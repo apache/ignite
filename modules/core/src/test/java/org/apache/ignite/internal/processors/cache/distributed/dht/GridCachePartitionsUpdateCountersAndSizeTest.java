@@ -176,7 +176,7 @@ public class GridCachePartitionsUpdateCountersAndSizeTest extends GridCommonAbst
     private static class SizeCounterLogListener extends LogListener {
         /** Pattern for Counters inconsistent message.*/
         final Pattern patCnt = Pattern.compile("(\\d)=(\\d{1,2})");
-        
+
         /** Pattern for Size inconsistent message.*/
         final Pattern patSz = Pattern.compile("(\\d)=(\\d{1,2})");
 
