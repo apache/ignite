@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -37,6 +36,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor.PERMS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
@@ -64,25 +64,20 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     /** JDBC URL prefix. */
     private static final String JDBC_URL_PREFIX = "jdbc:ignite:thin://";
 
-    /** Index of the node that accepted the query request. */
-    private static final int LOCAL_NODE_IDX = 0;
-
-    /** Index of the node which is remote to query executor. */
-    private static final int REMOTE_NODE_IDX = 1;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        Ignite srv = startGrid(LOCAL_NODE_IDX);
+        Ignite srv = startGrid(0);
 
-        startGrid(REMOTE_NODE_IDX);
+        startGrid(1);
 
         srv.cluster().state(ACTIVE);
 
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setIndexedTypes(Integer.class, Integer.class);
+        ccfg.setCacheMode(REPLICATED);
         ccfg.setSqlSchema(TEST_SCHEMA);
 
         srv.createCache(ccfg);
@@ -97,52 +92,67 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests INSERT query permissions check on local and remote node against the executor.
+     * Tests INSERT query permissions check.
      */
     @Test
     public void testInsert() throws Exception {
-        checkInsert(LOCAL_NODE_IDX);
-        checkInsert(REMOTE_NODE_IDX);
+        int key = KeyType.INSERT_KEY.ordinal();
+
+        checkPermissionsRequired(
+            "INSERT INTO " + TEST_SCHEMA + '.' + TABLE_NAME + "(_key, _val) VALUES (" + key + ", 0);",
+            cachePermissions(DEFAULT_CACHE_NAME, CACHE_PUT));
     }
 
     /**
-     * Tests SELECT query permissions check on the local and remote nodes against the executor.
+     * Tests SELECT query permissions check.
      */
     @Test
     public void testSelect() throws Exception {
-        checkSelect(LOCAL_NODE_IDX);
-        checkSelect(REMOTE_NODE_IDX);
+        int key = insertKey(KeyType.SELECT_KEY);
+
+        checkPermissionsRequired(
+            "SELECT _val FROM " + TEST_SCHEMA + '.' + TABLE_NAME + " WHERE _key=" + key + ";",
+            cachePermissions(DEFAULT_CACHE_NAME, CACHE_READ));
     }
 
     /**
-     * Tests UPDATE query permissions check on the local and remote nodes against the executor.
+     * Tests UPDATE query permissions check.
      */
     @Test
     public void testUpdate() throws Exception {
-        checkUpdate(LOCAL_NODE_IDX);
-        checkUpdate(REMOTE_NODE_IDX);
+        int key = insertKey(KeyType.UPDATE_KEY);
+
+        checkPermissionsRequired(
+            "UPDATE " + TEST_SCHEMA + '.' + TABLE_NAME + " SET _val=1 WHERE _key=" + key + ';',
+            cachePermissions(DEFAULT_CACHE_NAME, CACHE_PUT));
     }
 
     /**
-     * Tests DELETE query permissions check on the local and remote nodes against the executor.
+     * Tests DELETE query permissions check.
      */
     @Test
     public void testDelete() throws Exception {
-        checkDelete(LOCAL_NODE_IDX);
-        checkDelete(REMOTE_NODE_IDX);
+        int key = insertKey(KeyType.DELETE_KEY);
+
+        checkPermissionsRequired(
+            "DELETE FROM " + TEST_SCHEMA + '.' + TABLE_NAME + " WHERE _key=" + key + ';',
+            cachePermissions(DEFAULT_CACHE_NAME, CACHE_REMOVE));
     }
 
     /**
-     * Tests MERGE query permissions check on the local and remote nodes against the executor.
+     * Tests MERGE query permissions check.
      */
     @Test
     public void testMerge() throws Exception {
-        checkMerge(LOCAL_NODE_IDX);
-        checkMerge(REMOTE_NODE_IDX);
+        int key = insertKey(KeyType.MERGE_KEY);
+
+        checkPermissionsRequired(
+            "MERGE INTO " + TEST_SCHEMA + '.' + TABLE_NAME + "(_key, _val) VALUES (" + key + ", 0);",
+            cachePermissions(DEFAULT_CACHE_NAME, CACHE_PUT));
     }
 
     /**
-     * Tests CREATE TABLE query permissions check,
+     * Tests CREATE TABLE query permissions check.
      */
     @Test
     public void testCreateTable() throws Exception {
@@ -152,7 +162,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests DROP TABLE query permissions check,
+     * Tests DROP TABLE query permissions check.
      */
     @Test
     public void testDropTable() throws Exception {
@@ -194,68 +204,17 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     }
 
     /**
-     * Checks the permissions required to execute INSERT SQL query.
+     * Inserts key with specified type into the test table.
      *
-     * @param nodeIdx Index of the node on which the query will be executed.
+     * @param keyType Type of the key to insert.
+     * @return Inserted key.
      */
-    private void checkInsert(int nodeIdx) throws Exception {
-        int key = keyForNode(KeyType.INSERT_KEY, nodeIdx);
-
-        checkPermissionsRequired(
-            "INSERT INTO " + TEST_SCHEMA + '.' + TABLE_NAME + "(_key, _val) VALUES (" + key + ", 0)",
+    private int insertKey(KeyType keyType) throws Exception {
+        executeWithPermissions(
+            "INSERT INTO " + TEST_SCHEMA + '.' + TABLE_NAME + "(_key, _val) VALUES (" + keyType.ordinal() + ", 0);",
             cachePermissions(DEFAULT_CACHE_NAME, CACHE_PUT));
-    }
 
-    /**
-     * Checks the permissions required to execute SELECT SQL statement.
-     *
-     * @param nodeIdx Index of the node on which the query will be executed.
-     */
-    private void checkSelect(int nodeIdx) throws Exception {
-        int key = initializeKeyForNode(KeyType.SELECT_KEY, nodeIdx);
-
-        checkPermissionsRequired(
-            "SELECT _val FROM " + TEST_SCHEMA + '.' + TABLE_NAME + " WHERE _key=" + key + ';',
-            cachePermissions(DEFAULT_CACHE_NAME, CACHE_READ));
-    }
-
-    /**
-     * Checks the permissions required to execute UPDATE SQL statement.
-     *
-     * @param nodeIdx Index of the node on which the query will be executed.
-     */
-    private void checkUpdate(int nodeIdx) throws Exception {
-        int key = initializeKeyForNode(KeyType.UPDATE_KEY, nodeIdx);
-
-        checkPermissionsRequired(
-            "UPDATE " + TEST_SCHEMA + '.' + TABLE_NAME + " SET _val = 1 WHERE _key=" + key + ';',
-            cachePermissions(DEFAULT_CACHE_NAME, CACHE_PUT));
-    }
-
-    /**
-     * Checks the permissions required to execute DELETE SQL statement.
-     *
-     * @param nodeIdx Index of the node on which the query will be executed.
-     */
-    private void checkDelete(int nodeIdx) throws Exception {
-        int key = initializeKeyForNode(KeyType.DELETE_KEY, nodeIdx);
-
-        checkPermissionsRequired(
-            "DELETE FROM " + TEST_SCHEMA + '.' + TABLE_NAME + " WHERE _key=" + key + ';',
-            cachePermissions(DEFAULT_CACHE_NAME, CACHE_REMOVE));
-    }
-
-    /**
-     * Checks the permissions required to execute MERGE SQL statement.
-     *
-     * @param nodeIdx Index of the node on which the query will be executed.
-     */
-    private void checkMerge(int nodeIdx) throws Exception {
-        int key = initializeKeyForNode(KeyType.MERGE_KEY, nodeIdx);
-
-        checkPermissionsRequired(
-            "MERGE INTO " + TEST_SCHEMA + '.' + TABLE_NAME + "(_key, _val) VALUES (" + key + ", 0);",
-            cachePermissions(DEFAULT_CACHE_NAME, CACHE_PUT));
+        return keyType.ordinal();
     }
 
     /**
@@ -272,47 +231,6 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
         );
 
         return name;
-    }
-
-    /**
-     * Generates key which will belong to node with specified index and inserts it in the test table.
-     *
-     * @param keyType Type of key for dynamic generation.
-     * @param nodeIdx Index of node to which key will belong.
-     * @return Initialized key.
-     */
-    private int initializeKeyForNode(KeyType keyType, int nodeIdx) throws Exception {
-        int key = keyForNode(keyType, nodeIdx);
-
-        executeWithPermissions(
-            "INSERT INTO " + TEST_SCHEMA + '.' + TABLE_NAME + "(_key, _val) VALUES (" + key + ", 0)",
-            cachePermissions(DEFAULT_CACHE_NAME, CACHE_PUT));
-
-        return key;
-    }
-
-    /**
-     * Generates key which belongs to specified node.
-     *
-     * @param keyType Type of the key to be generated.
-     * @param nodeIdx Key storage node index.
-     */
-    private int keyForNode(KeyType keyType, int nodeIdx) {
-        int res;
-
-        int keyIdx = 0;
-
-        AtomicInteger cnt = new AtomicInteger(0);
-
-        do {
-            res = keyForNode(
-                grid(LOCAL_NODE_IDX).affinity(DEFAULT_CACHE_NAME),
-                cnt,
-                grid(nodeIdx).localNode());
-        }
-        while (keyIdx++ != keyType.ordinal());
-
-        return res;
     }
 
     /**
@@ -474,7 +392,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     }
 
     /**
-     * The type of the SQL query key for its dynamic generation with binding to a specific node.
+     * The type of the SQL query key.
      */
     private enum KeyType {
         /** Key for INSERT operation testing. */
