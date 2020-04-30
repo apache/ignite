@@ -336,12 +336,10 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
 
         registerUser(login, perms);
 
-        try {
-            try (Connection conn = getConnection(login)) {
-                Statement stmt = conn.createStatement();
+        try (Connection conn = getConnection(login)) {
+            Statement stmt = conn.createStatement();
 
-                stmt.execute(sql);
-            }
+            stmt.execute(sql);
         }
         finally {
             removeUser(login);
