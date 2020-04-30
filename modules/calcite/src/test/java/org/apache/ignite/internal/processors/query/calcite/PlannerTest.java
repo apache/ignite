@@ -70,6 +70,8 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
@@ -728,11 +730,16 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
-                return Linq4j.asEnumerable(Arrays.asList(
-                    new Object[]{0, "Igor", 0},
-                    new Object[]{1, "Roman", 0}
-                ));
+            @Override public IgniteIndex getIndex(String idxName) {
+                return new IgniteIndex(null, null, null, null) {
+                    @Override public Iterable<Object[]> scan(ExecutionContext execCtx, Predicate<Object[]> filters,
+                        Object[] lowerIdxConditions, Object[] upperIdxConditions) {
+                        return Linq4j.asEnumerable(Arrays.asList(
+                            new Object[]{0, "Igor", 0},
+                            new Object[]{1, "Roman", 0}
+                        ));
+                    }
+                };
             }
 
             @Override public NodesMapping mapping(PlanningContext ctx) {
@@ -750,11 +757,16 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
-                return Linq4j.asEnumerable(Arrays.asList(
-                    new Object[]{0, "Calcite", 1},
-                    new Object[]{1, "Ignite", 1}
-                ));
+            @Override public IgniteIndex getIndex(String idxName) {
+                return new IgniteIndex(null, null, null, null) {
+                    @Override public Iterable<Object[]> scan(ExecutionContext execCtx, Predicate<Object[]> filters,
+                        Object[] lowerIdxConditions, Object[] upperIdxConditions) {
+                        return Linq4j.asEnumerable(Arrays.asList(
+                            new Object[]{0, "Calcite", 1},
+                            new Object[]{1, "Ignite", 1}
+                        ));
+                    }
+                };
             }
 
             @Override public NodesMapping mapping(PlanningContext ctx) {
@@ -979,11 +991,17 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("ID0", f.createJavaType(Integer.class))
                 .add("ID1", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
-                return Linq4j.asEnumerable(Arrays.asList(
-                    new Object[]{0, 1},
-                    new Object[]{1, 2}
-                ));
+
+            @Override public IgniteIndex getIndex(String idxName) {
+                return new IgniteIndex(null, null, null, null) {
+                    @Override public Iterable<Object[]> scan(ExecutionContext execCtx, Predicate<Object[]> filters,
+                        Object[] lowerIdxConditions, Object[] upperIdxConditions) {
+                        return Linq4j.asEnumerable(Arrays.asList(
+                            new Object[]{0, 1},
+                            new Object[]{1, 2}
+                        ));
+                    }
+                };
             }
 
             @Override public NodesMapping mapping(PlanningContext ctx) {
@@ -1848,6 +1866,10 @@ public class PlannerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public List<RelCollation> collations() {
             return Collections.emptyList();
+        }
+
+        @Override public ColumnDescriptor[] columnDescriptors() {
+            return new ColumnDescriptor[0];
         }
     }
 

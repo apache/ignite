@@ -98,7 +98,8 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         this.idxName = idxName;
         this.filters = filters;
         this.igniteTable = tbl.unwrap(IgniteTable.class);
-        this.collation = traits.getTrait(RelCollationTraitDef.INSTANCE);
+        RelCollation coll = traits.getTrait(RelCollationTraitDef.INSTANCE);
+        this.collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
         this.predicateMasks = new int[collation.getFieldCollations().size()];
         this.lowerIdxCondition = new RexNode[igniteTable.columnDescriptors().length];
         this.upperIdxCondition = new RexNode[igniteTable.columnDescriptors().length];

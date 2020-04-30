@@ -147,6 +147,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Downstr
 
     /** {@inheritDoc} */
     @Override public void onError(Throwable e) {
+        context().planningContext().logger();
         System.out.println("ERROR!=" + X.getFullStackTrace(e));
         cancel(); // TODO send cause to originator.
     }

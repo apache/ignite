@@ -16,6 +16,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -38,7 +39,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.h2.value.DataType;
 import org.h2.value.Value;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * TODO: Add class description.
@@ -47,21 +47,6 @@ import org.jetbrains.annotations.NotNull;
 public class IndexScan implements Iterable<Object[]> {
     /** */
     private final ExecutionContext ectx;
-
-    /** */
-    private final TableDescriptor desc;
-
-    /** */
-    private final Predicate<Object[]> filters;
-
-    /** */
-    private final Object[] lowerBound;
-
-    /** */
-    private final Object[] upperBound;
-
-    /** */
-    private final GridIndex<H2Row> idx;
 
     /** */
     private final CacheObjectContext coCtx;
@@ -73,7 +58,22 @@ public class IndexScan implements Iterable<Object[]> {
     private final GridCacheContext cacheCtx;
 
     /** */
+    private final TableDescriptor desc;
+
+    /** */
+    private final GridIndex<H2Row> idx;
+
+    /** */
     private final AffinityTopologyVersion topVer;
+
+    /** Additional filters. */
+    private final Predicate<Object[]> filters;
+
+    /** Lower index scan bound. */
+    private final Object[] lowerBound;
+
+    /** Upper index scan bound. */
+    private final Object[] upperBound;
 
     /** */
     private final int[] partsArr;
@@ -81,6 +81,13 @@ public class IndexScan implements Iterable<Object[]> {
     /** */
     private final MvccSnapshot mvccSnapshot;
 
+    /**
+     * @param ctx Cache context.
+     * @param igniteIdx Index tree.
+     * @param filters Additional filters.
+     * @param lowerBound Lower index scan bound.
+     * @param upperBound Upper index scan bound.
+     */
     public IndexScan(
         ExecutionContext ctx,
         IgniteIndex igniteIdx,
@@ -100,33 +107,30 @@ public class IndexScan implements Iterable<Object[]> {
         this.topVer = ctx.planningContext().topologyVersion();
         this.partsArr = ctx.partitions();
         this.mvccSnapshot = ctx.mvccSnapshot();
-
     }
 
-    @NotNull @Override public Iterator<Object[]> iterator() {
-        IndexingQueryFilter filter = new IndexingQueryFilterImpl(ctx, topVer, partsArr);
-        IndexingQueryCacheFilter filter1 = filter.forCache(cacheCtx.name());
-        H2TreeFilterClosure filterClosure =new H2TreeFilterClosure(filter1, mvccSnapshot, cacheCtx, ectx.planningContext().logger());
+    /** {@inheritDoc} */
+    @Override public Iterator<Object[]> iterator() {
+        H2TreeFilterClosure filterC = filterClosure();
 
         H2Row lower = lowerBound == null ? null : new CalciteH2Row(coCtx, lowerBound);
         H2Row upper = upperBound == null ? null : new CalciteH2Row(coCtx, upperBound);
 
-        GridCursor<H2Row> cur =  idx.find(lower, upper, filterClosure);
-//
-//        System.out.println("upperBound=" + Arrays.toString(upperBound));
-//        System.out.println("lowerBound=" + Arrays.toString(lowerBound));
-//        try {
-//            //desc.toRow(ectx, (H2CacheRow)cur.get())
-//            while (cur.next())
-//                System.out.println(this + "next=" + cur.get());
-//        }
-//        catch (Exception e) {
-//            System.out.println("Exc===" + e);
-//            throw new RuntimeException(e);
-//        }
-
+        GridCursor<H2Row> cur = idx.find(lower, upper, filterC);
 
         return new CursorIteratorWrapper(cur);
+    }
+
+    /** */
+    public H2TreeFilterClosure filterClosure() {
+        IndexingQueryFilter filter = new IndexingQueryFilterImpl(ctx, topVer, partsArr);
+        IndexingQueryCacheFilter f = filter.forCache(cacheCtx.name());
+        H2TreeFilterClosure filterC = null;
+
+        if (f != null || mvccSnapshot != null )
+            filterC = new H2TreeFilterClosure(f, mvccSnapshot, cacheCtx, ectx.planningContext().logger());
+
+        return filterC;
     }
 
     /** */
@@ -184,18 +188,10 @@ public class IndexScan implements Iterable<Object[]> {
          * @param cursor Cursor.
          */
         CursorIteratorWrapper(GridCursor<H2Row> cursor) {
+            assert cursor != null;
             this.cursor = cursor;
-            try {
-                assert cursor != null;
 
-                if (cursor.next()) {
-                    H2Row h2Row = cursor.get();
-                    next = desc.toRow(ectx, (CacheDataRow)h2Row);
-                }
-            }
-            catch (IgniteCheckedException ex) {
-                throw U.convertException(ex);
-            }
+            advance();
         }
 
         /** {@inheritDoc} */
@@ -205,17 +201,28 @@ public class IndexScan implements Iterable<Object[]> {
 
         /** {@inheritDoc} */
         @Override public Object[] next() {
+            if (next == null)
+                throw new NoSuchElementException();
+
+            Object[] res = next;
+
+            advance();
+
+            return res;
+        }
+
+        /** */
+        public void advance()  {
             try {
-                Object[] res = next;
-
-                if (cursor.next()) {
+                next = null;
+                while (next == null && cursor.next()) {
                     H2Row h2Row = cursor.get();
-                    next = desc.toRow(ectx, (CacheDataRow)h2Row);
-                }
-                else
-                    next = null;
 
-                return res;
+                    Object[] r = desc.toRow(ectx, (CacheDataRow)h2Row);
+
+                    if (filters == null || filters.test(r))
+                        next = r;
+                }
             }
             catch (IgniteCheckedException ex) {
                 throw U.convertException(ex);
