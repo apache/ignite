@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.Set;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
@@ -63,17 +61,10 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         initialHandler(IgniteMetadata.DerivedDistribution.Handler.class);
 
     /** */
-    private static final IgniteMetadata.DerivedTraitSet.Handler DERIVED_TRAIT_SETS_INITIAL_HANDLER =
-        initialHandler(IgniteMetadata.DerivedTraitSet.Handler.class);
-
-    /** */
     private IgniteMetadata.FragmentMetadata.Handler sourceDistributionHandler;
 
     /** */
     private IgniteMetadata.DerivedDistribution.Handler derivedDistributionsHandler;
-
-    /** */
-    private IgniteMetadata.DerivedTraitSet.Handler derivedTraitSetsHandler;
 
     /**
      * Factory method.
@@ -103,7 +94,6 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
     private RelMetadataQueryEx() {
         sourceDistributionHandler = SOURCE_DISTRIBUTION_INITIAL_HANDLER;
         derivedDistributionsHandler = DERIVED_DISTRIBUTIONS_INITIAL_HANDLER;
-        derivedTraitSetsHandler = DERIVED_TRAIT_SETS_INITIAL_HANDLER;
     }
 
     /**
@@ -133,21 +123,6 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
                 return derivedDistributionsHandler.deriveDistributions(rel, this);
             } catch (JaninoRelMetadataProvider.NoHandler e) {
                 derivedDistributionsHandler = revise(e.relClass, IgniteMetadata.DerivedDistribution.DEF);
-            }
-        }
-    }
-
-    /**
-     * Requests all possible trait sets fot the given relational node.
-     * @param rel Relational node.
-     * @return List of possible trait sets the given relational node may have.
-     */
-    public Set<RelTraitSet> deriveTraitSets(RelNode rel) {
-        for (;;) {
-            try {
-                return derivedTraitSetsHandler.deriveTraitSets(rel, this);
-            } catch (JaninoRelMetadataProvider.NoHandler e) {
-                derivedTraitSetsHandler = revise(e.relClass, IgniteMetadata.DerivedTraitSet.DEF);
             }
         }
     }

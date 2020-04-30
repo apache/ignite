@@ -22,7 +22,6 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.CallOperation;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.Scalar;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.DerivedDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMetadata;
 
@@ -33,8 +32,7 @@ public enum IgniteMethod {
     CALL_APPLY(CallOperation.class, "apply", Object[].class),
     SCALAR_EXECUTE(Scalar.class, "execute", ExecutionContext.class, Object[].class, Object[].class),
     DERIVED_DISTRIBUTIONS(DerivedDistribution.class, "deriveDistributions"),
-    FRAGMENT_INFO(FragmentMetadata.class, "fragmentInfo"),
-    DERIVED_TRAIT_SETS(IgniteMetadata.DerivedTraitSet.class, "deriveTraitSets");
+    FRAGMENT_INFO(FragmentMetadata.class, "fragmentInfo");
 
     /** */
     private final Method method;

@@ -17,18 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 
 /**
@@ -50,23 +46,12 @@ public class ProjectTraitsPropagationRule extends RelOptRule {
         RelNode input = call.rel(1);
 
         RelOptCluster cluster = rel.getCluster();
-        RelMetadataQueryEx mq = (RelMetadataQueryEx)cluster.getMetadataQuery();
+        RelMetadataQuery mq = cluster.getMetadataQuery();
 
-        Set<RelTraitSet> allTraitSets = mq.deriveTraitSets(rel);
-        Set<RelTraitSet> physicalTraitSets = new HashSet<>();
-        for (RelTraitSet set : allTraitSets) {
-            RelTraitSet physSet = set.replace(IgniteConvention.INSTANCE);
-            physicalTraitSets.add(physSet);
-        }
+        RelTraitSet traits = rel.getTraitSet()
+            .replace(IgniteMdDistribution.project(mq, input, rel.getProjects()));
 
-        List<RelNode> newRels = new ArrayList<>(physicalTraitSets.size());
-        for (RelTraitSet traits : physicalTraitSets) {
-            RelNode newInput = convert(input, traits);
-            IgniteProject newProject =
-                new IgniteProject(cluster, traits, newInput, rel.getProjects(), rel.getRowType());
-            newRels.add(newProject);
-        }
-
-        RuleUtils.transformTo(call, newRels);
+        RuleUtils.transformTo(call,
+            new IgniteProject(cluster, traits, input, rel.getProjects(), rel.getRowType()));
     }
 }

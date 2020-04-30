@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.Set;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
@@ -42,8 +40,7 @@ public class IgniteMetadata {
                 IgniteMdDerivedDistribution.SOURCE,
                 IgniteMdDistribution.SOURCE,
                 IgniteMdFragmentInfo.SOURCE,
-                DefaultRelMetadataProvider.INSTANCE,
-                IgniteMdDerivedTraitSets.SOURCE));
+                DefaultRelMetadataProvider.INSTANCE));
 
     public interface FragmentMetadata extends Metadata {
         MetadataDef<FragmentMetadata> DEF = MetadataDef.of(FragmentMetadata.class,
@@ -67,18 +64,6 @@ public class IgniteMetadata {
         /** Handler API. */
         interface Handler extends MetadataHandler<DerivedDistribution> {
             List<IgniteDistribution> deriveDistributions(RelNode r, RelMetadataQuery mq);
-        }
-    }
-
-    public interface DerivedTraitSet extends Metadata {
-        MetadataDef<DerivedTraitSet> DEF = MetadataDef.of(DerivedTraitSet.class,
-            DerivedTraitSet.Handler.class, IgniteMethod.DERIVED_TRAIT_SETS.method());
-
-        Set<RelTraitSet> deriveTraitSets();
-
-        /** Handler API. */
-        interface Handler extends MetadataHandler<DerivedTraitSet> {
-            Set<RelTraitSet> deriveTraitSets(RelNode r, RelMetadataQuery mq);
         }
     }
 }

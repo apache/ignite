@@ -43,9 +43,9 @@ public class ProjectConverterRule extends RelOptRule {
         LogicalProject rel = call.rel(0);
 
         RelOptCluster cluster = rel.getCluster();
-        RelNode input = convert(rel.getInput(), IgniteConvention.INSTANCE);
-        RelTraitSet traits = rel.getTraitSet()
+        RelTraitSet traits = cluster.traitSet()
             .replace(IgniteConvention.INSTANCE);
+        RelNode input = convert(rel.getInput(), traits);
 
         RuleUtils.transformTo(call,
             new IgniteProject(cluster, traits, input, rel.getProjects(), rel.getRowType()));
