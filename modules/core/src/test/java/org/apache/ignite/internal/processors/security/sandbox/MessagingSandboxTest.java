@@ -22,22 +22,34 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+
 /**
  * Checks that a remote listener for IgniteMessaging is executed inside the sandbox.
  */
 public class MessagingSandboxTest extends AbstractSandboxTest {
+    /** Node to send messages. */
+    private static final String SRV_SENDER = "srv_sender";
+
     /** Latch. */
-    private static CountDownLatch latch;
+    private static volatile CountDownLatch latch;
 
     /** Error. */
-    private static AccessControlException error;
+    private static volatile AccessControlException error;
+
+
+    /** {@inheritDoc} */
+    @Override protected void prepareCluster() throws Exception {
+        startGrid(SRV_SENDER, ALLOW_ALL, false);
+
+        super.prepareCluster();
+    }
 
     /** */
     @Test
@@ -53,41 +65,44 @@ public class MessagingSandboxTest extends AbstractSandboxTest {
 
     /** */
     private void testMessaging(BiFunction<IgniteMessaging, String, UUID> func) {
-        execute(grid(CLNT_ALLOWED_WRITE_PROP), func, this::checkAllowedOperation);
-        execute(grid(CLNT_FORBIDDEN_WRITE_PROP), func, this::checkForbiddenOperation);
+        execute(grid(CLNT_ALLOWED_WRITE_PROP), func, false);
+        execute(grid(CLNT_FORBIDDEN_WRITE_PROP), func, true);
     }
 
     /**
      * @param r Runnable that runs {@link AbstractSandboxTest#controlAction()}.
      */
     private void checkAllowedOperation(Runnable r) {
-        System.clearProperty(PROP_NAME);
+        runOperation(
+            () -> {
+                error = null;
 
-        error = null;
+                r.run();
 
-        r.run();
-
-        assertNull(error);
-        assertEquals(PROP_VALUE, System.getProperty(PROP_NAME));
+                assertNull(error);
+            }
+        );
     }
 
     /**
      * @param r RunnableX that that runs {@link AbstractSandboxTest#controlAction()}.
      */
     private void checkForbiddenOperation(GridTestUtils.RunnableX r) {
-        System.clearProperty(PROP_NAME);
+        runForbiddenOperation(
+            () -> {
+                error = null;
 
-        error = null;
+                r.run();
 
-        r.run();
+                assertNotNull(error);
 
-        assertNotNull(error);
-        assertNull(System.getProperty(PROP_NAME));
+                throw error;
+            }, AccessControlException.class
+        );
     }
 
     /** */
-    private void execute(Ignite node, BiFunction<IgniteMessaging, String, UUID> func,
-        Consumer<GridTestUtils.RunnableX> op) {
+    private void execute(Ignite node, BiFunction<IgniteMessaging, String, UUID> func, boolean isForbiddenCase) {
         final String topic = "test_topic";
 
         IgniteMessaging messaging = node.message(node.cluster().forNodeId(grid(SRV).localNode().id()));
@@ -97,11 +112,16 @@ public class MessagingSandboxTest extends AbstractSandboxTest {
         latch = new CountDownLatch(1);
 
         try {
-            op.accept(() -> {
-                grid(SRV).message().send(topic, "Hello!");
+            GridTestUtils.RunnableX r = () -> {
+                grid(SRV_SENDER).message().send(topic, "Hello!");
 
                 latch.await(10, TimeUnit.SECONDS);
-            });
+            };
+
+            if (isForbiddenCase)
+                checkForbiddenOperation(r);
+            else
+                checkAllowedOperation(r);
         }
         finally {
             messaging.stopRemoteListen(listenerId);
