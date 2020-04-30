@@ -43,4 +43,20 @@ public class DataStorageConfigurationValidationTest extends TestCase {
             }
         }, IllegalArgumentException.class, null);
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetWalSegmentsCountShouldThrowExceptionThenLessThan2() throws Exception {
+        final DataStorageConfiguration cfg = new DataStorageConfiguration();
+
+        GridTestUtils.assertThrows(null, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cfg.setWalSegments(1);
+
+                return null;
+            }
+        }, IllegalArgumentException.class, null);
+    }
+
 }
