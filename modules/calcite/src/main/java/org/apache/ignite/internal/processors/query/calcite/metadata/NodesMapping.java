@@ -377,12 +377,12 @@ public class NodesMapping implements MarshalableMessage {
             assignments = Commons.transform(assignments0, this::transform);
     }
 
-    /** {@inheritDoc} */
+    /** */
     private List<UUID> transform(UUIDCollectionMessage message) {
         return message.uuids() instanceof List ? (List<UUID>)message.uuids() : new ArrayList<>(message.uuids());
     }
 
-    /** {@inheritDoc} */
+    /** */
     private UUIDCollectionMessage transform(List<UUID> uuids) {
         return new UUIDCollectionMessage(uuids);
     }

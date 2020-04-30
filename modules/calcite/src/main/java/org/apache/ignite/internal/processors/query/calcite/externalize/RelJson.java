@@ -20,6 +20,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
@@ -32,6 +33,7 @@ import java.util.Set;
 import java.util.function.Function;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
@@ -48,7 +50,6 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.externalize.RelEnumTypes;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl.JavaType;
@@ -65,15 +66,27 @@ import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexVariable;
 import org.apache.calcite.rex.RexWindow;
 import org.apache.calcite.rex.RexWindowBound;
+import org.apache.calcite.sql.JoinConditionType;
+import org.apache.calcite.sql.JoinType;
 import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlExplain;
+import org.apache.calcite.sql.SqlExplainFormat;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlInsertKeyword;
 import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.SqlJsonConstructorNullClause;
+import org.apache.calcite.sql.SqlJsonQueryWrapperBehavior;
+import org.apache.calcite.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlMatchRecognize;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlSelectKeyword;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.fun.SqlTrimFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlNameMatchers;
@@ -96,6 +109,7 @@ class RelJson {
     /** */
     @FunctionalInterface
     public static interface RelFactory extends Function<RelInput, RelNode> {
+        /** {@inheritDoc} */
         @Override RelNode apply(RelInput input);
     }
 
@@ -109,13 +123,13 @@ class RelJson {
 
         if (!typeName.contains(".")) {
             for (String package_ : PACKAGES) {
-                if ((clazz = classForName(package_ + typeName, false)) != null)
+                if ((clazz = classForName(package_ + typeName, true)) != null)
                     break;
             }
         }
 
         if (clazz == null)
-            clazz = classForName(typeName, true);
+            clazz = classForName(typeName, false);
 
         assert RelNode.class.isAssignableFrom(clazz);
 
@@ -138,15 +152,54 @@ class RelJson {
     }
 
     /** */
-    private static Class<?> classForName(String typeName, boolean throwExceptionIfNotFound) {
+    private static final ImmutableMap<String, Enum<?>> ENUM_BY_NAME;
+
+    /** */
+    static {
+        // Build a mapping from enum constants (e.g. LEADING) to the enum
+        // that contains them (e.g. SqlTrimFunction.Flag). If there two
+        // enum constants have the same name, the builder will throw.
+        final ImmutableMap.Builder<String, Enum<?>> enumByName =
+            ImmutableMap.builder();
+
+        register(enumByName, JoinConditionType.class);
+        register(enumByName, JoinType.class);
+        register(enumByName, Direction.class);
+        register(enumByName, NullDirection.class);
+        register(enumByName, SqlTypeName.class);
+        register(enumByName, SqlKind.class);
+        register(enumByName, SqlSyntax.class);
+        register(enumByName, SqlExplain.Depth.class);
+        register(enumByName, SqlExplainFormat.class);
+        register(enumByName, SqlExplainLevel.class);
+        register(enumByName, SqlInsertKeyword.class);
+        register(enumByName, SqlJsonConstructorNullClause.class);
+        register(enumByName, SqlJsonQueryWrapperBehavior.class);
+        register(enumByName, SqlJsonValueEmptyOrErrorBehavior.class);
+        register(enumByName, SqlMatchRecognize.AfterOption.class);
+        register(enumByName, SqlSelectKeyword.class);
+        register(enumByName, SqlTrimFunction.Flag.class);
+        register(enumByName, TimeUnitRange.class);
+        ENUM_BY_NAME = enumByName.build();
+    }
+
+    /** */
+    private static void register(ImmutableMap.Builder<String, Enum<?>> builder, Class<? extends Enum> aClass) {
+        String preffix = aClass.getSimpleName() + "#";
+        for (Enum enumConstant : aClass.getEnumConstants())
+            builder.put(preffix + enumConstant.name(), enumConstant);
+    }
+
+    /** */
+    private static Class<?> classForName(String typeName, boolean skipNotFound) {
         try {
             return Class.forName(typeName);
         }
         catch (ClassNotFoundException e) {
-            if (throwExceptionIfNotFound)
-                throw new RuntimeException("unknown type " + typeName);
+            if (skipNotFound)
+                return null;
 
-            return null;
+            throw new RuntimeException("unknown type " + typeName);
         }
     }
 
@@ -168,7 +221,7 @@ class RelJson {
     /** */
     String classToTypeName(Class<? extends RelNode> class_) {
         if (IgniteRel.class.isAssignableFrom(class_))
-	        return class_.getSimpleName();
+            return class_.getSimpleName();
 
         String canonicalName = class_.getName();
         for (String package_ : PACKAGES) {
@@ -181,12 +234,15 @@ class RelJson {
         return canonicalName;
     }
 
+    /** */
     Object toJson(Object value) {
         if (value == null
             || value instanceof Number
             || value instanceof String
             || value instanceof Boolean)
             return value;
+        else if (value instanceof Enum)
+            return toJson((Enum)value);
         else if (value instanceof RexNode)
             return toJson((RexNode)value);
         else if (value instanceof RexWindow)
@@ -224,6 +280,7 @@ class RelJson {
                 + value + " (type " + value.getClass().getCanonicalName() + ")");
     }
 
+    /** */
     RelCollation toCollation(List<Map<String, Object>> jsonFieldCollations) {
         List<RelFieldCollation> fieldCollations = new ArrayList<>();
         for (Map<String, Object> map : jsonFieldCollations)
@@ -231,6 +288,7 @@ class RelJson {
         return RelCollations.of(fieldCollations);
     }
 
+    /** */
     IgniteDistribution toDistribution(Object distribution) {
         if (distribution instanceof String) {
             switch ((String)distribution) {
@@ -259,6 +317,7 @@ class RelJson {
         return IgniteDistributions.hash((List<Integer>)map.get("keys"), function);
     }
 
+    /** */
     RelDataType toType(RelDataTypeFactory typeFactory, Object o) {
         if (o instanceof List) {
             List<Map<String, Object>> jsonList = (List<Map<String, Object>>)o;
@@ -272,7 +331,7 @@ class RelJson {
             String clazz = (String)map.get("class");
 
             if (clazz != null) {
-                RelDataType type = typeFactory.createJavaType(classForName(clazz, true));
+                RelDataType type = typeFactory.createJavaType(classForName(clazz, false));
 
                 if (Boolean.TRUE == map.get("nullable"))
                     type = typeFactory.createTypeWithNullability(type, true);
@@ -285,8 +344,7 @@ class RelJson {
             if (fields != null)
                 return toType(typeFactory, fields);
             else {
-                SqlTypeName sqlTypeName =
-                    Util.enumVal(SqlTypeName.class, (String)map.get("type"));
+                SqlTypeName sqlTypeName = toEnum(map.get("type"));
                 Integer precision = (Integer)map.get("precision");
                 Integer scale = (Integer)map.get("scale");
                 if (SqlTypeName.INTERVAL_TYPES.contains(sqlTypeName)) {
@@ -310,12 +368,12 @@ class RelJson {
             }
         }
         else {
-            SqlTypeName sqlTypeName =
-                Util.enumVal(SqlTypeName.class, (String)o);
+            SqlTypeName sqlTypeName = toEnum(o);
             return typeFactory.createSqlType(sqlTypeName);
         }
     }
 
+    /** */
     RexNode toRex(RelInput relInput, Object o) {
         RelOptCluster cluster = relInput.getCluster();
         RexBuilder rexBuilder = cluster.getRexBuilder();
@@ -397,25 +455,31 @@ class RelJson {
                 }
                 throw new RuntimeException("input field " + input + " is out of range");
             }
+
             String field = (String)map.get("field");
             if (field != null) {
                 Object jsonExpr = map.get("expr");
                 RexNode expr = toRex(relInput, jsonExpr);
                 return rexBuilder.makeFieldAccess(expr, field, true);
             }
-            
-            if (map.containsKey("correl")) {
-                String correl = (String)map.get("correl");
+
+            String correl = (String)map.get("correl");
+            if (correl != null) {
                 RelDataType type = toType(typeFactory, map.get("type"));
                 return rexBuilder.makeCorrel(type, new CorrelationId(correl));
             }
+
             if (map.containsKey("literal")) {
                 Object literal = map.get("literal");
                 RelDataType type = toType(typeFactory, map.get("type"));
-                return literal == null 
-                    ? rexBuilder.makeNullLiteral(type) 
-                    : rexBuilder.makeLiteral(literal, type, false);
 
+                if (literal == null)
+                    return rexBuilder.makeNullLiteral(type);
+
+                if (type.getSqlTypeName() == SqlTypeName.SYMBOL)
+                    literal = toEnum(literal);
+
+                return rexBuilder.makeLiteral(literal, type, false);
             }
             
             throw new UnsupportedOperationException("cannot convert to rex " + o);
@@ -437,13 +501,12 @@ class RelJson {
             throw new UnsupportedOperationException("cannot convert to rex " + o);
     }
 
+    /** */
     SqlOperator toOp(Map<String, Object> map) {
         // in case different operator has the same kind, check with both name and kind.
         String name = map.get("name").toString();
-        String kind = map.get("kind").toString();
-        String syntax = map.get("syntax").toString();
-        SqlKind sqlKind = SqlKind.valueOf(kind);
-        SqlSyntax sqlSyntax = SqlSyntax.valueOf(syntax);
+        SqlKind sqlKind = toEnum(map.get("kind"));
+        SqlSyntax sqlSyntax = toEnum(map.get("syntax"));
         List<SqlOperator> operators = new ArrayList<>();
         SqlStdOperatorTable.instance().lookupOperatorOverloads(
             new SqlIdentifier(name, new SqlParserPos(0, 0)),
@@ -460,17 +523,40 @@ class RelJson {
         return null;
     }
 
+    /** */
+    <T> List<T> list() {
+        return new ArrayList<>();
+    }
+
+    /** */
+    <T> Map<String, T> map() {
+        return new LinkedHashMap<>();
+    }
+
+    /** */
+    private <T extends Enum<T>> T toEnum(Object o) {
+        if (o instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>)o;
+            String class_ = (String)map.get("class");
+            String name = map.get("name").toString();
+            return Util.enumVal((Class<T>)classForName(class_, false), name);
+        }
+
+        assert o instanceof String && ENUM_BY_NAME.containsKey(o);
+
+        String name = (String)o;
+        return (T)ENUM_BY_NAME.get(name);
+    }
+
+    /** */
     private RelFieldCollation toFieldCollation(Map<String, Object> map) {
         Integer field = (Integer)map.get("field");
-        Direction direction =
-            Util.enumVal(Direction.class,
-                (String)map.get("direction"));
-        NullDirection nullDirection =
-            Util.enumVal(NullDirection.class,
-                (String)map.get("nulls"));
+        Direction direction = toEnum(map.get("direction"));
+        NullDirection nullDirection = toEnum(map.get("nulls"));
         return new RelFieldCollation(field, direction, nullDirection);
     }
 
+    /** */
     private List<RexFieldCollation> toRexFieldCollationList(RelInput relInput, List<Map<String, Object>> order) {
         if (order == null)
             return null;
@@ -479,9 +565,9 @@ class RelJson {
         for (Map<String, Object> o : order) {
             RexNode expr = toRex(relInput, o.get("expr"));
             Set<SqlKind> directions = new HashSet<>();
-            if (Direction.valueOf((String)o.get("direction")) == Direction.DESCENDING)
+            if (toEnum(o.get("direction")) == Direction.DESCENDING)
                 directions.add(SqlKind.DESCENDING);
-            if (NullDirection.valueOf((String)o.get("null-direction")) == NullDirection.FIRST)
+            if (toEnum(o.get("null-direction")) == NullDirection.FIRST)
                 directions.add(SqlKind.NULLS_FIRST);
             else
                 directions.add(SqlKind.NULLS_LAST);
@@ -490,6 +576,7 @@ class RelJson {
         return list;
     }
 
+    /** */
     private RexWindowBound toRexWindowBound(RelInput input, Map<String, Object> map) {
         if (map == null)
             return null;
@@ -520,6 +607,7 @@ class RelJson {
         }
     }
 
+    /** */
     private List<RexNode> toRexList(RelInput relInput, List<?> operands) {
         List<RexNode> list = new ArrayList<>();
         for (Object operand : operands)
@@ -527,6 +615,20 @@ class RelJson {
         return list;
     }
 
+    /** */
+    private Object toJson(Enum<?> enum0) {
+        String key = enum0.getDeclaringClass().getSimpleName() + "#" + enum0.name();
+
+        if (ENUM_BY_NAME.get(key) == enum0)
+            return key;
+
+        Map<String, Object> map = map();
+        map.put("class", enum0.getDeclaringClass().getName());
+        map.put("name", enum0.name());
+        return map;
+    }
+
+    /** */
     private Object toJson(AggregateCall node) {
         Map<String, Object> map = map();
         map.put("agg", toJson(node.getAggregation()));
@@ -537,6 +639,7 @@ class RelJson {
         return map;
     }
 
+    /** */
     private Object toJson(RelDataType node) {
         if (node instanceof JavaType) {
             Map<String, Object> map = map();
@@ -554,7 +657,7 @@ class RelJson {
         }
         else {
             Map<String, Object> map = map();
-            map.put("type", node.getSqlTypeName().name());
+            map.put("type", toJson(node.getSqlTypeName()));
             if (node.isNullable())
                 map.put("nullable", true);
             if (node.getSqlTypeName().allowsPrec())
@@ -565,6 +668,7 @@ class RelJson {
         }
     }
 
+    /** */
     private Object toJson(RelDataTypeField node) {
         Map<String, Object> map;
         if (node.getType().isStruct()) {
@@ -577,10 +681,12 @@ class RelJson {
         return map;
     }
 
+    /** */
     private Object toJson(CorrelationId node) {
         return node.getId();
     }
 
+    /** */
     private Object toJson(RexNode node) {
         Map<String, Object> map;
         switch (node.getKind()) {
@@ -595,7 +701,7 @@ class RelJson {
                 RexLiteral literal = (RexLiteral)node;
                 Object value = literal.getValue3();
                 map = map();
-                map.put("literal", RelEnumTypes.fromEnum(value));
+                map.put("literal", toJson(value));
                 map.put("type", toJson(node.getType()));
 
                 return map;
@@ -663,11 +769,12 @@ class RelJson {
         }
     }
 
+    /** */
     private Object toJson(RexWindow window) {
         Map<String, Object> map = map();
-        if (window.partitionKeys.size() > 0)
+        if (!window.partitionKeys.isEmpty())
             map.put("partition", toJson(window.partitionKeys));
-        if (window.orderKeys.size() > 0)
+        if (!window.orderKeys.isEmpty())
             map.put("order", toJson(window.orderKeys));
         if (window.getLowerBound() == null) {
             // No ROWS or RANGE clause
@@ -688,6 +795,7 @@ class RelJson {
         return map;
     }
 
+    /** */
     private Object toJson(DistributionTrait distribution) {
         Type type = distribution.getType();
 
@@ -715,26 +823,29 @@ class RelJson {
         }
     }
 
+    /** */
     private Object toJson(RelCollationImpl node) {
         List<Object> list = list();
         for (RelFieldCollation fieldCollation : node.getFieldCollations()) {
             Map<String, Object> map = map();
             map.put("field", fieldCollation.getFieldIndex());
-            map.put("direction", fieldCollation.getDirection().name());
-            map.put("nulls", fieldCollation.nullDirection.name());
+            map.put("direction", toJson(fieldCollation.getDirection()));
+            map.put("nulls", toJson(fieldCollation.nullDirection));
             list.add(map);
         }
         return list;
     }
 
+    /** */
     private Object toJson(RexFieldCollation collation) {
         Map<String, Object> map = map();
         map.put("expr", toJson(collation.left));
-        map.put("direction", collation.getDirection().name());
-        map.put("null-direction", collation.getNullDirection().name());
+        map.put("direction", toJson(collation.getDirection()));
+        map.put("null-direction", toJson(collation.getNullDirection()));
         return map;
     }
 
+    /** */
     private Object toJson(RexWindowBound windowBound) {
         Map<String, Object> map = map();
         if (windowBound.isCurrentRow())
@@ -748,20 +859,13 @@ class RelJson {
         return map;
     }
 
+    /** */
     private Object toJson(SqlOperator operator) {
         // User-defined operators are not yet handled.
         Map map = map();
         map.put("name", operator.getName());
-        map.put("kind", operator.kind.toString());
-        map.put("syntax", operator.getSyntax().toString());
+        map.put("kind", toJson(operator.kind));
+        map.put("syntax", toJson(operator.getSyntax()));
         return map;
-    }
-
-    <T> List<T> list() {
-        return new ArrayList<>();
-    }
-
-    <T> Map<String, T> map() {
-        return new LinkedHashMap<>();
     }
 }

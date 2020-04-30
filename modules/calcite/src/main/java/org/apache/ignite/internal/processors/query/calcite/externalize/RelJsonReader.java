@@ -49,20 +49,32 @@ import org.apache.ignite.IgniteException;
 /** */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class RelJsonReader {
+    /** */
     private static final TypeReference<LinkedHashMap<String, Object>> TYPE_REF =
         new TypeReference<LinkedHashMap<String, Object>>() {};
 
+    /** */
     private final RelOptCluster cluster;
+
+    /** */
     private final RelOptSchema relOptSchema;
+
+    /** */
     private final RelJson relJson = new RelJson();
+
+    /** */
     private final Map<String, RelNode> relMap = new LinkedHashMap<>();
+
+    /** */
     private RelNode lastRel;
 
+    /** */
     public RelJsonReader(RelOptCluster cluster, RelOptSchema relOptSchema) {
         this.cluster = cluster;
         this.relOptSchema = relOptSchema;
     }
 
+    /** */
     public RelNode read(String s) {
         try {
             lastRel = null;
@@ -76,11 +88,13 @@ public class RelJsonReader {
         }
     }
 
+    /** */
     private void readRels(List<Map<String, Object>> jsonRels) {
         for (Map<String, Object> jsonRel : jsonRels)
             readRel(jsonRel);
     }
 
+    /** */
     private void readRel(Map<String, Object> jsonRel) {
         String id = (String)jsonRel.get("id");
         String type = (String)jsonRel.get("relOp");
@@ -90,32 +104,40 @@ public class RelJsonReader {
         lastRel = rel;
     }
 
+    /** */
     private class RelInputImpl implements RelInput {
+        /** */
         private final Map<String, Object> jsonRel;
 
+        /** */
         private RelInputImpl(Map<String, Object> jsonRel) {
             this.jsonRel = jsonRel;
         }
 
+        /** {@inheritDoc} */
         @Override public RelOptCluster getCluster() {
             return cluster;
         }
 
+        /** {@inheritDoc} */
         @Override public RelTraitSet getTraitSet() {
             return cluster.traitSet();
         }
 
+        /** {@inheritDoc} */
         @Override public RelOptTable getTable(String table) {
             List<String> list = getStringList(table);
             return relOptSchema.getTableForMember(list);
         }
 
+        /** {@inheritDoc} */
         @Override public RelNode getInput() {
             List<RelNode> inputs = getInputs();
             assert inputs.size() == 1;
             return inputs.get(0);
         }
 
+        /** {@inheritDoc} */
         @Override public List<RelNode> getInputs() {
             List<String> jsonInputs = getStringList("inputs");
             if (jsonInputs == null)
@@ -126,14 +148,17 @@ public class RelJsonReader {
             return inputs;
         }
 
+        /** {@inheritDoc} */
         @Override public RexNode getExpression(String tag) {
             return relJson.toRex(this, jsonRel.get(tag));
         }
 
+        /** {@inheritDoc} */
         @Override public ImmutableBitSet getBitSet(String tag) {
             return ImmutableBitSet.of(getIntegerList(tag));
         }
 
+        /** {@inheritDoc} */
         @Override public List<ImmutableBitSet> getBitSetList(String tag) {
             List<List<Integer>> list = getIntegerListList(tag);
             if (list == null)
@@ -145,18 +170,22 @@ public class RelJsonReader {
             return builder.build();
         }
 
+        /** {@inheritDoc} */
         @Override public List<String> getStringList(String tag) {
             return (List<String>)jsonRel.get(tag);
         }
 
+        /** {@inheritDoc} */
         @Override public List<Integer> getIntegerList(String tag) {
             return (List<Integer>)jsonRel.get(tag);
         }
 
+        /** {@inheritDoc} */
         @Override public List<List<Integer>> getIntegerListList(String tag) {
             return (List<List<Integer>>)jsonRel.get(tag);
         }
 
+        /** {@inheritDoc} */
         @Override public List<AggregateCall> getAggregateCalls(String tag) {
             List<Map<String, Object>> jsonAggs = (List)jsonRel.get(tag);
             List<AggregateCall> inputs = new ArrayList<>();
@@ -165,28 +194,34 @@ public class RelJsonReader {
             return inputs;
         }
 
+        /** {@inheritDoc} */
         @Override public Object get(String tag) {
             return jsonRel.get(tag);
         }
 
+        /** {@inheritDoc} */
         @Override public String getString(String tag) {
             return (String)jsonRel.get(tag);
         }
 
+        /** {@inheritDoc} */
         @Override public float getFloat(String tag) {
             return ((Number)jsonRel.get(tag)).floatValue();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean getBoolean(String tag, boolean default_) {
             Boolean b = (Boolean)jsonRel.get(tag);
             return b != null ? b : default_;
         }
 
+        /** {@inheritDoc} */
         @Override public <E extends Enum<E>> E getEnum(String tag, Class<E> enumClass) {
             return Util.enumVal(enumClass,
                 getString(tag).toUpperCase(Locale.ROOT));
         }
 
+        /** {@inheritDoc} */
         @Override public List<RexNode> getExpressionList(String tag) {
             List<Object> jsonNodes = (List)jsonRel.get(tag);
             List<RexNode> nodes = new ArrayList<>();
@@ -195,11 +230,13 @@ public class RelJsonReader {
             return nodes;
         }
 
+        /** {@inheritDoc} */
         @Override public RelDataType getRowType(String tag) {
             Object o = jsonRel.get(tag);
             return relJson.toType(cluster.getTypeFactory(), o);
         }
 
+        /** {@inheritDoc} */
         @Override public RelDataType getRowType(String expressionsTag, String fieldsTag) {
             List<RexNode> expressionList = getExpressionList(expressionsTag);
             List<String> names =
@@ -217,14 +254,17 @@ public class RelJsonReader {
                 });
         }
 
+        /** {@inheritDoc} */
         @Override public RelCollation getCollation() {
             return relJson.toCollation((List)get("collation"));
         }
 
+        /** {@inheritDoc} */
         @Override public RelDistribution getDistribution() {
             return relJson.toDistribution(get("distribution"));
         }
 
+        /** {@inheritDoc} */
         @Override public ImmutableList<ImmutableList<RexLiteral>> getTuples(String tag) {
             List<List> jsonTuples = (List)get(tag);
             ImmutableList.Builder<ImmutableList<RexLiteral>> builder =
@@ -234,6 +274,7 @@ public class RelJsonReader {
             return builder.build();
         }
 
+        /** */
         private RelNode lookupInput(String jsonInput) {
             RelNode node = relMap.get(jsonInput);
             if (node == null)
@@ -242,6 +283,7 @@ public class RelJsonReader {
             return node;
         }
 
+        /** */
         private ImmutableList<RexLiteral> getTuple(List jsonTuple) {
             ImmutableList.Builder<RexLiteral> builder =
                 ImmutableList.builder();
@@ -250,6 +292,7 @@ public class RelJsonReader {
             return builder.build();
         }
 
+        /** */
         private AggregateCall toAggCall(Map<String, Object> jsonAggCall) {
             Map<String, Object> aggMap = (Map)jsonAggCall.get("agg");
             SqlAggFunction aggregation = (SqlAggFunction)relJson.toOp(aggMap);

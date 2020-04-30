@@ -39,6 +39,8 @@ public class IgniteSender extends SingleRel implements IgniteRel {
 
     /** */
     private long targetFragmentId;
+
+    /** */
     private final IgniteDistribution distribution;
 
     /**

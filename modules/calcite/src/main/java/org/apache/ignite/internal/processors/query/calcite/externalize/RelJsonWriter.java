@@ -38,38 +38,53 @@ import org.apache.ignite.IgniteException;
  * @see RelJsonReader
  */
 public class RelJsonWriter implements RelWriter {
+    /** */
     private final RelJson relJson = new RelJson();
+
+    /** */
     private final List<Object> relList = new ArrayList<>();
+
+    /** */
     private final Map<RelNode, String> relIdMap = new IdentityHashMap<>();
 
+    /** */
     private final boolean pretty;
 
+    /** */
     private String previousId;
+
+    /** */
     private List<Pair<String, Object>> items = new ArrayList<>();
 
+    /** */
     public RelJsonWriter() {
         this(false);
     }
 
+    /** */
     public RelJsonWriter(boolean pretty) {
         this.pretty = pretty;
     }
 
+    /** {@inheritDoc} */
     @Override public final void explain(RelNode rel, List<Pair<String, Object>> valueList) {
         try (RexNode.Closeable ignored = withRexNormalize()) {
             explain_(rel, valueList);
         }
     }
 
+    /** {@inheritDoc} */
     @Override public SqlExplainLevel getDetailLevel() {
         return SqlExplainLevel.ALL_ATTRIBUTES;
     }
 
+    /** {@inheritDoc} */
     @Override public RelWriter item(String term, Object value) {
         items.add(Pair.of(term, value));
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public RelWriter done(RelNode node) {
         List<Pair<String, Object>> current0 = items;
         items = new ArrayList<>();
@@ -77,6 +92,7 @@ public class RelJsonWriter implements RelWriter {
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean nest() {
         return true;
     }
@@ -102,6 +118,7 @@ public class RelJsonWriter implements RelWriter {
         }
     }
 
+    /** */
     private void explain_(RelNode rel, List<Pair<String, Object>> values) {
         final Map<String, Object> map = relJson.map();
 
@@ -128,6 +145,7 @@ public class RelJsonWriter implements RelWriter {
         previousId = id;
     }
 
+    /** */
     private List<Object> explainInputs(List<RelNode> inputs) {
         final List<Object> list = relJson.list();
         for (RelNode input : inputs) {
