@@ -45,6 +45,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -269,23 +270,11 @@ public class GridServiceProxy<T> implements Serializable {
      * @param args Method args.
      * @return Invocation result.
      */
-    private Object callServiceLocally(Service svc, Method mtd, Object[] args) {
-        if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd)) {
-            try {
-                return ((PlatformService)svc).invokeMethod(mtd.getName(), false, args);
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
-        }
-        else {
-            try {
-                return mtd.invoke(svc, args);
-            }
-            catch (IllegalAccessException | InvocationTargetException e) {
-                throw new IgniteException(e);
-            }
-        }
+    private Object callServiceLocally(Service svc, Method mtd, Object[] args) throws Exception {
+        if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
+            return ((PlatformService)svc).invokeMethod(mtd.getName(), false, true, args);
+        else
+            return mtd.invoke(svc, args);
     }
 
     /**
@@ -472,7 +461,10 @@ public class GridServiceProxy<T> implements Serializable {
         /** */
         private Object callPlatformService(PlatformService srv) {
             try {
-                return srv.invokeMethod(mtdName, false, args);
+                return srv.invokeMethod(mtdName, false, true, args);
+            }
+            catch (PlatformNativeException ne) {
+                throw new ServiceProxyException(U.convertException(ne));
             }
             catch (Exception e) {
                 throw new ServiceProxyException(e);

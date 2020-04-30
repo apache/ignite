@@ -359,6 +359,7 @@
     <Compile Include="Query\ImplicitBinarizablePerson.cs" />
     <Compile Include="Query\NoDefBinarizablePerson.cs" />
     <Compile Include="Query\BinarizablePerson.cs" />
+    <Compile Include="Services\CallPlatformServiceTest.cs" />
     <Compile Include="Services\ServicesTest.cs" />
     <Compile Include="Services\ServicesTestAsync.cs" />
     <Compile Include="Services\ServiceProxyTest.cs" />

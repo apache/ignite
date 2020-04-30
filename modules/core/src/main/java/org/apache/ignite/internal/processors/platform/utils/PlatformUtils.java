@@ -833,12 +833,26 @@ public class PlatformUtils {
      */
     public static Object readInvocationResult(PlatformContext ctx, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
+        return readInvocationResult(ctx, reader, false);
+    }
+
+    /**
+     * Reads invocation result (of a job/service/etc) using a common protocol.
+     *
+     * @param ctx Platform context.
+     * @param reader Reader.
+     * @param crossPlatform If {@code true} read result cross-platform.
+     * @return Result.
+     * @throws IgniteCheckedException When invocation result is an error.
+     */
+    public static Object readInvocationResult(PlatformContext ctx, BinaryRawReaderEx reader, boolean crossPlatform)
+            throws IgniteCheckedException {
         // 1. Read success flag.
         boolean success = reader.readBoolean();
 
         if (success)
             // 2. Return result as is.
-            return reader.readObjectDetached();
+            return crossPlatform ? reader.readObject() : reader.readObjectDetached();
         else {
             // 3. Read whether exception is in form of object or string.
             boolean hasException = reader.readBoolean();
