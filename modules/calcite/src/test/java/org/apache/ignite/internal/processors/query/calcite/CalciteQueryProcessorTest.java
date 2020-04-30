@@ -185,11 +185,15 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (55, ?, ?)", "Igor", 1);
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?)", 0, "Igor", 1);
 
         assertEquals(1, query.size());
 
-        List<?> row = F.first(query.get(0).getAll());
+        List<List<?>> rows = query.get(0).getAll();
+
+        assertEquals(1, rows.size());
+
+        List<?> row = rows.get(0);
 
         assertNotNull(row);
 
@@ -219,7 +223,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 22, 33, "Igor", 1);
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1);
 
         assertEquals(1, query.size());
 

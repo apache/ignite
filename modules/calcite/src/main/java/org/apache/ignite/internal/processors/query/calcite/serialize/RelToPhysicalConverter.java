@@ -97,7 +97,7 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
 
     /** {@inheritDoc} */
     @Override public PhysicalRel visit(IgniteTableScan scan) {
-        List<Expression> filters = rexTranslator.translate(scan.filters());
+        List<Expression> filters = scan.filters() == null ? null : rexTranslator.translate(scan.filters());
 
         List<Expression> lowerBound = scan.lowerIndexCondition() == null ? null :
             rexTranslator.translate(scan.lowerIndexCondition());
