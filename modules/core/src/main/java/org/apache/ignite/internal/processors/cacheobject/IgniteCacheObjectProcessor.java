@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cacheobject;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -299,6 +299,12 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @throws IgniteException In case of error.
      */
     public Collection<BinaryType> metadata() throws IgniteException;
+
+    /**
+     * @param types Collection of binary types to write to.
+     * @param dir Destination directory.
+     */
+    public void saveMetadata(Collection<BinaryType> types, File dir);
 
     /**
      * @param typeName Type name.
