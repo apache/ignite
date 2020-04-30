@@ -39,19 +39,19 @@ public class IgniteMetadata {
             ImmutableList.of(
                 IgniteMdDerivedDistribution.SOURCE,
                 IgniteMdDistribution.SOURCE,
-                IgniteMdFragmentInfo.SOURCE,
+                IgniteMdNodesMapping.SOURCE,
                 DefaultRelMetadataProvider.INSTANCE));
 
-    public interface FragmentMetadata extends Metadata {
-        MetadataDef<FragmentMetadata> DEF = MetadataDef.of(FragmentMetadata.class,
-            FragmentMetadata.Handler.class, IgniteMethod.FRAGMENT_INFO.method());
+    public interface NodesMappingMetadata extends Metadata {
+        MetadataDef<NodesMappingMetadata> DEF = MetadataDef.of(NodesMappingMetadata.class,
+            NodesMappingMetadata.Handler.class, IgniteMethod.NODES_MAPPING.method());
 
         /** Determines how the rows are distributed. */
-        FragmentInfo fragmentInfo();
+        NodesMapping nodesMapping();
 
         /** Handler API. */
-        interface Handler extends MetadataHandler<FragmentMetadata> {
-            FragmentInfo fragmentInfo(RelNode r, RelMetadataQuery mq);
+        interface Handler extends MetadataHandler<NodesMappingMetadata> {
+            NodesMapping nodesMapping(RelNode r, RelMetadataQuery mq);
         }
     }
 

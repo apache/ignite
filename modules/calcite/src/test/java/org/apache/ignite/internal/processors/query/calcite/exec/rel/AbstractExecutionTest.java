@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -138,10 +139,11 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     }
 
     protected ExecutionContext executionContext(UUID nodeId, UUID queryId, long fragmentId) {
+        FragmentDescription fragmentDescription = new FragmentDescription(fragmentId, null, -1, null, null);
         return new ExecutionContext(
             taskExecutor(nodeId),
             PlanningContext.builder().localNodeId(nodeId).logger(log()).build(),
-            queryId, fragmentId, null, ImmutableMap.of());
+            queryId, fragmentDescription, ImmutableMap.of());
     }
 
     /** */

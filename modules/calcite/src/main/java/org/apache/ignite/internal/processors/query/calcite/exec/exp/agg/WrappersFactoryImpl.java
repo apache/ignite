@@ -29,7 +29,6 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -295,9 +294,8 @@ public class WrappersFactoryImpl implements Supplier<List<AccumulatorWrapper>> {
 
             IgniteTypeFactory typeFactory = ctx.parent().typeFactory();
             SqlConformance conformance = ctx.parent().conformance();
-            SqlOperatorTable opTable = ctx.parent().opTable();
 
-            ExpressionFactory factory = new ExpressionFactory(typeFactory, conformance, opTable);
+            ExpressionFactory factory = new ExpressionFactory(typeFactory, conformance);
 
             if (type != AggregateType.REDUCE && !F.isEmpty(call.getArgList()))
                 inAdapter = createInAdapter(accumulator, factory);

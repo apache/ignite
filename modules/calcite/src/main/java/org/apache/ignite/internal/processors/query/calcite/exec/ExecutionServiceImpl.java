@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionSer
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CalciteQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepDmlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
@@ -87,8 +88,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationRes
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
-import org.apache.ignite.internal.processors.query.calcite.serialize.RelToPhysicalConverter;
-import org.apache.ignite.internal.processors.query.calcite.serialize.SenderPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -591,13 +590,11 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         List<Fragment> fragments = plan.fragments();
 
         // Local execution
-        Fragment local = F.first(fragments);
+        Fragment fragment = F.first(fragments);
+        NodesMapping mapping = plan.fragmentMapping(fragment);
 
         if (U.assertionsEnabled()) {
-            assert local != null;
-
-            NodesMapping mapping = local.mapping();
-
+            assert fragment != null;
             assert mapping != null;
 
             List<UUID> nodes = mapping.nodes();
@@ -605,45 +602,61 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(pctx.localNodeId());
         }
 
-        ExecutionContext ectx = new ExecutionContext(taskExecutor(), pctx, queryId, local.fragmentId(),
-            local.mapping().partitions(pctx.localNodeId()), Commons.parametersMap(pctx.parameters()));
+        FragmentDescription fragmentDescription = new FragmentDescription(
+            fragment.fragmentId(),
+            mapping.partitions(pctx.localNodeId()),
+            mapping.assignments().size(),
+            plan.targetMapping(fragment),
+            plan.remoteSources(fragment)
+        );
 
-        Node<Object[]> node = new LogicalRelImplementor(ectx, partitionService(), mailboxRegistry(), exchangeService(), failureProcessor()).go(local.root());
+        ExecutionContext ectx = new ExecutionContext(
+            taskExecutor(),
+            pctx,
+            queryId,
+            fragmentDescription,
+            Commons.parametersMap(pctx.parameters()));
 
-        assert !(node instanceof SenderPhysicalRel);
+        Node<Object[]> node = new LogicalRelImplementor(ectx, partitionService(), mailboxRegistry(), exchangeService(), failureProcessor()).go(fragment.root());
 
-        QueryInfo info = new QueryInfo(ectx, fragments, node);
+        QueryInfo info = new QueryInfo(ectx, plan, node);
 
         // register query
         register(info);
 
         // start remote execution
         if (fragments.size() > 1) {
-            RelToPhysicalConverter converter = new RelToPhysicalConverter(ectx.getTypeFactory());
-
             for (int i = 1; i < fragments.size(); i++) {
-                Fragment fragment = fragments.get(i);
+                Fragment fragment0 = fragments.get(i);
+                NodesMapping mapping0 = plan.fragmentMapping(fragment0);
 
                 boolean error = false;
 
-                for (UUID nodeId : fragment.mapping().nodes()) {
+                for (UUID nodeId : mapping0.nodes()) {
                     if (error)
-                        info.onResponse(nodeId, fragment.fragmentId(), new QueryCancelledException());
+                        info.onResponse(nodeId, fragment0.fragmentId(), new QueryCancelledException());
                     else {
                         try {
+                            FragmentDescription fragmentDescription0 = new FragmentDescription(
+                                fragment0.fragmentId(),
+                                mapping0.partitions(nodeId),
+                                mapping0.assignments().size(),
+                                plan.targetMapping(fragment0),
+                                plan.remoteSources(fragment0)
+                            );
+
                             QueryStartRequest req = new QueryStartRequest(
                                 queryId,
-                                fragment.fragmentId(),
                                 pctx.schemaName(),
-                                converter.go(fragment.root()),
+                                Commons.toJson(fragment0.root()),
                                 pctx.topologyVersion(),
-                                fragment.mapping().partitions(nodeId),
+                                fragmentDescription0,
                                 pctx.parameters());
 
                             messageService().send(nodeId, req);
                         }
                         catch (Exception e) {
-                            info.onResponse(nodeId, fragment.fragmentId(), e);
+                            info.onResponse(nodeId, fragment0.fragmentId(), e);
                             error = true;
                         }
                     }
@@ -725,19 +738,18 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                 taskExecutor(),
                 ctx,
                 msg.queryId(),
-                msg.fragmentId(),
-                msg.partitions(),
+                msg.fragmentDescription(),
                 Commons.parametersMap(msg.parameters())
             );
 
-            Node<Object[]> node = new PhysicalRelImplementor(execCtx, partitionService(),
-                mailboxRegistry(), exchangeService(), failureProcessor()).go(msg.root());
+            Node<Object[]> node = new LogicalRelImplementor(execCtx, partitionService(),
+                mailboxRegistry(), exchangeService(), failureProcessor()).go(Commons.fromJson(ctx.createCluster(), msg.root()));
 
             assert node instanceof Outbox : node;
 
             node.context().execute(((Outbox<Object[]>) node)::init);
 
-            messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId()));
+            messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentDescription().fragmentId()));
         }
         catch (Throwable ex) { // TODO don't catch errors!
             cancelQuery(msg.queryId());
@@ -748,7 +760,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             U.warn(log, "Failed to start query. [nodeId=" + nodeId + ']', ex);
 
             try {
-                messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId(), ex));
+                messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentDescription().fragmentId(), ex));
             }
             catch (IgniteCheckedException e) {
                 e.addSuppressed(ex);
@@ -874,7 +886,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         private Throwable error;
 
         /** */
-        private QueryInfo(ExecutionContext ctx, List<Fragment> fragments, Node<Object[]> root) {
+        private QueryInfo(ExecutionContext ctx, MultiStepPlan plan, Node<Object[]> root) {
             this.ctx = ctx;
 
             RootNode rootNode = new RootNode(ctx, ExecutionServiceImpl.this::onCursorClose);
@@ -885,15 +897,14 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             remotes = new HashSet<>();
             waiting = new HashSet<>();
 
-            for (int i = 1; i < fragments.size(); i++) {
-                Fragment fragment = fragments.get(i);
-                long id = fragment.fragmentId();
-                List<UUID> nodes = fragment.mapping().nodes();
+            for (int i = 1; i < plan.fragments().size(); i++) {
+                Fragment fragment = plan.fragments().get(i);
+                List<UUID> nodes = plan.fragmentMapping(fragment).nodes();
 
                 remotes.addAll(nodes);
 
                 for (UUID node : nodes)
-                    waiting.add(new RemoteFragmentKey(node, id));
+                    waiting.add(new RemoteFragmentKey(node, fragment.fragmentId()));
             }
 
             state = QueryState.RUNNING;

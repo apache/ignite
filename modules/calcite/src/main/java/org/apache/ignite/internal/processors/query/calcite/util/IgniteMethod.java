@@ -20,19 +20,17 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.lang.reflect.Method;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.CallOperation;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.Scalar;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.DerivedDistribution;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMetadata;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.NodesMappingMetadata;
 
 /**
  * Contains methods used in metadata definitions.
  */
 public enum IgniteMethod {
-    CALL_APPLY(CallOperation.class, "apply", Object[].class),
     SCALAR_EXECUTE(Scalar.class, "execute", ExecutionContext.class, Object[].class, Object[].class),
     DERIVED_DISTRIBUTIONS(DerivedDistribution.class, "deriveDistributions"),
-    FRAGMENT_INFO(FragmentMetadata.class, "fragmentInfo");
+    NODES_MAPPING(NodesMappingMetadata.class, "nodesMapping");
 
     /** */
     private final Method method;

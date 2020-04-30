@@ -24,12 +24,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
  *
  */
+@WithSystemProperty(key = "calcite.debug", value = "true")
 public class JdbcQueryTest extends GridCommonAbstractTest {
     /** URL. */
     private final String url = "jdbc:ignite:thin://127.0.0.1?useExperimentalQueryEngine=true";

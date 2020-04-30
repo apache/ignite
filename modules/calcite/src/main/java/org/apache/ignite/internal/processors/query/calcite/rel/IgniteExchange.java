@@ -20,8 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Relational expression that imposes a particular distribution on its input
@@ -38,6 +41,15 @@ public class IgniteExchange extends Exchange implements IgniteRel {
      */
     public IgniteExchange(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RelDistribution distribution) {
         super(cluster, traitSet, input, distribution);
+    }
+
+    public IgniteExchange(RelInput input) {
+        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteDistribution distribution() {
+        return (IgniteDistribution)distribution;
     }
 
     /** {@inheritDoc} */

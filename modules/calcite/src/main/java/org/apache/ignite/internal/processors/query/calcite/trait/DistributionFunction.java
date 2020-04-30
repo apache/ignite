@@ -251,6 +251,11 @@ public abstract class DistributionFunction implements Serializable {
             this.key = key;
         }
 
+        /** */
+        public int cacheId() {
+            return cacheId;
+        }
+
         /** {@inheritDoc} */
         @Override public RelDistribution.Type type() {
             return RelDistribution.Type.HASH_DISTRIBUTED;

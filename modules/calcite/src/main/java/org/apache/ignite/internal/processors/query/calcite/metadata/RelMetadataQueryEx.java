@@ -53,15 +53,15 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
     }
 
     /** */
-    private static final IgniteMetadata.FragmentMetadata.Handler SOURCE_DISTRIBUTION_INITIAL_HANDLER =
-        initialHandler(IgniteMetadata.FragmentMetadata.Handler.class);
+    private static final IgniteMetadata.NodesMappingMetadata.Handler SOURCE_DISTRIBUTION_INITIAL_HANDLER =
+        initialHandler(IgniteMetadata.NodesMappingMetadata.Handler.class);
 
     /** */
     private static final IgniteMetadata.DerivedDistribution.Handler DERIVED_DISTRIBUTIONS_INITIAL_HANDLER =
         initialHandler(IgniteMetadata.DerivedDistribution.Handler.class);
 
     /** */
-    private IgniteMetadata.FragmentMetadata.Handler sourceDistributionHandler;
+    private IgniteMetadata.NodesMappingMetadata.Handler sourceDistributionHandler;
 
     /** */
     private IgniteMetadata.DerivedDistribution.Handler derivedDistributionsHandler;
@@ -97,17 +97,17 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
     }
 
     /**
-     * Calculates fragment meta information, the given relation node is a root of.
+     * Calculates data location mapping for a query fragment the given relation node is a root of.
      *
      * @param rel Relational node.
      * @return Fragment meta information.
      */
-    public FragmentInfo getFragmentInfo(RelNode rel) {
+    public NodesMapping nodesMapping(RelNode rel) {
         for (;;) {
             try {
-                return sourceDistributionHandler.fragmentInfo(rel, this);
+                return sourceDistributionHandler.nodesMapping(rel, this);
             } catch (JaninoRelMetadataProvider.NoHandler e) {
-                sourceDistributionHandler = revise(e.relClass, IgniteMetadata.FragmentMetadata.DEF);
+                sourceDistributionHandler = revise(e.relClass, IgniteMetadata.NodesMappingMetadata.DEF);
             }
         }
     }

@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.SingleRel;
-import org.apache.ignite.internal.processors.query.calcite.prepare.RelTarget;
-import org.apache.ignite.internal.processors.query.calcite.prepare.RelTargetAware;
+import org.apache.calcite.rel.core.Exchange;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
@@ -32,40 +33,31 @@ import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 /**
  *
  */
-public class IgniteTrimExchange extends SingleRel implements IgniteRel, RelTargetAware {
+public class IgniteTrimExchange extends Exchange implements IgniteRel {
     /** */
-    private RelTarget target;
+    public IgniteTrimExchange(RelOptCluster cluster, RelTraitSet traits, RelNode input, RelDistribution distribution) {
+        super(cluster, traits, input, distribution);
 
-    /** */
-    public IgniteTrimExchange(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
-        super(cluster, traits, input);
-
+        assert distribution.getType() == HASH_DISTRIBUTED;
         assert input.getTraitSet().getTrait(DistributionTraitDef.INSTANCE).getType() == BROADCAST_DISTRIBUTED;
-        assert traits.getTrait(DistributionTraitDef.INSTANCE).getType() == HASH_DISTRIBUTED;
     }
 
-    /** */
-    @Override public RelNode copy(RelTraitSet traits, List<RelNode> inputs) {
-        RelNode input = sole(inputs);
+    public IgniteTrimExchange(RelInput input) {
+        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
+    }
 
-        assert input.getTraitSet().getTrait(DistributionTraitDef.INSTANCE).getType() == BROADCAST_DISTRIBUTED;
-        assert traits.getTrait(DistributionTraitDef.INSTANCE).getType() == HASH_DISTRIBUTED;
+    /** {@inheritDoc} */
+    @Override public IgniteDistribution distribution() {
+        return (IgniteDistribution)distribution;
+    }
 
-        return new IgniteTrimExchange(getCluster(), traits, input);
+    /** {@inheritDoc} */
+    @Override public Exchange copy(RelTraitSet traits, RelNode input, RelDistribution distribution) {
+        return new IgniteTrimExchange(getCluster(), traits, input, distribution);
     }
 
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
-    }
-
-    /** */
-    public RelTarget target() {
-        return target;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void target(RelTarget target) {
-        this.target = target;
     }
 }
