@@ -69,38 +69,6 @@ public class MessagingSandboxTest extends AbstractSandboxTest {
         execute(grid(CLNT_FORBIDDEN_WRITE_PROP), func, true);
     }
 
-    /**
-     * @param r Runnable that runs {@link AbstractSandboxTest#controlAction()}.
-     */
-    private void checkAllowedOperation(Runnable r) {
-        runOperation(
-            () -> {
-                error = null;
-
-                r.run();
-
-                assertNull(error);
-            }
-        );
-    }
-
-    /**
-     * @param r RunnableX that that runs {@link AbstractSandboxTest#controlAction()}.
-     */
-    private void checkForbiddenOperation(GridTestUtils.RunnableX r) {
-        runForbiddenOperation(
-            () -> {
-                error = null;
-
-                r.run();
-
-                assertNotNull(error);
-
-                throw error;
-            }, AccessControlException.class
-        );
-    }
-
     /** */
     private void execute(Ignite node, BiFunction<IgniteMessaging, String, UUID> func, boolean isForbiddenCase) {
         final String topic = "test_topic";
@@ -113,15 +81,25 @@ public class MessagingSandboxTest extends AbstractSandboxTest {
 
         try {
             GridTestUtils.RunnableX r = () -> {
+                error = null;
+
                 grid(SRV_SENDER).message().send(topic, "Hello!");
 
                 latch.await(10, TimeUnit.SECONDS);
+
+                if (isForbiddenCase) {
+                    assertNotNull(error);
+
+                    throw error;
+                }
+                else
+                    assertNull(error);
             };
 
             if (isForbiddenCase)
-                checkForbiddenOperation(r);
+                runForbiddenOperation(r, AccessControlException.class);
             else
-                checkAllowedOperation(r);
+                runOperation(r);
         }
         finally {
             messaging.stopRemoteListen(listenerId);
