@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.security.sandbox.ContinuousQueryWit
 import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DoPrivilegedOnRemoteNodeTest;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteOperationsInsideSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.MessagingSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.IgnitionComponentProxyTest;
 import org.apache.ignite.internal.processors.security.sandbox.SecuritySubjectPermissionsTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
@@ -99,6 +100,7 @@ import org.junit.runners.Suite;
     AccessToClassesInsideInternalPackageTest.class,
     SecuritySubjectPermissionsTest.class,
     IgnitionComponentProxyTest.class,
+    MessagingSandboxTest.class,
     ContinuousQuerySandboxTest.class,
     ContinuousQueryWithTransformerSandboxTest.class,
 
