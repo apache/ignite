@@ -77,23 +77,18 @@ public class MessagingSandboxTest extends AbstractSandboxTest {
 
         UUID listenerId = func.apply(messaging, topic);
 
-        latch = new CountDownLatch(1);
-
         try {
             GridTestUtils.RunnableX r = () -> {
                 error = null;
+
+                latch = new CountDownLatch(1);
 
                 grid(SRV_SENDER).message().send(topic, "Hello!");
 
                 latch.await(10, TimeUnit.SECONDS);
 
-                if (isForbiddenCase) {
-                    assertNotNull(error);
-
+                if (error != null)
                     throw error;
-                }
-                else
-                    assertNull(error);
             };
 
             if (isForbiddenCase)
