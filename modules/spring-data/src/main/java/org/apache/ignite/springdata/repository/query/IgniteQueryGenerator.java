@@ -97,7 +97,7 @@ public class IgniteQueryGenerator {
                 sql.append(order.getProperty()).append(" ").append(order.getDirection());
 
                 if (order.getNullHandling() != Sort.NullHandling.NATIVE) {
-                    sql.append(" ").append("NULL ");
+                    sql.append(" ").append("NULLS ");
                     switch (order.getNullHandling()) {
                         case NULLS_FIRST:
                             sql.append("FIRST");
