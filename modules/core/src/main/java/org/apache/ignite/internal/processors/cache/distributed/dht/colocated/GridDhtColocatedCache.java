@@ -528,6 +528,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         // Optimization: try to resolve value locally and escape 'get future' creation.
         if (!forcePrimary && ctx.affinityNode()) {
+            ctx.shared().database().checkpointReadLock();
+
             try {
                 Map<K, V> locVals = null;
 
@@ -685,6 +687,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);
+            }
+            finally {
+                ctx.shared().database().checkpointReadUnlock();
             }
         }
 

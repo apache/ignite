@@ -745,7 +745,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             // Concurrently traverse the snapshot marshaller directory and delete all files.
             Files.walkFileTree(marshDir.toPath(), new SimpleFileVisitor<Path>() {
-                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     U.delete(file);
 
                     return FileVisitResult.CONTINUE;
