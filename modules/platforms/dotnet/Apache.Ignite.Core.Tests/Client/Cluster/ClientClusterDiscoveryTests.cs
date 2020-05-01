@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
+    using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
@@ -69,15 +70,46 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             {
                 AssertClientConnectionCount(client, 3);
 
-                var cfg = GetIgniteConfiguration();
-                cfg.AutoGenerateIgniteInstanceName = true;
-
-                using (Ignition.Start(cfg))
+                using (Ignition.Start(GetIgniteConfiguration()))
                 {
                     AssertClientConnectionCount(client, 4);
                 }
 
                 AssertClientConnectionCount(client, 3);
+            }
+        }
+
+        /// <summary>
+        /// Tests random topology changes.
+        /// </summary>
+        [Test]
+        public void TestClientDiscoveryWithRandomTopologyChanges()
+        {
+            var nodes = new Stack<IIgnite>();
+
+            using (var client = GetClient())
+            {
+                AssertClientConnectionCount(client, 3);
+
+                for (int i = 0; i < 20; i++)
+                {
+                    if (nodes.Count == 0 || TestUtils.Random.Next(2) == 0)
+                    {
+                        nodes.Push(Ignition.Start(GetIgniteConfiguration()));
+                    }
+                    else
+                    {
+                        nodes.Pop().Dispose();
+                    }
+                    
+                    // TODO: Verify partition awareness as well.
+                    AssertClientConnectionCount(client, 3 + nodes.Count);
+                }
+            }
+
+            foreach (var node in nodes)
+            {
+                node.Dispose();
             }
         }
 
@@ -104,7 +136,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         {
             return new IgniteConfiguration(base.GetIgniteConfiguration())
             {
-                Localhost = _noLocalhost ? null : "127.0.0.1"
+                Localhost = _noLocalhost ? null : "127.0.0.1",
+                AutoGenerateIgniteInstanceName = true
             };
         }
         
