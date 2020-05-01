@@ -22,6 +22,7 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.UUID;
@@ -35,7 +36,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
     private final Collection<ClusterNode> addedNodes;
 
     /** */
-    private final Collection<UUID> removedNodeIds;
+    @Nullable private final Collection<UUID> removedNodeIds;
 
     /** */
     private final long topVer;
@@ -51,11 +52,10 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
     public ClientClusterGroupGetNodesEndpointsResponse(long reqId,
                                                        long topVer,
                                                        Collection<ClusterNode> addedNodes,
-                                                       Collection<UUID> removedNodeIds) {
+                                                       @Nullable Collection<UUID> removedNodeIds) {
         super(reqId);
 
         assert addedNodes != null;
-        assert removedNodeIds != null;
 
         this.topVer = topVer;
         this.addedNodes = addedNodes;
@@ -90,11 +90,15 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
                 writer.writeString(host);
         }
 
-        writer.writeInt(removedNodeIds.size());
+        if (removedNodeIds != null) {
+            writer.writeInt(removedNodeIds.size());
 
-        for (UUID id : removedNodeIds) {
-            writer.writeLong(id.getMostSignificantBits());
-            writer.writeLong(id.getLeastSignificantBits());
+            for (UUID id : removedNodeIds) {
+                writer.writeLong(id.getMostSignificantBits());
+                writer.writeLong(id.getLeastSignificantBits());
+            }
+        } else {
+            writer.writeInt(0);
         }
     }
 }

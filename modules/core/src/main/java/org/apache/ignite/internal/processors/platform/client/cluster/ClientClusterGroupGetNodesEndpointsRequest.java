@@ -24,7 +24,11 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Cluster group get nodes endpoints request.
@@ -54,23 +58,25 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
 
-        Set<UUID> startNodes = toSet(startTopVer == UNKNOWN_TOP_VER
-                ? Collections.emptyList()
-                : cluster.topology(startTopVer));
-
         long endTopVer0 = endTopVer == UNKNOWN_TOP_VER ? cluster.topologyVersion() : endTopVer;
 
-        Set<UUID> endNodes = toSet(cluster.topology(endTopVer0));
+        Collection<ClusterNode> topology = cluster.topology(endTopVer0);
+
+        if (startTopVer == UNKNOWN_TOP_VER)
+            return new ClientClusterGroupGetNodesEndpointsResponse(requestId(), endTopVer0, topology, null);
+
+        Set<UUID> startNodes = toSet(cluster.topology(startTopVer));
+        Set<UUID> endNodes = toSet(topology);
 
         Collection<UUID> removedNodeIds = new ArrayList<>();
-
-        Collection<ClusterNode> addedNodes = new ArrayList<>();
 
         for (UUID startNode : startNodes) {
             if (!endNodes.contains(startNode)) {
                 removedNodeIds.add(startNode);
             }
         }
+
+        Collection<ClusterNode> addedNodes = new ArrayList<>();
 
         for (UUID endNode : endNodes) {
             if (!startNodes.contains(endNode)) {
