@@ -139,6 +139,7 @@ public class IgniteCachePutKeyAttachedBinaryObjectTest extends GridCommonAbstrac
         }
     }
 
+    /** */
     public static class CompositeKey {
         /** */
         private int id;
@@ -152,7 +153,6 @@ public class IgniteCachePutKeyAttachedBinaryObjectTest extends GridCommonAbstrac
             this.subKey = subKey;
         }
     }
-
 
     /** */
     public static class CompositeValue {
