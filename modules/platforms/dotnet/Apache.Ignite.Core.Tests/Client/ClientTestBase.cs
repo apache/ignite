@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         protected static ICache<int, T> GetCache<T>()
         {
-            return Ignition.GetIgnite().GetOrCreateCache<int, T>(CacheName);
+            return Ignition.GetAll().First().GetOrCreateCache<int, T>(CacheName);
         }
 
         /// <summary>
