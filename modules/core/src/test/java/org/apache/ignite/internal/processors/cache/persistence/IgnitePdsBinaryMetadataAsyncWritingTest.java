@@ -58,6 +58,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.suppressException;
 
 /**
@@ -546,7 +547,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
      */
     private void cleanBinaryMetaFolderForNode(String consId) throws IgniteCheckedException {
         String dfltWorkDir = U.defaultWorkDirectory();
-        File metaDir = U.resolveWorkDirectory(dfltWorkDir, "binary_meta", false);
+        File metaDir = U.resolveWorkDirectory(dfltWorkDir, BINARY_META_FOLDER, false);
 
         for (File subDir : metaDir.listFiles()) {
             if (subDir.getName().contains(consId)) {
@@ -661,7 +662,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
     /** */
     private static boolean isBinaryMetaFile(File file) {
-        return file.getPath().contains("binary_meta");
+        return file.getPath().contains(BINARY_META_FOLDER);
     }
 
     /** */

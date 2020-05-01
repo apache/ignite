@@ -45,6 +45,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
+
 /**
  *
  */
@@ -364,8 +366,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     ) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        Path fromFile = Paths.get(workDir, fromWorkDir, "binary_meta", fromConsId, fileName);
-        Path toFile = Paths.get(workDir, toWorkDir, "binary_meta", toConsId, fileName);
+        Path fromFile = Paths.get(workDir, fromWorkDir, BINARY_META_FOLDER, fromConsId, fileName);
+        Path toFile = Paths.get(workDir, toWorkDir, BINARY_META_FOLDER, toConsId, fileName);
 
         Files.copy(fromFile, toFile, StandardCopyOption.REPLACE_EXISTING);
     }
