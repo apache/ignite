@@ -54,6 +54,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -97,7 +98,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
@@ -634,8 +637,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
         try {
-            if (cctx.kernalContext().clientNode())
-                throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
+            if (cctx.kernalContext().clientNode()) {
+                return cctx.kernalContext().grid()
+                    .compute(cctx.kernalContext().grid().cluster()
+                        .forNodeId(U.oldest(cctx.kernalContext().discovery().aliveServerNodes(), null).id()))
+                    .applyAsync(new CreateSnapshotTask(), name);
+            }
 
             if (!IgniteFeatures.allNodesSupports(cctx.discovery().allNodes(), PERSISTENCE_CACHE_SNAPSHOT))
                 throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
@@ -1228,6 +1235,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             endTime = U.currentTimeMillis();
 
             return super.onDone(res, err, cancel);
+        }
+    }
+
+    /** Start creation of cluster snapshot closure. */
+    private static class CreateSnapshotTask implements IgniteClosure<String, Void> {
+        /** Serial version UID. */
+        private static final long serialVersionUID = 0L;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /** {@inheritDoc} */
+        @Override public Void apply(String name) {
+            ignite.snapshot().createSnapshot(name)
+                .get();
+
+            return null;
         }
     }
 }
