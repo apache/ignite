@@ -61,7 +61,6 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
     /**
      * Tests that validation with CRC checking doesn't fail if nothing is broken.
      */
-    @Test
     public void testValidateIndexesWithCrcNoErrors() {
         injectTestSystemOut();
 
