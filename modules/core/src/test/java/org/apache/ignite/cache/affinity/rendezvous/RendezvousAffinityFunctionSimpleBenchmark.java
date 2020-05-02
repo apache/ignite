@@ -589,7 +589,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
             List<Integer> structure1 = structureOf(assignPartitions(aff1, nodes, null, backups, 0).get2());
 
-            assertEquals (structure0, structure1);
+            assertEquals(structure0, structure1);
         }
     }
 

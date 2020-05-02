@@ -627,7 +627,7 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return topic.ordinal() + id1.hashCode () + (int)(id2 ^ (id2 >>> 32));
+            return topic.ordinal() + id1.hashCode() + (int)(id2 ^ (id2 >>> 32));
         }
 
         /** {@inheritDoc} */

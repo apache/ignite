@@ -164,7 +164,7 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
 
         if (!conn.isDmlSupported())
-            if(isQuery != null && !isQuery)
+            if (isQuery != null && !isQuery)
                 throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
             else
                 isQuery = true;
@@ -479,7 +479,7 @@ public class JdbcStatement implements Statement {
         try {
             int[] res = loc ? task.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(task);
 
-            long updateCnt = F.isEmpty(res)? -1 : res[res.length - 1];
+            long updateCnt = F.isEmpty(res) ? -1 : res[res.length - 1];
 
             results = Collections.singletonList(new JdbcResultSet(this, updateCnt));
 

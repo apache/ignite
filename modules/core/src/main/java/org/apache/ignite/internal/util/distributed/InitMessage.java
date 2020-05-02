@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * @see FullMessage
  * @see SingleNodeMessage
  */
-public class InitMessage<I extends Serializable>  implements DiscoveryCustomMessage {
+public class InitMessage<I extends Serializable> implements DiscoveryCustomMessage {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -80,7 +80,7 @@ public class InitMessage<I extends Serializable>  implements DiscoveryCustomMess
     /** {@inheritDoc} */
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
-        return null;
+        return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
     }
 
     /** @return Process id. */

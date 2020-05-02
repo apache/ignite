@@ -248,7 +248,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
             else {
                 Handler[] handlers = Logger.getLogger("").getHandlers();
 
-                if  (!F.isEmpty(handlers)) {
+                if (!F.isEmpty(handlers)) {
                     for (Handler h : handlers) {
                         if (h instanceof ConsoleHandler)
                             impl.removeHandler(h);

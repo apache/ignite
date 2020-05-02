@@ -484,7 +484,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param ts Timestamp.
      */
     public void doWriteTimestamp(@Nullable Timestamp ts) {
-        if (ts== null)
+        if (ts == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 8 + 4);
@@ -498,7 +498,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param time Time.
      */
     public void doWriteTime(@Nullable Time time) {
-        if (time== null)
+        if (time == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 8);

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * JDBC column metadata.
  */
-public class JdbcColumnMetaV2 extends JdbcColumnMeta{
+public class JdbcColumnMetaV2 extends JdbcColumnMeta {
     /** Allow nulls . */
     private boolean nullable;
 

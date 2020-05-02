@@ -758,7 +758,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "FIRST_NAME", "LAST_NAME", "ADDRESS"));
 
-        assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME,  "LAST_NAME", "ADDRESS"));
+        assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LAST_NAME", "ADDRESS"));
     }
 
     /**
@@ -784,7 +784,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "FIRST_NAME", "LAST_NAME", "ADDRESS"));
 
-        assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME,  "LAST_NAME", "ADDRESS"));
+        assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LAST_NAME", "ADDRESS"));
     }
 
     /** */
@@ -869,21 +869,15 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         srvLog = new ListeningTestLogger(false, log);
 
         String msg1 = "curSize=1";
-
         String msg2 = "curSize=2";
-
         String msg3 = "curSize=3";
 
         LogListener lstn1 = LogListener.matches(msg1).build();
-
         LogListener lstn2 = LogListener.matches(msg2).build();
-
         LogListener lstn3 = LogListener.matches(msg3).build();
 
         srvLog.registerListener(lstn1);
-
         srvLog.registerListener(lstn2);
-
         srvLog.registerListener(lstn3);
 
         IgniteEx ig0 = startGrid(0);
@@ -894,23 +888,21 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         IgniteCache<Key, Val> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 1 PARALLEL 28"));
+        execSql(cache, "create index \"idx1\" on Val(valLong) INLINE_SIZE 1 PARALLEL 28");
 
-        List<List<?>> res = cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
+        List<List<?>> res = execSql(cache, "explain select * from Val where valLong > ?", 10);
 
         log.info("exp: " + res.get(0).get(0));
 
         assertTrue(lstn1.check());
 
-        cache.query(new SqlFieldsQuery("drop index \"idx1\"")).getAll();
-
-        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 2 PARALLEL 28"));
-
-        cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
+        execSql(cache, "drop index \"idx1\"");
+        execSql(cache, "create index \"idx1\" on Val(valLong) INLINE_SIZE 2 PARALLEL 28");
+        execSql(cache, "explain select * from Val where valLong > ?", 10);
 
         assertTrue(lstn2.check());
 
-        cache.query(new SqlFieldsQuery("drop index \"idx1\"")).getAll();
+        execSql(cache, "drop index \"idx1\"");
 
         stopAllGrids();
 
@@ -920,15 +912,23 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         cache = ig0.cache(DEFAULT_CACHE_NAME);
 
-        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 3 PARALLEL 28"));
-
-        cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
+        execSql(cache, "create index \"idx1\" on Val(valLong) INLINE_SIZE 3 PARALLEL 28");
+        execSql(cache, "explain select * from Val where valLong > ?", 10);
 
         assertTrue(lstn3.check());
 
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /**
+     * @param cache Cache.
+     * @param qry Query.
+     * @param args Args.
+     */
+    private List<List<?>> execSql(IgniteCache<?, ?> cache, String qry, Object... args) {
+        return cache.query(new SqlFieldsQuery(qry).setArgs(args)).getAll();
     }
 
     /** */
@@ -1385,7 +1385,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
         return sql(grid(), sql, args);
     }
 
@@ -1395,7 +1395,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object... args) {
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setArgs(args), false);
     }

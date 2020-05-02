@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -446,6 +447,32 @@ namespace Apache.Ignite.Core.Tests
             }
 
             throw new InvalidOperationException("Could not resolve Ignite.NET source directory.");
+        }
+        
+        /// <summary>
+        /// Gets a value indicating whether specified partition is reserved.
+        /// </summary>
+        public static bool IsPartitionReserved(IIgnite ignite, string cacheName, int part)
+        {
+            Debug.Assert(ignite != null);
+            Debug.Assert(cacheName != null);
+            
+            const string taskName = "org.apache.ignite.platform.PlatformIsPartitionReservedTask";
+
+            return ignite.GetCompute().ExecuteJavaTask<bool>(taskName, new object[] {cacheName, part});
+        }
+
+        /// <summary>
+        /// Gets the innermost exception.
+        /// </summary>
+        public static Exception GetInnermostException(this Exception ex)
+        {
+            while (ex.InnerException != null)
+            {
+                ex = ex.InnerException;
+            }
+
+            return ex;
         }
     }
 }

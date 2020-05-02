@@ -28,10 +28,10 @@ import org.apache.ignite.lang.IgniteProductVersion;
  *
  */
 public class MetaPageInitRootInlineFlagsCreatedVersionRecord extends MetaPageInitRootInlineRecord {
-    /** Created version. */
+    /** Flags for the created meta page. */
     private final long flags;
 
-    /** Created version. */
+    /** Version of the created meta page. */
     private final IgniteProductVersion createdVer;
 
     /**

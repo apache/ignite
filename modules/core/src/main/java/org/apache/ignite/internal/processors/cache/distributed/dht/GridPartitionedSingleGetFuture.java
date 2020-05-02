@@ -863,7 +863,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /**
      * @param topVer Topology version.
      */
-    private void awaitVersionAndRemap(AffinityTopologyVersion topVer){
+    private void awaitVersionAndRemap(AffinityTopologyVersion topVer) {
         IgniteInternalFuture<AffinityTopologyVersion> awaitTopologyVersionFuture =
             cctx.shared().exchange().affinityReadyFuture(topVer);
 
