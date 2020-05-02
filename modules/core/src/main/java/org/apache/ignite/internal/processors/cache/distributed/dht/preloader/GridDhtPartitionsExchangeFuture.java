@@ -1776,7 +1776,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (distributed)
                 releaseLatch = cctx.exchange().latch().getOrCreate(latchId, initialVersion());
 
-            partReleaseFut = context().exchangeFreeSwitch() && isBaselineNodeFailed()?
+            partReleaseFut = context().exchangeFreeSwitch() && isBaselineNodeFailed() ?
                 cctx.partitionRecoveryFuture(initialVersion(), firstDiscoEvt.eventNode(), filter) :
                 cctx.partitionReleaseFuture(initialVersion());
 
