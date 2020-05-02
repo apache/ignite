@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.profiling.parsers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static java.util.regex.Pattern.compile;
+import static org.apache.ignite.internal.profiling.ProfilingLogParser.currentNodeId;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 
 /**
@@ -34,64 +32,48 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  * Example:
  * <pre>
  * {
- *      "startTime" : $startTime,
- *      "finishTime" : $finishTime,
- *      "nodeIds" : [ $nodeId ]
+ *      "profilingStartTime" : $startTime,
+ *      "profilingFinishTime" : $finishTime,
+ *      "nodesInfo" : { $nodeId : {"name": $name, "verson": verson, "startTime" : $startTime} }
  * }
  * </pre>
  */
 public class TopologyChangesParser implements IgniteLogParser {
-    /** */
-    private static final Pattern pattern = compile(
-        "^pme \\[duration=\\d+, reason=.+tstamp=(\\d+).+, blocking=(true|false), resVer=.+]$");
-
     /** Result JSON. */
     private final ObjectNode res = MAPPER.createObjectNode();
 
-    /** Cluster start time. */
-    private long startTime;
+    /** Result JSON. */
+    private final ObjectNode nodesInfo = MAPPER.createObjectNode();
 
-    /** Cluster stop time. */
-    private long finishTime;
-
-    /** Nodes IDs. */
-    private final Set<String> nodeIds;
-
-    /**
-     * @param nodeIds Nodes IDs.
-     */
-    public TopologyChangesParser(Set<String> nodeIds) {
-        this.nodeIds = nodeIds;
+    /** */
+    public TopologyChangesParser() {
+        res.put("startTime", 0);
+        res.put("finishTime", 0);
+        res.set("nodesInfo", nodesInfo);
     }
 
-//    /** {@inheritDoc} */
-//    @Override public void parse(String nodeId, String str) {
-//        if (!str.startsWith("pme"))
-//            return;
-//
-//        Matcher matcher = pattern.matcher(str);
-//
-//        if (!matcher.matches())
-//            return;
-//
-//        long tstamp = Long.parseLong(matcher.group(1));
-//
-//        startTime = startTime == 0 ? tstamp : Math.min(startTime, tstamp);
-//
-//        finishTime = Math.max(finishTime, tstamp);
-//    }
+    /** {@inheritDoc} */
+    @Override public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime) {
+        res.put("startTime", Math.min(startTime, res.get("startTime").longValue()));
+        res.put("finishTime", Math.max(startTime, res.get("startTime").longValue()));
+
+        if (!currentNodeId().equals(nodeId))
+            throw new RuntimeException("Unknown node id found [nodeId=" + nodeId + ']');
+
+        if (nodesInfo.get(nodeId.toString()) != null)
+            throw new RuntimeException("Duplicate node id found [nodeId=" + nodeId + ']');
+
+        ObjectNode node = MAPPER.createObjectNode();
+
+        node.put("name", igniteInstanceName);
+        node.put("verson", igniteVersion);
+        node.put("startTime", startTime);
+
+        nodesInfo.set(nodeId.toString(), node);
+    }
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {
-        res.put("startTime", startTime);
-        res.put("finishTime", finishTime);
-
-        ArrayNode nodeIds = MAPPER.createArrayNode();
-
-        this.nodeIds.forEach(nodeIds::add);
-
-        res.set("nodeIds", nodeIds);
-
         return U.map("topology", res);
     }
 }

@@ -89,6 +89,14 @@ public interface IgniteProfiling {
      */
     void cacheStart(int cacheId, long startTime, String cacheName, @Nullable String groupName, boolean userCache);
 
+    /**
+     * @param nodeId Node id.
+     * @param igniteInstanceName Ignite instance name.
+     * @param igniteVersion Ignite version.
+     * @param startTime Profiling start time.
+     */
+    void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime);
+
     /** Cache operation type. */
     public enum CacheOperationType {
         /** */

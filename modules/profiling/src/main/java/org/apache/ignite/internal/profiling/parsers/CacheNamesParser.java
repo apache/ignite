@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Collections;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 
@@ -32,7 +31,6 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  * <pre>
  * {
  *   $cacheId : {
- *     "cacheId" : $cacheId,
  *     "startTime" : $startTime,
  *     "cacheName" : $cacheName,
  *     "groupName" : $groupName,
@@ -42,10 +40,6 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  * </pre>
  */
 public class CacheNamesParser implements IgniteLogParser {
-    /** */
-    private static final Pattern pattern = Pattern.compile(
-        "^cacheStart \\[id=(-?\\d+), startTime=(\\d+), name=(.*), group=(.*), userCache=(true|false)]$");
-
     /** Result JSON. */
     private final ObjectNode res = MAPPER.createObjectNode();
 
@@ -57,7 +51,6 @@ public class CacheNamesParser implements IgniteLogParser {
 
         ObjectNode node = MAPPER.createObjectNode();
 
-        node.put("cacheId", cacheId);
         node.put("startTime", startTime);
         node.put("cacheName", cacheName);
         node.put("groupName", groupName);

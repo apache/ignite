@@ -22,8 +22,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.profiling.ProfilingLogParser.currentNodeId;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 import static org.apache.ignite.internal.profiling.util.Utils.createArrayIfAbsent;
 import static org.apache.ignite.internal.profiling.util.Utils.createObjectIfAbsent;
@@ -43,21 +45,26 @@ import static org.apache.ignite.internal.profiling.util.Utils.createObjectIfAbse
  * </pre>
  */
 public class CacheOperationsParser implements IgniteLogParser {
-    /** Cache operations statistics: nodeId->cacheId->opType->aggregatedResults */
-    private final Map<String, Map<Integer, Map<String, Map<Long, Integer>>>> res = new HashMap<>();
+    /** Field name of aggregated by caches/nodes values. */
+    private static final String TOTAL = "total";
+
+    /** Cache operations statistics: nodeId->cacheId->opType->aggregatedResults. */
+    private final Map<UUID, Map<Integer, Map<String, Map<Long, Integer>>>> res = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override public void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
-        String[] nodes = new String[] {"", "NODE_ID_TO_DO"};
+        // nodeId=null means aggregate by all nodes.
+        UUID[] nodesId = new UUID[] {null, currentNodeId()};
 
+        // cacheId=0 means aggregate by all caches.
         int[] cacheIds = new int[] {0, cacheId};
 
         // Aggregate by seconds.
         long aggrTime = startTime / 1000 * 1000;
 
-        for (String node : nodes) {
+        for (UUID nodeId : nodesId) {
             for (int cache : cacheIds) {
-                res.computeIfAbsent(node, k -> new HashMap<>())
+                res.computeIfAbsent(nodeId, k -> new HashMap<>())
                     .computeIfAbsent(cache, k -> new HashMap<>())
                     .computeIfAbsent(type.name(), k -> new HashMap<>())
                     .compute(aggrTime, (time, count) -> count == null ? 1 : count + 1);
@@ -70,10 +77,10 @@ public class CacheOperationsParser implements IgniteLogParser {
         ObjectNode jsonRes = MAPPER.createObjectNode();
 
         res.forEach((nodeId, cachesMap) -> {
-            ObjectNode node = createObjectIfAbsent(nodeId, jsonRes);
+            ObjectNode node = createObjectIfAbsent(nodeId == null ? TOTAL : String.valueOf(nodeId), jsonRes);
 
             cachesMap.forEach((cacheId, opsMap) -> {
-                ObjectNode cache = createObjectIfAbsent(String.valueOf(cacheId), node);
+                ObjectNode cache = createObjectIfAbsent(cacheId == 0 ? TOTAL : String.valueOf(cacheId), node);
 
                 opsMap.forEach((opType, timingMap) -> {
                     ArrayNode op = createArrayIfAbsent(opType, cache);
@@ -91,39 +98,5 @@ public class CacheOperationsParser implements IgniteLogParser {
         });
 
         return U.map("ops", jsonRes);
-    }
-
-    /** Cache operation. */
-    private static class CacheOperation {
-        /** Operation type. */
-        String type;
-
-        /** Cache id. */
-        String cacheId;
-
-        /** Start time. */
-        long startTime;
-
-        /** Duration. */
-        long duration;
-
-        /** @param str String to parse from. */
-        CacheOperation(String str) {
-            int idx = str.indexOf('=');
-            int idx2 = str.indexOf(',', idx);
-            type = str.substring(idx + 1, idx2);
-
-            idx = str.indexOf('=', idx2);
-            idx2 = str.indexOf(',', idx);
-            cacheId = str.substring(idx + 1, idx2);
-
-            idx = str.indexOf('=', idx2);
-            idx2 = str.indexOf(',', idx);
-            startTime = Long.parseLong(str.substring(idx + 1, idx2));
-
-            idx = str.indexOf('=', idx2);
-            idx2 = str.indexOf(']', idx);
-            duration = Long.parseLong(str.substring(idx + 1, idx2));
-        }
     }
 }

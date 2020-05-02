@@ -73,4 +73,10 @@ public interface IgniteLogParser extends IgniteProfiling {
         boolean userCache) {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override default void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion,
+        long startTime) {
+        // No-op.
+    }
 }

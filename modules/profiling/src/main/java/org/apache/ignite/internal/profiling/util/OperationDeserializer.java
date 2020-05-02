@@ -196,6 +196,34 @@ public class OperationDeserializer {
 
                 return true;
             }
+
+            case PROFILING_START: {
+                if (buf.remaining() < 20)
+                    break;
+
+                UUID nodeId = readUuid(buf);
+
+                int nameLen = buf.getInt();
+
+                if (buf.remaining() < nameLen + 4)
+                    break;
+
+                String instanceName = readString(buf, nameLen);
+
+                int verLen = buf.getInt();
+
+                if (buf.remaining() < verLen + 4)
+                    break;
+
+                String version = readString(buf, verLen);
+
+                long startTime = buf.getLong();
+
+                for (IgniteLogParser parser : parsers)
+                    parser.profilingStart(nodeId, instanceName, version, startTime);
+
+                return true;
+            }
         }
 
         buf.position(pos);
@@ -204,7 +232,7 @@ public class OperationDeserializer {
     }
 
     /** */
-    private static String readString(ByteBuffer buf, int size) {
+    public static String readString(ByteBuffer buf, int size) {
         byte[] bytes = new byte[size];
 
         buf.get(bytes);

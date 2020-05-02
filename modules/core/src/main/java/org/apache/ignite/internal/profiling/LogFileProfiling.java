@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -40,6 +41,7 @@ import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.thread.IgniteThread;
 
+import static org.apache.ignite.internal.profiling.LogFileProfiling.OperationType.PROFILING_START;
 import static org.apache.ignite.internal.util.IgniteUtils.sleep;
 
 /** */
@@ -85,7 +87,7 @@ public class LogFileProfiling implements IgniteProfiling {
 
             File profilingDir = U.resolveWorkDirectory(igniteWorkDir, "profiling", false);
 
-            File file = new File(profilingDir, "profiling-" + ctx.igniteInstanceName() + ".log");
+            File file = new File(profilingDir, "profiling-" + ctx.localNodeId() + ".log");
 
             fileIo = fileIoFactory.create(file);
 
@@ -94,6 +96,8 @@ public class LogFileProfiling implements IgniteProfiling {
         catch (Exception e) {
             throw new IgniteSpiException("Failed to start profiling.", e);
         }
+
+        profilingStart(ctx.localNodeId(), ctx.igniteInstanceName(), IgniteVersionUtils.VER_STR, U.currentTimeMillis());
     }
 
     /** */
@@ -283,10 +287,34 @@ public class LogFileProfiling implements IgniteProfiling {
         segment.release();
     }
 
+    /** {@inheritDoc} */
+    @Override public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime) {
+        byte[] nameBytes = igniteInstanceName.getBytes();
+        byte[] versionBytes = igniteVersion.getBytes();
+
+        int size = /*nodeId*/ 16 +
+            /*igniteInstanceName*/ 4 + nameBytes.length +
+            /*version*/ 4 + versionBytes.length +
+            /*profilingStartTime*/ 8;
+
+        SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(PROFILING_START, size);
+
+        ByteBuffer buf = segment.buffer();
+
+        writeUuid(buf, nodeId);
+        buf.putInt(nameBytes.length);
+        buf.put(nameBytes);
+        buf.putInt(versionBytes.length);
+        buf.put(versionBytes);
+        buf.putLong(System.currentTimeMillis());
+
+        segment.release();
+    }
+
     /** */
     private SegmentedRingByteBuffer.WriteSegment reserveBuffer(OperationType type, int size) {
         for (; ; ) {
-            SegmentedRingByteBuffer.WriteSegment seg = ringByteBuffer.offer(size + /*type*/1);
+            SegmentedRingByteBuffer.WriteSegment seg = ringByteBuffer.offer(size + /*type*/ 1);
 
             if (seg == null) {
                 LT.warn(log, "Buffer size is too small.");
@@ -408,7 +436,10 @@ public class LogFileProfiling implements IgniteProfiling {
         JOB,
 
         /** Cache start. */
-        CACHE_START;
+        CACHE_START,
+
+        /** Profiling start. */
+        PROFILING_START;
 
         /** */
         private static final OperationType[] VALS = values();

@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -80,6 +81,12 @@ public class ProfilingLogParser {
     /** File read buffer. */
     private static final ByteBuffer readBuf = allocateDirect(READ_BUFFER_SIZE).order(nativeOrder());
 
+    /** IO factory. */
+    private static final RandomAccessFileIOFactory ioFactory = new RandomAccessFileIOFactory();
+
+    /** Node id of current parsed log. */
+    private static volatile UUID curNodeId;
+
     /**
      * @param args Only one argument: profiling logs directory to parse or '-h' to get usage help.
      */
@@ -88,7 +95,7 @@ public class ProfilingLogParser {
 
         String logDir = getLogDir(args);
 
-        HashMap<String, File> logs = findLogs(logDir);
+        HashMap<UUID, File> logs = findLogs(logDir);
 
         if (logs.isEmpty())
             throw new Exception("Unable to find profiling logs.");
@@ -143,8 +150,8 @@ public class ProfilingLogParser {
      * @param logDir Logs directory.
      * @return Map of found logs: nodeId -> log file path.
      */
-    private static HashMap<String, File> findLogs(String logDir) throws IOException {
-        HashMap<String, File> res = new HashMap<>();
+    private static HashMap<UUID, File> findLogs(String logDir) throws IOException {
+        HashMap<UUID, File> res = new HashMap<>();
 
         File logsDir = new File(logDir);
 
@@ -156,7 +163,7 @@ public class ProfilingLogParser {
             if (!matcher.matches())
                 continue;
 
-            String nodeId = matcher.group(1);
+            UUID nodeId = UUID.fromString(matcher.group(1));
 
             res.put(nodeId, file.toFile());
 
@@ -190,25 +197,29 @@ public class ProfilingLogParser {
      * @param logs Profiling logs.
      * @param resDir Results directory.
      */
-    private static void parseLogs(HashMap<String, File> logs, String resDir) throws Exception {
+    private static void parseLogs(HashMap<UUID, File> logs, String resDir) throws Exception {
         IgniteLogParser[] parsers = new IgniteLogParser[] {
             new QueryParser(),
             new CacheNamesParser(),
             new CacheOperationsParser(),
             new TransactionsParser(),
             new ComputeParser(),
-            new TopologyChangesParser(logs.keySet())
+            new TopologyChangesParser()
         };
 
         int currLog = 1;
 
-        for (Map.Entry<String, File> entry : logs.entrySet()) {
-            String nodeId = entry.getKey();
+        for (Map.Entry<UUID, File> entry : logs.entrySet()) {
+            UUID nodeId = entry.getKey();
             File log = entry.getValue();
 
             String progressMsg = "[" + currLog + '/' + logs.size() + " log]";
 
+            curNodeId = nodeId;
+
             parseLog(parsers, nodeId, log, progressMsg);
+
+            curNodeId = null;
 
             currLog++;
         }
@@ -233,7 +244,7 @@ public class ProfilingLogParser {
      * @param log Log to parse.
      * @param msg Progress message to log.
      */
-    private static void parseLog(IgniteLogParser[] parsers, String nodeId, File log, String msg)
+    private static void parseLog(IgniteLogParser[] parsers, UUID nodeId, File log, String msg)
         throws Exception {
         System.out.println("Starting parse log [file=" + log.getAbsolutePath() +
             ", size=" + FileUtils.byteCountToDisplaySize(log.length()) + ", nodeId=" + nodeId + ']');
@@ -242,7 +253,7 @@ public class ProfilingLogParser {
         long parsed = 0;
         long parsedBytes = 0;
 
-        try (FileIO io = new RandomAccessFileIOFactory().create(log)) {
+        try (FileIO io = ioFactory.create(log)) {
             readBuf.clear();
 
             while (true) {
@@ -286,6 +297,13 @@ public class ProfilingLogParser {
         }
 
         System.out.println("Log parsed successfully [nodeId=" + nodeId + ']');
+    }
+
+    /** @return Node id of current parsed log. */
+    public static UUID currentNodeId() {
+        assert curNodeId != null;
+
+        return curNodeId;
     }
 
     /**
