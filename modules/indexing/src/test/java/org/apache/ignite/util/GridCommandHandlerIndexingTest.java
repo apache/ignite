@@ -158,7 +158,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
      *
      * @throws Exception
      */
-    private Ignite prepareGridForTest() throws Exception{
+    private Ignite prepareGridForTest() throws Exception {
         Ignite ignite = startGrids(GRID_CNT);
 
         ignite.cluster().active(true);

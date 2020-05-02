@@ -98,7 +98,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     private final long totalPartitionsCnt;
 
     /** Snapshot future. */
-    private IgniteInternalFuture<Boolean> snapshotFut;
+    private IgniteInternalFuture<Void> snapshotFut;
 
     /**
      * @param exchFut Exchange future.
@@ -188,17 +188,15 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
             assert snapshotFut == null || snapshotFut.isDone() : snapshotFut;
 
             (snapshotFut = cctx.snapshotMgr()
-                .createRemoteSnapshot(nodeId,
+                .requestRemoteSnapshot(nodeId,
                     assigns,
                     (file, uniquePartId) -> onPartitionSnapshotReceived(nodeId, uniquePartId, file)))
                 .chain(f -> {
-                        try {
-                            if (!f.isCancelled() && f.get())
-                                requestPartitionsSnapshot(it);
-                        }
-                        catch (IgniteCheckedException e) {
-                            if (!onDone(e) && log.isDebugEnabled())
-                                log.debug("Stale error (ignored): " + e.getMessage());
+                        if (!f.isCancelled() && f.error() == null)
+                            requestPartitionsSnapshot(it);
+                        else {
+                            if (!onDone(f.error()) && log.isDebugEnabled())
+                                log.debug("Stale error (ignored): " + f.error().getMessage());
                         }
 
                         return null;
@@ -285,7 +283,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     private void onPartitionSnapshotRestored(UUID nodeId, int grpId, int partId, long cntr) {
         Map<Integer, Set<Integer>> grpParts = remaining.get(nodeId);
 
-        assert  grpParts != null : "nodeId=" + nodeId + ", grpId=" + grpId + ", p=" + partId;
+        assert grpParts != null : "nodeId=" + nodeId + ", grpId=" + grpId + ", p=" + partId;
 
         Set<Integer> parts = grpParts.get(grpId);
 

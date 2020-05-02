@@ -140,6 +140,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 
@@ -798,8 +799,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             ExchangeType exchange;
 
-            if (exchCtx.exchangeFreeSwitch()){
-                exchange = onExchangeFreeSwitch();
+            if (exchCtx.exchangeFreeSwitch()) {
+                exchange = isSnapshotOperation(firstDiscoEvt) ? onCustomMessageNoAffinityChange() :
+                    onExchangeFreeSwitchNodeLeft();
 
                 initCoordinatorCaches(newCrd);
             }
@@ -936,6 +938,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
                 comp.onInitAfterTopologyLock(this);
+
+            // For pme-free exchanges onInitAfterTopologyLock must be
+            // invoked prior to onDoneBeforeTopologyUnlock.
+            if (exchange == ExchangeType.ALL && context().exchangeFreeSwitch()) {
+                cctx.exchange().exchangerBlockingSectionBegin();
+
+                try {
+                    onDone(initialVersion());
+                }
+                finally {
+                    cctx.exchange().exchangerBlockingSectionEnd();
+                }
+            }
 
             if (exchLog.isInfoEnabled())
                 exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
@@ -1404,7 +1419,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @return Exchange type.
      */
-    private ExchangeType onExchangeFreeSwitch() {
+    private ExchangeType onExchangeFreeSwitchNodeLeft() {
         assert !firstDiscoEvt.eventNode().isClient() : this;
 
         assert firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED;
@@ -1509,7 +1524,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         boolean skipWaitOnLocalJoin = localJoinExchange()
             && cctx.exchange().latch().canSkipJoiningNodes(initialVersion());
 
-        if (context().exchangeFreeSwitch())
+        if (context().exchangeFreeSwitch() && isBaselineNodeFailed())
             waitPartitionRelease(true, false);
         else if (!skipWaitOnLocalJoin) { // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
             boolean distributed = true;
@@ -1606,9 +1621,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
-            if (context().exchangeFreeSwitch())
-                onDone(initialVersion());
-            else {
+            if (!context().exchangeFreeSwitch()) {
                 if (crd.isLocal()) {
                     if (remaining.isEmpty()) {
                         initFut.onDone(true);
@@ -1717,7 +1730,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (distributed)
                 releaseLatch = cctx.exchange().latch().getOrCreate(DISTRIBUTED_LATCH_ID, initialVersion());
 
-            partReleaseFut = context().exchangeFreeSwitch() ?
+            partReleaseFut = context().exchangeFreeSwitch() && isBaselineNodeFailed() ?
                 cctx.partitionRecoveryFuture(initialVersion(), firstDiscoEvt.eventNode()) :
                 cctx.partitionReleaseFuture(initialVersion());
 
@@ -2946,7 +2959,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 if (finishState0 == null) {
-                    assert firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient() : this;
+                    assert (firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient())
+                        || isSnapshotOperation(firstDiscoEvt) : GridDhtPartitionsExchangeFuture.this;
 
                     ClusterNode node = cctx.node(nodeId);
 
@@ -3978,6 +3992,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     Set<Integer> parts;
 
                     if (exchCtx.exchangeFreeSwitch()) {
+                        assert !isSnapshotOperation(firstDiscoEvt) : "Not allowed for taking snapshots: " + this;
+
                         // Previous topology to resolve failed primaries set.
                         AffinityTopologyVersion topVer = sharedContext().exchange().readyAffinityVersion();
 

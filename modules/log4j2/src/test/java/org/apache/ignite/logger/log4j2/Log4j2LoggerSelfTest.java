@@ -179,7 +179,7 @@ public class Log4j2LoggerSelfTest {
         String logContent = U.readFileToString(logFile.getAbsolutePath(), "UTF-8");
 
         assertTrue("Log file does not contain it's node ID: " + logFile,
-            logContent.contains(">>> Local node [ID="+ id8.toUpperCase()));
+            logContent.contains(">>> Local node [ID=" + id8.toUpperCase()));
 
     }
 

@@ -45,7 +45,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg  = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setName(DEFAULT_CACHE_NAME);

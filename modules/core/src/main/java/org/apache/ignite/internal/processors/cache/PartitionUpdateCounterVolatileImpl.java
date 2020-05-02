@@ -77,7 +77,7 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
     @Override public void update(long val) {
         long cur;
 
-        while(val > (cur = cntr.get()) && !cntr.compareAndSet(cur, val));
+        while (val > (cur = cntr.get()) && !cntr.compareAndSet(cur, val));
     }
 
     /** {@inheritDoc} */

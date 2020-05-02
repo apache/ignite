@@ -100,7 +100,7 @@ final class MarshallerMappingFileStore {
                 U.error(log, "Failed to write class name to file [platformId=" + platformId + "id=" + typeId +
                         ", clsName=" + typeName + ", file=" + file.getAbsolutePath() + ']', e);
             }
-            catch(OverlappingFileLockException ignored) {
+            catch (OverlappingFileLockException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("File already locked (will ignore): " + file.getAbsolutePath());
             }

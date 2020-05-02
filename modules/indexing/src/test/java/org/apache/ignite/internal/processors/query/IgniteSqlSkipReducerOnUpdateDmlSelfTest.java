@@ -642,7 +642,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return (name==null? 0: name.hashCode()) ^ position ^ amount ^ (updated == null ? 0 : updated.hashCode());
+            return (name == null ? 0 : name.hashCode()) ^ position ^ amount ^ (updated == null ? 0 : updated.hashCode());
         }
 
         /** {@inheritDoc} */

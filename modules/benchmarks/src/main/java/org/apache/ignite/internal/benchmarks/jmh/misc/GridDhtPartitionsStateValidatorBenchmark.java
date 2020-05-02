@@ -120,7 +120,7 @@ public class GridDhtPartitionsStateValidatorBenchmark extends JmhAbstractBenchma
             Map<Integer, Long> cacheSizesMap = new HashMap<>();
 
             IntStream.range(0, PARTS).forEach(k -> { localPartitions.add(partitionMock(k, k + 1, k + 1));
-                long us = k > 20 && k <= 30 ? 0 :k + 2L;
+                long us = k > 20 && k <= 30 ? 0 : k + 2L;
                 updateCountersMap.put(k, new T2<>(k + 2L, us));
                 cacheSizesMap.put(k, us); });
 

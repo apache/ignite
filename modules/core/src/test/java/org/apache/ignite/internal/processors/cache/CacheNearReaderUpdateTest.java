@@ -151,11 +151,11 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         runTestGetUpdateMultithreaded(ccfg, putNodes, getNodes, null, null);
 
         if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
-            runTestGetUpdateMultithreaded(ccfg, putNodes, getNodes, PESSIMISTIC,  REPEATABLE_READ);
+            runTestGetUpdateMultithreaded(ccfg, putNodes, getNodes, PESSIMISTIC, REPEATABLE_READ);
 
-            runTestGetUpdateMultithreaded(ccfg, putNodes, getNodes, OPTIMISTIC,  REPEATABLE_READ);
+            runTestGetUpdateMultithreaded(ccfg, putNodes, getNodes, OPTIMISTIC, REPEATABLE_READ);
 
-            runTestGetUpdateMultithreaded(ccfg, putNodes, getNodes, OPTIMISTIC,  SERIALIZABLE);
+            runTestGetUpdateMultithreaded(ccfg, putNodes, getNodes, OPTIMISTIC, SERIALIZABLE);
         }
     }
 

@@ -32,7 +32,7 @@ public interface PageStore extends Closeable {
     public void addWriteListener(PageWriteListener lsnr);
 
     /**
-     * @param lsnr Page write listenter to remove.
+     * @param lsnr Page write listener to remove.
      */
     public void removeWriteListener(PageWriteListener lsnr);
 

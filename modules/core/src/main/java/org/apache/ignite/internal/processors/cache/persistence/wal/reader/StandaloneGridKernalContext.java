@@ -106,13 +106,12 @@ import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
+
 /**
  * Dummy grid kernal context
  */
 public class StandaloneGridKernalContext implements GridKernalContext {
-    /** Binary metadata file store folder. */
-    public static final String BINARY_META_FOLDER = "binary_meta";
-
     /** Config for fake Ignite instance. */
     private final IgniteConfiguration cfg;
 

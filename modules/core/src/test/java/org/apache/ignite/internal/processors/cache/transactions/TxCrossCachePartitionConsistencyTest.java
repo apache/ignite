@@ -264,14 +264,14 @@ public class TxCrossCachePartitionConsistencyTest extends GridCommonAbstractTest
      * @param balance Balance.
      */
     private void preload(IgniteEx node, List<Integer> keys, long balance) {
-        try(IgniteDataStreamer<Object, Object> ds = node.dataStreamer(CACHE1)) {
+        try (IgniteDataStreamer<Object, Object> ds = node.dataStreamer(CACHE1)) {
             ds.allowOverwrite(true);
 
             for (Integer key : keys)
                 ds.addData(key, new Deposit(key, balance));
         }
 
-        try(IgniteDataStreamer<Object, Object> ds = node.dataStreamer(CACHE2)) {
+        try (IgniteDataStreamer<Object, Object> ds = node.dataStreamer(CACHE2)) {
             ds.allowOverwrite(true);
 
             for (Integer key : keys)

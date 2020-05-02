@@ -604,7 +604,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean systemTx() {
         return cacheType == CacheType.UTILITY ||
-            ((cacheType == CacheType.INTERNAL || cacheType == CacheType.DATA_STRUCTURES)&& transactional());
+            ((cacheType == CacheType.INTERNAL || cacheType == CacheType.DATA_STRUCTURES) && transactional());
     }
 
     /**
@@ -2272,7 +2272,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             }
         }
 
-        if (!readFromBackup || forcePrimary){
+        if (!readFromBackup || forcePrimary) {
             ClusterNode first = affNodes.get(0);
 
             return !invalidNodes.contains(first) ? first : null;

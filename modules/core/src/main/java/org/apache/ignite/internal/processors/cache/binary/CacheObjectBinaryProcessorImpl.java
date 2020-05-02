@@ -125,6 +125,9 @@ import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
  * Binary processor implementation.
  */
 public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter implements IgniteCacheObjectProcessor {
+    /** Binary metadata file store folder. */
+    public static final String BINARY_META_FOLDER = "binary_meta";
+
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
@@ -203,17 +206,18 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /**
      * @param igniteWorkDir Basic ignite working directory.
+     * @param consId Node consistent id.
      * @return Working directory.
      */
-    public File binaryFileStoreWorkDir(String igniteWorkDir) {
+    public static File resolveBinaryWorkDir(String igniteWorkDir, String consId) {
         try {
             File workDir = new File(U.resolveWorkDirectory(
                 igniteWorkDir,
-                "binary_meta",
+                BINARY_META_FOLDER,
                 false),
-                ctx.pdsFolderResolver().resolveFolders().folderName());
+                consId);
 
-            U.ensureDirectory(workDir, "directory for serialized binary metadata", log);
+            U.ensureDirectory(workDir, "directory for serialized binary metadata", null);
 
             return workDir;
         }
@@ -230,7 +234,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     ctx,
                     log,
                     binaryMetadataFileStoreDir == null ?
-                        binaryFileStoreWorkDir(ctx.config().getWorkDirectory()) : binaryMetadataFileStoreDir);
+                        resolveBinaryWorkDir(ctx.config().getWorkDirectory(),
+                            ctx.pdsFolderResolver().resolveFolders().folderName()) :
+                        binaryMetadataFileStoreDir);
 
                 metadataFileStore.start();
             }
@@ -777,7 +783,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
-                        + ", acceptedVer=" + (holder == null ? "NA" :holder.acceptedVersion()) + ']');
+                        + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion()) + ']');
 
                 try {
                     transport.requestUpToDateMetadata(typeId).get();
@@ -798,7 +804,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
-                        + ", acceptedVer=" + (holder == null ? "NA" :holder.acceptedVersion()) + ']');
+                        + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion()) + ']');
             }
         }
         else {
@@ -844,7 +850,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                         + ", missingSchemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
                         + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion())
-                        + ", binMetaUpdateTimeout=" + waitSchemaTimeout +']');
+                        + ", binMetaUpdateTimeout=" + waitSchemaTimeout + ']');
 
                 long t0 = System.nanoTime();
 
@@ -915,13 +921,19 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void saveMetadata(Collection<BinaryType> types, File dir) {
-        BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(),
-            ctx,
-            log,
-            binaryFileStoreWorkDir(dir.getAbsolutePath()));
+        try {
+            BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(),
+                ctx,
+                log,
+                resolveBinaryWorkDir(dir.getAbsolutePath(),
+                    ctx.pdsFolderResolver().resolveFolders().folderName()));
 
-        for (BinaryType type : types)
-            writer.mergeAndWriteMetadata(((BinaryTypeImpl)type).metadata());
+            for (BinaryType type : types)
+                writer.mergeAndWriteMetadata(((BinaryTypeImpl)type).metadata());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1218,7 +1230,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to get partition", e);
 
-            return  -1;
+            return -1;
         }
     }
 

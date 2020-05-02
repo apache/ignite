@@ -161,7 +161,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                         final GridFutureAdapter<IgfsMessage> fut0 = new GridFutureAdapter<>();
 
                         pool.execute(new Runnable() {
-                            @Override public void run()  {
+                            @Override public void run() {
                                 try {
                                     fut0.onDone(execute(ses, cmd, msg, in));
                                 }

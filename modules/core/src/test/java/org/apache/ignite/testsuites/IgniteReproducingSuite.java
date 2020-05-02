@@ -44,7 +44,7 @@ public class IgniteReproducingSuite {
          * @return List of test(s) for reproduction some problem.
          */
         private static List<Class<?>> classes() {
-            List <Class<?>> suite = new ArrayList<>();
+            List<Class<?>> suite = new ArrayList<>();
 
             suite.add(IgniteReproducingSuite.TestStub.class);
 

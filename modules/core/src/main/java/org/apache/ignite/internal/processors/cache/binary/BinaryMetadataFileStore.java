@@ -74,7 +74,6 @@ class BinaryMetadataFileStore {
      * @param metadataLocCache Metadata locale cache.
      * @param ctx Context.
      * @param log Logger.
-     * and consistentId
      */
     BinaryMetadataFileStore(
         final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
@@ -86,18 +85,21 @@ class BinaryMetadataFileStore {
         this.ctx = ctx;
         this.isPersistenceEnabled = CU.isPersistenceEnabled(ctx.config());
         this.log = log;
+        this.workDir = workDir;
 
-        if (!CU.isPersistenceEnabled(ctx.config()))
+        if (!CU.isPersistenceEnabled(ctx.config())) {
             return;
+        }
 
         fileIOFactory = ctx.config().getDataStorageConfiguration().getFileIOFactory();
-        this.workDir = workDir;
     }
 
     /**
-     * Starts worker thread for acync writing of binary metadata.
+     * Starts worker thread for async writing of binary metadata.
      */
-    void start() {
+    void start() throws IgniteCheckedException {
+        U.ensureDirectory(workDir, "directory for serialized binary metadata", log);
+
         writer = new BinaryMetadataAsyncWriter();
 
         new IgniteThread(writer).start();

@@ -2962,11 +2962,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgnitePageStoreManager pageStoreMgr = null;
         IgniteWriteAheadLogManager walMgr = null;
         IgnitePartitionPreloadManager preloadMgr = null;
-        IgniteSnapshotManager snapshotMgr = null;
 
         if (CU.isPersistenceEnabled(ctx.config()) && !ctx.clientNode()) {
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
-            snapshotMgr = new IgniteSnapshotManager(ctx);
 
             pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
 
@@ -2992,6 +2990,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         WalStateManager walStateMgr = new WalStateManager(ctx);
 
+        IgniteSnapshotManager snapshotMgr = new IgniteSnapshotManager(ctx);
         IgniteCacheSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteCacheSnapshotManager.class);
 
         if (snpMgr == null)
@@ -3067,7 +3066,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public @Nullable IgniteNodeValidationResult validateNode(
         ClusterNode node, JoiningNodeDiscoveryData discoData
     ) {
-        if(!cachesInfo.isMergeConfigSupports(node))
+        if (!cachesInfo.isMergeConfigSupports(node))
             return null;
 
         String validationRes = cachesInfo.validateJoiningNodeData(discoData);
@@ -4388,7 +4387,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cachesInfo.isRestarting(name)) {
                 IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(name);
 
-                assert proxy != null: name;
+                assert proxy != null : name;
 
                 proxy.internalProxy(); //should throw exception
 

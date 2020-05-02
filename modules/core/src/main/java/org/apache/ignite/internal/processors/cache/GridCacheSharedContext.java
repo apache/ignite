@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
@@ -126,7 +127,7 @@ public class GridCacheSharedContext<K, V> {
     /** Page store manager. {@code Null} if persistence is not enabled. */
     @Nullable private IgnitePageStoreManager pageStoreMgr;
 
-    /** Page file snapshot manager. Can be {@code null} if presistence is not enabled. */
+    /** Snapshot manager for persistence caches. See {@link IgniteSnapshot}. */
     private IgniteSnapshotManager snapshotMgr;
 
     /** Affinity manager. */
@@ -886,7 +887,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Diagnostic manager.
      */
-    public CacheDiagnosticManager diagnostic(){
+    public CacheDiagnosticManager diagnostic() {
         return diagnosticMgr;
     }
 

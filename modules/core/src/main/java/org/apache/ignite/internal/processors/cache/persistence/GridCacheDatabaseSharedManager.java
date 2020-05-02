@@ -68,7 +68,6 @@ import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -159,8 +158,8 @@ import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
+import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -1104,7 +1103,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             WALPointer restored = binaryState.lastReadRecordPointer();
 
-            if(restored.equals(CheckpointStatus.NULL_PTR))
+            if (restored.equals(CheckpointStatus.NULL_PTR))
                 restored = null; // This record is first
             else
                 restored = restored.next();
@@ -2472,8 +2471,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                         applyError.compareAndSet(
                                             null,
-                                            (t instanceof IgniteCheckedException)?
-                                                (IgniteCheckedException)t:
+                                            (t instanceof IgniteCheckedException) ?
+                                                (IgniteCheckedException)t :
                                                 new IgniteCheckedException("Failed to apply page snapshot", t));
                                     }
                                 }, groupId, partId, exec, semaphore

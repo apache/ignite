@@ -233,7 +233,7 @@ public class IgniteWalIteratorFactory {
      * @return List of tuples, low and high index segments with gap.
      */
     public List<T2<Long, Long>> hasGaps(
-         @NotNull  List<FileDescriptor> descriptors
+         @NotNull List<FileDescriptor> descriptors
     ) throws IllegalArgumentException {
 
         List<T2<Long, Long>> gaps = new ArrayList<>();
@@ -456,7 +456,7 @@ public class IgniteWalIteratorFactory {
          * @param log Logger.
          * @return IteratorParametersBuilder Self reference.
          */
-        public IteratorParametersBuilder log(IgniteLogger log){
+        public IteratorParametersBuilder log(IgniteLogger log) {
             this.log = log;
 
             return this;

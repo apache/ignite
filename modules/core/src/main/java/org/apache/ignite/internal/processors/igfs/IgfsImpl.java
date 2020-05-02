@@ -349,7 +349,7 @@ public final class IgfsImpl implements IgfsEx {
             boolean await = false;
 
             for (IgfsPath path : paths) {
-                if (workerPath.isSubDirectoryOf(path) || F.eq(workerPath, path))  {
+                if (workerPath.isSubDirectoryOf(path) || F.eq(workerPath, path)) {
                     await = true;
 
                     break;
@@ -723,13 +723,13 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(final IgfsPath path, @Nullable final Map<String, String> props)  {
+    @Override public void mkdirs(final IgfsPath path, @Nullable final Map<String, String> props) {
         A.notNull(path, "path");
 
         if (meta.isClient()) {
             meta.runClientTask(new IgfsClientMkdirsCallable(cfg.getName(), IgfsUserContext.currentUser(), path, props));
 
-            return ;
+            return;
         }
 
         safeOp(new Callable<Void>() {

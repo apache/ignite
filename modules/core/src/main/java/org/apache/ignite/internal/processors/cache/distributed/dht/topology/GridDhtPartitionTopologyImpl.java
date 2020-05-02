@@ -568,11 +568,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
 
                 if (evts.hasServerLeft()) {
-                    List<DiscoveryEvent> evts0 = evts.events();
-
-                    for (int i = 0; i < evts0.size(); i++) {
-                        DiscoveryEvent evt = evts0.get(i);
-
+                    for (DiscoveryEvent evt : evts.events()) {
                         if (ExchangeDiscoveryEvents.serverLeftEvent(evt))
                             removeNode(evt.eventNode().id());
                     }
@@ -670,7 +666,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (log.isDebugEnabled()) {
                     log.debug("Created new full topology map on oldest node [" +
-                        "grp=" +  grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
+                        "grp=" + grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
                         ", fullMap=" + node2part + ']');
                 }
             }
@@ -2276,7 +2272,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         GridDhtPartitionsExchangeFuture exchFut) {
         Map<UUID, Set<Integer>> res = new HashMap<>();
 
-        List<DiscoveryEvent> evts = exchFut.events().events();
+        Collection<DiscoveryEvent> evts = exchFut.events().events();
 
         Set<UUID> joinedNodes = U.newHashSet(evts.size());
 

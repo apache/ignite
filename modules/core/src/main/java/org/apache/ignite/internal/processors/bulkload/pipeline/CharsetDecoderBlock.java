@@ -127,7 +127,7 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
                 continue;
             }
 
-            assert ! res.isMalformed() && ! res.isUnmappable();
+            assert !res.isMalformed() && !res.isUnmappable();
 
             // We're not supposed to reach this point with the current implementation.
             // The code below will fire exception if Oracle implementation of CharsetDecoder will be changed in future.

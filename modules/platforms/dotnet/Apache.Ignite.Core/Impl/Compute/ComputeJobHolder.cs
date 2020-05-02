@@ -24,10 +24,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Compute.Closure;
-    using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>
     /// Holder for user-provided compute job.
@@ -74,21 +71,27 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Executes local job.
         /// </summary>
         /// <param name="cancel">Cancel flag.</param>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "User code can throw any exception type.")]
         public void ExecuteLocal(bool cancel)
         {
-            object res;
-            bool success;
+            ComputeRunner.InjectResources(_ignite, _job);
 
-            Execute0(cancel, out res, out success);
+            var nodeId = _ignite.GetIgnite().GetCluster().GetLocalNode().Id;
 
-            _jobRes = new ComputeJobResultImpl(
-                success ? res : null, 
-                success ? null : new IgniteException("Compute job has failed on local node, " +
-                                                     "examine InnerException for details.", (Exception) res), 
-                _job, 
-                _ignite.GetIgnite().GetCluster().GetLocalNode().Id, 
-                cancel
-            );
+            try
+            {
+                var res = Execute0(cancel);
+
+                _jobRes = new ComputeJobResultImpl(res, null, _job, nodeId, cancel);
+            }
+            catch (Exception e)
+            {
+                var ex = new IgniteException(
+                    "Compute job has failed on local node, examine InnerException for details.", e);
+
+                _jobRes = new ComputeJobResultImpl(null, ex, _job, nodeId, cancel);
+            }
         }
 
         /// <summary>
@@ -98,28 +101,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="stream">Stream.</param>
         public void ExecuteRemote(PlatformMemoryStream stream, bool cancel)
         {
-            // 1. Execute job.
-            object res;
-            bool success;
-
-            using (PeerAssemblyResolver.GetInstance(_ignite, Guid.Empty))
-            {
-                Execute0(cancel, out res, out success);
-            }
-
-            // 2. Try writing result to the stream.
-            var writer = _ignite.Marshaller.StartMarshal(stream);
-
-            try
-            {
-                // 3. Marshal results.
-                BinaryUtils.WriteInvocationResult(writer, success, res);
-            }
-            finally
-            {
-                // 4. Process metadata.
-                _ignite.Marshaller.FinishMarshal(writer);
-            }
+            ComputeRunner.ExecuteJobAndWriteResults(_ignite, stream, _job, _ => Execute0(cancel));
         }
 
         /// <summary>
@@ -181,36 +163,14 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Internal job execution routine.
         /// </summary>
         /// <param name="cancel">Cancel flag.</param>
-        /// <param name="res">Result.</param>
-        /// <param name="success">Success flag.</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
-            Justification = "User job can throw any exception")]
-        private void Execute0(bool cancel, out object res, out bool success)
+        private object Execute0(bool cancel)
         {
-            // 1. Inject resources.
-            IComputeResourceInjector injector = _job as IComputeResourceInjector;
-
-            if (injector != null)
-                injector.Inject(_ignite);
-            else
-                ResourceProcessor.Inject(_job, _ignite);
-
-            // 2. Execute.
-            try
+            if (cancel)
             {
-                if (cancel)
-                    _job.Cancel();
-
-                res = _job.Execute();
-
-                success = true;
+                _job.Cancel();
             }
-            catch (Exception e)
-            {
-                res = e;
 
-                success = false;
-            }
+            return _job.Execute();
         }
 
         /** <inheritDoc /> */

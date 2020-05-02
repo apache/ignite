@@ -271,4 +271,9 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
     @Override public long highestAppliedCounter() {
         return delegate.highestAppliedCounter();
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return delegate.toString();
+    }
 }

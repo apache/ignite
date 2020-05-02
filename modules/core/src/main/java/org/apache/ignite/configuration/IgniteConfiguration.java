@@ -224,6 +224,9 @@ public class IgniteConfiguration {
     /** Default value for cache sanity check enabled flag. */
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
+    /** Default relative working directory path for snapshot operation result. */
+    public static final String DFLT_SNAPSHOT_DIRECTORY = "snapshots";
+
     /** Default value for late affinity assignment flag. */
     @Deprecated
     public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
@@ -555,6 +558,13 @@ public class IgniteConfiguration {
     /** Page memory configuration. */
     private DataStorageConfiguration dsCfg;
 
+    /**
+     * Directory where will be stored all results of snapshot operations. The internal
+     * {@link U#resolveWorkDirectory(String, String, boolean)} is used to configure
+     * snapshot working directory.
+     */
+    private String snapshotPath = DFLT_SNAPSHOT_DIRECTORY;
+
     /** Active on start flag. */
     @Deprecated
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -714,6 +724,7 @@ public class IgniteConfiguration {
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
         segResolvers = cfg.getSegmentationResolvers();
+        snapshotPath = cfg.getSnapshotPath();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
@@ -3151,6 +3162,26 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setLocalEventListeners(Map<IgnitePredicate<? extends Event>, int[]> lsnrs) {
         this.lsnrs = lsnrs;
+
+        return this;
+    }
+
+    /**
+     * @return By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used. The value can be
+     * configured as relative path starting from the Ignites {@link #getWorkDirectory()} or
+     * the value can be represented as an absolute snapshot working path.
+     */
+    public String getSnapshotPath() {
+        return snapshotPath;
+    }
+
+    /**
+     * @param snapshotPath By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used.
+     * The value can be configured as relative path starting from the Ignites {@link #getWorkDirectory()}
+     * or the value can be represented as an absolute snapshot working path instead.
+     */
+    public IgniteConfiguration setSnapshotPath(String snapshotPath) {
+        this.snapshotPath = snapshotPath;
 
         return this;
     }

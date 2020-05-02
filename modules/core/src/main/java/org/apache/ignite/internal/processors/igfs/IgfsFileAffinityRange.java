@@ -249,7 +249,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable, Binaryliz
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, affKey);
+        U.writeIgniteUuid(out, affKey);
         out.writeInt(status);
         out.writeLong(startOff);
         out.writeLong(endOff);
@@ -257,7 +257,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable, Binaryliz
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        affKey = U.readGridUuid(in);
+        affKey = U.readIgniteUuid(in);
         status = in.readInt();
         startOff = in.readLong();
         endOff = in.readLong();

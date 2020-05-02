@@ -498,7 +498,7 @@ public class SqlParser {
     /**
      * Last successfully parsed sql statement. It corresponds to the last command returned by {@link #nextCommand()}.
      */
-    public String lastCommandSql(){
+    public String lastCommandSql() {
         if (lastCmdEndPos < 0)
             return null;
 

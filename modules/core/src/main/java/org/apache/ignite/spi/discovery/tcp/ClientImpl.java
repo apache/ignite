@@ -1788,7 +1788,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             U.quietAndWarn(log, "Local node will try to reconnect to cluster with new id due " +
                                 "to network problems [newId=" + newId +
                                 ", prevId=" + locNode.id() +
-                                ", locNode=" + locNode+ ']');
+                                ", locNode=" + locNode + ']');
 
                             locNode.onClientDisconnected(newId);
 
