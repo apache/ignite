@@ -2089,4 +2089,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertContains(log, testOut.toString(), "Master key change was rejected. The cluster is inactive.");
     }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testClusterSnapshotCreate() throws Exception {
+        injectTestSystemOut();
+
+        Ignite ignite = startGrids(1);
+
+//        ignite.cluster().state(ACTIVE);
+
+//        createCacheAndPreload(ignite, 10);
+
+        CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", "snapshot_02052020"));
+
+        testOut.reset();
+    }
 }
