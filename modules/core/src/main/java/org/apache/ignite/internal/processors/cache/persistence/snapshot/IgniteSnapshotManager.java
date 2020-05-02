@@ -637,14 +637,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
         try {
-            if (cctx.kernalContext().clientNode()) {
-                return cctx.kernalContext().grid()
-                    .compute(cctx.kernalContext().grid().cluster()
-                        .forNodeId(U.oldest(cctx.kernalContext().discovery().aliveServerNodes(), null).id()))
-                    .applyAsync(new CreateSnapshotTask(), name);
-            }
-
-            if (!IgniteFeatures.allNodesSupports(cctx.discovery().allNodes(), PERSISTENCE_CACHE_SNAPSHOT))
+            if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
                 throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
 
             if (!active(cctx.kernalContext().state().clusterState().state()))
@@ -654,6 +647,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (!clusterState.hasBaselineTopology())
                 throw new IgniteException("Snapshot operation has been rejected. The baseline topology is not configured for cluster.");
+
+            if (cctx.kernalContext().clientNode()) {
+                return cctx.kernalContext().grid()
+                    .compute(cctx.kernalContext().grid().cluster()
+                        .forNodeId(U.oldest(cctx.kernalContext().discovery().aliveServerNodes(), null).id()))
+                    .applyAsync(new CreateSnapshotTask(), name);
+            }
 
             ClusterSnapshotFuture snpFut0;
 
