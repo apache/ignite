@@ -15,8 +15,11 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Client
+namespace Apache.Ignite.Core.Client.Transactions
 {
+    /// <summary>
+    /// Ignite Thin Client transactions facade.
+    /// </summary>
     public interface IClientTransactions
     {
         /// <summary>

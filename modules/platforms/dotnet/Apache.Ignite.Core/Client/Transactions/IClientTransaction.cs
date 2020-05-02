@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Client
+namespace Apache.Ignite.Core.Client.Transactions
 {
     public interface IClientTransaction
     {

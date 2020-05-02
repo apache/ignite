@@ -61,11 +61,11 @@
     <Compile Include="Client\IClientCluster.cs" />
     <Compile Include="Client\IClientClusterGroup.cs" />
     <Compile Include="Client\IClientClusterNode.cs" />
-    <Compile Include="Client\IClientTransaction.cs" />
-    <Compile Include="Client\IClientTransactions.cs" />
     <Compile Include="Client\IgniteClientConfigurationSection.cs" />
     <Compile Include="Client\ISslStreamFactory.cs" />
     <Compile Include="Client\SslStreamFactory.cs" />
+    <Compile Include="Client\Transactions\IClientTransaction.cs" />
+    <Compile Include="Client\Transactions\IClientTransactions.cs" />
     <Compile Include="Cluster\IBaselineNode.cs" />
     <Compile Include="Common\IgniteProductVersion.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />

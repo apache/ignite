@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
@@ -182,6 +183,12 @@ namespace Apache.Ignite.Core.Impl.Client
         public IBinary GetBinary()
         {
             return _binary;
+        }
+
+        /** <inheritDoc /> */
+        public IClientTransactions GetTransactions()
+        {
+            throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */

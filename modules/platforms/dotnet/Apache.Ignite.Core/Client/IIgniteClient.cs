@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Client
     using System.Net;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Transactions;
 
     /// <summary>
     /// Main entry point for Ignite Thin Client APIs.
@@ -109,6 +110,12 @@ namespace Apache.Ignite.Core.Client
         /// <returns>Instance of <see cref="IBinary"/> interface</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IBinary GetBinary();
+
+        /// <summary>
+        /// Gets Ignite transactions facade.
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        IClientTransactions GetTransactions();
 
         /// <summary>
         /// Gets the configuration.
