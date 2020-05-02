@@ -44,26 +44,22 @@ import static org.apache.ignite.internal.profiling.util.Utils.createObjectIfAbse
  */
 public class CacheOperationsParser implements IgniteLogParser {
     /** Cache operations statistics: nodeId->cacheId->opType->aggregatedResults */
-    private final Map<String, Map<String, Map<String, Map<Long, Integer>>>> res = new HashMap<>();
+    private final Map<String, Map<Integer, Map<String, Map<Long, Integer>>>> res = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void parse(String nodeId, String str) {
-        if (!str.startsWith("cache "))
-            return;
+    @Override public void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
+        String[] nodes = new String[] {"", "NODE_ID_TO_DO"};
 
-        CacheOperation op = new CacheOperation(str);
-
-        String[] nodes = new String[] {"", nodeId};
-        String[] caches = new String[] {"", op.cacheId};
+        int[] cacheIds = new int[] {0, cacheId};
 
         // Aggregate by seconds.
-        long aggrTime = op.startTime / 1000 * 1000;
+        long aggrTime = startTime / 1000 * 1000;
 
         for (String node : nodes) {
-            for (String cache : caches) {
+            for (int cache : cacheIds) {
                 res.computeIfAbsent(node, k -> new HashMap<>())
                     .computeIfAbsent(cache, k -> new HashMap<>())
-                    .computeIfAbsent(op.type, k -> new HashMap<>())
+                    .computeIfAbsent(type.name(), k -> new HashMap<>())
                     .compute(aggrTime, (time, count) -> count == null ? 1 : count + 1);
             }
         }
@@ -77,7 +73,7 @@ public class CacheOperationsParser implements IgniteLogParser {
             ObjectNode node = createObjectIfAbsent(nodeId, jsonRes);
 
             cachesMap.forEach((cacheId, opsMap) -> {
-                ObjectNode cache = createObjectIfAbsent(cacheId, node);
+                ObjectNode cache = createObjectIfAbsent(String.valueOf(cacheId), node);
 
                 opsMap.forEach((opType, timingMap) -> {
                     ArrayNode op = createArrayIfAbsent(opType, cache);

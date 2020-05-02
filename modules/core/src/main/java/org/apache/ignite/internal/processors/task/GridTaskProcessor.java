@@ -1334,12 +1334,12 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             if (!worker.isInternal()) {
                 execTasks.increment();
 
-                ctx.metric().profile("task",
-                    "sesId", ses.getId(),
-                    "taskName", ses.getTaskName(),
-                    "startTime", ses.getStartTime(),
-                    "duration", U.currentTimeMillis() - ses.getStartTime(),
-                    "affPartId", worker.affPartId());
+                ctx.metric().profiling().task(
+                    ses.getId(),
+                    ses.getTaskName(),
+                    ses.getStartTime(),
+                    U.currentTimeMillis() - ses.getStartTime(),
+                    worker.affPartId());
             }
 
             // Unregister job message listener from all job topics.

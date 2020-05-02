@@ -40,7 +40,6 @@ import org.apache.ignite.internal.metric.IoStatisticsHolderQuery;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -202,7 +201,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert req.mvccSnapshot() != null || !cctx.mvccEnabled() || req.cancel() ||
             (req.type() == null && !req.fields()) : req; // Last assertion means next page request.
 
-        if (cctx.kernalContext().metric().isProfilingEnabled())
+        if (cctx.kernalContext().metric().profilingEnabled())
             IoStatisticsQueryHelper.startGatheringQueryStatistics();
 
         try {
@@ -256,15 +255,16 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 }
             }
         } finally {
-            if (cctx.kernalContext().metric().isProfilingEnabled()) {
+            if (cctx.kernalContext().metric().profilingEnabled()) {
                 IoStatisticsHolderQuery stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
                 if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
-                    cctx.kernalContext().metric().profile("queryStat",
-                        "type", req.type(),
-                        "id", QueryUtils.globalQueryId(sndId, req.id()),
-                        "logicalReads", stat.logicalReads(),
-                        "physicalReads", stat.physicalReads());
+                    cctx.kernalContext().metric().profiling().queryReads(
+                        req.type(),
+                        sndId,
+                        req.id(),
+                        stat.logicalReads(),
+                        stat.physicalReads());
                 }
             }
         }
@@ -615,8 +615,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert qry.type() == GridCacheQueryType.SCAN : qry;
         assert qry.mvccSnapshot() != null || !cctx.mvccEnabled();
 
-        long startTime = cctx.kernalContext().metric().isProfilingEnabled() ? System.currentTimeMillis() : 0;
-        long startTimeNanos = cctx.kernalContext().metric().isProfilingEnabled() ? System.nanoTime() : 0;
+        long startTime = cctx.kernalContext().metric().profilingEnabled() ? System.currentTimeMillis() : 0;
+        long startTimeNanos = cctx.kernalContext().metric().profilingEnabled() ? System.nanoTime() : 0;
 
         GridCloseableIterator locIter0 = null;
 
@@ -691,13 +691,14 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (fut != null)
                     fut.cancel();
 
-                cctx.kernalContext().metric().profile("query",
-                    "type", SCAN,
-                    "query", cctx.name(),
-                    "id", QueryUtils.globalQueryId(cctx.nodeId(), ((GridCacheDistributedQueryFuture)fut).requestId()),
-                    "startTime", startTime,
-                    "duration", System.nanoTime() - startTimeNanos,
-                    "success", true);
+                cctx.kernalContext().metric().profiling().query(
+                    SCAN,
+                    cctx.name(),
+                    cctx.nodeId(),
+                    ((GridCacheDistributedQueryFuture)fut).requestId(),
+                    startTime,
+                    System.nanoTime() - startTimeNanos,
+                    true);
             }
         };
     }

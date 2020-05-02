@@ -149,7 +149,7 @@ public class RunningQueryManager {
             qryType,
             schemaName,
             System.currentTimeMillis(),
-            ctx.metric().isProfilingEnabled() ? System.nanoTime() : 0,
+            ctx.metric().profilingEnabled() ? System.nanoTime() : 0,
             cancel,
             loc
         );
@@ -198,13 +198,14 @@ public class RunningQueryManager {
             }
         }
 
-        ctx.metric().profile("query",
-            "type", qry.queryType(),
-            "query", qry.query(),
-            "id", QueryUtils.globalQueryId(qry.nodeId(), qryId),
-            "startTime", qry.startTime(),
-            "duration", System.nanoTime() - qry.startTimeNanos(),
-            "success", !failed);
+        ctx.metric().profiling().query(
+            qry.queryType(),
+            qry.query(),
+            qry.nodeId(),
+            qryId,
+            qry.startTime(),
+            System.nanoTime() - qry.startTimeNanos(),
+            !failed);
     }
 
     /**

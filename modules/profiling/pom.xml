@@ -20,7 +20,8 @@
 <!--
     POM file.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -76,18 +77,21 @@
             <version>2.9.10</version>
             <scope>compile</scope>
         </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.9.10</version>
             <scope>compile</scope>
         </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
             <version>2.9.10</version>
             <scope>compile</scope>
         </dependency>
+
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
@@ -99,19 +103,21 @@
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
                 <executions>
                     <execution>
-                        <id>dependencies-report</id>
+                        <!-- Create zip archive with UI resources. -->
+                        <id>dependencies-profiling</id>
                         <goals>
                             <goal>single</goal>
                         </goals>
-                        <phase>compile</phase>
+                        <phase>prepare-package</phase>
                         <configuration>
                             <appendAssemblyId>false</appendAssemblyId>
                             <descriptors>
-                                <descriptor>${basedir}/dependencies-report.xml</descriptor>
+                                <descriptor>../../assembly/dependencies-profiling.xml</descriptor>
                             </descriptors>
-                            <finalName>report/report</finalName>
+                            <finalName>report</finalName>
                             <attach>false</attach>
                         </configuration>
                     </execution>
@@ -119,10 +125,12 @@
             </plugin>
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
+                <version>3.1.0</version>
                 <executions>
                     <execution>
+                        <!-- Includes zip archive with UI resources to module resources. -->
                         <id>copy-resources</id>
-                        <phase>process-classes</phase>
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
@@ -130,8 +138,10 @@
                             <outputDirectory>${project.build.outputDirectory}</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>${basedir}/target/report</directory>
-                                    <filtering>false</filtering>
+                                    <directory>${basedir}/target</directory>
+                                    <includes>
+                                        <include>report.zip</include>
+                                    </includes>
                                 </resource>
                             </resources>
                         </configuration>

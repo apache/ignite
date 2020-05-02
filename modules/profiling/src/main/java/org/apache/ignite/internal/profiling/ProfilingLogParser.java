@@ -30,6 +30,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,6 +45,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.profiling.parsers.CacheNamesParser;
 import org.apache.ignite.internal.profiling.parsers.CacheOperationsParser;
 import org.apache.ignite.internal.profiling.parsers.ComputeParser;
@@ -51,11 +54,15 @@ import org.apache.ignite.internal.profiling.parsers.IgniteLogParser;
 import org.apache.ignite.internal.profiling.parsers.QueryParser;
 import org.apache.ignite.internal.profiling.parsers.TopologyChangesParser;
 import org.apache.ignite.internal.profiling.parsers.TransactionsParser;
+import org.apache.ignite.internal.profiling.util.OperationDeserializer;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static java.nio.ByteBuffer.allocateDirect;
+import static java.nio.ByteOrder.nativeOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.regex.Pattern.compile;
+import static org.apache.ignite.internal.util.IgniteUtils.sizeInMegabytes;
 
 /**
  * Profiling log parser. Creates JSONs for UI interface. Builds the report.
@@ -64,8 +71,14 @@ public class ProfilingLogParser {
     /** Profiling log file name pattern. */
     private static final Pattern PROFILING_FILE_PATTERN = compile(".*profiling-(.+).log$");
 
-    /** Maven-generated archive of report resources. */
+    /** Maven-generated archive of UI report resources. */
     private static final String REPORT_RESOURCE_NAME = "report.zip";
+
+    /** File read buffer size. */
+    private static final int READ_BUFFER_SIZE = 32 * 1024 * 1024;
+
+    /** File read buffer. */
+    private static final ByteBuffer readBuf = allocateDirect(READ_BUFFER_SIZE).order(nativeOrder());
 
     /**
      * @param args Only one argument: profiling logs directory to parse or '-h' to get usage help.
@@ -187,24 +200,17 @@ public class ProfilingLogParser {
             new TopologyChangesParser(logs.keySet())
         };
 
-        for (byte phase = 1; phase <= 2; phase++) {
-            int currLog = 1;
+        int currLog = 1;
 
-            for (Map.Entry<String, File> entry : logs.entrySet()) {
-                String nodeId = entry.getKey();
-                File log = entry.getValue();
+        for (Map.Entry<String, File> entry : logs.entrySet()) {
+            String nodeId = entry.getKey();
+            File log = entry.getValue();
 
-                String progressMsg = "[" + currLog + '/' + logs.size() + " log]";
+            String progressMsg = "[" + currLog + '/' + logs.size() + " log]";
 
-                parseLog(parsers, nodeId, log, phase, progressMsg);
+            parseLog(parsers, nodeId, log, progressMsg);
 
-                currLog++;
-            }
-
-            if (phase == 1) {
-                for (IgniteLogParser parser : parsers)
-                    parser.onFirstPhaseEnd();
-            }
+            currLog++;
         }
 
         for (IgniteLogParser parser : parsers) {
@@ -225,41 +231,58 @@ public class ProfilingLogParser {
      * @param parsers Parsers.
      * @param nodeId Node id.
      * @param log Log to parse.
-     * @param phase Phase.
      * @param msg Progress message to log.
      */
-    private static void parseLog(IgniteLogParser[] parsers, String nodeId, File log, byte phase, String msg)
+    private static void parseLog(IgniteLogParser[] parsers, String nodeId, File log, String msg)
         throws Exception {
         System.out.println("Starting parse log [file=" + log.getAbsolutePath() +
             ", size=" + FileUtils.byteCountToDisplaySize(log.length()) + ", nodeId=" + nodeId + ']');
 
         long ts = System.currentTimeMillis();
         long parsed = 0;
+        long parsedBytes = 0;
 
-        try (BufferedReader br = new BufferedReader(new FileReader(log))) {
-            for (String line; (line = br.readLine()) != null; ) {
-                for (IgniteLogParser parser : parsers) {
-                    if (phase == 1)
-                        parser.parse(nodeId, line);
-                    else
-                        parser.parsePhase2(nodeId, line);
+        try (FileIO io = new RandomAccessFileIOFactory().create(log)) {
+            readBuf.clear();
+
+            while (true) {
+                int read = io.read(readBuf);
+
+                readBuf.flip();
+
+                if (read <= 0)
+                    break;
+
+                parsedBytes += read;
+
+                while (true) {
+                    boolean deserialize = OperationDeserializer.deserialize(readBuf, parsers);
+
+                    if (!deserialize)
+                        break;
+
+                    if (++parsed % 1_000_000 == 0) {
+                        long speed = 1_000_000 / (System.currentTimeMillis() - ts) * 1000;
+
+                        Runtime runtime = Runtime.getRuntime();
+
+                        long memoryUsage = (runtime.totalMemory() - runtime.freeMemory()) * 100 / runtime.maxMemory();
+
+                        System.out.println(msg +
+                            " progress: " + parsedBytes * 100 / log.length() + " %," +
+                            " parsed: " + parsed / 1_000_000 + " MM operations," +
+                            " speed: " + speed + " ops/sec," +
+                            " memory usage: " + memoryUsage + "% of " + sizeInMegabytes(runtime.totalMemory()) + " MB");
+
+                        ts = System.currentTimeMillis();
+                    }
                 }
 
-                if (++parsed % 1_000_000 == 0) {
-                    long speed = 1_000_000 / (System.currentTimeMillis() - ts) * 1000;
-
-                    Runtime runtime = Runtime.getRuntime();
-
-                    long memoryUsage = (runtime.totalMemory() - runtime.freeMemory()) * 100 / runtime.maxMemory();
-
-                    System.out.println("[" + phase + "/2 phase] " + msg +
-                        " parsed: " + parsed / 1_000_000 + " MM lines," +
-                        " speed: " + speed + " lines/sec," +
-                        " memory usage: " + memoryUsage + "% of " + U.sizeInMegabytes(runtime.totalMemory()) + " MB");
-
-                    ts = System.currentTimeMillis();
-                }
+                readBuf.compact();
             }
+
+            if (readBuf.remaining() > 0)
+                System.out.println("WARNING: bad end of file.");
         }
 
         System.out.println("Log parsed successfully [nodeId=" + nodeId + ']');

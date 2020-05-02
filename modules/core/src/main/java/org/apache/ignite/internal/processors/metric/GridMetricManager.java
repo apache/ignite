@@ -38,7 +38,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -50,6 +50,9 @@ import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.profiling.IgniteProfiling;
+import org.apache.ignite.internal.profiling.LogFileProfiling;
+import org.apache.ignite.internal.profiling.NoopProfiling;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -205,9 +208,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Prefix for {@link HistogramMetric} configuration property name. */
     public static final String HISTOGRAM_CFG_PREFIX = metricName("metrics", "histogram");
 
-    /** Profiling log category. */
-    private static final String PROFILING_LOG_CATEGORY = "profiling";
-
     /** Registered metrics registries. */
     private final ConcurrentHashMap<String, ReadOnlyMetricRegistry> registries = new ConcurrentHashMap<>();
 
@@ -238,8 +238,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
 
-    /** Profiling logger. */
-    private final IgniteLogger profilingLog;
+    /** Profiling. */
+    private final IgniteProfiling profiling;
+
+    /** Profiling enabled. */
+    private final boolean profilingEnabled;
 
     /**
      * @param ctx Kernal context.
@@ -279,7 +282,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
 
-        profilingLog = ctx.log(PROFILING_LOG_CATEGORY);
+        profilingEnabled = IgniteSystemProperties.getBoolean("IGNITE_PROFILING_ENABLED", true);
+
+        // todo dev-only
+        log.info("Profiling is " + (profilingEnabled ? "enabled" : "disabled") + ".");
+
+        profiling = profilingEnabled ? new LogFileProfiling(ctx) : new NoopProfiling();
     }
 
     /** {@inheritDoc} */
@@ -325,6 +333,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                     GridMetricManager.this.metastorage = metastorage;
                 }
             });
+
+        if (profiling instanceof LogFileProfiling)
+            ((LogFileProfiling)profiling).onManagerStart(ctx);
     }
 
     /** {@inheritDoc} */
@@ -333,6 +344,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         // Stop discovery worker and metrics updater.
         U.closeQuiet(metricsUpdateTask);
+
+        if (profiling instanceof LogFileProfiling)
+            ((LogFileProfiling)profiling).onManagerStop();
     }
 
     /**
@@ -757,36 +771,13 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /** @return {@code True} if profiling enabled. */
-    public boolean isProfilingEnabled() {
-        return profilingLog.isInfoEnabled();
+    public boolean profilingEnabled() {
+        return profilingEnabled;
     }
 
-    /**
-     * Profiles operation.
-     *
-     * @param category Profile category.
-     * @param tuples Tuples to profile (key, value).
-     */
-    public void profile(String category, Object... tuples) {
-        if (!profilingLog.isInfoEnabled())
-            return;
-
-        assert tuples.length % 2 == 0;
-
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(category).append(" [");
-
-        for (int i = 0; i < tuples.length; i += 2) {
-            sb.append(tuples[i]).append("=").append(tuples[i + 1]);
-
-            if (i < tuples.length - 2)
-                sb.append(", ");
-        }
-
-        sb.append(']');
-
-        profilingLog.info(sb.toString());
+    /** @return Profiling. */
+    public IgniteProfiling profiling() {
+        return profiling;
     }
 
     /**

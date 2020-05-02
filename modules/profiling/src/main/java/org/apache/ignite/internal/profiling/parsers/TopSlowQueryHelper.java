@@ -22,12 +22,12 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.internal.profiling.parsers.QueryParser.Query;
-import org.apache.ignite.internal.profiling.parsers.QueryParser.QueryReads;
 import org.apache.ignite.internal.profiling.util.OrderedFixedSizeStructure;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.profiling.parsers.QueryParser.Query;
+import static org.apache.ignite.internal.profiling.parsers.QueryParser.QueryReads;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 
 /**

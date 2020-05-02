@@ -15,21 +15,24 @@
  * limitations under the License.
  */
 
-const CACHE_OPERATIONS = ["get", "put", "remove", "getAndPut", "getAndRemove",
+const CACHE_OPERATIONS = ["GET", "PUT", "REMOVE", "GET_AND_PUT", "GET_AND_REMOVE",
+    "GET_ALL", "PUT_ALL", "REMOVE_ALL", "INVOKE", "INVOKE_ALL", "LOCK"];
+
+const CACHE_OPERATIONS_READABLE = ["get", "put", "remove", "getAndPut", "getAndRemove",
     "getAll", "putAll", "removeAll","invoke", "invokeAll", "lock"];
 
 const CACHE_OPERATIONS_COLORS = {
-    get: "#007bff",
-    getAll: "#4661EE",
-    put: "#EC5657",
-    putAll: "#c02332",
-    remove: "#9d71e4",
-    removeAll: "#8357c7",
-    invoke: "#1BCDD1",
-    invokeAll: "#23BFAA",
-    getAndPut: "#F5A52A",
-    getAndRemove: "#fd7e14",
-    lock: "#FAA586"
+    GET: "#007bff",
+    PUT: "#4661EE",
+    REMOVE: "#EC5657",
+    GET_AND_PUT: "#c02332",
+    GET_AND_REMOVE: "#9d71e4",
+    GET_ALL: "#8357c7",
+    PUT_ALL: "#1BCDD1",
+    REMOVE_ALL: "#23BFAA",
+    INVOKE: "#F5A52A",
+    INVOKE_ALL: "#fd7e14",
+    LOCK: "#FAA586"
 };
 
 const searchCachesSelect = $('#searchCaches');
@@ -86,7 +89,7 @@ function drawCharts() {
                 },
                 title: {
                     display: true,
-                    text: "Count of [" + opName + "]",
+                    text: "Count of [" + CACHE_OPERATIONS_READABLE[k] + "]",
                     fontSize: 20
                 },
                 animation: false
@@ -98,7 +101,7 @@ function drawCharts() {
 }
 
 function prepareCacheDatasets(opName) {
-    var cacheId = searchCachesSelect.val();
+    var cacheId = searchCachesSelect.val() === "" ? 0 : searchCachesSelect.val();
     var nodeId = searchNodesSelect.val();
 
     var res = [];

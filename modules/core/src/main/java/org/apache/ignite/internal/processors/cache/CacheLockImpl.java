@@ -25,7 +25,10 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.profiling.IgniteProfiling;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -193,12 +196,13 @@ class CacheLockImpl<K, V> implements Lock {
             cntr--;
 
             if (cntr == 0) {
-                if (delegate.context().kernalContext().metric().isProfilingEnabled()) {
-                    delegate.context().kernalContext().metric().profile("cache",
-                        "op", "lock",
-                        "cacheId", delegate.context().cacheId(),
-                        "startTime", System.currentTimeMillis(),
-                        "duration", System.nanoTime() - startTime);
+                GridMetricManager metric = delegate.context().kernalContext().metric();
+
+                if (metric.profilingEnabled()) {
+                    metric.profiling().cacheOperation(IgniteProfiling.CacheOperationType.LOCK,
+                        delegate.context().cacheId(),
+                        U.currentTimeMillis(),
+                        System.nanoTime() - startTime);
                 }
 
                 startTime = 0;

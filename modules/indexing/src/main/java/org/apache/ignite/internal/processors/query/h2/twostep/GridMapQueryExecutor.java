@@ -49,9 +49,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.H2StatementCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -301,7 +301,7 @@ public class GridMapQueryExecutor {
         @Nullable final MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled
     ) {
-        if (ctx.metric().isProfilingEnabled())
+        if (ctx.metric().profilingEnabled())
             IoStatisticsQueryHelper.startGatheringQueryStatistics();
 
         // Prepare to run queries.
@@ -527,15 +527,16 @@ public class GridMapQueryExecutor {
             if (reserved != null)
                 reserved.release();
 
-            if (ctx.metric().isProfilingEnabled()) {
+            if (ctx.metric().profilingEnabled()) {
                 IoStatisticsHolderQuery stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
                 if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
-                    ctx.metric().profile("queryStat",
-                        "type", "SQL_FIELDS",
-                        "id", QueryUtils.globalQueryId(node.id(), reqId),
-                        "logicalReads", stat.logicalReads(),
-                        "physicalReads", stat.physicalReads());
+                    ctx.metric().profiling().queryReads(
+                        GridCacheQueryType.SQL_FIELDS,
+                        node.id(),
+                        reqId,
+                        stat.logicalReads(),
+                        stat.physicalReads());
                 }
             }
         }

@@ -2021,12 +2021,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                ctx.metric().profile("job",
-                    "sesId", ses.getId(),
-                    "queuedTime", worker.getQueuedTime(),
-                    "startTime", worker.getStartTime(),
-                    "duration", worker.getExecuteTime(),
-                    "isTimedOut", worker.isTimedOut());
+                ctx.metric().profiling().job(ses.getId(),
+                    worker.getQueuedTime(),
+                    worker.getStartTime(),
+                    worker.getExecuteTime(),
+                    worker.isTimedOut());
             }
         }
     }

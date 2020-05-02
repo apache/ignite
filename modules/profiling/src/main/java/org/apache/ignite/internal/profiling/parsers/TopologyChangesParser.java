@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -65,22 +64,22 @@ public class TopologyChangesParser implements IgniteLogParser {
         this.nodeIds = nodeIds;
     }
 
-    /** {@inheritDoc} */
-    @Override public void parse(String nodeId, String str) {
-        if (!str.startsWith("pme"))
-            return;
-
-        Matcher matcher = pattern.matcher(str);
-
-        if (!matcher.matches())
-            return;
-
-        long tstamp = Long.parseLong(matcher.group(1));
-
-        startTime = startTime == 0 ? tstamp : Math.min(startTime, tstamp);
-
-        finishTime = Math.max(finishTime, tstamp);
-    }
+//    /** {@inheritDoc} */
+//    @Override public void parse(String nodeId, String str) {
+//        if (!str.startsWith("pme"))
+//            return;
+//
+//        Matcher matcher = pattern.matcher(str);
+//
+//        if (!matcher.matches())
+//            return;
+//
+//        long tstamp = Long.parseLong(matcher.group(1));
+//
+//        startTime = startTime == 0 ? tstamp : Math.min(startTime, tstamp);
+//
+//        finishTime = Math.max(finishTime, tstamp);
+//    }
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {

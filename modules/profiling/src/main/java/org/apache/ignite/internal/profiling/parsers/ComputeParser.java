@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -81,68 +80,39 @@ public class ComputeParser implements IgniteLogParser {
     private final Map<IgniteUuid, List<Job>> topSlowRes = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void parse(String nodeId, String str) {
-        if (str.startsWith("task"))
-            parseTask(nodeId, str);
-        else if (str.startsWith("job"))
-            parseJob(nodeId, str);
+    @Override public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
+//        topSlowTask.put(duration, task);
+
+//        AggregatedTaskInfo info = taskRes.computeIfAbsent(taskName, k -> new AggregatedTaskInfo());
+//
+//        info.merge(task);
+//
+//        // Try merge unmerged ids.
+//        long[] arr = unmergedIds.get(task.sesId);
+//
+//        if (arr != null) {
+//            info.jobsCnt += arr[0];
+//            info.jobsDuration += arr[1];
+//
+//            unmergedIds.remove(task.sesId);
+//        }
     }
 
-    /** Parses task. */
-    private void parseTask(String nodeId, String str) {
-        Task task = new Task(nodeId, str);
-
-        topSlowTask.put(task.duration, task);
-
-        AggregatedTaskInfo info = taskRes.computeIfAbsent(task.taskName, k -> new AggregatedTaskInfo());
-
-        info.merge(task);
-
-        // Try merge unmerged ids.
-        long[] arr = unmergedIds.get(task.sesId);
-
-        if (arr != null) {
-            info.jobsCnt += arr[0];
-            info.jobsDuration += arr[1];
-
-            unmergedIds.remove(task.sesId);
-        }
-    }
-
-    /** Parses job. */
-    private void parseJob(String nodeId, String str) {
-        Job job = new Job(nodeId, str);
-
-        for (AggregatedTaskInfo info : taskRes.values()) {
-            if (info.ids.contains(job.sesId)) {
-                info.merge(job);
-
-                return;
-            }
-        }
-
-        long[] arr = unmergedIds.computeIfAbsent(job.sesId, uuid -> new long[] {0, 0});
-
-        arr[0] += 1;
-        arr[1] += job.duration;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onFirstPhaseEnd() {
-        topSlowTask.values().forEach(task -> topSlowRes.put(task.sesId, new LinkedList<>()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void parsePhase2(String nodeId, String str) {
-        if (str.startsWith("job") && !topSlowRes.isEmpty()) {
-            Job job = new Job(nodeId, str);
-
-            topSlowRes.computeIfPresent(job.sesId, (uuid, jobs) -> {
-                jobs.add(job);
-
-                return jobs;
-            });
-        }
+    @Override public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
+//        Job job = new Job(nodeId, str);
+//
+//        for (AggregatedTaskInfo info : taskRes.values()) {
+//            if (info.ids.contains(job.sesId)) {
+//                info.merge(job);
+//
+//                return;
+//            }
+//        }
+//
+//        long[] arr = unmergedIds.computeIfAbsent(job.sesId, uuid -> new long[] {0, 0});
+//
+//        arr[0] += 1;
+//        arr[1] += job.duration;
     }
 
     /** {@inheritDoc} */

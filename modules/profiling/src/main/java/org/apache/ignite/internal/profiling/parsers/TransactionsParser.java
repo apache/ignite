@@ -20,10 +20,13 @@ package org.apache.ignite.internal.profiling.parsers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.util.GridIntIterator;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
@@ -55,25 +58,25 @@ public class TransactionsParser implements IgniteLogParser {
     private final Map<String, Map<String, HistogramMetricImpl>> histogram = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void parse(String nodeId, String str) {
-        if (!str.startsWith("tx"))
-            return;
+    @Override public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commit) {
+        String op = commit ? "commit" : "rollback";
 
-        Transaction tx = Transaction.fromString(str);
+        ArrayList<String> cacheIdsArr = new ArrayList<>(cacheIds.size() + 1);
 
-        String op = tx.commit ? "commit" : "rollback";
-
-        String[] cacheIds = tx.cacheIds.split(",");
         // Aggragate total by cache and by nodes by cache.
-        cacheIds = Arrays.copyOf(cacheIds, cacheIds.length + 1);
-        cacheIds[cacheIds.length - 1] = "";
+        cacheIdsArr.add("");
 
-        String[] nodes = new String[] {"", nodeId};
+        GridIntIterator iter = cacheIds.iterator();
 
-        long aggrTime = tx.startTime / 1000 * 1000;
+        while (iter.hasNext())
+            cacheIdsArr.add(String.valueOf(iter.next()));
+
+        String[] nodes = new String[] {"", "NODE_ID_TO_DO"};
+
+        long aggrTime = startTime / 1000 * 1000;
 
         for (String node : nodes) {
-            for (String cache : cacheIds) {
+            for (String cache : cacheIdsArr) {
                 res.computeIfAbsent(node, s -> new HashMap<>())
                     .computeIfAbsent(cache, s -> new HashMap<>())
                     .computeIfAbsent(op, s -> new HashMap<>())
@@ -81,7 +84,7 @@ public class TransactionsParser implements IgniteLogParser {
 
                 histogram.computeIfAbsent(node, s -> new HashMap<>())
                     .computeIfAbsent(cache, s -> new HistogramMetricImpl("", null, HISTOGRAM_BUCKETS))
-                    .value(U.nanosToMillis(tx.duration));
+                    .value(U.nanosToMillis(duration));
             }
         }
     }

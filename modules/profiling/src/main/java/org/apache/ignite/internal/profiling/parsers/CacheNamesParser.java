@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Collections;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
@@ -51,24 +50,10 @@ public class CacheNamesParser implements IgniteLogParser {
     private final ObjectNode res = MAPPER.createObjectNode();
 
     /** {@inheritDoc} */
-    @Override public void parse(String nodeId, String str) {
-        if (!str.startsWith("cacheStart"))
-            return;
-
-        Matcher matcher = pattern.matcher(str);
-
-        if (!matcher.matches())
-            return;
-
-        int cacheId = Integer.parseInt(matcher.group(1));
-
+    @Override public void cacheStart(int cacheId, long startTime, String cacheName, String groupName,
+        boolean userCache) {
         if (res.findValue(String.valueOf(cacheId)) != null)
             return;
-
-        long startTime = Long.parseLong(matcher.group(2));
-        String cacheName = matcher.group(3);
-        String groupName = matcher.group(4);
-        boolean userCache = Boolean.parseBoolean(matcher.group(5));
 
         ObjectNode node = MAPPER.createObjectNode();
 

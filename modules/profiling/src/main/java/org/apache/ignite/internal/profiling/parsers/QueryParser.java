@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
@@ -73,79 +75,59 @@ public class QueryParser implements IgniteLogParser {
     private final TopSlowQueryHelper slowQueries = new TopSlowQueryHelper();
 
     /** {@inheritDoc} */
-    @Override public void parse(String nodeId, String str) {
-        if (str.startsWith("query "))
-            parseQuery(nodeId, str);
-        else if (str.startsWith("queryStat"))
-            parseReads(str);
-    }
-
-    /** Parses query. */
-    private void parseQuery(String nodeId, String str) {
-        Query query = new Query(nodeId, str);
-
-        slowQueries.value(nodeId, query);
-
-        Map<String, AggregatedQueryInfo> res = query.isSql ? sqlRes : scanRes;
-
-        AggregatedQueryInfo info = res.computeIfAbsent(query.text, k -> new AggregatedQueryInfo());
-
-        info.merge(query);
-
-        // Try merge unmerged ids.
-        Map<Integer, long[]> nodeIds = unmergedIds.get(query.queryNodeId);
-
-        if (nodeIds != null) {
-            long[] reads = nodeIds.get(query.id);
-
-            if (reads != null) {
-                info.addReads(reads[0], reads[1]);
-
-                nodeIds.remove(query.id);
-
-                if (nodeIds.isEmpty())
-                    unmergedIds.remove(query.queryNodeId);
-            }
-        }
-    }
-
-    /** Parses reads. */
-    private void parseReads(String str) {
-        QueryReads reads = new QueryReads(str);
-
-        Map<String, AggregatedQueryInfo> res = reads.isSql ? sqlRes : scanRes;
-
-        for (AggregatedQueryInfo info : res.values()) {
-            Set<Integer> ids = info.ids.get(reads.nodeId);
-
-            if (ids != null && ids.contains(reads.id)) {
-                info.addReads(reads.logicalReads, reads.physicalReads);
-
-                // Merged.
-                return;
-            }
-        }
-
-        Map<Integer, long[]> ids = unmergedIds.computeIfAbsent(reads.nodeId, k -> new HashMap<>());
-
-        long[] readsArr = ids.computeIfAbsent(reads.id, k -> new long[] {0, 0});
-
-        readsArr[0] += reads.logicalReads;
-        readsArr[1] += reads.physicalReads;
+    @Override public void query(GridCacheQueryType type, String text, UUID queryNodeId, long id, long startTime,
+        long duration, boolean success) {
+//        Query query = new Query(nodeId, str);
+//
+//        slowQueries.value(nodeId, query);
+//
+//        Map<String, AggregatedQueryInfo> res = query.isSql ? sqlRes : scanRes;
+//
+//        AggregatedQueryInfo info = res.computeIfAbsent(query.text, k -> new AggregatedQueryInfo());
+//
+//        info.merge(query);
+//
+//        // Try merge unmerged ids.
+//        Map<Integer, long[]> nodeIds = unmergedIds.get(query.queryNodeId);
+//
+//        if (nodeIds != null) {
+//            long[] reads = nodeIds.get(query.id);
+//
+//            if (reads != null) {
+//                info.addReads(reads[0], reads[1]);
+//
+//                nodeIds.remove(query.id);
+//
+//                if (nodeIds.isEmpty())
+//                    unmergedIds.remove(query.queryNodeId);
+//            }
+//        }
     }
 
     /** {@inheritDoc} */
-    @Override public void onFirstPhaseEnd() {
-        slowQueries.onFirstPhaseEnd();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void parsePhase2(String nodeId, String str) {
-        if (str.startsWith("queryStat")) {
-            QueryReads reads = new QueryReads(str);
-
-            slowQueries.mergeReads(reads);
-        }
+    @Override public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
+        long physicalReads) {
+//        QueryReads reads = new QueryReads(str);
+//
+//        Map<String, AggregatedQueryInfo> res = reads.isSql ? sqlRes : scanRes;
+//
+//        for (AggregatedQueryInfo info : res.values()) {
+//            Set<Integer> ids = info.ids.get(reads.nodeId);
+//
+//            if (ids != null && ids.contains(reads.id)) {
+//                info.addReads(reads.logicalReads, reads.physicalReads);
+//
+//                // Merged.
+//                return;
+//            }
+//        }
+//
+//        Map<Integer, long[]> ids = unmergedIds.computeIfAbsent(reads.nodeId, k -> new HashMap<>());
+//
+//        long[] readsArr = ids.computeIfAbsent(reads.id, k -> new long[] {0, 0});
+//
+//        readsArr[0] += reads.logicalReads;
+//        readsArr[1] += reads.physicalReads;
     }
 
     /** {@inheritDoc} */
