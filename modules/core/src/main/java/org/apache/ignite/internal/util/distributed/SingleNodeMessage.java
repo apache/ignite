@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.distributed;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;

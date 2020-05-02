@@ -33,6 +33,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -400,6 +401,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
     /** Defines distributed processes. */
     public enum DistributedProcessType {
+        /** For test purposes only. */
+        TEST_PROCESS,
+
         /**
          * Master key change prepare process.
          *

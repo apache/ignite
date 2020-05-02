@@ -36,7 +36,7 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.util.distributed.DistributedProcessType.TEST_PROCESS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.TEST_PROCESS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -75,7 +75,7 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
                 fail("Unexpected interrupt.");
             }
 
-            return true;
+            return false;
         }, new int[] {EVT_NODE_LEFT, EVT_NODE_FAILED}));
 
         cfg.setFailureHandler(new FailureHandler() {
