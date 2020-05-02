@@ -224,7 +224,7 @@ public class ClusterProperties {
     /**
      * @return Provide the total memory requested to ResourceManagers (memoryPerNode + memoryOverheadPerNode).
      */
-    public double totalMemoryPerNode(){
+    public double totalMemoryPerNode() {
         return memoryPerNode() + memoryOverHeadPerNode();
     }
 

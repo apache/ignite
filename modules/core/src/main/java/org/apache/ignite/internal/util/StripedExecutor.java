@@ -719,16 +719,16 @@ public class StripedExecutor implements ExecutorService {
                     if (r != null)
                         return r;
 
-                    if(others != null) {
+                    if (others != null) {
                         int len = others.length;
                         int init = ThreadLocalRandom.current().nextInt(len);
                         int cur = init;
 
                         while (true) {
-                            if(cur != idx) {
+                            if (cur != idx) {
                                 Deque<Runnable> queue = (Deque<Runnable>) ((StripeConcurrentQueue) others[cur]).queue;
 
-                                if(queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
+                                if (queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
                                     return r;
                             }
 
@@ -755,9 +755,9 @@ public class StripedExecutor implements ExecutorService {
             if (parked)
                 LockSupport.unpark(thread);
 
-            if(others != null && queueSize() > IGNITE_TASKS_STEALING_THRESHOLD) {
+            if (others != null && queueSize() > IGNITE_TASKS_STEALING_THRESHOLD) {
                 for (Stripe other : others) {
-                    if(((StripeConcurrentQueue)other).parked)
+                    if (((StripeConcurrentQueue)other).parked)
                         LockSupport.unpark(other.thread);
                 }
             }

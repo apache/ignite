@@ -51,7 +51,7 @@ public class VisorCacheResetLostPartitionsTaskArg extends VisorDataTransferObjec
     public VisorCacheResetLostPartitionsTaskArg(List<String> cacheNames) {
         this.cacheNames = cacheNames;
 
-        if(cacheNames != null)
+        if (cacheNames != null)
             modifiedCaches = cacheNames.toString();
     }
 

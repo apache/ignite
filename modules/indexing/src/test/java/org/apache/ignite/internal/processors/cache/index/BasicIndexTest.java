@@ -758,7 +758,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "FIRST_NAME", "LAST_NAME", "ADDRESS"));
 
-        assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME,  "LAST_NAME", "ADDRESS"));
+        assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LAST_NAME", "ADDRESS"));
     }
 
     /**
@@ -784,7 +784,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "FIRST_NAME", "LAST_NAME", "ADDRESS"));
 
-        assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME,  "LAST_NAME", "ADDRESS"));
+        assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LAST_NAME", "ADDRESS"));
     }
 
     /** */
@@ -1385,7 +1385,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
         return sql(grid(), sql, args);
     }
 
@@ -1395,7 +1395,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object... args) {
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setArgs(args), false);
     }

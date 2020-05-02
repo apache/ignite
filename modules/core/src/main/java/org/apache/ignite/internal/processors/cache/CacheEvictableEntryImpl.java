@@ -201,7 +201,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
         if (clazz.isAssignableFrom(IgniteCache.class))
             return (T)cached.context().grid().cache(cached.context().name());
 
-        if(clazz.isAssignableFrom(getClass()))
+        if (clazz.isAssignableFrom(getClass()))
             return clazz.cast(this);
 
         throw new IllegalArgumentException();

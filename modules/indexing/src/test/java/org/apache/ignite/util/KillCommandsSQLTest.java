@@ -51,7 +51,7 @@ import static org.apache.ignite.util.KillCommandsTests.doTestScanQueryCancel;
 /** Tests cancel of user created entities via SQL. */
 public class KillCommandsSQLTest extends GridCommonAbstractTest {
     /** */
-    public static final int  NODES_CNT = 3;
+    public static final int NODES_CNT = 3;
 
     /** */
     public static final String KILL_SQL_QRY = KILL + " " + QUERY;

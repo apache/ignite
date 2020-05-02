@@ -94,7 +94,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @return The same value as parameter has.
      */
     @Gridify(taskName = "org.apache.ignite.p2p.GridP2PTestTask",
-        igniteInstanceName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
+        igniteInstanceName = "org.apache.ignite.p2p.GridP2PGridifySelfTest1")
     public int executeGridify(int res) {
         return res;
     }
@@ -130,7 +130,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @param res Result.
      * @return The same value as parameter has.
      */
-    @Gridify(igniteInstanceName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
+    @Gridify(igniteInstanceName = "org.apache.ignite.p2p.GridP2PGridifySelfTest1")
     public Integer executeGridifyResource(int res) {
         String path = "org/apache/ignite/p2p/p2p.properties";
 
@@ -140,7 +140,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
         );
 
         // Test property file load.
-        byte [] bytes = new byte[20];
+        byte[] bytes = new byte[20];
 
         try (InputStream in = tstClsLdr.getResourceAsStream(path)) {
             if (in == null) {

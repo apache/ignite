@@ -145,7 +145,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
 
         IgniteTransactions transactions = ignite.transactions();
 
-        try(Transaction tx = transactions.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 0, 1)) {
+        try (Transaction tx = transactions.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 0, 1)) {
             assertNotNull(transactions.tx());
 
             ignite.cache(DEFAULT_CACHE_NAME).put(KEY, KEY + 1);

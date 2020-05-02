@@ -60,7 +60,7 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<H2Row, H2Row>,
      */
     public H2TreeFilterClosure(IndexingQueryCacheFilter filter, MvccSnapshot mvccSnapshot, GridCacheContext cctx,
         IgniteLogger log) {
-        assert (filter != null || mvccSnapshot != null) && cctx != null ;
+        assert (filter != null || mvccSnapshot != null) && cctx != null;
 
         this.filter = filter;
         this.mvccSnapshot = mvccSnapshot;
@@ -70,8 +70,8 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<H2Row, H2Row>,
 
     /** {@inheritDoc} */
     @Override public boolean apply(BPlusTree<H2Row, H2Row> tree, BPlusIO<H2Row> io,
-        long pageAddr, int idx)  throws IgniteCheckedException {
-        return (filter  == null || applyFilter((H2RowLinkIO)io, pageAddr, idx))
+        long pageAddr, int idx) throws IgniteCheckedException {
+        return (filter == null || applyFilter((H2RowLinkIO)io, pageAddr, idx))
             && (mvccSnapshot == null || applyMvcc((H2RowLinkIO)io, pageAddr, idx));
     }
 

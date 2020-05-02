@@ -421,7 +421,7 @@ public class Tracer {
         int xIdx, Function<LabeledVector<Double>, Double> yGetter,
         Function<LabeledVector<Double>, Color> colorGetter) throws IOException {
 
-        if(!isBrowseSupported())
+        if (!isBrowseSupported())
             return;
 
         String tmpl = fileToString("d3-dataset-template.html");

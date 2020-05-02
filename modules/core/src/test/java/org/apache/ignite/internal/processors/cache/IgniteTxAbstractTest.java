@@ -188,7 +188,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
 
                         case REMOVE: {
                             if (isTestDebug())
-                                debug("Removing key [key=" + key + ", i=" + i  + ']');
+                                debug("Removing key [key=" + key + ", i=" + i + ']');
 
                             cache.remove(key);
 

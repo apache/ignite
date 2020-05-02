@@ -145,7 +145,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         int iteration = 0;
 
-        while (U.currentTimeMillis() < finishTime ){
+        while (U.currentTimeMillis() < finishTime ) {
             System.out.println("Iteration: " + iteration);
 
             for (int i = 0; i < caches; i++) {
@@ -159,7 +159,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
                 ignite.destroyCache("cache" + i);
             }
 
-            iteration ++;
+            iteration++;
         }
     }
 }
