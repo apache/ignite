@@ -19,86 +19,138 @@ package org.apache.ignite.internal.processors.platform.client.cluster;
 
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Cluster group get nodes endpoints response.
  */
-@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse {
-    /** */
-    private final Collection<ClusterNode> addedNodes;
+    /** Indicates unknown topology version. */
+    private static final long UNKNOWN_TOP_VER = -1;
 
-    /** */
-    @Nullable private final Collection<UUID> removedNodeIds;
+    /** Start topology version. -1 for earliest. */
+    private final long startTopVer;
 
-    /** */
-    private final long topVer;
+    /** End topology version. -1 for latest. */
+    private final long endTopVer;
 
     /**
      * Constructor.
      *
      * @param reqId Request identifier.
-     * @param topVer Topology version.
-     * @param addedNodes Added nodes.
-     * @param removedNodeIds Removed node ids.
+     * @param startTopVer Start topology version.
+     * @param endTopVer End topology version.
      */
     public ClientClusterGroupGetNodesEndpointsResponse(long reqId,
-                                                       long topVer,
-                                                       Collection<ClusterNode> addedNodes,
-                                                       @Nullable Collection<UUID> removedNodeIds) {
+                                                       long startTopVer,
+                                                       long endTopVer) {
         super(reqId);
 
-        assert addedNodes != null;
-
-        this.topVer = topVer;
-        this.addedNodes = addedNodes;
-        this.removedNodeIds = removedNodeIds;
+        this.startTopVer = startTopVer;
+        this.endTopVer = endTopVer;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
 
-        writer.writeLong(topVer);
+        IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
 
-        writer.writeInt(addedNodes.size());
+        long endTopVer0 = endTopVer == UNKNOWN_TOP_VER ? cluster.topologyVersion() : endTopVer;
 
-        for (ClusterNode node : addedNodes) {
-            UUID id = node.id();
-            writer.writeLong(id.getMostSignificantBits());
-            writer.writeLong(id.getLeastSignificantBits());
+        Collection<ClusterNode> topology = cluster.topology(endTopVer0);
 
-            int port = node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
-            writer.writeInt(port);
+        writer.writeLong(endTopVer0);
 
-            Collection<String> addrs = node.addresses();
-            Collection<String> hosts = node.hostNames();
+        if (startTopVer == UNKNOWN_TOP_VER) {
+            writer.writeInt(topology.size());
 
-            writer.writeInt(addrs.size() + hosts.size());
+            for (ClusterNode node : topology)
+                writeNode(writer, node);
 
-            for (String addr : addrs)
-                writer.writeString(addr);
-
-            for (String host : hosts)
-                writer.writeString(host);
+            return;
         }
 
-        if (removedNodeIds != null) {
-            writer.writeInt(removedNodeIds.size());
+        Set<UUID> startNodes = toSet(cluster.topology(startTopVer));
+        Set<UUID> endNodes = toSet(topology);
 
-            for (UUID id : removedNodeIds) {
-                writer.writeLong(id.getMostSignificantBits());
-                writer.writeLong(id.getLeastSignificantBits());
+        int pos = writer.reserveInt();
+        int cnt = 0;
+
+        for (UUID endNode : endNodes) {
+            if (!startNodes.contains(endNode)) {
+                writeNode(writer, cluster.node(endNode));
+                cnt++;
             }
-        } else {
-            writer.writeInt(0);
         }
+
+        writer.writeInt(pos, cnt);
+
+        pos = writer.reserveInt();
+        cnt = 0;
+
+        for (UUID startNode : startNodes) {
+            if (!endNodes.contains(startNode)) {
+                writeUuid(writer, startNode);
+                cnt++;
+            }
+        }
+
+        writer.writeInt(pos, cnt);
+    }
+
+    /**
+     * Writes node info.
+     *
+     * @param writer Writer.
+     * @param node Node.
+     */
+    private void writeNode(BinaryRawWriterEx writer, ClusterNode node) {
+        writeUuid(writer, node.id());
+
+        int port = node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
+        writer.writeInt(port);
+
+        Collection<String> addrs = node.addresses();
+        Collection<String> hosts = node.hostNames();
+
+        writer.writeInt(addrs.size() + hosts.size());
+
+        for (String addr : addrs)
+            writer.writeString(addr);
+
+        for (String host : hosts)
+            writer.writeString(host);
+    }
+
+    /**
+     * Writes UUID.
+     *
+     * @param writer Writer.
+     * @param id id.
+     */
+    private void writeUuid(BinaryRawWriterEx writer, UUID id) {
+        writer.writeLong(id.getMostSignificantBits());
+        writer.writeLong(id.getLeastSignificantBits());
+    }
+
+    /**
+     * Converts collection to a set of node ids.
+     *
+     * @param nodes Nodes.
+     * @return Set of node ids.
+     */
+    private Set<UUID> toSet(Collection<ClusterNode> nodes) {
+        Set<UUID> res = new HashSet<>(nodes.size());
+
+        for (ClusterNode node : nodes)
+            res.add(node.id());
+
+        return res;
     }
 }

@@ -18,25 +18,14 @@
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * Cluster group get nodes endpoints request.
  */
 public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
-    /** Indicates unknown topology version. */
-    private static final long UNKNOWN_TOP_VER = -1;
-
     /** Start topology version. -1 for earliest. */
     private final long startTopVer;
 
@@ -56,50 +45,6 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
-
-        long endTopVer0 = endTopVer == UNKNOWN_TOP_VER ? cluster.topologyVersion() : endTopVer;
-
-        Collection<ClusterNode> topology = cluster.topology(endTopVer0);
-
-        if (startTopVer == UNKNOWN_TOP_VER)
-            return new ClientClusterGroupGetNodesEndpointsResponse(requestId(), endTopVer0, topology, null);
-
-        Set<UUID> startNodes = toSet(cluster.topology(startTopVer));
-        Set<UUID> endNodes = toSet(topology);
-
-        Collection<UUID> removedNodeIds = new ArrayList<>();
-
-        for (UUID startNode : startNodes) {
-            if (!endNodes.contains(startNode)) {
-                removedNodeIds.add(startNode);
-            }
-        }
-
-        Collection<ClusterNode> addedNodes = new ArrayList<>();
-
-        for (UUID endNode : endNodes) {
-            if (!startNodes.contains(endNode)) {
-                ClusterNode node = cluster.node(endNode);
-                addedNodes.add(node);
-            }
-        }
-
-        return new ClientClusterGroupGetNodesEndpointsResponse(requestId(), endTopVer0, addedNodes, removedNodeIds);
-    }
-
-    /**
-     * Converts collection to a set of node ids.
-     *
-     * @param nodes Nodes.
-     * @return Set of node ids.
-     */
-    private Set<UUID> toSet(Collection<ClusterNode> nodes) {
-        Set<UUID> res = new HashSet<>(nodes.size());
-
-        for (ClusterNode node : nodes)
-            res.add(node.id());
-
-        return res;
+        return new ClientClusterGroupGetNodesEndpointsResponse(requestId(), startTopVer, endTopVer);
     }
 }
