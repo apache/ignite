@@ -26,16 +26,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
     [TestFixture]
     public class ClientClusterDiscoveryTestsSsl : ClientClusterDiscoveryTests
     {
-        /** <inheritdoc /> */
-        protected override IgniteConfiguration GetIgniteConfiguration()
-        {
-            return GetIgniteConfigurationWithSsl();
-        }
-
-        /** <inheritdoc /> */
-        protected override IgniteClientConfiguration GetClientConfiguration()
-        {
-            return GetClientConfigurationWithSsl();
-        }
+        // TODO
     }
 }

@@ -50,6 +50,9 @@ namespace Apache.Ignite.Core.Tests.Client
         /** Grid count. */
         private readonly int _gridCount = 1;
 
+        /** SSL. */
+        private readonly bool _enableSsl;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
@@ -61,9 +64,10 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
-        public ClientTestBase(int gridCount)
+        public ClientTestBase(int gridCount, bool enableSsl = false)
         {
             _gridCount = gridCount;
+            _enableSsl = enableSsl;
         }
 
         /// <summary>
@@ -108,7 +112,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             Assert.AreEqual(0, cache.GetSize(CachePeekMode.All));
             Assert.AreEqual(0, GetClientCache<int>().GetSize(CachePeekMode.All));
-            
+
             ClearLoggers();
         }
 
@@ -154,11 +158,27 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         protected virtual IgniteClientConfiguration GetClientConfiguration()
         {
+            var port = _enableSsl ? 11110 : IgniteClientConfiguration.DefaultPort;
+            
             return new IgniteClientConfiguration
             {
-                Endpoints = new List<string> {IPAddress.Loopback.ToString()},
+                Endpoints = new List<string> {IPAddress.Loopback + ":" + port},
                 SocketTimeout = TimeSpan.FromSeconds(15),
-                Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace})
+                Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace}),
+                SslStreamFactory = _enableSsl
+                    ? new SslStreamFactory
+                    {
+                        CertificatePath = Path.Combine("Config", "Client", "thin-client-cert.pfx"),
+                        CertificatePassword = "123456",
+                        SkipServerCertificateValidation = true,
+                        CheckCertificateRevocation = true,
+#if !NETCOREAPP
+                        SslProtocols = SslProtocols.Tls
+#else
+                        SslProtocols = SslProtocols.Tls12
+#endif
+                    }
+                    : null
             };
         }
 
@@ -169,41 +189,8 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                Logger = new ListLogger()
-            };
-        }
-
-        /// <summary>
-        /// Gets the Ignite configuration with SSL.
-        /// </summary>
-        protected  IgniteConfiguration GetIgniteConfigurationWithSsl()
-        {
-            return new IgniteConfiguration(GetIgniteConfiguration())
-            {
-                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl.xml")
-            };
-        }
-
-        /// <summary>
-        /// Gets the client configuration with SSL.
-        /// </summary>
-        protected IgniteClientConfiguration GetClientConfigurationWithSsl()
-        {
-            return new IgniteClientConfiguration(GetClientConfiguration())
-            {
-                Endpoints = new[] {IPAddress.Loopback + ":11110"},
-                SslStreamFactory = new SslStreamFactory
-                {
-                    CertificatePath = Path.Combine("Config", "Client", "thin-client-cert.pfx"),
-                    CertificatePassword = "123456",
-                    SkipServerCertificateValidation = true,
-                    CheckCertificateRevocation = true,
-#if !NETCOREAPP
-                    SslProtocols = SslProtocols.Tls
-#else
-                    SslProtocols = SslProtocols.Tls12
-#endif
-                }
+                Logger = new ListLogger(),
+                SpringConfigUrl = _enableSsl ? Path.Combine("Config", "Client", "server-with-ssl.xml") : null
             };
         }
 

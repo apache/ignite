@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
-    using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -26,16 +25,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     [TestFixture]
     public sealed class CacheTestSsl : CacheTest
     {
-        /** <inheritdoc /> */
-        protected override IgniteConfiguration GetIgniteConfiguration()
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheTestSsl"/> class.
+        /// </summary>
+        public CacheTestSsl() : base(1, true)
         {
-            return GetIgniteConfigurationWithSsl();
-        }
-
-        /** <inheritdoc /> */
-        protected override IgniteClientConfiguration GetClientConfiguration()
-        {
-            return GetClientConfigurationWithSsl();
+            //No-op.
         }
     }
 }
