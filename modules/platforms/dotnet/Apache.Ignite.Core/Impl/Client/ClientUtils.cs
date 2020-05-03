@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Impl.Client
 {
+    using System;
+    using System.Collections;
     using Apache.Ignite.Core.Client;
 
     /// <summary>
@@ -24,6 +26,9 @@ namespace Apache.Ignite.Core.Impl.Client
     /// </summary>
     internal static class ClientUtils
     {
+        /** Bit mask of all features. */
+        public static readonly byte[] AllFeatures = GetAllFeatures();
+        
         /// <summary>
         /// Validates op code against current protocol version.
         /// </summary>
@@ -53,6 +58,25 @@ namespace Apache.Ignite.Core.Impl.Client
                 operation, protocolVersion, requiredProtocolVersion);
                 
             throw new IgniteClientException(message);
+        }
+
+        /// <summary>
+        /// Gets a bit array with all supported features.
+        /// </summary>
+        private static byte[] GetAllFeatures()
+        {
+            var vals = Enum.GetValues(typeof(ClientBitmaskFeature));
+            var bits = new BitArray(vals.Length);
+
+            foreach (ClientBitmaskFeature feature in vals)
+            {
+                bits.Set((int)feature, true);
+            }
+            
+            var bytes = new byte[1 + vals.Length / 8];
+            bits.CopyTo(bytes, 0);
+
+            return bytes;
         }
     }
 }

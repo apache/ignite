@@ -408,10 +408,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 // Writing features.
                 if (hasFeatures)
                 {
-                    // TODO: Implement client-side features.
-                    var featureBytes = new byte[0];
-
-                    BinaryUtils.Marshaller.Marshal(stream, w => w.WriteByteArray(featureBytes));
+                    BinaryUtils.Marshaller.Marshal(stream, w => w.WriteByteArray(ClientUtils.AllFeatures));
                 }
 
                 // Authentication data.
