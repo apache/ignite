@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Collections;
     using System.Collections.Concurrent;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -87,9 +88,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Callback checker guard. */
         private volatile bool _checkingTimeouts;
 
-        /** Server protocol version. */
-        public ClientProtocolVersion ServerVersion { get; private set; }
-
         /** Current async operations, map from request id. */
         private readonly ConcurrentDictionary<long, Request> _requests
             = new ConcurrentDictionary<long, Request>();
@@ -120,6 +118,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
+
+        /** Features. */
+        private BitArray _features = new BitArray(1, false);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
@@ -227,6 +228,21 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
+        /// Returns a value indicating whether specified operation is supported by this connection.
+        /// </summary>
+        public bool IsOpSupported(ClientOp op)
+        {
+            if (ServerVersion < op.GetMinVersion())
+            {
+                return false;
+            }
+
+            var feature = op.GetFeature();
+
+            return feature == null || _features.Get((int) feature);
+        }
+
+        /// <summary>
         /// Gets the current remote EndPoint.
         /// </summary>
         public EndPoint RemoteEndPoint { get { return _socket.RemoteEndPoint; } }
@@ -248,6 +264,11 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             get { return _isDisposed; }
         }
+
+        /// <summary>
+        /// Gets the server protocol version.
+        /// </summary>
+        public ClientProtocolVersion ServerVersion { get; private set; }
 
         /// <summary>
         /// Starts waiting for the new message.
@@ -366,8 +387,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void Handshake(IgniteClientConfiguration clientConfiguration, ClientProtocolVersion version)
         {
-            bool auth = version >= Ver110 && clientConfiguration.UserName != null;
-            bool features = version >= Ver170;
+            var hasAuth = version >= Ver110 && clientConfiguration.UserName != null;
+            var hasFeatures = version >= Ver170;
 
             // Send request.
             int messageLen;
@@ -385,7 +406,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 stream.WriteByte(ClientType);
 
                 // Writing features.
-                if (features)
+                if (hasFeatures)
                 {
                     // TODO: Implement client-side features.
                     var featureBytes = new byte[0];
@@ -394,7 +415,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
 
                 // Authentication data.
-                if (auth)
+                if (hasAuth)
                 {
                     BinaryUtils.Marshaller.Marshal(stream, writer =>
                     {
@@ -416,10 +437,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (success)
                 {
-                    if (version >= Ver170)
+                    if (hasFeatures)
                     {
-                        // TODO: Implement features support
-                        BinaryUtils.Marshaller.Unmarshal<byte[]>(stream);
+                        _features = new BitArray(BinaryUtils.Marshaller.Unmarshal<byte[]>(stream));
                     }
 
                     if (version >= Ver140)
