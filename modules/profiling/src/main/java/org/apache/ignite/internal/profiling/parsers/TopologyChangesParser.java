@@ -47,15 +47,15 @@ public class TopologyChangesParser implements IgniteLogParser {
 
     /** */
     public TopologyChangesParser() {
-        res.put("startTime", 0);
-        res.put("finishTime", 0);
+        res.put("profilingStartTime", 0);
+        res.put("profilingFinishTime", 0);
         res.set("nodesInfo", nodesInfo);
     }
 
     /** {@inheritDoc} */
     @Override public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime) {
-        res.put("startTime", Math.min(startTime, res.get("startTime").longValue()));
-        res.put("finishTime", Math.max(startTime, res.get("startTime").longValue()));
+        res.put("profilingStartTime", Math.min(startTime, res.get("profilingStartTime").longValue()));
+        res.put("profilingFinishTime", Math.max(startTime, res.get("profilingFinishTime").longValue()));
 
         if (!currentNodeId().equals(nodeId))
             throw new RuntimeException("Unknown node id found [nodeId=" + nodeId + ']');

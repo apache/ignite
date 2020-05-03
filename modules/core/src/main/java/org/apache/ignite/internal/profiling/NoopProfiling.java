@@ -61,4 +61,9 @@ public class NoopProfiling implements IgniteProfiling {
         boolean userCache) {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime) {
+        // No-op.
+    }
 }

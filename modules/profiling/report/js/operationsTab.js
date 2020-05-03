@@ -101,7 +101,7 @@ function drawCharts() {
 }
 
 function prepareCacheDatasets(opName) {
-    var cacheId = searchCachesSelect.val() === "" ? 0 : searchCachesSelect.val();
+    var cacheId = searchCachesSelect.val();
     var nodeId = searchNodesSelect.val();
 
     var res = [];

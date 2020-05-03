@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-const reportStartTime = report_topology["startTime"];
-const reportFinishTime = report_topology["finishTime"];
+const reportStartTime = report_topology["profilingStartTime"];
+const reportFinishTime = report_topology["profilingFinishTime"];
 
 $("#reportTiming").html("Collected from " + moment(reportStartTime).format() + " to "
     + moment(reportFinishTime).format());
@@ -63,9 +63,13 @@ function numberWithCommas(x) {
 }
 
 function buildSelectCaches(el, callback) {
-    el.append('<option data-content="<b>All caches</b>" value=""/>');
+    el.append('<option data-content="<b>All caches</b>" value="total"/>');
+
+    Object.keys(report_startedCaches).forEach(cacheId => report_startedCaches[cacheId].cacheId = cacheId);
 
     var cachesInfo = sortByKeyAsc(Object.values(report_startedCaches), "cacheName");
+
+    console.log(cachesInfo);
 
     if (cachesInfo.length === 0)
         return;
@@ -85,11 +89,11 @@ function buildSelectCaches(el, callback) {
 }
 
 function buildSelectNodes(el, callback) {
-    el.append('<option data-content="<b>All nodes</b>" value=""/>');
+    el.append('<option data-content="<b>All nodes</b>" value="total"/>');
 
-    var nodesInfo = report_topology["nodeIds"].sort();
+    var nodesInfo = report_topology["nodesInfo"];
 
-    $.each(nodesInfo, function (k, nodeId) {
+    $.each(nodesInfo, function (nodeId, nodeInfo) {
         el.append('<option data-content="' + nodeId + '" value="' + nodeId + '"/>');
     });
 

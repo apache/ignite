@@ -22,12 +22,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.profiling.util.OrderedFixedSizeStructure;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.profiling.parsers.QueryParser.Query;
-import static org.apache.ignite.internal.profiling.parsers.QueryParser.QueryReads;
+import static org.apache.ignite.internal.profiling.ProfilingLogParser.currentNodeId;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 
 /**
@@ -36,28 +37,32 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  * @see QueryParser
  */
 public class TopSlowQueryHelper {
-    /** Tree to store top of slow SQL queries: duration -> query. */
-    private final OrderedFixedSizeStructure<Long, Query> topSql = new OrderedFixedSizeStructure<>();
+    /** Tree to store top of slow SQL queries: duration -> globalQueryId. */
+    private final OrderedFixedSizeStructure<Long, T2<UUID, Long>> topSql = new OrderedFixedSizeStructure<>();
 
-    /** Tree to store top of slow SCAN queries: duration -> query. */
-    private final OrderedFixedSizeStructure<Long, Query> topScan = new OrderedFixedSizeStructure<>();
-
-    /** Result map with aggregated reads: queryNodeId -> queryId -> query & reads. */
-    private final Map<String, Map<Integer, T2<Query, long[]>>> sqlRes = new HashMap<>();
+    /** Tree to store top of slow SCAN queries: duration -> globalQueryId. */
+    private final OrderedFixedSizeStructure<Long, T2<UUID, Long>> topScan = new OrderedFixedSizeStructure<>();
 
     /** Result map with aggregated reads: queryNodeId -> queryId -> query & reads. */
-    private final Map<String, Map<Integer, T2<Query, long[]>>> scanRes = new HashMap<>();
+    private final Map<UUID, Map<Long, ObjectNode>> sqlRes = new HashMap<>();
+
+    /** Result map with aggregated reads: queryNodeId -> queryId -> query & reads. */
+    private final Map<UUID, Map<Long, ObjectNode>> scanRes = new HashMap<>();
 
     /**
      * Put value.
-     *
-     * @param nodeId Node id.
-     * @param query Query.
      */
-    public void value(String nodeId, Query query) {
-        OrderedFixedSizeStructure<Long, Query> map = query.isSql ? topSql : topScan;
+    public void value(GridCacheQueryType type, long duration, UUID queryNodeId, long id) {
+        OrderedFixedSizeStructure<Long, T2<UUID, Long>> map;
 
-        map.put(query.duration, query);
+        if (type == GridCacheQueryType.SQL_FIELDS)
+            map = topSql;
+        else if (type == GridCacheQueryType.SCAN)
+            map = topScan;
+        else
+            return;
+
+        map.put(duration, new T2<>(queryNodeId, id));
     }
 
     /** Callback on all logs parsed at first iteration. */
@@ -66,26 +71,57 @@ public class TopSlowQueryHelper {
         prepareResult(topScan, scanRes);
     }
 
-    /**
-     * Adds reads to slowest queries.
-     *
-     * @param reads Query reads.
-     */
-    public void mergeReads(QueryReads reads) {
-        Map<String, Map<Integer, T2<Query, long[]>>> map = reads.isSql ? sqlRes : scanRes;
+    /** */
+    public void mergeQuery(GridCacheQueryType type, String text, UUID queryNodeId, long id, long startTime,
+        long duration, boolean success) {
+        Map<UUID, Map<Long, ObjectNode>> map;
 
-        Map<Integer, T2<Query, long[]>> ids = map.get(reads.nodeId);
+        if (type == GridCacheQueryType.SQL_FIELDS)
+            map = sqlRes;
+        else if (type == GridCacheQueryType.SCAN)
+            map = scanRes;
+        else
+            return;
+
+        Map<Long, ObjectNode> ids = map.get(queryNodeId);
 
         if (ids == null)
             return;
 
-        ids.computeIfPresent(reads.id, (k, t2) -> {
-            long[] queryReads = t2.get2();
+        ids.computeIfPresent(id, (k, json) -> {
+            json.put("text", text);
+            json.put("startTime", startTime);
+            json.put("duration", duration);
+            json.put("nodeId", currentNodeId().toString());
+            json.put("success", success);
 
-            queryReads[0] += reads.logicalReads;
-            queryReads[1] += reads.physicalReads;
+            return json;
+        });
+    }
 
-            return t2;
+    /**
+     * Adds reads to slowest queries.
+     */
+    public void mergeReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads, long physicalReads) {
+        Map<UUID, Map<Long, ObjectNode>> map;
+
+        if (type == GridCacheQueryType.SQL_FIELDS)
+            map = sqlRes;
+        else if (type == GridCacheQueryType.SCAN)
+            map = scanRes;
+        else
+            return;
+
+        Map<Long, ObjectNode> ids = map.get(queryNodeId);
+
+        if (ids == null)
+            return;
+
+        ids.computeIfPresent(id, (k, json) -> {
+            json.put("logicalReads", json.get("logicalReads").asLong() + logicalReads);
+            json.put("physicalReads", json.get("physicalReads").asLong() + physicalReads);
+
+            return json;
         });
     }
 
@@ -98,40 +134,25 @@ public class TopSlowQueryHelper {
         ArrayNode sqlRes = MAPPER.createArrayNode();
         ArrayNode scanRes = MAPPER.createArrayNode();
 
-        buildResultJson(this.sqlRes, sqlRes);
-        buildResultJson(this.scanRes, scanRes);
+        this.sqlRes.values().forEach(map -> map.values().forEach(sqlRes::add));
+        this.scanRes.values().forEach(map -> map.values().forEach(scanRes::add));
 
         return U.map("topSlowSql", sqlRes, "topSlowScan", scanRes);
     }
 
     /** Prepares results to start to find reads. */
-    private void prepareResult(OrderedFixedSizeStructure<Long, Query> top,
-        Map<String, Map<Integer, T2<Query, long[]>>> res) {
-        top.values().forEach(query -> {
-            res.computeIfAbsent(query.queryNodeId, k -> new HashMap<>())
-                .computeIfAbsent(query.id, k -> new T2<>(query, new long[] {0, 0}));
-        });
-    }
+    private void prepareResult(OrderedFixedSizeStructure<Long, T2<UUID, Long>> top,
+        Map<UUID, Map<Long, ObjectNode>> res) {
+        top.values().forEach(t2 -> {
+            res.computeIfAbsent(t2.getKey(), k -> new HashMap<>())
+                .computeIfAbsent(t2.getValue(), k -> {
+                    ObjectNode node = MAPPER.createObjectNode();
 
-    /** Builds JSON. */
-    private void buildResultJson(Map<String, Map<Integer, T2<Query, long[]>>> res, ArrayNode json) {
-        res.forEach((originNodeId, qrs) -> {
-            for (T2<Query, long[]> t3 : qrs.values()) {
-                Query query = t3.get1();
-                long[] reads = t3.get2();
+                    node.put("logicalReads", 0);
+                    node.put("physicalReads", 0);
 
-                ObjectNode node = MAPPER.createObjectNode();
-
-                node.put("text", query.text);
-                node.put("startTime", query.startTime);
-                node.put("duration", query.duration);
-                node.put("nodeId", query.nodeId);
-                node.put("logicalReads", reads[0]);
-                node.put("physicalReads", reads[1]);
-                node.put("success", query.success);
-
-                json.add(node);
-            }
+                    return node;
+                });
         });
     }
 }

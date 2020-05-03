@@ -27,8 +27,8 @@ const txSearchNodesSelect = $('#txSearchNodes');
 const txCharts = $("#txCharts");
 
 function tx_drawCharts() {
-    var cacheId = txSearchCachesSelect.val();
-    var nodeId = txSearchNodesSelect.val();
+    var cacheId = searchCachesSelect.val();
+    var nodeId = searchNodesSelect.val();
 
     txCharts.empty();
 

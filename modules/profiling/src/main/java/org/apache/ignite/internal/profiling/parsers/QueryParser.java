@@ -25,8 +25,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.profiling.ProfilingLogParser;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.profiling.ProfilingLogParser.currentPhase;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 
 /**
@@ -69,7 +71,7 @@ public class QueryParser implements IgniteLogParser {
     private final Map<String, AggregatedQueryInfo> scanRes = new HashMap<>();
 
     /** Parsed reads that have not mapped to queries yet: queryNodeId -> queryId -> reads. */
-    private final Map<String, Map<Integer, long[]>> unmergedIds = new HashMap<>();
+    private final Map<UUID, Map<Long, long[]>> unmergedIds = new HashMap<>();
 
     /** Top of slowest queries. */
     private final TopSlowQueryHelper slowQueries = new TopSlowQueryHelper();
@@ -77,57 +79,79 @@ public class QueryParser implements IgniteLogParser {
     /** {@inheritDoc} */
     @Override public void query(GridCacheQueryType type, String text, UUID queryNodeId, long id, long startTime,
         long duration, boolean success) {
-//        Query query = new Query(nodeId, str);
-//
-//        slowQueries.value(nodeId, query);
-//
-//        Map<String, AggregatedQueryInfo> res = query.isSql ? sqlRes : scanRes;
-//
-//        AggregatedQueryInfo info = res.computeIfAbsent(query.text, k -> new AggregatedQueryInfo());
-//
-//        info.merge(query);
-//
-//        // Try merge unmerged ids.
-//        Map<Integer, long[]> nodeIds = unmergedIds.get(query.queryNodeId);
-//
-//        if (nodeIds != null) {
-//            long[] reads = nodeIds.get(query.id);
-//
-//            if (reads != null) {
-//                info.addReads(reads[0], reads[1]);
-//
-//                nodeIds.remove(query.id);
-//
-//                if (nodeIds.isEmpty())
-//                    unmergedIds.remove(query.queryNodeId);
-//            }
-//        }
+        if (currentPhase() == ProfilingLogParser.ParsePhase.REDUCE) {
+            slowQueries.mergeQuery(type, text, queryNodeId, id, startTime, duration, success);
+
+            return;
+        }
+
+        slowQueries.value(type, duration, queryNodeId, id);
+
+        Map<String, AggregatedQueryInfo> res;
+
+        if (type == GridCacheQueryType.SQL_FIELDS)
+            res = sqlRes;
+        else if (type == GridCacheQueryType.SCAN)
+            res = scanRes;
+        else
+            return;
+
+        AggregatedQueryInfo info = res.computeIfAbsent(text, k -> new AggregatedQueryInfo());
+
+        info.merge(queryNodeId, id, duration, success);
+
+        // Try merge unmerged ids.
+        Map<Long, long[]> nodeIds = unmergedIds.get(queryNodeId);
+
+        if (nodeIds != null) {
+            long[] reads = nodeIds.get(id);
+
+            if (reads != null) {
+                info.addReads(reads[0], reads[1]);
+
+                nodeIds.remove(id);
+
+                if (nodeIds.isEmpty())
+                    unmergedIds.remove(queryNodeId);
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
         long physicalReads) {
-//        QueryReads reads = new QueryReads(str);
-//
-//        Map<String, AggregatedQueryInfo> res = reads.isSql ? sqlRes : scanRes;
-//
-//        for (AggregatedQueryInfo info : res.values()) {
-//            Set<Integer> ids = info.ids.get(reads.nodeId);
-//
-//            if (ids != null && ids.contains(reads.id)) {
-//                info.addReads(reads.logicalReads, reads.physicalReads);
-//
-//                // Merged.
-//                return;
-//            }
-//        }
-//
-//        Map<Integer, long[]> ids = unmergedIds.computeIfAbsent(reads.nodeId, k -> new HashMap<>());
-//
-//        long[] readsArr = ids.computeIfAbsent(reads.id, k -> new long[] {0, 0});
-//
-//        readsArr[0] += reads.logicalReads;
-//        readsArr[1] += reads.physicalReads;
+        if (currentPhase() == ProfilingLogParser.ParsePhase.REDUCE) {
+            slowQueries.mergeReads(type, queryNodeId, id, logicalReads, physicalReads);
+
+            return;
+        }
+
+        Map<String, AggregatedQueryInfo> res;
+
+        if (type == GridCacheQueryType.SQL_FIELDS)
+            res = sqlRes;
+        else if (type == GridCacheQueryType.SCAN)
+            res = scanRes;
+        else
+            return;
+
+        for (AggregatedQueryInfo info : res.values()) {
+            Set<Long> ids = info.ids.get(queryNodeId);
+
+            if (ids != null && ids.contains(id)) {
+                info.addReads(logicalReads, physicalReads);
+
+                // Merged.
+                return;
+            }
+        }
+
+        Map<Long, long[]> ids = unmergedIds.computeIfAbsent(queryNodeId, k -> new HashMap<>());
+
+        long[] readsArr = ids.computeIfAbsent(id, k -> new long[] {0, 0});
+
+        readsArr[0] += logicalReads;
+        readsArr[1] += physicalReads;
     }
 
     /** {@inheritDoc} */
@@ -182,7 +206,7 @@ public class QueryParser implements IgniteLogParser {
         int failures;
 
         /** Query ids. Parsed from global query id: NodeId -> queryIds */
-        final Map<String, Set<Integer>> ids = new HashMap<>();
+        final Map<UUID, Set<Long>> ids = new HashMap<>();
 
         /** */
         public void addReads(long logicalReads, long physicalReads) {
@@ -190,118 +214,16 @@ public class QueryParser implements IgniteLogParser {
             this.physicalReads += physicalReads;
         }
 
-        /** @param query Query to merge with. */
-        public void merge(Query query) {
+        /** */
+        public void merge(UUID queryNodeId, long id, long duration, boolean success) {
             count += 1;
-            totalDuration += query.duration;
+            totalDuration += duration;
 
-            if (!query.success)
+            if (!success)
                 failures += 1;
 
-            ids.computeIfAbsent(query.queryNodeId, k -> new HashSet<>())
-                .add(query.id);
-        }
-    }
-
-    /** */
-    static class Query {
-        /** Node id. */
-        final String nodeId;
-
-        /** {@code True} if query type is SQL, otherwise SCAN. */
-        boolean isSql;
-
-        /** Query text in case of SQL query. Cache name in case of SCAN query. */
-        String text;
-
-        /** Originating node id (as part of global query id). */
-        String queryNodeId;
-
-        /** Query id. */
-        int id;
-
-        /** Start time. */
-        long startTime;
-
-        /** Duration. */
-        long duration;
-
-        /** Success flag. */
-        boolean success;
-
-        /**
-         * @param nodeId Node id.
-         * @param str String to parse from.
-         */
-        Query(String nodeId, String str) {
-            this.nodeId = nodeId;
-
-            int idx = str.indexOf('=');
-            int idx2 = str.indexOf('=', idx + 1);
-            int textIdx = idx2 + 1;
-
-            isSql = str.charAt(13) == 'Q';
-            success = str.charAt(str.length() - 3) == 'u';
-
-            idx = str.lastIndexOf(',');
-            idx2 = str.lastIndexOf('=', idx);
-            duration = U.nanosToMillis(Long.parseLong(str.substring(idx2 + 1, idx)));
-
-            idx = str.lastIndexOf(',', idx2);
-            idx2 = str.lastIndexOf('=', idx);
-            startTime = Long.parseLong(str.substring(idx2 + 1, idx));
-
-            idx = str.lastIndexOf(',', idx2);
-            idx2 = str.lastIndexOf('_', idx);
-            id = Integer.parseInt(str.substring(idx2 + 1, idx));
-
-            idx = str.lastIndexOf('_', idx2);
-            idx2 = str.lastIndexOf('=', idx);
-            queryNodeId = str.substring(idx2 + 1, idx);
-
-            idx = str.lastIndexOf(',', idx2);
-            text = str.substring(textIdx, idx);
-        }
-    }
-
-    /** Query reads. */
-    static class QueryReads {
-        /** {@code True} if query type is SQL, otherwise SCAN. */
-        boolean isSql;
-
-        /** Originating node id. */
-        String nodeId;
-
-        /** Query id. */
-        int id;
-
-        /** Number of logical reads. */
-        int logicalReads;
-
-        /** Number of physical reads. */
-        int physicalReads;
-
-        /** @param str String to parse from. */
-        QueryReads(String str) {
-            isSql = str.charAt(17) == 'Q';
-
-            int idx = str.indexOf('=');
-
-            idx = str.indexOf('=', idx + 1);
-            int idx2 = str.indexOf('_', idx);
-            nodeId = str.substring(idx + 1, idx2);
-
-            idx = str.indexOf('_', idx2);
-            idx2 = str.indexOf(',', idx);
-            id = Integer.parseInt(str.substring(idx + 1, idx2));
-
-            idx = str.indexOf('=', idx2);
-            idx2 = str.indexOf(',', idx);
-            logicalReads = Integer.parseInt(str.substring(idx + 1, idx2));
-
-            idx = str.indexOf('=', idx2);
-            idx2 = str.indexOf(']', idx);
-            physicalReads = Integer.parseInt(str.substring(idx + 1, idx2));
+            ids.computeIfAbsent(queryNodeId, k -> new HashSet<>())
+                .add(id);
         }
     }
 }

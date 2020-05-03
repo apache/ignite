@@ -86,9 +86,21 @@ public class LoadTestHelper {
         run(true);
     }
 
+    /** Run server. */
+    @Test
+    public void startServer2() throws Exception {
+        run(true);
+    }
+
     /** Run client. */
     @Test
     public void startClient() throws Exception {
+        run(false);
+    }
+
+    /** Run client. */
+    @Test
+    public void startClient2() throws Exception {
         run(false);
     }
 

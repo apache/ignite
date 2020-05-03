@@ -85,7 +85,10 @@ public class ProfilingLogParser {
     private static final RandomAccessFileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
     /** Node id of current parsed log. */
-    private static volatile UUID curNodeId;
+    private static UUID curNodeId;
+
+    /** Current parse phase. */
+    private static ParsePhase curPhase;
 
     /**
      * @param args Only one argument: profiling logs directory to parse or '-h' to get usage help.
@@ -207,21 +210,31 @@ public class ProfilingLogParser {
             new TopologyChangesParser()
         };
 
-        int currLog = 1;
+        for (ParsePhase phase : ParsePhase.values()) {
+            curPhase = phase;
 
-        for (Map.Entry<UUID, File> entry : logs.entrySet()) {
-            UUID nodeId = entry.getKey();
-            File log = entry.getValue();
+            if (phase == ParsePhase.REDUCE)
+                continue;
 
-            String progressMsg = "[" + currLog + '/' + logs.size() + " log]";
+            int currLog = 1;
 
-            curNodeId = nodeId;
+            for (Map.Entry<UUID, File> entry : logs.entrySet()) {
+                UUID nodeId = entry.getKey();
+                File log = entry.getValue();
 
-            parseLog(parsers, nodeId, log, progressMsg);
+                String progressMsg = "[" + currLog + '/' + logs.size() + " log]";
 
-            curNodeId = null;
+                curNodeId = nodeId;
 
-            currLog++;
+                parseLog(parsers, nodeId, log, progressMsg);
+
+                curNodeId = null;
+
+                currLog++;
+            }
+
+            for (IgniteLogParser parser : parsers)
+                parser.onPhaseEnd();
         }
 
         for (IgniteLogParser parser : parsers) {
@@ -301,9 +314,12 @@ public class ProfilingLogParser {
 
     /** @return Node id of current parsed log. */
     public static UUID currentNodeId() {
-        assert curNodeId != null;
-
         return curNodeId;
+    }
+
+    /** @return Current parse phase. */
+    public static ParsePhase currentPhase() {
+        return curPhase;
     }
 
     /**
@@ -383,5 +399,14 @@ public class ProfilingLogParser {
                 }
             }
         }
+    }
+
+    /** */
+    public enum ParsePhase {
+        /** */
+        PARSE,
+
+        /** */
+        REDUCE
     }
 }
