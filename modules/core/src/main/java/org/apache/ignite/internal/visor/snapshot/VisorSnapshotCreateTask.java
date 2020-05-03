@@ -23,6 +23,7 @@ import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * @see SnapshotCommand
@@ -53,7 +54,10 @@ public class VisorSnapshotCreateTask extends VisorOneNodeTask<String, String> {
 
         /** {@inheritDoc} */
         @Override protected String run(String name) throws IgniteException {
-            ignite.snapshot().createSnapshot(name);
+            IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(name);
+
+            if (fut.isDone())
+                fut.get();
 
             return "Cluster snapshot started with name: " + name;
         }
