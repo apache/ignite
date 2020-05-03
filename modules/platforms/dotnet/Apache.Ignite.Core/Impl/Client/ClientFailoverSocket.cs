@@ -75,6 +75,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Current affinity topology version. Store as object to make volatile. */
         private volatile object _affinityTopologyVersion;
 
+        /** Topology version that <see cref="_discoveryNodes"/> corresponds to. */
+        private long _discoveryTopologyVersion = UnknownTopologyVersion;
+
         /** Map from cache ID to partition mapping. */
         private volatile ClientCacheTopologyPartitionMap _distributionMap;
 
@@ -427,13 +430,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void OnAffinityTopologyVersionChange(AffinityTopologyVersion affinityTopologyVersion)
         {
-            var oldTopologyVersion = GetTopologyVersion();
-            
             _affinityTopologyVersion = affinityTopologyVersion;
 
-            var newTopologyVersion = affinityTopologyVersion.Version;
-            
-            if (oldTopologyVersion < newTopologyVersion &&_config.EnablePartitionAwareness)
+            if (_discoveryTopologyVersion < affinityTopologyVersion.Version &&_config.EnablePartitionAwareness)
             {
                 ThreadPool.QueueUserWorkItem(_ =>
                 {
@@ -443,7 +442,7 @@ namespace Apache.Ignite.Core.Impl.Client
                         {
                             if (!_disposed)
                             {
-                                DiscoverEndpoints(oldTopologyVersion, newTopologyVersion);
+                                DiscoverEndpoints();
                                 InitSocketMap();
                             }
                         }
@@ -744,44 +743,34 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Updates endpoint info.
         /// </summary>
-        private void DiscoverEndpoints(long startTopVer, long endTopVer)
+        private void DiscoverEndpoints()
         {
             if (!_enableDiscovery)
             {
                 return;
             }
             
-            // TODO: Store current cluster (discovered endpoints) in a separate map.
-            // No partition awareness: just use this map as part of round-robin
-            // With partition awareness: "fill the blanks" - connect to any nodes that are not yet connected.
-            // Maintain socket map at all times to understand where we are connected.
+            var newVer = GetTopologyVersion();
 
-            // TODO: perform async request?
-            // TODO: Avoid creating intermediate lists, update dictionary directly.
-            // TODO: Use topology version from result, store in a field for consequent requests.
-            var res = GetServerEndpoints(startTopVer, endTopVer);
+            if (newVer <= _discoveryTopologyVersion)
+            {
+                return;
+            }
+
             var discoveryNodes = _discoveryNodes == null
                 ? new Dictionary<Guid, ClientDiscoveryNode>()
                 : new Dictionary<Guid, ClientDiscoveryNode>(_discoveryNodes);
+
+            _discoveryTopologyVersion = GetServerEndpoints(
+                _discoveryTopologyVersion, newVer, discoveryNodes);
             
-            foreach (var addedNode in res.JoinedNodes)
-            {
-                discoveryNodes[addedNode.Id] = addedNode;
-            }
-
-            foreach (var removedNode in res.RemovedNodes)
-            {
-                // TODO: Disconnect here?
-                discoveryNodes.Remove(removedNode);
-            }
-
             _discoveryNodes = discoveryNodes;
         }
 
         /// <summary>
         /// Gets all server endpoints.
         /// </summary>
-        private ClientDiscoveryResult GetServerEndpoints(long startTopVer, long endTopVer)
+        private long GetServerEndpoints(long startTopVer, long endTopVer, IDictionary<Guid, ClientDiscoveryNode> dict)
         {
             return DoOutInOp(ClientOp.ClusterGroupGetNodesEndpoints,
                 ctx =>
@@ -796,7 +785,6 @@ namespace Apache.Ignite.Core.Impl.Client
                     var topVer = s.ReadLong();
 
                     var addedCnt = s.ReadInt();
-                    var addedNodes = new List<ClientDiscoveryNode>(addedCnt);
 
                     for (var i = 0; i < addedCnt; i++)
                     {
@@ -804,18 +792,17 @@ namespace Apache.Ignite.Core.Impl.Client
                         var port = s.ReadInt();
                         var addresses = ctx.Reader.ReadStringCollection();
                         
-                        addedNodes.Add(new ClientDiscoveryNode(id, port, addresses));
+                        dict[id] = new ClientDiscoveryNode(id, port, addresses);
                     }
 
                     var removedCnt = s.ReadInt();
-                    var removedNodeIds = new List<Guid>(removedCnt);
 
-                    for (int i = 0; i < removedCnt; i++)
+                    for (var i = 0; i < removedCnt; i++)
                     {
-                        removedNodeIds.Add(BinaryUtils.ReadGuid(s));
+                        dict.Remove(BinaryUtils.ReadGuid(s));
                     }
                     
-                    return new ClientDiscoveryResult(topVer, addedNodes, removedNodeIds);
+                    return topVer;
                 });
         }
 
