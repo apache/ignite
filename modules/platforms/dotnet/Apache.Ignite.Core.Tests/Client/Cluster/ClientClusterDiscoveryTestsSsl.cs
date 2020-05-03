@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
-    using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -26,6 +25,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
     [TestFixture]
     public class ClientClusterDiscoveryTestsSsl : ClientClusterDiscoveryTests
     {
-        // TODO
+        /// <summary>
+        /// Initializes a new instance of <see cref="ClientClusterDiscoveryTestsSsl"/> class.
+        /// </summary>
+        public ClientClusterDiscoveryTestsSsl() : base(false, true)
+        {
+            // No-op.
+        }
     }
 }

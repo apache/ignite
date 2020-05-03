@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         /// <summary>
         /// Initializes a new instance of <see cref="ClientClusterDiscoveryTests"/>.
         /// </summary>
-        public ClientClusterDiscoveryTests() : this(false)
+        public ClientClusterDiscoveryTests() : this(false, false)
         {
             // No-op.
         }
@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         /// <summary>
         /// Initializes a new instance of <see cref="ClientClusterDiscoveryTests"/>.
         /// </summary>
-        public ClientClusterDiscoveryTests(bool noLocalhost) : base(3)
+        public ClientClusterDiscoveryTests(bool noLocalhost, bool enableSsl) : base(3, enableSsl)
         {
             _noLocalhost = noLocalhost;
         }

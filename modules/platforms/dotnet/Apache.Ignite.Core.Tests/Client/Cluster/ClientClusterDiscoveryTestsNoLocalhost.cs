@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         /// <summary>
         /// Initializes a new instance of <see cref="ClientClusterDiscoveryTestsNoLocalhost"/> class.
         /// </summary>
-        public ClientClusterDiscoveryTestsNoLocalhost() : base(true)
+        public ClientClusterDiscoveryTestsNoLocalhost() : base(true, false)
         {
             // No-op.
         }
