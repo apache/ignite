@@ -73,6 +73,8 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
             for (ClusterNode node : topology)
                 writeNode(writer, node);
 
+            writer.writeInt(0);
+
             return;
         }
 
