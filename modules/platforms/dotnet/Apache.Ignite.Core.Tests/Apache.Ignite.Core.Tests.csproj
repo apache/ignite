@@ -174,6 +174,7 @@
     <Compile Include="Client\ClientTestBase.cs" />
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTests.cs" />
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTestsNoLocalhost.cs" />
+    <Compile Include="Client\Cluster\ClientClusterDiscoveryTestsSsl.cs" />
     <Compile Include="Client\Cluster\ClientClusterGroupTests.cs" />
     <Compile Include="Client\Cluster\ClientClusterTests.cs" />
     <Compile Include="Client\EndpointTest.cs" />

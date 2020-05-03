@@ -113,15 +113,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             }
         }
 
-        /// <summary>
-        /// Tests that SSL + Discovery combination works.
-        /// </summary>
-        [Test]
-        public void TestClientDiscoversAllServersWithSsl()
-        {
-            Assert.Fail("TODO");
-        }
-
         /** <inheritdoc /> */
         protected override IgniteClientConfiguration GetClientConfiguration()
         {

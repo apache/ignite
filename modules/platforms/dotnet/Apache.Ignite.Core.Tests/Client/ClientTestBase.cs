@@ -19,8 +19,10 @@ namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Security.Authentication;
     using System.Text.RegularExpressions;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -172,9 +174,43 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Gets the Ignite configuration with SSL.
+        /// </summary>
+        protected  IgniteConfiguration GetIgniteConfigurationWithSsl()
+        {
+            return new IgniteConfiguration(GetIgniteConfiguration())
+            {
+                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl.xml")
+            };
+        }
+
+        /// <summary>
+        /// Gets the client configuration with SSL.
+        /// </summary>
+        protected IgniteClientConfiguration GetClientConfigurationWithSsl()
+        {
+            return new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                Endpoints = new[] {IPAddress.Loopback + ":11110"},
+                SslStreamFactory = new SslStreamFactory
+                {
+                    CertificatePath = Path.Combine("Config", "Client", "thin-client-cert.pfx"),
+                    CertificatePassword = "123456",
+                    SkipServerCertificateValidation = true,
+                    CheckCertificateRevocation = true,
+#if !NETCOREAPP
+                    SslProtocols = SslProtocols.Tls
+#else
+                    SslProtocols = SslProtocols.Tls12
+#endif
+                }
+            };
+        }
+
+        /// <summary>
         /// Converts object to binary form.
         /// </summary>
-        protected IBinaryObject ToBinary(object o)
+        private IBinaryObject ToBinary(object o)
         {
             return Client.GetBinary().ToBinary<IBinaryObject>(o);
         }
