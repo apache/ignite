@@ -34,9 +34,10 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         /// <param name="operation">Operation.</param>
         /// <param name="protocolVersion">Protocol version.</param>
-        public static void ValidateOp(ClientOp operation, ClientProtocolVersion protocolVersion)
+        /// <param name="features">Features.</param>
+        public static void ValidateOp(ClientOp operation, ClientProtocolVersion protocolVersion, BitArray features)
         {
-            ValidateOp(operation, protocolVersion, operation.GetMinVersion());
+            ValidateOp(operation, protocolVersion, operation.GetMinVersion(), features, operation.GetFeature());
         }
         
         /// <summary>
@@ -46,18 +47,23 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <param name="protocolVersion">Protocol version.</param>
         /// <param name="requiredProtocolVersion">Required protocol version.</param>
         public static void ValidateOp<T>(T operation, ClientProtocolVersion protocolVersion, 
-            ClientProtocolVersion requiredProtocolVersion)
+            ClientProtocolVersion requiredProtocolVersion, BitArray features, ClientBitmaskFeature? requiredFeature)
         {
-            if (protocolVersion >= requiredProtocolVersion)
+            if (protocolVersion < requiredProtocolVersion)
             {
-                return;
+                var message = string.Format("Operation {0} is not supported by protocol version {1}. " +
+                                            "Minimum protocol version required is {2}.", 
+                    operation, protocolVersion, requiredProtocolVersion);
+                
+                throw new IgniteClientException(message);
             }
 
-            var message = string.Format("Operation {0} is not supported by protocol version {1}. " +
-                                        "Minimum protocol version required is {2}.", 
-                operation, protocolVersion, requiredProtocolVersion);
-                
-            throw new IgniteClientException(message);
+            if (features != null && requiredFeature != null && !features.Get((int) requiredFeature.Value))
+            {
+                throw new IgniteClientException(string.Format(
+                    "Operation {0} is not supported by the server. Feature {1} is missing.",
+                    operation, requiredFeature.Value));
+            }
         }
 
         /// <summary>

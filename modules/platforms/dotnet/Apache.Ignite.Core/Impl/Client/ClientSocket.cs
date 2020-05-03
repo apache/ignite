@@ -623,7 +623,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private RequestMessage WriteMessage(Action<ClientRequestContext> writeAction, ClientOp opId)
         {
-            ClientUtils.ValidateOp(opId, ServerVersion);
+            ClientUtils.ValidateOp(opId, ServerVersion, _features);
             
             var requestId = Interlocked.Increment(ref _requestId);
             

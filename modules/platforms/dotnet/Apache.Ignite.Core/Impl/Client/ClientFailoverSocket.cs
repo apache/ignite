@@ -386,8 +386,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (_socket != null)
             {
-                if (_config.EnablePartitionAwareness &&
-                    _socket.ServerVersion < ClientOp.CachePartitions.GetMinVersion())
+                if (_config.EnablePartitionAwareness && _socket.IsOpSupported(ClientOp.CachePartitions))
                 {
                     _config.EnablePartitionAwareness = false;
 
@@ -398,16 +397,11 @@ namespace Apache.Ignite.Core.Impl.Client
                     );
                 }
 
-                // TODO: Use feature flags.
-                if (_socket.ServerVersion < ClientOp.ClusterGroupGetNodesEndpoints.GetMinVersion())
+                if (_socket.IsOpSupported(ClientOp.ClusterGroupGetNodesEndpoints))
                 {
                     _enableDiscovery = false;
                     
-                    _logger.Warn("Automatic server node discovery has been disabled: server protocol version {0} " +
-                                 "is lower than required {1}",
-                        _socket.ServerVersion,
-                        ClientOp.ClusterGroupGetNodesEndpoints.GetMinVersion()
-                    );
+                    _logger.Warn("Automatic server node discovery is not supported by the server");
                 }
             }
         }
