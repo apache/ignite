@@ -88,7 +88,8 @@ namespace Apache.Ignite.Core.Impl.Client
         ClusterGroupGetNodeIds = 5100,
         [MinVersion(1, 5, 0)]
         ClusterGroupGetNodesInfo = 5101,
-        [MinVersion(1, 7, 0)] // TODO: Use features instead of version
+        
+        [ClientBitmaskFeature(ClientBitmaskFeature.ClusterGroupGetNodesEndpoints)]
         ClusterGroupGetNodesEndpoints = 5102
     }
 }
