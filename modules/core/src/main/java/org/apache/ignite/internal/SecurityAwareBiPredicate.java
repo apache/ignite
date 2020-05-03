@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal;
 
+import java.security.AccessControlException;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.security.AbstractSecurityAwareExternalizable;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -52,8 +55,18 @@ public class SecurityAwareBiPredicate<E1, E2> extends AbstractSecurityAwareExter
 
     /** {@inheritDoc} */
     @Override public boolean apply(E1 e1, E2 e2) {
-        try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
-            return original.apply(e1, e2);
+        IgniteSecurity security = ignite.context().security();
+
+        try (OperationSecurityContext c = security.withContext(subjectId)) {
+            IgniteSandbox sandbox = security.sandbox();
+
+            return sandbox.enabled() ? sandbox.execute(() -> original.apply(e1, e2)) : original.apply(e1, e2);
+        }
+        catch (AccessControlException e) {
+            ignite.context().log(getClass()).error("The operation can't be executed because the current subject " +
+                "doesn't have appropriate permission [subjectId=" + subjectId + "].", e);
+
+            throw e;
         }
     }
 }
