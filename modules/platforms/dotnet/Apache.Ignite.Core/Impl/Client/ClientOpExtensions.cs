@@ -29,6 +29,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** */
         private static readonly Dictionary<ClientOp, ClientProtocolVersion> VersionMap = GetVersionMap();
 
+        /** */
+        private static readonly Dictionary<ClientOp, ClientBitmaskFeature> FeatureMap = GetFeatureMap();
+
         /// <summary>
         /// Gets minimum protocol version that is required to perform specified operation.
         /// </summary>
@@ -41,6 +44,20 @@ namespace Apache.Ignite.Core.Impl.Client
             return VersionMap.TryGetValue(op, out minVersion) 
                 ? minVersion 
                 : ClientSocket.Ver100;
+        }
+
+        /// <summary>
+        /// Gets <see cref="ClientBitmaskFeature"/> that is required to perform specified operation.
+        /// </summary>
+        /// <param name="op">Operation.</param>
+        /// <returns>Required feature flag, or null.</returns>
+        public static ClientBitmaskFeature? GetFeature(this ClientOp op)
+        {
+            ClientBitmaskFeature feature;
+
+            return FeatureMap.TryGetValue(op, out feature)
+                ? feature
+                : (ClientBitmaskFeature?) null;
         }
         
         /// <summary>
@@ -63,6 +80,31 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 var clientOp = (ClientOp) Enum.Parse(typeof(ClientOp), memberInfo.Name);
                 res[clientOp] = attr.Version;
+            }
+
+            return res;
+        }
+        
+        /// <summary>
+        /// Gets the version map.
+        /// </summary>
+        private static Dictionary<ClientOp, ClientBitmaskFeature> GetFeatureMap()
+        {
+            var res = new Dictionary<ClientOp, ClientBitmaskFeature>();
+            
+            foreach (var memberInfo in typeof(ClientOp).GetMembers())
+            {
+                var attr = memberInfo.GetCustomAttributes(false)
+                    .OfType<ClientBitmaskFeatureAttribute>()
+                    .SingleOrDefault();
+
+                if (attr == null)
+                {
+                    continue;
+                }
+
+                var clientOp = (ClientOp) Enum.Parse(typeof(ClientOp), memberInfo.Name);
+                res[clientOp] = attr.Feature;
             }
 
             return res;

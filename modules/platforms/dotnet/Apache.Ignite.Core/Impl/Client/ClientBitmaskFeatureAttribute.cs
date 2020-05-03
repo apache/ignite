@@ -35,5 +35,13 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             _feature = feature;
         }
+
+        /// <summary>
+        /// Gets the feature.
+        /// </summary>
+        public ClientBitmaskFeature Feature
+        {
+            get { return _feature; }
+        }
     }
 }
