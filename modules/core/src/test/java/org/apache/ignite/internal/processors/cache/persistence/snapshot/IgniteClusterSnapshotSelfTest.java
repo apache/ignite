@@ -873,6 +873,32 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testConcurrentClusterSnapshotFromClient() throws Exception {
+        IgniteEx grid = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        IgniteEx clnt = startClientGrid(2);
+
+        IgniteSnapshotManager mgr = snp(grid);
+        Function<String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
+
+        BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
+
+        mgr.localSnapshotSenderFactory((snpName) ->
+            new DelegateSnapshotSender(log, block, old.apply(snpName)));
+
+        IgniteFuture<Void> fut = grid.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        assertThrowsWithCause(() ->
+                clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
+            IgniteException.class);
+
+        block.unblock();
+
+        fut.get();
+    }
+
     /**
      * @param ignite Ignite instance.
      * @param started Latch will be released when delta partition processing starts.
