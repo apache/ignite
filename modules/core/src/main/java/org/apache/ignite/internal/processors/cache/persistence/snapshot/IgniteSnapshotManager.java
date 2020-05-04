@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -652,7 +653,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return cctx.kernalContext().grid()
                     .compute(cctx.kernalContext().grid().cluster()
                         .forNodeId(U.oldest(cctx.kernalContext().discovery().aliveServerNodes(), null).id()))
-                    .applyAsync(new CreateSnapshotTask(), name);
+                    .applyAsync(new CreateSnapshotTask(), name)
+                    .chain(f -> {
+                        try {
+                            return f.get();
+                        }
+                        catch (ClusterTopologyException e) {
+                            throw new IgniteException("Snapshot request has been sent to the remote node " +
+                                "but the target server node left the cluster", e);
+                        }
+                    });
             }
 
             ClusterSnapshotFuture snpFut0;
@@ -1178,7 +1188,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(SnapshotStartDiscoveryMessage.class, this);
+            return S.toString(SnapshotStartDiscoveryMessage.class, this, super.toString());
         }
     }
 
