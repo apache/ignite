@@ -288,11 +288,11 @@ public abstract class AbstractReducer implements Reducer {
         if (lp == null && !LAST_PAGES_UPDATER.compareAndSet(this, null, lp = new ConcurrentHashMap<>()))
             lp = lastPages;
 
-        assert pageSize > 0: pageSize;
+        assert pageSize > 0 : pageSize;
 
         int lastPage = allRows == 0 ? 0 : (allRows - 1) / pageSize;
 
-        assert lastPage >= 0: lastPage;
+        assert lastPage >= 0 : lastPage;
 
         if (lp.put(new ReduceSourceKey(nodeId, res.segmentId()), lastPage) != null)
             throw new IllegalStateException();

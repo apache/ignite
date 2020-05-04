@@ -177,6 +177,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param readThrough Read through flag.
+     * @param forcePrimary Force primary flag.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
@@ -187,6 +188,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         AffinityTopologyVersion topVer,
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
+        boolean forcePrimary,
         boolean deserializeBinary,
         boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -197,7 +199,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
             readThrough,
-            /*force primary*/needVer || !ctx.config().isReadFromBackup(),
+            forcePrimary,
             tx,
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),

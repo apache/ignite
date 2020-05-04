@@ -53,4 +53,24 @@ public class SqlQueryMXBeanImpl implements SqlQueryMXBean {
     @Override public void setLongQueryTimeoutMultiplier(int longQryTimeoutMultiplier) {
         h2idx.longRunningQueries().setTimeoutMultiplier(longQryTimeoutMultiplier);
     }
+
+    /** {@inheritDoc} */
+    @Override public long getResultSetSizeThreshold() {
+        return h2idx.longRunningQueries().getResultSetSizeThreshold();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setResultSetSizeThreshold(long rsSizeThreshold) {
+        h2idx.longRunningQueries().setResultSetSizeThreshold(rsSizeThreshold);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getResultSetSizeThresholdMultiplier() {
+        return h2idx.longRunningQueries().getResultSetSizeThresholdMultiplier();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setResultSetSizeThresholdMultiplier(int rsSizeThresholdMultiplier) {
+        h2idx.longRunningQueries().setResultSetSizeThresholdMultiplier(rsSizeThresholdMultiplier);
+    }
 }

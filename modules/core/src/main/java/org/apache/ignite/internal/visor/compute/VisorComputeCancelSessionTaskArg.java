@@ -58,12 +58,12 @@ public class VisorComputeCancelSessionTaskArg extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, sesId);
+        U.writeIgniteUuid(out, sesId);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        sesId = U.readGridUuid(in);
+        sesId = U.readIgniteUuid(in);
     }
 
     /** {@inheritDoc} */

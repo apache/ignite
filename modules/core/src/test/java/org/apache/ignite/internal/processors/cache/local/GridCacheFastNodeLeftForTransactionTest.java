@@ -254,7 +254,7 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         PrintStream sysOut = System.out;
 
-        try(PrintStream out = new PrintStream(baos)) {
+        try (PrintStream out = new PrintStream(baos)) {
             System.setOut(out);
 
             Logger cmdLog = createTestLogger(baos);

@@ -150,7 +150,7 @@ public class LocalFileSystemUtils {
 
         int perm = 0;
 
-        for(PosixFilePermission p : attrs.permissions())
+        for (PosixFilePermission p : attrs.permissions())
             perm |= (1 << 8 - p.ordinal());
 
         props.put(IgfsUtils.PROP_PERMISSION, '0' + Integer.toOctalString(perm));

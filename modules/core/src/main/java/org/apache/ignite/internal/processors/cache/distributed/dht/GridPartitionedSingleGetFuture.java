@@ -377,7 +377,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (tryLocalGet(key, part, topVer, affNodes))
             return null;
 
-        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap);
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap,
+            forcePrimary);
 
         // Failed if none balanced node found.
         if (affNode == null) {
@@ -862,7 +863,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /**
      * @param topVer Topology version.
      */
-    private void awaitVersionAndRemap(AffinityTopologyVersion topVer){
+    private void awaitVersionAndRemap(AffinityTopologyVersion topVer) {
         IgniteInternalFuture<AffinityTopologyVersion> awaitTopologyVersionFuture =
             cctx.shared().exchange().affinityReadyFuture(topVer);
 

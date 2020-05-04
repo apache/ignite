@@ -162,7 +162,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
 
     /** */
     private void checkMetricsNotEmpty(String cachePrefix) {
-        for (int i=0; i<2; i++) {
+        for (int i = 0; i < 2; i++) {
             GridMetricManager mmgr = metricManager(i);
 
             MetricRegistry mreg = mmgr.registry(cachePrefix);
@@ -181,7 +181,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
 
     /** */
     private void checkMetricsEmpty(String cachePrefix) {
-        for (int i=0; i<3; i++) {
+        for (int i = 0; i < 3; i++) {
             GridMetricManager mmgr = metricManager(i);
 
             MetricRegistry mreg = mmgr.registry(cachePrefix);

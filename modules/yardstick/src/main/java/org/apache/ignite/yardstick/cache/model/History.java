@@ -64,6 +64,6 @@ public class History {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "History [tid=" + tid + ", bid=" + bid + ", aid=" + aid + ", delta=" + delta +']';
+        return "History [tid=" + tid + ", bid=" + bid + ", aid=" + aid + ", delta=" + delta + ']';
     }
 }

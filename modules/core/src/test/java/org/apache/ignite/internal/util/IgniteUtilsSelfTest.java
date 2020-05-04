@@ -312,7 +312,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         System.out.println("Is Solaris SPARC: " + U.isSolarisSparc());
         System.out.println("Is Solaris x86: " + U.isSolarisX86());
         System.out.println("Is Windows7: " + U.isWindows7());
-        System.out.println("Is Sufficiently Tested OS: " + U.isSufficientlyTestedOs());
     }
 
     /**
@@ -794,7 +793,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     private static String composeString(int len) {
         StringBuilder sb = new StringBuilder();
 
-        for (int i=0; i<len; i++)
+        for (int i = 0; i < len; i++)
             sb.append((char)i);
 
         String x = sb.toString();
@@ -1005,8 +1004,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         ExecutorService executorService = Executors.newFixedThreadPool(4);
 
         try {
-            for(int parallelism = 1; parallelism < 16; parallelism++)
-                for(int size = 0; size < 10_000; size++)
+            for (int parallelism = 1; parallelism < 16; parallelism++)
+                for (int size = 0; size < 10_000; size++)
                     testOrder(executorService, size, parallelism);
         } finally {
             executorService.shutdownNow();
@@ -1093,9 +1092,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         // Pool size should be less that input data collection.
         ExecutorService executorService = Executors.newFixedThreadPool(2);
 
-        Future<?> f1 = executorService.submit(()-> runTask(executorService));
-        Future<?> f2 = executorService.submit(()-> runTask(executorService));
-        Future<?> f3 = executorService.submit(()-> runTask(executorService));
+        Future<?> f1 = executorService.submit(() -> runTask(executorService));
+        Future<?> f2 = executorService.submit(() -> runTask(executorService));
+        Future<?> f3 = executorService.submit(() -> runTask(executorService));
 
         f1.get();
         f2.get();
@@ -1162,7 +1161,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     private void testOrder(ExecutorService executorService, int size, int parallelism) throws IgniteCheckedException {
         List<Integer> list = new ArrayList<>();
-        for(int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++)
             list.add(i);
 
         Collection<Integer> results = IgniteUtils.doInParallel(

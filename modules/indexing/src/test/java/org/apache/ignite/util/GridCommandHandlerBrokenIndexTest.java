@@ -53,7 +53,7 @@ import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFi
 /**
  * Tests failed start of iteration through index.
  */
-public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerClusterPerMethodAbstractTest{
+public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
     private final String IDX_NAME = "bad_index";
 
@@ -71,7 +71,7 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
      * Adds error message listeners to server nodes.
      */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (cfg.isClientMode())
             return cfg;
@@ -127,7 +127,7 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
      *
      * @throws Exception if failed to start node.
      */
-    private void prepareGridForTest() throws Exception{
+    private void prepareGridForTest() throws Exception {
         Ignite ignite = startGrids(2);
 
         ignite.cluster().active(true);

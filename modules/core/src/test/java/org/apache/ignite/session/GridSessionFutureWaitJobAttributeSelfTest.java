@@ -158,7 +158,7 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
         startSignal = new CountDownLatch[EXEC_COUNT];
         stopSignal = new CountDownLatch[EXEC_COUNT];
 
-        for(int i=0 ; i < EXEC_COUNT; i++){
+        for (int i = 0; i < EXEC_COUNT; i++) {
             startSignal[i] = new CountDownLatch(1);
 
             stopSignal[i] = new CountDownLatch(1);

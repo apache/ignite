@@ -226,7 +226,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
      * @param contains Expect whether or not messages are in log.
      * @throws Exception If failed.
      */
-    private void checkStarvationQryPoolInLog(long checkTimeout, String findLogMsg ,boolean contains) throws Exception {
+    private void checkStarvationQryPoolInLog(long checkTimeout, String findLogMsg, boolean contains) throws Exception {
         assertNotNull(findLogMsg);
 
         qryPoolSize = 1;

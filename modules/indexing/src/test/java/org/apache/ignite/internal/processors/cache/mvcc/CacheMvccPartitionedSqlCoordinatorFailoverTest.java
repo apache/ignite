@@ -61,7 +61,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
      */
     @Test
     public void testPutAllGetAll_ClientServer_Backups3_RestartCoordinator_ScanDml() throws Exception {
-        putAllGetAll(RestartMode.RESTART_CRD  , 5, 2, 3, DFLT_PARTITION_COUNT,
+        putAllGetAll(RestartMode.RESTART_CRD, 5, 2, 3, DFLT_PARTITION_COUNT,
             new InitIndexing(Integer.class, Integer.class), SCAN, DML);
     }
 
@@ -72,7 +72,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     public void testPutAllGetAll_ClientServer_Backups1_RestartCoordinator_ScanDml_Persistence() throws Exception {
         persistence = true;
 
-        putAllGetAll(RestartMode.RESTART_CRD  , 2, 1, 2, DFLT_PARTITION_COUNT,
+        putAllGetAll(RestartMode.RESTART_CRD, 2, 1, 2, DFLT_PARTITION_COUNT,
             new InitIndexing(Integer.class, Integer.class), SCAN, DML);
     }
 

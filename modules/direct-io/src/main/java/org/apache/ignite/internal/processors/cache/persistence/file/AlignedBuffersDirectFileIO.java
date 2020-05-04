@@ -241,8 +241,8 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
         ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(ioBlockSize, size);
 
         try {
-            assert alignedBuf.position() == 0: "Temporary aligned buffer is in incorrect state: position is set incorrectly";
-            assert alignedBuf.limit() == size: "Temporary aligned buffer is in incorrect state: limit is set incorrectly";
+            assert alignedBuf.position() == 0 : "Temporary aligned buffer is in incorrect state: position is set incorrectly";
+            assert alignedBuf.limit() == size : "Temporary aligned buffer is in incorrect state: limit is set incorrectly";
 
             int loaded = readIntoAlignedBuffer(alignedBuf, filePosition);
 
