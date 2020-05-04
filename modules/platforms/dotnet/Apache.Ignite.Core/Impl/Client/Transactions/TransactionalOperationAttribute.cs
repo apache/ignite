@@ -15,18 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Client.Transactions
+namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
-    /// <summary>
-    /// Ignite Thin Client transactions facade.
-    /// </summary>
-    public interface IClientTransactions
+    using System;
+
+    internal class TransactionalOperationAttribute : Attribute
     {
-        /// <summary>
-        /// Returns instance of Ignite Transactions to mark a transaction with a special label.
-        /// </summary>
-        /// <param name="label"></param>
-        /// <returns><see cref="T:Apache.Ignite.Core.Transactions.ITransactions" /></returns>
-        IClientTransaction WithLabel(string label);
+        // No-op.
     }
 }

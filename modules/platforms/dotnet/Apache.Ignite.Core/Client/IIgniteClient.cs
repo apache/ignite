@@ -114,8 +114,7 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Gets Ignite transactions facade.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
-        IClientTransactions GetTransactions();
+        IClientTransactions Transactions { get; }
 
         /// <summary>
         /// Gets the configuration.

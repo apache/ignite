@@ -73,7 +73,9 @@ namespace Apache.Ignite.Core.Impl.Client
         BinaryTypePut = 3003,
 
         // Transactions
+        [MinVersion(1, 5, 0)]
         TxStart = 4000,
+        [MinVersion(1, 5, 0)]
         TxEnd = 4001,
 
         // Cluster.

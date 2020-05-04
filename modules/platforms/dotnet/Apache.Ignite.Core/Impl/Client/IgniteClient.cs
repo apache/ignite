@@ -186,10 +186,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        public IClientTransactions GetTransactions()
-        {
-            throw new NotImplementedException();
-        }
+        public IClientTransactions Transactions { get; private set; }
 
         /** <inheritDoc /> */
         public CacheAffinityImpl GetAffinity(string cacheName)
