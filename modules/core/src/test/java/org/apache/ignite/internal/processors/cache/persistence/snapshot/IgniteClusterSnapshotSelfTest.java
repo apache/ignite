@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.OpenOption;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -857,13 +858,32 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotFromClientNodeStop() throws Exception {
-        startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+        CountDownLatch block = new CountDownLatch(1);
+        startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+        startClientGrid(3);
 
-        IgniteEx clnt = startClientGrid(2);
+        awaitPartitionMapExchange();
 
-        IgniteFuture<Void> fut = clnt.snapshot().createSnapshot(SNAPSHOT_NAME);
+        for (Ignite grid : Arrays.asList(grid(1), grid(2))) {
+            ((IgniteEx)grid).context().cache().context().exchange()
+                .registerExchangeAwareComponent(new PartitionsExchangeAware() {
+                    /** {@inheritDoc} */
+                    @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                        try {
+                            block.await();
+                        }
+                        catch (InterruptedException e) {
+                            fail("Must not catch exception here: " + e.getMessage());
+                        }
+                    }
+                });
+        }
+
+        IgniteFuture<Void> fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME);
 
         stopGrid(0);
+
+        block.countDown();
 
         System.out.println("@@@ fut=" + fut.get());
 
