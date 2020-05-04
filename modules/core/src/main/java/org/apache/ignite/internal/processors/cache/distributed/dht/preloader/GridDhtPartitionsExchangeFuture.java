@@ -801,8 +801,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             ExchangeType exchange;
 
             if (exchCtx.exchangeFreeSwitch()) {
-                exchange = isSnapshotOperation(firstDiscoEvt) ? onCustomMessageNoAffinityChange() :
-                    onExchangeFreeSwitchNodeLeft();
+                if (isSnapshotOperation(firstDiscoEvt)) {
+                    if (!forceAffReassignment)
+                        cctx.affinity().onCustomMessageNoAffinityChange(this, exchActions);
+
+                    exchange = cctx.kernalContext().clientNode() ? ExchangeType.NONE : ExchangeType.ALL;
+
+                    // Keep if the cluster was rebalanced.
+                    if (wasRebalanced())
+                        markRebalanced();
+                }
+                else
+                    exchange = onExchangeFreeSwitchNodeLeft();
 
                 initCoordinatorCaches(newCrd);
             }
@@ -1446,6 +1456,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void clientOnlyExchange() throws IgniteCheckedException {
         if (crd != null) {
             assert !crd.isLocal() : crd;
+            assert !exchCtx.exchangeFreeSwitch() : this;
 
             cctx.exchange().exchangerBlockingSectionBegin();
 
@@ -4864,13 +4875,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 final ClusterNode newCrd = crd0;
 
                                 // If coordinator changed during exchange free switch no need to send messages.
-//                                if (!exchCtx.exchangeFreeSwitch()) {
-                                    cctx.kernalContext().getSystemExecutorService().submit(new Runnable() {
-                                        @Override public void run() {
-                                            sendPartitions(newCrd);
-                                        }
-                                    });
-//                                }
+                                cctx.kernalContext().getSystemExecutorService().submit(new Runnable() {
+                                    @Override public void run() {
+                                        sendPartitions(newCrd);
+                                    }
+                                });
                             }
                         }
                     }

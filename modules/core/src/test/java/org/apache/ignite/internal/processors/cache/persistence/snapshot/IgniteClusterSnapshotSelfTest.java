@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -857,7 +858,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
-    public void testClusterSnapshotFromClientNodeStop() throws Exception {
+    public void testClusterSnapshotCoordinatorStopped() throws Exception {
         CountDownLatch block = new CountDownLatch(1);
         startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
         startClientGrid(3);
@@ -879,29 +880,43 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 });
         }
 
+        for (Ignite grid : G.allGrids()) {
+            TestRecordingCommunicationSpi.spi(grid)
+                .blockMessages((node, msg) -> msg instanceof GridDhtPartitionsSingleMessage);
+        }
+
         IgniteFuture<Void> fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME);
 
         stopGrid(0);
 
         block.countDown();
 
-        System.out.println("@@@ fut=" + fut.get());
+        // There are two exchanges happen: snapshot, node left (with pme-free).
+        // Both of them are not require for sending messages.
+        assertFalse("Pme-free switch doesn't expect messaging exchanging between nodes",
+            GridTestUtils.waitForCondition(() -> {
+                boolean hasMsgs = false;
 
-        startGrid(0);
+                for (Ignite g : G.allGrids())
+                    hasMsgs |= TestRecordingCommunicationSpi.spi(g).hasBlockedMessages();
 
-        stopAllGrids();
+                return hasMsgs;
+            }, 5_000));
 
-        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+        assertThrowsWithCause((Callable<Object>)fut::get, IgniteException.class);
 
-        awaitPartitionMapExchange();
+        List<GridDhtPartitionsExchangeFuture> exchFuts =
+            grid(1).context().cache().context().exchange().exchangeFutures();
 
-        assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
+        assertFalse("Exchanges cannot be empty due to snapshot and node left happened",
+            exchFuts.isEmpty());
+
+        for (GridDhtPartitionsExchangeFuture exch : exchFuts) {
+            assertTrue("Snapshot and node left events must keep `rebalanced` state" + exch,
+                exch.rebalanced());
+        }
     }
 
-    // todo On cluster without clients start a snapshot and fail coordinator
-    //  (no errors must happen due to single messages resend)
-    // todo add test coordinator left during snapshot exchange (future inited, but not started)
-    // todo should client send its partitions in case of pme-free? #clientOnlyExchange
     // todo "Wrap exception Topology projection" is empty with the user one.
     // todo add test for PartitionExchangeAware execution order during snapshot
 
