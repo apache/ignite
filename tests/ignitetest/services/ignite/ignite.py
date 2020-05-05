@@ -29,6 +29,7 @@ class IgniteService(IgnitePathResolverMixin, Service):
     PERSISTENT_ROOT = "/mnt/ignite"
     WORK_DIR = os.path.join(PERSISTENT_ROOT, "work")
     CONFIG_FILE = os.path.join(PERSISTENT_ROOT, "ignite-config.xml")
+    LOG4J_CONFIG_FILE = os.path.join(PERSISTENT_ROOT, "ignite-log4j.xml")
     HEAP_DUMP_FILE = os.path.join(PERSISTENT_ROOT, "ignite-heap.bin")
     STDOUT_STDERR_CAPTURE = os.path.join(PERSISTENT_ROOT, "console.log")
 
@@ -58,8 +59,14 @@ class IgniteService(IgnitePathResolverMixin, Service):
         self.logger.info("Waiting for Ignite to start...")
 
     def start_cmd(self, node):
-        cmd = "%s %s 1>> %s 2>> %s &" % \
+        jvm_opts = "-J-DIGNITE_SUCCESS_FILE=" + IgniteService.PERSISTENT_ROOT + "/success_file "
+        jvm_opts += "-J-Dlog4j.configDebug=true"
+
+        cmd = "export EXCLUDE_TEST_CLASSES=true; "
+        cmd += "export IGNITE_LOG_DIR=" + IgniteService.PERSISTENT_ROOT + "; "
+        cmd += "%s %s %s 1>> %s 2>> %s &" % \
               (self.path.script("ignite.sh", node),
+               jvm_opts,
                IgniteService.CONFIG_FILE,
                IgniteService.STDOUT_STDERR_CAPTURE,
                IgniteService.STDOUT_STDERR_CAPTURE)
@@ -67,7 +74,9 @@ class IgniteService(IgnitePathResolverMixin, Service):
 
     def start_node(self, node, timeout_sec=180):
         node.account.mkdirs(IgniteService.PERSISTENT_ROOT)
-        node.account.create_file(IgniteService.CONFIG_FILE, self.config.render(IgniteService.WORK_DIR))
+        node.account.create_file(IgniteService.CONFIG_FILE,
+                                 self.config.render(IgniteService.PERSISTENT_ROOT, IgniteService.WORK_DIR))
+        node.account.create_file(IgniteService.LOG4J_CONFIG_FILE, self.config.render_log4j(IgniteService.WORK_DIR))
 
         cmd = self.start_cmd(node)
         self.logger.debug("Attempting to start IgniteService on %s with command: %s" % (str(node.account), cmd))

@@ -107,3 +107,6 @@ packages
 
 #NodeJs files
 /modules/platforms/nodejs/node_modules
+
+/results
+.ducktape
