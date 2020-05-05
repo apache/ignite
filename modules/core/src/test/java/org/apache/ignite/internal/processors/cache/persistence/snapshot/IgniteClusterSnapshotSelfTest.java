@@ -23,8 +23,13 @@ import java.io.Serializable;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +56,7 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
@@ -65,6 +71,7 @@ import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -917,8 +924,128 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    // todo "Wrap exception Topology projection" is empty with the user one.
-    // todo add test for PartitionExchangeAware execution order during snapshot
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotOnMovingPartitionsCoordinatorLeft() throws Exception {
+        startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        for (Ignite grid : G.allGrids()) {
+            TestRecordingCommunicationSpi.spi(grid)
+                .blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
+        }
+
+        Ignite ignite = startGrid(2);
+
+        ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
+
+        TestRecordingCommunicationSpi.spi(grid(0))
+            .waitForBlocked();
+
+        CountDownLatch latch = new CountDownLatch(G.allGrids().size());
+        IgniteInternalFuture<?> stopFut = GridTestUtils.runAsync(() -> {
+            try {
+                U.await(latch);
+
+                stopGrid(0);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                fail("Must not fail here: " + e.getMessage());
+            }
+        });
+
+        Queue<T2<GridDhtPartitionExchangeId, Boolean>> exchFuts = new ConcurrentLinkedQueue<>();
+
+        for (Ignite ig : G.allGrids()) {
+            ((IgniteEx)ig).context().cache().context().exchange()
+                .registerExchangeAwareComponent(new PartitionsExchangeAware() {
+                    /** {@inheritDoc} */
+                    @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                        try {
+                            exchFuts.add(new T2<>(fut.exchangeId(), fut.rebalanced()));
+                            latch.countDown();
+
+                            stopFut.get();
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.log(log, "Interrupted on coordinator: " + e.getMessage());
+                        }
+                    }
+                });
+        }
+
+        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        stopFut.get();
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            IgniteException.class,
+            "Snapshot creation has been finished with an error");
+
+        assertEquals("Snapshot futures expected: " + exchFuts, 3, exchFuts.size());
+
+        for (T2<GridDhtPartitionExchangeId, Boolean> exch : exchFuts)
+            assertFalse("Snapshot `rebalanced` must be false with moving partitions: " + exch.get1(), exch.get2());
+
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotPartitionExchangeAwareOrder() throws Exception {
+        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        Map<UUID, PartitionsExchangeAware> comps = new HashMap<>();
+
+        for (Ignite ig : G.allGrids()) {
+            PartitionsExchangeAware comp;
+
+            ((IgniteEx)ig).context().cache().context().exchange()
+                .registerExchangeAwareComponent(comp = new PartitionsExchangeAware() {
+                    /** Order of exchange calls. */
+                    private final AtomicInteger order = new AtomicInteger();
+
+                    /** {@inheritDoc} */
+                    @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                        assertEquals("Exchange order violated: " + fut.firstEvent(), 0, order.getAndIncrement());
+                    }
+
+                    /** {@inheritDoc} */
+                    @Override public void onInitAfterTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                        assertEquals("Exchange order violated: " + fut.firstEvent(), 1, order.getAndIncrement());
+                    }
+
+                    /** {@inheritDoc} */
+                    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+                        assertEquals("Exchange order violated: " + fut.firstEvent(), 2, order.getAndIncrement());
+                    }
+
+                    /** {@inheritDoc} */
+                    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+                        assertEquals("Exchange order violated: " + fut.firstEvent(), 3, order.getAndSet(0));
+                    }
+                });
+
+            comps.put(((IgniteEx)ig).localNode().id(), comp);
+        }
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
+            .get();
+
+        for (Ignite ig : G.allGrids()) {
+            ((IgniteEx)ig).context().cache().context().exchange()
+                .unregisterExchangeAwareComponent(comps.get(((IgniteEx)ig).localNode().id()));
+        }
+
+        awaitPartitionMapExchange();
+
+        assertEquals("Some of ignite instances failed during snapshot", 3, G.allGrids().size());
+
+        stopAllGrids();
+
+        IgniteEx snp = startGridsFromSnapshot(3, SNAPSHOT_NAME);
+
+        assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
+    }
 
     /**
      * @param ignite Ignite instance.
