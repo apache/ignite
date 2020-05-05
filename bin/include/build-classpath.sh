@@ -52,8 +52,10 @@ includeToClassPath() {
                 IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/classes
             fi
 
-            if [ -d "${file}/target/test-classes" ]; then
-                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/test-classes
+            if [[ -z "${EXCLUDE_TEST_CLASSES}" ]]; then
+              if [ -d "${file}/target/test-classes" ]; then
+                  IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/test-classes
+              fi
             fi
 
             if [ -d "${file}/target/libs" ]; then
