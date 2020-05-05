@@ -17,14 +17,34 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
+    using System;
     using Apache.Ignite.Core.Client.Transactions;
+    using Apache.Ignite.Core.Transactions;
 
-    public class ClientTransactions : IClientTransactions
+    internal class ClientTransactions : IClientTransactions
     {
         /** <inheritDoc /> */
-        public IClientTransaction WithLabel(string label)
+        public IClientTransaction TxStart()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation, TimeSpan timeout)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public IClientTransactions WithLabel(string label)
+        {
+            throw new NotImplementedException();
         }
     }
 }
