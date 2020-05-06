@@ -145,6 +145,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
 
                 var clientCache = client.GetCache<int, int>(cache.Name);
                 var logger = (ListLogger) ignite2.Logger;
+                var aff = ignite2.GetAffinity(cache.Name);
+                var localNode = ignite2.GetCluster().GetLocalNode();
+
+                TestUtils.WaitForTrueCondition(() => aff.GetAllPartitions(localNode).Length > 10);
+                
                 var key = TestUtils.GetPrimaryKey(ignite2, cache.Name);
                 
                 TestUtils.WaitForTrueCondition(() =>
