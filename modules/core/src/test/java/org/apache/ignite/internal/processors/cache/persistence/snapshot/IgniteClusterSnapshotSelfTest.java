@@ -986,7 +986,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         for (T2<GridDhtPartitionExchangeId, Boolean> exch : exchFuts)
             assertFalse("Snapshot `rebalanced` must be false with moving partitions: " + exch.get1(), exch.get2());
-
     }
 
     /** @throws Exception If fails. */
@@ -1001,25 +1000,20 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             ((IgniteEx)ig).context().cache().context().exchange()
                 .registerExchangeAwareComponent(comp = new PartitionsExchangeAware() {
-                    /** Order of exchange calls. */
                     private final AtomicInteger order = new AtomicInteger();
 
-                    /** {@inheritDoc} */
                     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
                         assertEquals("Exchange order violated: " + fut.firstEvent(), 0, order.getAndIncrement());
                     }
 
-                    /** {@inheritDoc} */
                     @Override public void onInitAfterTopologyLock(GridDhtPartitionsExchangeFuture fut) {
                         assertEquals("Exchange order violated: " + fut.firstEvent(), 1, order.getAndIncrement());
                     }
 
-                    /** {@inheritDoc} */
                     @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
                         assertEquals("Exchange order violated: " + fut.firstEvent(), 2, order.getAndIncrement());
                     }
 
-                    /** {@inheritDoc} */
                     @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
                         assertEquals("Exchange order violated: " + fut.firstEvent(), 3, order.getAndSet(0));
                     }
@@ -1028,8 +1022,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             comps.put(((IgniteEx)ig).localNode().id(), comp);
         }
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
-            .get();
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
         for (Ignite ig : G.allGrids()) {
             ((IgniteEx)ig).context().cache().context().exchange()

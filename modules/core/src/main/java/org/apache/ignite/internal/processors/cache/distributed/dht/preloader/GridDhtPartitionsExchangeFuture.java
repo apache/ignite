@@ -802,14 +802,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (exchCtx.exchangeFreeSwitch()) {
                 if (isSnapshotOperation(firstDiscoEvt)) {
+                    // Keep if the cluster was rebalanced.
+                    if (wasRebalanced())
+                        markRebalanced();
+
                     if (!forceAffReassignment)
                         cctx.affinity().onCustomMessageNoAffinityChange(this, exchActions);
 
                     exchange = cctx.kernalContext().clientNode() ? ExchangeType.NONE : ExchangeType.ALL;
-
-                    // Keep if the cluster was rebalanced.
-                    if (wasRebalanced())
-                        markRebalanced();
                 }
                 else
                     exchange = onExchangeFreeSwitchNodeLeft();
