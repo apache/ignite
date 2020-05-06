@@ -71,5 +71,18 @@ namespace Apache.Ignite.Core.Tests.Client
             
             Assert.AreEqual(expected, ClientFeatures.AllFeatures.Single());
         }
+
+        /// <summary>
+        /// Tests <see cref="ClientFeatures.HasFeature"/>.
+        /// </summary>
+        [Test]
+        public void TestHasFeature()
+        {
+            var features = ClientFeatures.CurrentFeatures;
+            
+            Assert.IsTrue(features.HasFeature(ClientBitmaskFeature.ClusterGroupGetNodesEndpoints));
+            Assert.IsFalse(features.HasFeature((ClientBitmaskFeature) (-1)));
+            Assert.IsFalse(features.HasFeature((ClientBitmaskFeature) 12345));
+        }
     }
 }
