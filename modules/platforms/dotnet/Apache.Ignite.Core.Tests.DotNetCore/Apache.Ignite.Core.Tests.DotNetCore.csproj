@@ -221,13 +221,13 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\TestKeyWithAffinity.cs">
       <Link>ThinClient\Cache\TestKeyWithAffinity.cs</Link>
     </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientFeaturesTest.cs">
+      <Link>ThinClient\ClientFeaturesTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientProtocolCompatibilityTest.cs">
       <Link>ThinClient\ClientProtocolCompatibilityTest.cs</Link>
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientConnectionTest.cs" Link="ThinClient\ClientConnectionTest.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientOpExtensionsTest.cs">
-      <Link>ThinClient\ClientOpExtensionsTest.cs</Link>
-    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientProtocolVersionTest.cs">
       <Link>ThinClient\ClientProtocolVersionTest.cs</Link>
     </Compile>
