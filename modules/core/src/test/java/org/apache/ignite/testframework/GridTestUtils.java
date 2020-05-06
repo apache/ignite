@@ -442,6 +442,29 @@ public final class GridTestUtils {
     }
 
     /**
+     * Checks whether runnable throws expected exception or not.
+     *
+     * @param log Logger (optional).
+     * @param run Runnable.
+     * @param cls Exception class.
+     * @param msg Exception message (optional). If provided exception message
+     *      and this message should be equal.
+     * @return Thrown throwable.
+     */
+    public static Throwable assertThrows(
+        @Nullable IgniteLogger log,
+        RunnableX run,
+        Class<? extends Throwable> cls,
+        @Nullable String msg
+    ) {
+        return assertThrows(log, () -> {
+            run.run();
+
+            return null;
+        }, cls, msg);
+    }
+
+    /**
      * Checks whether callable throws expected exception or not.
      *
      * @param log Logger (optional).

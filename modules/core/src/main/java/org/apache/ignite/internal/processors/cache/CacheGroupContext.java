@@ -1240,8 +1240,9 @@ public class CacheGroupContext {
      */
     public void globalWalEnabled(boolean enabled) {
         if (globalWalEnabled != enabled) {
-            log.info("Global WAL state for group=" + cacheOrGroupName() +
-                " changed from " + globalWalEnabled + " to " + enabled);
+            if (log.isInfoEnabled())
+                log.info("Global WAL state for group=" + cacheOrGroupName() +
+                    " changed from " + globalWalEnabled + " to " + enabled);
 
             persistGlobalWalState(enabled);
 
@@ -1255,8 +1256,10 @@ public class CacheGroupContext {
      */
     public void localWalEnabled(boolean enabled, boolean persist) {
         if (localWalEnabled != enabled) {
-            log.info("Local WAL state for group=" + cacheOrGroupName() +
-                " changed from " + localWalEnabled + " to " + enabled);
+            if (log.isInfoEnabled()) {
+                log.info("Local WAL state for group=" + cacheOrGroupName() +
+                    " changed from " + localWalEnabled + " to " + enabled);
+            }
 
             if (persist)
                 persistLocalWalState(enabled);

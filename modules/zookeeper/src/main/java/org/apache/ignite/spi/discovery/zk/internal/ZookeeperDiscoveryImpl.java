@@ -1353,7 +1353,7 @@ public class ZookeeperDiscoveryImpl {
                 log.info("Discovery coordinator already exists, watch for previous server node [" +
                     "locId=" + locNode.id() +
                     ", watchPath=" + prevE.getValue() + ']');
-             }
+            }
 
             PreviousNodeWatcher watcher = new ServerPreviousNodeWatcher(rtState);
 
