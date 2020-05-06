@@ -20,8 +20,8 @@ namespace Apache.Ignite.Core.Impl.Client
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
 
     /// <summary>
@@ -31,6 +31,10 @@ namespace Apache.Ignite.Core.Impl.Client
     {
         /** Bit mask of all features. */
         public static readonly byte[] AllFeatures = GetAllFeatures();
+
+        /** Current features. */
+        public static readonly ClientFeatures CurrentFeatures =
+            new ClientFeatures(ClientSocket.CurrentProtocolVersion, new BitArray(AllFeatures));
 
         /** */
         private static readonly Dictionary<ClientOp, ClientProtocolVersion> OpVersion =
@@ -79,6 +83,31 @@ namespace Apache.Ignite.Core.Impl.Client
             // TODO
             return false;
         }
+
+        /// <summary>
+        /// Returns a value indicating whether WithExpiryPolicy request flag is supported.
+        /// </summary>
+        public bool HasWithExpiryPolicyFlag()
+        {
+            return _protocolVersion >= ClientSocket.Ver150;
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether <see cref="QueryField.Precision"/> and <see cref="QueryField.Scale"/>
+        /// are supported.
+        /// </summary>
+        public bool HasQueryFieldPrecisionAndScale()
+        {
+            return _protocolVersion >= ClientSocket.Ver120;
+        }
+        
+        /// <summary>
+        /// Returns a value indicating whether <see cref="CacheConfiguration.ExpiryPolicyFactory"/> is supported.
+        /// </summary>
+        public bool HasCacheConfigurationExpiryPolicyFactory()
+        {
+            return _protocolVersion >= ClientSocket.Ver160;
+        }
         
         /// <summary>
         /// Gets minimum protocol version that is required to perform specified operation.
@@ -121,7 +150,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Validates op code against current protocol version.
         /// </summary>
-        public static void ValidateOp<T>(T operation, ClientProtocolVersion protocolVersion, 
+        private static void ValidateOp<T>(T operation, ClientProtocolVersion protocolVersion, 
             ClientProtocolVersion requiredProtocolVersion, BitArray features, ClientBitmaskFeature? requiredFeature)
         {
             if (protocolVersion < requiredProtocolVersion)

@@ -361,7 +361,7 @@ namespace Apache.Ignite.Core.Impl.Client
             if (statusCode == ClientStatusCode.Success)
             {
                 return readFunc != null 
-                    ? readFunc(new ClientResponseContext(stream, _marsh, ServerVersion)) 
+                    ? readFunc(new ClientResponseContext(stream, _marsh, _features)) 
                     : default(T);
             }
 
@@ -632,7 +632,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (writeAction != null)
             {
-                var ctx = new ClientRequestContext(stream, _marsh, ServerVersion);
+                var ctx = new ClientRequestContext(stream, _marsh, _features);
                 writeAction(ctx);
                 ctx.FinishMarshal();
             }

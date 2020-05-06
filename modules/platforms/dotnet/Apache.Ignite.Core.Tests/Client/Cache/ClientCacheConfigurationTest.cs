@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
+    using System.Collections;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -176,9 +177,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             using (var stream = new BinaryHeapStream(128))
             {
-                ClientCacheConfigurationSerializer.Write(stream, cfg, ClientSocket.CurrentProtocolVersion, true);
+                ClientCacheConfigurationSerializer.Write(stream, cfg, ClientFeatures.CurrentFeatures, true);
                 stream.Seek(0, SeekOrigin.Begin);
-                return new CacheClientConfiguration(stream, ClientSocket.CurrentProtocolVersion);
+                return new CacheClientConfiguration(stream, ClientFeatures.CurrentFeatures);
             }
         }
 

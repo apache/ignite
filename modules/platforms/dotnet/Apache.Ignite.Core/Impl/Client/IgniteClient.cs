@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(ClientOp.CacheGetOrCreateWithConfiguration,
-                ctx => ClientCacheConfigurationSerializer.Write(ctx.Stream, configuration, ctx.ProtocolVersion));
+                ctx => ClientCacheConfigurationSerializer.Write(ctx.Stream, configuration, ctx.Features));
 
             return GetCache<TK, TV>(configuration.Name);
         }
@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(ClientOp.CacheCreateWithConfiguration,
-                ctx => ClientCacheConfigurationSerializer.Write(ctx.Stream, configuration, ctx.ProtocolVersion));
+                ctx => ClientCacheConfigurationSerializer.Write(ctx.Stream, configuration, ctx.Features));
 
             return GetCache<TK, TV>(configuration.Name);
         }
