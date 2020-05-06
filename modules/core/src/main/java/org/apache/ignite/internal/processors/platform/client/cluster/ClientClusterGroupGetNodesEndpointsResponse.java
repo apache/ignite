@@ -115,6 +115,8 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
     private void writeNode(BinaryRawWriterEx writer, ClusterNode node) {
         writeUuid(writer, node.id());
 
+        // TODO: This may be absent (on client nodes, etc).
+        // Check
         int port = node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
         writer.writeInt(port);
 

@@ -134,6 +134,21 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             AssertClientConnectionCount(client, 3);
         }
 
+        /// <summary>
+        /// Tests that thin client discovery does not include thick client nodes.
+        /// </summary>
+        [Test]
+        public void TestClientDiscoversOnlyServerNodes()
+        {
+            // TODO
+        }
+
+        [Test]
+        public void TestDiscoveryWithBaselineTopology()
+        {
+            // TODO: ???
+        }
+        
         /** <inheritdoc /> */
         protected override IgniteClientConfiguration GetClientConfiguration()
         {
