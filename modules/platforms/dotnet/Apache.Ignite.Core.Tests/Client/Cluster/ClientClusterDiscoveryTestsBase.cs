@@ -18,16 +18,14 @@
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
-    using System.Net;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for client cluster discovery (basic).
+    /// Basic class for client cluster discovery tests.
     /// </summary>
-    public class ClientClusterDiscoveryTestsBase : ClientTestBase
+    public abstract class ClientClusterDiscoveryTestsBase : ClientTestBase
     {
         /** Flag indicating whether IgniteConfiguration.Localhost should be set. */
         private readonly bool _noLocalhost;
