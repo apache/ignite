@@ -31,7 +31,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Bit mask of all features. */
         public static readonly byte[] AllFeatures = GetAllFeatures();
 
-        
         /** */
         private static readonly Dictionary<ClientOp, ClientProtocolVersion> OpVersion =
             new Dictionary<ClientOp, ClientProtocolVersion>
