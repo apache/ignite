@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
+    using System.Linq;
     using NUnit.Framework;
 
     /// <summary>
@@ -30,9 +31,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         {
             base.FixtureSetUp();
 
-            var ignite = Ignition.GetIgnite();
+            var ignite = Ignition.GetAll().First();
             var cluster = ignite.GetCluster();
-            
+
+            cluster.SetBaselineAutoAdjustEnabledFlag(false);
             cluster.SetBaselineTopology(cluster.TopologyVersion);
         }
     }
