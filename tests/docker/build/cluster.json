@@ -48,6 +48,17 @@
         "port": 22,
         "user": "ducker"
       }
+    },
+    {
+      "externally_routable_ip": "ducker05",
+      "ssh_config": {
+        "host": "ducker05",
+        "hostname": "ducker05",
+        "identityfile": "/home/ducker/.ssh/id_rsa",
+        "password": "",
+        "port": 22,
+        "user": "ducker"
+      }
     }
   ]
 }

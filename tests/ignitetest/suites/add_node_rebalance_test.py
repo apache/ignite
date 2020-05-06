@@ -16,6 +16,7 @@
 from ducktape.tests.test import Test
 
 from ignitetest.services.ignite.ignite import IgniteService
+from ignitetest.services.ignite_client_app import IgniteClientApp
 
 
 class AddNodeRebalanceTest(Test):
@@ -41,6 +42,9 @@ class AddNodeRebalanceTest(Test):
             * Await for rebalance to finish.
         """
         self.logger.info("Start add node rebalance test.")
+        self.client = IgniteClientApp(self.test_context)
+        self.client.start()
+        self.client.wait()
 
         for node in self.ignite.nodes:
-            node.account.ssh("touch /opt/hello-from-test.txt")
+            node.account.ssh("touch /opt/hello-from-test-after-client.txt")

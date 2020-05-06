@@ -18,14 +18,13 @@ import signal
 
 from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
-from ducktape.cluster.remoteaccount import RemoteCommandError
 
 from ignitetest.ignite_utils.ignite_config import IgniteConfig
-from ignitetest.ignite_utils.ignite_path import IgnitePathResolverMixin
+from ignitetest.ignite_utils.ignite_path import IgnitePath
 from ignitetest.version import DEV_BRANCH
 
 
-class IgniteService(IgnitePathResolverMixin, Service):
+class IgniteService(Service):
     PERSISTENT_ROOT = "/mnt/ignite"
     WORK_DIR = os.path.join(PERSISTENT_ROOT, "work")
     CONFIG_FILE = os.path.join(PERSISTENT_ROOT, "ignite-config.xml")
@@ -43,7 +42,7 @@ class IgniteService(IgnitePathResolverMixin, Service):
             "collect_default": False}
     }
 
-    def __init__(self, context, num_nodes=3, version=DEV_BRANCH):
+    def __init__(self, context, num_nodes=1, version=DEV_BRANCH):
         """
         :param context: test context
         :param num_nodes: number of Ignite nodes.
@@ -52,6 +51,7 @@ class IgniteService(IgnitePathResolverMixin, Service):
 
         self.log_level = "DEBUG"
         self.config = IgniteConfig()
+        self.path = IgnitePath()
 
         for node in self.nodes:
             node.version = version
@@ -85,7 +85,7 @@ class IgniteService(IgnitePathResolverMixin, Service):
         self.logger.debug("Attempting to start IgniteService on %s with command: %s" % (str(node.account), cmd))
         with node.account.monitor_log(IgniteService.STDOUT_STDERR_CAPTURE) as monitor:
             node.account.ssh(cmd)
-            monitor.wait_until("Topology snapshot", timeout_sec=timeout_sec, backoff_sec=.25,
+            monitor.wait_until("Topology snapshot", timeout_sec=timeout_sec, backoff_sec=5,
                                err_msg="Ignite server didn't finish startup in %d seconds" % timeout_sec)
 
         if len(self.pids(node)) == 0:
