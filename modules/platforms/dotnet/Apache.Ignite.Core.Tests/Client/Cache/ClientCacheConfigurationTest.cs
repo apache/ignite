@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
-    using System.Collections;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
