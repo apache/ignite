@@ -41,11 +41,12 @@ public interface PlatformService extends Service {
      * @param mthdName Method name.
      * @param srvKeepBinary Server keep binary flag.
      * @param args Arguments.
-     * @param crossPlatform If {@code true}, call service in cross-platform compatible manner.
+     * @param deserializeResult If {@code true}, call service in cross-platform compatible manner.
      * @return Resulting data.
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
-    public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean crossPlatform, Object[] args) throws IgniteCheckedException;
+    public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult, Object[] args)
+            throws IgniteCheckedException;
 
     /**
      * Gets native pointer.

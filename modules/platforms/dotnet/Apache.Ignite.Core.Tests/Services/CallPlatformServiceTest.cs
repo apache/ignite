@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
+    using System.Collections;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
@@ -64,6 +66,10 @@ namespace Apache.Ignite.Core.Tests.Services
             StopGrids();
         }
 
+        /// <summary>
+        /// Tests call a platform service by invoking a special compute java task,
+        /// in which real invocation of the service is made.
+        /// </summary>
         [Test]
         public void TestCallPlatformService()
         {
@@ -113,7 +119,8 @@ namespace Apache.Ignite.Core.Tests.Services
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 IgniteInstanceName = "grid" + idx,
-                BinaryConfiguration = new BinaryConfiguration(typeof(TestValue))
+                BinaryConfiguration = new BinaryConfiguration(typeof(TestKey), typeof(TestValue), 
+                    typeof(BinarizableTestValue))
                 {
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 }
@@ -132,49 +139,153 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             TestValue ValueProp { get; set; }
 
+            /** */
             void ErrorMethod();
+
+            /** */
+            TestValue[] AddOneToEach(TestValue[] arr);
+
+            /** */
+            ICollection AddOneToEachCollection(ICollection col);
+
+            /** */
+            IDictionary AddOneToEachDictionary(IDictionary dict);
+
+            /** */
+            BinarizableTestValue AddOne(BinarizableTestValue val);
         }
 
+        #pragma warning disable 649
+        
         /** */
-        public class TestPlatformService : ITestPlatformService
+        private class TestPlatformService : ITestPlatformService
         {
             /** */
             [InstanceResource]
-#pragma warning disable 649
             private IIgnite _grid;
-#pragma warning restore 649
             
-            /** */
+            /** <inheritdoc /> */
             public Guid NodeId => _grid.GetCluster().GetLocalNode().Id;
 
-            /** */
+            /** <inheritdoc /> */
             public Guid? GuidProp { get; set; }
             
-            /** */
+            /** <inheritdoc /> */
             public TestValue ValueProp { get; set; }
 
-            /** */
+            /** <inheritdoc /> */
             public void ErrorMethod()
             {
                 throw new Exception("Failed method");
             }
+            
+            /** <inheritdoc /> */
+            public TestValue[] AddOneToEach(TestValue[] arr)
+            {
+                return arr.Select(val => new TestValue()
+                {
+                    Id = val.Id + 1,
+                    Name = val.Name
 
-            /** */
+                }).ToArray();
+            }
+
+            /** <inheritdoc /> */
+            public ICollection AddOneToEachCollection(ICollection col)
+            {
+                var res =  col.Cast<TestValue>().Select(val => new TestValue()
+                {
+                    Id = val.Id + 1,
+                    Name = val.Name
+                
+                }).ToList();
+
+                return new ArrayList(res);
+            }
+
+            /** <inheritdoc /> */
+            public IDictionary AddOneToEachDictionary(IDictionary dict)
+            {
+                var res = new Hashtable();
+
+                foreach (DictionaryEntry pair in dict)
+                {
+                    var k = new TestKey(((TestKey) pair.Key).Id + 1);
+                    
+                    var v = new TestValue()
+                    {
+                        Id = ((TestValue)pair.Value).Id + 1,
+                        Name = ((TestValue)pair.Value).Name
+                    };
+                    
+                    res.Add(k, v);
+                }
+                
+                return res;
+            }
+
+            /** <inheritdoc /> */
+            public BinarizableTestValue AddOne(BinarizableTestValue val)
+            {
+                return new BinarizableTestValue()
+                {
+                    Id = val.Id + 1,
+                    Name = val.Name
+                };
+            }
+
+            /** <inheritdoc /> */
             public void Init(IServiceContext context)
             {
                 // No-op.
             }
 
-            /** */
+            /** <inheritdoc /> */
             public void Execute(IServiceContext context)
             {
                 // No-op.
             }
 
-            /** */
+            /** <inheritdoc /> */
             public void Cancel(IServiceContext context)
             {
                 // No-op;
+            }
+        }
+        
+        #pragma warning restore 649
+
+        /** */
+        public class TestKey
+        {
+            /** */
+            public TestKey(int id)
+            {
+                Id = id;
+            }
+
+            /** */
+            public int Id { get; }
+            
+            /** <inheritdoc /> */
+            public override int GetHashCode()
+            {
+                return Id;
+            }
+            
+            /** <inheritdoc /> */
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) 
+                    return false;
+                
+                if (ReferenceEquals(this, obj)) 
+                    return true;
+                
+                if (obj.GetType() != GetType()) 
+                    return false;
+                
+                return Id == ((TestKey)obj).Id;
             }
         }
 
@@ -186,6 +297,24 @@ namespace Apache.Ignite.Core.Tests.Services
             
             /** */
             public string Name { get; set; }
+        }
+
+        /** */
+        public class BinarizableTestValue : TestValue, IBinarizable
+        {
+            /** <inheritdoc /> */
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteInt("id", Id);
+                writer.WriteString("name", Name);
+            }
+
+            /** <inheritdoc /> */
+            public void ReadBinary(IBinaryReader reader)
+            {
+                Id = reader.ReadInt("id");
+                Name = reader.ReadString("name");
+            }
         }
     }
 }
