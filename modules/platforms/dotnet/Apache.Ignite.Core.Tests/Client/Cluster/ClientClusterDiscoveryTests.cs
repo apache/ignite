@@ -18,7 +18,10 @@
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
+    using System.Threading;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -65,7 +68,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                         nodes.Pop().Dispose();
                     }
                     
-                    // TODO: Verify partition awareness as well.
                     AssertClientConnectionCount(client, 3 + nodes.Count);
                 }
             }
@@ -125,6 +127,37 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             {
                 var client = GetClient();
                 AssertClientConnectionCount(client, 3);
+            }
+        }
+
+        /// <summary>
+        /// Tests that Partition Awareness feature works together with Cluster Discovery.
+        /// </summary>
+        [Test]
+        public void TestPartitionAwarenessRoutesRequestsToNewlyJoinedNodes()
+        {
+            var ignite = Ignition.GetAll().First();
+            var cache = ignite.CreateCache<int, int>("c");
+            var key = 12;  // This key will belong to newly joined node.
+            cache.Put(key, key);
+            
+            using (var ignite2 = Ignition.Start(GetIgniteConfiguration()))
+            {
+                var client = GetClient();
+                AssertClientConnectionCount(client, 4);
+
+                var aff = ignite2.GetAffinity(cache.Name);
+                var localNode = ignite2.GetCluster().GetLocalNode();
+
+                TestUtils.WaitForTrueCondition(() => aff.IsPrimary(localNode, key), 5000);
+
+                var clientCache = client.GetCache<int, int>(cache.Name);
+                clientCache.Get(key);
+
+                var log = ((ListLogger) ignite2.Logger).Entries.LastOrDefault(
+                    e => e.Message.Contains("Client request received"));
+                
+                Assert.IsNotNull(log);
             }
         }
     }
