@@ -42,7 +42,7 @@ class IgniteService(Service):
             "collect_default": False}
     }
 
-    def __init__(self, context, num_nodes=1, version=DEV_BRANCH):
+    def __init__(self, context, num_nodes=3, version=DEV_BRANCH):
         """
         :param context: test context
         :param num_nodes: number of Ignite nodes.
@@ -75,7 +75,7 @@ class IgniteService(Service):
                IgniteService.STDOUT_STDERR_CAPTURE)
         return cmd
 
-    def start_node(self, node, timeout_sec=180):
+    def start_node(self, node, timeout_sec=180, wait_for_rebalance=False):
         node.account.mkdirs(IgniteService.PERSISTENT_ROOT)
         node.account.create_file(IgniteService.CONFIG_FILE,
                                  self.config.render(IgniteService.PERSISTENT_ROOT, IgniteService.WORK_DIR))
@@ -83,9 +83,14 @@ class IgniteService(Service):
 
         cmd = self.start_cmd(node)
         self.logger.debug("Attempting to start IgniteService on %s with command: %s" % (str(node.account), cmd))
+
+        wait_for_message = "Topology snapshot"
+        if wait_for_rebalance:
+            wait_for_message = "Completed (final) rebalancing [grp=test-cache"
+
         with node.account.monitor_log(IgniteService.STDOUT_STDERR_CAPTURE) as monitor:
             node.account.ssh(cmd)
-            monitor.wait_until("Topology snapshot", timeout_sec=timeout_sec, backoff_sec=5,
+            monitor.wait_until(wait_for_message, timeout_sec=timeout_sec, backoff_sec=5,
                                err_msg="Ignite server didn't finish startup in %d seconds" % timeout_sec)
 
         if len(self.pids(node)) == 0:
