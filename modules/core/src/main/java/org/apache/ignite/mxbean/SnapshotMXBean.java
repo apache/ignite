@@ -15,17 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.twitter;
+package org.apache.ignite.mxbean;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.IgniteSnapshot;
 
 /**
- * Twitter streamer tests.
+ * Snapshot features MBean.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgniteTwitterStreamerTest.class
-})
-public class IgniteTwitterStreamerTestSuite {
+@MXBeanDescription("MBean that provides access for snapshot features.")
+public interface SnapshotMXBean {
+    /**
+     * Create the cluster-wide snapshot with given name asynchronously.
+     *
+     * @param snpName Snapshot name to created.
+     * @see IgniteSnapshot#createSnapshot(String) (String)
+     */
+    @MXBeanDescription("Create cluster-wide snapshot.")
+    public void createSnapshot(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
 }
