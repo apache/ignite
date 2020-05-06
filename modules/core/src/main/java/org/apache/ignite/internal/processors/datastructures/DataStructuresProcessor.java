@@ -1570,7 +1570,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final boolean create = cfg != null;
         final boolean collocated = isCollocated(cfg);
         final boolean separated = !collocated &&
-            U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE,  ctx.grid().cluster().nodes());
+            U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE, ctx.grid().cluster().nodes());
 
         return getCollection(new CX1<GridCacheContext, IgniteSet<T>>() {
             @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {

@@ -147,7 +147,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
     private volatile int totalIndexes;
 
     /** Total cache groups. */
-    private volatile  int totalCacheGrps;
+    private volatile int totalCacheGrps;
 
     /** Last progress print timestamp. */
     private final AtomicLong lastProgressPrintTs = new AtomicLong(0);
@@ -821,7 +821,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         if (e instanceof InterruptedException)
             return new IgniteInterruptedException((InterruptedException)e);
         else if (e.getCause() instanceof IgniteException)
-            return  (IgniteException)e.getCause();
+            return (IgniteException)e.getCause();
         else
             return new IgniteException(e.getCause());
     }

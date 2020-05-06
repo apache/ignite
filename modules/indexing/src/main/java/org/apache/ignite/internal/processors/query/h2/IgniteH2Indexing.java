@@ -365,7 +365,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return; // Type was rejected.
 
-        tbl.table().update(row, prevRow,  prevRowAvailable);
+        tbl.table().update(row, prevRow, prevRowAvailable);
 
         if (tbl.luceneIndex() != null) {
             long expireTime = row.expireTime();
@@ -577,7 +577,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         );
 
                         return new H2FieldsIterator(rs, mvccTracker, conn, qryParams.pageSize(),
-                            log, IgniteH2Indexing.this);
+                            log, IgniteH2Indexing.this, qryInfo);
                     }
                     catch (IgniteCheckedException | RuntimeException | Error e) {
                         conn.close();
@@ -803,7 +803,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     private ResultSet executeSqlQuery(final H2PooledConnection conn, final PreparedStatement stmt,
-        int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException  {
+        int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
         if (cancel != null)
             cancel.add(() -> cancelStatement(stmt));
 
@@ -911,17 +911,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
 
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout())
-                qryInfo.printLogMessage(log, "Long running query is finished");
+                qryInfo.printLogMessage(log, "Long running query is finished", null);
 
             return rs;
         }
         catch (Throwable e) {
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout()) {
                 qryInfo.printLogMessage(log, "Long running query is finished with error: "
-                    + e.getMessage());
+                    + e.getMessage(), null);
             }
 
-            throw  e;
+            throw e;
         }
         finally {
             CacheDataTree.setDataPageScanEnabled(false);

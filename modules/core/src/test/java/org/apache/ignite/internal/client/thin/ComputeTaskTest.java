@@ -96,7 +96,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private IgniteClient startClient(int ... gridIdxs) {
+    private IgniteClient startClient(int... gridIdxs) {
         String[] addrs = new String[gridIdxs.length];
 
         for (int i = 0; i < gridIdxs.length; i++)
@@ -321,17 +321,17 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
         try (IgniteClient client = startClient(0, 1)) {
             ClientComputeImpl compute = (ClientComputeImpl)client.compute();
 
-            Future<Object> fut1  = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
+            Future<Object> fut1 = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
 
             dropAllThinClientConnections();
 
-            Future<Object> fut2  = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
+            Future<Object> fut2 = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
 
             dropAllThinClientConnections();
 
             TestLatchTask.latch = new CountDownLatch(1);
 
-            Future<Object> fut3  = compute.executeAsync(TestLatchTask.class.getName(), null);
+            Future<Object> fut3 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
             assertEquals(1, compute.activeTaskFutures().size());
 
@@ -530,7 +530,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
      *
      * @param gridIdxs Grid indexes.
      */
-    private Set<UUID> nodeIds(int ... gridIdxs) {
+    private Set<UUID> nodeIds(int... gridIdxs) {
         Set<UUID> res = new HashSet<>();
 
         for (int i : gridIdxs)

@@ -1682,7 +1682,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                             + "]; contents=" + treeContents);
 
                     if (treeSize < minBound || treeSize > maxBound) {
-                        fail("Tree size is not in bounds ["  + minBound + ".." + maxBound + "]: " + treeSize
+                        fail("Tree size is not in bounds [" + minBound + ".." + maxBound + "]: " + treeSize
                             + "; Tree contents: " + treeContents);
                     }
                 }

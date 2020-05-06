@@ -1552,7 +1552,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override  public long readLock(long absPtr, long pageId, boolean force, boolean touch) {
+    @Override public long readLock(long absPtr, long pageId, boolean force, boolean touch) {
         assert started;
 
         int tag = force ? -1 : PageIdUtils.tag(pageId);

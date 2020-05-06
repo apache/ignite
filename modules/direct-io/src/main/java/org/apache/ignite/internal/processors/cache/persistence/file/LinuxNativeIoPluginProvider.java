@@ -213,7 +213,7 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
      * @param fileIO file to advice.
      * @param size expected size of file.
      */
-    private void adviceFileDontNeed(FileIO fileIO, long size)   {
+    private void adviceFileDontNeed(FileIO fileIO, long size) {
         try {
             if (fileIO instanceof RandomAccessFileIO) {
                 RandomAccessFileIO chIo = (RandomAccessFileIO)fileIO;

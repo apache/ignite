@@ -86,7 +86,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
  */
 public class PlatformUtils {
     /** Node attribute: platform. */
-    public static final String ATTR_PLATFORM = ATTR_PREFIX  + ".platform";
+    public static final String ATTR_PLATFORM = ATTR_PREFIX + ".platform";
 
     /** Platform: CPP. */
     public static final String PLATFORM_CPP = "cpp";

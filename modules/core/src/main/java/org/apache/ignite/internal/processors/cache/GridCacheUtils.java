@@ -2125,6 +2125,6 @@ public class GridCacheUtils {
      *
      */
     public interface BackupPostProcessingClosure extends IgniteInClosure<Collection<GridCacheEntryInfo>>,
-        IgniteBiInClosure<CacheObject, GridCacheVersion>{
+        IgniteBiInClosure<CacheObject, GridCacheVersion> {
     }
 }

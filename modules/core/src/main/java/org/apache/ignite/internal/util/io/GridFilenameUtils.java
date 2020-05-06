@@ -883,7 +883,7 @@ public class GridFilenameUtils {
         int index = indexOfLastSeparator(filename);
         if (index < 0)
             return filename.substring(0, prefix);
-        int end = index + (includeSeparator ?  1 : 0);
+        int end = index + (includeSeparator ? 1 : 0);
         if (end == 0)
             end++;
         return filename.substring(0, end);

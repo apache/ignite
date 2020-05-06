@@ -1375,7 +1375,7 @@ public class IgnitionEx {
      * @param name Grid name.
      * @return Grid instance.
      */
-    public  static IgniteKernal gridx(@Nullable String name) {
+    public static IgniteKernal gridx(@Nullable String name) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         IgniteKernal res;
@@ -1752,6 +1752,13 @@ public class IgnitionEx {
                 }
             };
 
+            UncaughtExceptionHandler excHnd = new UncaughtExceptionHandler() {
+                @Override public void uncaughtException(Thread t, Throwable e) {
+                    if (grid != null)
+                        grid.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                }
+            };
+
             execSvc = new IgniteThreadPoolExecutor(
                 "pub",
                 cfg.getIgniteInstanceName(),
@@ -2007,7 +2014,7 @@ public class IgnitionEx {
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<>(),
                 GridIoPolicy.UNDEFINED,
-                oomeHnd);
+                excHnd);
 
             rebalanceExecSvc.allowCoreThreadTimeOut(true);
 
@@ -2015,7 +2022,7 @@ public class IgnitionEx {
                 cfg.getRebalanceThreadPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "rebalance-striped",
-                oomeHnd,
+                excHnd,
                 true,
                 DFLT_THREAD_KEEP_ALIVE_TIME);
 

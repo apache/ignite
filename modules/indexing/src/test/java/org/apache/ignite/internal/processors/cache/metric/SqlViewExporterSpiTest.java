@@ -156,11 +156,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         for (List<?> row : res) {
             names.add((String)row.get(0));
 
-            assertNotNull(row.get(1));
+            assertNotNull("Metric value must be not null [name=" + row.get(0) + ']', row.get(1));
         }
 
         for (String attr : EXPECTED_ATTRIBUTES)
-            assertTrue(attr + " should be exporterd via SQL view", names.contains(attr));
+            assertTrue(attr + " should be exported via SQL view", names.contains(attr));
     }
 
     /** */
@@ -560,7 +560,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }
 
         assertTrue(execute(ignite0, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
-        assertTrue(execute(ignite1, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
+        assertTrue(waitForCondition(() ->
+            execute(ignite1, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty(), getTestTimeout()));
     }
 
     /** */

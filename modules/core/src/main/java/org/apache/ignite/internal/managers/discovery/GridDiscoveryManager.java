@@ -660,23 +660,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ctx.cache().onDiscoveryEvent(type, customMsg, node, nextTopVer, ctx.state().clusterState());
                 }
 
-                if (type == EVT_DISCOVERY_CUSTOM_EVT) {
-                    for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
-                        List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
-
-                        if (list != null) {
-                            for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
-                                try {
-                                    lsnr.onCustomEvent(nextTopVer, node, customMsg);
-                                }
-                                catch (Exception e) {
-                                    U.error(log, "Failed to notify direct custom event listener: " + customMsg, e);
-                                }
-                            }
-                        }
-                    }
-                }
-
                 DiscoCache discoCache;
 
                 // Put topology snapshot into discovery history.
@@ -735,6 +718,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             discoCacheHist.put(nextTopVer, discoCache);
 
                             topSnap.set(new Snapshot(nextTopVer, discoCache));
+                        }
+                    }
+                }
+
+                if (type == EVT_DISCOVERY_CUSTOM_EVT) {
+                    for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
+                        List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
+
+                        if (list != null) {
+                            for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
+                                try {
+                                    lsnr.onCustomEvent(nextTopVer, node, customMsg);
+                                }
+                                catch (Exception e) {
+                                    U.error(log, "Failed to notify direct custom event listener: " + customMsg, e);
+                                }
+                            }
                         }
                     }
                 }
@@ -1235,7 +1235,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             if (locDelayAssign != rmtLateAssign) {
                 throw new IgniteCheckedException("Remote node has cache affinity assignment mode different from local " +
-                    "[locId8=" +  U.id8(locNode.id()) +
+                    "[locId8=" + U.id8(locNode.id()) +
                     ", locDelayAssign=" + locDelayAssign +
                     ", rmtId8=" + U.id8(n.id()) +
                     ", rmtLateAssign=" + rmtLateAssign +
@@ -1847,7 +1847,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topVer Topology version.
      * @return Compacted consistent id map.
      */
-    public  Map<Short, UUID> nodeIdMap(AffinityTopologyVersion topVer) {
+    public Map<Short, UUID> nodeIdMap(AffinityTopologyVersion topVer) {
         return resolveDiscoCache(CU.cacheId(null), topVer).nodeIdMap();
     }
 

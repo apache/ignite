@@ -272,7 +272,7 @@ public abstract class PagesList extends DataStructure {
                         while (prevId != 0L) {
                             final long pageId = prevId;
                             final long page = acquirePage(pageId, IoStatisticsHolderNoOp.INSTANCE);
-                            try  {
+                            try {
                                 long pageAddr = readLock(pageId, page);
 
                                 assert pageAddr != 0L;
