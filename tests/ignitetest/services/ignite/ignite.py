@@ -86,7 +86,7 @@ class IgniteService(Service):
 
         wait_for_message = "Topology snapshot"
         if wait_for_rebalance:
-            wait_for_message = "Completed (final) rebalancing [grp=test-cache"
+            wait_for_message = "Completed (final) rebalancing \[grp=test-cache"
 
         with node.account.monitor_log(IgniteService.STDOUT_STDERR_CAPTURE) as monitor:
             node.account.ssh(cmd)
