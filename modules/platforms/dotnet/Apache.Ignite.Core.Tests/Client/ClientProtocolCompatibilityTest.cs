@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 cache.Put(1, 2);
                 Assert.AreEqual(2, cache.Get(1));
 
-                var log = GetLogs(client).Last();
+                var log = GetLogs(client).AsEnumerable().Reverse().Skip(1).First();
                 var expectedMessage = string.Format("Partition awareness has been disabled: server protocol version " +
                                                     "{0} is lower than required 1.4.0", version);
                 
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Assert.AreEqual(version, client.Socket.CurrentProtocolVersion);
 
-                var lastLog = GetLogs(client).Last();
+                var lastLog = GetLogs(client).Last(e => e.Level == LogLevel.Debug);
                 var expectedLog = string.Format(
                     "Handshake completed on 127.0.0.1:10800, protocol version = {0}", version);
                 
