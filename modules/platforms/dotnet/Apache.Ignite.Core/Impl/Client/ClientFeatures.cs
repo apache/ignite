@@ -80,8 +80,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
         public bool HasOp(ClientOp op)
         {
-            // TODO
-            return false;
+            return ValidateOp(op, false);
         }
 
         /// <summary>
@@ -144,30 +143,42 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <param name="operation">Operation.</param>
         public void ValidateOp(ClientOp operation)
         {
-            ValidateOp(operation, _protocolVersion , GetMinVersion(operation), _features, GetFeature(operation));
+            ValidateOp(operation, true);
         }
         
-        /// <summary>
-        /// Validates op code against current protocol version.
-        /// </summary>
-        private static void ValidateOp<T>(T operation, ClientProtocolVersion protocolVersion, 
-            ClientProtocolVersion requiredProtocolVersion, BitArray features, ClientBitmaskFeature? requiredFeature)
+        private bool ValidateOp(ClientOp operation, bool shouldThrow)
         {
-            if (protocolVersion < requiredProtocolVersion)
+            var requiredProtocolVersion = GetMinVersion(operation);
+            
+            if (_protocolVersion < requiredProtocolVersion)
             {
-                var message = string.Format("Operation {0} is not supported by protocol version {1}. " +
-                                            "Minimum protocol version required is {2}.", 
-                    operation, protocolVersion, requiredProtocolVersion);
-                
-                throw new IgniteClientException(message);
+                if (shouldThrow)
+                {
+                    var message = string.Format("Operation {0} is not supported by protocol version {1}. " +
+                                                "Minimum protocol version required is {2}.",
+                        operation, _protocolVersion, requiredProtocolVersion);
+
+                    throw new IgniteClientException(message);
+                }
+
+                return false;
             }
 
-            if (features != null && requiredFeature != null && !features.Get((int) requiredFeature.Value))
+            var requiredFeature = GetFeature(operation);
+
+            if (_features != null && requiredFeature != null && !_features.Get((int) requiredFeature.Value))
             {
-                throw new IgniteClientException(string.Format(
-                    "Operation {0} is not supported by the server. Feature {1} is missing.",
-                    operation, requiredFeature.Value));
+                if (shouldThrow)
+                {
+                    throw new IgniteClientException(string.Format(
+                        "Operation {0} is not supported by the server. Feature {1} is missing.",
+                        operation, requiredFeature.Value));
+                }
+
+                return false;
             }
+
+            return true;
         }
 
         /// <summary>
@@ -175,18 +186,18 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private static byte[] GetAllFeatures()
         {
-            var vals = Enum.GetValues(typeof(ClientBitmaskFeature))
+            var values = Enum.GetValues(typeof(ClientBitmaskFeature))
                 .Cast<int>()
                 .ToArray();
 
-            var bits = new BitArray(vals.Max() + 1);
+            var bits = new BitArray(values.Max() + 1);
 
-            foreach (var feature in vals)
+            foreach (var feature in values)
             {
                 bits.Set(feature, true);
             }
             
-            var bytes = new byte[1 + vals.Length / 8];
+            var bytes = new byte[1 + values.Length / 8];
             bits.CopyTo(bytes, 0);
 
             return bytes;
