@@ -168,27 +168,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cfg = GetIgniteConfiguration();
             cfg.AutoGenerateIgniteInstanceName = true;
 
-            using (var ignite = Ignition.Start(cfg))
+            using (Ignition.Start(cfg))
             {
-                // Wait for rebalance.
-                var events = ignite.GetEvents();
-                events.EnableLocal(EventType.CacheRebalanceStopped);
-                events.WaitForLocal(EventType.CacheRebalanceStopped);
+                TestUtils.WaitForTrueCondition(() =>
+                {
+                    // Keys 12 and 14 belong to a new node now (-1).
+                    Assert.AreEqual(12, _cache.Get(12));
+                    if (GetClientRequestGridIndex() != -1)
+                    {
+                        return false;
+                    }
 
-                // Warm-up.
-                Assert.AreEqual(1, _cache.Get(1));
-                
-                // Get default node index by performing non-partition-aware operation.
-                _cache.GetAll(Enumerable.Range(1, 10));
-                var defaultNodeIdx = GetClientRequestGridIndex("GetAll");
-                Assert.Greater(defaultNodeIdx, -1);
+                    Assert.AreEqual(14, _cache.Get(14));
+                    Assert.AreEqual(-1, GetClientRequestGridIndex());
 
-                // Assert: keys 12 and 14 belong to a new node now (-1).
-                Assert.AreEqual(12, _cache.Get(12));
-                Assert.AreEqual(-1, GetClientRequestGridIndex());
-
-                Assert.AreEqual(14, _cache.Get(14));
-                Assert.AreEqual(-1, GetClientRequestGridIndex());
+                    return true;
+                }, 3000);
             }
         }
 
