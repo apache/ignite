@@ -84,3 +84,4 @@ packages
 
 /results
 .ducktape
+*.pyc
