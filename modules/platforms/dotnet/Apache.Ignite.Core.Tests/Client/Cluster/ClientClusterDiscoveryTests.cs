@@ -140,7 +140,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         [Test]
         public void TestClientDiscoversOnlyServerNodes()
         {
-            // TODO
+            var cfg = GetIgniteConfiguration();
+            cfg.ClientMode = true;
+
+            using (Ignition.Start(cfg))
+            {
+                var client = GetClient();
+                AssertClientConnectionCount(client, 3);
+            }
         }
 
         [Test]
@@ -173,13 +180,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         /// </summary>
         private static void AssertClientConnectionCount(IIgniteClient client, int count)
         {
-            TestUtils.WaitForTrueCondition(() =>
+            var res = TestUtils.WaitForCondition(() =>
             {
                 // Perform any operation to cause topology update.
                 client.GetCacheNames();
 
                 return count == client.GetConnections().Count();
-            });
+            }, 1000);
+
+            if (!res)
+            {
+                Assert.Fail("Client connection count mismatch: expected {0}, but was {1}", 
+                    count, client.GetConnections().Count());
+            }
         }
     }
 }
