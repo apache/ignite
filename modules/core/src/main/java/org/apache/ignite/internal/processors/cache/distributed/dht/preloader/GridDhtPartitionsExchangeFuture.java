@@ -801,8 +801,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             ExchangeType exchange;
 
             if (exchCtx.exchangeFreeSwitch()) {
-                exchange = isSnapshotOperation(firstDiscoEvt) ? onCustomMessageNoAffinityChange() :
-                    onExchangeFreeSwitchNodeLeft();
+                if (isSnapshotOperation(firstDiscoEvt)) {
+                    // Keep if the cluster was rebalanced.
+                    if (wasRebalanced())
+                        markRebalanced();
+
+                    if (!forceAffReassignment)
+                        cctx.affinity().onCustomMessageNoAffinityChange(this, exchActions);
+
+                    exchange = cctx.kernalContext().clientNode() ? ExchangeType.NONE : ExchangeType.ALL;
+                }
+                else
+                    exchange = onExchangeFreeSwitchNodeLeft();
 
                 initCoordinatorCaches(newCrd);
             }
@@ -1446,6 +1456,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void clientOnlyExchange() throws IgniteCheckedException {
         if (crd != null) {
             assert !crd.isLocal() : crd;
+            assert !exchCtx.exchangeFreeSwitch() : this;
 
             cctx.exchange().exchangerBlockingSectionBegin();
 
