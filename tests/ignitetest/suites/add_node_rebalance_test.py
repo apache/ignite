@@ -42,9 +42,8 @@ class AddNodeRebalanceTest(Test):
         """
         Test performs add node rebalance test which consists of following steps:
             * Start cluster.
-            * Put data to it via CacheDataProducer.
-            * Start one more node.
-            * Await for rebalance to finish.
+            * Put data to it via IgniteClientApp.
+            * Start one more node and awaits for rebalance to finish.
         """
         self.logger.info("Start add node rebalance test.")
 
