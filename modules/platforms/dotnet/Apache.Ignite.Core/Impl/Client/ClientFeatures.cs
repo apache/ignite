@@ -71,6 +71,9 @@ namespace Apache.Ignite.Core.Impl.Client
             _features = features;
         }
 
+        /// <summary>
+        /// Returns a value indicating whether specified feature is supported.
+        /// </summary>
         public bool HasFeature(ClientBitmaskFeature feature)
         {
             var index = (int) feature;
@@ -78,6 +81,9 @@ namespace Apache.Ignite.Core.Impl.Client
             return _features != null && index >= 0 && index < _features.Count && _features.Get(index);
         }
 
+        /// <summary>
+        /// Returns a value indicating whether specified operation is supported.
+        /// </summary>
         public bool HasOp(ClientOp op)
         {
             return ValidateOp(op, false);
@@ -123,22 +129,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Gets <see cref="ClientBitmaskFeature"/> that is required to perform specified operation.
-        /// </summary>
-        /// <param name="op">Operation.</param>
-        /// <returns>Required feature flag, or null.</returns>
-        public static ClientBitmaskFeature? GetFeature(ClientOp op)
-        {
-            ClientBitmaskFeature feature;
-
-            return OpFeature.TryGetValue(op, out feature)
-                ? feature
-                : (ClientBitmaskFeature?) null;
-        }
-
-        
-        /// <summary>
-        /// Validates op code against current protocol version.
+        /// Validates specified op code against current protocol version and features.
         /// </summary>
         /// <param name="operation">Operation.</param>
         public void ValidateOp(ClientOp operation)
@@ -146,6 +137,9 @@ namespace Apache.Ignite.Core.Impl.Client
             ValidateOp(operation, true);
         }
         
+        /// <summary>
+        /// Validates specified op code against current protocol version and features.
+        /// </summary>
         private bool ValidateOp(ClientOp operation, bool shouldThrow)
         {
             var requiredProtocolVersion = GetMinVersion(operation);
@@ -179,6 +173,20 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             return true;
+        }
+        
+        /// <summary>
+        /// Gets <see cref="ClientBitmaskFeature"/> that is required to perform specified operation.
+        /// </summary>
+        /// <param name="op">Operation.</param>
+        /// <returns>Required feature flag, or null.</returns>
+        private static ClientBitmaskFeature? GetFeature(ClientOp op)
+        {
+            ClientBitmaskFeature feature;
+
+            return OpFeature.TryGetValue(op, out feature)
+                ? feature
+                : (ClientBitmaskFeature?) null;
         }
 
         /// <summary>
