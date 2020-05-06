@@ -659,7 +659,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             return f.get();
                         }
                         catch (ClusterTopologyException e) {
-                            throw new IgniteException("Snapshot request has been sent to the remote node " +
+                            throw new IgniteException("Snapshot request has been sent to the remote " +
                                 "but the target server node left the cluster", e);
                         }
                     });
@@ -1259,8 +1259,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public Void apply(String name) {
-            ignite.snapshot().createSnapshot(name)
-                .get();
+            ignite.snapshot().createSnapshot(name).get();
 
             return null;
         }

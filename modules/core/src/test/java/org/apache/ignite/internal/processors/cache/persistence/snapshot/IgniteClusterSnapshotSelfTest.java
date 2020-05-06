@@ -1044,18 +1044,15 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     @Test
     public void testClusterSnapshotFromClient() throws Exception {
         startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
-
         IgniteEx clnt = startClientGrid(2);
 
-        clnt.snapshot().createSnapshot(SNAPSHOT_NAME)
-            .get();
+        clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         awaitPartitionMapExchange();
-
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
     }
 
@@ -1081,40 +1078,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             IgniteException.class);
 
         block.unblock();
-
         fut.get();
     }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testClusterSnapshotFromClientNodeStop() throws Exception {
-        startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
-
-        IgniteEx clnt = startClientGrid(2);
-
-        IgniteFuture<Void> fut = clnt.snapshot().createSnapshot(SNAPSHOT_NAME);
-
-        stopGrid(0);
-
-        System.out.println("@@@ fut=" + fut.get());
-
-        startGrid(0);
-
-        stopAllGrids();
-
-        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
-
-        awaitPartitionMapExchange();
-
-        assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
-    }
-
-    // todo On cluster without clients start a snapshot and fail coordinator
-    //  (no errors must happen due to single messages resend)
-    // todo add test coordinator left during snapshot exchange (future inited, but not started)
-    // todo should client send its partitions in case of pme-free? #clientOnlyExchange
-    // todo "Wrap exception Topology projection" is empty with the user one.
-    // todo add test for PartitionExchangeAware execution order during snapshot
 
     /**
      * @param ignite Ignite instance.
