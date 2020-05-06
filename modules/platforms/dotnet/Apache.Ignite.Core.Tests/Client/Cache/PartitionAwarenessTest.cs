@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         [Test]
-        public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToDefaultNode()
+        public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToNewNode()
         {
             // Warm-up.
             Assert.AreEqual(1, _cache.Get(1));
@@ -183,13 +183,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 var defaultNodeIdx = GetClientRequestGridIndex("GetAll");
                 Assert.Greater(defaultNodeIdx, -1);
 
-                // Assert: keys 12 and 14 belong to a new node now, but we don't have the new node in the server list.
-                // Requests are routed to default node.
+                // Assert: keys 12 and 14 belong to a new node now (-1).
                 Assert.AreEqual(12, _cache.Get(12));
-                Assert.AreEqual(defaultNodeIdx, GetClientRequestGridIndex());
+                Assert.AreEqual(-1, GetClientRequestGridIndex());
 
                 Assert.AreEqual(14, _cache.Get(14));
-                Assert.AreEqual(defaultNodeIdx, GetClientRequestGridIndex());
+                Assert.AreEqual(-1, GetClientRequestGridIndex());
             }
         }
 
