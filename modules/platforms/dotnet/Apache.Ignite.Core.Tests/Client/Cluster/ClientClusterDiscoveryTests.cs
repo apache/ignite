@@ -156,7 +156,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         [Test]
         public void TestDiscoveryWithoutClientConnectorOnServer()
         {
-            // TODO
+            var cfg = GetIgniteConfiguration();
+            cfg.ClientConnectorConfigurationEnabled = false;
+            
+            using (Ignition.Start(cfg))
+            {
+                var client = GetClient();
+                AssertClientConnectionCount(client, 3);
+            }
         }
 
         [Test]

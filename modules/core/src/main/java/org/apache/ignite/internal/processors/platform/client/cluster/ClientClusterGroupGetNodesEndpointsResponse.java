@@ -68,26 +68,30 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
         writer.writeLong(endTopVer0);
 
         if (startTopVer == UNKNOWN_TOP_VER) {
-            writer.writeInt(topology.size());
+            int pos = writer.reserveInt();
+            int size = 0;
 
-            for (ClusterNode node : topology)
-                writeNode(writer, node);
+            for (ClusterNode node : topology) {
+                if (writeNode(writer, node))
+                    size++;
+            }
 
+            writer.writeInt(pos, size);
             writer.writeInt(0);
 
             return;
         }
 
-        Set<UUID> startNodes = toSet(cluster.topology(startTopVer));
-        Set<UUID> endNodes = toSet(topology);
+        Map<UUID, ClusterNode> startNodes = toMap(cluster.topology(startTopVer));
+        Map<UUID, ClusterNode> endNodes = toMap(topology);
 
         int pos = writer.reserveInt();
         int cnt = 0;
 
-        for (UUID endNode : endNodes) {
-            if (!startNodes.contains(endNode)) {
-                writeNode(writer, cluster.node(endNode));
-                cnt++;
+        for (Map.Entry<UUID, ClusterNode> endNode : endNodes.entrySet()) {
+            if (!startNodes.containsKey(endNode.getKey())) {
+                if (writeNode(writer, endNode.getValue()))
+                    cnt++;
             }
         }
 
@@ -96,9 +100,9 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
         pos = writer.reserveInt();
         cnt = 0;
 
-        for (UUID startNode : startNodes) {
-            if (!endNodes.contains(startNode)) {
-                writeUuid(writer, startNode);
+        for (Map.Entry<UUID, ClusterNode> startNode : startNodes.entrySet()) {
+            if (!endNodes.containsKey(startNode.getKey()) && !startNode.getValue().isClient()) {
+                writeUuid(writer, startNode.getKey());
                 cnt++;
             }
         }
@@ -155,11 +159,11 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
      * @param nodes Nodes.
      * @return Set of node ids.
      */
-    private Set<UUID> toSet(Collection<ClusterNode> nodes) {
-        Set<UUID> res = new HashSet<>(nodes.size());
+    private Map<UUID, ClusterNode> toMap(Collection<ClusterNode> nodes) {
+        Map<UUID, ClusterNode> res = new HashMap<>(nodes.size());
 
         for (ClusterNode node : nodes)
-            res.add(node.id());
+            res.put(node.id(), node);
 
         return res;
     }
