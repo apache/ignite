@@ -17,22 +17,15 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
-    using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
-    using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for client cluster discovery: client connects to any node first, retrieves all server endpoints,
-    /// and connects to all of them.
+    /// Tests for client cluster discovery.
     /// </summary>
-    public class ClientClusterDiscoveryTests : ClientTestBase
+    public class ClientClusterDiscoveryTests : ClientClusterDiscoveryTestsBase
     {
-        /** Flag indicating whether IgniteConfiguration.Localhost should be set. */
-        private readonly bool _noLocalhost;
-
         /// <summary>
         /// Initializes a new instance of <see cref="ClientClusterDiscoveryTests"/>.
         /// </summary>
@@ -44,41 +37,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         /// <summary>
         /// Initializes a new instance of <see cref="ClientClusterDiscoveryTests"/>.
         /// </summary>
-        public ClientClusterDiscoveryTests(bool noLocalhost, bool enableSsl) : base(3, enableSsl)
+        public ClientClusterDiscoveryTests(bool noLocalhost, bool enableSsl) : base(noLocalhost, enableSsl)
         {
-            _noLocalhost = noLocalhost;
-        }
-
-        /// <summary>
-        /// Tests that client with one initial endpoint discovers all servers.
-        /// </summary>
-        [Test]
-        public void TestClientWithOneEndpointDiscoversAllServers()
-        {
-            using (var client = GetClient())
-            {
-                AssertClientConnectionCount(client, 3);
-            }
-        }
-
-        /// <summary>
-        /// Tests that client discovers new servers automatically when they join the cluster, and removes
-        /// disconnected servers.
-        /// </summary>
-        [Test]
-        public void TestClientDiscoversJoinedServersAndRemovesDisconnected()
-        {
-            using (var client = GetClient())
-            {
-                AssertClientConnectionCount(client, 3);
-
-                using (Ignition.Start(GetIgniteConfiguration()))
-                {
-                    AssertClientConnectionCount(client, 4);
-                }
-
-                AssertClientConnectionCount(client, 3);
-            }
+            // No-op.
         }
 
         /// <summary>
@@ -164,52 +125,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             {
                 var client = GetClient();
                 AssertClientConnectionCount(client, 3);
-            }
-        }
-        
-        /** <inheritdoc /> */
-        protected override IgniteClientConfiguration GetClientConfiguration()
-        {
-            return new IgniteClientConfiguration(base.GetClientConfiguration())
-            {
-                EnablePartitionAwareness = true
-            };
-        }
-
-        /** <inheritdoc /> */
-        protected override IgniteConfiguration GetIgniteConfiguration()
-        {
-            return new IgniteConfiguration(base.GetIgniteConfiguration())
-            {
-                Localhost = _noLocalhost ? null : "127.0.0.1",
-                AutoGenerateIgniteInstanceName = true
-            };
-        }
-        
-        /// <summary>
-        /// Asserts client connection count.
-        /// </summary>
-        private static void AssertClientConnectionCount(IIgniteClient client, int count)
-        {
-            var res = TestUtils.WaitForCondition(() =>
-            {
-                // Perform any operation to cause topology update.
-                try
-                {
-                    client.GetCacheNames();
-                }
-                catch (Exception)
-                {
-                    // Ignore.
-                }
-
-                return count == client.GetConnections().Count();
-            }, 1000);
-
-            if (!res)
-            {
-                Assert.Fail("Client connection count mismatch: expected {0}, but was {1}", 
-                    count, client.GetConnections().Count());
             }
         }
     }

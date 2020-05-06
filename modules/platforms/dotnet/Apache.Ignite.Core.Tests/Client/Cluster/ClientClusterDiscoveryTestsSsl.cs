@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
     /// Tests client discovery with SSL enabled.
     /// </summary>
     [TestFixture]
-    public class ClientClusterDiscoveryTestsSsl : ClientClusterDiscoveryTests
+    public class ClientClusterDiscoveryTestsSsl : ClientClusterDiscoveryTestsBase
     {
         /// <summary>
         /// Initializes a new instance of <see cref="ClientClusterDiscoveryTestsSsl"/> class.

@@ -173,6 +173,7 @@
     <Compile Include="Client\ClientServerCompatibilityTest.cs" />
     <Compile Include="Client\ClientTestBase.cs" />
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTests.cs" />
+    <Compile Include="Client\Cluster\ClientClusterDiscoveryTestsBase.cs" />
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTestsBaselineTopology.cs" />
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTestsNoLocalhost.cs" />
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTestsSsl.cs" />
