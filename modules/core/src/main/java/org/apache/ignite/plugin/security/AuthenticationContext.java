@@ -18,6 +18,7 @@
 package org.apache.ignite.plugin.security;
 
 import java.net.InetSocketAddress;
+import java.security.cert.Certificate;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,6 +50,9 @@ public class AuthenticationContext {
 
     /** True if this is a client node context. */
     private boolean client;
+
+    /** Client SSL certificates. */
+    private Certificate[] certs;
 
     /**
      * Gets subject type.
@@ -153,6 +157,23 @@ public class AuthenticationContext {
      */
     public AuthenticationContext authorizationContext(AuthorizationContext newVal) {
         athrCtx = newVal;
+
+        return this;
+    }
+
+    /**
+     * @return Client SSL certificates.
+     */
+    public Certificate[] certificates() {
+        return certs;
+    }
+
+    /**
+     * Set client SSL certificates.
+     * @param certs Client SSL certificates.
+     */
+    public AuthenticationContext certificates(Certificate[] certs) {
+        this.certs = certs;
 
         return this;
     }

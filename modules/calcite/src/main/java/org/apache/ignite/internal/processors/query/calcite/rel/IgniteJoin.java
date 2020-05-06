@@ -17,18 +17,23 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import com.google.common.collect.ImmutableSet;
+import java.util.List;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlExplainLevel;
 
 /**
  * Relational expression that combines two relational expressions according to
@@ -56,6 +61,17 @@ public class IgniteJoin extends Join implements IgniteRel {
         super(cluster, traitSet, left, right, condition, variablesSet, joinType);
     }
 
+    /** */
+    public IgniteJoin(RelInput input) {
+        this(input.getCluster(),
+            input.getTraitSet().replace(IgniteConvention.INSTANCE),
+            input.getInputs().get(0),
+            input.getInputs().get(1),
+            input.getExpression("condition"),
+            ImmutableSet.copyOf((List<CorrelationId>)input.get("variablesSet")),
+            input.getEnum("joinType", JoinRelType.class));
+    }
+
     /** {@inheritDoc} */
     @Override public Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
         return new IgniteJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType);
@@ -72,5 +88,11 @@ public class IgniteJoin extends Join implements IgniteRel {
             return planner.getCostFactory().makeInfiniteCost();
 
         return super.computeSelfCost(planner, mq);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw)
+            .itemIf("variablesSet", variablesSet.asList(), pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES);
     }
 }

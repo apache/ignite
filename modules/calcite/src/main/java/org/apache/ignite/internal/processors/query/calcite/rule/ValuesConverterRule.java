@@ -22,9 +22,9 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.logical.LogicalValues;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 
 /**
  *
@@ -47,7 +47,7 @@ public class ValuesConverterRule extends RelOptRule {
 
         RelTraitSet traits = rel.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteMdDistribution.values(rel.getRowType(), rel.getTuples()));
+            .replace(IgniteDistributions.values(rel.getRowType(), rel.getTuples()));
 
         RuleUtils.transformTo(call,
             new IgniteValues(cluster, rel.getRowType(), rel.getTuples(), traits));

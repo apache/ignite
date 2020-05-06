@@ -21,35 +21,58 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
+import org.apache.calcite.sql.SqlExplainLevel;
 
 /**
  * Relational expression that receives elements from remote {@link IgniteSender}
  */
 public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
     /** */
-    private final Fragment source;
+    private final long exchangeId;
+
+    /** */
+    private final long sourceFragmentId;
 
     /**
      * Creates a Receiver
-     *
-     * @param cluster  Cluster that this relational expression belongs to
-     * @param traits   Traits of this relational expression
-     * @param rowType  Output row type
-     * @param source   Source fragment.
      */
-    public IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, Fragment source) {
+    public IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, long exchangeId,
+        long sourceFragmentId) {
         super(cluster, traits);
 
+        this.exchangeId = exchangeId;
+        this.sourceFragmentId = sourceFragmentId;
         this.rowType = rowType;
-        this.source = source;
+    }
+
+    /** */
+    public IgniteReceiver(RelInput input) {
+        this(
+            input.getCluster(),
+            input.getTraitSet().replace(IgniteConvention.INSTANCE),
+            input.getRowType("rowType"),
+            ((Number)input.get("exchangeId")).longValue(),
+            ((Number)input.get("sourceFragmentId")).longValue());
+    }
+
+    /** */
+    public long exchangeId() {
+        return exchangeId;
+    }
+
+    /** */
+    public long sourceFragmentId() {
+        return sourceFragmentId;
     }
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new IgniteReceiver(getCluster(), traitSet, rowType, source);
+        return new IgniteReceiver(getCluster(), traitSet, rowType, exchangeId, sourceFragmentId);
     }
 
     /** {@inheritDoc} */
@@ -57,10 +80,17 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
         return visitor.visit(this);
     }
 
-    /**
-     * @return Source fragment.
-     */
-    public Fragment source() {
-        return source;
+    /** {@inheritDoc} */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        RelWriter writer = super.explainTerms(pw);
+
+        if (pw.getDetailLevel() != SqlExplainLevel.ALL_ATTRIBUTES)
+            return writer;
+
+        return writer
+            .item("rowType", rowType)
+            .item("exchangeId", exchangeId)
+            .item("sourceFragmentId", sourceFragmentId)
+            .itemIf("collations", collations(), collations() != null && collations() != RelCollations.EMPTY);
     }
 }

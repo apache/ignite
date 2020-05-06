@@ -79,24 +79,24 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
 
     @Test
     public void testPkIdx_KeyColumnFilter() {
-        assertIndexInQuery("[[PUBLIC, PROJECT][PK]]", "SELECT * FROM Project WHERE _key=1");
+        assertIndexInQuery("PUBLIC, PROJECT", "PK", "SELECT * FROM Project WHERE _key=1");
     }
 
     @Test
     public void testPkIdx_KeyColumnAliasFilter() {
-        assertIndexInQuery("[[PUBLIC, PROJECT][PK_ALIAS]]",
+        assertIndexInQuery("PUBLIC, PROJECT", "PK_ALIAS",
             "SELECT * FROM Project WHERE id=1");
     }
 
     @Test
     public void testNameIdx_NameFilter() {
-        assertIndexInQuery("[[PUBLIC, PROJECT][PROJECT_NAME_ASC_IDX]]",
+        assertIndexInQuery("PUBLIC, PROJECT", "PROJECT_NAME_ASC_IDX",
             "SELECT * FROM Project WHERE name='Ignite'");
     }
 
     @Test
     public void testVerNameIdIdx_VerFilter() {
-        assertIndexInQuery("[[PUBLIC, PROJECT][PROJECT_VER_DESC_NAME_ASC_ID_DESC_IDX]]",
+        assertIndexInQuery("PUBLIC, PROJECT", "PROJECT_VER_DESC_NAME_ASC_ID_DESC_IDX",
             "SELECT * FROM Project WHERE ver=1 AND name='Vasya'");
     }
 
@@ -152,7 +152,7 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
 //
 //        System.out.println("planning time=" + (System.currentTimeMillis() - start));
 
-    public void assertIndexInQuery(String idxName, String qry) {
+    public void assertIndexInQuery(String tblName, String idxName, String qry) {
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
         List<FieldsQueryCursor<List<?>>> cursors =
@@ -164,7 +164,7 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
 
         String plan = (String)res.get(0).get(0);
 
-        String idxScanName = "IgniteTableScan(table=" + idxName + ",";
+        String idxScanName = "IgniteTableScan(table=[[" + tblName + "]], index=[" + idxName + ']';
 
         assertTrue("idxName=" + idxName + ", plan=" + plan, plan.contains(idxScanName));
     }

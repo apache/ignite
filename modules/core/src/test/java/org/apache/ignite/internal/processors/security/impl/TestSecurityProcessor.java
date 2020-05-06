@@ -117,6 +117,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setAddr(ctx.address())
                 .setLogin(ctx.credentials().getLogin())
                 .setPerms(perms)
+                .setCerts(ctx.certificates())
                 .sandboxPermissions(SANDBOX_PERMS.get(ctx.credentials()))
         );
     }

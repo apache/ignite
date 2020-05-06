@@ -467,7 +467,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
             stopGrid();
         }
 
-        if (isException == false)
+        if (!isException)
             fail("@Gridify method gridifyDefaultException(0) does not return any exception.");
     }
 

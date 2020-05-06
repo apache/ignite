@@ -56,11 +56,14 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
@@ -110,8 +113,10 @@ public class PlannerTest extends GridCommonAbstractTest {
     /** */
     private List<UUID> nodes;
 
+    /** */
     private List<QueryTaskExecutorImpl> executors;
 
+    /** */
     private volatile Throwable lastException;
 
     /** */
@@ -360,6 +365,378 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         assertNotNull(relRoot.rel);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUnion() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable table1 = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("SALARY", f.createJavaType(Double.class))
+                .build()) {
+
+            @Override public NodesMapping mapping(PlanningContext ctx) {
+                return new NodesMapping(null, Arrays.asList(
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2),
+                    select(nodes, 2, 0),
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2)
+                ), NodesMapping.HAS_PARTITIONED_CACHES);
+            }
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "Table1", "hash");
+            }
+        };
+
+        TestTable table2 = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("SALARY", f.createJavaType(Double.class))
+                .build()) {
+
+            @Override public NodesMapping mapping(PlanningContext ctx) {
+                return new NodesMapping(null, Arrays.asList(
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2),
+                    select(nodes, 2, 0),
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2)
+                ), NodesMapping.HAS_PARTITIONED_CACHES);
+            }
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "Table2", "hash");
+            }
+        };
+
+        TestTable table3 = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("SALARY", f.createJavaType(Double.class))
+                .build()) {
+
+            @Override public NodesMapping mapping(PlanningContext ctx) {
+                return new NodesMapping(null, Arrays.asList(
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2),
+                    select(nodes, 2, 0),
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2)
+                ), NodesMapping.HAS_PARTITIONED_CACHES);
+            }
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "Table3", "hash");
+            }
+        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("TABLE1", table1);
+        publicSchema.addTable("TABLE2", table2);
+        publicSchema.addTable("TABLE3", table3);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "" +
+            "SELECT * FROM table1 " +
+            "UNION " +
+            "SELECT * FROM table2 " +
+            "UNION " +
+            "SELECT * FROM table3 ";
+
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .parameters(new Object[]{2})
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        RelNode root;
+
+        try (IgnitePlanner planner = ctx.planner()){
+            assertNotNull(planner);
+
+            String query = ctx.query();
+
+            assertNotNull(query);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            root = planner.convert(sqlNode);
+
+            // Transformation chain
+            root = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, root.getTraitSet(), root);
+
+            // Transformation chain
+            RelTraitSet desired = root.getCluster().traitSet()
+                .replace(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single())
+                .simplify();
+
+            root = planner.transform(PlannerPhase.OPTIMIZATION, desired, root);
+        }
+
+        assertNotNull(root);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUnionAll() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable table1 = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("SALARY", f.createJavaType(Double.class))
+                .build()) {
+
+            @Override public NodesMapping mapping(PlanningContext ctx) {
+                return new NodesMapping(null, Arrays.asList(
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2),
+                    select(nodes, 2, 0),
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2)
+                ), NodesMapping.HAS_PARTITIONED_CACHES);
+            }
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "Table1", "hash");
+            }
+        };
+
+        TestTable table2 = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("SALARY", f.createJavaType(Double.class))
+                .build()) {
+
+            @Override public NodesMapping mapping(PlanningContext ctx) {
+                return new NodesMapping(null, Arrays.asList(
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2),
+                    select(nodes, 2, 0),
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2)
+                ), NodesMapping.HAS_PARTITIONED_CACHES);
+            }
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "Table2", "hash");
+            }
+        };
+
+        TestTable table3 = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("SALARY", f.createJavaType(Double.class))
+                .build()) {
+
+            @Override public NodesMapping mapping(PlanningContext ctx) {
+                return new NodesMapping(null, Arrays.asList(
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2),
+                    select(nodes, 2, 0),
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2)
+                ), NodesMapping.HAS_PARTITIONED_CACHES);
+            }
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "Table3", "hash");
+            }
+        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("TABLE1", table1);
+        publicSchema.addTable("TABLE2", table2);
+        publicSchema.addTable("TABLE3", table3);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "" +
+            "SELECT * FROM table1 " +
+            "UNION ALL " +
+            "SELECT * FROM table2 " +
+            "UNION ALL " +
+            "SELECT * FROM table3 ";
+
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .parameters(new Object[]{2})
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        RelNode root;
+
+        try (IgnitePlanner planner = ctx.planner()){
+            assertNotNull(planner);
+
+            String query = ctx.query();
+
+            assertNotNull(query);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            root = planner.convert(sqlNode);
+
+            // Transformation chain
+            root = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, root.getTraitSet(), root);
+
+            // Transformation chain
+            RelTraitSet desired = root.getCluster().traitSet()
+                .replace(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single())
+                .simplify();
+
+            root = planner.transform(PlannerPhase.OPTIMIZATION, desired, root);
+        }
+
+        assertNotNull(root);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAggregate() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable employer = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("SALARY", f.createJavaType(Double.class))
+                .build()) {
+
+            @Override public NodesMapping mapping(PlanningContext ctx) {
+                return new NodesMapping(null, Arrays.asList(
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2),
+                    select(nodes, 2, 0),
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2)
+                ), NodesMapping.HAS_PARTITIONED_CACHES);
+            }
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "Employers", "hash");
+            }
+        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("EMPS", employer);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "SELECT * FROM emps WHERE emps.salary = (SELECT AVG(emps.salary) FROM emps)";
+
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .parameters(new Object[]{2})
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        RelNode root;
+
+        try (IgnitePlanner planner = ctx.planner()){
+            assertNotNull(planner);
+
+            String query = ctx.query();
+
+            assertNotNull(query);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            root = planner.convert(sqlNode);
+
+            // Transformation chain
+            root = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, root.getTraitSet(), root);
+
+            // Transformation chain
+            RelTraitSet desired = root.getCluster().traitSet()
+                .replace(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single())
+                .simplify();
+
+            root = planner.transform(PlannerPhase.OPTIMIZATION, desired, root);
+        }
+
+        assertNotNull(root);
     }
 
     /**
@@ -896,7 +1273,16 @@ public class PlannerTest extends GridCommonAbstractTest {
             exchangeService.mailboxRegistry(mailboxRegistry);
             exchangeService.init();
 
-            ectx = new ExecutionContext(taskExecutor, ctx, queryId, fragment.fragmentId(), null, Commons.parametersMap(ctx.parameters()));
+            ectx = new ExecutionContext(taskExecutor,
+                ctx,
+                queryId,
+                new FragmentDescription(
+                    fragment.fragmentId(),
+                    null,
+                    0,
+                    plan.targetMapping(fragment),
+                    plan.remoteSources(fragment)),
+                Commons.parametersMap(ctx.parameters()));
 
             exec = new LogicalRelImplementor(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeService,
                 new TestFailureProcessor(kernal)).go(fragment.root());
@@ -952,8 +1338,12 @@ public class PlannerTest extends GridCommonAbstractTest {
                     .logger(log)
                     .build(),
                 queryId,
-                fragment.fragmentId(),
-                null,
+                new FragmentDescription(
+                    fragment.fragmentId(),
+                    null,
+                    0,
+                    plan.targetMapping(fragment),
+                    plan.remoteSources(fragment)),
                 Commons.parametersMap(ctx.parameters()));
 
             exec = new LogicalRelImplementor(ectx, c -> r -> 0, mailboxRegistry, exchangeService,
@@ -1125,7 +1515,16 @@ public class PlannerTest extends GridCommonAbstractTest {
             exchangeService.mailboxRegistry(mailboxRegistry);
             exchangeService.init();
 
-            ectx = new ExecutionContext(taskExecutor, ctx, queryId, fragment.fragmentId(), null, Commons.parametersMap(ctx.parameters()));
+            ectx = new ExecutionContext(taskExecutor,
+                ctx,
+                queryId,
+                new FragmentDescription(
+                    fragment.fragmentId(),
+                    null,
+                    0,
+                    plan.targetMapping(fragment),
+                    plan.remoteSources(fragment)),
+                Commons.parametersMap(ctx.parameters()));
 
             exec = new LogicalRelImplementor(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeService,
                 new TestFailureProcessor(kernal)).go(fragment.root());
@@ -1181,8 +1580,12 @@ public class PlannerTest extends GridCommonAbstractTest {
                     .logger(log)
                     .build(),
                 queryId,
-                fragment.fragmentId(),
-                null,
+                new FragmentDescription(
+                    fragment.fragmentId(),
+                    null,
+                    -1,
+                    plan.targetMapping(fragment),
+                    plan.remoteSources(fragment)),
                 Commons.parametersMap(ctx.parameters()));
 
             exec = new LogicalRelImplementor(ectx, c -> r -> 0, mailboxRegistry, exchangeService,
@@ -1805,6 +2208,135 @@ public class PlannerTest extends GridCommonAbstractTest {
         assertEquals(2, plan.fragments().size());
     }
 
+    @Test
+    public void testSerializationDeserialization() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable developer = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("PROJECTID", f.createJavaType(Integer.class))
+                .build()) {
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "Developer", "hash");
+            }
+        };
+
+        TestTable project = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("VER", f.createJavaType(Integer.class))
+                .build()) {
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "Project", "hash");
+            }
+
+        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("DEVELOPER", developer);
+        publicSchema.addTable("PROJECT", project);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
+            "FROM PUBLIC.Developer d JOIN (" +
+            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
+            ") p " +
+            "ON d.projectId = p.id0 " +
+            "WHERE (d.projectId + 1) > ?";
+
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .parameters(new Object[]{2})
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        RelNode rel;
+
+        try (IgnitePlanner planner = ctx.planner()){
+            assertNotNull(planner);
+
+            String query = ctx.query();
+
+            assertNotNull(query);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            rel = planner.convert(sqlNode);
+
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
+
+            // Transformation chain
+            RelTraitSet desired = rel.getCluster().traitSet()
+                .replace(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single())
+                .simplify();
+
+            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+        }
+
+        assertNotNull(rel);
+
+        List<Fragment> fragments = new Splitter().go((IgniteRel)rel);
+        List<String> serialized = new ArrayList<>(fragments.size());
+
+        for (Fragment fragment : fragments) {
+            RelJsonWriter writer = new RelJsonWriter();
+            fragment.root().explain(writer);
+            serialized.add(writer.asString());
+        }
+
+        assertNotNull(serialized);
+
+        ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .parameters(new Object[]{2})
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        List<RelNode> nodes = new ArrayList<>();
+
+        try(IgnitePlanner ignored = ctx.planner()) {
+            for (String s : serialized) {
+                RelJsonReader reader = new RelJsonReader(ctx.createCluster(), ctx.catalogReader());
+                nodes.add(reader.read(s));
+            }
+        }
+
+        assertNotNull(nodes);
+    }
+
     /** */
     private NodesMapping intermediateMapping(@NotNull AffinityTopologyVersion topVer, int desiredCount, @Nullable Predicate<ClusterNode> filter) {
         List<UUID> nodes = desiredCount == 1 ? select(this.nodes, 0) : select(this.nodes, 0, 1, 2, 3);
@@ -1831,6 +2363,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         private TestTable(RelDataType type) {
             super(null, null, null);
             protoType = RelDataTypeImpl.proto(type);
+            addIndex(new IgniteIndex(null, "PK", null, this));
         }
 
         /** {@inheritDoc} */
@@ -1840,7 +2373,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-            return new IgniteTableScan(cluster, traitSet, relOptTable, null, null);
+            return new IgniteTableScan(cluster, traitSet, relOptTable, "PK", null);
         }
 
         /** {@inheritDoc} */

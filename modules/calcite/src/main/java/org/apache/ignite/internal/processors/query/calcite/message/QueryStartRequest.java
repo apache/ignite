@@ -22,7 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.calcite.serialize.PhysicalRel;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -38,20 +38,13 @@ public class QueryStartRequest implements MarshalableMessage {
     private UUID queryId;
 
     /** */
-    private long fragmentId;
-
-    /** */
-    private int[] partitions;
-
-    /** */
     private AffinityTopologyVersion version;
 
     /** */
-    @GridDirectTransient
-    private PhysicalRel root;
+    private FragmentDescription fragmentDescription;
 
     /** */
-    private byte[] rootBytes;
+    private String root;
 
     /** */
     @GridDirectTransient
@@ -61,20 +54,18 @@ public class QueryStartRequest implements MarshalableMessage {
     private byte[] paramsBytes;
 
     /** */
-    public QueryStartRequest(UUID queryId, long fragmentId, String schema, PhysicalRel root, AffinityTopologyVersion version, int[] partitions, Object[] params) {
+    public QueryStartRequest(UUID queryId, String schema, String root, AffinityTopologyVersion version,
+        FragmentDescription fragmentDescription, Object[] params) {
         this.schema = schema;
         this.queryId = queryId;
-        this.fragmentId = fragmentId;
-        this.partitions = partitions;
+        this.fragmentDescription = fragmentDescription;
         this.version = version;
         this.root = root;
         this.params = params;
     }
 
     /** */
-    QueryStartRequest() {
-
-    }
+    QueryStartRequest() {}
 
     /**
      * @return Schema name.
@@ -91,17 +82,10 @@ public class QueryStartRequest implements MarshalableMessage {
     }
 
     /**
-     * @return Fragment ID.
+     * @return Fragment description.
      */
-    public long fragmentId() {
-        return fragmentId;
-    }
-
-    /**
-     * @return Partitions.
-     */
-    public int[] partitions() {
-        return partitions;
+    public FragmentDescription fragmentDescription() {
+        return fragmentDescription;
     }
 
     /**
@@ -114,7 +98,7 @@ public class QueryStartRequest implements MarshalableMessage {
     /**
      * @return Fragment plan.
      */
-    public PhysicalRel root() {
+    public String root() {
         return root;
     }
 
@@ -127,20 +111,18 @@ public class QueryStartRequest implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
-        if (rootBytes == null && root != null)
-            rootBytes = marshaller.marshal(root);
-
         if (paramsBytes == null && params != null)
             paramsBytes = marshaller.marshal(params);
+
+        fragmentDescription.prepareMarshal(marshaller);
     }
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
-        if (root == null && rootBytes != null)
-            root = marshaller.unmarshal(rootBytes, loader);
-
         if (params == null && paramsBytes != null)
             params = marshaller.unmarshal(paramsBytes, loader);
+
+        fragmentDescription.prepareUnmarshal(marshaller, loader);
     }
 
     /** {@inheritDoc} */
@@ -156,7 +138,7 @@ public class QueryStartRequest implements MarshalableMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("fragmentId", fragmentId))
+                if (!writer.writeMessage("fragmentDescription", fragmentDescription))
                     return false;
 
                 writer.incrementState();
@@ -168,30 +150,24 @@ public class QueryStartRequest implements MarshalableMessage {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeIntArray("partitions", partitions))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeByteArray("rootBytes", rootBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
                 if (!writer.writeUuid("queryId", queryId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 3:
+                if (!writer.writeString("root", root))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
                 if (!writer.writeString("schema", schema))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 5:
                 if (!writer.writeAffinityTopologyVersion("version", version))
                     return false;
 
@@ -211,7 +187,7 @@ public class QueryStartRequest implements MarshalableMessage {
 
         switch (reader.state()) {
             case 0:
-                fragmentId = reader.readLong("fragmentId");
+                fragmentDescription = reader.readMessage("fragmentDescription");
 
                 if (!reader.isLastRead())
                     return false;
@@ -227,22 +203,6 @@ public class QueryStartRequest implements MarshalableMessage {
                 reader.incrementState();
 
             case 2:
-                partitions = reader.readIntArray("partitions");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                rootBytes = reader.readByteArray("rootBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
                 queryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
@@ -250,7 +210,15 @@ public class QueryStartRequest implements MarshalableMessage {
 
                 reader.incrementState();
 
-            case 5:
+            case 3:
+                root = reader.readString("root");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
                 schema = reader.readString("schema");
 
                 if (!reader.isLastRead())
@@ -258,7 +226,7 @@ public class QueryStartRequest implements MarshalableMessage {
 
                 reader.incrementState();
 
-            case 6:
+            case 5:
                 version = reader.readAffinityTopologyVersion("version");
 
                 if (!reader.isLastRead())
@@ -278,6 +246,6 @@ public class QueryStartRequest implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 6;
     }
 }

@@ -24,10 +24,10 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -40,7 +40,7 @@ public class JoinTraitsPropagationRule extends RelOptRule {
     public static final RelOptRule INSTANCE = new JoinTraitsPropagationRule();
 
     public JoinTraitsPropagationRule() {
-        super(operand(IgniteJoin.class, operand(RelSubset.class, any())));
+        super(RuleUtils.traitPropagationOperand(IgniteJoin.class));
     }
 
     /** {@inheritDoc} */
@@ -51,20 +51,22 @@ public class JoinTraitsPropagationRule extends RelOptRule {
         RelNode right = rel.getRight();
 
         RelOptCluster cluster = rel.getCluster();
+        RelMetadataQuery mq = call.getMetadataQuery();
+
         RexNode condition = rel.getCondition();
         Set<CorrelationId> variablesSet = rel.getVariablesSet();
         JoinRelType joinType = rel.getJoinType();
 
-        List<IgniteDistributions.BiSuggestion> suggests = IgniteDistributions.suggestJoin(
-            left, right, rel.analyzeCondition(), joinType);
+        List<IgniteDistributions.BiSuggestion> suggestions = IgniteDistributions.suggestJoin(
+            mq, left, right, rel.analyzeCondition(), joinType);
 
-        List<RelNode> newRels = new ArrayList<>(suggests.size());
+        List<RelNode> newRels = new ArrayList<>(suggestions.size());
 
-        for (IgniteDistributions.BiSuggestion suggest : suggests) {
-            RelTraitSet traits = rel.getTraitSet().replace(suggest.out());
+        for (IgniteDistributions.BiSuggestion suggestion : suggestions) {
+            RelTraitSet traits = rel.getTraitSet().replace(suggestion.out());
 
-            RelNode left0 = RuleUtils.changeTraits(left, suggest.left());
-            RelNode right0 = RuleUtils.changeTraits(right, suggest.right());
+            RelNode left0 = RuleUtils.changeTraits(left, suggestion.left());
+            RelNode right0 = RuleUtils.changeTraits(right, suggestion.right());
 
             newRels.add(new IgniteJoin(cluster, traits, left0, right0,
                 condition, variablesSet, joinType));

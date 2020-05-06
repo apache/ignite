@@ -17,24 +17,34 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Represents a list of nodes capable to execute a query over particular partitions.
  */
-public class NodesMapping implements Serializable {
+public class NodesMapping implements MarshalableMessage {
     /** */
     public static final byte HAS_MOVING_PARTITIONS  = 1;
 
@@ -54,13 +64,23 @@ public class NodesMapping implements Serializable {
     public static final byte CLIENT                 = 1 << 5;
 
     /** */
-    private final List<UUID> nodes;
+    @GridDirectCollection(UUID.class)
+    private List<UUID> nodes;
 
     /** */
-    private final List<List<UUID>> assignments;
+    @GridDirectTransient
+    private List<List<UUID>> assignments;
 
     /** */
-    private final byte flags;
+    @GridDirectCollection(Message.class)
+    private List<UUIDCollectionMessage> assignments0;
+
+    /** */
+    private byte flags;
+
+    /** */
+    public NodesMapping() {
+    }
 
     /** */
     public NodesMapping(List<UUID> nodes, List<List<UUID>> assignments, byte flags) {
@@ -103,6 +123,9 @@ public class NodesMapping implements Serializable {
      */
     public NodesMapping mergeWith(NodesMapping other) throws LocationMappingException {
         byte flags = (byte) (this.flags | other.flags);
+
+        // reset posiible set deduplicated flag
+        flags &= ~DEDUPLICATED;
 
         List<UUID> nodes = intersectReplicated(this.nodes, other.nodes);
 
@@ -258,5 +281,109 @@ public class NodesMapping implements Serializable {
         }
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessageType type() {
+        return MessageType.NODES_MAPPING;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeCollection("assignments0", assignments0, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeByte("flags", flags))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeCollection("nodes", nodes, MessageCollectionItemType.UUID))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                assignments0 = reader.readCollection("assignments0", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                flags = reader.readByte("flags");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                nodes = reader.readCollection("nodes", MessageCollectionItemType.UUID);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return reader.afterMessageRead(NodesMapping.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marshaller) {
+        if (assignments != null && assignments0 == null)
+            assignments0 = Commons.transform(assignments, this::transform);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) {
+        if (assignments0 != null && assignments == null)
+            assignments = Commons.transform(assignments0, this::transform);
+    }
+
+    /** */
+    private List<UUID> transform(UUIDCollectionMessage message) {
+        return message.uuids() instanceof List ? (List<UUID>)message.uuids() : new ArrayList<>(message.uuids());
+    }
+
+    /** */
+    private UUIDCollectionMessage transform(List<UUID> uuids) {
+        return new UUIDCollectionMessage(uuids);
     }
 }

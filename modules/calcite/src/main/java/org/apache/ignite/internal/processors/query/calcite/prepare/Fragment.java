@@ -17,19 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import com.google.common.collect.ImmutableList;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentInfo;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdNodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
@@ -37,9 +38,9 @@ import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
 /**
  * Fragment of distributed query
  */
-public class Fragment implements RelTargetAware {
+public class Fragment {
     /** */
-    private static final AtomicLong ID_GEN = new AtomicLong();
+    static final AtomicLong ID_GEN = new AtomicLong();
 
     /** */
     private final long id;
@@ -48,85 +49,32 @@ public class Fragment implements RelTargetAware {
     private final IgniteRel root;
 
     /** */
-    private NodesMapping mapping;
-
-    /**
-     * @param root Root node of the fragment.
-     */
-    public Fragment(IgniteRel root) {
-        this(ID_GEN.getAndIncrement(), root);
-    }
+    private final ImmutableList<IgniteReceiver> remotes;
 
     /**
      * @param id Fragment id.
      * @param root Root node of the fragment.
+     * @param remotes Remote sources of the fragment.
      */
-    public Fragment(long id, IgniteRel root){
+    public Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes){
         this.id = id;
         this.root = root;
+        this.remotes = ImmutableList.copyOf(remotes);
     }
 
     /**
-     * Inits fragment and its dependencies. Mainly init process consists of data location calculation.
+     * Mapps the fragment to its data location.
      *
      * @param mappingService Mapping service.
      * @param ctx Planner context.
-     * @param mq Metadata query used for data location calculation.
+     * @param mq Metadata query.
      */
-    public void init(MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) throws OptimisticPlanningException {
-        FragmentInfo info = IgniteMdFragmentInfo._fragmentInfo(root, mq);
-
-        mapping = fragmentMapping(mappingService, ctx, info);
-
-        if (F.isEmpty(info.targetAwareList()))
-            return;
-
-        RelTargetImpl target = new RelTargetImpl(id, mapping);
-
-        for (RelTargetAware aware : info.targetAwareList())
-            aware.target(target);
-    }
-
-    /**
-     * @return Root node.
-     */
-    public IgniteRel root() {
-        return root;
-    }
-
-    /**
-     * @return Fragment ID.
-     */
-    public long fragmentId() {
-        return id;
-    }
-
-    /**
-     * @return Fragment mapping.
-     */
-    public NodesMapping mapping() {
-        return mapping;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void target(RelTarget target) {
-        assert root instanceof RelTargetAware;
-
-        ((RelTargetAware) root).target(target);
-    }
-
-    /** */
-    public boolean local() {
-        return !(root instanceof IgniteSender);
-    }
-
-    /** */
-    private NodesMapping fragmentMapping(MappingService mappingService, PlanningContext ctx, FragmentInfo info) throws OptimisticPlanningException {
-        NodesMapping mapping;
+    NodesMapping map(MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) throws OptimisticPlanningException {
+        NodesMapping mapping = IgniteMdNodesMapping._nodesMapping(root, mq);
 
         try {
-            if (info.mapped())
-                mapping = local() ? localMapping(ctx).mergeWith(info.mapping()) : info.mapping();
+            if (mapping != null)
+                mapping = local() ? localMapping(ctx).mergeWith(mapping) : mapping;
             else if (local())
                 mapping = localMapping(ctx);
             else {
@@ -143,6 +91,32 @@ public class Fragment implements RelTargetAware {
         }
 
         return mapping.deduplicate();
+    }
+
+    /**
+     * @return Fragment ID.
+     */
+    public long fragmentId() {
+        return id;
+    }
+
+    /**
+     * @return Root node.
+     */
+    public IgniteRel root() {
+        return root;
+    }
+
+    /**
+     * @return Fragment remote sources.
+     */
+    public List<IgniteReceiver> remotes() {
+        return remotes;
+    }
+
+    /** */
+    public boolean local() {
+        return !(root instanceof IgniteSender);
     }
 
     /** */

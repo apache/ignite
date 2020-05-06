@@ -63,32 +63,28 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     /** */
     private final GridQueryCancel cancel;
 
+    /** */
+    private final boolean lazy;
+
     /** Partition result. */
     private PartitionResult partRes;
 
     /**
      * @param iterExec Query executor.
-     * @param cancel Cancellation closure.
-     */
-    public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel) {
-        this(iterExec, cancel, true);
-    }
-
-    /**
-     * @param iterExec Query executor.
      */
     public QueryCursorImpl(Iterable<T> iterExec) {
-        this(iterExec, null);
+        this(iterExec, null, true, false);
     }
 
     /**
      * @param iterExec Query executor.
      * @param isQry Result type flag - {@code true} for query, {@code false} for update operation.
      */
-    public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel, boolean isQry) {
+    public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel, boolean isQry, boolean lazy) {
         this.iterExec = iterExec;
         this.cancel = cancel;
         this.isQry = isQry;
+        this.lazy = lazy;
     }
 
     /** {@inheritDoc} */
@@ -105,7 +101,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
         iter = iterExec.iterator();
 
-        if (!STATE_UPDATER.compareAndSet(this, EXECUTION, RESULT_READY)) {
+        if (!lazy && !STATE_UPDATER.compareAndSet(this, EXECUTION, RESULT_READY)) {
             // Handle race with cancel and make sure the iterator resources are freed correctly.
             closeIter();
 
@@ -150,6 +146,19 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     /** {@inheritDoc} */
     @Override public void close() {
         while (state != CLOSED) {
+            if (lazy) {
+                //In lazy mode: check that iterator has no data: in this case cancel.cancel() shouldn't be called.
+                try {
+                    if (iter != null && !iter.hasNext())
+                        STATE_UPDATER.compareAndSet(this, EXECUTION, RESULT_READY);
+                }
+                catch (Exception e) {
+                    // Ignore exception on check iterator
+                    // because Iterator.hasNext() may throw error on invalid / error query.
+                    STATE_UPDATER.compareAndSet(this, EXECUTION, RESULT_READY);
+                }
+            }
+
             if (STATE_UPDATER.compareAndSet(this, RESULT_READY, CLOSED)) {
                 closeIter();
 
@@ -159,6 +168,8 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
             if (STATE_UPDATER.compareAndSet(this, EXECUTION, CLOSED)) {
                 if (cancel != null)
                     cancel.cancel();
+
+                closeIter();
 
                 return;
             }
@@ -233,6 +244,13 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
      */
     public PartitionResult partitionResult() {
         return partRes;
+    }
+
+    /**
+     * @return Lazy mode flag.
+     */
+    protected boolean lazy() {
+        return lazy;
     }
 
     /**

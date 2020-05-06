@@ -28,7 +28,13 @@ public enum ValidateIndexesCommandArg implements CommandArg {
     CHECK_FIRST("--check-first"),
 
     /** Check through. */
-    CHECK_THROUGH("--check-through");
+    CHECK_THROUGH("--check-through"),
+
+    /** Check CRC. */
+    CHECK_CRC("--check-crc"),
+
+    /** Check sizes. */
+    CHECK_SIZES("--check-sizes");
 
     /** Option name. */
     private final String name;

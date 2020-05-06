@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +33,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelFieldCollation;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
@@ -47,9 +47,11 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyList;
 import static org.apache.calcite.rex.RexUtil.removeCast;
 import static org.apache.calcite.sql.SqlKind.EQUALS;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN;
@@ -73,11 +75,30 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     private final String idxName;
     private final List<RexNode> filters;
-    private final RexNode[] lowerIdxCondition;
-    private final RexNode[] upperIdxCondition;
+    private final List<RexNode> lowerIdxCondition;
+    private final List<RexNode> upperIdxCondition;
     private final IgniteTable igniteTable;
     private final RelCollation collation;
     private final int[] predicateMasks;
+
+    /** */
+    public IgniteTableScan(RelInput input) {
+        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
+        idxName = input.getString("index");
+        List<RexNode> filters0 = null;
+        try {
+            filters0 = input.getExpressionList("filters");
+
+        } catch (RuntimeException e) {
+            System.out.println("asda");
+        }
+        filters = filters0;
+        lowerIdxCondition = input.getExpressionList("lower");
+        upperIdxCondition = input.getExpressionList("upper");
+        igniteTable = getTable().unwrap(IgniteTable.class);
+        collation = igniteTable.getIndex(idxName).collation();
+        predicateMasks = new int[0];
+    }
 
     /**
      * Creates a TableScan.
@@ -101,8 +122,8 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         RelCollation coll = traits.getTrait(RelCollationTraitDef.INSTANCE);
         this.collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
         this.predicateMasks = new int[collation.getFieldCollations().size()];
-        this.lowerIdxCondition = new RexNode[igniteTable.columnDescriptors().length];
-        this.upperIdxCondition = new RexNode[igniteTable.columnDescriptors().length];
+        this.lowerIdxCondition = makeListOfNullLiterals(igniteTable.columnDescriptors().length);
+        this.upperIdxCondition = makeListOfNullLiterals(igniteTable.columnDescriptors().length);
         buildIndexConditions();
 
     }
@@ -177,8 +198,8 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
                 switch (op.kind) {
                     case EQUALS:
                         predicateMasks[idxInCollation] |= EQUALS_MASK;
-                        lowerIdxCondition[i] = cond; // TODO support and merge multiple conditions on the same column.
-                        upperIdxCondition[i] = cond;
+                        lowerIdxCondition.set(i, cond); // TODO support and merge multiple conditions on the same column.
+                        upperIdxCondition.set(i, cond);
                         break;
 
                     case LESS_THAN:
@@ -189,11 +210,11 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
                     case GREATER_THAN:
                     case GREATER_THAN_OR_EQUAL:
                         if (lowerBoundBelow) {
-                            lowerIdxCondition[i] = cond;
+                            lowerIdxCondition.set(i, cond);
                             predicateMasks[idxInCollation] |= GREATER_MASK;
                         }
                         else {
-                            upperIdxCondition[i] = cond;
+                            upperIdxCondition.set(i, cond);
                             predicateMasks[idxInCollation] |= LESS_MASK;
                         }
                         break;
@@ -248,45 +269,35 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         return leftOp.isA(SqlKind.INPUT_REF);
     }
 
-    private static boolean allNulls(Object[] arr) {
-        for (int i = 0; i < arr.length; i++) {
-            if (arr[i] != null)
+    public String indexName() {
+        return idxName;
+    }
+
+    public List<RexNode> lowerIndexCondition() {
+        return lowerIdxCondition;
+    }
+
+    public List<RexNode>  upperIndexCondition() {
+        return upperIdxCondition;
+    }
+
+    private static boolean allNulls(List arr) {
+        for (int i = 0; i < arr.size(); i++) {
+            if (arr.get(i) != null)
                 return false;
         }
         return true;
     }
 
 
-    public List<RexNode> lowerIndexCondition() {
-        if (allNulls(lowerIdxCondition))
-            return null;
-        return fillNulls(lowerIdxCondition);
-    }
-
-
-
-    public List<RexNode>  upperIndexCondition() {
-        if (allNulls(upperIdxCondition))
-            return null;
-        return fillNulls(upperIdxCondition);
-    }
-
-    public String indexName() {
-        return idxName;
-    }
-
-    private  List<RexNode> fillNulls(RexNode[] boundsArr) {
-        List<RexNode> idxConds = new ArrayList<>(boundsArr.length);
-        for (int i = 0; i < boundsArr.length; i++) {
-
-            if (boundsArr[i] == null) {
-                RexNode nullLiteral = getCluster().getRexBuilder().makeNullLiteral(getCluster().getTypeFactory().createJavaType(Object.class));
-                idxConds.add(nullLiteral);
-            }
-            else
-                idxConds.add(boundsArr[i]);
+    private List<RexNode> makeListOfNullLiterals(int size) {
+        List<RexNode> list = new ArrayList<>(size);
+        RexNode nullLiteral = getCluster().getRexBuilder()
+            .makeNullLiteral(getCluster().getTypeFactory().createJavaType(Object.class));
+        for (int i = 0; i < size; i++) {
+            list.add(nullLiteral);
         }
-        return idxConds;
+        return list;
     }
 
     //    private static List<RexNode> makeListOfNulls(int cols) {
@@ -399,15 +410,18 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 //    }
 
     @Override public RelWriter explainTerms(RelWriter pw) {
-        return pw.item("table", String.valueOf(table.getQualifiedName()) + '[' + idxName + ']')
-            //.item("index", idxName)
-            .item("lower", allNulls(lowerIdxCondition) ? null : Arrays.toString(lowerIdxCondition))
-            .item("upper", allNulls(upperIdxCondition) ? null : Arrays.toString(upperIdxCondition))
-            .item("filters", F.isEmpty(filters) ? null : filters);
+        super.explainTerms(pw);
+        return pw.item("index", idxName )
+            .item("lower", lowerIdxCondition) // TODO all nulls handling?
+            .item("upper", upperIdxCondition)
+            .item("filters", filters == null ? emptyList() : filters)
+            .item("collation", collation);
     }
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+        assert inputs.isEmpty();
+
         return this;
     }
 

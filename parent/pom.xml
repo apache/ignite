@@ -61,12 +61,12 @@
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
         <commons.io.version>2.6</commons.io.version>
+        <commons.dbcp.version>1.4</commons.dbcp.version>
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>4.2.0</curator.version>
         <easymock.version>3.4</easymock.version>
         <ezmorph.bundle.version>1.0.6_1</ezmorph.bundle.version>
         <ezmorph.version>1.0.6</ezmorph.version>
-        <flume.ng.version>1.7.0</flume.ng.version>
         <guava.retrying.version>2.0.0</guava.retrying.version>
         <guava.version>25.1-jre</guava.version>
         <guava14.version>14.0.1</guava14.version>
@@ -762,7 +762,7 @@
                                 <goals>
                                     <goal>check</goal>
                                 </goals>
-                                <phase>validate</phase>
+                                <phase>compile</phase>
                                 <configuration>
                                     <consoleOutput>true</consoleOutput>
                                     <logViolationsToConsole>true</logViolationsToConsole>
@@ -776,6 +776,11 @@
                             </execution>
                         </executions>
                         <dependencies>
+                            <dependency>
+                                <groupId>org.apache.ignite</groupId>
+                                <artifactId>ignite-tools</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
                             <dependency>
                                 <groupId>com.puppycrawl.tools</groupId>
                                 <artifactId>checkstyle</artifactId>
@@ -873,8 +878,7 @@
                                         <exclude>src/main/java/org/jsr166/*.java</exclude>
                                         <exclude>src/main/java/org/mindrot/*.java</exclude>
                                         <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
-                                        <exclude>src/test/resources/org.apache.ignite.util/control.sh_cache_help.output</exclude><!--test depends on file content-->
-                                        <exclude>src/test/resources/org.apache.ignite.util/control.sh_help.output</exclude><!--test depends on file content-->
+                                        <exclude>src/test/resources/org.apache.ignite.util/*.output</exclude><!--test depends on file content-->
                                         <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->

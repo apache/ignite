@@ -34,6 +34,11 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
+    T visit(IgniteTrimExchange rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
     T visit(IgniteProject rel);
 
     /**
@@ -59,12 +64,32 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
+    T visit(IgniteAggregate rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
+    T visit(IgniteMapAggregate rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
+    T visit(IgniteReduceAggregate rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
     T visit(IgniteTableModify rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
     T visit(IgniteValues rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
+    T visit(IgniteUnionAll rel);
 
     /**
      * Visits a relational node and calculates a result on the basis of node meta information.

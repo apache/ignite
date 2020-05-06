@@ -322,7 +322,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         log.info("Doing indexes validation.");
 
         VisorValidateIndexesTaskArg taskArg =
-            new VisorValidateIndexesTaskArg(Collections.singleton("SQL_PUBLIC_T"), nodeIds, 0, 1);
+            new VisorValidateIndexesTaskArg(Collections.singleton("SQL_PUBLIC_T"), nodeIds, 0, 1, true, true);
 
         VisorValidateIndexesTaskResult taskRes =
             ignite.compute().execute(VisorValidateIndexesTask.class.getName(), new VisorTaskArgument<>(nodeIds, taskArg, false));

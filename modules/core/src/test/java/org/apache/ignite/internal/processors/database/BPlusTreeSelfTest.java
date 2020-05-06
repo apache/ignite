@@ -65,8 +65,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridStripedLock;
@@ -103,7 +103,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static final short LONG_LEAF_IO = 30001;
 
     /** */
-    protected static final int PAGE_SIZE = 256;
+    protected static final int PAGE_SIZE = 512;
 
     /** */
     protected static final long MB = 1024 * 1024;
@@ -2859,8 +2859,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override
-        protected int getLockRetries() {
+        @Override protected int getLockRetries() {
             return numRetries;
         }
     }

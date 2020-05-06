@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -52,6 +53,129 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     @After
     public void tearDown() throws Exception {
         stopAllGrids();
+    }
+
+    @Test
+    public void unionAll() throws Exception {
+        IgniteCache<Integer, Employer> employer1 = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("employer1")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("EMPLOYER1")))
+            .setBackups(1)
+        );
+
+        IgniteCache<Integer, Employer> employer2 = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("employer2")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("EMPLOYER2")))
+            .setBackups(2)
+        );
+
+        IgniteCache<Integer, Employer> employer3 = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("employer3")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("EMPLOYER3")))
+            .setBackups(3)
+        );
+
+        employer1.put(1, new Employer("Igor", 10d));
+        employer2.put(1, new Employer("Roman", 15d));
+        employer3.put(1, new Employer("Nikolay", 20d));
+        employer1.put(2, new Employer("Igor", 10d));
+        employer2.put(2, new Employer("Roman", 15d));
+        employer3.put(3, new Employer("Nikolay", 20d));
+
+        waitForReadyTopology(internalCache(employer1).context().topology(), new AffinityTopologyVersion(5, 4));
+
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT * FROM employer1 " +
+                "UNION ALL " +
+                "SELECT * FROM employer2 " +
+                "UNION ALL " +
+                "SELECT * FROM employer3 ");
+
+        assertEquals(1, query.size());
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(6, rows.size());
+    }
+
+    @Test
+    public void union() throws Exception {
+        IgniteCache<Integer, Employer> employer1 = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("employer1")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("EMPLOYER1")))
+            .setBackups(1)
+        );
+
+        IgniteCache<Integer, Employer> employer2 = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("employer2")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("EMPLOYER2")))
+            .setBackups(2)
+        );
+
+        IgniteCache<Integer, Employer> employer3 = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("employer3")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("EMPLOYER3")))
+            .setBackups(3)
+        );
+
+        employer1.put(1, new Employer("Igor", 10d));
+        employer2.put(1, new Employer("Roman", 15d));
+        employer3.put(1, new Employer("Nikolay", 20d));
+        employer1.put(2, new Employer("Igor", 10d));
+        employer2.put(2, new Employer("Roman", 15d));
+        employer3.put(3, new Employer("Nikolay", 20d));
+
+        waitForReadyTopology(internalCache(employer1).context().topology(), new AffinityTopologyVersion(5, 4));
+
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT * FROM employer1 " +
+                "UNION " +
+                "SELECT * FROM employer2 " +
+                "UNION " +
+                "SELECT * FROM employer3 ");
+
+        assertEquals(1, query.size());
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(3, rows.size());
+    }
+
+    @Test
+    public void aggregate() throws Exception {
+        IgniteCache<Integer, Employer> employer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("employer")
+            .setSqlSchema("PUBLIC")
+            .setIndexedTypes(Integer.class, Employer.class)
+            .setBackups(2)
+        );
+
+        waitForReadyTopology(internalCache(employer).context().topology(), new AffinityTopologyVersion(5, 2));
+
+        employer.putAll(ImmutableMap.of(
+            0, new Employer("Igor", 10d),
+            1, new Employer("Roman", 15d),
+            2, new Employer("Nikolay", 20d)
+        ));
+
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT * FROM employer WHERE employer.salary = (SELECT AVG(employer.salary) FROM employer)");
+
+        assertEquals(1, query.size());
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(1, rows.size());
+        assertEquals(Arrays.asList("Roman", 15d), F.first(rows));
     }
 
     @Test
@@ -297,6 +421,23 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         public Key(int id, int affinityKey) {
             this.id = id;
             this.affinityKey = affinityKey;
+        }
+    }
+
+    /** */
+    public static class Employer {
+        /** */
+        @QuerySqlField
+        public String name;
+
+        /** */
+        @QuerySqlField
+        public Double salary;
+
+        /** */
+        public Employer(String name, Double salary) {
+            this.name = name;
+            this.salary = salary;
         }
     }
 

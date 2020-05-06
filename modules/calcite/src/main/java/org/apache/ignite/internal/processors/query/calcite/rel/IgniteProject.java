@@ -22,11 +22,13 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Relational expression that computes a set of
@@ -44,6 +46,10 @@ public class IgniteProject extends Project implements IgniteRel {
      */
     public IgniteProject(RelOptCluster cluster, RelTraitSet traits, RelNode input, List<? extends RexNode> projects, RelDataType rowType) {
         super(cluster, traits, input, projects, rowType);
+    }
+
+    public IgniteProject(RelInput input) {
+        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */

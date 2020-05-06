@@ -34,4 +34,8 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("Cannot update field \"{0}\". You cannot update key, key fields or val field in case the val is a complex type.")
     Resources.ExInst<SqlValidatorException> cannotUpdateField(String field);
+
+    /** */
+    @Resources.BaseMessage("Illegal aggregate function. {0} is unsupported at the moment.")
+    Resources.ExInst<SqlValidatorException> unsupportedAggregationFunction(String a0);
 }

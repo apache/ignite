@@ -28,16 +28,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.logging.Formatter;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+import java.util.logging.StreamHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -52,6 +57,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
+import org.apache.ignite.internal.commandline.CommonArgParser;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -71,6 +77,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -85,10 +92,14 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
@@ -109,6 +120,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** Special word for defining any char sequence from special word to the end of line in golden copy of help output */
     private static final String ANY = "<!any!>";
+
+    /** Error stack trace prefix. */
+    protected static final String ERROR_STACK_TRACE_PREFIX = "Error stack trace:";
 
     /**
      * Very basic tests for running the command in different enviroment which other command are running in.
@@ -318,7 +332,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                 assertContains(log, output, CommandHandler.UTILITY_NAME);
         }
 
-        checkHelp(output, "org.apache.ignite.util/control.sh_cache_help.output");
+        checkHelp(output, "org.apache.ignite.util/" + getClass().getSimpleName() + "_cache_help.output");
     }
 
     /** */
@@ -349,7 +363,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertNotContains(log, testOutStr, "Control.sh");
 
-        checkHelp(testOutStr, "org.apache.ignite.util/control.sh_help.output");
+        checkHelp(testOutStr, "org.apache.ignite.util/" + getClass().getSimpleName() + "_help.output");
     }
 
     /**
@@ -1592,6 +1606,90 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
                 assertContains(log, testOut.toString(), warning);
             }));
+    }
+
+    /**
+     * Test checks that there will be no error when executing the command with
+     * option {@link CommonArgParser#CMD_VERBOSE}.
+     */
+    @Test
+    public void testCorrectExecCmdWithVerboseInDiffParamsOrder() {
+        injectTestSystemOut();
+
+        int resCode = EXIT_CODE_OK;
+
+        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE));
+        assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+
+        assertEquals(resCode, execute(CMD_VERBOSE, BASELINE.text()));
+        assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+    }
+
+    /**
+     * Test checks that stack trace for incorrect arguments will be output
+     * only if {@link CommonArgParser#CMD_VERBOSE} flag is present.
+     */
+    @Test
+    public void testErrInvalidArgumentsWithVerbose() {
+        injectTestSystemOut();
+
+        int resCode = EXIT_CODE_INVALID_ARGUMENTS;
+        String uuid = UUID.randomUUID().toString();
+
+        assertEquals(resCode, execute(BASELINE.text(), uuid));
+        assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+
+        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE, uuid));
+        assertContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+    }
+
+    /**
+     * Test checks that stack trace for connection error will be output only
+     * if {@link CommonArgParser#CMD_VERBOSE} flag is present.
+     */
+    @Test
+    public void testErrConnectionWithVerbose() {
+        injectTestSystemOut();
+
+        int resCode = EXIT_CODE_CONNECTION_FAILED;
+        String uuid = UUID.randomUUID().toString();
+
+        assertEquals(resCode, execute(BASELINE.text(), "--host", uuid));
+        assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+
+        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE, "--host", uuid));
+        assertContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+    }
+
+    /**
+     * Test checks that stack trace for unexpected error will be output with or
+     * without {@link CommonArgParser#CMD_VERBOSE} flag.
+     */
+    @Test
+    public void testErrUnexpectedWithWithoutVerbose() {
+        injectTestSystemOut();
+
+        Logger log = CommandHandler.initLogger(null);
+        log.addHandler(new StreamHandler(System.out, new Formatter() {
+            /** {@inheritDoc} */
+            @Override public String format(LogRecord record) {
+                String msg = record.getMessage();
+
+                if (msg.contains("Cluster state:"))
+                    throw new Error();
+
+                return msg + "\n";
+            }
+        }));
+
+        int resCode = EXIT_CODE_UNEXPECTED_ERROR;
+        CommandHandler cmd = new CommandHandler(log);
+
+        assertEquals(resCode, execute(cmd, BASELINE.text()));
+        assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+
+        assertEquals(resCode, execute(cmd, BASELINE.text(), CMD_VERBOSE));
+        assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
     }
 
     /**

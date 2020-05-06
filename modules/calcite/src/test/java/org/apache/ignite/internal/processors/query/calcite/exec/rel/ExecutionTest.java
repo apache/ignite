@@ -17,14 +17,32 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.WrappersFactoryImpl;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode.AggregateType.MAP;
+import static org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode.AggregateType.REDUCE;
+import static org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode.AggregateType.SINGLE;
 
 /**
  *
@@ -86,5 +104,585 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         Assert.assertArrayEquals(new Object[]{2, "Ivan", "Calcite"}, rows.get(0));
         Assert.assertArrayEquals(new Object[]{2, "Ivan", "Ignite"}, rows.get(1));
+    }
+
+    @Test
+    public void testUnionAll() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan1 = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        ScanNode scan2 = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        ScanNode scan3 = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        UnionAllNode<Object[]> union = new UnionAllNode<>(ctx);
+        union.register(F.asList(scan1, scan2, scan3));
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(union);
+
+        assertTrue(root.hasNext());
+
+        List<Object[]> res = new ArrayList<>();
+
+        while (root.hasNext())
+            res.add(root.next());
+
+        assertEquals(12, res.size());
+    }
+
+    @Test
+    public void testAggregateMapReduceAvg() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        RelDataType rowType = typeFactory.createStructType(F.asList(
+            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
+            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
+
+        ImmutableList<ImmutableBitSet> groupSets = ImmutableList.of(ImmutableBitSet.of());
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.AVG,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(1),
+            -1,
+            RelCollations.EMPTY,
+            typeFactory.createSqlType(SqlTypeName.DOUBLE),
+            null);
+
+        WrappersFactoryImpl factory;
+
+        factory = new WrappersFactoryImpl(ctx, MAP, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, groupSets, factory, rowHnd);
+        map.register(scan);
+
+        factory = new WrappersFactoryImpl(ctx, REDUCE, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, groupSets, factory, rowHnd);
+        reduce.register(map);
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(reduce);
+
+        assertTrue(root.hasNext());
+        assertEquals(725d, rowHnd.get(0, root.next()));
+        assertFalse(root.hasNext());
+    }
+
+    @Test
+    public void testAggregateMapReduceSum() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        RelDataType rowType = typeFactory.createStructType(F.asList(
+            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
+            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
+
+        // empty groups means SELECT SUM(field) FROM table
+        ImmutableList<ImmutableBitSet> groupSets = ImmutableList.of(ImmutableBitSet.of());
+
+        // AVG on second field
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.SUM,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(1),
+            -1,
+            RelCollations.EMPTY,
+            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            null);
+
+        WrappersFactoryImpl factory;
+
+        factory = new WrappersFactoryImpl(ctx, MAP, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, groupSets, factory, rowHnd);
+        map.register(scan);
+
+        factory = new WrappersFactoryImpl(ctx, REDUCE, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, groupSets, factory, rowHnd);
+        reduce.register(map);
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(reduce);
+
+        assertTrue(root.hasNext());
+        assertEquals((Integer)2900, rowHnd.get(0, root.next()));
+        assertFalse(root.hasNext());
+    }
+
+    @Test
+    public void testAggregateMapReduceMin() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        RelDataType rowType = typeFactory.createStructType(F.asList(
+            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
+            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
+
+        ImmutableList<ImmutableBitSet> groupSets = ImmutableList.of(ImmutableBitSet.of());
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.MIN,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(1),
+            -1,
+            RelCollations.EMPTY,
+            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            null);
+
+        WrappersFactoryImpl factory;
+
+        factory = new WrappersFactoryImpl(ctx, MAP, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, groupSets, factory, rowHnd);
+        map.register(scan);
+
+        factory = new WrappersFactoryImpl(ctx, REDUCE, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, groupSets, factory, rowHnd);
+        reduce.register(map);
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(reduce);
+
+        assertTrue(root.hasNext());
+        assertEquals((Integer)200, rowHnd.get(0, root.next()));
+        assertFalse(root.hasNext());
+    }
+
+    @Test
+    public void testAggregateMapReduceMax() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        RelDataType rowType = typeFactory.createStructType(F.asList(
+            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
+            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
+
+        ImmutableList<ImmutableBitSet> groupSets = ImmutableList.of(ImmutableBitSet.of());
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.MAX,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(1),
+            -1,
+            RelCollations.EMPTY,
+            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            null);
+
+        WrappersFactoryImpl factory;
+
+        factory = new WrappersFactoryImpl(ctx, MAP, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, groupSets, factory, rowHnd);
+        map.register(scan);
+
+        factory = new WrappersFactoryImpl(ctx, REDUCE, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, groupSets, factory, rowHnd);
+        reduce.register(map);
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(reduce);
+
+        assertTrue(root.hasNext());
+        assertEquals((Integer)1400, rowHnd.get(0, root.next()));
+        assertFalse(root.hasNext());
+    }
+
+    @Test
+    public void testAggregateMapReduceCount() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        RelDataType rowType = typeFactory.createStructType(F.asList(
+            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
+            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
+
+        ImmutableList<ImmutableBitSet> groupSets = ImmutableList.of(ImmutableBitSet.of());
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.COUNT,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(),
+            -1,
+            RelCollations.EMPTY,
+            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            null);
+
+        WrappersFactoryImpl factory;
+
+        factory = new WrappersFactoryImpl(ctx, MAP, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, groupSets, factory, rowHnd);
+        map.register(scan);
+
+        factory = new WrappersFactoryImpl(ctx, REDUCE, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, groupSets, factory, rowHnd);
+        reduce.register(map);
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(reduce);
+
+        assertTrue(root.hasNext());
+        assertEquals((Integer)4, rowHnd.get(0, root.next()));
+        assertFalse(root.hasNext());
+    }
+
+    @Test
+    public void testAggregateAvg() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        RelDataType rowType = typeFactory.createStructType(F.asList(
+            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
+            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
+
+        ImmutableList<ImmutableBitSet> groupSets = ImmutableList.of(ImmutableBitSet.of());
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.AVG,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(1),
+            -1,
+            RelCollations.EMPTY,
+            typeFactory.createSqlType(SqlTypeName.DOUBLE),
+            null);
+
+        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, SINGLE, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, groupSets, factory, rowHnd);
+        agg.register(scan);
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(agg);
+
+        assertTrue(root.hasNext());
+        assertEquals(725d, rowHnd.get(0, root.next()));
+        assertFalse(root.hasNext());
+    }
+
+    @Test
+    public void testAggregateSum() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        RelDataType rowType = typeFactory.createStructType(F.asList(
+            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
+            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
+
+        // empty groups means SELECT SUM(field) FROM table
+        ImmutableList<ImmutableBitSet> groupSets = ImmutableList.of(ImmutableBitSet.of());
+
+        // AVG on second field
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.SUM,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(1),
+            -1,
+            RelCollations.EMPTY,
+            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            null);
+
+        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, SINGLE, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, groupSets, factory, rowHnd);
+        agg.register(scan);
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(agg);
+
+        assertTrue(root.hasNext());
+        assertEquals((Integer)2900, rowHnd.get(0, root.next()));
+        assertFalse(root.hasNext());
+    }
+
+    @Test
+    public void testAggregateMin() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        RelDataType rowType = typeFactory.createStructType(F.asList(
+            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
+            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
+
+        ImmutableList<ImmutableBitSet> groupSets = ImmutableList.of(ImmutableBitSet.of());
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.MIN,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(1),
+            -1,
+            RelCollations.EMPTY,
+            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            null);
+
+        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, SINGLE, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, groupSets, factory, rowHnd);
+        agg.register(scan);
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(agg);
+
+        assertTrue(root.hasNext());
+        assertEquals((Integer)200, rowHnd.get(0, root.next()));
+        assertFalse(root.hasNext());
+    }
+
+    @Test
+    public void testAggregateMax() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        RelDataType rowType = typeFactory.createStructType(F.asList(
+            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
+            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
+
+        ImmutableList<ImmutableBitSet> groupSets = ImmutableList.of(ImmutableBitSet.of());
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.MAX,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(1),
+            -1,
+            RelCollations.EMPTY,
+            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            null);
+
+        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, SINGLE, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, groupSets, factory, rowHnd);
+        agg.register(scan);
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(agg);
+
+        assertTrue(root.hasNext());
+        assertEquals((Integer)1400, rowHnd.get(0, root.next()));
+        assertFalse(root.hasNext());
+    }
+
+    @Test
+    public void testAggregateCount() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        RelDataType rowType = typeFactory.createStructType(F.asList(
+            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
+            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
+
+        ImmutableList<ImmutableBitSet> groupSets = ImmutableList.of(ImmutableBitSet.of());
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.COUNT,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(),
+            -1,
+            RelCollations.EMPTY,
+            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            null);
+
+        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, SINGLE, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, groupSets, factory, rowHnd);
+        agg.register(scan);
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(agg);
+
+        assertTrue(root.hasNext());
+        assertEquals((Integer)4, rowHnd.get(0, root.next()));
+        assertFalse(root.hasNext());
+    }
+
+    @Test
+    public void testAggregateCountByGroup() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 0, 200),
+            rowHnd.create("Roman", 1, 300),
+            rowHnd.create("Ivan", 1, 1400),
+            rowHnd.create("Alexey", 0, 1000)
+        ));
+
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        RelDataType rowType = typeFactory.createStructType(F.asList(
+            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
+            Pair.of("PROJECT_ID", typeFactory.createSqlType(SqlTypeName.INTEGER)),
+            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
+
+        ImmutableList<ImmutableBitSet> groupSets = ImmutableList.of(ImmutableBitSet.of(1));
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.COUNT,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(),
+            -1,
+            RelCollations.EMPTY,
+            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            null);
+
+        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, SINGLE, rowHnd, F.asList(call), rowType);
+
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, groupSets, factory, rowHnd);
+        agg.register(scan);
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(agg);
+
+        assertTrue(root.hasNext());
+        // TODO needs a sort, relying on an order in a hash table looks strange
+        Assert.assertArrayEquals(rowHnd.create(1, 2), root.next());
+        Assert.assertArrayEquals(rowHnd.create(0, 2), root.next());
+        assertFalse(root.hasNext());
     }
 }

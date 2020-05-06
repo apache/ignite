@@ -21,10 +21,12 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.prepare.Prepare;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
@@ -37,29 +39,39 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
      * <blockquote>
      * <pre>UPDATE table SET iden1 = exp1, ident2 = exp2  WHERE condition</pre>
      * </blockquote>
-     *
-     * @param cluster              Cluster this relational expression belongs to
+     *  @param cluster              Cluster this relational expression belongs to
      * @param traitSet             Traits of this relational expression
      * @param table                Target table to modify
-     * @param catalogReader        accessor to the table metadata.
      * @param input                Sub-query or filter condition
      * @param operation            Modify operation (INSERT, UPDATE, DELETE)
      * @param updateColumnList     List of column identifiers to be updated
-     *                             (e.g. ident1, ident2); null if not UPDATE
+*                             (e.g. ident1, ident2); null if not UPDATE
      * @param sourceExpressionList List of value expressions to be set
-     *                             (e.g. exp1, exp2); null if not UPDATE
+*                             (e.g. exp1, exp2); null if not UPDATE
      * @param flattened            Whether set flattens the input row type
      */
     public IgniteTableModify(RelOptCluster cluster,
         RelTraitSet traitSet,
         RelOptTable table,
-        Prepare.CatalogReader catalogReader,
         RelNode input,
         Operation operation,
         List<String> updateColumnList,
         List<RexNode> sourceExpressionList,
         boolean flattened) {
-        super(cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened);
+        super(cluster, traitSet, table, Commons.context(cluster).catalogReader(), input, operation, updateColumnList, sourceExpressionList, flattened);
+    }
+
+    public IgniteTableModify(RelInput input) {
+        this(
+            input.getCluster(),
+            input.getTraitSet().replace(IgniteConvention.INSTANCE),
+            input.getTable("table"),
+            input.getInput(),
+            input.getEnum("operation", Operation.class),
+            input.getStringList("updateColumnList"),
+            input.getExpressionList("sourceExpressionList"),
+            input.getBoolean("flattened", true)
+        );
     }
 
     /** {@inheritDoc} */
@@ -68,12 +80,15 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
             getCluster(),
             traitSet,
             getTable(),
-            getCatalogReader(),
             sole(inputs),
             getOperation(),
             getUpdateColumnList(),
             getSourceExpressionList(),
             isFlattened());
+    }
+
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw);
     }
 
     /** {@inheritDoc} */

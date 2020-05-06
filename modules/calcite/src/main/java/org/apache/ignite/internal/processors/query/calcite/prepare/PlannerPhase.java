@@ -23,9 +23,12 @@ import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
 import org.apache.calcite.rel.rules.SubQueryRemoveRule;
+import org.apache.calcite.rel.rules.UnionMergeRule;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
+import org.apache.ignite.internal.processors.query.calcite.rule.AggregateConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.AggregateTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverterRule;
@@ -34,6 +37,8 @@ import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverter
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.PushFilterProjectIntoScanRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.UnionTraitsTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
@@ -67,6 +72,8 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
+                AggregateConverterRule.INSTANCE,
+                AggregateTraitsPropagationRule.INSTANCE,
                 JoinConverterRule.INSTANCE,
                 JoinTraitsPropagationRule.INSTANCE,
                 ProjectConverterRule.INSTANCE,
@@ -77,8 +84,10 @@ public enum PlannerPhase {
                 PushFilterProjectIntoScanRule.FILTER_INTO_SCAN,
                 new FilterProjectTransposeRule(Filter.class, Project.class, true, true,
                     RelFactories.LOGICAL_BUILDER),
-                ProjectFilterTransposeRule.INSTANCE
-                );
+                ProjectFilterTransposeRule.INSTANCE,
+                UnionMergeRule.INSTANCE,
+                UnionConverterRule.INSTANCE,
+                UnionTraitsTraitsPropagationRule.INSTANCE);
         }
 
         /** {@inheritDoc} */

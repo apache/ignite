@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageServic
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -188,6 +189,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
      */
     private ExecutionContext baseInboxContext(UUID queryId, long fragmentId) {
         PlanningContext ctx = PlanningContext.builder().logger(log).build();
-        return new ExecutionContext(taskExecutor(), ctx, queryId, fragmentId, null, ImmutableMap.of());
+        FragmentDescription fragmentDescription = new FragmentDescription(fragmentId, null, -1, null, null);
+        return new ExecutionContext(taskExecutor(), ctx, queryId, fragmentDescription, ImmutableMap.of());
     }
 }

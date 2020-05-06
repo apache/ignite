@@ -120,7 +120,7 @@ public final class PlanningContext implements Context {
         RelDataTypeSystem typeSys = connectionConfig().typeSystem(RelDataTypeSystem.class, config.getTypeSystem());
         this.typeFactory = new IgniteTypeFactory(typeSys);
 
-        expressionFactory = new ExpressionFactory(typeFactory, conformance(), opTable());
+        expressionFactory = new ExpressionFactory(typeFactory, conformance());
     }
 
     /**
