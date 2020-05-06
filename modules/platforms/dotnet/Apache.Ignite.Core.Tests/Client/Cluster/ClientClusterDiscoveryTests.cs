@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
@@ -165,12 +166,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 AssertClientConnectionCount(client, 3);
             }
         }
-
-        [Test]
-        public void TestDiscoveryWithBaselineTopology()
-        {
-            // TODO: ???
-        }
         
         /** <inheritdoc /> */
         protected override IgniteClientConfiguration GetClientConfiguration()
@@ -199,7 +194,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             var res = TestUtils.WaitForCondition(() =>
             {
                 // Perform any operation to cause topology update.
-                client.GetCacheNames();
+                try
+                {
+                    client.GetCacheNames();
+                }
+                catch (Exception)
+                {
+                    // Ignore.
+                }
 
                 return count == client.GetConnections().Count();
             }, 1000);
