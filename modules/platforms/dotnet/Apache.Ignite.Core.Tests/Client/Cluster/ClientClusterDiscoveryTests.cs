@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
@@ -111,6 +112,26 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             {
                 node.Dispose();
             }
+        }
+
+        /// <summary>
+        /// Tests that originally known node can leave and client maintains connections to other cluster nodes.
+        /// </summary>
+        [Test]
+        public void TestClientMaintainsConnectionWhenOriginalNodeLeaves()
+        {
+            // Client knows about single server node initially.
+            var ignite = Ignition.Start(GetIgniteConfiguration());
+            var cfg = GetClientConfiguration();
+            cfg.Endpoints = new[] {IPAddress.Loopback + ":10803"};
+
+            // Client starts and discovers other server nodes.
+            var client = Ignition.StartClient(cfg);
+            AssertClientConnectionCount(client, 4);
+            
+            // Original node leaves. Client is still connected.
+            ignite.Dispose();
+            AssertClientConnectionCount(client, 3);
         }
 
         /** <inheritdoc /> */
