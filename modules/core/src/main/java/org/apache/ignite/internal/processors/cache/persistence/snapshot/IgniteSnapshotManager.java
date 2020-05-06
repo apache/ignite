@@ -650,9 +650,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 throw new IgniteException("Snapshot operation has been rejected. The baseline topology is not configured for cluster.");
 
             if (cctx.kernalContext().clientNode()) {
+                ClusterNode crd = U.oldest(cctx.kernalContext().discovery().aliveServerNodes(), null);
+
+                if (crd == null)
+                    throw new IgniteException("There is no alive server nodes in the cluster");
+
                 return cctx.kernalContext().grid()
-                    .compute(cctx.kernalContext().grid().cluster()
-                        .forNodeId(U.oldest(cctx.kernalContext().discovery().aliveServerNodes(), null).id()))
+                    .compute(cctx.kernalContext().grid().cluster().forNodeId(crd.id()))
                     .applyAsync(new CreateSnapshotTask(), name)
                     .chain(f -> {
                         try {
