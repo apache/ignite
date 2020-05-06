@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using Apache.Ignite.Core.Client;
 
     /// <summary>
@@ -145,12 +146,15 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private static byte[] GetAllFeatures()
         {
-            var vals = Enum.GetValues(typeof(ClientBitmaskFeature));
-            var bits = new BitArray(vals.Length);
+            var vals = Enum.GetValues(typeof(ClientBitmaskFeature))
+                .Cast<int>()
+                .ToArray();
 
-            foreach (ClientBitmaskFeature feature in vals)
+            var bits = new BitArray(vals.Max() + 1);
+
+            foreach (var feature in vals)
             {
-                bits.Set((int)feature, true);
+                bits.Set(feature, true);
             }
             
             var bytes = new byte[1 + vals.Length / 8];

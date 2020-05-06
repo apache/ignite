@@ -337,7 +337,10 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 foreach (var socketEndpoint in _endPoints)
                 {
-                    socketEndpoint.Socket.Dispose();
+                    if (socketEndpoint.Socket != null)
+                    {
+                        socketEndpoint.Socket.Dispose();
+                    }
                 }
             }
         }
