@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.NuGet
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
     /// <summary>
@@ -65,7 +66,11 @@ namespace Apache.Ignite.Core.Tests.NuGet
             var cfg = new IgniteConfiguration
             {
                 DiscoverySpi = TestUtil.GetLocalDiscoverySpi(),
-                CacheConfiguration = new[] {new CacheConfiguration("testcache")}
+                CacheConfiguration = new[] {new CacheConfiguration("testcache")},
+                Logger = new ConsoleLogger
+                {
+                    MinLevel = LogLevel.Debug
+                }
             };
 
             using (var ignite = Ignition.Start(cfg))
