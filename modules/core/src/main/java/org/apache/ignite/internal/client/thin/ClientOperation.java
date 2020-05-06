@@ -66,10 +66,10 @@ enum ClientOperation {
     /** Start new transaction. */TX_START(4000),
     /** End the transaction (commit or rollback). */TX_END(4001),
 
-    /** Get cluster state */ CLUSTER_GET_STATE(5000),
-    /** Change cluster state */ CLUSTER_CHANGE_STATE(5001),
-    /** Get WAL state */ CLUSTER_GET_WAL_STATE(5003),
-    /** Change WAL state */ CLUSTER_CHANGE_WAL_STATE(5002),
+    /** Get cluster state. */CLUSTER_GET_STATE(5000),
+    /** Change cluster state. */CLUSTER_CHANGE_STATE(5001),
+    /** Get WAL state. */CLUSTER_GET_WAL_STATE(5003),
+    /** Change WAL state. */CLUSTER_CHANGE_WAL_STATE(5002),
 
     /** Execute compute task. */COMPUTE_TASK_EXECUTE(6000),
     /** Finished compute task notification. */COMPUTE_TASK_FINISHED(6001, true);

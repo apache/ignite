@@ -37,9 +37,6 @@ public class ClusterApiTest extends GridCommonAbstractTest {
     /** Client connector address. */
     private static final String CLIENT_CONN_ADDR = "127.0.0.1:" + ClientConnectorConfiguration.DFLT_PORT;
 
-    /** Timeout for waitForCondition operations. */
-    private static final long TIMEOUT = 1_000L;
-
     /**
      * {@inheritDoc}
      */
