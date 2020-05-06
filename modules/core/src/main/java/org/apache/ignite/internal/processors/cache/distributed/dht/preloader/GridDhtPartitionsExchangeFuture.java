@@ -4874,14 +4874,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                                 final ClusterNode newCrd = crd0;
 
-                                // If coordinator changed during exchange free switch no need to send messages.
-                                if (!exchCtx.exchangeFreeSwitch()) {
-                                    cctx.kernalContext().getSystemExecutorService().submit(new Runnable() {
-                                        @Override public void run() {
-                                            sendPartitions(newCrd);
-                                        }
-                                    });
-                                }
+                                cctx.kernalContext().getSystemExecutorService().submit(new Runnable() {
+                                    @Override public void run() {
+                                        sendPartitions(newCrd);
+                                    }
+                                });
                             }
                         }
                     }
