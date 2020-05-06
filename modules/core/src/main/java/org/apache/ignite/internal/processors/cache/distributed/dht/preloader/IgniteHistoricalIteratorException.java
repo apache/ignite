@@ -18,27 +18,31 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.IgniteException;
 
 /**
- * Iterator that provides history of updates for a subset of partitions.
+ * Thrown when {@link IgniteHistoricalIterator} cannot iterate over WAL for some reason.
  */
-public interface IgniteHistoricalIterator extends GridCloseableIterator<CacheDataRow> {
-    /**
-     * @param partId Partition ID.
-     * @return {@code True} if iterator contains data for given partition.
-     */
-    public boolean contains(int partId);
+public class IgniteHistoricalIteratorException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * @param partId Partition ID.
-     * @return {@code True} if all data for given partition has already been returned.
+     * Creates a new exception with the specified cause.
+     *
+     * @param cause Cause.
      */
-    public boolean isDone(int partId);
+    public IgniteHistoricalIteratorException(Throwable cause) {
+        super(cause);
+    }
 
     /**
-     * @return {@code true} if all historical partitions are processed.
+     * Creates a new exception with the specified message and cause.
+     *
+     * @param msg Detail message.
+     * @param cause Cause.
      */
-    public boolean allHistoricalPartitionsDone();
+    public IgniteHistoricalIteratorException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
 }
