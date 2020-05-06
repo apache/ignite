@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         /// Tests that thin client discovery does not include thick client nodes.
         /// </summary>
         [Test]
-        public void TestClientDiscoversOnlyServerNodes()
+        public void TestThinClientDoesNotDiscoverThickClientNodes()
         {
             var cfg = GetIgniteConfiguration();
             cfg.ClientMode = true;
@@ -148,6 +148,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 var client = GetClient();
                 AssertClientConnectionCount(client, 3);
             }
+        }
+
+        /// <summary>
+        /// Tests that server nodes without client connector are ignored by thin client discovery.
+        /// </summary>
+        [Test]
+        public void TestDiscoveryWithoutClientConnectorOnServer()
+        {
+            // TODO
         }
 
         [Test]

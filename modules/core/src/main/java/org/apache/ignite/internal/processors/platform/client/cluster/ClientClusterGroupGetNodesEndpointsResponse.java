@@ -113,11 +113,16 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
      * @param node Node.
      */
     private boolean writeNode(BinaryRawWriterEx writer, ClusterNode node) {
-        // TODO: This may be absent (on client nodes, etc).
-        int port = node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
+        if (node.isClient())
+            return false;
+
+        Object port = node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
+
+        if (!(port instanceof Integer))
+            return false; // No client connector.
 
         writeUuid(writer, node.id());
-        writer.writeInt(port);
+        writer.writeInt((int) port);
 
         Collection<String> addrs = node.addresses();
         Collection<String> hosts = node.hostNames();
