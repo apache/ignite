@@ -24,8 +24,10 @@ namespace Apache.Ignite.Core.Tests.Client
     /// <summary>
     /// Tests for <see cref="ClientFeatures"/> class.
     /// </summary>
-    public class ClientOpExtensionsTest
+    public class ClientFeaturesTest
     {
+        // TODO: More tests - feature flags, validation.
+        
         /// <summary>
         /// Tests that <see cref="ClientFeatures.GetMinVersion"/> returns a version
         /// for every valid <see cref="ClientOp"/>.
