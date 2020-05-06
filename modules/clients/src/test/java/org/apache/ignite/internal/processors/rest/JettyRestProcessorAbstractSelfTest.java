@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -189,7 +188,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
 
-        IgniteUtils.clearClassCache();
+        U.clearClassCache();
 
         super.afterTestsStopped();
     }
@@ -671,12 +670,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertResponseContainsError(ret, "Failed to convert value to specified type");
 
         // Check forbidden type.
-        json = "[{\"value\": 1}, {\"value\": 2}]";
+        ForbiddenType forbidden = new ForbiddenType(new Exploit[] {
+            new Exploit(1),
+            new Exploit(2)
+        });
+
+        json = JSON_MAPPER.writeValueAsString(forbidden);
 
         ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
             "keyType", "int",
             "key", "5",
-            "valueType", Exploit[].class.getName(),
+            "valueType", ForbiddenType.class.getName(),
             "val", json
         );
 
@@ -3306,10 +3310,41 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /** */
+    private static class ForbiddenType {
+        /** Data. */
+        @JsonProperty
+        private Exploit[] data;
+
+        /** */
+        ForbiddenType() {
+            // No-op.
+        }
+
+        /**
+         * @param data Data.
+         */
+        ForbiddenType(Exploit[] data) {
+            this.data = data;
+        }
+    }
+
+    /** */
     private static class Exploit {
         /** Value. */
         @JsonProperty
         private int val = 10;
+
+        /**
+         * @param val Value
+         */
+        Exploit(int val) {
+            this.val = val;
+        }
+
+        /** */
+        Exploit() {
+            // No-op.
+        }
     }
 
     /** */
