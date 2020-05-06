@@ -1171,7 +1171,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(SnapshotStartDiscoveryMessage.class, this);
+            return S.toString(SnapshotStartDiscoveryMessage.class, this, super.toString());
         }
     }
 
