@@ -178,6 +178,9 @@ public abstract class GridAbstractTest extends TestCase {
     /** */
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
 
+    /** Loggers with changed log level for test's purposes. */
+    private static final transient Map<Logger, Level> changedLevels = new ConcurrentHashMap<>();
+
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
@@ -351,6 +354,18 @@ public abstract class GridAbstractTest extends TestCase {
             return IgniteNodeRunner.startedInstance().log();
 
         return log;
+    }
+
+    /**
+     * Sets the log level for root logger ({@link #log}) to {@link Level#DEBUG}. The log level will be resetted to
+     * default in {@link #afterTest()}.
+     */
+    protected final void setRootLoggerDebugLevel() {
+        Logger logger = Logger.getRootLogger();
+
+        assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, logger.getLevel()));
+
+        logger.setLevel(Level.DEBUG);
     }
 
     /**
@@ -572,6 +587,14 @@ public abstract class GridAbstractTest extends TestCase {
         }
         finally {
             changedSysPropertiesInTest.clear();
+        }
+
+        try {
+            for (Logger logger : changedLevels.keySet())
+                logger.setLevel(changedLevels.get(logger));
+        }
+        finally {
+            changedLevels.clear();
         }
     }
 

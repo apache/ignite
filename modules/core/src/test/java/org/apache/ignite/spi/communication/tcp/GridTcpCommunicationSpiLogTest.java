@@ -57,6 +57,8 @@ public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        setRootLoggerDebugLevel();
+
         srvTestLog = new ListeningTestLogger(true, log);
     }
 

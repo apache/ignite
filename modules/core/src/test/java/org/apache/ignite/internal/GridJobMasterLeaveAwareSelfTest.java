@@ -55,6 +55,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
@@ -487,12 +488,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         assert invokeLatch.await(5000, MILLISECONDS);
 
-        try {
-            fut.get();
-        }
-        catch (IgniteException e) {
-            log.debug("Task failed: " + e);
-        }
+        GridTestUtils.assertThrows(log, () -> fut.get(), IgniteException.class, null);
     }
 
     /**

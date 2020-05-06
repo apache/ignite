@@ -42,6 +42,7 @@ import org.apache.ignite.lang.utils.GridLeanIdentitySetSelfTest;
 import org.apache.ignite.lang.utils.GridLeanMapSelfTest;
 import org.apache.ignite.lang.utils.GridListSetSelfTest;
 import org.apache.ignite.lang.utils.GridStripedLockSelfTest;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLoggerSelfTest;
 import org.apache.ignite.util.GridConcurrentLinkedDequeSelfTest;
 import org.apache.ignite.util.GridConcurrentLinkedHashMapMultiThreadedSelfTest;
 
@@ -84,6 +85,8 @@ public class IgniteLangSelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(IgniteFutureImplTest.class));
         suite.addTest(new TestSuite(IgniteCacheFutureImplTest.class));
+
+        suite.addTest(new TestSuite(GridTestLog4jLoggerSelfTest.class));
 
         // Consistent hash tests.
         suite.addTest(new TestSuite(GridConsistentHashSelfTest.class));

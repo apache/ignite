@@ -95,7 +95,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         // Daemon node should not open client port
         if (cfg.isDaemon()) {
-            log.debug("Client connection configuration ignored for daemon node.");
+            if (log.isDebugEnabled())
+                log.debug("Client connection configuration ignored for daemon node.");
 
             return;
         }
