@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
-    using System.Threading;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
