@@ -63,10 +63,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         public ClientFeatures(ClientProtocolVersion protocolVersion, BitArray features)
         {
-            // TODO: Move all logic to this class, including mapping from version to op, from feature to op.
-            // TODO: Move ValidateOp methods here.
-            Debug.Assert(features != null);
-            
             _protocolVersion = protocolVersion;
             _features = features;
         }
@@ -75,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             var index = (int) feature;
 
-            return index >= 0 && index < _features.Count && _features.Get(index);
+            return _features != null && index >= 0 && index < _features.Count && _features.Get(index);
         }
 
         public bool HasOp(ClientOp op)
@@ -119,15 +115,12 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <param name="operation">Operation.</param>
         public void ValidateOp(ClientOp operation)
         {
-            ValidateOp(operation, _protocolVersion , operation.GetMinVersion(), _features, operation.GetFeature());
+            ValidateOp(operation, _protocolVersion , GetMinVersion(operation), _features, GetFeature(operation));
         }
         
         /// <summary>
         /// Validates op code against current protocol version.
         /// </summary>
-        /// <param name="operation">Operation.</param>
-        /// <param name="protocolVersion">Protocol version.</param>
-        /// <param name="requiredProtocolVersion">Required protocol version.</param>
         public static void ValidateOp<T>(T operation, ClientProtocolVersion protocolVersion, 
             ClientProtocolVersion requiredProtocolVersion, BitArray features, ClientBitmaskFeature? requiredFeature)
         {

@@ -22,12 +22,12 @@ namespace Apache.Ignite.Core.Tests.Client
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for <see cref="ClientOpExtensions"/> class.
+    /// Tests for <see cref="ClientFeatures"/> class.
     /// </summary>
     public class ClientOpExtensionsTest
     {
         /// <summary>
-        /// Tests that <see cref="ClientOpExtensions.GetMinVersion"/> returns a version
+        /// Tests that <see cref="ClientFeatures.GetMinVersion"/> returns a version
         /// for every valid <see cref="ClientOp"/>.
         /// </summary>
         [Test]
@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             foreach (ClientOp clientOp in Enum.GetValues(typeof(ClientOp)))
             {
-                var minVersion = clientOp.GetMinVersion();
+                var minVersion = ClientFeatures.GetMinVersion(clientOp);
                 
                 Assert.IsTrue(minVersion >= ClientSocket.Ver100);
                 Assert.IsTrue(minVersion <= ClientSocket.CurrentProtocolVersion);
@@ -43,17 +43,17 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
-        /// Tests that <see cref="ClientOpExtensions.GetMinVersion"/> returns a specific version for known new features.
+        /// Tests that <see cref="ClientFeatures.GetMinVersion"/> returns a specific version for known new features.
         /// </summary>
         [Test]
         public void TestGetMinVersionReturnsSpecificVersionForNewFeatures()
         {
-            Assert.AreEqual(ClientSocket.Ver140, ClientOp.CachePartitions.GetMinVersion());
+            Assert.AreEqual(ClientSocket.Ver140, ClientFeatures.GetMinVersion(ClientOp.CachePartitions));
 
-            Assert.AreEqual(ClientSocket.Ver150, ClientOp.ClusterIsActive.GetMinVersion());
-            Assert.AreEqual(ClientSocket.Ver150, ClientOp.ClusterChangeState.GetMinVersion());
-            Assert.AreEqual(ClientSocket.Ver150, ClientOp.ClusterChangeWalState.GetMinVersion());
-            Assert.AreEqual(ClientSocket.Ver150, ClientOp.ClusterGetWalState.GetMinVersion());
+            Assert.AreEqual(ClientSocket.Ver150, ClientFeatures.GetMinVersion(ClientOp.ClusterIsActive));
+            Assert.AreEqual(ClientSocket.Ver150, ClientFeatures.GetMinVersion(ClientOp.ClusterChangeState));
+            Assert.AreEqual(ClientSocket.Ver150, ClientFeatures.GetMinVersion(ClientOp.ClusterChangeWalState));
+            Assert.AreEqual(ClientSocket.Ver150, ClientFeatures.GetMinVersion(ClientOp.ClusterGetWalState));
         }
     }
 }

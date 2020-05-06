@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -386,18 +387,18 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (_socket != null)
             {
-                if (_config.EnablePartitionAwareness && _socket.IsOpSupported(ClientOp.CachePartitions))
+                if (_config.EnablePartitionAwareness && !_socket.Features.HasOp(ClientOp.CachePartitions))
                 {
                     _config.EnablePartitionAwareness = false;
 
                     _logger.Warn("Partition awareness has been disabled: server protocol version {0} " +
                                  "is lower than required {1}",
                         _socket.ServerVersion,
-                        ClientOp.CachePartitions.GetMinVersion()
+                        ClientFeatures.GetMinVersion(ClientOp.CachePartitions)
                     );
                 }
 
-                if (_socket.IsOpSupported(ClientOp.ClusterGroupGetNodesEndpoints))
+                if (!_socket.Features.HasFeature(ClientBitmaskFeature.ClusterGroupGetNodesEndpoints))
                 {
                     _enableDiscovery = false;
                     
