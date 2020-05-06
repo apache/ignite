@@ -49,7 +49,7 @@ class IgniteConfig:
     <appender name="CONSOLE_ERR" class="org.apache.log4j.ConsoleAppender">
         <param name="Target" value="System.err"/>
 
-        <param name="Threshold" value="ERROR"/>
+        <param name="Threshold" value="INFO"/>
 
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="[%d{{ISO8601}}][%-5p][%t][%c{{1}}] %m%n"/>
