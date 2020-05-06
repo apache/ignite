@@ -1746,8 +1746,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * The main purpose of this method is to wait for all ongoing updates (transactional and atomic), initiated on
      * the previous topology version, to finish to prevent inconsistencies during rebalancing and to prevent two
      * different simultaneous owners of the same lock.
-     * For the exact list of the objects being awaited for see
-     * {@link GridCacheSharedContext#partitionReleaseFuture(AffinityTopologyVersion)} javadoc.
      * Also, this method can be used to wait for tx recovery only in case of PME-free switch.
      *
      * @param latchId Distributed latch Id.
