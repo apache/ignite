@@ -33,6 +33,16 @@ class IgniteService(IgnitePathResolverMixin, Service):
     HEAP_DUMP_FILE = os.path.join(PERSISTENT_ROOT, "ignite-heap.bin")
     STDOUT_STDERR_CAPTURE = os.path.join(PERSISTENT_ROOT, "console.log")
 
+    logs = {
+        "console_log": {
+            "path": STDOUT_STDERR_CAPTURE,
+            "collect_default": True},
+
+        "heap_dump": {
+            "path": HEAP_DUMP_FILE,
+            "collect_default": False}
+    }
+
     def __init__(self, context, num_nodes=3, version=DEV_BRANCH):
         """
         :param context: test context
@@ -45,13 +55,6 @@ class IgniteService(IgnitePathResolverMixin, Service):
 
         for node in self.nodes:
             node.version = version
-
-    def set_version(self, version):
-        for node in self.nodes:
-            node.version = version
-
-    def alive(self, node):
-        return len(self.pids(node)) > 0
 
     def start(self):
         Service.start(self)
@@ -88,15 +91,6 @@ class IgniteService(IgnitePathResolverMixin, Service):
         if len(self.pids(node)) == 0:
             raise Exception("No process ids recorded on node %s" % node.account.hostname)
 
-    def pids(self, node):
-        """Return process ids associated with running processes on the given node."""
-        try:
-            cmd = "jcmd | grep -e %s | awk '{print $1}'" % self.java_class_name()
-            pid_arr = [pid for pid in node.account.ssh_capture(cmd, allow_fail=True, callback=int)]
-            return pid_arr
-        except (RemoteCommandError, ValueError) as e:
-            return []
-
     def stop_node(self, node, clean_shutdown=True, timeout_sec=60):
         pids = self.pids(node)
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
@@ -111,6 +105,11 @@ class IgniteService(IgnitePathResolverMixin, Service):
             self.thread_dump(node)
             raise
 
+    def clean_node(self, node):
+        node.account.kill_java_processes(self.java_class_name(),
+                                         clean_shutdown=False, allow_fail=True)
+        node.account.ssh("sudo rm -rf -- %s" % IgniteService.PERSISTENT_ROOT, allow_fail=False)
+
     def thread_dump(self, node):
         for pid in self.pids(node):
             try:
@@ -118,10 +117,22 @@ class IgniteService(IgnitePathResolverMixin, Service):
             except:
                 self.logger.warn("Could not dump threads on node")
 
-    def clean_node(self, node):
-        node.account.kill_java_processes(self.java_class_name(),
-                                         clean_shutdown=False, allow_fail=True)
-        node.account.ssh("sudo rm -rf -- %s" % IgniteService.PERSISTENT_ROOT, allow_fail=False)
+    def pids(self, node):
+        """Return process ids associated with running processes on the given node."""
+        try:
+            cmd = "jcmd | grep -e %s | awk '{print $1}'" % self.java_class_name()
+            pid_arr = [pid for pid in node.account.ssh_capture(cmd, allow_fail=True, callback=int)]
+            return pid_arr
+        except (RemoteCommandError, ValueError) as e:
+            return []
 
     def java_class_name(self):
         return "org.apache.ignite.startup.cmdline.CommandLineStartup"
+
+    def set_version(self, version):
+        for node in self.nodes:
+            node.version = version
+
+    def alive(self, node):
+        return len(self.pids(node)) > 0
+
