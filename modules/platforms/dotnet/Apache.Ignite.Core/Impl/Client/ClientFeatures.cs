@@ -17,15 +17,21 @@
 
 namespace Apache.Ignite.Core.Impl.Client
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Client;
 
     /// <summary>
     /// Handles client features based on protocol version and feature flags.
     /// </summary>
     internal class ClientFeatures
     {
+        /** Bit mask of all features. */
+        public static readonly byte[] AllFeatures = GetAllFeatures();
+
+        
         /** */
         private static readonly Dictionary<ClientOp, ClientProtocolVersion> OpVersion =
             new Dictionary<ClientOp, ClientProtocolVersion>
@@ -76,6 +82,89 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             // TODO
             return false;
+        }
+        
+        /// <summary>
+        /// Gets minimum protocol version that is required to perform specified operation.
+        /// </summary>
+        /// <param name="op">Operation.</param>
+        /// <returns>Minimum protocol version.</returns>
+        public static ClientProtocolVersion GetMinVersion(ClientOp op)
+        {
+            ClientProtocolVersion minVersion;
+            
+            return OpVersion.TryGetValue(op, out minVersion) 
+                ? minVersion 
+                : ClientSocket.Ver100;
+        }
+
+        /// <summary>
+        /// Gets <see cref="ClientBitmaskFeature"/> that is required to perform specified operation.
+        /// </summary>
+        /// <param name="op">Operation.</param>
+        /// <returns>Required feature flag, or null.</returns>
+        public static ClientBitmaskFeature? GetFeature(ClientOp op)
+        {
+            ClientBitmaskFeature feature;
+
+            return OpFeature.TryGetValue(op, out feature)
+                ? feature
+                : (ClientBitmaskFeature?) null;
+        }
+
+        
+        /// <summary>
+        /// Validates op code against current protocol version.
+        /// </summary>
+        /// <param name="operation">Operation.</param>
+        public void ValidateOp(ClientOp operation)
+        {
+            ValidateOp(operation, _protocolVersion , operation.GetMinVersion(), _features, operation.GetFeature());
+        }
+        
+        /// <summary>
+        /// Validates op code against current protocol version.
+        /// </summary>
+        /// <param name="operation">Operation.</param>
+        /// <param name="protocolVersion">Protocol version.</param>
+        /// <param name="requiredProtocolVersion">Required protocol version.</param>
+        public static void ValidateOp<T>(T operation, ClientProtocolVersion protocolVersion, 
+            ClientProtocolVersion requiredProtocolVersion, BitArray features, ClientBitmaskFeature? requiredFeature)
+        {
+            if (protocolVersion < requiredProtocolVersion)
+            {
+                var message = string.Format("Operation {0} is not supported by protocol version {1}. " +
+                                            "Minimum protocol version required is {2}.", 
+                    operation, protocolVersion, requiredProtocolVersion);
+                
+                throw new IgniteClientException(message);
+            }
+
+            if (features != null && requiredFeature != null && !features.Get((int) requiredFeature.Value))
+            {
+                throw new IgniteClientException(string.Format(
+                    "Operation {0} is not supported by the server. Feature {1} is missing.",
+                    operation, requiredFeature.Value));
+            }
+        }
+
+        /// <summary>
+        /// Gets a bit array with all supported features.
+        /// </summary>
+        private static byte[] GetAllFeatures()
+        {
+            var vals = Enum.GetValues(typeof(ClientBitmaskFeature));
+            var bits = new BitArray(vals.Length);
+
+            foreach (ClientBitmaskFeature feature in vals)
+            {
+                bits.Set((int)feature, true);
+            }
+            
+            var bytes = new byte[1 + vals.Length / 8];
+            bits.CopyTo(bytes, 0);
+
+            return bytes;
         }
     }
 }
