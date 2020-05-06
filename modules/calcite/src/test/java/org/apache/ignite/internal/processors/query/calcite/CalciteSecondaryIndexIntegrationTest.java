@@ -85,7 +85,7 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
     @Test
     public void testPkIdx_KeyColumnAliasFilter() {
         assertIndexInQuery("PUBLIC, PROJECT", "PK_ALIAS",
-            "SELECT * FROM Project WHERE id=1");
+            "SELECT * FROM Project WHERE id=?");
     }
 
     @Test
@@ -97,7 +97,7 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
     @Test
     public void testVerNameIdIdx_VerFilter() {
         assertIndexInQuery("PUBLIC, PROJECT", "PROJECT_VER_DESC_NAME_ASC_ID_DESC_IDX",
-            "SELECT * FROM Project WHERE ver=1 AND name='Vasya'");
+            "SELECT * FROM Project WHERE ver=? AND name=?");
     }
 
     @Test
@@ -105,7 +105,7 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
         List<FieldsQueryCursor<List<?>>> cursors =
-            engine.query(null, "PUBLIC", "SELECT * FROM Project WHERE name='Ignite'");
+            engine.query(null, "PUBLIC", "SELECT * FROM Project WHERE name=?", "GridGain");
 
         FieldsQueryCursor<List<?>> cur = cursors.get(0);
 
