@@ -136,9 +136,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         [Test]
         public void TestPartitionAwarenessRoutesRequestsToNewlyJoinedNodes()
         {
+            const int key = 12; // This key will belong to newly joined node.
+            
             var ignite = Ignition.GetAll().First();
             var cache = ignite.CreateCache<int, int>("c");
-            var key = 12;  // This key will belong to newly joined node.
             cache.Put(key, key);
             
             using (var ignite2 = Ignition.Start(GetIgniteConfiguration()))
@@ -152,12 +153,17 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 TestUtils.WaitForTrueCondition(() => aff.IsPrimary(localNode, key), 5000);
 
                 var clientCache = client.GetCache<int, int>(cache.Name);
-                clientCache.Get(key);
-
-                var log = ((ListLogger) ignite2.Logger).Entries.LastOrDefault(
-                    e => e.Message.Contains("Client request received"));
+                var logger = (ListLogger) ignite2.Logger;
                 
-                Assert.IsNotNull(log);
+                TestUtils.WaitForTrueCondition(() =>
+                {
+                    clientCache.Get(key);
+
+                    var log = logger.Entries.LastOrDefault(
+                        e => e.Message.Contains("client.cache.ClientCacheGetRequest"));
+
+                    return log != null;
+                }, 3000);
             }
         }
     }
