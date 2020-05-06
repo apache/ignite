@@ -132,8 +132,7 @@ namespace Apache.Ignite.Core.Client
 
         /// <summary>
         /// Gets all active connections. Ignite Thin Client maintains connections to multiple server nodes when
-        /// multiple <see cref="IgniteClientConfiguration.Endpoints"/> are specified,
-        /// or when <see cref="IgniteClientConfiguration.EnableDiscovery"/> is set to true.
+        /// <see cref="IgniteClientConfiguration.EnablePartitionAwareness"/> is true.
         /// </summary>
         IEnumerable<IClientConnection> GetConnections();
     }

@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -426,6 +425,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Updates current Affinity Topology Version.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "Thread root must catch all exceptions to avoid crashing the process.")]
         private void OnAffinityTopologyVersionChange(AffinityTopologyVersion affinityTopologyVersion)
         {
             _affinityTopologyVersion = affinityTopologyVersion;
