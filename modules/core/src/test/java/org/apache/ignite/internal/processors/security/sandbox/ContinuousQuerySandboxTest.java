@@ -31,7 +31,7 @@ public class ContinuousQuerySandboxTest extends AbstractContinuousQuerySandboxTe
         checkContinuousQuery(() -> {
             ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
 
-            cq.setInitialQuery(new ScanQuery<>(initQryFilter));
+            cq.setInitialQuery(new ScanQuery<>(INIT_QRY_FILTER));
             cq.setLocalListener(e -> {/* No-op. */});
 
             return cq;
@@ -44,7 +44,7 @@ public class ContinuousQuerySandboxTest extends AbstractContinuousQuerySandboxTe
         checkContinuousQuery(() -> {
             ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
 
-            cq.setRemoteFilterFactory(() -> rmtFilter);
+            cq.setRemoteFilterFactory(() -> RMT_FILTER);
 
             return cq;
         }, false);
@@ -56,7 +56,7 @@ public class ContinuousQuerySandboxTest extends AbstractContinuousQuerySandboxTe
         checkContinuousQuery(() -> {
             ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
 
-            cq.setRemoteFilter(rmtFilter);
+            cq.setRemoteFilter(RMT_FILTER);
 
             return cq;
         }, false);

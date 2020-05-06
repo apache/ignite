@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.security.AccessControlException;
 import java.util.UUID;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityAwareExternalizable;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
-import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Security aware remote filter.
@@ -36,10 +35,6 @@ public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizab
     implements CacheEntryEventSerializableFilter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Ignite. */
-    @IgniteInstanceResource
-    private transient IgniteEx ignite;
 
     /**
      * Default constructor.
@@ -64,6 +59,11 @@ public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizab
             IgniteSandbox sandbox = security.sandbox();
 
             return sandbox.enabled() ? sandbox.execute(() -> original.evaluate(evt)) : original.evaluate(evt);
+        }
+        catch (AccessControlException e) {
+            logAccessDeniedMessage(e);
+
+            throw e;
         }
     }
 }

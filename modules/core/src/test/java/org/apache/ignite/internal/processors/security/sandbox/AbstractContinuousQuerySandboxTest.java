@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.sandbox;
 
+import java.security.AccessControlException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import javax.cache.Cache;
@@ -27,13 +28,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Abstract class to test that a remote filter and transformer of ContinuousQueries run on a remote node inside the
@@ -46,71 +43,52 @@ public class AbstractContinuousQuerySandboxTest extends AbstractSandboxTest {
     /** Cache index. */
     private static final AtomicInteger CACHE_INDEX = new AtomicInteger();
 
-    /** Error message. */
-    private static final String ERROR_MESSAGE = "java.security.AccessControlException: " +
-        "access denied (\"java.util.PropertyPermission\" \"test.sandbox.property\" \"write\")";
+    /** Error. */
+    private static volatile AccessControlException error;
 
-    /** Log listener. */
-    private static final LogListener LOG_LSNR = LogListener
-        .matches(s -> s.contains(ERROR_MESSAGE))
-        .times(1)
-        .build();
-
-    /** Test logger. */
-    private static ListeningTestLogger log;
-
-    /** Preidacte for inital query tests. */
-    protected static IgniteBiPredicate<Integer, Integer> initQryFilter;
-
-    /** Remote filter. */
-    protected static CacheEntryEventSerializableFilter<Integer, Integer> rmtFilter;
-
-    /** Constructor. */
-    public AbstractContinuousQuerySandboxTest() {
-        log = new ListeningTestLogger(false, GridAbstractTest.log);
-
-        log.registerListener(LOG_LSNR);
-
-        initQryFilter = (k, v) -> {
+    /** Runs control action for CQ tests. */
+    protected static final Runnable CONTROL_ACTION_RUNNER = new Runnable() {
+        @Override public void run() {
             try {
                 controlAction();
             }
-            catch (Throwable e) {
-                log.error("", e);
+            catch (AccessControlException e) {
+                error = e;
             }
+        }
+    };
 
-            return true;
-        };
+    /** Preidacte for inital query tests. */
+    protected static final IgniteBiPredicate<Integer, Integer> INIT_QRY_FILTER = (k, v) -> {
+        CONTROL_ACTION_RUNNER.run();
 
-        rmtFilter = e -> {
-            controlAction();
+        return true;
+    };
 
-            return true;
-        };
-    }
+    /** Remote filter. */
+    protected static final CacheEntryEventSerializableFilter<Integer, Integer> RMT_FILTER = ent -> {
+        CONTROL_ACTION_RUNNER.run();
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setGridLogger(log);
-    }
+        return true;
+    };
 
     /** */
     protected void checkContinuousQuery(Supplier<Query<Cache.Entry<Integer, Integer>>> s, boolean init) {
-        runOperation(() -> executeQuery(grid(CLNT_ALLOWED_WRITE_PROP), s.get(), init));
-        runForbiddenOperation(() -> executeQuery(grid(CLNT_FORBIDDEN_WRITE_PROP), s.get(), init));
+        runOperation(operation(CLNT_ALLOWED_WRITE_PROP, s, init));
+        runForbiddenOperation(operation(CLNT_FORBIDDEN_WRITE_PROP, s, init), AccessControlException.class);
     }
 
-    /**
-     * @param r RunnableX that that runs {@link AbstractSandboxTest#controlAction()}.
-     */
-    private void runForbiddenOperation(GridTestUtils.RunnableX r) {
-        LOG_LSNR.reset();
-        System.clearProperty(PROP_NAME);
+    /** */
+    private GridTestUtils.RunnableX operation(String nodeName,
+        Supplier<Query<Cache.Entry<Integer, Integer>>> s, boolean init) {
+        return () -> {
+            error = null;
 
-        r.run();
+            executeQuery(grid(nodeName), s.get(), init);
 
-        assertTrue(LOG_LSNR.check());
-        assertNull(System.getProperty(PROP_NAME));
+            if (error != null)
+                throw error;
+        };
     }
 
     /**

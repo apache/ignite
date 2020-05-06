@@ -33,7 +33,7 @@ public class ContinuousQueryWithTransformerSandboxTest extends AbstractContinuou
         checkContinuousQuery(() -> {
             ContinuousQueryWithTransformer<Integer, Integer, Integer> q = new ContinuousQueryWithTransformer<>();
 
-            q.setInitialQuery(new ScanQuery<>(initQryFilter));
+            q.setInitialQuery(new ScanQuery<>(INIT_QRY_FILTER));
             q.setRemoteTransformerFactory(() -> Cache.Entry::getValue);
             q.setLocalListener(e -> {/* No-op. */});
 
@@ -47,7 +47,7 @@ public class ContinuousQueryWithTransformerSandboxTest extends AbstractContinuou
         checkContinuousQuery(()->{
             ContinuousQueryWithTransformer<Integer, Integer, Integer> q = new ContinuousQueryWithTransformer<>();
 
-            q.setRemoteFilterFactory(() -> rmtFilter);
+            q.setRemoteFilterFactory(() -> RMT_FILTER);
             q.setRemoteTransformerFactory(() -> Cache.Entry::getValue);
 
             return q;
@@ -61,7 +61,7 @@ public class ContinuousQueryWithTransformerSandboxTest extends AbstractContinuou
             ContinuousQueryWithTransformer<Integer, Integer, Integer> q = new ContinuousQueryWithTransformer<>();
 
             q.setRemoteTransformerFactory(() -> e -> {
-                controlAction();
+                CONTROL_ACTION_RUNNER.run();
 
                 return e.getValue();
             });
