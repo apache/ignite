@@ -20,15 +20,20 @@ from ignitetest.services.ignite_client_app import IgniteClientApp
 
 
 class AddNodeRebalanceTest(Test):
+    NUM_NODES = 3
+    REBALANCE_TIMEOUT = 600
+
     """
     Test performs rebalance tests.
     """
     def __init__(self, test_context):
         super(AddNodeRebalanceTest, self).__init__(test_context=test_context)
-        self.ignite = IgniteService(test_context)
+        self.ignite = IgniteService(test_context, num_nodes=AddNodeRebalanceTest.NUM_NODES)
 
     def setUp(self):
-        self.ignite.start()
+        # starting all nodes except last.
+        for i in range(AddNodeRebalanceTest.NUM_NODES-1):
+            self.ignite.start_node(self.ignite.nodes[i])
 
     def teardown(self):
         self.ignite.stop()
@@ -42,9 +47,10 @@ class AddNodeRebalanceTest(Test):
             * Await for rebalance to finish.
         """
         self.logger.info("Start add node rebalance test.")
-        self.client = IgniteClientApp(self.test_context)
-        self.client.start()
-        self.client.wait()
 
-        for node in self.ignite.nodes:
-            node.account.ssh("touch /opt/hello-from-test-after-client.txt")
+        # This client just put some data to the cache.
+        IgniteClientApp(self.test_context).run()
+
+        self.ignite.start_node(self.ignite.nodes[AddNodeRebalanceTest.NUM_NODES-1],
+                               timeout_sec=AddNodeRebalanceTest.REBALANCE_TIMEOUT,
+                               wait_for_rebalance = True)
