@@ -85,3 +85,4 @@ packages
 /results
 .ducktape
 *.pyc
+tests/docker/build/*
