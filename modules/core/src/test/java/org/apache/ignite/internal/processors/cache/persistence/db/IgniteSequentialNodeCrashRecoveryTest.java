@@ -163,6 +163,8 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
 
         g = startGrid(0);
 
+        awaitPartitionMapExchange();
+
         {
             IgniteCache<Object, Object> cache = g.cache("cache");
 
