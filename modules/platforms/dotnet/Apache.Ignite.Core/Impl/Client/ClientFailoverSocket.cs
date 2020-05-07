@@ -253,7 +253,6 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (_socket == null || (_socket.IsDisposed && !_config.ReconnectDisabled))
                 {
-                    // TODO: Use different reconnect logic when socketMap is available.
                     Connect();
                 }
 
@@ -345,14 +344,25 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Connects the socket.
+        /// Gets next connected socket, or connects a new one.
         /// </summary>
-        private void Connect()
+        private ClientSocket GetNextSocket()
         {
             List<Exception> errors = null;
             var startIdx = (int) Interlocked.Increment(ref _endPointIndex);
             _socket = null;
 
+            // Check socket map first, if available: it includes all cluster nodes.
+            var map = _nodeSocketMap;
+            foreach (var socket in map.Values)
+            {
+                if (!socket.IsDisposed)
+                {
+                    return socket;
+                }
+            }
+
+            // Fall back to initially known endpoints.
             for (var i = 0; i < _endPoints.Count; i++)
             {
                 var idx = (startIdx + i) % _endPoints.Count;
@@ -360,15 +370,12 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (endPoint.Socket != null && !endPoint.Socket.IsDisposed)
                 {
-                    _socket = endPoint.Socket;
-                    break;
+                    return endPoint.Socket;
                 }
 
                 try
                 {
-                    _socket = Connect(endPoint);
-
-                    break;
+                    return Connect(endPoint);
                 }
                 catch (SocketException e)
                 {
@@ -381,12 +388,17 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
             }
 
-            if (_socket == null && errors != null)
-            {
-                throw new AggregateException("Failed to establish Ignite thin client connection, " +
-                                             "examine inner exceptions for details.", errors);
-            }
+            throw new AggregateException("Failed to establish Ignite thin client connection, " +
+                                         "examine inner exceptions for details.", errors);
+        }
 
+        /// <summary>
+        /// Connects the socket.
+        /// </summary>
+        private void Connect()
+        {
+            _socket = GetNextSocket();
+            
             if (_socket != null)
             {
                 if (_config.EnablePartitionAwareness && !_socket.Features.HasOp(ClientOp.CachePartitions))
