@@ -49,6 +49,7 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
@@ -81,18 +82,15 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
     private final RelCollation collation;
     private final int[] predicateMasks;
 
-    /** */
+    /**
+     * Constructor used for deserialization.
+     *
+     * @param input Serialized representation.
+     */
     public IgniteTableScan(RelInput input) {
         super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
         idxName = input.getString("index");
-        List<RexNode> filters0 = null;
-        try {
-            filters0 = input.getExpressionList("filters");
-
-        } catch (RuntimeException e) {
-            System.out.println("asda");
-        }
-        filters = filters0;
+        filters = input.getExpressionList("filters");
         lowerIdxCondition = input.getExpressionList("lower");
         upperIdxCondition = input.getExpressionList("upper");
         igniteTable = getTable().unwrap(IgniteTable.class);
@@ -102,10 +100,11 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     /**
      * Creates a TableScan.
-     *  @param cluster Cluster that this relational expression belongs to
+     * @param cluster Cluster that this relational expression belongs to
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
-     * @param idxName
+     * @param idxName Index name.
+     * @param filters Filters for scan.
      */
     public IgniteTableScan(
         RelOptCluster cluster,
@@ -125,7 +124,6 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         this.lowerIdxCondition = makeListOfNullLiterals(igniteTable.columnDescriptors().length);
         this.upperIdxCondition = makeListOfNullLiterals(igniteTable.columnDescriptors().length);
         buildIndexConditions();
-
     }
 
     private void buildIndexConditions() {
@@ -134,44 +132,15 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
         assert !filters.isEmpty() : filters;
 
-        //RelCollation collation = igniteTable.collations().get(0);
         Map<Integer, RelFieldCollation> idxCols = new HashMap<>(collation.getFieldCollations().size());
         for (RelFieldCollation fc : collation.getFieldCollations())
             idxCols.put(fc.getFieldIndex(), fc);
 
         int cols = igniteTable.columnDescriptors().length;
 
-        List<RexNode> predicatesConjunction = RexUtil.flattenAnd(filters);
-
-//        if (predicatesConjunction.isAlwaysTrue() || predicatesConjunction.isAlwaysFalse())
-//            return; // TODO handle alwaysFalse and alwaysTrue.
-
-        Map<Integer, List<RexCall>> fieldsToPredicates = new HashMap<>(predicatesConjunction.size());
-
-        for (RexNode rexNode : predicatesConjunction) {
-            if (!isBinaryComparison(rexNode))
-                continue;
-
-            RexCall predCall = (RexCall)rexNode;
-            RexInputRef inputRef = (RexInputRef)extractOperand(predCall, true);
-
-            if (inputRef == null) // TODO handle this situation
-                continue;
-
-            int constraintFldIdx = inputRef.getIndex();
-
-            List<RexCall> fldPreds = fieldsToPredicates
-                .computeIfAbsent(constraintFldIdx, k -> new ArrayList<>(predicatesConjunction.size()));
-
-            // Let RexInputRef be on the left side.
-            if (!inputRefOnTheLeft(predCall))
-                predCall = (RexCall)RexUtil.invert(getCluster().getRexBuilder(), predCall);
-
-            fldPreds.add(predCall);
-        }
+        Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields();
 
         for (int i = 0; i < cols; i++) {
-            // TODO aliases or multiple collations
             RelFieldCollation fldCollation = idxCols.get(i);
 
             if (fldCollation == null)
@@ -187,9 +156,6 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
             boolean lowerBoundBelow = !fldCollation.getDirection().isDescending();
 
             for (RexCall pred : fldPreds) {
-//                assert pred.getOperands().get(0) instanceof RexInputRef  &&
-//                    ((RexSlot)pred.getOperands().get(0)).getIndex() == i : pred;
-
                 RexNode cond = removeCast(pred.operands.get(1));
 
                 assert cond instanceof RexLiteral || cond instanceof RexDynamicParam : cond;
@@ -224,6 +190,37 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
                 }
             }
         }
+    }
+
+    @NotNull private Map<Integer, List<RexCall>> mapPredicatesToFields() {
+        Map<Integer, List<RexCall>> fieldsToPredicates = null;
+
+        List<RexNode> predicatesConjunction = RexUtil.flattenAnd(filters);
+
+        fieldsToPredicates = new HashMap<>(predicatesConjunction.size());
+
+        for (RexNode rexNode : predicatesConjunction) {
+            if (!isBinaryComparison(rexNode))
+                continue;
+
+            RexCall predCall = (RexCall)rexNode;
+            RexInputRef inputRef = (RexInputRef)extractOperand(predCall, true);
+
+            if (inputRef == null)
+                continue;
+
+            int constraintFldIdx = inputRef.getIndex();
+
+            List<RexCall> fldPreds = fieldsToPredicates
+                .computeIfAbsent(constraintFldIdx, k -> new ArrayList<>(predicatesConjunction.size()));
+
+            // Let RexInputRef be on the left side.
+            if (!inputRefOnTheLeft(predCall))
+                predCall = (RexCall)RexUtil.invert(getCluster().getRexBuilder(), predCall);
+
+            fldPreds.add(predCall);
+        }
+        return fieldsToPredicates;
     }
 
     private boolean boundsArePossible() {
