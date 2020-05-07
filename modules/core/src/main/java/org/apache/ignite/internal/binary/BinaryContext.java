@@ -398,18 +398,24 @@ public class BinaryContext {
 
     /**
      * @param marsh Binary marshaller.
-     * @param cfg Configuration.
      * @throws BinaryObjectException In case of error.
      */
-    public void configure(BinaryMarshaller marsh, IgniteConfiguration cfg) throws BinaryObjectException {
+    public void configure(BinaryMarshaller marsh) throws BinaryObjectException {
+        configure(marsh, null);
+    }
+
+    /**
+     * @param marsh Binary marshaller.
+     * @param binaryCfg Binary configuration.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void configure(BinaryMarshaller marsh, BinaryConfiguration binaryCfg) throws BinaryObjectException {
         if (marsh == null)
             return;
 
         this.marsh = marsh;
 
         marshCtx = marsh.getContext();
-
-        BinaryConfiguration binaryCfg = cfg.getBinaryConfiguration();
 
         if (binaryCfg == null)
             binaryCfg = new BinaryConfiguration();
