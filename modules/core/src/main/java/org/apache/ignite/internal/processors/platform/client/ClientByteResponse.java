@@ -15,37 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cluster;
+package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Change cache WAL state response.
+ * Byte response.
  */
-public class ClientClusterWalChangeStateResponse extends ClientResponse {
-    /**
-     * Operation result.
-     */
-    private final boolean res;
+public class ClientByteResponse extends ClientResponse {
+    /** */
+    private final byte val;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reqId Request id.
-     * @param res   Operation result.
      */
-    ClientClusterWalChangeStateResponse(long reqId, boolean res) {
+    public ClientByteResponse(long reqId, byte val) {
         super(reqId);
 
-        this.res = res;
+        this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
 
-        writer.writeBoolean(res);
+        writer.writeByte(val);
     }
 }
