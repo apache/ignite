@@ -17,9 +17,12 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
+    using NUnit.Framework;
+
     /// <summary>
     /// Discovery test with no <see cref="IgniteConfiguration.Localhost"/> set.
     /// </summary>
+    [TestFixture]
     public class ClientClusterDiscoveryTestsNoLocalhost : ClientClusterDiscoveryTests
     {
         /// <summary>
