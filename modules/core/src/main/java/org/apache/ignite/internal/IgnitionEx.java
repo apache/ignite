@@ -1704,6 +1704,9 @@ public class IgnitionEx {
 
                     log.info("Node started : "
                         + startNodeTimer.stagesTimings().stream().collect(joining(",", "[", "]")));
+
+                    if (startCtx.springCtx == null)
+                        log.warning("No Spring application context is set, @SpringResource annotation is silently ignored.");
                 }
                 catch (Exception e) {
                     if (log != null)
