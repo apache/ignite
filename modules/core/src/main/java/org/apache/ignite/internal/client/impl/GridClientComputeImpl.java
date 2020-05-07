@@ -33,7 +33,6 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnectionRes
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 import static org.apache.ignite.internal.client.util.GridClientUtils.applyFilter;
 
 /**
@@ -48,18 +47,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
     };
 
     /** */
-    private static final GridClientPredicate<GridClientNode> DAEMON = new GridClientPredicate<GridClientNode>() {
-        @Override public boolean apply(GridClientNode e) {
-            return "true".equals(e.<String>attribute(ATTR_DAEMON));
-        }
-    };
-
-    /** */
-    private static final GridClientPredicate<GridClientNode> NOT_DAEMON = new GridClientPredicate<GridClientNode>() {
-        @Override public boolean apply(GridClientNode e) {
-            return !"true".equals(e.<String>attribute(ATTR_DAEMON));
-        }
-    };
+    private static final GridClientPredicate<GridClientNode> NOT_DAEMON = n -> !n.isDaemon();
 
     /** Projection factory. */
     @SuppressWarnings("TypeMayBeWeakened")
@@ -194,7 +182,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
 
     /** {@inheritDoc} */
     @Override public Collection<GridClientNode> daemonNodes() throws GridClientException {
-        return applyFilter(projectionNodes(), DAEMON);
+        return applyFilter(projectionNodes(), GridClientNode::isDaemon);
     }
 
     /** {@inheritDoc} */
