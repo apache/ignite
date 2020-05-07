@@ -3015,8 +3015,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * Perform action on binary object after unmarshalling from offheap data, when offheap memory chunk cleared.
      *
-     * @param obj Object to marshal-unmarshal
-     * @param action Action to perform on object
+     * @param obj Object to marshal-unmarshal.
+     * @param action Action to perform on object.
      * @throws Exception If failed.
      */
     private void testReadDetachObjectProperly(Object obj, IgniteThrowableConsumer<Object> action) throws Exception {
