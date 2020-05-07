@@ -185,6 +185,8 @@ public class BinaryClassDescriptor {
         else {
             if (cls == BinaryEnumObjectImpl.class)
                 mode = BinaryWriteMode.BINARY_ENUM;
+            else if (cls == BinaryObjectArray.class)
+                mode = BinaryWriteMode.OBJECT_ARR;
             else
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
@@ -714,7 +716,7 @@ public class BinaryClassDescriptor {
                     break;
 
                 case OBJECT_ARR:
-                    writer.doWriteObjectArray((Object[])obj);
+                    writer.doWriteObjectArray(obj);
 
                     break;
 

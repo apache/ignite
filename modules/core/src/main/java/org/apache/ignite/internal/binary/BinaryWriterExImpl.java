@@ -745,32 +745,38 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Array of objects.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    void doWriteObjectArray(@Nullable Object[] val) throws BinaryObjectException {
+    void doWriteObjectArray(@Nullable Object val) throws BinaryObjectException {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            if (tryWriteAsHandle(val))
+            boolean isBinary = val instanceof BinaryObjectArray;
+
+            Object[] arr = isBinary ? ((BinaryObjectArray)val).items() : (Object[])val;
+
+            if (tryWriteAsHandle(arr))
                 return;
 
             BinaryClassDescriptor desc = ctx.registerClass(
-                val.getClass().getComponentType(),
+                arr.getClass().getComponentType(),
                 true,
                 failIfUnregistered);
 
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(GridBinaryMarshaller.OBJ_ARR);
 
-            if (desc.registered())
+            if (isBinary)
+                out.unsafeWriteInt(((BinaryObjectArray)val).itemTypeId());
+            else if (desc.registered())
                 out.unsafeWriteInt(desc.typeId());
             else {
                 out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
 
-                doWriteString(val.getClass().getComponentType().getName());
+                doWriteString(arr.getClass().getComponentType().getName());
             }
 
-            out.writeInt(val.length);
+            out.writeInt(arr.length);
 
-            for (Object obj : val)
+            for (Object obj : arr)
                 doWriteObject(obj);
         }
     }
@@ -1296,7 +1302,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    void writeObjectArrayField(@Nullable Object[] val) throws BinaryObjectException {
+    void writeObjectArrayField(@Nullable Object val) throws BinaryObjectException {
         doWriteObjectArray(val);
     }
 

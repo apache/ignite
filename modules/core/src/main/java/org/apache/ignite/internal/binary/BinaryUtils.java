@@ -1554,6 +1554,21 @@ public class BinaryUtils {
 
     /**
      * @param in Binary input stream.
+     * @return Type ID specified at the input stream
+     * @throws BinaryObjectException If failed.
+     */
+    public static int doReadTypeId(BinaryInputStream in)
+        throws BinaryObjectException {
+        int typeId = in.readInt();
+
+        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+            doReadClassName(in);
+
+        return typeId;
+    }
+
+    /**
+     * @param in Binary input stream.
      * @param ctx Binary context.
      * @param ldr Class loader.
      * @param deserialize Doesn't load the class when the flag is {@code false}. Class information is skipped.
@@ -1820,8 +1835,21 @@ public class BinaryUtils {
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
+    @Nullable public static Object unmarshal(
+        BinaryInputStream in,
+        BinaryContext ctx,
+        ClassLoader ldr,
+        BinaryReaderHandlesHolder handles,
+        boolean detach) throws BinaryObjectException {
+        return unmarshal(in, ctx, ldr, handles, detach, false);
+    }
+
+    /**
+     * @return Unmarshalled value.
+     * @throws BinaryObjectException In case of error.
+     */
     @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean detach) throws BinaryObjectException {
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
         int start = in.position();
 
         byte flag = in.readByte();
@@ -1873,7 +1901,7 @@ public class BinaryUtils {
 
                 handles.setHandle(po, start);
 
-                return po;
+                return deserialize ? po.deserialize() : po;
             }
 
             case GridBinaryMarshaller.BYTE:
@@ -1961,13 +1989,13 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                return doReadObjectArray(in, ctx, ldr, handles, false);
+                return doReadObjectArray(in, ctx, ldr, handles, deserialize);
 
             case GridBinaryMarshaller.COL:
-                return doReadCollection(in, ctx, ldr, handles, false, null);
+                return doReadCollection(in, ctx, ldr, handles, deserialize, null);
 
             case GridBinaryMarshaller.MAP:
-                return doReadMap(in, ctx, ldr, handles, false, null);
+                return doReadMap(in, ctx, ldr, handles, deserialize, null);
 
             case GridBinaryMarshaller.BINARY_OBJ:
                 return doReadBinaryObject(in, ctx, detach);
@@ -2004,11 +2032,17 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static Object[] doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    public static Object doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
-        Class compType = doReadClass(in, ctx, ldr, deserialize);
+        Class<?> compType = null;
+        int compTypeId = 0;
+
+        if (deserialize)
+            compType = doReadClass(in, ctx, ldr, deserialize);
+        else
+            compTypeId = doReadTypeId(in);
 
         int len = in.readInt();
 
@@ -2019,7 +2053,11 @@ public class BinaryUtils {
         for (int i = 0; i < len; i++)
             arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
 
-        return arr;
+        boolean keepCompTypeId = !deserialize
+            && compTypeId != GridBinaryMarshaller.OBJECT
+            && compTypeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
+
+        return keepCompTypeId ? new BinaryObjectArray(compTypeId, arr) : arr;
     }
 
     /**

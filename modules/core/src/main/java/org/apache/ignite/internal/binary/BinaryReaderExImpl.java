@@ -1336,6 +1336,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         return BinaryUtils.unmarshal(in, ctx, ldr, this, true);
     }
 
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
+        return BinaryUtils.unmarshal(in, ctx, ldr, this, true, deserialize);
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public Object[] readObjectArray(String fieldName) throws BinaryObjectException {
         try {
@@ -1359,7 +1365,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public Object[] readObjectArray() throws BinaryObjectException {
         switch (checkFlag(OBJ_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
+                return (Object[])BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
 
             case HANDLE:
                 return readHandleField();
@@ -1908,7 +1914,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ_ARR:
-                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
+                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, !GridBinaryMarshaller.KEEP_BINARIES.get());
 
                 break;
 

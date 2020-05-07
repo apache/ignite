@@ -319,6 +319,7 @@ public class BinaryContext {
         registerPredefinedType(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
         registerPredefinedType(Time[].class, GridBinaryMarshaller.TIME_ARR);
         registerPredefinedType(Object[].class, GridBinaryMarshaller.OBJ_ARR);
+        registerPredefinedType(BinaryObjectArray.class, GridBinaryMarshaller.OBJ_ARR);
 
         // Special collections.
         registerPredefinedType(ArrayList.class, 0);

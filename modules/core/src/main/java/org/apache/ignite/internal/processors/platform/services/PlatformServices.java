@@ -274,18 +274,20 @@ public class PlatformServices extends PlatformAbstractTarget {
                 String mthdName = reader.readString();
 
                 Object[] args;
+                ServiceProxyHolder svcProxy = (ServiceProxyHolder)arg;
 
                 if (reader.readBoolean()) {
                     args = new Object[reader.readInt()];
+                    boolean keepBinary = srvKeepBinary || svcProxy.isPlatformService();
 
                     for (int i = 0; i < args.length; i++)
-                        args[i] = reader.readObjectDetached();
+                        args[i] = reader.readObjectDetached(!keepBinary);
                 }
                 else
                     args = null;
 
                 try {
-                    Object result = ((ServiceProxyHolder)arg).invoke(mthdName, srvKeepBinary, args);
+                    Object result = svcProxy.invoke(mthdName, srvKeepBinary, args);
 
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }
@@ -559,6 +561,14 @@ public class PlatformServices extends PlatformAbstractTarget {
         }
 
         /**
+         * @return {@code true} if the target service is a {@link PlatformService} and {@code false} if the target
+         * service is a native Java service.
+         */
+        public boolean isPlatformService() {
+            return PlatformService.class.isAssignableFrom(serviceClass);
+        }
+
+        /**
          * Invokes the proxy.
          *
          * @param mthdName Method name.
@@ -574,10 +584,6 @@ public class PlatformServices extends PlatformAbstractTarget {
                 return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
             else {
                 assert proxy instanceof GridServiceProxy;
-
-                // Deserialize arguments for Java service when not in binary mode
-                if (!srvKeepBinary)
-                    args = PlatformUtils.unwrapBinariesInArray(args);
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
 

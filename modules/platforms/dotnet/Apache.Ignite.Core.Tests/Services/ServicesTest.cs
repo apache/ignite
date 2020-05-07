@@ -412,6 +412,29 @@ namespace Apache.Ignite.Core.Tests.Services
             var ex = Assert.Throws<ServiceInvocationException>(() => { prx.TestProperty = new object(); });
             Assert.IsInstanceOf<InvalidCastException>(ex.InnerException);
         }
+        
+        /// <summary>
+        /// Test call service proxy from remote node with a methods having an array of user types and objects.
+        /// </summary>
+        [Test]
+        public void TestCallServiceProxyWithMethodsHavingArrays()
+        {
+            // Deploy to the remote node
+            var nodeId = Grid2.GetCluster().GetLocalNode().Id;
+
+            var cluster = Grid1.GetCluster().ForNodeIds(nodeId);
+
+            cluster.GetServices().DeployNodeSingleton(SvcName, new TestIgniteServiceArraySerializable());
+            
+            var enumerable  = new[] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x});
+            
+            var prx = Services.GetServiceProxy<ITestIgniteServiceArray>(SvcName);
+            
+            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArrayOfObjects(enumerable.ToArray<object>())
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray(enumerable.ToArray())
+                  .Select(x => x.Field).ToArray());
+        }
 
         /// <summary>
         /// Tests service descriptors.
@@ -859,12 +882,17 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
 
             // Binary collections
-            var arr = new [] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x}).ToArray<object>();
+            var enumerable  = new[] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x});
+            var arrOfObj = enumerable.ToArray<object>();
+            var arr = enumerable.ToArray();
+            
             Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
-            Assert.AreEqual(new[] {11, 12, 13},
-                svc.testBinarizableArray(arr).OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
-
+            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArrayOfObjects(arrOfObj)
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArray(arr)
+                .Select(x => x.Field).ToArray());
+            
             // Binary object
             Assert.AreEqual(15,
                 binSvc.testBinaryObject(
@@ -1115,6 +1143,43 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             object Method(object arg);
+        }
+        
+        /// <summary>
+        /// Test serializable service with a methods having an array of user types and objects.
+        /// </summary>
+        public interface ITestIgniteServiceArray
+        {
+            /** */
+            object[] TestBinarizableArrayOfObjects(object[] x);
+            
+            /** */
+            PlatformComputeBinarizable[] TestBinarizableArray(PlatformComputeBinarizable[] x);
+        }
+
+        /// <summary>
+        /// Test serializable service with a methods having an array of user types and objects.
+        /// </summary>
+        [Serializable]
+        private class TestIgniteServiceArraySerializable : TestIgniteServiceSerializable, ITestIgniteServiceArray
+        {
+            public object[] TestBinarizableArrayOfObjects(object[] arg)
+            {
+                if (arg == null)
+                    return null;
+
+                for (var i = 0; i < arg.Length; i++)
+                    arg[i] = arg[i] == null
+                        ? null
+                        : new PlatformComputeBinarizable() { Field = ((PlatformComputeBinarizable)arg[i]).Field + 1 };
+
+                return arg;
+            }
+
+            public PlatformComputeBinarizable[] TestBinarizableArray(PlatformComputeBinarizable[] arg)
+            {
+                return (PlatformComputeBinarizable[])TestBinarizableArrayOfObjects(arg);
+            }
         }
 
         /// <summary>
@@ -1486,7 +1551,10 @@ namespace Apache.Ignite.Core.Tests.Services
             PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
 
             /** */
-            object[] testBinarizableArray(object[] x);
+            object[] testBinarizableArrayOfObjects(object[] x);
+            
+            /** */
+            PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] x);
 
             /** */
             ICollection testBinarizableCollection(ICollection x);

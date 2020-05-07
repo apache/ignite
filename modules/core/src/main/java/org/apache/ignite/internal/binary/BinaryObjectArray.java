@@ -17,24 +17,24 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.jetbrains.annotations.Nullable;
+import java.io.Serializable;
 
-/**
- * Extended reader interface.
- */
-public interface BinaryRawReaderEx extends BinaryRawReader {
-    /**
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached() throws BinaryObjectException;
+final class BinaryObjectArray implements Serializable {
+    private static final long serialVersionUID = 0L;
 
-    /**
-     * @param deserialize {@code true} if object should be unmarshelled and then deserialized.
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached(boolean deserialize) throws BinaryObjectException;
+    private final int itemTypeId;
+    private final Object[] items;
+
+    BinaryObjectArray(int itemTypeId, Object[] items) {
+        this.itemTypeId = itemTypeId;
+        this.items = items;
+    }
+
+    public int itemTypeId() {
+        return itemTypeId;
+    }
+
+    public Object[] items() {
+        return items;
+    }
 }
