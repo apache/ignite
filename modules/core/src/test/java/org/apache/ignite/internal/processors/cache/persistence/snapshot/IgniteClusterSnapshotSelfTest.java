@@ -1073,12 +1073,27 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteFuture<Void> fut = grid.snapshot().createSnapshot(SNAPSHOT_NAME);
 
-        assertThrowsWithCause(() ->
-                clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
-            IgniteException.class);
+        assertThrowsAnyCause(log,
+            () -> clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
+            IgniteException.class,
+            "Snapshot has not been created");
 
         block.unblock();
         fut.get();
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotFromClientDisconnected() throws Exception {
+        startGridsWithCache(1, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx clnt = startClientGrid(1);
+
+        stopGrid(0);
+
+        assertThrowsAnyCause(log,
+            () -> clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
+            IgniteException.class,
+            "Client disconnected. Snapshot result is unknown");
     }
 
     /**

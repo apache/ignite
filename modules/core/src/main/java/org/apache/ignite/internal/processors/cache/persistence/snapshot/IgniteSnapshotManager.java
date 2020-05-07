@@ -32,6 +32,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -47,7 +48,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
@@ -55,6 +55,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -655,20 +656,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (crd == null)
                     throw new IgniteException("There is no alive server nodes in the cluster");
 
-                return cctx.kernalContext().grid()
-                    .compute(cctx.kernalContext().grid().cluster().forNodeId(crd.id()))
-                    .applyAsync(new CreateSnapshotClosure(), name)
-                    .chain(f -> {
-                        try {
-                            return f.get();
-                        }
-                        catch (IgniteClientDisconnectedException e) {
-                            throw new IgniteException("Client disconnected. Snapshot result is unknown", e);
-                        }
-                        catch (IgniteException e) {
-                            throw new IgniteException("Snapshot has not been created", e);
-                        }
-                    });
+                return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
+                    .callAsync(new CreateSnapshotClosure(),
+                        name,
+                        Collections.singletonList(crd),
+                        null));
             }
 
             ClusterSnapshotFuture snpFut0;
@@ -1268,6 +1260,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             ignite.snapshot().createSnapshot(name).get();
 
             return null;
+        }
+    }
+
+    /** Wrapper of internal checked exceptions. */
+    private static class IgniteSnapshotFutureImpl extends IgniteFutureImpl<Void> {
+        /** @param fut Internal future. */
+        public IgniteSnapshotFutureImpl(IgniteInternalFuture<Void> fut) {
+            super(fut);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteException convertException(IgniteCheckedException e) {
+            if (e instanceof IgniteClientDisconnectedCheckedException)
+                return new IgniteException("Client disconnected. Snapshot result is unknown", U.convertException(e));
+            else
+                return new IgniteException("Snapshot has not been created", U.convertException(e));
         }
     }
 }
