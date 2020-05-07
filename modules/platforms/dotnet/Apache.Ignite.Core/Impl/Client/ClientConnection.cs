@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Diagnostics;
     using System.Net;
     using Apache.Ignite.Core.Client;
 
@@ -40,6 +41,10 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         public ClientConnection(EndPoint localEndPoint, EndPoint remoteEndPoint, Guid nodeId)
         {
+            Debug.Assert(localEndPoint != null);
+            Debug.Assert(remoteEndPoint != null);
+            Debug.Assert(nodeId != Guid.Empty);
+            
             _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
             _nodeId = nodeId;
