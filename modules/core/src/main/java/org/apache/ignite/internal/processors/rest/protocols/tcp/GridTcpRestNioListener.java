@@ -105,6 +105,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     private static final Map<GridClientCacheRequest.GridCacheOperation, GridRestCommand> cacheCmdMap =
         new EnumMap<>(GridClientCacheRequest.GridCacheOperation.class);
 
+    /** User attributes key. */
+    private static final int USER_ATTR_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
     /** Supported protocol versions. */
     private static final Collection<Short> SUPP_VERS = new HashSet<>();
 
@@ -145,9 +148,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
     /** Handler for all Redis requests. */
     private GridRedisNioListener redisLsnr;
-
-    /** User attributes key. */
-    private final int userAttrKey = GridNioSessionMetaKey.nextUniqueKey();
 
     /**
      * Creates listener which will convert incoming tcp packets to rest requests and forward them to
@@ -318,7 +318,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
             restReq.credentials(req.credentials());
 
-            ses.addMeta(userAttrKey, req.userAttributes());
+            ses.addMeta(USER_ATTR_KEY, req.userAttributes());
         }
         else if (msg instanceof GridClientCacheRequest) {
             GridClientCacheRequest req = (GridClientCacheRequest)msg;
@@ -421,7 +421,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restReq.sessionToken(msg.sessionToken());
             restReq.address(ses.remoteAddress());
             restReq.certificates(ses.certificates());
-            restReq.userAttributes(ses.meta(userAttrKey));
+            restReq.userAttributes(ses.meta(USER_ATTR_KEY));
         }
 
         return restReq;
