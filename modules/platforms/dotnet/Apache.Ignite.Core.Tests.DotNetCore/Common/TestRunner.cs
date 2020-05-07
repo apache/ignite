@@ -17,9 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.DotNetCore.Common
 {
-    using System;
-    using Apache.Ignite.Core.Tests.Cache.Affinity;
-
     /// <summary>
     /// Test runner.
     /// </summary>
@@ -30,28 +27,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         /// </summary>
         private static void Main(string[] args)
         {
-            var t1 = new AffinityFunctionSpringTest();
-            t1.TestSetUp();
-            t1.TestDynamicCache();
-            t1.TestTearDown();
-            
-            t1.TestSetUp();
-            t1.TestStaticCache();
-            t1.TestTearDown();
-            t1.FixtureTearDown();
-            
-            var t2 = new AffinityFunctionTest();
-            t2.FixtureSetUp();
-            t2.TestDynamicCache();
-            t2.TestDynamicCachePredefined();
-            t2.TestExceptionInFunction();
-            t2.TestInheritRendezvousAffinity();
-            t2.TestRemoveNode();
-            t2.TestSimpleInheritance();
-            t2.TestStaticCache();
-            Console.WriteLine(">>> TEARDOWN");
-            t2.FixtureTearDown();
-            Console.WriteLine(">>> END");
+            new IgnitionStartTest().TestIgniteStartsFromAppConfig();
         }
     }
 }
