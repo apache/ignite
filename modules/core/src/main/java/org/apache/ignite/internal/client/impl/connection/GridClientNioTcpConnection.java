@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
@@ -264,7 +265,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             ses.addMeta(SES_META_CONN, this);
 
-            if (cred != null || userAttrs != null) {
+            if (cred != null || F.isEmpty(userAttrs)) {
                 GridClientFuture<?> authFut = makeAuthRequest();
 
                 authFut.get(connTimeoutRest, MILLISECONDS);
@@ -645,26 +646,15 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** */
-    private <R> GridClientFutureAdapter<R> makeAuthRequest() throws GridClientConnectionResetException {
+    private <R> GridClientFutureAdapter<R> makeAuthRequest() throws GridClientConnectionResetException,
+        GridClientClosedException {
         TcpClientFuture<R> fut = new TcpClientFuture<>();
 
         fut.retryState(TcpClientFuture.STATE_REQUEST_RETRY);
 
         GridClientAuthenticationRequest req = buildAuthRequest();
 
-        pendingReqs.putIfAbsent(req.requestId(), fut);
-
-        GridNioFuture<?> sndFut = ses.send(req);
-
-        try {
-            sndFut.get();
-        }
-        catch (Exception e) {
-            throw new GridClientConnectionResetException("Failed to send message over connection " +
-                "(will try to reconnect): " + serverAddress(), e);
-        }
-
-        return fut;
+        return makeRequest(req, fut, false);
     }
 
     /**
@@ -674,10 +664,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      */
     private GridClientAuthenticationRequest buildAuthRequest() {
         GridClientAuthenticationRequest req = new GridClientAuthenticationRequest();
-
-        long reqId = reqIdCntr.getAndIncrement();
-
-        req.requestId(reqId);
 
         req.clientId(clientId);
 

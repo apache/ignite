@@ -45,15 +45,6 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     /** Session token. */
     private byte[] sesTok;
 
-    /** Login. */
-    private String login;
-
-    /** Password. */
-    private String pwd;
-
-    /** User attributes. */
-    Map<String, String> userAttrs;
-
     /** {@inheritDoc} */
     @Override public long requestId() {
         return reqId;
@@ -96,44 +87,6 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
      */
     @Override public void sessionToken(byte[] sesTok) {
         this.sesTok = sesTok;
-    }
-
-    /**
-     * @return Login.
-     */
-    public String login() {
-        return login;
-    }
-
-    /**
-     * @param login New login.
-     */
-    public void login(String login) {
-        this.login = login;
-    }
-
-    /**
-     * @return Password.
-     */
-    public String password() {
-        return pwd;
-    }
-
-    /**
-     * @param pwd New password.
-     */
-    public void password(String pwd) {
-        this.pwd = pwd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, String> userAttributes() {
-        return userAttrs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void userAttributes(Map<String, String> userAttrs) {
-        this.userAttrs = userAttrs;
     }
 
     /** {@inheritDoc} */

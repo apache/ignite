@@ -29,15 +29,15 @@ import org.apache.ignite.plugin.security.AuthenticationContext;
  * Security processor for test AuthenticationContext with user attributes.
  */
 public class TestAttributeSecurityProcessor extends TestAdditionalSecurityProcessor {
-    /** Authentication handler. */
-    private Consumer<Map<String, Object>> hndlr;
+    /** Authentication context handler. */
+    private Consumer<AuthenticationContext> hndlr;
 
     /**
      * Constructor.
      */
     public TestAttributeSecurityProcessor(GridKernalContext ctx, TestSecurityData nodeSecData,
         Collection<TestSecurityData> predefinedAuthData, boolean globalAuth, boolean checkSslCerts,
-        Consumer<Map<String, Object>> hndlr) {
+        Consumer<AuthenticationContext> hndlr) {
         super(ctx, nodeSecData, predefinedAuthData, globalAuth, checkSslCerts);
 
         this.hndlr = hndlr;
@@ -45,7 +45,7 @@ public class TestAttributeSecurityProcessor extends TestAdditionalSecurityProces
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticate(AuthenticationContext authCtx) throws IgniteCheckedException {
-        hndlr.accept(authCtx.nodeAttributes());
+        hndlr.accept(authCtx);
 
         return super.authenticate(authCtx);
     }

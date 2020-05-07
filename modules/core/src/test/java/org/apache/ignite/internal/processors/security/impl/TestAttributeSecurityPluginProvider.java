@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 /**
@@ -30,11 +31,11 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
  */
 public class TestAttributeSecurityPluginProvider extends TestAdditionalSecurityPluginProvider {
     /** Authentication handler. */
-    private Consumer<Map<String, Object>> hndlr;
+    private Consumer<AuthenticationContext> hndlr;
 
     /** */
     public TestAttributeSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
-        boolean globalAuth, boolean checkAddPass, Consumer<Map<String, Object>> hndlr,
+        boolean globalAuth, boolean checkAddPass, Consumer<AuthenticationContext> hndlr,
         TestSecurityData... clientData) {
         super(login, pwd, perms, globalAuth, checkAddPass, clientData);
 

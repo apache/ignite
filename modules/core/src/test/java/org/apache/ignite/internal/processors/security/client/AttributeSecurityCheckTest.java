@@ -28,6 +28,7 @@ import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.security.UserAttributesFactory;
 import org.apache.ignite.internal.processors.security.impl.TestAttributeSecurityPluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -42,15 +43,12 @@ public class AttributeSecurityCheckTest extends CommonSecurityCheckTest {
     /** */
     private static Map<String, Object> userAttrs;
 
-    /** */
-    private static final int TEST_KEY_CNT = 10;
-
     /** {@inheritDoc} */
     @Override protected PluginProvider<?> getPluginProvider(String name){
         return new TestAttributeSecurityPluginProvider(name, null, ALLOW_ALL,
-            globalAuth, true, new Consumer<Map<String, Object>>() {
-            @Override public void accept(Map<String, Object> map) {
-                userAttrs = map;
+            globalAuth, true, new Consumer<AuthenticationContext>() {
+            @Override public void accept(AuthenticationContext actx) {
+                userAttrs = actx.nodeAttributes();
             }
         }, clientData());
     }
@@ -73,6 +71,8 @@ public class AttributeSecurityCheckTest extends CommonSecurityCheckTest {
         try (GridClient client = GridClientFactory.start(getGridClientConfiguration())) {
             assertTrue(client.connected());
 
+            assertEquals(userAttrs.get("key"), "val");
+
             GridClientClusterState state = client.state();
 
             // Close a coordinator to force the client to send a CLUSTER_CURRENT_STATE message to the other node
@@ -83,8 +83,7 @@ public class AttributeSecurityCheckTest extends CommonSecurityCheckTest {
 
             state.state();
 
-            for (int i = 0; i < TEST_KEY_CNT; i++)
-                assertEquals(userAttrs.get("key" + i), "val" + i);
+            assertEquals(userAttrs.get("key"), "val");
         }
     }
 
@@ -94,8 +93,7 @@ public class AttributeSecurityCheckTest extends CommonSecurityCheckTest {
     private Map<String, String> userAttributes(){
         Map<String, String> attrs = new UserAttributesFactory().create();
 
-        for (int i = 0; i < TEST_KEY_CNT; i++)
-            attrs.put("key" + i, "val" + i);
+        attrs.put("key", "val");
 
         return attrs;
     }
