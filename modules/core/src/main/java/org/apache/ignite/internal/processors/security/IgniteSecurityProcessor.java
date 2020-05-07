@@ -133,8 +133,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID subjId) {
-        RuntimeException error;
-
         try {
             ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
                 .orElseGet(() -> ctx.discovery().historicalNode(subjId));
@@ -145,8 +143,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
             if (res != null)
                 return withContext(res);
-
-            error = new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
         }
         catch (Throwable e) {
             log.error(FAILED_OBTAIN_SEC_CTX_MSG, e);
@@ -154,9 +150,11 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
             throw e;
         }
 
-        log.error(FAILED_OBTAIN_SEC_CTX_MSG, error);
+        String msg = "Failed to find security context for subject with given ID : " + subjId;
 
-        throw error;
+        log.error(msg);
+
+        throw new IllegalStateException(msg);
     }
 
     /** {@inheritDoc} */
