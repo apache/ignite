@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest.client.message;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.UUID;
 
 /**

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.security.impl;
 
 import java.security.Permissions;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
