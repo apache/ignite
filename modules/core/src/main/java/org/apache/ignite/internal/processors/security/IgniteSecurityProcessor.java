@@ -150,11 +150,12 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
             throw e;
         }
 
-        String msg = "Failed to find security context for subject with given ID : " + subjId;
+        IllegalStateException error = new IllegalStateException("Failed to find security context " +
+            "for subject with given ID : " + subjId);
 
-        log.error(msg);
+        log.error(FAILED_OBTAIN_SEC_CTX_MSG, error);
 
-        throw new IllegalStateException(msg);
+        throw error;
     }
 
     /** {@inheritDoc} */
