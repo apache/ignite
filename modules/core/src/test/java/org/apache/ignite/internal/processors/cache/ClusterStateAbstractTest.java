@@ -181,7 +181,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
     /** */
     private void checkClusterState(int nodesCnt, ClusterState state) {
-        for (int g = 0; g < nodesCnt ; g++)
+        for (int g = 0; g < nodesCnt; g++)
             assertEquals(grid(g).name(), state, grid(g).cluster().state());
     }
 

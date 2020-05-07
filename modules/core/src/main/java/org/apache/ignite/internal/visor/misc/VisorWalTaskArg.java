@@ -28,7 +28,7 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
 /**
  * Argument for {@link VisorWalTask}.
  */
-public class VisorWalTaskArg extends VisorDataTransferObject{
+public class VisorWalTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -71,7 +71,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
 
-        for (int i = 0 ; i < ccfgs.length; i++) {
+        for (int i = 0; i < ccfgs.length; i++) {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(PARTITIONED);

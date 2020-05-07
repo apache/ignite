@@ -63,6 +63,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             Assert.AreEqual(dupInts.ToArray().Distinct().Sum(), dupInts.Distinct().Sum());
 
             // All/any
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             Assert.IsFalse(ints.Where(x => x > -5).Any(x => x > PersonCount && x > 0));
             Assert.IsTrue(ints.Any(x => x < PersonCount / 2));
 

@@ -370,7 +370,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      * @return {@code this}.
      */
     public GridH2QueryRequest flags(int flags) {
-        assert flags >= 0 && flags <= 255: flags;
+        assert flags >= 0 && flags <= 255 : flags;
 
         this.flags = (byte)flags;
 
@@ -524,9 +524,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
     @Override public void unmarshall(Marshaller m, GridKernalContext ctx) {
-        if (params != null)
-            return;
-
         assert paramsBytes != null;
 
         try {

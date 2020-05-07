@@ -18,6 +18,11 @@
 package org.apache.ignite.platform;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -33,12 +38,6 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 import static java.util.Calendar.JANUARY;
 
@@ -384,7 +383,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
             Collection<PlatformComputeBinarizable> res = new ArrayList<>(arg.size());
 
-            for(Object x : arg)
+            for (Object x : arg)
                 res.add(new PlatformComputeBinarizable(((PlatformComputeBinarizable)x).field + 1));
 
             return res;

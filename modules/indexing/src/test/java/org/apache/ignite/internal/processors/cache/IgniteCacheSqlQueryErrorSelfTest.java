@@ -26,7 +26,7 @@ import org.junit.Test;
 /**
  * Java API query error messages test.
  */
-public class IgniteCacheSqlQueryErrorSelfTest  extends GridCacheAbstractSelfTest {
+public class IgniteCacheSqlQueryErrorSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;

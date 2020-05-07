@@ -136,7 +136,7 @@ public class VisorGridEvent extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeInt(typeId);
-        U.writeGridUuid(out, id);
+        U.writeIgniteUuid(out, id);
         U.writeString(out, name);
         U.writeUuid(out, nid);
         out.writeLong(ts);
@@ -147,7 +147,7 @@ public class VisorGridEvent extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         typeId = in.readInt();
-        id = U.readGridUuid(in);
+        id = U.readIgniteUuid(in);
         name = U.readString(in);
         nid = U.readUuid(in);
         ts = in.readLong();

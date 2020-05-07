@@ -1437,7 +1437,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (clsHandlers == null)
                     clsHandlers = new IgniteBiInClosure[GridCacheMessage.MAX_CACHE_MSG_LOOKUP_INDEX];
 
-                if(clsHandlers[msgIdx] != null)
+                if (clsHandlers[msgIdx] != null)
                     return null;
 
                 clsHandlers[msgIdx] = c;

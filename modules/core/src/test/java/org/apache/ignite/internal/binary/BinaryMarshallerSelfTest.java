@@ -3484,7 +3484,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectImpl binObj = marshal(simpleObject(), m);
 
-        Collection<String> fieldsBin =  binObj.type().fieldNames();
+        Collection<String> fieldsBin = binObj.type().fieldNames();
 
         Field[] fields = SimpleObject.class.getDeclaredFields();
 
@@ -3521,7 +3521,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject binObj = builder.build();
 
-        Collection<String> fieldsBin =  binObj.type().fieldNames();
+        Collection<String> fieldsBin = binObj.type().fieldNames();
 
         assertEquals(fieldNames.length, fieldsBin.size());
 

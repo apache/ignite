@@ -347,7 +347,7 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
                     }
 
                     GridTestUtils.runMultiThreaded(new CI1<Integer>() {
-                        @Override public void apply (Integer idx) {
+                        @Override public void apply(Integer idx) {
                             Transaction tx = clientTxs.get(idx);
 
                             assertEquals(SUSPENDED, tx.state());

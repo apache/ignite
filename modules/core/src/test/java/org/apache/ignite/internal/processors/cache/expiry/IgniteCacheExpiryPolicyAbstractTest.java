@@ -1057,7 +1057,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      */
     @Test
     public void testNearExpiresWithCacheStore() throws Exception {
-        if(cacheMode() != PARTITIONED)
+        if (cacheMode() != PARTITIONED)
             return;
 
         factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1));
@@ -1090,7 +1090,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         waitExpired(key);
 
-        for(int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < gridCount(); i++)
             assertNull(jcache(i).localPeek(key, CachePeekMode.BACKUP, CachePeekMode.PRIMARY));
 
         assertEquals(null, cache.get(key));

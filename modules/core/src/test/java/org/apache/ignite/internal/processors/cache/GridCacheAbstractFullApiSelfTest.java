@@ -186,7 +186,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** */
     @Before
-    public void beforeGridCacheAbstractFullApiSelfTest()  {
+    public void beforeGridCacheAbstractFullApiSelfTest() {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9543", MvccFeatureChecker.forcedMvcc());
     }
 
@@ -3958,7 +3958,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         if (async) {
-            if(oldAsync) {
+            if (oldAsync) {
                 IgniteCache<String, Integer> asyncCache = jcache().withAsync();
 
                 asyncCache.clear();
@@ -6136,7 +6136,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testTransformResourceInjection() throws Exception {
         ClusterGroup servers = grid(0).cluster().forServers();
 
-        if(F.isEmpty(servers.nodes()))
+        if (F.isEmpty(servers.nodes()))
             return;
 
         grid(0).services( grid(0).cluster()).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
@@ -6627,7 +6627,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (!entry.isNear())
                 entry.context().cache().removeEntry(entry);
 
-            return  pair;
+            return pair;
         }
     }
 

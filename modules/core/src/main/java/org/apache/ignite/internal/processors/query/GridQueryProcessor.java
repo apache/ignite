@@ -1061,7 +1061,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (!dscoMsgIdHist.add(id)) {
             U.warn(log, "Received duplicate schema custom discovery message (will ignore) [opId=" +
-                msg.operation().id() + ", msg=" + msg  +']');
+                msg.operation().id() + ", msg=" + msg + ']');
 
             return;
         }
@@ -1080,7 +1080,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             U.warn(log, "Received unsupported schema custom discovery message (will ignore) [opId=" +
-                msg.operation().id() + ", msg=" + msg  +']');
+                msg.operation().id() + ", msg=" + msg + ']');
     }
 
     /**
@@ -1774,7 +1774,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (!res && !ifNotExists)
-            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS, entity.getTableName());
     }
 
     /**
@@ -2614,7 +2614,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ).get(0);
 
         // Convert.
-        QueryKeyValueIterable<K, V>converted = new QueryKeyValueIterable<>(res);
+        QueryKeyValueIterable<K, V> converted = new QueryKeyValueIterable<>(res);
 
         return new QueryCursorImpl<Cache.Entry<K, V>>(converted) {
             @Override public void close() {
@@ -2950,6 +2950,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets type descriptor for provided cache name and type name if type is still valid.
+     *
+     * @param cacheName Cache name.
+     * @param typeName Type name.
+     * @return Query type descriptor or {@code null} if descriptor was not found.
+     */
+    public @Nullable GridQueryTypeDescriptor typeDescriptor(@Nullable String cacheName, String typeName) {
+        return typesByName.get(new QueryTypeNameKey(cacheName, typeName));
+    }
+
+    /**
      * @param qryType Query type.
      * @param qry Query description.
      * @param cctx Cache context.
@@ -3164,7 +3175,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void validateKeyAndValue(CacheObjectContext coctx, KeyCacheObject key, CacheObject val)
         throws IgniteCheckedException {
-        QueryTypeDescriptorImpl desc = typeByValue(coctx.cacheName(), coctx, key, val, false);
+        QueryTypeDescriptorImpl desc = typeByValue(coctx.cacheName(), coctx, key, val, true);
 
         if (desc == null)
             return;

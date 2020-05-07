@@ -1522,6 +1522,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!forcePrimary && ctx.affinityNode()) {
+            ctx.shared().database().checkpointReadLock();
+
             try {
                 Map<K, V> locVals = U.newHashMap(keys.size());
 
@@ -1669,6 +1671,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);
+            }
+            finally {
+                ctx.shared().database().checkpointReadUnlock();
             }
         }
 
@@ -1821,7 +1826,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
-            DhtAtomicUpdateResult  updDhtRes = new DhtAtomicUpdateResult();
+            DhtAtomicUpdateResult updDhtRes = new DhtAtomicUpdateResult();
 
             try {
                 while (true) {
@@ -1895,7 +1900,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                                 }
                                             }
 
-                                            assert found: "The requested topology future cannot be found [topVer="
+                                            assert found : "The requested topology future cannot be found [topVer="
                                                 + req.topologyVersion() + ']';
                                         }
                                         else {
@@ -3467,7 +3472,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         }
                     }
                 }
-                catch (NodeStoppingException e){
+                catch (NodeStoppingException e) {
                     U.warn(log, "Failed to update key on backup (local node is stopping): " + key);
 
                     return;
@@ -3475,8 +3480,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 catch (GridDhtInvalidPartitionException ignored) {
                     // Ignore.
                 }
-                catch (IgniteCheckedException|RuntimeException e) {
-                    if(e instanceof RuntimeException && !X.hasCause(e, IgniteOutOfMemoryException.class))
+                catch (IgniteCheckedException | RuntimeException e) {
+                    if (e instanceof RuntimeException && !X.hasCause(e, IgniteOutOfMemoryException.class))
                         throw (RuntimeException)e;
 
                     IgniteCheckedException err = new IgniteCheckedException("Failed to update key on backup node: " + key, e);
@@ -3795,7 +3800,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return {@code True} if cache should be validated, {@code false} - otherwise.
      */
     private boolean needCacheValidation(ClusterNode node) {
-        assert node != null: "The near node must not be null. This is guaranteed by processNearAtomicUpdateRequest()";
+        assert node != null : "The near node must not be null. This is guaranteed by processNearAtomicUpdateRequest()";
 
         return Boolean.TRUE.equals(node.attribute(ATTR_VALIDATE_CACHE_REQUESTS));
     }

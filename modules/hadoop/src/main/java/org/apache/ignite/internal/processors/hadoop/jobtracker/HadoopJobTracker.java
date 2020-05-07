@@ -500,12 +500,12 @@ public class HadoopJobTracker extends HadoopComponent {
             if (meta == null) {
                 fut.onDone();
 
-                activeFinishFuts.remove(jobId , fut);
+                activeFinishFuts.remove(jobId, fut);
             }
             else if (meta.phase() == PHASE_COMPLETE) {
                 fut.onDone(jobId, meta.failCause());
 
-                activeFinishFuts.remove(jobId , fut);
+                activeFinishFuts.remove(jobId, fut);
             }
 
             return fut;
@@ -562,7 +562,7 @@ public class HadoopJobTracker extends HadoopComponent {
             assert (status.state() != FAILED) || status.failCause() != null :
                 "Invalid task status [info=" + info + ", status=" + status + ']';
 
-            assert state != null || (ctx.jobUpdateLeader() && (info.type() == COMMIT || info.type() == ABORT)):
+            assert state != null || (ctx.jobUpdateLeader() && (info.type() == COMMIT || info.type() == ABORT)) :
                 "Missing local state for finished task [info=" + info + ", status=" + status + ']';
 
             StackedProcessor incrCntrs = null;
@@ -694,7 +694,7 @@ public class HadoopJobTracker extends HadoopComponent {
             }
 
             // Iteration over all local entries is correct since system cache is REPLICATED.
-            for (IgniteCache.Entry<HadoopJobId, HadoopJobMetadata>  entry : entries) {
+            for (IgniteCache.Entry<HadoopJobId, HadoopJobMetadata> entry : entries) {
                 HadoopJobMetadata meta = entry.getValue();
 
                 HadoopJobId jobId = meta.jobId();
@@ -1666,7 +1666,7 @@ public class HadoopJobTracker extends HadoopComponent {
             final HadoopJobPhase currPhase = meta.phase();
 
             assert currPhase == PHASE_CANCELLING || currPhase == PHASE_COMPLETE
-                    || err != null: "Invalid phase for cancel: " + currPhase;
+                    || err != null : "Invalid phase for cancel: " + currPhase;
 
             Collection<Integer> rdcCp = new HashSet<>(cp.pendingReducers());
 
