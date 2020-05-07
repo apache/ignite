@@ -37,9 +37,7 @@ public class ClusterApiTest extends GridCommonAbstractTest {
     /** Client connector address. */
     private static final String CLIENT_CONN_ADDR = "127.0.0.1:" + ClientConnectorConfiguration.DFLT_PORT;
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
@@ -48,9 +46,7 @@ public class ClusterApiTest extends GridCommonAbstractTest {
             .setClusterStateOnStart(ClusterState.INACTIVE);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -59,9 +55,7 @@ public class ClusterApiTest extends GridCommonAbstractTest {
         startGrid(0);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
@@ -71,7 +65,7 @@ public class ClusterApiTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Test change cluster state operation by thin client.
      */
     @Test
     public void testClusterState() throws Exception {
@@ -87,7 +81,7 @@ public class ClusterApiTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Test change WAL state for cache operation by thin client.
      */
     @Test
     public void testWalState() throws Exception {
@@ -124,7 +118,7 @@ public class ClusterApiTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Changes state by thin client and check by thin and thick clients that state is changed.
      */
     private void changeAndCheckState(ClientCluster clientCluster, IgniteCluster igniteCluster, ClusterState state) {
         clientCluster.state(state);

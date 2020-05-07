@@ -45,6 +45,6 @@ public class ClientClusterGetStateRequest extends ClientRequest {
 
         return ctx.currentProtocolContext().isFeatureSupported(ClientBitmaskFeature.CLUSTER_API) ?
             new ClientByteResponse(requestId(), (byte)state.ordinal()) :
-            new ClientBooleanResponse(requestId(), state != ClusterState.INACTIVE);
+            new ClientBooleanResponse(requestId(), ClusterState.active(state));
     }
 }
