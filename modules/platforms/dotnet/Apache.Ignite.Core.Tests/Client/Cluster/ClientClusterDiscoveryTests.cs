@@ -95,6 +95,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             // Original node leaves. Client is still connected.
             ignite.Dispose();
             AssertClientConnectionCount(client, 3);
+            
+            // Perform any operation to verify that client works.
+            Assert.AreEqual(3, client.GetCluster().GetNodes().Count);
         }
 
         /// <summary>
