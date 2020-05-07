@@ -125,6 +125,13 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         buildIndexConditions();
     }
 
+    //        // TODO Merge OR filters result using several index cursors
+//        // TODO simplify and merge overlapping conditions
+//        // TODO do we always scan over index? datapages scan?
+//        // TODO IN operator
+//        // TODO BETWEEN
+//
+
     private void buildIndexConditions() {
         if (!boundsArePossible())
             return;
@@ -294,13 +301,6 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         }
         return list;
     }
-
-    //        // TODO Merge OR filters result using several index cursors
-//        // TODO simplify and merge overlapping conditions
-//        // TODO do we always scan over index? datapages scan?
-//        // TODO IN operator
-//        // TODO BETWEEN
-//
 
     @Override public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);

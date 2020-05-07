@@ -48,12 +48,16 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
         projEntity.addQueryField("name", String.class.getName(), null);
         projEntity.addQueryField("id", Integer.class.getName(), null);
         QueryIndex simpleIdx = new QueryIndex("name", true);
-        LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>();
-        fields.put("ver", false);
-        fields.put("name", true);
-        fields.put("id", false);
-        QueryIndex complexIdx = new QueryIndex(fields, QueryIndexType.SORTED);
-        projEntity.setIndexes(Arrays.asList(simpleIdx, complexIdx));
+        LinkedHashMap<String, Boolean> fields1 = new LinkedHashMap<>();
+        //fields.put("ver", false);
+        fields1.put("name", true);
+        fields1.put("id", false);
+        QueryIndex complexIdxNameId = new QueryIndex(fields1, QueryIndexType.SORTED);
+        LinkedHashMap<String, Boolean> fields2 = new LinkedHashMap<>();
+        fields2.put("name", true);
+        fields2.put("ver", false);
+        QueryIndex complexIdxNameVer = new QueryIndex(fields2, QueryIndexType.SORTED);
+        projEntity.setIndexes(Arrays.asList(simpleIdx, complexIdxNameId, complexIdxNameVer));
         projEntity.setTableName("Project");
 
         CacheConfiguration projCfg = cache(projEntity);
@@ -92,6 +96,12 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
     public void testNameIdx_NameFilter() {
         assertIndexInQuery("PUBLIC, PROJECT", "PROJECT_NAME_ASC_IDX",
             "SELECT * FROM Project WHERE name='Ignite'");
+    }
+
+    @Test
+    public void testVerNameIdx_VerFilter() {
+        assertIndexInQuery("PUBLIC, PROJECT", "PROJECT_VER_DESC_NAME_ASC_ID_DESC_IDX",
+            "SELECT * FROM Project WHERE ver=? AND name=?");
     }
 
     @Test
