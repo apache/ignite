@@ -68,6 +68,9 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
  * </ul>
  */
 public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
+    /**  */
+    public static final String FAILED_OBTAIN_SEC_CTX_MSG = "Failed to obtain a security context.";
+
     /** Internal attribute name constant. */
     public static final String ATTR_GRID_SEC_PROC_CLASS = "grid.security.processor.class";
 
@@ -148,8 +151,13 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         catch (RuntimeException e) {
             error = e;
         }
+        catch (Throwable e){
+            log.error(FAILED_OBTAIN_SEC_CTX_MSG, e);
 
-        log.error("Failed to obtain a security context.", error);
+            throw e;
+        }
+
+        log.error(FAILED_OBTAIN_SEC_CTX_MSG, error);
 
         throw error;
     }
