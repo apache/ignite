@@ -21,13 +21,10 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.SerializeSeparately;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 
@@ -44,32 +41,11 @@ public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitte
     /** Marshaller. */
     private final Marshaller marshaller;
 
-    /** Grid kernal context. */
-    private final GridKernalContext ctx;
-
     /**
      * @param marshaller Marshaller.
-     * @param ctx Grid kernal context.
      */
-    public CacheConfigurationSplitterImpl(Marshaller marshaller, GridKernalContext ctx) {
+    public CacheConfigurationSplitterImpl(Marshaller marshaller) {
         this.marshaller = marshaller;
-        this.ctx = ctx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public T2<CacheConfiguration, CacheConfigurationEnrichment> split(CacheGroupDescriptor desc) {
-        if (desc.isConfigurationEnriched() && isAffinity(desc.config()))
-            return split(desc.config());
-
-        return new T2<>(desc.config(), desc.cacheConfigurationEnrichment());
-    }
-
-    /** {@inheritDoc} */
-    @Override public T2<CacheConfiguration, CacheConfigurationEnrichment> split(DynamicCacheDescriptor desc) {
-        if (desc.isConfigurationEnriched() && isAffinity(desc.cacheConfiguration()))
-            return split(desc.cacheConfiguration());
-
-        return new T2<>(desc.cacheConfiguration(), desc.cacheConfigurationEnrichment());
     }
 
     /**
@@ -138,14 +114,5 @@ public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitte
         catch (Exception e) {
             throw new IgniteException("Failed to serialize field [fieldName=" + fieldName + ", value=" + val + ']', e);
         }
-    }
-
-    /**
-     * @param cfg Cache configuration.
-     * @return {@code true} If local node is affinity node for cache.
-     */
-    private boolean isAffinity(CacheConfiguration cfg) {
-        return cfg.getCacheMode() == CacheMode.LOCAL ||
-                CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter());
     }
 }
