@@ -134,10 +134,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 var remoteEndPoint = (IPEndPoint) connection.RemoteEndPoint;
                 Assert.AreEqual(server.GetAttribute<int>("clientListenerPort"), remoteEndPoint.Port);
                 
-                CollectionAssert.Contains(server.Addresses, remoteEndPoint.Address.ToString());
+                CollectionAssert.Contains(server.Addresses.Select(IPAddress.Parse), remoteEndPoint.Address);
 
                 var localEndPoint = (IPEndPoint) connection.LocalEndPoint;
-                Assert.AreEqual(IPAddress.Loopback, localEndPoint.Address);
+                CollectionAssert.Contains(new[] {IPAddress.Loopback, IPAddress.IPv6Loopback}, localEndPoint.Address);
             }
         }
     }
