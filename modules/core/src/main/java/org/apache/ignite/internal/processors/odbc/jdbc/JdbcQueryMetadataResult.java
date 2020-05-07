@@ -45,7 +45,7 @@ public class JdbcQueryMetadataResult extends JdbcResult {
      * @param queryId Query ID.
      * @param meta Query metadata.
      */
-    JdbcQueryMetadataResult(long queryId, List<JdbcColumnMeta> meta){
+    JdbcQueryMetadataResult(long queryId, List<JdbcColumnMeta> meta) {
         super(QRY_META);
 
         this.meta = meta;

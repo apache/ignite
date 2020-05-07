@@ -896,7 +896,7 @@ public class FunctionalTest {
                 t.join();
 
                 // New explicit transaction can be started after current transaction has been closed by another thread.
-                try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)){
+                try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                     cache.put(0, "value23");
 
                     tx1.commit();

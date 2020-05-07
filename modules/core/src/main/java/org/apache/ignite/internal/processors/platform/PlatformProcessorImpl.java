@@ -73,7 +73,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.FALSE;
 import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.TRUE;
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 
 /**
  * Platform processor.
@@ -521,7 +520,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             }
 
             case OP_ADD_CACHE_CONFIGURATION:
-                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader, DEFAULT_VER);
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
                 ctx.grid().addCacheConfiguration(cfg);
 
@@ -571,7 +570,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         if (type == OP_GET_CACHE_CONFIG) {
             int cacheId = reader.readInt();
             CacheConfiguration cfg = ctx.cache().cacheDescriptor(cacheId).cacheConfiguration();
-            PlatformConfigurationUtils.writeCacheConfiguration(writer, cfg, DEFAULT_VER);
+            PlatformConfigurationUtils.writeCacheConfiguration(writer, cfg);
 
             return;
         }
@@ -610,7 +609,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             }
 
             case OP_CREATE_CACHE_FROM_CONFIG: {
-                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader, DEFAULT_VER);
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
                 IgniteCacheProxy cache = reader.readBoolean()
                         ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
@@ -622,7 +621,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             }
 
             case OP_GET_OR_CREATE_CACHE_FROM_CONFIG: {
-                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader, DEFAULT_VER);
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
                 IgniteCacheProxy cache = reader.readBoolean()
                         ? (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg,
@@ -743,7 +742,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_IGNITE_CONFIGURATION: {
-                PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration(), DEFAULT_VER);
+                PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration());
 
                 return;
             }
@@ -881,7 +880,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             PlatformCacheExtension[] res = new PlatformCacheExtension[maxExtId + 1];
 
             for (PlatformCacheExtension cacheExt : cacheExts)
-                res[cacheExt.id()]= cacheExt;
+                res[cacheExt.id()] = cacheExt;
 
             return res;
         }
@@ -922,7 +921,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             PlatformPluginExtension[] res = new PlatformPluginExtension[maxExtId + 1];
 
             for (PlatformPluginExtension ext : exts)
-                res[ext.id()]= ext;
+                res[ext.id()] = ext;
 
             return res;
         }

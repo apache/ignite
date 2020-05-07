@@ -396,7 +396,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         IgniteEx aliveNode = stopCrd ? grids.get2() : grids.get1();
 
-        IgniteFuture<Void> fut  = aliveNode.encryption().changeMasterKey(MASTER_KEY_NAME_2);
+        IgniteFuture<Void> fut = aliveNode.encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
         spi.waitForBlocked();
 

@@ -78,12 +78,12 @@ public class IgfsMetaFileLockProcessor implements EntryProcessor<IgniteUuid, Igf
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, lockId);
+        U.writeIgniteUuid(out, lockId);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        lockId = U.readGridUuid(in);
+        lockId = U.readIgniteUuid(in);
     }
 
     /** {@inheritDoc} */

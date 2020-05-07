@@ -35,7 +35,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * ANN model to predict labels in multi-class classification task.
  */
-public final class ANNClassificationModel extends NNClassificationModel  {
+public final class ANNClassificationModel extends NNClassificationModel {
     /** */
     private static final long serialVersionUID = -127312378991350345L;
 

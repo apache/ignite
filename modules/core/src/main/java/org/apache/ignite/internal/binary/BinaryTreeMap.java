@@ -77,7 +77,7 @@ public class BinaryTreeMap implements Binarylizable, Serializable {
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReader rawReader = reader.rawReader();
 
-        Comparator comp =  rawReader.readObject();
+        Comparator comp = rawReader.readObject();
 
         map = comp == null ? new TreeMap() : new TreeMap(comp);
 

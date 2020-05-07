@@ -256,7 +256,7 @@ public class GridCommandHandlerIndexingUtils {
 
         GridQueryProcessor qryProcessor = internalCache.context().kernalContext().query();
 
-        while (cacheDataGridIter.hasNextX()){
+        while (cacheDataGridIter.hasNextX()) {
             CacheDataRow cacheDataRow = cacheDataGridIter.nextX();
 
             if (nonNull(filter) && !filter.test(cacheDataRow))

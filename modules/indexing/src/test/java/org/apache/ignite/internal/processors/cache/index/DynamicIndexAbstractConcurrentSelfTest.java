@@ -115,7 +115,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<KeyClass, ValueClass> cacheConfiguration() {
-        CacheConfiguration<KeyClass, ValueClass> ccfg =  super.cacheConfiguration();
+        CacheConfiguration<KeyClass, ValueClass> ccfg = super.cacheConfiguration();
 
         return ccfg.setCacheMode(cacheMode).setAtomicityMode(atomicityMode);
     }
@@ -1097,7 +1097,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         /** {@inheritDoc} */
         @Override public void dynamicIndexDrop(@NotNull String schemaName, String idxName, boolean ifExists)
-            throws IgniteCheckedException{
+            throws IgniteCheckedException {
             awaitIndexing(ctx.localNodeId());
 
             super.dynamicIndexDrop(schemaName, idxName, ifExists);

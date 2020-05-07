@@ -196,7 +196,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             cache.query(new SqlFieldsQuery("INSERT INTO \"AllTypes\" (_key, _val) VALUES(2, ?)")
                 .setArgs(new AllTypes(2L))).getAll();
 
-            cache.query (new SqlFieldsQuery(
+            cache.query(new SqlFieldsQuery(
                 "UPDATE \"AllTypes\" " +
                     "SET " +
                     "\"dateCol\" = '2016-11-30 12:00:00', " +
