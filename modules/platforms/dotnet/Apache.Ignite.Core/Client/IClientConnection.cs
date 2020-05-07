@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Client
 
     /// <summary>
     /// Represents Ignite client connection.
-    /// TODO: Is this a good name?
     /// </summary>
     public interface IClientConnection
     {

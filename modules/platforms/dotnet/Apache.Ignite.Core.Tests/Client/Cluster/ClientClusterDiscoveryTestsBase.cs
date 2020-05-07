@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
     using System;
     using System.Linq;
+    using System.Net;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
@@ -121,6 +122,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             {
                 Assert.Fail("Client connection count mismatch: expected {0}, but was {1}", 
                     count, client.GetConnections().Count());
+            }
+
+            var cluster = Ignition.GetAll().First().GetCluster();
+
+            foreach (var connection in client.GetConnections())
+            {
+                var server = cluster.GetNode(connection.NodeId);
+                Assert.IsNotNull(server);
+
+                var remoteEndPoint = (IPEndPoint) connection.RemoteEndPoint;
+                Assert.AreEqual(server.GetAttribute<int>("clientListenerPort"), remoteEndPoint.Port);
+                
+                CollectionAssert.Contains(server.Addresses, remoteEndPoint.Address.ToString());
+
+                var localEndPoint = (IPEndPoint) connection.LocalEndPoint;
+                Assert.AreEqual(IPAddress.Loopback, localEndPoint.Address);
             }
         }
     }
