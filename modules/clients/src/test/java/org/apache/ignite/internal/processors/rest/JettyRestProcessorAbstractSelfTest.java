@@ -3491,7 +3491,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /** Complex entity. */
-    @SuppressWarnings({"InnerClassMayBeStatic"})
     private static class Complex implements Serializable {
         /** */
         @QuerySqlField(index = true)
