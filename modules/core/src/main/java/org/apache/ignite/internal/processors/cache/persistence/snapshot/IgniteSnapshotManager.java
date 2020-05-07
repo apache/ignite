@@ -47,11 +47,11 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -657,14 +657,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 return cctx.kernalContext().grid()
                     .compute(cctx.kernalContext().grid().cluster().forNodeId(crd.id()))
-                    .applyAsync(new CreateSnapshotTask(), name)
+                    .applyAsync(new CreateSnapshotClosure(), name)
                     .chain(f -> {
                         try {
                             return f.get();
                         }
-                        catch (ClusterTopologyException e) {
-                            throw new IgniteException("Snapshot request has been sent to the remote " +
-                                "but the target server node left the cluster", e);
+                        catch (IgniteClientDisconnectedException e) {
+                            throw new IgniteException("Client disconnected. Snapshot result is unknown", e);
+                        }
+                        catch (IgniteException e) {
+                            throw new IgniteException("Snapshot has not been created", e);
                         }
                     });
             }
@@ -1253,7 +1255,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** Start creation of cluster snapshot closure. */
-    private static class CreateSnapshotTask implements IgniteClosure<String, Void> {
+    private static class CreateSnapshotClosure implements IgniteClosure<String, Void> {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
