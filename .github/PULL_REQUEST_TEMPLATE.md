@@ -4,7 +4,7 @@ In order to streamline the review of the contribution
 we ask you to ensure the following steps have been taken:
 
 ### The Contribution Checklist
-- [ ] There is a JIRA ticket associated with the pull request. 
+- [ ] There is a single JIRA ticket related to the pull request. 
 - [ ] The web-link to the pull request attached to the JIRA ticket.
 - [ ] The JIRA ticket has the _Patch Available_ state.
 - [ ] The pull request body describes changes that have been made. 
