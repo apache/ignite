@@ -1840,7 +1840,7 @@ public class BinaryUtils {
 
                     in.position(handlePos);
 
-                    obj = unmarshal(in, ctx, ldr, handles);
+                    obj = unmarshal(in, ctx, ldr, handles, detach);
 
                     in.position(retPos);
                 }
