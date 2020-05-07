@@ -130,6 +130,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID subjId) {
+        RuntimeException error;
+
         try {
             ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
                 .orElseGet(() -> ctx.discovery().historicalNode(subjId));
@@ -138,16 +140,18 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
                 uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node))
                 : secPrc.securityContext(subjId);
 
-            if (res == null)
-                throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
+            if (res != null)
+                return withContext(res);
 
-            return withContext(res);
+            error = new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
         }
-        catch (Throwable e) {
-            log.error("Failed to obtain a security context.", e);
+        catch (RuntimeException e) {
+            error = e;
+        }
 
-            throw e;
-        }
+        log.error("Failed to obtain a security context.", error);
+
+        throw error;
     }
 
     /** {@inheritDoc} */
