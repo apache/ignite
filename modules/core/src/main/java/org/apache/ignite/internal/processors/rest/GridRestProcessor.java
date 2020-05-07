@@ -245,19 +245,19 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         boolean authenticationEnabled = ctx.authentication().enabled();
         boolean securityEnabled = ctx.security().enabled();
 
-        Session ses;
-
-        try {
-            ses = session(req);
-        }
-        catch (IgniteAuthenticationException e) {
-            return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(new GridRestResponse(STATUS_FAILED, e.getMessage()));
-        }
-
         if (authenticationEnabled || securityEnabled) {
+            Session ses;
+
+            try {
+                ses = session(req);
+            }
+            catch (IgniteAuthenticationException e) {
+                return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(new GridRestResponse(STATUS_FAILED, e.getMessage()));
+            }
+
             assert ses != null;
 
             req.clientId(ses.clientId);
@@ -418,9 +418,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 Session ses = Session.random();
 
-                if (req.userAttributes() != null)
-                    ses.userAttrs = req.userAttributes();
-
                 UUID oldSesId = clientId2SesId.put(ses.clientId, ses.sesId);
 
                 assert oldSesId == null : "Got an illegal state for request: " + req;
@@ -437,9 +434,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 if (sesId == null) {
                     Session ses = Session.fromClientId(clientId);
-
-                    if (req.userAttributes() != null)
-                        ses.userAttrs = req.userAttributes();
 
                     if (clientId2SesId.putIfAbsent(ses.clientId, ses.sesId) != null)
                         continue; // Another thread already register session with the clientId.
@@ -809,6 +803,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
+        authCtx.nodeAttributes(req.userAttributes());
         authCtx.address(req.address());
         authCtx.certificates(req.certificates());
 
@@ -824,11 +819,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             ses.creds = creds;
 
         authCtx.credentials(creds);
-
-        if (req.userAttributes() != null)
-            ses.userAttrs = req.userAttributes();
-
-        authCtx.nodeAttributes(ses.userAttrs);
 
         SecurityContext subjCtx = ctx.security().authenticate(authCtx);
 
@@ -1081,9 +1071,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         /** Credentials that can be used for security token invalidation.*/
         private volatile SecurityCredentials creds;
-
-        /** User attributes. */
-        private volatile Map<String, String> userAttrs;
 
         /**
          * @param clientId Client ID.
