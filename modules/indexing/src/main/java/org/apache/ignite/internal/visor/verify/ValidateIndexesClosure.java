@@ -297,7 +297,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         List<T3<CacheGroupContext, GridDhtLocalPartition, Future<CacheSize>>> cacheSizeFutures = new ArrayList<>(partArgs.size());
         List<T3<GridCacheContext, Index, Future<T2<Throwable, Long>>>> idxSizeFutures = new ArrayList<>(idxArgs.size());
 
-        partArgs.forEach(k -> procPartFutures.add(processPartitionAsync(k)));
+        partArgs.forEach(k -> procPartFutures.add(processPartitionAsync(k.get1(), k.get2())));
 
         idxArgs.forEach(k -> procIdxFutures.add(processIndexAsync(k, idleChecker)));
 
@@ -476,28 +476,28 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
     }
 
     /**
-     * @param grpCtxWithPart Group context and partition id.
+     * @param grpCtx Group context.
+     * @param part Local partition.
      */
     private Future<Map<PartitionKey, ValidateIndexesPartitionResult>> processPartitionAsync(
-        final T2<CacheGroupContext, GridDhtLocalPartition> grpCtxWithPart
+        CacheGroupContext grpCtx,
+        GridDhtLocalPartition part
     ) {
         return calcExecutor.submit(new Callable<Map<PartitionKey, ValidateIndexesPartitionResult>>() {
             @Override public Map<PartitionKey, ValidateIndexesPartitionResult> call() {
-                return processPartition(grpCtxWithPart);
+                return processPartition(grpCtx, part);
             }
         });
     }
 
     /**
-     * @param grpCtxWithPart Group context and partition id.
+     * @param grpCtx Group context.
+     * @param part Local partition.
      */
     private Map<PartitionKey, ValidateIndexesPartitionResult> processPartition(
-        final T2<CacheGroupContext, GridDhtLocalPartition> grpCtxWithPart
+        CacheGroupContext grpCtx,
+        GridDhtLocalPartition part
     ) {
-        CacheGroupContext grpCtx = grpCtxWithPart.get1();
-
-        GridDhtLocalPartition part = grpCtxWithPart.get2();
-
         if (!part.reserve())
             return emptyMap();
 
@@ -686,7 +686,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         return calcExecutor.submit(new Callable<Map<String, ValidateIndexesPartitionResult>>() {
             /** {@inheritDoc} */
             @Override public Map<String, ValidateIndexesPartitionResult> call() {
-                    return processIndex(cacheCtxWithIdx, idleChecker);
+                return processIndex(cacheCtxWithIdx, idleChecker);
             }
         });
     }
