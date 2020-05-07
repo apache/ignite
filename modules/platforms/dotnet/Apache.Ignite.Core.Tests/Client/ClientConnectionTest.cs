@@ -200,6 +200,9 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreNotEqual(clientCfg, client.GetConfiguration());
                 Assert.AreNotEqual(client.GetConfiguration(), client.GetConfiguration());
                 Assert.AreEqual(clientCfg.ToXml(), client.GetConfiguration().ToXml());
+
+                var conn = client.GetConnections().Single();
+                Assert.AreEqual(servCfg.ClientConnectorConfiguration.Port, ((IPEndPoint) conn.RemoteEndPoint).Port);
             }
         }
 
