@@ -207,7 +207,9 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      */
     @Test
     public void testDropTable() throws Exception {
-        String sysPermsTable = createTable("test_sys_perm_table_drop");
+        String sysPermsTable = "test_sys_perm_table_drop";
+
+        createTable(sysPermsTable);
 
         checkSystemPermissionRequired(of("DROP TABLE " + sysPermsTable + ';'), CACHE_DESTROY);
 
@@ -227,7 +229,9 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      */
     @Test
     public void testAlterTableAddColumn() throws Exception {
-        String table = createTable("test_table_add_column");
+        String table = "test_table_add_column";
+
+        createTable(table);
 
         executeWithPermissions(of("ALTER TABLE " + table + " ADD test_add_column LONG;"), EMPTY_PERMS);
     }
@@ -237,7 +241,9 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      */
     @Test
     public void testAlterTableDropColumn() throws Exception {
-        String table = createTable("test_table_drop_column");
+        String table = "test_table_drop_column";
+
+        createTable(table);
 
         executeWithPermissions(of("ALTER TABLE " + table + " DROP COLUMN long_col;"), EMPTY_PERMS);
     }
@@ -247,7 +253,9 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      */
     @Test
     public void testCreateAndDropIndex() throws Exception {
-        String table = createTable("test_table_manage_index");
+        String table = "test_table_manage_index";
+
+        createTable(table);
 
         executeWithPermissions(of("CREATE INDEX test_idx ON " + table + "(id ASC);"), EMPTY_PERMS);
 
@@ -273,16 +281,13 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      * Creates table with the specified name.
      *
      * @param name Name of the table to be created.
-     * @return Name of created table.
      */
-    private String createTable(String name) throws Exception {
+    private void createTable(String name) throws Exception {
         executeWithPermissions(
             of("CREATE TABLE " + name + "(id LONG PRIMARY KEY, str_col varchar, long_col LONG)" +
                 " WITH \"TEMPLATE=REPLICATED\";"),
             systemPermissions(CACHE_CREATE)
         );
-
-        return name;
     }
 
     /**
