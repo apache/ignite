@@ -120,7 +120,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableScan rel) {
-        return new IgniteTableScan(cluster, rel.getTraitSet(), rel.getTable(), rel.indexName(), rel.filters());
+        return new IgniteTableScan(cluster, rel.getTraitSet(), rel.getTable(), rel.indexName(), rel.condition());
     }
 
     /** {@inheritDoc} */

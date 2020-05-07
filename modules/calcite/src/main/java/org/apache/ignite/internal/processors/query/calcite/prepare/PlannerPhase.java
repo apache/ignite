@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverterRul
 import org.apache.ignite.internal.processors.query.calcite.rule.JoinTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectTraitsPropagationRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.PushFilterProjectIntoScanRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.PushFilterIntoScanRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionTraitsTraitsPropagationRule;
@@ -81,7 +81,7 @@ public enum PlannerPhase {
                 FilterConverterRule.INSTANCE,
                 FilterTraitsPropagationRule.INSTANCE,
                 TableModifyConverterRule.INSTANCE,
-                PushFilterProjectIntoScanRule.FILTER_INTO_SCAN,
+                PushFilterIntoScanRule.FILTER_INTO_SCAN,
                 new FilterProjectTransposeRule(Filter.class, Project.class, true, true,
                     RelFactories.LOGICAL_BUILDER),
                 ProjectFilterTransposeRule.INSTANCE,

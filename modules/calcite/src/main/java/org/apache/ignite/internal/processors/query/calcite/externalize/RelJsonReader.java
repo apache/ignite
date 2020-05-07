@@ -140,7 +140,7 @@ public class RelJsonReader {
         /** {@inheritDoc} */
         @Override public List<RelNode> getInputs() {
             List<String> jsonInputs = getStringList("inputs");
-            if (jsonInputs == null || jsonInputs.isEmpty())
+            if (jsonInputs == null)
                 return ImmutableList.of(lastRel);
             List<RelNode> inputs = new ArrayList<>();
             for (String jsonInput : jsonInputs)

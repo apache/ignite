@@ -160,8 +160,8 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteTableScan scan) {
-        Predicate<Object[]> filters = F.isEmpty(scan.filters()) ? null :
-            expressionFactory.predicate(ctx, scan.filters(), scan.getRowType());
+        Predicate<Object[]> filters = scan.condition() == null ? null :
+            expressionFactory.predicate(ctx, scan.condition(), scan.getRowType());
 
         Object[] lowerBound = scan.lowerIndexCondition() == null ? null :
             expressionFactory.singleRowValuesExp(ctx, scan.lowerIndexCondition(), scan.getRowType());
