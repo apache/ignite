@@ -257,6 +257,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Direct protocol version. */
     public static final byte DIRECT_PROTO_VER = 3;
 
+    /** Session timeout which processing files. */
+    private static final int CHANNEL_SESSION_TIMEOUT_MS = 60_000;
+
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
 
@@ -2903,7 +2906,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
 
                 @Override public long endTime() {
-                    return startTs + netTimeoutMs;
+                    return startTs + CHANNEL_SESSION_TIMEOUT_MS;
                 }
 
                 @Override public void onTimeout() {
