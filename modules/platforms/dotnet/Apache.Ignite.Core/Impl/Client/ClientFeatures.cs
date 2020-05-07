@@ -90,11 +90,16 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Returns a value indicating whether WithExpiryPolicy request flag is supported.
+        /// Checks whether WithExpiryPolicy request flag is supported. Throws an exception when not supported. 
         /// </summary>
-        public bool HasWithExpiryPolicyFlag()
+        public void ValidateWithExpiryPolicyFlag()
         {
-            return _protocolVersion >= ClientSocket.Ver150;
+            var requiredVersion = ClientSocket.Ver150;
+
+            if (_protocolVersion < requiredVersion)
+            {
+                ThrowMinimumVersionException("WithExpiryPolicy", requiredVersion);
+            }
         }
 
         /// <summary>
@@ -148,11 +153,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 if (shouldThrow)
                 {
-                    var message = string.Format("Operation {0} is not supported by protocol version {1}. " +
-                                                "Minimum protocol version required is {2}.",
-                        operation, _protocolVersion, requiredProtocolVersion);
-
-                    throw new IgniteClientException(message);
+                    ThrowMinimumVersionException(operation, requiredProtocolVersion);
                 }
 
                 return false;
@@ -174,7 +175,19 @@ namespace Apache.Ignite.Core.Impl.Client
 
             return true;
         }
-        
+
+        /// <summary>
+        /// Throws minimum version exception.
+        /// </summary>
+        private void ThrowMinimumVersionException(object operation, ClientProtocolVersion requiredProtocolVersion)
+        {
+            var message = string.Format("Operation {0} is not supported by protocol version {1}. " +
+                                        "Minimum protocol version required is {2}.",
+                operation, _protocolVersion, requiredProtocolVersion);
+
+            throw new IgniteClientException(message);
+        }
+
         /// <summary>
         /// Gets <see cref="ClientBitmaskFeature"/> that is required to perform specified operation.
         /// </summary>

@@ -135,6 +135,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         [Test]
         public void TestPartitionAwarenessRoutesRequestsToNewlyJoinedNodes()
         {
+            if (GetType() == typeof(ClientClusterDiscoveryTestsBaselineTopology))
+            {
+                // Fixed baseline means that rebalance to a new node won't happen.
+                return;
+            }
+            
             var ignite = Ignition.GetAll().First();
             var cache = ignite.CreateCache<int, int>("c");
             
@@ -145,6 +151,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
 
                 var clientCache = client.GetCache<int, int>(cache.Name);
                 var logger = (ListLogger) ignite2.Logger;
+                var aff = ignite2.GetAffinity(cache.Name);
+                var localNode = ignite2.GetCluster().GetLocalNode();
+
+                TestUtils.WaitForTrueCondition(() => aff.GetAllPartitions(localNode).Length > 0, 5000);
+                
                 var key = TestUtils.GetPrimaryKey(ignite2, cache.Name);
                 
                 TestUtils.WaitForTrueCondition(() =>
