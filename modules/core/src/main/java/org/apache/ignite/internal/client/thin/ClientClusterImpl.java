@@ -35,7 +35,7 @@ class ClientClusterImpl extends ClientClusterGroupImpl implements ClientCluster 
     private final ClientBinaryMarshaller marsh;
 
     /**
-     * Default constructor.
+     * Constructor.
      */
     ClientClusterImpl(ReliableChannel ch, ClientBinaryMarshaller marsh) {
         super(null);
