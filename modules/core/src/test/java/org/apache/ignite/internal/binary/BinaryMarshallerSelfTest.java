@@ -79,8 +79,8 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryOffheapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -3020,33 +3020,23 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testReadDetachObjectProperly(Object obj, IgniteThrowableConsumer<Object> action) throws Exception {
-        long ptr = 0;
+        BinaryMarshaller marsh = binaryMarshaller();
 
-        try {
-            BinaryMarshaller marsh = binaryMarshaller();
+        BinaryHeapOutputStream os = new BinaryHeapOutputStream(1024);
 
-            BinaryOffheapOutputStream os = new BinaryOffheapOutputStream(1024);
+        BinaryWriterExImpl writer = marsh.binaryMarshaller().writer(os);
 
-            BinaryWriterExImpl writer = marsh.binaryMarshaller().writer(os);
+        writer.writeObject(obj);
 
-            writer.writeObject(obj);
+        BinaryHeapInputStream is = new BinaryHeapInputStream(os.array());
 
-            BinaryOffheapInputStream is = new BinaryOffheapInputStream(os.rawOffheapPointer(), os.capacity());
+        BinaryReaderExImpl reader = marsh.binaryMarshaller().reader(is);
 
-            ptr = os.rawOffheapPointer();
+        Object bObj = reader.readObjectDetached();
 
-            BinaryReaderExImpl reader = marsh.binaryMarshaller().reader(is);
+        Arrays.fill(os.array(), (byte)0);
 
-            Object bObj = reader.readObjectDetached();
-
-            GridUnsafe.setMemory(ptr, os.capacity(), (byte)0);
-
-            action.accept(bObj);
-        }
-        finally {
-            if (ptr != 0)
-                GridUnsafe.freeMemory(ptr);
-        }
+        action.accept(bObj);
     }
 
     /**

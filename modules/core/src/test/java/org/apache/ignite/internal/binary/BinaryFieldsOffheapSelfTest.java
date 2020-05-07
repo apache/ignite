@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.binary.streams.BinaryOffheapOutputStream;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 
@@ -41,12 +40,14 @@ public class BinaryFieldsOffheapSelfTest extends BinaryFieldsAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected BinaryObjectExImpl toBinary(BinaryMarshaller marsh, Object obj) throws Exception {
-        BinaryOffheapOutputStream os = new BinaryOffheapOutputStream(64);
+        byte[] arr = marsh.marshal(obj);
 
-        marsh.binaryMarshaller().writer(os).marshal(obj);
+        long ptr = GridUnsafe.allocateMemory(arr.length);
 
-        ptrs.add(os.offheapPointer());
+        ptrs.add(ptr);
 
-        return new BinaryObjectOffheapImpl(binaryContext(marsh), os.offheapPointer(), 0, os.position());
+        GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF, ptr, arr.length);
+
+        return new BinaryObjectOffheapImpl(binaryContext(marsh), ptr, 0, arr.length);
     }
 }

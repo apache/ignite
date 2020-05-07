@@ -82,13 +82,10 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         return res;
     }
 
-    /** {@inheritDoc} */
-    @Override public long rawOffheapPointer() {
-        return ptr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long offheapPointer() {
+    /**
+     * @return Pointer.
+     */
+    public long pointer() {
         return ptr;
     }
 

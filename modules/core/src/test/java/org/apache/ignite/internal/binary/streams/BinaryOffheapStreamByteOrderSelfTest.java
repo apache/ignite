@@ -26,6 +26,6 @@ public class BinaryOffheapStreamByteOrderSelfTest extends AbstractBinaryStreamBy
         int cap = ARR_LEN * 8;
 
         out = new BinaryOffheapOutputStream(cap);
-        in = new BinaryOffheapInputStream(out.offheapPointer(), cap);
+        in = new BinaryOffheapInputStream(((BinaryOffheapOutputStream)out).pointer(), cap);
     }
 }
