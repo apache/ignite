@@ -127,6 +127,9 @@ public class IdleVerifyUtility {
                 if (part.state() != GridDhtPartitionState.OWNING)
                     continue;
 
+                if (!part.dataStore().partUpdateCounter().sequential())
+                    throw new GridNotIdleException("Cluster not idle. Probably due to continues rebalance");
+
                 partsWithCounters.put(part.id(), part.updateCounter());
             }
 

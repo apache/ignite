@@ -28,6 +28,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -309,7 +310,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
     private Ignite prepareGridForTest() throws Exception {
         Ignite ignite = startGrids(GRID_CNT);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         Ignite client = startGrid(CLIENT_NODE_NAME_PREFIX);
 
