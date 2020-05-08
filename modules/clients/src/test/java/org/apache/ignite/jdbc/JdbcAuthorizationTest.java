@@ -94,14 +94,14 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
         super.beforeTestsStarted();
 
         Ignite srv = startSecurityGrid(0,
-            client(EMPTY_PERMS_USER, new SecurityBasicPermissionSet()),
-            client(CACHE_CREATE_SYS_PERM_USER, systemPermissions(CACHE_CREATE)),
-            client(CACHE_DESTROY_SYS_PERMS_USER, systemPermissions(CACHE_DESTROY)),
-            client(CACHE_CREATE_CACHE_PERMS_USER, cachePermissions(TEST_CREATE_TABLE_CACHE, CACHE_CREATE)),
-            client(CACHE_DESTROY_CACHE_PERMS_USER, cachePermissions(TEST_DROP_TABLE_CACHE, CACHE_DESTROY)),
-            client(CACHE_READ_USER, cachePermissions(DEFAULT_CACHE_NAME, CACHE_READ)),
-            client(CACHE_PUT_USER, cachePermissions(DEFAULT_CACHE_NAME, CACHE_PUT)),
-            client(CACHE_REMOVE_USER, cachePermissions(DEFAULT_CACHE_NAME, CACHE_REMOVE)));
+            new TestSecurityData(EMPTY_PERMS_USER, new SecurityBasicPermissionSet()),
+            new TestSecurityData(CACHE_CREATE_SYS_PERM_USER, systemPermissions(CACHE_CREATE)),
+            new TestSecurityData(CACHE_DESTROY_SYS_PERMS_USER, systemPermissions(CACHE_DESTROY)),
+            new TestSecurityData(CACHE_CREATE_CACHE_PERMS_USER, cachePermissions(TEST_CREATE_TABLE_CACHE, CACHE_CREATE)),
+            new TestSecurityData(CACHE_DESTROY_CACHE_PERMS_USER, cachePermissions(TEST_DROP_TABLE_CACHE, CACHE_DESTROY)),
+            new TestSecurityData(CACHE_READ_USER, cachePermissions(DEFAULT_CACHE_NAME, CACHE_READ)),
+            new TestSecurityData(CACHE_PUT_USER, cachePermissions(DEFAULT_CACHE_NAME, CACHE_PUT)),
+            new TestSecurityData(CACHE_REMOVE_USER, cachePermissions(DEFAULT_CACHE_NAME, CACHE_REMOVE)));
 
         startSecurityGrid(1);
 
@@ -222,19 +222,25 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests CREATE TABLE query permissions check.
+     * Tests CREATE TABLE query system permissions check.
      */
     @Test
-    public void testCreateTable() throws Exception {
+    public void testCreateTableSystemPermissions() throws Exception {
         StatementProvider stmt = of(
             "CREATE TABLE sys_perm_table_create(id LONG PRIMARY KEY, val varchar) WITH \"TEMPLATE=REPLICATED\";");
 
         assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
 
         execute(stmt, CACHE_CREATE_SYS_PERM_USER);
+    }
 
-        stmt = of("CREATE TABLE cache_perm_table_create(id LONG PRIMARY KEY, val varchar) WITH " +
-                "\"TEMPLATE=REPLICATED, CACHE_NAME=" + TEST_CREATE_TABLE_CACHE + "\";");
+    /**
+     * Tests CREATE TABLE query cache permissions check.
+     */
+    @Test
+    public void testCreateTableCachePermissions() throws Exception {
+        StatementProvider stmt = of("CREATE TABLE cache_perm_table_create(id LONG PRIMARY KEY, val varchar) WITH " +
+            "\"TEMPLATE=REPLICATED, CACHE_NAME=" + TEST_CREATE_TABLE_CACHE + "\";");
 
         assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
 
@@ -242,28 +248,33 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests DROP TABLE query permissions check.
+     * Tests DROP TABLE query system permissions check.
      */
     @Test
-    public void testDropTable() throws Exception {
-        String sysPermsTable = "test_sys_perm_table_drop";
+    public void testDropTableSystemPermissions() throws Exception {
+        String table = "test_sys_perm_table_drop";
 
-        createTable(sysPermsTable);
+        createTable(table);
 
-        StatementProvider stmt = of("DROP TABLE " + sysPermsTable + ';');
+        StatementProvider stmt = of("DROP TABLE " + table + ';');
 
         assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
 
         execute(stmt, CACHE_DESTROY_SYS_PERMS_USER);
+    }
 
-        String cachePermsTable = "test_cache_perm_table_drop";
+    /**
+     * Tests DROP TABLE query cache permissions check.
+     */
+    @Test
+    public void testDropTableCachePermissions() throws Exception {
+        String table = "test_cache_perm_table_drop";
 
-        execute(of("CREATE TABLE " + cachePermsTable + "(id LONG PRIMARY KEY, str_col varchar, long_col LONG)" +
+        execute(of("CREATE TABLE " + table + "(id LONG PRIMARY KEY, str_col varchar, long_col LONG)" +
                 " WITH \"TEMPLATE=REPLICATED, CACHE_NAME=" + TEST_DROP_TABLE_CACHE + "\";"),
-            CACHE_CREATE_SYS_PERM_USER
-        );
+            CACHE_CREATE_SYS_PERM_USER);
 
-        stmt = of("DROP TABLE " + cachePermsTable + ';');
+        StatementProvider stmt = of("DROP TABLE " + table + ';');
 
         assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
 
@@ -295,17 +306,29 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests CREATE INDEX and DROP INDEX queries permissions check.
+     * Tests CREATE INDEX queries permissions check.
      */
     @Test
-    public void testCreateAndDropIndex() throws Exception {
-        String table = "test_table_manage_index";
+    public void testCreateIndex() throws Exception {
+        String table = "test_table_create_index";
 
         createTable(table);
 
-        execute(of("CREATE INDEX test_idx ON " + table + "(id ASC);"), EMPTY_PERMS_USER);
+        execute(of("CREATE INDEX test_create_idx ON " + table + "(id ASC);"), EMPTY_PERMS_USER);
+    }
 
-        execute(of("DROP INDEX test_idx ON " + table + ';'), EMPTY_PERMS_USER);
+    /**
+     * Tests DROP INDEX queries permissions check.
+     */
+    @Test
+    public void testDropIndex() throws Exception {
+        String table = "test_table_drop_index";
+
+        createTable(table);
+
+        execute(of("CREATE INDEX test_drop_idx ON " + table + "(id ASC);"), EMPTY_PERMS_USER);
+
+        execute(of("DROP INDEX test_drop_idx ON " + table + ';'), EMPTY_PERMS_USER);
     }
 
     /**
@@ -338,7 +361,6 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      * @param stmt Provider of the SQL statement.
      * @param login Login of the user.
      */
-    @SuppressWarnings("ThrowableNotThrown")
     private void assertAuthorizationFailed(StatementProvider stmt, String login) {
         assertThrowsAnyCause(
             log,
@@ -381,13 +403,6 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
                 clients
             ))
         );
-    }
-
-    /**
-     * @return Security data of the user with the specified name and granted permissons.
-     */
-    private TestSecurityData client(String name, SecurityPermissionSet perms) {
-        return new TestSecurityData(name, perms);
     }
 
     /**
