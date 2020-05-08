@@ -108,7 +108,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         // Daemon node should not open client port
         if (cfg.isDaemon()) {
-            log.debug("Client connection configuration ignored for daemon node.");
+            if (log.isDebugEnabled())
+                log.debug("Client connection configuration ignored for daemon node.");
 
             return;
         }
@@ -543,7 +544,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 srv.close(ses);
 
-                log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
+                if (log.isInfoEnabled())
+                    log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
             }
         }
 
@@ -568,7 +570,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 srv.close(ses);
 
-                log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
+                if (log.isInfoEnabled())
+                    log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
 
                 return true;
             }
