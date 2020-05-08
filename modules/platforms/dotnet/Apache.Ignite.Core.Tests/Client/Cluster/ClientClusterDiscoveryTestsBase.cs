@@ -133,8 +133,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
 
                 var remoteEndPoint = (IPEndPoint) connection.RemoteEndPoint;
                 Assert.AreEqual(server.GetAttribute<int>("clientListenerPort"), remoteEndPoint.Port);
+
+                var ipAddresses = server.Addresses
+                    .Select(a => a.Split('%').First())  // Trim IPv6 scope.
+                    .Select(IPAddress.Parse)
+                    .ToArray();
                 
-                CollectionAssert.Contains(server.Addresses.Select(IPAddress.Parse), remoteEndPoint.Address);
+                CollectionAssert.Contains(ipAddresses, remoteEndPoint.Address);
 
                 var localEndPoint = (IPEndPoint) connection.LocalEndPoint;
                 CollectionAssert.Contains(new[] {IPAddress.Loopback, IPAddress.IPv6Loopback}, localEndPoint.Address);
