@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly object _topologyUpdateLock = new object();
 
         /** Disposed flag. */
-        private bool _disposed;
+        private volatile bool _disposed;
 
         /** Current affinity topology version. Store as object to make volatile. */
         private volatile object _affinityTopologyVersion;
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             get
             {
-                var socket = _socket;
+                var socket = GetSocket();
                 return socket != null ? socket.RemoteEndPoint : null;
             }
         }
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             get
             {
-                var socket = _socket;
+                var socket = GetSocket();
                 return socket != null ? socket.LocalEndPoint : null;
             }
         }
@@ -262,6 +262,8 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
         {
+            ThrowIfDisposed();
+            
             if (!_config.EnablePartitionAwareness)
             {
                 return null;
@@ -350,7 +352,6 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             List<Exception> errors = null;
             var startIdx = (int) Interlocked.Increment(ref _endPointIndex);
-            _socket = null;
 
             // Check socket map first, if available: it includes all cluster nodes.
             var map = _nodeSocketMap;
@@ -398,26 +399,23 @@ namespace Apache.Ignite.Core.Impl.Client
         private void Connect()
         {
             _socket = GetNextSocket();
-            
-            if (_socket != null)
+
+            if (_config.EnablePartitionAwareness && !_socket.Features.HasOp(ClientOp.CachePartitions))
             {
-                if (_config.EnablePartitionAwareness && !_socket.Features.HasOp(ClientOp.CachePartitions))
-                {
-                    _config.EnablePartitionAwareness = false;
+                _config.EnablePartitionAwareness = false;
 
-                    _logger.Warn("Partition awareness has been disabled: server protocol version {0} " +
-                                 "is lower than required {1}",
-                        _socket.ServerVersion,
-                        ClientFeatures.GetMinVersion(ClientOp.CachePartitions)
-                    );
-                }
+                _logger.Warn("Partition awareness has been disabled: server protocol version {0} " +
+                             "is lower than required {1}",
+                    _socket.ServerVersion,
+                    ClientFeatures.GetMinVersion(ClientOp.CachePartitions)
+                );
+            }
 
-                if (!_socket.Features.HasFeature(ClientBitmaskFeature.ClusterGroupGetNodesEndpoints))
-                {
-                    _enableDiscovery = false;
-                    
-                    _logger.Warn("Automatic server node discovery is not supported by the server");
-                }
+            if (!_socket.Features.HasFeature(ClientBitmaskFeature.ClusterGroupGetNodesEndpoints))
+            {
+                _enableDiscovery = false;
+
+                _logger.Warn("Automatic server node discovery is not supported by the server");
             }
         }
 
@@ -647,7 +645,7 @@ namespace Apache.Ignite.Core.Impl.Client
             var map = new Dictionary<Guid, ClientSocket>(_nodeSocketMap);
 
             var defaultSocket = _socket;
-            if (defaultSocket != null && defaultSocket.ServerNodeId != null)
+            if (defaultSocket != null && !defaultSocket.IsDisposed && defaultSocket.ServerNodeId != null)
             {
                 map[defaultSocket.ServerNodeId.Value] = defaultSocket;
             }
