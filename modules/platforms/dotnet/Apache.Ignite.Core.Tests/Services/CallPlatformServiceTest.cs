@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
         
         /** */
-        public interface ITestPlatformService: IService
+        public interface ITestPlatformService : IService
         {
             /** */
             Guid NodeId { get; }
@@ -185,9 +185,12 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             [InstanceResource]
             private IIgnite _grid;
-            
+
             /** <inheritdoc /> */
-            public Guid NodeId => _grid.GetCluster().GetLocalNode().Id;
+            public Guid NodeId
+            {
+                get { return _grid.GetCluster().GetLocalNode().Id;}
+            }
 
             /** <inheritdoc /> */
             public Guid? GuidProp { get; set; }
