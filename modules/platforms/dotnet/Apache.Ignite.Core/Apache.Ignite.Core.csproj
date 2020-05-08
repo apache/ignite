@@ -111,6 +111,7 @@
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Client\MinVersionAttribute.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
+    <Compile Include="Impl\Client\Transactions\ClientTransaction.cs" />
     <Compile Include="Impl\Client\Transactions\ClientTransactions.cs" />
     <Compile Include="Impl\Client\Transactions\TransactionalOperationAttribute.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />

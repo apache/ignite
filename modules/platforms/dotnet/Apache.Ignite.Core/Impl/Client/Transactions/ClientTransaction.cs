@@ -15,34 +15,34 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Client.Transactions
+namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Client.Transactions;
 
     /// <summary>
-    /// Thin client transaction.
+    /// Ignite Thin Client transaction facade.
     /// </summary>
-    public interface IClientTransaction
+    internal class ClientTransaction: IClientTransaction
     {
-        /// <summary>
-        /// Commits this transaction.
-        /// </summary>
-        void Commit();
+        public void Commit()
+        {
+            throw new System.NotImplementedException();
+        }
 
-        /// <summary>
-        /// Commits this transaction.
-        /// </summary>
-        Task CommitAsync();
+        public Task CommitAsync()
+        {
+            throw new System.NotImplementedException();
+        }
 
-        /// <summary>
-        /// Rolls back this transaction.
-        /// </summary>
-        void Rollback();
+        public void Rollback()
+        {
+            throw new System.NotImplementedException();
+        }
 
-        /// <summary>
-        /// Rolls back this transaction.
-        /// </summary>
-        Task RollbackAsync();
-
+        public Task RollbackAsync()
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

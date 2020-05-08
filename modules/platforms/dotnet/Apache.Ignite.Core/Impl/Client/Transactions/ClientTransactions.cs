@@ -21,6 +21,9 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Transactions;
 
+    /// <summary>
+    /// Ignite Thin Client transactions facade.
+    /// </summary>
     internal class ClientTransactions : IClientTransactions
     {
         /** <inheritDoc /> */
