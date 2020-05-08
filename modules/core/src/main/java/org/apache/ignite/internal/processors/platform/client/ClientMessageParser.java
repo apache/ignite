@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartReq
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodeIdsRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesDetailsRequest;
-import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesEndpointsRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterIsActiveRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
@@ -223,7 +222,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /* Cluster operations. */
     /** */
-    private static final short OP_CLUSTER_IS_ACTIVE = 5000;
+    private static final short OP_CLUSTER_GET_STATE = 5000;
 
     /** */
     private static final short OP_CLUSTER_CHANGE_STATE = 5001;
@@ -427,8 +426,8 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_TX_END:
                 return new ClientTxEndRequest(reader);
 
-            case OP_CLUSTER_IS_ACTIVE:
-                return new ClientClusterIsActiveRequest(reader);
+            case OP_CLUSTER_GET_STATE:
+                return new ClientClusterGetStateRequest(reader);
 
             case OP_CLUSTER_CHANGE_STATE:
                 return new ClientClusterChangeStateRequest(reader);
