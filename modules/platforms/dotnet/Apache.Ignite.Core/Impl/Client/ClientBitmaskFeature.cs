@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Client
     {
         // UserAttributes = 0,
         // ExecuteTaskByName = 1,
-        ClusterGroupGetNodesEndpoints = 2
+        // ClusterApi = 2,
+        ClusterGroupGetNodesEndpoints = 3
     }
 }

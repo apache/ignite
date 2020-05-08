@@ -67,15 +67,16 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterChangeStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGetStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodeIdsRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesDetailsRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesEndpointsRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
 import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
-import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterChangeStateRequest;
-import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodeIdsRequest;
-import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesDetailsRequest;
-import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterIsActiveRequest;
-import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
-import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
 
 /**
  * Thin client message parser.
