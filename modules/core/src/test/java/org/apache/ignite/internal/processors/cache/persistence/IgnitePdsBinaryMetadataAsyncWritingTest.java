@@ -105,6 +105,8 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -118,6 +120,8 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        super.afterTest();
     }
 
     /**
@@ -240,6 +244,8 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         specialFileIOFactory = new FailingFileIOFactory(new RandomAccessFileIOFactory());
 
+        setRootLoggerDebugLevel();
+
         IgniteEx ig1 = startGrid(1);
 
         ig0.cluster().active(true);
@@ -324,13 +330,14 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
             (topVer, snd, msg) -> suppressException(fileWriteLatch::await)
         );
 
-        ListeningTestLogger listeningLog = new ListeningTestLogger(true, log);
+        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+        setRootLoggerDebugLevel();
+
         LogListener waitingForWriteLsnr = LogListener.matches("Waiting for write completion of").build();
         listeningLog.registerListener(waitingForWriteLsnr);
 
         startGrid(2);
-
-        listeningLog = null;
 
         ig0.cluster().active(true);
         IgniteCache cache0 = cl0.createCache(testCacheCfg);
