@@ -35,6 +35,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         private const string CheckTaskName = "org.apache.ignite.platform.PlatformServiceCallTask";
+
+        /** */
+        private const string CheckCollectionsTaskName = "org.apache.ignite.platform.PlatformServiceCallCollectionsTask";
         
         /** */
         protected IIgnite Grid1;
@@ -44,9 +47,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         protected IIgnite Grid3;
-
-        /** */
-        protected IIgnite[] Grids;
         
         /// <summary>
         /// Start grids and deploy test service.
@@ -69,9 +69,12 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests call a platform service by invoking a special compute java task,
         /// in which real invocation of the service is made.
+        /// <para/>
+        /// Tests common methods.
+        /// <param name="local">If true call on local node.</param>
         /// </summary>
         [Test]
-        public void TestCallPlatformService()
+        public void TestCallPlatformService([Values(true, false)] bool local)
         {
             var cfg = new ServiceConfiguration
             {
@@ -82,7 +85,29 @@ namespace Apache.Ignite.Core.Tests.Services
             
             Grid1.GetServices().Deploy(cfg);
 
-            Grid1.GetCompute().ExecuteJavaTask<object>(CheckTaskName, ServiceName);
+            Grid1.GetCompute().ExecuteJavaTask<object>(CheckTaskName, new object[] { ServiceName, local });
+        }
+        
+        /// <summary>
+        /// Tests call a platform service by invoking a special compute java task,
+        /// in which real invocation of the service is made.
+        /// <para/>
+        /// Tests collections method.
+        /// <param name="local">If true call on local node.</param>
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceCollections([Values(true, false)] bool local)
+        {
+            var cfg = new ServiceConfiguration
+            {
+                Name = ServiceName,
+                TotalCount = 1,
+                Service = new TestPlatformService()
+            };
+            
+            Grid1.GetServices().Deploy(cfg);
+
+            Grid1.GetCompute().ExecuteJavaTask<object>(CheckCollectionsTaskName, new object[] { ServiceName, local });
         }
         
         /// <summary>
@@ -96,8 +121,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Grid1 = Ignition.Start(GetConfiguration(1));
             Grid2 = Ignition.Start(GetConfiguration(2));
             Grid3 = Ignition.Start(GetConfiguration(3));
-
-            Grids = new[] { Grid1, Grid2, Grid3 };
         }
 
         /// <summary>
@@ -106,7 +129,6 @@ namespace Apache.Ignite.Core.Tests.Services
         private void StopGrids()
         {
             Grid1 = Grid2 = Grid3 = null;
-            Grids = null;
 
             Ignition.StopAll(true);
         }

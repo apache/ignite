@@ -17,51 +17,25 @@
 
 package org.apache.ignite.platform;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
-import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
- *  Task to test calling {@link PlatformService} from Java.
+ *  Basic task to calling {@link PlatformService} from Java.
  */
-public class PlatformServiceCallTask extends ComputeTaskAdapter<String, Object> {
+public class PlatformServiceCallTask extends AbstractPlatformServiceCallTask {
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String srvcName)
-            throws IgniteException {
-        return Collections.singletonMap(new PlatformServiceCallJob(srvcName), F.first(subgrid));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
-        return results.get(0).getData();
+    @Override ComputeJobAdapter createJob(String svcName) {
+        return new PlatformServiceCallJob(svcName);
     }
 
     /** */
-    private static class PlatformServiceCallJob extends ComputeJobAdapter {
-        /** */
-        private final String srvcName;
-
+    static class PlatformServiceCallJob extends AbstractServiceCallJob {
         /** */
         @SuppressWarnings("unused")
         @IgniteInstanceResource
@@ -70,14 +44,12 @@ public class PlatformServiceCallTask extends ComputeTaskAdapter<String, Object> 
         /**
          * @param srvcName Service name.
          */
-        private PlatformServiceCallJob(String srvcName) {
-            assert srvcName != null;
-
-            this.srvcName = srvcName;
+        PlatformServiceCallJob(String srvcName) {
+            super(srvcName);
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteException {
+        @Override void runTest() {
             TestPlatformService srv = ignite.services().serviceProxy(srvcName, TestPlatformService.class, false);
 
             {
@@ -109,193 +81,6 @@ public class PlatformServiceCallTask extends ComputeTaskAdapter<String, Object> 
 
                 assertTrue(nativeEx.toString().contains("Failed method"));
             }
-
-            {
-                TestValue[] exp = IntStream.range(0, 10).mapToObj(i -> new TestValue(i, "name_" + i))
-                        .toArray(TestValue[]::new);
-
-                TestValue[] res = srv.AddOneToEach(exp);
-
-                assertEquals(exp.length, res.length);
-
-                for (int i = 0; i < exp.length; i++)
-                    assertEquals(exp[i].id() + 1, res[i].id());
-            }
-
-            {
-                List<TestValue> exp = IntStream.range(0, 10).mapToObj(i -> new TestValue(i, "name_" + i))
-                        .collect(Collectors.toList());
-
-                Collection<TestValue> res = srv.AddOneToEachCollection(exp);
-
-                assertEquals(exp.size(), res.size());
-
-                res.forEach(v -> assertEquals(exp.get(v.id() - 1).name(), v.name()));
-            }
-
-            {
-                Map<TestKey, TestValue> exp = IntStream.range(0, 10)
-                        .mapToObj(i -> new T2<>(new TestKey(i), new TestValue(i, "name_" + i)))
-                        .collect(Collectors.toMap(T2::getKey, T2::getValue));
-
-                Map<TestKey, TestValue> res = srv.AddOneToEachDictionary(exp);
-
-                assertEquals(exp.size(), res.size());
-
-                res.forEach((k, v) -> assertEquals(exp.get(new TestKey(k.id() - 1)).name(), v.name()));
-            }
-
-            {
-                BinarizableTestValue exp = new BinarizableTestValue(1, "test");
-
-                BinarizableTestValue res = srv.AddOne(exp);
-
-                assertEquals(exp.id() + 1, res.id());
-
-                assertEquals(exp.name(), res.name());
-            }
-
-            return null;
-        }
-    }
-
-    /** */
-    private static void assertEquals(Object exp, Object res) throws IgniteException {
-        if ((exp != null && !exp.equals(res)) || (res != null && !res.equals(exp)))
-            throw new IgniteException(String.format("Expected equals to %s, got %s", exp, res));
-    }
-
-    /** */
-    private static void assertTrue(boolean res) {
-        assertEquals(true, res);
-    }
-
-    /** */
-    public interface TestPlatformService
-    {
-        /** */
-        UUID get_NodeId();
-
-        /** */
-        UUID get_GuidProp();
-
-        /** */
-        void set_GuidProp(UUID val);
-
-        /** */
-        TestValue get_ValueProp();
-
-        /** */
-        void set_ValueProp(TestValue val);
-
-        /** */
-        void ErrorMethod();
-
-        /** */
-        TestValue[] AddOneToEach(TestValue[] col);
-
-        /** */
-        Collection<TestValue> AddOneToEachCollection(Collection<TestValue> col);
-
-        /** */
-        Map<TestKey, TestValue> AddOneToEachDictionary(Map<TestKey, TestValue> dict);
-
-        /** */
-        BinarizableTestValue AddOne(BinarizableTestValue val);
-    }
-
-    /** */
-    public static class TestKey {
-        /** */
-        private final int id;
-
-        /** */
-        public TestKey(int id) {
-            this.id = id;
-        }
-
-        /** */
-        public int id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            return id == ((TestKey)o).id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(id);
-        }
-    }
-
-    /** */
-    public static class TestValue {
-        /** */
-        protected int id;
-
-        /** */
-        protected String name;
-
-        /** */
-        public TestValue(int id, String name) {
-            this.id = id;
-            this.name = name;
-        }
-
-        /** */
-        public int id() {
-            return id;
-        }
-
-        /** */
-        public String name() {
-            return name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            TestValue val = (TestValue) o;
-
-            return id == val.id && Objects.equals(name, val.name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(id, name);
-        }
-    }
-
-    /** */
-    public static class BinarizableTestValue extends TestValue implements Binarylizable {
-        /** */
-        public BinarizableTestValue(int id, String name) {
-            super(id, name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.writeInt("id", id);
-            writer.writeString("name", name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            id = reader.readInt("id");
-            name = reader.readString("name");
         }
     }
 }
