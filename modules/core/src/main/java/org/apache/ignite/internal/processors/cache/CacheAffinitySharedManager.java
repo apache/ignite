@@ -65,6 +65,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
@@ -855,7 +857,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         fut.timeBag().finishGlobalStage("Update caches registry");
 
-        processCacheStartRequests(fut, crd, exchActions);
+        IgniteSecurity security = cctx.kernalContext().security();
+
+        if (security.enabled() && exchActions.securitySubjectId() != null) {
+            try (OperationSecurityContext s = security.withContext(exchActions.securitySubjectId())) {
+                processCacheStartRequests(fut, crd, exchActions);
+            }
+        }
+        else
+            processCacheStartRequests(fut, crd, exchActions);
 
         Set<Integer> stoppedGrps = processCacheStopRequests(fut, crd, exchActions, false);
 

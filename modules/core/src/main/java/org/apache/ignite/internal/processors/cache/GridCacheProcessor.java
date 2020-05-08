@@ -138,6 +138,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchang
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
@@ -171,6 +172,7 @@ import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -2873,8 +2875,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ((GridServiceProcessor)ctx.service()).updateUtilityCache();
         }
 
-        if (err == null)
-            processCacheStopRequestOnExchangeDone(exchActions);
+        if (err == null) {
+            IgniteSecurity security = ctx.security();
+
+            if (security.enabled() && exchActions.securitySubjectId() != null) {
+                try (OperationSecurityContext s = security.withContext(exchActions.securitySubjectId())) {
+                    processCacheStopRequestOnExchangeDone(exchActions);
+                }
+            }
+            else
+                processCacheStopRequestOnExchangeDone(exchActions);
+        }
     }
 
     /**
@@ -3942,7 +3953,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!sndReqs.isEmpty()) {
             try {
-                ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs));
+                DynamicCacheChangeBatch batch = new DynamicCacheChangeBatch(sndReqs);
+
+                IgniteSecurity security = ctx.security();
+
+                if(security.enabled()) {
+                    SecuritySubject subj = security.securityContext().subject();
+
+                    batch.securitySubjectId(subj.id());
+                }
+
+                ctx.discovery().sendCustomEvent(batch);
 
                 err = checkNodeState();
             }
