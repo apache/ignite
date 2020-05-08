@@ -220,8 +220,10 @@ public class SchemaManager {
         boolean disabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
 
         if (disabled) {
-            log.info("SQL system views will not be created because they are disabled (see " +
-                IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS + " system property)");
+            if (log.isInfoEnabled()) {
+                log.info("SQL system views will not be created because they are disabled (see " +
+                    IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS + " system property)");
+            }
 
             return;
         }

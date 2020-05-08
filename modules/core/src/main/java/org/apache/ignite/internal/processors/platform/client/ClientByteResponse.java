@@ -15,17 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.twitter;
+package org.apache.ignite.internal.processors.platform.client;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
 /**
- * Twitter streamer tests.
+ * Byte response.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgniteTwitterStreamerTest.class
-})
-public class IgniteTwitterStreamerTestSuite {
+public class ClientByteResponse extends ClientResponse {
+    /** */
+    private final byte val;
+
+    /**
+     * Constructor.
+     *
+     * @param reqId Request id.
+     */
+    public ClientByteResponse(long reqId, byte val) {
+        super(reqId);
+
+        this.val = val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+        super.encode(ctx, writer);
+
+        writer.writeByte(val);
+    }
 }
