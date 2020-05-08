@@ -1464,7 +1464,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return null;
                 }
-            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
+            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap, false);
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -1515,7 +1515,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return null;
                 }
-            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
+            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap, true);
     }
 
     /**
@@ -1599,27 +1599,59 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param totalCpus Total cpu number.
      * @param heap Heap size.
      * @param offheap Offheap size.
+     * @param needNodesDetails Flag for additional alive nodes logging.
      */
-    private void topologySnapshotMessage(IgniteClosure<String, Void> clo, long topVer, DiscoCache discoCache,
-        int evtType, ClusterNode evtNode, int srvNodesNum, int clientNodesNum, int totalCpus, double heap,
-        double offheap) {
-        String summary = PREFIX + " [" +
-            (discoOrdered ? "ver=" + topVer + ", " : "") +
-            "servers=" + srvNodesNum +
-            ", clients=" + clientNodesNum +
-            ", CPUs=" + totalCpus +
-            ", offheap=" + offheap + "GB" +
-            ", heap=" + heap + "GB]";
+    private void topologySnapshotMessage(
+        IgniteClosure<String, Void> clo,
+        long topVer,
+        DiscoCache discoCache,
+        int evtType,
+        ClusterNode evtNode,
+        int srvNodesNum,
+        int clientNodesNum,
+        int totalCpus,
+        double heap,
+        double offheap,
+        boolean needNodesDetails
+    ) {
+        DiscoveryDataClusterState state = discoCache.state();
 
-        clo.apply(summary);
+        SB summary = new SB(PREFIX);
+
+        summary.a(" [");
+        summary.a(discoOrdered ? "ver=" + topVer + ", " : "");
+        summary.a("locNode=").a(U.id8(discoCache.localNode().id()));
+        summary.a(", servers=").a(srvNodesNum);
+        summary.a(", clients=").a(clientNodesNum);
+        summary.a(", state=").a(state.active() ? "ACTIVE" : "INACTIVE");
+        summary.a(", CPUs=").a(totalCpus);
+        summary.a(", offheap=").a(offheap).a("GB");
+        summary.a(", heap=").a(heap).a("GB");
+
+        if ((evtType == EVT_NODE_JOINED
+            || evtType == EVT_NODE_LEFT
+            || evtType == EVT_NODE_FAILED)
+            && needNodesDetails) {
+            summary.a(", aliveNodes=[");
+
+            for (ClusterNode clusterNode : discoCache.allNodes())
+                if (discoCache.alive(clusterNode.id()))
+                    summary.a(clusterNode.toString()).a(", ");
+
+            summary.setLength(summary.length() - 2);
+
+            summary.a("]");
+        }
+
+        summary.a("]");
+
+        clo.apply(summary.toString());
 
         ClusterNode currCrd = discoCache.coordinator();
 
         if ((evtType == EventType.EVT_NODE_FAILED || evtType == EventType.EVT_NODE_LEFT) &&
                 !evtNode.isClient() && currCrd != null && currCrd.order() > evtNode.order())
             clo.apply("Coordinator changed [prev=" + evtNode + ", cur=" + currCrd + "]");
-
-        DiscoveryDataClusterState state = discoCache.state();
 
         clo.apply("  ^-- Node [id=" + discoCache.localNode().id().toString().toUpperCase() + ", clusterState="
             + (state.active() ? "ACTIVE" : "INACTIVE") + ']');
@@ -2522,7 +2554,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @param cacheMap Map to add to.
      * @param cacheName Cache name.
-     * @param node Node to add
+     * @param rich Node to add
      */
     private void addToMap(Map<Integer, List<ClusterNode>> cacheMap, String cacheName, ClusterNode rich) {
         List<ClusterNode> cacheNodes = cacheMap.get(CU.cacheId(cacheName));
