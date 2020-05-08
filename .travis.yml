@@ -22,7 +22,7 @@ matrix:
       jdk: openjdk8
       before_script:
         - echo $JVM_EXTRA_ARGS
-      script: mvn package -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala -DskipTests -Dmaven.javadoc.skip=true -B -V
+      script: mvn test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -Dmaven.javadoc.skip=true -B -V
       before_cache: rm -rfv $HOME/.m2/repository/org/apache/ignite
       cache: {directories: [$HOME/.m2/repository]}
 
@@ -42,7 +42,7 @@ matrix:
           --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
           -Djdk.tls.client.protocols=TLSv1.2'
       # ignite-scalar module currently doesn't build under jdk11
-      script: mvn package -Pall-java,licenses,lgpl,checkstyle,examples,!spark-2.4,!spark,!scala -DskipTests -Dmaven.javadoc.skip=true -B -V
+      script: mvn test-compile -Pall-java,licenses,lgpl,checkstyle,examples,check-licenses,!spark-2.4,!spark,!scala -Dmaven.javadoc.skip=true -B -V
       before_cache: rm -rfv $HOME/.m2/repository/org/apache/ignite
       cache: {directories: [$HOME/.m2/repository]}
 

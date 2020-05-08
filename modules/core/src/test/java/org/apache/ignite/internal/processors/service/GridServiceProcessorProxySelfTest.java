@@ -253,7 +253,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         for (int i = 0; i < nodeCount(); i++) {
             final int idx = i;
 
-            final AtomicReference< MapService<Integer, String>> ref = new AtomicReference<>();
+            final AtomicReference<MapService<Integer, String>> ref = new AtomicReference<>();
 
             //wait because after deployNodeSingleton we don't have guarantees what service was deploy.
             boolean wait = GridTestUtils.waitForCondition(new PA() {

@@ -526,7 +526,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             }
 
             assertEquals(0, origQrys.size());
-            assertEquals(0, remoteQrys.size());
+            assertTrue(waitForCondition(() -> remoteQrys.size() == 0, getTestTimeout()));
         }
     }
 

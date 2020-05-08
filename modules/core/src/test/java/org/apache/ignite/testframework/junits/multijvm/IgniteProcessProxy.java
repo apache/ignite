@@ -57,6 +57,7 @@ import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
@@ -127,7 +128,7 @@ public class IgniteProcessProxy implements IgniteEx {
     private final transient IgniteLogger log;
 
     /** Grid id. */
-    private final UUID id = UUID.randomUUID();
+    private final UUID id;
 
     /**
      * @param cfg Configuration.
@@ -167,6 +168,7 @@ public class IgniteProcessProxy implements IgniteEx {
     )
         throws Exception {
         this.cfg = cfg;
+        this.id = cfg.getNodeId() == null ? UUID.randomUUID() : cfg.getNodeId();
         this.locJvmGrid = locJvmGrid;
         this.log = logger(log, "jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
@@ -822,6 +824,11 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteEncryption encryption() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteSnapshot snapshot() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
