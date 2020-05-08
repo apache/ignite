@@ -82,7 +82,6 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
                 .setPerms(ALLOW_ALL)
         );
 
-
         SECURITY_CONTEXTS.put(res.subject().id(), res);
 
         return res;

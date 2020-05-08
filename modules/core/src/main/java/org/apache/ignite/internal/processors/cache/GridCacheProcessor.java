@@ -3957,7 +3957,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 IgniteSecurity security = ctx.security();
 
-                if(security.enabled()) {
+                if (security.enabled()) {
                     SecuritySubject subj = security.securityContext().subject();
 
                     batch.securitySubjectId(subj.id());
