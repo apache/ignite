@@ -48,14 +48,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             AssertClientConnectionCount(Client, 3);
             cache.Put(1, 1);
 
-            // Start new node, add to baseline.
+            // Start new node.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+
+            AssertClientConnectionCount(Client, 4);
+            cache.Put(2, 2);
             
+            // Add new node to baseline.
             var cluster = ignite.GetCluster();
             cluster.SetBaselineTopology(cluster.TopologyVersion);
 
             AssertClientConnectionCount(Client, 4);
-            cache.Put(2, 2);
+            cache.Put(3, 3);
 
             // Stop node to remove from baseline (live node can't be removed from baseline).
             ignite.Dispose();
@@ -64,7 +68,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             cluster.SetBaselineTopology(cluster.TopologyVersion);
 
             AssertClientConnectionCount(Client, 3);
-            cache.Put(3, 3);
+            cache.Put(4, 4);
         }
     }
 }
