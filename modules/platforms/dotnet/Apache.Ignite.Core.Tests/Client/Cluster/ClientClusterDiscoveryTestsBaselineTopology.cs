@@ -49,10 +49,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             cache.Put(1, 1);
 
             // Start new node, add to baseline.
-            var ignite = Ignition.Start();
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
             
             var cluster = ignite.GetCluster();
-            cluster.SetBaselineAutoAdjustEnabledFlag(false);
             cluster.SetBaselineTopology(cluster.TopologyVersion);
 
             AssertClientConnectionCount(Client, 4);
@@ -62,8 +61,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             ignite.Dispose();
             
             cluster = Ignition.GetAll().First().GetCluster();
-            cluster.SetBaselineAutoAdjustEnabledFlag(false);
-            cluster.SetBaselineTopology(cluster.ForRemotes().GetNodes());
+            cluster.SetBaselineTopology(cluster.TopologyVersion);
 
             AssertClientConnectionCount(Client, 3);
             cache.Put(3, 3);
