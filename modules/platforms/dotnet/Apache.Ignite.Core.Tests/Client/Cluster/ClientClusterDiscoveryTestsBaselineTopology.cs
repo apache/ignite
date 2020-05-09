@@ -31,11 +31,42 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         {
             base.FixtureSetUp();
 
-            var ignite = Ignition.GetAll().First();
-            var cluster = ignite.GetCluster();
+            var cluster = Ignition.GetAll().First().GetCluster();
 
             cluster.SetBaselineAutoAdjustEnabledFlag(false);
             cluster.SetBaselineTopology(cluster.TopologyVersion);
+        }
+
+        /// <summary>
+        /// Tests client discovery with changing baseline topology. 
+        /// </summary>
+        [Test]
+        public void TestClientDiscoveryWithBaselineTopologyChange()
+        {
+            AssertClientConnectionCount(Client, 3);
+            
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            cache.Put(1, 1);
+
+            // Start new node, add to baseline.
+            var ignite = Ignition.Start();
+            
+            var cluster = ignite.GetCluster();
+            cluster.SetBaselineAutoAdjustEnabledFlag(false);
+            cluster.SetBaselineTopology(cluster.TopologyVersion);
+
+            AssertClientConnectionCount(Client, 4);
+            cache.Put(2, 2);
+
+            // Stop node to remove from baseline (live node can't be removed from baseline).
+            ignite.Dispose();
+            
+            cluster = Ignition.GetAll().First().GetCluster();
+            cluster.SetBaselineAutoAdjustEnabledFlag(false);
+            cluster.SetBaselineTopology(cluster.ForRemotes().GetNodes());
+
+            AssertClientConnectionCount(Client, 3);
+            cache.Put(3, 3);
         }
     }
 }
