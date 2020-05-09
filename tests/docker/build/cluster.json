@@ -1,0 +1,64 @@
+{
+  "_comment": [
+    "Licensed to the Apache Software Foundation (ASF) under one or more",
+    "contributor license agreements.  See the NOTICE file distributed with",
+    "this work for additional information regarding copyright ownership.",
+    "The ASF licenses this file to You under the Apache License, Version 2.0",
+    "(the \"License\"); you may not use this file except in compliance with",
+    "the License.  You may obtain a copy of the License at",
+    "",
+    "http://www.apache.org/licenses/LICENSE-2.0",
+    "",
+    "Unless required by applicable law or agreed to in writing, software",
+    "distributed under the License is distributed on an \"AS IS\" BASIS,",
+    "WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.",
+    "See the License for the specific language governing permissions and",
+    "limitations under the License."
+  ],
+  "nodes": [
+    {
+      "externally_routable_ip": "130.193.62.38",
+      "ssh_config": {
+        "host": "130.193.62.38",
+        "hostname": "ignite-1",
+        "identityfile": "/home/ducker/.ssh/id_rsa_yandex",
+        "password": "",
+        "port": 22,
+        "user": "nizhikov"
+      }
+    },
+    {
+      "externally_routable_ip": "84.201.189.216",
+      "ssh_config": {
+        "host": "84.201.189.216",
+        "hostname": "ignite-2",
+        "identityfile": "/home/ducker/.ssh/id_rsa_yandex",
+        "password": "",
+        "port": 22,
+        "user": "nizhikov"
+      }
+    },
+    {
+      "externally_routable_ip": "130.193.62.6",
+      "ssh_config": {
+        "host": "130.193.62.6",
+        "hostname": "ignite-3",
+        "identityfile": "/home/ducker/.ssh/id_rsa_yandex",
+        "password": "",
+        "port": 22,
+        "user": "nizhikov"
+      }
+    },
+    {
+      "externally_routable_ip": "130.193.62.60",
+      "ssh_config": {
+        "host": "130.193.62.60",
+        "hostname": "ignite-4",
+        "identityfile": "/home/ducker/.ssh/id_rsa_yandex",
+        "password": "",
+        "port": 22,
+        "user": "nizhikov"
+      }
+    }
+  ]
+}
