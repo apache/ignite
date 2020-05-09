@@ -490,7 +490,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             GridTestUtils.runMultiThreaded(
                 () -> {
                     int threadIdx = threadIdxs.incrementAndGet();
-                    
+
                     Random rnd = new Random();
 
                     try {
@@ -498,13 +498,13 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
                         for (int i = 0; i < iterations; i++) {
                             int nodeIdx = rnd.nextInt(GRIDS_CNT);
-                            
+
                             cache.put(threadIdx, i);
-                            
+
                             ClientCompute compute = client.compute(client.cluster().forNodeId(nodeId(nodeIdx)));
-                            
+
                             Future<T2<UUID, Set<UUID>>> fut = compute.executeAsync(TestTask.class.getName(), null);
-                            
+
                             assertEquals((Integer)i, cache.get(threadIdx));
 
                             assertEquals(nodeIds(nodeIdx), fut.get().get2());
@@ -518,7 +518,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
                     catch (InterruptedException | BrokenBarrierException ignore) {
                         // No-op.
                     }
-                    
+
                 }, threadsCnt, "run-task-async");
 
             assertTrue(((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty());
