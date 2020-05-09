@@ -43,9 +43,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         [Test]
         public void TestClientDiscoveryWithBaselineTopologyChange()
         {
-            AssertClientConnectionCount(Client, 3);
-            
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            
+            AssertClientConnectionCount(Client, 3);
             cache.Put(1, 1);
 
             // Start new node, add to baseline.
