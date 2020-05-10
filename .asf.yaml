@@ -29,6 +29,9 @@ github:
     - network-server
     - hadoop
     - sql
+    - cache
+    - in-memory-computing
+    - in-memory-database
   features:
     wiki: false
     issues: false
