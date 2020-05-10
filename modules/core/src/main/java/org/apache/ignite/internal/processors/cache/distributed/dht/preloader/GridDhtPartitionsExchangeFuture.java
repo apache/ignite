@@ -121,6 +121,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
@@ -800,8 +801,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             ExchangeType exchange;
 
             if (exchCtx.exchangeFreeSwitch()) {
-                exchange = isSnapshotOperation(firstDiscoEvt) ? onCustomMessageNoAffinityChange() :
-                    onExchangeFreeSwitchNodeLeft();
+                if (isSnapshotOperation(firstDiscoEvt)) {
+                    // Keep if the cluster was rebalanced.
+                    if (wasRebalanced())
+                        markRebalanced();
+
+                    if (!forceAffReassignment)
+                        cctx.affinity().onCustomMessageNoAffinityChange(this, exchActions);
+
+                    exchange = cctx.kernalContext().clientNode() ? ExchangeType.NONE : ExchangeType.ALL;
+                }
+                else
+                    exchange = onExchangeFreeSwitchNodeLeft();
 
                 initCoordinatorCaches(newCrd);
             }
@@ -1445,6 +1456,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void clientOnlyExchange() throws IgniteCheckedException {
         if (crd != null) {
             assert !crd.isLocal() : crd;
+            assert !exchCtx.exchangeFreeSwitch() : this;
 
             cctx.exchange().exchangerBlockingSectionBegin();
 
@@ -2166,6 +2178,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param oldestNode Oldest node. Target node to send message to.
      */
     private void sendPartitions(ClusterNode oldestNode) {
+        assert !exchCtx.exchangeFreeSwitch() : this;
+
         try {
             sendLocalPartitions(oldestNode);
         }
@@ -2946,7 +2960,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (log.isDebugEnabled())
             log.debug("Single message will be handled on completion of exchange future: " + this);
 
-        listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+        listen(failureHandlerWrapper(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
             @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                 if (cctx.kernalContext().isStopping())
                     return;
@@ -2963,8 +2977,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 if (finishState0 == null) {
-                    assert (firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient())
-                        || isSnapshotOperation(firstDiscoEvt) : GridDhtPartitionsExchangeFuture.this;
+                    assert (firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient()) :
+                        GridDhtPartitionsExchangeFuture.this;
 
                     ClusterNode node = cctx.node(nodeId);
 
@@ -2990,7 +3004,22 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 sendAllPartitionsToNode(finishState0, msg, nodeId);
             }
-        });
+        }));
+    }
+
+    /**
+     * @param clsr Closure to wrap with failure handler.
+     * @return Wrapped closure.
+     */
+    private <T extends IgniteInternalFuture<?>> IgniteInClosure<T> failureHandlerWrapper(IgniteInClosure<T> clsr) {
+        try {
+            return (CI1<T>)clsr::apply;
+        }
+        catch (Error e) {
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw e;
+        }
     }
 
     /**

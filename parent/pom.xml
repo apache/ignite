@@ -868,6 +868,7 @@
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
                                         <exclude>.travis.yml</exclude>
+                                        <exclude>.github/PULL_REQUEST_TEMPLATE.md</exclude>
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
                                         <exclude>**/DEVNOTES*.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>

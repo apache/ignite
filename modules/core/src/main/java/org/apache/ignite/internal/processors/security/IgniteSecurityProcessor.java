@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -67,6 +68,9 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
  * </ul>
  */
 public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
+    /**  */
+    private static final String FAILED_OBTAIN_SEC_CTX_MSG = "Failed to obtain a security context.";
+
     /** Internal attribute name constant. */
     public static final String ATTR_GRID_SEC_PROC_CLASS = "grid.security.processor.class";
 
@@ -92,6 +96,9 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Must use JDK marshaller for Security Subject. */
     private final JdkMarshaller marsh;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Map of security contexts. Key is the node's id. */
     private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
 
@@ -110,6 +117,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         this.secPrc = secPrc;
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+        log = ctx.log(getClass());
     }
 
     /** {@inheritDoc} */
@@ -125,17 +133,29 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID subjId) {
-        ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
-            .orElseGet(() -> ctx.discovery().historicalNode(subjId));
+        try {
+            ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
+                .orElseGet(() -> ctx.discovery().historicalNode(subjId));
 
-        SecurityContext res = node != null ? secCtxs.computeIfAbsent(subjId,
-            uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node))
-            : secPrc.securityContext(subjId);
+            SecurityContext res = node != null ? secCtxs.computeIfAbsent(subjId,
+                uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node))
+                : secPrc.securityContext(subjId);
 
-        if (res == null)
-            throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
+            if (res != null)
+                return withContext(res);
+        }
+        catch (Throwable e) {
+            log.error(FAILED_OBTAIN_SEC_CTX_MSG, e);
 
-        return withContext(res);
+            throw e;
+        }
+
+        IllegalStateException error = new IllegalStateException("Failed to find security context " +
+            "for subject with given ID : " + subjId);
+
+        log.error(FAILED_OBTAIN_SEC_CTX_MSG, error);
+
+        throw error;
     }
 
     /** {@inheritDoc} */
@@ -210,7 +230,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         }
         else {
             if (secPrc.sandboxEnabled()) {
-                ctx.log(getClass()).warning("GridSecurityProcessor#sandboxEnabled returns true, " +
+                log.warning("GridSecurityProcessor#sandboxEnabled returns true, " +
                     "but system SecurityManager is not defined, " +
                     "that may be a cause of security lack when IgniteCompute or IgniteCache operations perform.");
             }
