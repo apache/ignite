@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.springdata.IgniteSpringDataCrudSelfExpressionTest;
 import org.apache.ignite.springdata.IgniteSpringDataCrudSelfTest;
 import org.apache.ignite.springdata.IgniteSpringDataQueriesSelfTest;
+import org.apache.ignite.springdata22.repository.query.IgniteQueryGeneratorTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -30,7 +31,8 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     IgniteSpringDataCrudSelfTest.class,
     IgniteSpringDataQueriesSelfTest.class,
-    IgniteSpringDataCrudSelfExpressionTest.class
+    IgniteSpringDataCrudSelfExpressionTest.class,
+    IgniteQueryGeneratorTest.class
 })
 public class IgniteSpringData22TestSuite {
 }
