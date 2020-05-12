@@ -19,21 +19,38 @@ package org.apache.ignite.internal.binary;
 
 import java.io.Serializable;
 
-final class BinaryObjectArray implements Serializable {
+/**
+ * Binary object array.
+ */
+public final class BinaryObjectArray implements Serializable {
+    /** */
     private static final long serialVersionUID = 0L;
 
+    /** Item type id. */
     private final int itemTypeId;
+
+    /** Items. */
     private final Object[] items;
 
+    /**
+     * @param itemTypeId Item type id.
+     * @param items Items.
+     */
     BinaryObjectArray(int itemTypeId, Object[] items) {
         this.itemTypeId = itemTypeId;
         this.items = items;
     }
 
+    /**
+     * @return item type id.
+     */
     public int itemTypeId() {
         return itemTypeId;
     }
 
+    /**
+     * @return items.
+     */
     public Object[] items() {
         return items;
     }
