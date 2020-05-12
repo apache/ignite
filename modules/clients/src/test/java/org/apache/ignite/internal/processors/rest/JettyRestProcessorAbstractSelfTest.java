@@ -188,8 +188,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
 
-        U.clearClassCache();
-
         super.afterTestsStopped();
     }
 
