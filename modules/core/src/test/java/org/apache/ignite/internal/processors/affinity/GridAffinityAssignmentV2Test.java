@@ -203,7 +203,7 @@ public class GridAffinityAssignmentV2Test {
     public void testBackupsMoreThanThreshold() {
         List<ClusterNode> nodes = new ArrayList<>();
 
-        for(int i = 0; i < 10; i++)
+        for (int i = 0; i < 10; i++)
             nodes.add(node(metrics, ver, "1" + i));
 
         GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
@@ -225,7 +225,7 @@ public class GridAffinityAssignmentV2Test {
     public void testSerialization() throws IOException, ClassNotFoundException {
         List<ClusterNode> nodes = new ArrayList<>();
 
-        for(int i = 0; i < 10; i++)
+        for (int i = 0; i < 10; i++)
             nodes.add(node(metrics, ver, "1" + i));
 
         GridAffinityAssignmentV2 gridAffinityAssignment2 = new GridAffinityAssignmentV2(

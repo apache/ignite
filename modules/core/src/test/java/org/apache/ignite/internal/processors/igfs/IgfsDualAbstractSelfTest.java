@@ -1100,7 +1100,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      */
     @Test
     public void testUpdatePathMissingPartially() throws Exception {
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         Map<String, String> propsSubDir = properties("subDirOwner", "subDirGroup", "0555");
@@ -1132,7 +1132,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      */
     @Test
     public void testUpdatePathMissing() throws Exception {
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         Map<String, String> propsSubDir = properties("subDirOwner", "subDirGroup", "0555");

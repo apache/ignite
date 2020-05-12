@@ -844,7 +844,7 @@ public class HadoopExternalCommunication {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable protected HadoopCommunicationClient createNioClient(HadoopProcessDescriptor desc)
-        throws  IgniteCheckedException {
+        throws IgniteCheckedException {
         assert desc != null;
 
         int shmemPort = desc.sharedMemoryPort();

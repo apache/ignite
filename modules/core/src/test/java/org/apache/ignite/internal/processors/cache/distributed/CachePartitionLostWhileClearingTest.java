@@ -160,7 +160,7 @@ public class CachePartitionLostWhileClearingTest extends GridCommonAbstractTest 
     private void load(IgniteEx ignite, String cache, int partId, int cnt, int skip) {
         List<Integer> keys = partitionKeys(ignite.cache(cache), partId, cnt, skip);
 
-        try(IgniteDataStreamer<Object, Object> s = ignite.dataStreamer(cache)) {
+        try (IgniteDataStreamer<Object, Object> s = ignite.dataStreamer(cache)) {
             for (Integer key : keys)
                 s.addData(key, key);
         }

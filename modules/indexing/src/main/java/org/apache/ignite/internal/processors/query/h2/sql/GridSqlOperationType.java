@@ -58,9 +58,8 @@ public enum GridSqlOperationType {
     LIKE(2, new BiExpressionSqlGenerator("LIKE")),
 
     IN(-1, new ConditionInSqlGenerator()),
-    EXISTS(1, new PrefixSqlGenerator("EXISTS", false)),
+    EXISTS(1, new PrefixSqlGenerator("EXISTS", false));
 
-    ;
     /** */
     private final SqlGenerator sqlGenerator;
 

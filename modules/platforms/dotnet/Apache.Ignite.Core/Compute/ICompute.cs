@@ -341,6 +341,41 @@ namespace Apache.Ignite.Core.Compute
             CancellationToken cancellationToken);
 
         /// <summary>
+        /// Executes given job on the node where data for provided partition is located.
+        /// </summary>
+        /// <param name="cacheNames">Names of the caches to reserve the partition in.
+        /// The first cache is used for affinity co-location.</param>
+        /// <param name="partition">Partition number.</param>
+        /// <param name="func">Job to execute.</param>
+        /// <returns>Job result for this execution.</returns>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
+        TRes AffinityCall<TRes>(IEnumerable<string> cacheNames, int partition, IComputeFunc<TRes> func);
+
+        /// <summary>
+        /// Executes given job on the node where data for provided partition is located.
+        /// </summary>
+        /// <param name="cacheNames">Names of the caches to reserve the partition in.
+        /// The first cache is used for affinity co-location.</param>
+        /// <param name="partition">Partition number.</param>
+        /// <param name="func">Job to execute.</param>
+        /// <returns>Job result for this execution.</returns>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
+        Task<TRes> AffinityCallAsync<TRes>(IEnumerable<string> cacheNames, int partition, IComputeFunc<TRes> func);
+
+        /// <summary>
+        /// Executes given job on the node where data for provided partition is located.
+        /// </summary>
+        /// <param name="cacheNames">Names of the caches to reserve the partition in.
+        /// The first cache is used for affinity co-location.</param>
+        /// <param name="partition">Partition number.</param>
+        /// <param name="func">Job to execute.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>Job result for this execution.</returns>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
+        Task<TRes> AffinityCallAsync<TRes>(IEnumerable<string> cacheNames, int partition, IComputeFunc<TRes> func, 
+            CancellationToken cancellationToken);
+
+        /// <summary>
         /// Executes collection of jobs on nodes within this grid projection.
         /// </summary>
         /// <param name="clos">Collection of jobs to execute.</param>
@@ -532,6 +567,38 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>Task.</returns>
         Task AffinityRunAsync(string cacheName, object affinityKey, IComputeAction action, 
+            CancellationToken cancellationToken);
+        
+        /// <summary>
+        /// Executes given job on the node where data for provided partition is located
+        /// (a.k.a. affinity co-location).
+        /// </summary>
+        /// <param name="cacheNames">Names of the caches to reserve the partition in.
+        /// The first cache is used for affinity co-location.</param>
+        /// <param name="partition">Partition number.</param>
+        /// <param name="action">Job to execute.</param>
+        void AffinityRun(IEnumerable<string> cacheNames, int partition, IComputeAction action);
+
+        /// <summary>
+        /// Executes given job on the node where data for provided partition is located
+        /// (a.k.a. affinity co-location).
+        /// </summary>
+        /// <param name="cacheNames">Names of the caches to reserve the partition in.
+        /// The first cache is used for affinity co-location.</param>
+        /// <param name="partition">Partition number.</param>
+        /// <param name="action">Job to execute.</param>
+        Task AffinityRunAsync(IEnumerable<string> cacheNames, int partition, IComputeAction action);
+
+        /// <summary>
+        /// Executes given job on the node where data for provided partition is located
+        /// (a.k.a. affinity co-location).
+        /// </summary>
+        /// <param name="cacheNames">Names of the caches to reserve the partition in.
+        /// The first cache is used for affinity co-location.</param>
+        /// <param name="partition">Partition number.</param>
+        /// <param name="action">Job to execute.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        Task AffinityRunAsync(IEnumerable<string> cacheNames, int partition, IComputeAction action, 
             CancellationToken cancellationToken);
 
         /// <summary>

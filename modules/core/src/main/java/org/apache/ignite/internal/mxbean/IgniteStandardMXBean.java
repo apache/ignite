@@ -64,7 +64,7 @@ public class IgniteStandardMXBean extends StandardMBean {
     /**
      * Static constructor.
      */
-    static{
+    static {
         primCls.put(Boolean.TYPE.toString().toLowerCase(), Boolean.TYPE);
         primCls.put(Character.TYPE.toString().toLowerCase(), Character.TYPE);
         primCls.put(Byte.TYPE.toString().toLowerCase(), Byte.TYPE);

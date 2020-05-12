@@ -33,7 +33,7 @@ public class GridCacheAtomicCommandHandlerSelfTest extends GridCacheCommandHandl
     /**
      * @return CacheAtomicityMode for the cache.
      */
-    @Override protected CacheAtomicityMode atomicityMode(){
+    @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.ATOMIC;
     }
 }

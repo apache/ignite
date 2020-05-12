@@ -102,7 +102,7 @@ public class VisorThreadInfo extends VisorDataTransferObject {
         id = ti.getThreadId();
         state = ti.getThreadState();
         lock = ti.getLockInfo() != null ? new VisorThreadLockInfo(ti.getLockInfo()) : null;
-        lockName =ti.getLockName();
+        lockName = ti.getLockName();
         lockOwnerId = ti.getLockOwnerId();
         lockOwnerName = ti.getLockOwnerName();
         inNative = ti.isInNative();

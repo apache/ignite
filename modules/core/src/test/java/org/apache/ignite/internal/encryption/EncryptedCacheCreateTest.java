@@ -123,8 +123,8 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
         String encValPart = "AAAAAAAAAA";
         String plainValPart = "BBBBBBBBBB";
 
-        StringBuilder longEncVal = new StringBuilder(encValPart.length()*100);
-        StringBuilder longPlainVal = new StringBuilder(plainValPart.length()*100);
+        StringBuilder longEncVal = new StringBuilder(encValPart.length() * 100);
+        StringBuilder longPlainVal = new StringBuilder(plainValPart.length() * 100);
 
         for (int i = 0; i < 100; i++) {
             longEncVal.append(encValPart);

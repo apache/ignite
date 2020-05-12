@@ -177,7 +177,7 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
 
     /** {@inheritDoc} */
     @Override public void onReadLock(int structureId, long pageId, long page, long pageAddr) {
-        if (checkFailedLock(pageAddr) ||isInvalid())
+        if (checkFailedLock(pageAddr) || isInvalid())
             return;
 
         lock();
@@ -223,7 +223,7 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     }
 
     /** */
-    private boolean checkFailedLock(long pageAddr){
+    private boolean checkFailedLock(long pageAddr) {
         if (pageAddr == 0) {
             this.nextOp = 0;
             this.nextOpStructureId = 0;
@@ -241,7 +241,7 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     }
 
     /** */
-    protected void free(){
+    protected void free() {
         pages.free();
     }
 
@@ -297,7 +297,7 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     /**
      * @return Number of locks operations.
      */
-    public long operationsCounter(){
+    public long operationsCounter() {
         // Read  volatile for thread safety.
         boolean locked = this.locked;
 

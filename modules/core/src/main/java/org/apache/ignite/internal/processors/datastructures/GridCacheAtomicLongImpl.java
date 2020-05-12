@@ -93,7 +93,7 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
     @Override public long incrementAndGet() {
         checkRemoved();
 
-        try{
+        try {
             EntryProcessorResult<Long> res = cacheView.invoke(key, IncrementAndGetProcessor.INSTANCE);
 
             assert res != null && res.get() != null : res;

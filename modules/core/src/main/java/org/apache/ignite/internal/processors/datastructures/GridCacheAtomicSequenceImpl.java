@@ -355,7 +355,7 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
                     return curLocVal;
                 }
                 catch (Error | Exception e) {
-                    if(!X.hasCause(e, ClusterTopologyCheckedException.class))
+                    if (!X.hasCause(e, ClusterTopologyCheckedException.class))
                         U.error(log, "Failed to get and add: " + this, e);
 
                     throw e;

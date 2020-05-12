@@ -261,7 +261,7 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
     /**
      * @param dir Directory to clean.
      */
-    private static void cleanDirectory(File dir){
+    private static void cleanDirectory(File dir) {
         File[] entries = dir.listFiles();
 
         if (entries != null) {

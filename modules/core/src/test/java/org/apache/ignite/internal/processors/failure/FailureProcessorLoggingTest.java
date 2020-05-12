@@ -46,11 +46,11 @@ public class FailureProcessorLoggingTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TestFailureHandler hnd = new TestFailureHandler(false);
 
-        testLog = new CustomTestLogger(false, log);
+        testLog = new CustomTestLogger(log);
 
         hnd.setIgnoredFailureTypes(ImmutableSet.of(FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT, FailureType.SYSTEM_WORKER_BLOCKED));
 
@@ -150,11 +150,10 @@ public class FailureProcessorLoggingTest extends GridCommonAbstractTest {
         private String expThreadDumpMsg;
 
         /**
-         * @param dbg Dbg.
          * @param echo Echo.
          */
-        public CustomTestLogger(boolean dbg, @Nullable IgniteLogger echo) {
-            super(dbg, echo);
+        public CustomTestLogger(@Nullable IgniteLogger echo) {
+            super(echo);
         }
 
         /** {@inheritDoc} */
