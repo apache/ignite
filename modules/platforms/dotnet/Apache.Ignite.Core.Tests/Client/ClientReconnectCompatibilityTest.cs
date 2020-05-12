@@ -64,7 +64,10 @@ namespace Apache.Ignite.Core.Tests.Client
                     Assert.AreEqual(42, cache.Get(1));
                     Assert.IsFalse(client.GetConfiguration().EnablePartitionAwareness);
 
-                    var log = ((ListLogger) client.GetConfiguration().Logger).Entries.Last();
+                    var log = ((ListLogger) client.GetConfiguration().Logger).Entries
+                        .FirstOrDefault(e => e.Message.StartsWith("Partition"));
+
+                    Assert.IsNotNull(log);
                     Assert.AreEqual("Partition awareness has been disabled: " +
                                     "server protocol version 1.0.0 is lower than required 1.4.0", log.Message);
                 }
