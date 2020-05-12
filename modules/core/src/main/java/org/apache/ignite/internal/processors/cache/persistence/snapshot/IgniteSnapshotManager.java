@@ -1092,7 +1092,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (mappings == null)
                 return;
 
-            saveMappings(cctx.kernalContext(), mappings, snpLocDir);
+            try {
+                saveMappings(cctx.kernalContext(), mappings, snpLocDir);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /** {@inheritDoc} */
