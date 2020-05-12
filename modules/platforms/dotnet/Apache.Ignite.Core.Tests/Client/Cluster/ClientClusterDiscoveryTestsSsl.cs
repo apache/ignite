@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Client.Cache
+namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
     using NUnit.Framework;
 
     /// <summary>
-    /// SSL cache test.
+    /// Tests client discovery with SSL enabled.
     /// </summary>
     [TestFixture]
-    public sealed class CacheTestSsl : CacheTest
+    public class ClientClusterDiscoveryTestsSsl : ClientClusterDiscoveryTestsBase
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheTestSsl"/> class.
+        /// Initializes a new instance of <see cref="ClientClusterDiscoveryTestsSsl"/> class.
         /// </summary>
-        public CacheTestSsl() : base(1, true)
+        public ClientClusterDiscoveryTestsSsl() : base(false, true)
         {
-            //No-op.
+            // No-op.
         }
     }
 }

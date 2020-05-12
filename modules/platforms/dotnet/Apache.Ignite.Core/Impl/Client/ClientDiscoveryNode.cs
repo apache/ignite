@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,47 +17,59 @@
 
 namespace Apache.Ignite.Core.Impl.Client
 {
-    using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Binary.IO;
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
 
     /// <summary>
-    /// Request context.
+    /// Represents a discovered node.
     /// </summary>
-    internal sealed class ClientRequestContext : ClientContextBase
+    internal class ClientDiscoveryNode
     {
         /** */
-        private BinaryWriter _writer;
+        private readonly Guid _id;
+
+        /** */
+        private readonly int _port;
+        
+        /** */
+        private readonly IList<string> _addresses;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="ClientRequestContext"/> class.
+        /// Initializes a new instance of <see cref="ClientDiscoveryNode"/>.
         /// </summary>
-        /// <param name="stream">Stream.</param>
-        /// <param name="marshaller">Marshaller.</param>
-        /// <param name="features">Features supported by this request.</param>
-        public ClientRequestContext(IBinaryStream stream, Marshaller marshaller, ClientFeatures features)
-            : base(stream, marshaller, features)
-
+        public ClientDiscoveryNode(Guid id, int port, IList<string> addresses)
         {
-            // No-op.
+            Debug.Assert(addresses != null);
+            Debug.Assert(addresses.Count > 0);
+            
+            _id = id;
+            _port = port;
+            _addresses = addresses;
         }
 
         /// <summary>
-        /// Writer.
+        /// Gets the id.
         /// </summary>
-        public BinaryWriter Writer
+        public Guid Id
         {
-            get { return _writer ?? (_writer = Marshaller.StartMarshal(Stream)); }
+            get { return _id; }
         }
 
         /// <summary>
-        /// Finishes marshal session for this request (if any).
+        /// Gets the port.
         /// </summary>
-        public void FinishMarshal()
+        public int Port
         {
-            if (_writer != null)
-            {
-                Marshaller.FinishMarshal(_writer);
-            }
+            get { return _port; }
+        }
+
+        /// <summary>
+        /// Gets the addresses - IPs or host names.
+        /// </summary>
+        public IList<string> Addresses
+        {
+            get { return _addresses; }
         }
     }
 }
