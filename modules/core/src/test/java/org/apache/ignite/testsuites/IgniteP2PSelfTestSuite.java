@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.RaceOnDeployClassesWithSameAliases;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentMessageCountSelfTest;
 import org.apache.ignite.p2p.DeploymentClassLoaderCallableTest;
 import org.apache.ignite.p2p.GridP2PClassLoadingSelfTest;
@@ -84,6 +85,7 @@ public class IgniteP2PSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(P2PScanQueryUndeployTest.class));
         suite.addTest(new TestSuite(GridP2PComputeWithNestedEntryProcessorTest.class));
         suite.addTest(new TestSuite(GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest.class));
+        suite.addTest(new TestSuite(RaceOnDeployClassesWithSameAliases.class));
         GridTestUtils.addTestIfNeeded(suite, GridDeploymentMessageCountSelfTest.class, ignoredTests);
 
         return suite;

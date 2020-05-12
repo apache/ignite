@@ -184,40 +184,43 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                 return null;
             }
 
-            try {
-                // Check that class can be loaded.
-                String clsName = meta.className();
+            while (true) {
+                try {
+                    // Check that class can be loaded.
+                    String clsName = meta.className();
 
-                Class<?> cls = U.forName(clsName != null ? clsName : alias, ldr);
+                    Class<?> cls = U.forName(clsName != null ? clsName : alias, ldr);
 
-                spi.register(ldr, cls);
+                    spi.register(ldr, cls);
 
-                rsrc = spi.findResource(cls.getName());
+                    rsrc = spi.findResource(cls.getName());
 
-                if (rsrc != null && rsrc.getResourceClass().equals(cls)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Retrieved auto-loaded resource from spi: " + rsrc);
+                    if (rsrc != null && rsrc.getResourceClass().equals(cls)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Retrieved auto-loaded resource from spi: " + rsrc);
 
-                    dep = deploy(ctx.config().getDeploymentMode(), ldr, cls, meta.alias(), meta.record());
+                        dep = deploy(ctx.config().getDeploymentMode(), ldr, cls, meta.alias(), meta.record());
 
-                    assert dep != null;
+                        if (dep != null)
+                            return dep;
+                    }
+                    else {
+                        U.warn(log, "Failed to find resource from deployment SPI even after registering: " + meta);
+
+                        return null;
+                    }
                 }
-                else {
-                    U.warn(log, "Failed to find resource from deployment SPI even after registering: " + meta);
+                catch (ClassNotFoundException ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to load class for local auto-deployment [ldr=" + ldr + ", meta=" + meta + ']');
 
                     return null;
                 }
-            }
-            catch (ClassNotFoundException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to load class for local auto-deployment [ldr=" + ldr + ", meta=" + meta + ']');
+                catch (IgniteSpiException e) {
+                    U.error(log, "Failed to deploy local class with meta: " + meta, e);
 
-                return null;
-            }
-            catch (IgniteSpiException e) {
-                U.error(log, "Failed to deploy local class with meta: " + meta, e);
-
-                return null;
+                    return null;
+                }
             }
         }
 
@@ -353,16 +356,20 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             if (clsLdr.getClass().equals(GridDeploymentClassLoader.class))
                 clsLdr = clsLdr.getParent();
 
-            spi.register(clsLdr, cls);
+            GridDeployment dep = null;
 
-            GridDeployment dep = deployment(cls.getName());
+            while (dep == null) {
+                spi.register(clsLdr, cls);
 
-            if (dep == null) {
-                DeploymentResource rsrc = spi.findResource(cls.getName());
+                dep = deployment(cls.getName());
 
-                if (rsrc != null && rsrc.getClassLoader() == clsLdr)
-                    dep = deploy(ctx.config().getDeploymentMode(), rsrc.getClassLoader(),
-                        rsrc.getResourceClass(), rsrc.getName(), true);
+                if (dep == null) {
+                    DeploymentResource rsrc = spi.findResource(cls.getName());
+
+                    if (rsrc != null && rsrc.getClassLoader() == clsLdr)
+                        dep = deploy(ctx.config().getDeploymentMode(), rsrc.getClassLoader(),
+                            rsrc.getResourceClass(), rsrc.getName(), true);
+                }
             }
 
             return dep;
