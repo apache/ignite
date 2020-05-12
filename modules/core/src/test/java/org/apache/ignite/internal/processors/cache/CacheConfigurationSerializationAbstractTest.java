@@ -107,6 +107,8 @@ public class CacheConfigurationSerializationAbstractTest extends GridCommonAbstr
         return new CacheConfiguration("cache-" + getTestIgniteInstanceName(nodeIdx))
                 .setNodeFilter(new OnlyOneNodeFilter(getTestIgniteInstanceName(nodeIdx)))
                 .setWriteBehindEnabled(true)
+                .setWriteThrough(true)
+                .setReadThrough(true)
                 .setCacheStoreFactory(FactoryBuilder.factoryOf(GridCacheTestStore.class));
     }
 
