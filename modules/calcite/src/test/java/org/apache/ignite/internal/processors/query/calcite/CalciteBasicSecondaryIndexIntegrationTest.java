@@ -28,18 +28,25 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 /**
- * TODO: return empty result.
+ * Basic index tests.
  */
 public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstractTest {
+    private static final String PK = IgniteTable.PK_INDEX_NAME;
+    private static final String PK_ALIAS = IgniteTable.PK_ALIAS_INDEX_NAME;
+    private static final String DEPID_IDX =  "DEPID_IDX";
+    private static final String NAME_CITY_IDX =  "NAME_CITY_IDX";
+    private static final String NAME_DEPID_CITY_IDX =  "NAME_DEPID_CITY_IDX";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -56,17 +63,20 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         projEntity.addQueryField("age", Integer.class.getName(), null);
 
         QueryIndex simpleIdx = new QueryIndex("depId", true);
+        simpleIdx.setName(DEPID_IDX);
 
         LinkedHashMap<String, Boolean> fields1 = new LinkedHashMap<>();
         fields1.put("name", false);
-        fields1.put("age", false);
+        fields1.put("city", false);
         QueryIndex complexIdxNameId = new QueryIndex(fields1, QueryIndexType.SORTED);
+        complexIdxNameId.setName(NAME_CITY_IDX);
 
         LinkedHashMap<String, Boolean> fields2 = new LinkedHashMap<>();
         fields2.put("name", true);
         fields2.put("depId", false);
-        fields2.put("age", false);
+        fields2.put("city", false);
         QueryIndex complexIdxNameVer = new QueryIndex(fields2, QueryIndexType.SORTED);
+        complexIdxNameVer.setName(NAME_DEPID_CITY_IDX);
 
         projEntity.setIndexes(asList(simpleIdx, complexIdxNameId, complexIdxNameVer));
         projEntity.setTableName("Developer");
@@ -98,7 +108,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testNoFilter() {
         checkQuery("SELECT * FROM Developer",
-            "PUBLIC, DEVELOPER", "PK", false,
+            "PUBLIC, DEVELOPER", PK, false,
             asList(
                 asList(1, "Mozart", 3, "Vienna", 33),
                 asList(2, "Beethoven", 2, "Vienna", 44),
@@ -113,7 +123,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnEqualsFilter() {
         checkQuery("SELECT * FROM Developer WHERE _key=1",
-            "PUBLIC, DEVELOPER", "PK", false,
+            "PUBLIC, DEVELOPER", PK, false,
             singletonList(asList(1, "Mozart", 3, "Vienna", 33))
         );
     }
@@ -122,7 +132,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnGreaterThanFilter() {
         checkQuery("SELECT * FROM Developer WHERE _key>3",
-            "PUBLIC, DEVELOPER", "PK", false,
+            "PUBLIC, DEVELOPER", PK, false,
             singletonList(asList(4, "Strauss", 2, "Munich", 66))
         );
     }
@@ -131,7 +141,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnGreaterThanOrEqualsFilter() {
         checkQuery("SELECT * FROM Developer WHERE _key>=?",
-            "PUBLIC, DEVELOPER", "PK", false,
+            "PUBLIC, DEVELOPER", PK, false,
             asList(
                 asList(3, "Bach", 1, "Leipzig", 55),
                 asList(4, "Strauss", 2, "Munich", 66)),
@@ -143,7 +153,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnLessThanFilter() {
         checkQuery("SELECT * FROM Developer WHERE _key<?",
-            "PUBLIC, DEVELOPER", "PK", false,
+            "PUBLIC, DEVELOPER", PK, false,
             asList(
                 asList(1, "Mozart", 3, "Vienna", 33),
                 asList(2, "Beethoven", 2, "Vienna", 44)),
@@ -155,7 +165,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyColumnLessThanOrEqualsFilter() {
         checkQuery("SELECT * FROM Developer WHERE _key<=2",
-            "PUBLIC, DEVELOPER", "PK", false,
+            "PUBLIC, DEVELOPER", PK, false,
             asList(
                 asList(1, "Mozart", 3, "Vienna", 33),
                 asList(2, "Beethoven", 2, "Vienna", 44))
@@ -168,7 +178,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasEqualsFilter() {
         checkQuery("SELECT * FROM Developer WHERE id=2",
-            "PUBLIC, DEVELOPER", "PK_ALIAS", false,
+            "PUBLIC, DEVELOPER", PK_ALIAS, false,
             singletonList(asList(2, "Beethoven", 2, "Vienna", 44))
         );
     }
@@ -177,7 +187,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasGreaterThanFilter() {
         checkQuery("SELECT * FROM Developer WHERE id>?",
-            "PUBLIC, DEVELOPER", "PK_ALIAS", false,
+            "PUBLIC, DEVELOPER", PK_ALIAS, false,
             singletonList(asList(4, "Strauss", 2, "Munich", 66)),
             3
         );
@@ -187,7 +197,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasGreaterThanOrEqualsFilter() {
         checkQuery("SELECT * FROM Developer WHERE id>=3",
-            "PUBLIC, DEVELOPER", "PK_ALIAS", false,
+            "PUBLIC, DEVELOPER", PK_ALIAS, false,
             asList(
                 asList(3, "Bach", 1, "Leipzig", 55),
                 asList(4, "Strauss", 2, "Munich", 66))
@@ -198,7 +208,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasLessThanFilter() {
         checkQuery("SELECT * FROM Developer WHERE id<3",
-            "PUBLIC, DEVELOPER", "PK_ALIAS", false,
+            "PUBLIC, DEVELOPER", PK_ALIAS, false,
             asList(
                 asList(1, "Mozart", 3, "Vienna", 33),
                 asList(2, "Beethoven", 2, "Vienna", 44))
@@ -209,7 +219,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testKeyAliasLessThanOrEqualsFilter() {
         checkQuery("SELECT * FROM Developer WHERE id<=2",
-            "PUBLIC, DEVELOPER", "PK_ALIAS", false,
+            "PUBLIC, DEVELOPER", PK_ALIAS, false,
             asList(
                 asList(1, "Mozart", 3, "Vienna", 33),
                 asList(2, "Beethoven", 2, "Vienna", 44))
@@ -222,7 +232,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testIndexedFieldEqualsFilter() {
         checkQuery("SELECT * FROM Developer WHERE depId=2",
-            "PUBLIC, DEVELOPER", "DEVELOPER_DEPID_ASC_IDX", false,
+            "PUBLIC, DEVELOPER", DEPID_IDX, false,
             asList(
                 asList(2, "Beethoven", 2, "Vienna", 44),
                 asList(4, "Strauss", 2, "Munich", 66))
@@ -233,7 +243,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testIndexedFieldGreaterThanFilter() {
         checkQuery("SELECT * FROM Developer WHERE depId>2",
-            "PUBLIC, DEVELOPER", "DEVELOPER_DEPID_ASC_IDX", false,
+            "PUBLIC, DEVELOPER", DEPID_IDX, false,
             singletonList(asList(1, "Mozart", 3, "Vienna", 33)),
             3
         );
@@ -243,7 +253,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testIndexedFieldGreaterThanOrEqualsFilter() {
         checkQuery("SELECT * FROM Developer WHERE depId>=2",
-            "PUBLIC, DEVELOPER", "DEVELOPER_DEPID_ASC_IDX", false,
+            "PUBLIC, DEVELOPER", DEPID_IDX, false,
             asList(
                 asList(1, "Mozart", 3, "Vienna", 33),
                 asList(2, "Beethoven", 2, "Vienna", 44),
@@ -255,7 +265,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testIndexedFieldLessThanFilter() {
         checkQuery("SELECT * FROM Developer WHERE depId<?",
-            "PUBLIC, DEVELOPER", "DEVELOPER_DEPID_ASC_IDX", false,
+            "PUBLIC, DEVELOPER", DEPID_IDX, false,
             asList(
                 asList(2, "Beethoven", 2, "Vienna", 44),
                 asList(3, "Bach", 1, "Leipzig", 55),
@@ -268,7 +278,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testIndexedFieldLessThanOrEqualsFilter() {
         checkQuery("SELECT * FROM Developer WHERE depId<=?",
-            "PUBLIC, DEVELOPER", "DEVELOPER_DEPID_ASC_IDX", false,
+            "PUBLIC, DEVELOPER", DEPID_IDX, false,
             asList(
                 asList(2, "Beethoven", 2, "Vienna", 44),
                 asList(3, "Bach", 1, "Leipzig", 55),
@@ -283,7 +293,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testNonIndexedFieldEqualsFilter() {
         checkQuery("SELECT * FROM Developer WHERE age=?",
-            "PUBLIC, DEVELOPER", "PK", false,
+            "PUBLIC, DEVELOPER", PK, false,
             asList(
                 asList(2, "Beethoven", 2, "Vienna", 44)),
             44
@@ -294,7 +304,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testNonIndexedFieldGreaterThanFilter() {
         checkQuery("SELECT * FROM Developer WHERE age>?",
-            "PUBLIC, DEVELOPER", "PK", false,
+            "PUBLIC, DEVELOPER", PK, false,
             asList(
                 asList(3, "Bach", 1, "Leipzig", 55),
                 asList(4, "Strauss", 2, "Munich", 66)),
@@ -306,7 +316,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testNonIndexedFieldGreaterThanOrEqualsFilter() {
         checkQuery("SELECT * FROM Developer WHERE age>=?",
-            "PUBLIC, DEVELOPER", "PK", false,
+            "PUBLIC, DEVELOPER", PK, false,
             asList(
                 asList(2, "Beethoven", 2, "Vienna", 44),
                 asList(3, "Bach", 1, "Leipzig", 55),
@@ -319,7 +329,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testNonIndexedFieldLessThanFilter() {
         checkQuery("SELECT * FROM Developer WHERE age<?",
-            "PUBLIC, DEVELOPER", "PK", false,
+            "PUBLIC, DEVELOPER", PK, false,
             asList(
                 asList(1, "Mozart", 3, "Vienna", 33),
                 asList(2, "Beethoven", 2, "Vienna", 44),
@@ -332,7 +342,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testNonIndexedFieldLessThanOrEqualsFilter() {
         checkQuery("SELECT * FROM Developer WHERE age<=?",
-            "PUBLIC, DEVELOPER", "PK", false,
+            "PUBLIC, DEVELOPER", PK, false,
             asList(
                 asList(1, "Mozart", 3, "Vienna", 33),
                 asList(2, "Beethoven", 2, "Vienna", 44),
@@ -341,77 +351,178 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         );
     }
 
-//
-//    @Test
-//    public void testNameFilter() {
-//        checkQuery("PUBLIC, DEVELOPER", "DEVELOPER_NAME_DESC_AGE_DESC_IDX",
-//            "SELECT * FROM Developer WHERE name='Ignite'");
-//    }
-//
-//    @Test
-//    public void testVerNameIdx_VerFilter() {
-//        checkQuery("PUBLIC, DEVELOPER", "PROJECT_VER_DESC_NAME_ASC_ID_DESC_IDX",
-//            "SELECT * FROM Developer WHERE ver=? AND name=?");
-//    }
-//
-//    @Test
-//    public void testVerNameIdIdx_VerFilter() {
-//        checkQuery("PUBLIC, DEVELOPER", "PROJECT_VER_DESC_NAME_ASC_ID_DESC_IDX",
-//            "SELECT * FROM Developer WHERE ver=? AND name=?");
-//    }
-//
-//    @Test
-//    public void testNameIdx_NameFilterQuery() {
-//        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
-//
-//        List<FieldsQueryCursor<List<?>>> cursors =
-//            engine.query(null, "PUBLIC", "SELECT * FROM Developer WHERE name=?", "Mozart");
-//
-//        FieldsQueryCursor<List<?>> cur = cursors.get(0);
-//
-//        List<List<?>> res = cur.getAll();
-//
-//        System.out.println("res===" + res);
-//    }
+    // ===== non-indexed field filter =====
 
-//    @Test
-//    public void testIndexSortedness() {
-//        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
-//
-//        System.out.println("No sort: scan should be selected.");
-//        List<FieldsQueryCursor<List<?>>> cursors = engine.query(null, "PUBLIC", "SELECT * FROM Project");
-//
-//        for (List<?> row :  cursors.get(0))
-//            System.out.println(row);
-//
-////        System.out.println("Sort is in the same direction as index: index scan should be selected.");
-////        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project ORDER BY name");
-////
-////        System.out.println("Sort is in the opposite direction as index: table scan with sort should be selected.");
-////        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project ORDER BY name DESC");
-//    }
+    /** */
+    @Test
+    public void testComplexIndexCondition1() {
+        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3",
+            "PUBLIC, DEVELOPER", NAME_DEPID_CITY_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    /** */
+    @Test
+    public void testComplexIndexCondition2() {
+        checkQuery("SELECT * FROM Developer WHERE depId=? AND name=?",
+            "PUBLIC, DEVELOPER", NAME_DEPID_CITY_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33)),
+            3, "Mozart"
+        );
+    }
 
 
 
+    /** */
+    @Test
+    public void testComplexIndexCondition3() {
+        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND city='Vienna'",
+            "PUBLIC, DEVELOPER", NAME_DEPID_CITY_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
 
-//        System.out.println("Equals on name, inequality on id, so NAME_IDX should be selected");
-//        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE  name = 'Ignite' AND id > 1");
-//
-//        System.out.println("Inequality on name, equality on id, so PK should be selected");
-//        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE  name > 'Ignite' AND id = 1");
-//
-//
-//
-//        System.out.println("Equals on name and id, sort on name, so NAME_IDX should be selected");
-//        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE  name = 'Ignite' AND id = 1 ORDER BY name");
-//
-//        long start = System.currentTimeMillis();
-//
-//        System.out.println("Equals on name and id, sort on id, so PK should be selected");
-//        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE  name = 'Ignite' AND id = 1 ORDER BY id");
-//
-//        System.out.println("planning time=" + (System.currentTimeMillis() - start));
+    /** */
+    @Test
+    public void testComplexIndexCondition4() {
+        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND city='Leipzig'",
+            "PUBLIC, DEVELOPER", NAME_DEPID_CITY_IDX, false,
+            emptyList()
+        );
+    }
 
+    /** */
+    @Test
+    public void testComplexIndexCondition5() {
+        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND city='Vienna'",
+            "PUBLIC, DEVELOPER", NAME_CITY_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    /** */
+    @Test
+    public void testComplexIndexCondition6() {
+        checkQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId=3",
+            "PUBLIC, DEVELOPER", DEPID_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    /** */
+    @Test
+    public void testComplexIndexCondition7() {
+        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=2",
+            "PUBLIC, DEVELOPER", NAME_CITY_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    /** */
+    @Test
+    public void testComplexIndexCondition8() {
+        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=2 AND age>20",
+            "PUBLIC, DEVELOPER", NAME_CITY_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    /** */
+    @Test
+    public void testComplexIndexCondition9() {
+        checkQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId>=2 AND city>='Vienna'",
+            "PUBLIC, DEVELOPER", NAME_CITY_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    /** */
+    @Test
+    public void testComplexIndexCondition10() {
+        checkQuery("SELECT * FROM Developer WHERE name>='Mozart' AND city>='Vienna'",
+            "PUBLIC, DEVELOPER", NAME_CITY_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    /** */
+    @Test
+    public void testComplexIndexCondition11() {
+        checkQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId=3 AND city>='Vienna'",
+            "PUBLIC, DEVELOPER", DEPID_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    /** */
+    @Test
+    public void testComplexIndexCondition12() {
+        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND city='Vienna'",
+            "PUBLIC, DEVELOPER", NAME_DEPID_CITY_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    /** */
+    @Test
+    public void testComplexIndexCondition13() {
+        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=3 AND city='Vienna'",
+            "PUBLIC, DEVELOPER", NAME_CITY_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    /** */
+    @Test
+    public void testComplexIndexCondition14() {
+        checkQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId=3 AND city>='Vienna'",
+            "PUBLIC, DEVELOPER", DEPID_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    @Test
+    public void testComplexIndexCondition15() {
+        checkQuery("SELECT * FROM Developer WHERE age=33 AND city='Vienna'",
+            "PUBLIC, DEVELOPER", PK, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    @Test
+    public void testEmptyResult() {
+        checkQuery("SELECT * FROM Developer WHERE age=33 AND city='Leipzig'",
+            "PUBLIC, DEVELOPER", PK, false,
+            emptyList()
+        );
+    }
+
+    @Test
+    public void testOrCondition() {
+        checkQuery("SELECT * FROM Developer WHERE name='Mozart' OR depId=1",
+            "PUBLIC, DEVELOPER", PK, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33),
+                asList(3, "Bach", 1, "Leipzig", 55))
+        );
+    }
+
+    /** */
     public void checkQuery(String qry, String tblName, String idxName,boolean ordered, List<List> expRes,
         Object... params) {
         // Check plan.
@@ -445,8 +556,9 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         assertEqualsCollections(expRes, res);
     }
 
+    /** */
     private static class ListComparator implements Comparator<List<?>> {
-
+        /** {@inheritDoc} */
         @Override public int compare(List<?> o1, List<?> o2) {
             if (o1.size() != o2.size())
                 fail("Collections are not equal:\nExpected:\t" + o1 + "\nActual:\t" + o2);
@@ -483,13 +595,21 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         }
     }
 
-
+    /** */
     private static class Developer {
+        /** */
         String name;
+
+        /** */
         int depId;
+
+        /** */
         String city;
+
+        /** */
         int age;
 
+        /** */
         public Developer(String name, int depId, String city, int age) {
             this.name = name;
             this.depId = depId;
@@ -497,6 +617,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             this.age = age;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "Project{" +
                 "name='" + name + '\'' +
