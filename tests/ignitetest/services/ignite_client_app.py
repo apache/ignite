@@ -32,7 +32,7 @@ class IgniteClientApp(BackgroundThreadService):
     PERSISTENT_ROOT = "/mnt/client_app"
     STDOUT_STDERR_CAPTURE = os.path.join(PERSISTENT_ROOT, "console.log")
     WORK_DIR = os.path.join(PERSISTENT_ROOT, "work")
-    CONFIG_FILE = os.path.join(PERSISTENT_ROOT, "ignite-config.xml")
+    CLIENT_CONFIG_FILE = os.path.join(PERSISTENT_ROOT, "ignite-client-config.xml")
     LOG4J_CONFIG_FILE = os.path.join(PERSISTENT_ROOT, "ignite-log4j.xml")
 
     logs = {
@@ -41,17 +41,19 @@ class IgniteClientApp(BackgroundThreadService):
             "collect_default": True}
     }
 
-    def __init__(self, context, version=DEV_BRANCH, num_nodes=1):
+    def __init__(self, context, java_class_name, version=DEV_BRANCH, num_nodes=1):
         """
         Args:
             num_nodes:                  number of nodes to use (this should be 1)
         """
         BackgroundThreadService.__init__(self, context, num_nodes)
 
-        self.stop_timeout_sec = 10
         self.log_level = "DEBUG"
         self.config = IgniteConfig()
         self.path = IgnitePath()
+        self.java_class_name = java_class_name
+        self.timeout_sec = 60
+        self.stop_timeout_sec = 10
 
         for node in self.nodes:
             node.version = version
@@ -59,16 +61,11 @@ class IgniteClientApp(BackgroundThreadService):
     def start_cmd(self, node):
         """Return the start command appropriate for the given node."""
 
-        jvm_opts = "-J-DIGNITE_SUCCESS_FILE=" + IgniteClientApp.PERSISTENT_ROOT + "/success_file "
-        jvm_opts += "-J-Dlog4j.configDebug=true"
-
-        cmd = "export MAIN_CLASS={main_class}; ".format(main_class=self.java_class_name())
-        cmd += "export EXCLUDE_TEST_CLASSES=true; "
-        cmd += "export IGNITE_LOG_DIR=" + IgniteClientApp.PERSISTENT_ROOT + "; "
+        cmd = self.env()
         cmd += "%s %s %s 1>> %s 2>> %s " % \
                (self.path.script("ignite.sh", node),
-                jvm_opts,
-                IgniteClientApp.CONFIG_FILE,
+                self.jvm_opts(),
+                self.app_args(),
                 IgniteClientApp.STDOUT_STDERR_CAPTURE,
                 IgniteClientApp.STDOUT_STDERR_CAPTURE)
         return cmd
@@ -78,7 +75,7 @@ class IgniteClientApp(BackgroundThreadService):
 
     def stop_node(self, node):
         self.logger.info("%s Stopping node %s" % (self.__class__.__name__, str(node.account)))
-        node.account.kill_java_processes(self.java_class_name(),
+        node.account.kill_java_processes(self.java_class_name,
                                          clean_shutdown=True,
                                          allow_fail=True)
 
@@ -91,29 +88,64 @@ class IgniteClientApp(BackgroundThreadService):
             self.logger.warn("%s %s was still alive at cleanup time. Killing forcefully..." %
                              (self.__class__.__name__, node.account))
 
-        node.account.kill_java_processes(self.java_class_name(),
+        node.account.kill_java_processes(self.java_class_name,
                                          clean_shutdown=False,
                                          allow_fail=True)
 
         node.account.ssh("rm -rf %s" % IgniteClientApp.PERSISTENT_ROOT, allow_fail=False)
 
     def pids(self, node):
-        return node.account.java_pids(self.java_class_name())
+        return node.account.java_pids(self.java_class_name)
 
     def alive(self, node):
         return len(self.pids(node)) > 0
 
     def _worker(self, idx, node):
-        node.account.mkdirs(IgniteClientApp.PERSISTENT_ROOT)
-        node.account.create_file(IgniteClientApp.CONFIG_FILE,
-                                 self.config.render(IgniteClientApp.PERSISTENT_ROOT, IgniteClientApp.WORK_DIR))
-        node.account.create_file(IgniteClientApp.LOG4J_CONFIG_FILE,
-                                 self.config.render_log4j(IgniteClientApp.WORK_DIR))
+        create_client_configs(node, self.config)
 
         # Just run application.
         cmd = self.start_cmd(node)
         self.logger.info("Ignite client application command: %s", cmd)
-        node.account.ssh(cmd, allow_fail=False)
 
-    def java_class_name(self):
-        return "org.apache.ignite.internal.test.IgniteApplication"
+        with node.account.monitor_log(IgniteClientApp.STDOUT_STDERR_CAPTURE) as monitor:
+            node.account.ssh(cmd, allow_fail=False)
+            monitor.wait_until("Ignite Client Finish.", timeout_sec=self.timeout_sec, backoff_sec=5,
+                               err_msg="Ignite client don't finish before timeout %s" % self.timeout_sec)
+
+    def app_args(self):
+        return IgniteClientApp.CLIENT_CONFIG_FILE
+
+    def jvm_opts(self):
+        return "-J-DIGNITE_SUCCESS_FILE=" + IgniteClientApp.PERSISTENT_ROOT + "/success_file " + \
+               "-J-Dlog4j.configDebug=true " \
+               "-J-Xmx1G"
+
+    def env(self):
+        return "export MAIN_CLASS={main_class}; ".format(main_class=self.java_class_name) + \
+               "export EXCLUDE_TEST_CLASSES=true; " + \
+               "export IGNITE_LOG_DIR={log_dir}; ".format(log_dir=IgniteClientApp.PERSISTENT_ROOT)
+
+
+class SparkIgniteClientApp(IgniteClientApp):
+    def __init__(self, context, master_node):
+        IgniteClientApp.__init__(self, context, java_class_name="org.apache.ignite.internal.test.SparkApplication")
+        self.master_node = master_node
+        self.timeout_sec = 120
+
+    def app_args(self):
+        return " spark://" + self.master_node.account.hostname + ":7077"
+
+    def env(self):
+        return IgniteClientApp.env(self) + \
+               "export EXCLUDE_MODULES=\"kubernetes,aws,gce,mesos,rest-http,web-agent,zookeeper,serializers,store," \
+               "rocketmq\"; "
+
+
+def create_client_configs(node, config):
+    node.account.mkdirs(IgniteClientApp.PERSISTENT_ROOT)
+    node.account.create_file(IgniteClientApp.CLIENT_CONFIG_FILE,
+                             config.render(IgniteClientApp.PERSISTENT_ROOT,
+                                           IgniteClientApp.WORK_DIR,
+                                           "true"))
+    node.account.create_file(IgniteClientApp.LOG4J_CONFIG_FILE,
+                             config.render_log4j(IgniteClientApp.WORK_DIR))

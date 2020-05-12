@@ -17,47 +17,58 @@
   ],
   "nodes": [
     {
-      "externally_routable_ip": "130.193.62.38",
+      "externally_routable_ip": "ducker02",
       "ssh_config": {
-        "host": "130.193.62.38",
-        "hostname": "ignite-1",
-        "identityfile": "/home/ducker/.ssh/id_rsa_yandex",
+        "host": "ducker02",
+        "hostname": "ducker02",
+        "identityfile": "/home/ducker/.ssh/id_rsa",
         "password": "",
         "port": 22,
-        "user": "nizhikov"
+        "user": "ducker"
       }
     },
     {
-      "externally_routable_ip": "84.201.189.216",
+      "externally_routable_ip": "ducker03",
       "ssh_config": {
-        "host": "84.201.189.216",
-        "hostname": "ignite-2",
-        "identityfile": "/home/ducker/.ssh/id_rsa_yandex",
+        "host": "ducker03",
+        "hostname": "ducker03",
+        "identityfile": "/home/ducker/.ssh/id_rsa",
         "password": "",
         "port": 22,
-        "user": "nizhikov"
+        "user": "ducker"
       }
     },
     {
-      "externally_routable_ip": "130.193.62.6",
+      "externally_routable_ip": "ducker04",
       "ssh_config": {
-        "host": "130.193.62.6",
-        "hostname": "ignite-3",
-        "identityfile": "/home/ducker/.ssh/id_rsa_yandex",
+        "host": "ducker04",
+        "hostname": "ducker04",
+        "identityfile": "/home/ducker/.ssh/id_rsa",
         "password": "",
         "port": 22,
-        "user": "nizhikov"
+        "user": "ducker"
       }
     },
     {
-      "externally_routable_ip": "130.193.62.60",
+      "externally_routable_ip": "ducker05",
       "ssh_config": {
-        "host": "130.193.62.60",
-        "hostname": "ignite-4",
-        "identityfile": "/home/ducker/.ssh/id_rsa_yandex",
+        "host": "ducker05",
+        "hostname": "ducker05",
+        "identityfile": "/home/ducker/.ssh/id_rsa",
         "password": "",
         "port": 22,
-        "user": "nizhikov"
+        "user": "ducker"
+      }
+    },
+    {
+      "externally_routable_ip": "ducker06",
+      "ssh_config": {
+        "host": "ducker06",
+        "hostname": "ducker06",
+        "identityfile": "/home/ducker/.ssh/id_rsa",
+        "password": "",
+        "port": 22,
+        "user": "ducker"
       }
     }
   ]

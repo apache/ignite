@@ -16,6 +16,7 @@
 import os.path
 import signal
 
+from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
 

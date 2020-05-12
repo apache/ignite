@@ -16,7 +16,7 @@
 # limitations under the License.
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-5}
+IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-6}
 TC_PATHS=${TC_PATHS:-./ignitetest/}
 
 die() {

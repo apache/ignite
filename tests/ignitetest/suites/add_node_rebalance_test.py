@@ -15,7 +15,7 @@
 
 from ducktape.tests.test import Test
 
-from ignitetest.services.ignite.ignite import IgniteService
+from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_client_app import IgniteClientApp
 
 
@@ -48,7 +48,8 @@ class AddNodeRebalanceTest(Test):
         self.logger.info("Start add node rebalance test.")
 
         # This client just put some data to the cache.
-        IgniteClientApp(self.test_context).run()
+        IgniteClientApp(self.test_context,
+                        java_class_name="org.apache.ignite.internal.test.IgniteApplication").run()
 
         self.ignite.start_node(self.ignite.nodes[AddNodeRebalanceTest.NUM_NODES-1],
                                timeout_sec=AddNodeRebalanceTest.REBALANCE_TIMEOUT,

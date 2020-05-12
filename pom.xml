@@ -542,6 +542,7 @@
             <id>benchmarks</id>
             <modules>
                 <module>modules/benchmarks</module>
+                <module>modules/integration-tests</module>
             </modules>
         </profile>
 
