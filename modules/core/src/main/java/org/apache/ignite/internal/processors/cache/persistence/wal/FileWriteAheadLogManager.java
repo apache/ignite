@@ -617,26 +617,51 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (currHnd != null)
                 currHnd.close(false);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd.fileIO, e);
+        }
 
+        try {
             if (walSegmentSyncWorker != null)
                 walSegmentSyncWorker.shutdown();
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to shutdown WAL segment sycn worker", e);
+        }
 
+        try {
             if (walWriter != null)
                 walWriter.shutdown();
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to shutdown WAL writer worker", e);
+        }
 
-            segmentAware.interrupt();
+        segmentAware.interrupt();
 
+        try {
             if (archiver != null)
                 archiver.shutdown();
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to shutdown archiver worker", e);
+        }
 
+        try {
             if (compressor != null)
                 compressor.shutdown();
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to shutdown WAL compressor worker", e);
+        }
 
+        try {
             if (decompressor != null)
                 decompressor.shutdown();
         }
         catch (Exception e) {
-            U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd.fileIO, e);
+            U.error(log, "Failed to shutdown WAL decompressor sycn worker", e);
         }
     }
 
