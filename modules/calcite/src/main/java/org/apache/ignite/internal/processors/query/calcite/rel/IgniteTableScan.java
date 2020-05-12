@@ -75,11 +75,11 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     private final String idxName;
     private final RexNode condition;
-    private final List<RexNode> lowerIdxCondition;
-    private final List<RexNode> upperIdxCondition;
     private final IgniteTable igniteTable;
     private final RelCollation collation;
-    private final int[] predicateMasks;
+    private List<RexNode> lowerIdxCondition;
+    private List<RexNode> upperIdxCondition;
+    private double idxSelectivity = 1.0;
 
     /**
      * Constructor used for deserialization.
@@ -94,7 +94,6 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         upperIdxCondition = input.getExpressionList("upper");
         igniteTable = getTable().unwrap(IgniteTable.class);
         collation = igniteTable.getIndex(idxName).collation();
-        predicateMasks = new int[0];
     }
 
     /**
@@ -119,7 +118,6 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         this.igniteTable = tbl.unwrap(IgniteTable.class);
         RelCollation coll = traits.getTrait(RelCollationTraitDef.INSTANCE);
         this.collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
-        this.predicateMasks = new int[collation.getFieldCollations().size()];
         this.lowerIdxCondition = makeListOfNullLiterals(igniteTable.columnDescriptors().length);
         this.upperIdxCondition = makeListOfNullLiterals(igniteTable.columnDescriptors().length);
         buildIndexConditions();
@@ -138,30 +136,26 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
         assert condition != null;
 
-        Map<Integer, RelFieldCollation> idxCols = new HashMap<>(collation.getFieldCollations().size());
-        for (RelFieldCollation fc : collation.getFieldCollations())
-            idxCols.put(fc.getFieldIndex(), fc);
-
-        int cols = igniteTable.columnDescriptors().length;
-
         Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields();
 
-        for (int i = 0; i < cols; i++) {
-            RelFieldCollation fldCollation = idxCols.get(i);
+        double selectivity = 1.0;
 
-            if (fldCollation == null)
-                continue; // It is not an index field.
+        for (int i = 0; i < collation.getFieldCollations().size(); i++) {
+            RelFieldCollation fc = collation.getFieldCollations().get(i);
 
-            List<RexCall> fldPreds = fieldsToPredicates.get(i);
+            int collFldIdx = fc.getFieldIndex();
 
-            if (F.isEmpty(fldPreds))
-                continue;
+            List<RexCall> collFldPreds = fieldsToPredicates.get(collFldIdx);
 
-            int idxInCollation = collation.getFieldCollations().indexOf(fldCollation);
+            if (F.isEmpty(collFldPreds))
+                break;
 
-            boolean lowerBoundBelow = !fldCollation.getDirection().isDescending();
+            boolean lowerBoundBelow = !fc.getDirection().isDescending();
 
-            for (RexCall pred : fldPreds) {
+            RexNode bestUpper = null;
+            RexNode bestLower = null;
+
+            for (RexCall pred : collFldPreds) {
                 RexNode cond = removeCast(pred.operands.get(1));
 
                 assert cond instanceof RexLiteral || cond instanceof RexDynamicParam : cond;
@@ -169,9 +163,8 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
                 SqlOperator op = pred.getOperator();
                 switch (op.kind) {
                     case EQUALS:
-                        predicateMasks[idxInCollation] |= EQUALS_MASK;
-                        lowerIdxCondition.set(i, cond); // TODO support and merge multiple conditions on the same column.
-                        upperIdxCondition.set(i, cond);
+                        bestUpper = cond; // TODO support and merge multiple conditions on the same column.
+                        bestLower = cond;
                         break;
 
                     case LESS_THAN:
@@ -181,21 +174,49 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
                     case GREATER_THAN:
                     case GREATER_THAN_OR_EQUAL:
-                        if (lowerBoundBelow) {
-                            lowerIdxCondition.set(i, cond);
-                            predicateMasks[idxInCollation] |= GREATER_MASK;
-                        }
-                        else {
-                            upperIdxCondition.set(i, cond);
-                            predicateMasks[idxInCollation] |= LESS_MASK;
-                        }
+                        if (lowerBoundBelow)
+                            bestLower = cond;
+                        else
+                            bestUpper = cond;
                         break;
 
                     default:
                         throw new AssertionError("Unknown condition: " + cond);
                 }
+
+                if (bestUpper != null && bestLower != null)
+                    break; // We've found either "=" condition or both lower and upper.
+            }
+
+            if (bestLower == null && bestUpper == null)
+                break; // No bounds, so break the loop.
+
+            if (i > 0 && bestLower != bestUpper)
+                break; // Go behind the first index field only in the case of multiple "=" conditions on index fields.
+
+            if (bestLower == bestUpper) { // "x=10"
+                upperIdxCondition.set(collFldIdx, bestUpper);
+                lowerIdxCondition.set(collFldIdx, bestLower);
+                selectivity *= 0.1;
+            }
+            else if (bestLower != null && bestUpper!= null) { // "x>5 AND x<10"
+                upperIdxCondition.set(collFldIdx, bestUpper);
+                lowerIdxCondition.set(collFldIdx, bestLower);
+                selectivity *= 0.25;
+                break;
+            }
+            else if (bestLower != null) { // "x>5"
+                lowerIdxCondition.set(collFldIdx, bestLower);
+                selectivity *= 0.35;
+                break;
+            }
+            else { // "x<10"
+                upperIdxCondition.set(collFldIdx, bestUpper);
+                selectivity *= 0.35;
+                break;
             }
         }
+        idxSelectivity = selectivity;
     }
 
     @NotNull private Map<Integer, List<RexCall>> mapPredicatesToFields() {
@@ -375,25 +396,18 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
     }
 
     @Override public double estimateRowCount(RelMetadataQuery mq) {
+        // TODO cost model that takes cpu and io into account.
+        // TODO metadata fix: rows selected by filtered out by embedded filter.
         double rows = table.getRowCount();
 
-        for (int i = 0; i < predicateMasks.length; i++) {
-            if ((predicateMasks[i] & EQUALS_MASK) != 0) { // Handling '=' case.
-                rows *= 0.15;
-            } else if (i == 0) { // Handling '<', '>', '>=', '<=' cases.
-                if ((predicateMasks[i] & LESS_MASK) != 0)
-                    rows *= 0.5;
-                if ((predicateMasks[i] & GREATER_MASK) != 0)
-                    rows *= 0.5;
-                break;
-            }
-        }
+        double rowsIn = rows * idxSelectivity;
+        double rowsOut = rowsIn;
 
         if (condition != null) {
-            Double selectivity = mq.getSelectivity(this, condition);
-            rows *= selectivity;
+            Double sel = mq.getSelectivity(this, condition);
+            rowsOut *= sel;
         }
 
-        return rows;
+        return rowsIn + rowsOut;
     }
 }

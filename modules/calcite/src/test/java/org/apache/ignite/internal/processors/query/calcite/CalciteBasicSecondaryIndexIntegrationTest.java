@@ -64,7 +64,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
 
         LinkedHashMap<String, Boolean> fields2 = new LinkedHashMap<>();
         fields2.put("name", true);
-        fields2.put("city", false);
+        fields2.put("depId", false);
         fields2.put("age", false);
         QueryIndex complexIdxNameVer = new QueryIndex(fields2, QueryIndexType.SORTED);
 
