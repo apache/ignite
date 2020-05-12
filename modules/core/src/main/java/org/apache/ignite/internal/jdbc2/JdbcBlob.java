@@ -57,7 +57,7 @@ public class JdbcBlob implements Blob {
         if (pos < 1 || arr.length - pos < 0 || len < 0)
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than size of underlying byte array. Requested length also can't be negative " + "" +
-                "[pos=" + pos + ", len=" + len +']');
+                "[pos=" + pos + ", len=" + len + ']');
 
         int idx = (int)(pos - 1);
 
@@ -84,7 +84,7 @@ public class JdbcBlob implements Blob {
         if (pos < 1 || len < 1 || pos > arr.length || len > arr.length - pos + 1)
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than size of underlying byte array. Requested length can't be negative and can't be " +
-                "greater than available bytes from given position [pos=" + pos + ", len=" + len +']');
+                "greater than available bytes from given position [pos=" + pos + ", len=" + len + ']');
 
         return new ByteArrayInputStream(arr, (int)(pos - 1), (int)len);
     }
@@ -96,7 +96,7 @@ public class JdbcBlob implements Blob {
         if (start < 1 || start > arr.length || ptrn.length == 0 || ptrn.length > arr.length)
             return -1;
 
-        for(int i = 0, pos = (int)(start - 1); pos < arr.length;) {
+        for (int i = 0, pos = (int)(start - 1); pos < arr.length;) {
             if (arr[pos] == ptrn[i]) {
                 pos++;
 

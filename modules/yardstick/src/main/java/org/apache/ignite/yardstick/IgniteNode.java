@@ -307,7 +307,7 @@ public class IgniteNode implements BenchmarkServer {
 
         Collection<String> adrSetFromProp = new HashSet<>(Arrays.asList(hosts.split(",")));
 
-        if(adrSetFromProp.isEmpty())
+        if (adrSetFromProp.isEmpty())
             return;
 
         TcpDiscoverySpi spi = (TcpDiscoverySpi)c.getDiscoverySpi();

@@ -165,7 +165,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
                             case PUT_ALL_ASYNC: {
                                 Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
-                                for (int i = 0 ; i < 10; i++) {
+                                for (int i = 0; i < 10; i++) {
                                     TreeMap<TestKey, TestValue> map = new TreeMap<>();
 
                                     for (int k = 0; k < 100; k++)

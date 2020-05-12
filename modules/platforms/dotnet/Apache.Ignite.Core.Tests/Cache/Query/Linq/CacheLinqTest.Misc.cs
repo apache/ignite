@@ -346,7 +346,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             {
                 for (var i = 0; i < 100; i++)
                 {
-                    persons.SelectMany(p => GetRoleCache().AsCacheQueryable()).ToArray();
+                    persons.SelectMany(p => GetRoleCache().AsCacheQueryable())
+                        .Where(p => p.Value.Name.Contains("e")).ToArray();
                 }
             });
 

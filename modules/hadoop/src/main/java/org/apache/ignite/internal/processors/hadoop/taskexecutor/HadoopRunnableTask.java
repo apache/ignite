@@ -180,7 +180,7 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
             if (perfCntr != null)
                 perfCntr.onTaskFinish(info, execEndTs);
 
-            onTaskFinished(new HadoopTaskStatus(state, err, ctx==null ? null : ctx.counters()));
+            onTaskFinished(new HadoopTaskStatus(state, err, ctx == null ? null : ctx.counters()));
 
             if (combinerInput != null)
                 combinerInput.close();
@@ -280,7 +280,7 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
                     assert combinerInput == null;
 
                     combinerInput = get(job.info(), SHUFFLE_COMBINER_NO_SORTING, false) ?
-                        new HadoopHashMultimap(job.info(), mem, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)):
+                        new HadoopHashMultimap(job.info(), mem, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)) :
                         new HadoopSkipList(job.info(), mem); // TODO replace with red-black tree
 
                     return combinerInput.startAdding(ctx);

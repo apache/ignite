@@ -138,7 +138,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
     private Set<H2PooledConnection> usedConnections(Ignite ign) {
         ConnectionManager connMgr = ((IgniteH2Indexing)((IgniteEx)ign).context().query().getIndexing()).connections();
 
-        return  GridTestUtils.getFieldValue(connMgr, "usedConns");
+        return GridTestUtils.getFieldValue(connMgr, "usedConns");
     }
 
     /**

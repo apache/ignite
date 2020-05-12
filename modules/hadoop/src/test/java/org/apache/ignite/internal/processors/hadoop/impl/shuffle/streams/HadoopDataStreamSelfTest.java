@@ -73,7 +73,7 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
 
         write(out);
 
-        byte [] inBuf = Arrays.copyOf(out.buffer(), out.position());
+        byte[] inBuf = Arrays.copyOf(out.buffer(), out.position());
 
         HadoopDirectDataInput in = new HadoopDirectDataInput(inBuf);
 
@@ -123,7 +123,7 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
 
         byteArrayOs.close();
 
-        try (DataInputStream in =  new DataInputStream(new ByteArrayInputStream(byteArrayOs.toByteArray()))) {
+        try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(byteArrayOs.toByteArray()))) {
             return readLineStrings(in);
         }
     }
@@ -162,7 +162,7 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
 
         out.write(val.getBytes());
 
-        byte [] inBuf = Arrays.copyOf(out.buffer(), out.position());
+        byte[] inBuf = Arrays.copyOf(out.buffer(), out.position());
 
         HadoopDirectDataInput in = new HadoopDirectDataInput(inBuf);
 

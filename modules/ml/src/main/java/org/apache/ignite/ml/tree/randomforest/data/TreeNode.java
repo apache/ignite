@@ -101,7 +101,7 @@ public class TreeNode implements IgniteModel<Vector, Double> {
      * @param features Features.
      * @return Node.
      */
-    public  NodeId predictNextNodeKey(Vector features) {
+    public NodeId predictNextNodeKey(Vector features) {
         switch (type) {
             case UNKNOWN:
                 return id;

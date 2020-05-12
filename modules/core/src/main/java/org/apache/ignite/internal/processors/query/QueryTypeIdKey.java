@@ -38,7 +38,7 @@ public class QueryTypeIdKey {
      * @param cacheName Cache name.
      * @param valType Value type.
      */
-    public  QueryTypeIdKey(String cacheName, Class<?> valType) {
+    public QueryTypeIdKey(String cacheName, Class<?> valType) {
         assert valType != null;
 
         this.cacheName = cacheName;

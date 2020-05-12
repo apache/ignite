@@ -28,10 +28,10 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -95,6 +95,7 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             null,
             null,
             null,
+            null,
             new CacheDiagnosticManager()
         );
 
@@ -111,7 +112,7 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             (fullPageId, byteBuf, tag) -> {
                 assert false : "No page replacement should happen during the test";
             },
-            new CIX3<Long, FullPageId, PageMemoryEx>(){
+            new CIX3<Long, FullPageId, PageMemoryEx>() {
                 @Override public void applyx(Long aLong, FullPageId fullPageId, PageMemoryEx ex) {
                 }
             },

@@ -36,7 +36,7 @@ import org.hibernate.annotations.NaturalId;
 class User {
     /** ID. */
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
 
     /** Login. */

@@ -237,7 +237,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
             }
 
             for (int g = 0; g < GRID_CNT; g++) {
-                IgniteCache<Object, Object> checkCache =grid(g).cache(DEFAULT_CACHE_NAME);
+                IgniteCache<Object, Object> checkCache = grid(g).cache(DEFAULT_CACHE_NAME);
 
                 ClusterNode checkNode = grid(g).localNode();
 

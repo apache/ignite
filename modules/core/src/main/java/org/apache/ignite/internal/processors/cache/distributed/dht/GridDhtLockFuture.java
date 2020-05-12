@@ -268,7 +268,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         }
 
         if (tx != null) {
-            while(true) {
+            while (true) {
                 IgniteInternalFuture fut = tx.lockFut;
 
                 if (fut != null) {

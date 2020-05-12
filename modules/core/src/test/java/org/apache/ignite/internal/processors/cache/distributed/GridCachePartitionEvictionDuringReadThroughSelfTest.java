@@ -107,8 +107,8 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
                     catch (Throwable ignore) {
                         // No-op.
                     }
-                    if(Thread.currentThread().isInterrupted())
-                        throw new IgniteInterruptedCheckedException("Execution of ["+Thread.currentThread().getName()+"] Interrupted. Test is probably timed out");
+                    if (Thread.currentThread().isInterrupted())
+                        throw new IgniteInterruptedCheckedException("Execution of [" + Thread.currentThread().getName() + "] Interrupted. Test is probably timed out");
                 }
 
                 return null;

@@ -415,7 +415,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
     public void testPutTooLongDecimalKeyFail() throws Exception {
         IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_PREC);
 
-        T2<BigDecimal, BigDecimal> val =  new T2<>(d(123.45), d(12.34));
+        T2<BigDecimal, BigDecimal> val = new T2<>(d(123.45), d(12.34));
 
         checkPutAll(shouldFail, cache, new T2<>(d(12.35), d(12.34)), val);
 
@@ -429,7 +429,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
     public void testPutTooLongDecimalKeyFail2() throws Exception {
         IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_PREC);
 
-        T2<BigDecimal, Employee> val =  new T2<>(d(123.45), new Employee(d(12.34)));
+        T2<BigDecimal, Employee> val = new T2<>(d(123.45), new Employee(d(12.34)));
 
         checkPutAll(shouldFail, cache, new T2<>(d(12.35), new Employee(d(12.34))), val);
 

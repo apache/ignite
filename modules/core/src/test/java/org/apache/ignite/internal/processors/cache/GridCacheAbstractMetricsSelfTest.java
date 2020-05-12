@@ -389,7 +389,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
                 cache.put(i, i);
 
-                if(keys.size() == 3)
+                if (keys.size() == 3)
                     break;
             }
         }
@@ -862,7 +862,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         awaitMetricsUpdate(1);
 
-        assertEquals(KEY_CNT/2, cache.metrics().getCacheSize());
+        assertEquals(KEY_CNT / 2, cache.metrics().getCacheSize());
 
         assertEquals(cache.localSizeLong(CachePeekMode.PRIMARY), cache.localMetrics().getCacheSize());
 
@@ -1479,7 +1479,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @param name Metric name to find.
      * @return Metric.
      */
-    protected  <M extends Metric> M metric(String name) {
+    protected <M extends Metric> M metric(String name) {
         IgniteEx grid = grid(0);
 
         boolean isNear = ((IgniteKernal)grid).internalCache(DEFAULT_CACHE_NAME).isNear();

@@ -244,7 +244,7 @@ public class AsyncFileIO extends AbstractFileIO {
     }
 
     /** */
-    static class ChannelOpFuture extends GridFutureAdapter<Integer> implements CompletionHandler<Integer, AsyncFileIO>  {
+    static class ChannelOpFuture extends GridFutureAdapter<Integer> implements CompletionHandler<Integer, AsyncFileIO> {
         /** {@inheritDoc} */
         @Override public void completed(Integer res, AsyncFileIO attach) {
             if (attach != null) {

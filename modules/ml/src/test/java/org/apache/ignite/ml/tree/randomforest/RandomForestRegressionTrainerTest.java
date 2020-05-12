@@ -52,7 +52,7 @@ public class RandomForestRegressionTrainerTest extends TrainerTest {
         }
 
         ArrayList<FeatureMeta> meta = new ArrayList<>();
-        for(int i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++)
             meta.add(new FeatureMeta("", i, false));
         RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(meta)
             .withAmountOfTrees(5)

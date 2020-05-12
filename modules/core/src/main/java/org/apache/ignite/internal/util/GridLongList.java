@@ -136,7 +136,7 @@ public class GridLongList implements Message, Externalizable {
         int res = 1;
 
         for (int i = 0; i < idx; i++) {
-            long element  = arr[i];
+            long element = arr[i];
             int elementHash = (int)(element ^ (element >>> 32));
             res = 31 * res + elementHash;
         }

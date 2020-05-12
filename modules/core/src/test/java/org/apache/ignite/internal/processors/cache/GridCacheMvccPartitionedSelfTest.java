@@ -194,7 +194,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate c1 = entry.addNearLocal(node1, 1, ver1, true);
         GridCacheMvccCandidate c2 = entry.addNearLocal(node1, 1, ver2, true);
 
-        entry.readyNearLocal(ver2, ver2,  empty(), empty(), empty());
+        entry.readyNearLocal(ver2, ver2, empty(), empty(), empty());
 
         checkLocalOwner(c2, ver2, false);
         checkLocal(c1, ver1, false, false, false);
@@ -236,7 +236,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         entry.orderOwned(ver1, ver2);
 
-        entry.readyNearLocal(ver2, ver2,  empty(), empty(), empty());
+        entry.readyNearLocal(ver2, ver2, empty(), empty(), empty());
 
         checkRemote(c1, ver1, false, false);
 

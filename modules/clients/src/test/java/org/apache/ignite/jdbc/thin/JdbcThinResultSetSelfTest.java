@@ -530,7 +530,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
      * @throws SQLException On error.
      */
     private BigDecimal convertStringToBigDecimalViaJdbc(String strDec, int scale) throws SQLException {
-        try(ResultSet rs = stmt.executeQuery("select '" + strDec + "'")) {
+        try (ResultSet rs = stmt.executeQuery("select '" + strDec + "'")) {
             assert rs.next();
 
             return rs.getBigDecimal(1, scale);

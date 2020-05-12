@@ -191,7 +191,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
      * @return The file system.
      * @throws Exception
      */
-    FileSystem getFileSystem() throws Exception{
+    FileSystem getFileSystem() throws Exception {
         return FileSystem.get(new URI(getFsBase()), new Configuration());
     }
 

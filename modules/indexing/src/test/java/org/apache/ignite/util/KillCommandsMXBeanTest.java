@@ -48,7 +48,7 @@ import static org.apache.ignite.util.KillCommandsTests.doTestScanQueryCancel;
 /** Tests cancel of user created entities via JMX. */
 public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** */
-    public static final int  NODES_CNT = 3;
+    public static final int NODES_CNT = 3;
 
     /** */
     private static List<IgniteEx> srvs;

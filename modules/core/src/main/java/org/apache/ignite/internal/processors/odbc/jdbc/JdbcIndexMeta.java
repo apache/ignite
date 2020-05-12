@@ -159,7 +159,7 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
             fieldsAsc = new ArrayList<>(size);
 
             for (int i = 0; i < size; ++i)
-                fieldsAsc .add(reader.readBoolean());
+                fieldsAsc.add(reader.readBoolean());
         }
         else
             fieldsAsc = Collections.emptyList();
