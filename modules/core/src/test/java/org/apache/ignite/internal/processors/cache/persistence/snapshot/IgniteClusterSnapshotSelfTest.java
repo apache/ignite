@@ -1040,6 +1040,62 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotFromClient() throws Exception {
+        startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx clnt = startClientGrid(2);
+
+        clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        stopAllGrids();
+
+        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+
+        awaitPartitionMapExchange();
+        assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testConcurrentClusterSnapshotFromClient() throws Exception {
+        IgniteEx grid = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        IgniteEx clnt = startClientGrid(2);
+
+        IgniteSnapshotManager mgr = snp(grid);
+        Function<String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
+
+        BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
+
+        mgr.localSnapshotSenderFactory((snpName) ->
+            new DelegateSnapshotSender(log, block, old.apply(snpName)));
+
+        IgniteFuture<Void> fut = grid.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        assertThrowsAnyCause(log,
+            () -> clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
+            IgniteException.class,
+            "Snapshot has not been created");
+
+        block.unblock();
+        fut.get();
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotFromClientDisconnected() throws Exception {
+        startGridsWithCache(1, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx clnt = startClientGrid(1);
+
+        stopGrid(0);
+
+        assertThrowsAnyCause(log,
+            () -> clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
+            IgniteException.class,
+            "Client disconnected. Snapshot result is unknown");
+    }
+
     /**
      * @param ignite Ignite instance.
      * @param started Latch will be released when delta partition processing starts.

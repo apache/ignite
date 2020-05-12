@@ -53,6 +53,8 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -77,13 +79,17 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -2941,6 +2947,96 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         Class cls1 = portObj.field("cls1");
 
         assertEquals(obj.cls1, cls1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadDetachedMap() throws Exception {
+        Map<Key, Value> map = IntStream.range(0, 1000).mapToObj(i -> new T2<>(new Key(i), new Value(i)))
+            .collect(Collectors.toMap(T2::getKey, T2::getValue));
+
+        testReadDetachObjectProperly(map, obj -> {
+            Map<BinaryObject, BinaryObject> desMap = (Map<BinaryObject, BinaryObject>)obj;
+
+            assertEquals(map.size(), desMap.size());
+
+            desMap.forEach((k, v) -> {
+                Key key = new Key(k.field("key"));
+                Value val = new Value(v.field("val"));
+
+                assertTrue(map.containsKey(key));
+                assertEquals(val, map.get(key));
+            });
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadDetachedCollection() throws Exception {
+        Collection<Value> col = IntStream.range(0, 1000).mapToObj(Value::new).collect(Collectors.toSet());
+
+        testReadDetachObjectProperly(col, obj -> {
+            Collection<BinaryObject> desCol = (Collection<BinaryObject>)obj;
+
+            assertEquals(col.size(), desCol.size());
+
+            desCol.forEach(v -> {
+                Value val = new Value(v.field("val"));
+
+                assertTrue(col.contains(val));
+            });
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadDetachedArray() throws Exception {
+        Value[] arr = IntStream.range(0, 1000).mapToObj(Value::new).toArray(Value[]::new);
+
+        testReadDetachObjectProperly(arr, obj -> {
+            Object[] desArr = (Object[])obj;
+
+            assertEquals(arr.length, desArr.length);
+
+            for (int i = 0; i < arr.length; i++) {
+                BinaryObject val = (BinaryObject)desArr[i];
+
+                assertEquals(arr[i], new Value(val.field("val")));
+            }
+        });
+    }
+
+    /**
+     * Perform action on binary object after unmarshalling from offheap data, when offheap memory chunk cleared.
+     *
+     * @param obj Object to marshal-unmarshal.
+     * @param action Action to perform on object.
+     * @throws Exception If failed.
+     */
+    private void testReadDetachObjectProperly(Object obj, IgniteThrowableConsumer<Object> action) throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        BinaryHeapOutputStream os = new BinaryHeapOutputStream(1024);
+
+        BinaryWriterExImpl writer = marsh.binaryMarshaller().writer(os);
+
+        writer.writeObject(obj);
+
+        BinaryHeapInputStream is = new BinaryHeapInputStream(os.array());
+
+        BinaryReaderExImpl reader = marsh.binaryMarshaller().reader(is);
+
+        Object bObj = reader.readObjectDetached();
+
+        Arrays.fill(os.array(), (byte)0);
+
+        action.accept(bObj);
     }
 
     /**
