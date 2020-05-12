@@ -33,9 +33,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <param name="marshaller">Marshaller.</param>
-        /// <param name="protocolVersion">Protocol version to be used for this request.</param>
-        public ClientRequestContext(IBinaryStream stream, Marshaller marshaller, ClientProtocolVersion protocolVersion)
-            : base(stream, marshaller, protocolVersion)
+        /// <param name="features">Features supported by this request.</param>
+        public ClientRequestContext(IBinaryStream stream, Marshaller marshaller, ClientFeatures features)
+            : base(stream, marshaller, features)
 
         {
             // No-op.

@@ -29,7 +29,13 @@ public enum ProtocolBitmaskFeature {
     USER_ATTRIBUTES(0),
 
     /** Compute tasks (execute by task name). */
-    EXECUTE_TASK_BY_NAME(1);
+    EXECUTE_TASK_BY_NAME(1),
+
+    /**
+     * Cluster operations (state and WAL). In addition to {@link ProtocolVersionFeature#CLUSTER_API} this feature
+     * also allows to use other cluster states beside ACTIVE and INACTIVE.
+     */
+    CLUSTER_API(2);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.client;
 
+import org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature;
+
 /**
  * Feature not supported by server exception.
  */
@@ -31,5 +33,12 @@ public class ClientFeatureNotSupportedByServerException extends ClientException 
      */
     public ClientFeatureNotSupportedByServerException(String msg) {
         super(msg);
+    }
+
+    /**
+     * @param feature Feature.
+     */
+    public ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature feature) {
+        super("Feature " + feature.name() + " is not supported by the server");
     }
 }

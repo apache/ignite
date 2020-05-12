@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -39,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
@@ -232,43 +228,5 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
 
         assertTrue(explainPlan, explainPlan.toUpperCase().contains("_IDX"));
         assertFalse(explainPlan, explainPlan.toUpperCase().contains("_SCAN_"));
-    }
-
-    /** */
-    private static class BlockingExecutor implements Executor {
-        /** Delegate executor. */
-        private final Executor delegate;
-
-        /** Waiting tasks. */
-        private final Queue<Runnable> tasks = new ArrayDeque<>();
-
-        /** {@code true} if tasks must be blocked. */
-        private volatile boolean block = true;
-
-        /**
-         * @param delegate Delegate executor.
-         */
-        public BlockingExecutor(Executor delegate) {
-            this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void execute(@NotNull Runnable cmd) {
-            if (block)
-                tasks.offer(cmd);
-            else
-                delegate.execute(cmd);
-        }
-
-        /** Unblock and schedule tasks for execution. */
-        public void unblock() {
-            block = false;
-
-            Runnable r;
-
-            while ((r = tasks.poll()) != null) {
-                delegate.execute(r);
-            }
-        }
     }
 }

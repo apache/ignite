@@ -200,6 +200,9 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreNotEqual(clientCfg, client.GetConfiguration());
                 Assert.AreNotEqual(client.GetConfiguration(), client.GetConfiguration());
                 Assert.AreEqual(clientCfg.ToXml(), client.GetConfiguration().ToXml());
+
+                var conn = client.GetConnections().Single();
+                Assert.AreEqual(servCfg.ClientConnectorConfiguration.Port, ((IPEndPoint) conn.RemoteEndPoint).Port);
             }
         }
 
@@ -340,8 +343,7 @@ namespace Apache.Ignite.Core.Tests.Client
             ignite.Dispose();
 
             var ex = Assert.Throws<AggregateException>(() => putGetTask.Wait());
-            var baseEx = ex.GetBaseException();
-            var socketEx = baseEx as SocketException;
+            var socketEx = ex.GetInnermostException() as SocketException;
 
             if (socketEx != null)
             {

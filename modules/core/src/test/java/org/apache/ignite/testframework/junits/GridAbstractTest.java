@@ -195,6 +195,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /** */
     private static final transient Map<Class<?>, IgniteTestResources> tests = new ConcurrentHashMap<>();
 
+    /** Loggers with changed log level for test's purposes. */
+    private static final transient Map<Logger, Level> changedLevels = new ConcurrentHashMap<>();
+
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
@@ -328,7 +331,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If failed.
      */
     protected void afterTest() throws Exception {
-        // No-op.
+        try {
+            for (Logger logger : changedLevels.keySet())
+                logger.setLevel(changedLevels.get(logger));
+        }
+        finally {
+            changedLevels.clear();
+        }
     }
 
     /**
@@ -433,6 +442,18 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             return IgniteNodeRunner.startedInstance().log();
 
         return log;
+    }
+
+    /**
+     * Sets the log level for root logger ({@link #log}) to {@link Level#DEBUG}. The log level will be resetted to
+     * default in {@link #afterTest()}.
+     */
+    protected final void setRootLoggerDebugLevel() {
+        Logger logger = Logger.getRootLogger();
+
+        assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, logger.getLevel()));
+
+        logger.setLevel(Level.DEBUG);
     }
 
     /**
@@ -1220,7 +1241,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             if (discoverySpi != null && !(discoverySpi instanceof TcpDiscoverySpi)) {
                 try {
                     // Clone added to support ZookeeperDiscoverySpi.
-                    cfg.setDiscoverySpi(cloneDiscoverySpi(cfg.getDiscoverySpi()));
+                    cfg.setDiscoverySpi(cloneDiscoverySpi(discoverySpi));
 
                     resetDiscovery = false;
                 }
@@ -1251,7 +1272,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Additional JVM args for remote instances.
      */
     protected List<String> additionalRemoteJvmArgs() {
-        return Collections.emptyList();
+        return new ArrayList<>();
     }
 
     /**
