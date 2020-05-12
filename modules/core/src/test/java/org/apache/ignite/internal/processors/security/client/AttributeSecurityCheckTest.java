@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.security.client;
 
 import java.util.Map;
-import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
@@ -26,9 +25,8 @@ import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.security.UserAttributesFactory;
-import org.apache.ignite.internal.processors.security.impl.TestAttributeSecurityPluginProvider;
+import org.apache.ignite.internal.processors.security.impl.TestAuthenticationContextSecurityPluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -44,13 +42,9 @@ public class AttributeSecurityCheckTest extends CommonSecurityCheckTest {
     private static Map<String, Object> userAttrs;
 
     /** {@inheritDoc} */
-    @Override protected PluginProvider<?> getPluginProvider(String name){
-        return new TestAttributeSecurityPluginProvider(name, null, ALLOW_ALL,
-            globalAuth, true, new Consumer<AuthenticationContext>() {
-            @Override public void accept(AuthenticationContext actx) {
-                userAttrs = actx.nodeAttributes();
-            }
-        }, clientData());
+    @Override protected PluginProvider<?> getPluginProvider(String name) {
+        return new TestAuthenticationContextSecurityPluginProvider(name, null, ALLOW_ALL,
+            globalAuth, true, (ctx) -> userAttrs = ctx.nodeAttributes(), clientData());
     }
 
     /** {@inheritDoc} */
@@ -90,7 +84,7 @@ public class AttributeSecurityCheckTest extends CommonSecurityCheckTest {
     /**
      * @return User attributes.
      */
-    private Map<String, String> userAttributes(){
+    private Map<String, String> userAttributes() {
         Map<String, String> attrs = new UserAttributesFactory().create();
 
         attrs.put("key", "val");

@@ -79,7 +79,7 @@ public class GridClientAuthenticationRequest extends GridClientAbstractMessage {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        cred = (SecurityCredentials) in.readObject();
+        cred = (SecurityCredentials)in.readObject();
 
         userAttrs = U.readMap(in);
     }

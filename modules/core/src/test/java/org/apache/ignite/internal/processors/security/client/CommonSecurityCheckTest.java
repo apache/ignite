@@ -166,7 +166,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
      * @param name Ignite instance name
      * @return Plugin provider.
      */
-    protected PluginProvider<?> getPluginProvider(String name){
+    protected PluginProvider<?> getPluginProvider(String name) {
         return new TestAdditionalSecurityPluginProvider(name, null, ALLOW_ALL,
             globalAuth, true, clientData());
     }
