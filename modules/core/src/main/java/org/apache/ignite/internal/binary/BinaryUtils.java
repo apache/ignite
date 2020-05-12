@@ -1554,13 +1554,14 @@ public class BinaryUtils {
 
     /**
      * @param in Binary input stream.
-     * @return Type ID specified at the input stream
+     * @return Type ID specified at the input stream.
      * @throws BinaryObjectException If failed.
      */
     public static int doReadTypeId(BinaryInputStream in)
         throws BinaryObjectException {
         int typeId = in.readInt();
 
+        // Skip class name at the stream.
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             doReadClassName(in);
 
@@ -2041,7 +2042,7 @@ public class BinaryUtils {
         int compTypeId = 0;
 
         if (deserialize)
-            compType = doReadClass(in, ctx, ldr, deserialize);
+            compType = doReadClass(in, ctx, ldr);
         else
             compTypeId = doReadTypeId(in);
 
