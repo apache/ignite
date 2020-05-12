@@ -3802,16 +3802,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     void closeConnections(UUID nodeId) throws IgniteCheckedException {
         GridCommunicationClient[] clients = this.clients.remove(nodeId);
+
         if (nonNull(clients)) {
             for (GridCommunicationClient client : clients)
                 client.forceClose();
         }
 
         for (ConnectionKey connKey : clientFuts.keySet()) {
-            if (!nodeId.equals(connKey))
+            if (!nodeId.equals(connKey.nodeId()))
                 continue;
 
             GridFutureAdapter<GridCommunicationClient> fut = clientFuts.remove(connKey);
+
             if (nonNull(fut))
                 fut.get().forceClose();
         }
