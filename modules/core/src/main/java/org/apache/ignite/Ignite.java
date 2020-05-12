@@ -676,6 +676,8 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Clears partition's lost state and moves caches to a normal mode.
+     * <p>
+     * To avoid data loss with persistence it's recommended to return all owners to the grid before calling this method.
      */
     public void resetLostPartitions(Collection<String> cacheNames);
 

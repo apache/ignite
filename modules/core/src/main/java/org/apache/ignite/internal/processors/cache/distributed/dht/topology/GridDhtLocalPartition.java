@@ -551,13 +551,18 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             synchronized (this) {
                 GridDhtPartitionState prevState = state();
 
-                boolean update = this.state.compareAndSet(state, setPartState(state, toState));
+                boolean updated = this.state.compareAndSet(state, setPartState(state, toState));
 
-                if (update) {
+                if (updated) {
                     assert toState != EVICTED || reservations() == 0 : this;
 
                     try {
-                        ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, 0));
+                        // Optimization: do not log OWNING -> OWNING.
+                        if (prevState == OWNING && toState == LOST)
+                            return true;
+
+                        // Log LOST partitions as OWNING.
+                        ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState == LOST ? OWNING : toState, 0));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to log partition state change to WAL.", e);
@@ -570,15 +575,15 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             + ", p=" + id + ", prev=" + prevState + ", to=" + toState + "]");
                 }
 
-                return update;
+                return updated;
             }
         }
         else {
             GridDhtPartitionState prevState = state();
 
-            boolean update = this.state.compareAndSet(state, setPartState(state, toState));
+            boolean updated = this.state.compareAndSet(state, setPartState(state, toState));
 
-            if (update) {
+            if (updated) {
                 assert toState != EVICTED || reservations() == 0 : this;
 
                 if (log.isDebugEnabled())
@@ -586,7 +591,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         + ", p=" + id + ", prev=" + prevState + ", to=" + toState + "]");
             }
 
-            return update;
+            return updated;
         }
     }
 
@@ -940,7 +945,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             finally {
                 clearEvicting();
 
-                clearFuture.finish();
+                clearFuture.finish(); // Invokes clear future listeners.
             }
         }
 
@@ -1105,6 +1110,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Reset partition initial update counter.
+     */
+    public void resetInitialUpdateCounter() {
+        store.resetInitialUpdateCounter();
+    }
+
+    /**
      * @return Total size of all caches.
      */
     public long fullSize() {
@@ -1146,7 +1158,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                     // Do not clear fresh rows in case of partition reloading.
                     // This is required because normal updates are possible to moving partition which is currently cleared.
-                    if (row.version().compareTo(clearVer) >= 0 && state() == MOVING)
+                    // We can clean OWNING partition if a partition has been reset from lost state.
+                    // In this case new updates must be preserved.
+                    if (row.version().compareTo(clearVer) >= 0 && (state() == MOVING || state() == OWNING))
                         continue;
 
                     if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))

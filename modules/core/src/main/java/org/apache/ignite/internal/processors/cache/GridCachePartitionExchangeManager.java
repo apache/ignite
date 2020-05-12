@@ -227,7 +227,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts =
         new ConcurrentSkipListMap<>();
 
-    /** */
+    /** Used for mapping client exchange topology versions to server exchange topology versions. */
     private final ConcurrentNavigableMap<AffinityTopologyVersion, AffinityTopologyVersion> lastAffTopVers =
         new ConcurrentSkipListMap<>();
 
@@ -992,7 +992,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             aff.partitions());
 
         GridClientPartitionTopology old = clientTops.putIfAbsent(grpId,
-            top = new GridClientPartitionTopology(cctx, discoCache, grpId, aff.partitions(), affKey));
+            top = new GridClientPartitionTopology(cctx, discoCache, grpId, aff.partitions(), affKey,
+                ccfg.getPartitionLossPolicy()));
 
         return old != null ? old : top;
     }
@@ -1495,6 +1496,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         m.addPartitionUpdateCounters(grp.groupId(),
                             CachePartitionFullCountersMap.toCountersMap(cntrsMap));
                     }
+
+                    // Lost partitions can be skipped on node left or activation.
+                    m.addLostPartitions(grp.groupId(), grp.topology().lostPartitions());
                 }
             }
         }
@@ -1518,6 +1522,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (!partSizesMap.isEmpty())
                     partsSizes.put(top.groupId(), partSizesMap);
+
+                m.addLostPartitions(top.groupId(), top.lostPartitions());
             }
         }
 
@@ -1890,8 +1896,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             msg.partsToReload(cctx.localNodeId(), grpId),
                             partsSizes.getOrDefault(grpId, Collections.emptyMap()),
                             msg.topologyVersion(),
-                            null
-                        );
+                            null,
+                            null);
                     }
                 }
 

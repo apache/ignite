@@ -132,7 +132,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withNoRetries();
 
     /**
-     * Gets an instance of {@code IgniteCache} that will be allowed to execute cache operations (read, write)
+     * Gets an instance of {@code IgniteCache} that will be allowed to execute cache read operations
      * regardless of partition loss policy.
      *
      * @return Cache without partition loss protection.

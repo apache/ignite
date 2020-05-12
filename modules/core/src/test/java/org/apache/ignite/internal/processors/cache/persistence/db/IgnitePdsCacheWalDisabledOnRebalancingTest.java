@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -75,6 +76,12 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
     private static final int CACHE_SIZE = 2_000;
 
     /** */
+    private static final String CACHE1_NAME = "cache1";
+
+    /** */
+    private static final String CACHE2_NAME = "cache2";
+
+    /** */
     private static final String CACHE3_NAME = "cache3";
 
     /** Function to generate cache values. */
@@ -114,12 +121,12 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         // This is required because some tests do full clearing of persistence folder losing BLT info on next join.
         cfg.setConsistentId(igniteInstanceName);
 
-        CacheConfiguration ccfg1 = new CacheConfiguration("cache1")
+        CacheConfiguration ccfg1 = new CacheConfiguration(CACHE1_NAME)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.REPLICATED)
             .setAffinity(new RendezvousAffinityFunction(false, CACHE1_PARTS_NUM));
 
-        CacheConfiguration ccfg2 = new CacheConfiguration("cache2")
+        CacheConfiguration ccfg2 = new CacheConfiguration(CACHE2_NAME)
             .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.PARTITIONED)
@@ -369,7 +376,11 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         startClientGrid("client");
 
+        assertFalse(grid(1).cache(CACHE2_NAME).lostPartitions().isEmpty());
+
         fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
+
+        ig0.resetLostPartitions(Collections.singleton(CACHE2_NAME));
 
         awaitPartitionMapExchange();
 
