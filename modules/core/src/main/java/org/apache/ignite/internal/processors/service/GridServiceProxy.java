@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -29,12 +30,12 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -53,6 +54,9 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.platform.PlatformServiceGetter;
+import org.apache.ignite.platform.PlatformServiceMethod;
+import org.apache.ignite.platform.PlatformServiceSetter;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 
@@ -110,6 +114,9 @@ public class GridServiceProxy<T> implements Serializable {
     /** Service availability wait timeout. */
     private final long waitTimeout;
 
+    /** */
+    private final Map<GridServiceMethodReflectKey, String> srvMtds;
+
     /**
      * @param prj Grid projection.
      * @param name Service name.
@@ -137,6 +144,8 @@ public class GridServiceProxy<T> implements Serializable {
         hasLocNode = hasLocalNode(prj);
 
         log = ctx.log(getClass());
+
+        srvMtds = Collections.unmodifiableMap(processServiceAnnotations(svc));
 
         proxy = (T)Proxy.newProxyInstance(
             svc.getClassLoader(),
@@ -205,7 +214,7 @@ public class GridServiceProxy<T> implements Serializable {
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BROADCAST,
-                            new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
+                            new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args),
                             Collections.singleton(node),
                             false,
                             waitTimeout,
@@ -272,7 +281,7 @@ public class GridServiceProxy<T> implements Serializable {
      */
     private Object callServiceLocally(Service svc, Method mtd, Object[] args) throws Exception {
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
-            return ((PlatformService)svc).invokeMethod(mtd.getName(), false, true, args);
+            return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args);
         else
             return mtd.invoke(svc, args);
     }
@@ -388,6 +397,48 @@ public class GridServiceProxy<T> implements Serializable {
     }
 
     /**
+     * @param mtd Method to invoke.
+     */
+    String methodName(Method mtd) {
+        GridServiceMethodReflectKey mtdKey = new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes());
+
+        return srvMtds.getOrDefault(mtdKey, mtd.getName());
+    }
+
+    /**
+     * @param svc Service interface.
+     */
+    private Map<GridServiceMethodReflectKey, String> processServiceAnnotations(Class<? super T> svc) {
+        Map<GridServiceMethodReflectKey, String> map = new HashMap<>();
+
+        for (Method mtd: svc.getDeclaredMethods()) {
+            GridServiceMethodReflectKey mtdKey = new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes());
+
+            for (Annotation ann: mtd.getDeclaredAnnotations()) {
+                String rawMtdName = null;
+
+                if (ann instanceof PlatformServiceGetter) {
+                    PlatformServiceGetter getter = (PlatformServiceGetter)ann;
+
+                    rawMtdName = getter.prefix() + getter.value();
+                }
+                else if (ann instanceof PlatformServiceSetter) {
+                    PlatformServiceSetter setter = (PlatformServiceSetter)ann;
+
+                    rawMtdName = setter.prefix() + setter.value();
+                }
+                else if (ann instanceof PlatformServiceMethod)
+                    rawMtdName = ((PlatformServiceMethod)ann).value();
+
+                if (rawMtdName != null)
+                    map.putIfAbsent(mtdKey, rawMtdName);
+            }
+        }
+
+        return map;
+    }
+
+    /**
      * Invocation handler for service proxy.
      */
     private class ProxyInvocationHandler implements InvocationHandler {
@@ -419,7 +470,7 @@ public class GridServiceProxy<T> implements Serializable {
 
         /** Grid instance. */
         @IgniteInstanceResource
-        private transient Ignite ignite;
+        private transient IgniteEx ignite;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -443,7 +494,7 @@ public class GridServiceProxy<T> implements Serializable {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            ServiceContextImpl ctx = ((IgniteEx)ignite).context().service().serviceContext(svcName);
+            ServiceContextImpl ctx = ignite.context().service().serviceContext(svcName);
 
             if (ctx == null || ctx.service() == null)
                 throw new GridServiceNotFoundException(svcName);

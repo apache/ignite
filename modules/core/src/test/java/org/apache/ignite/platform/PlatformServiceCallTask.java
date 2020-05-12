@@ -53,14 +53,14 @@ public class PlatformServiceCallTask extends AbstractPlatformServiceCallTask {
             TestPlatformService srv = ignite.services().serviceProxy(srvcName, TestPlatformService.class, false);
 
             {
-                UUID nodeId = srv.get_NodeId();
+                UUID nodeId = srv.getNodeId();
                 assertTrue(ignite.cluster().nodes().stream().anyMatch(n -> n.id().equals(nodeId)));
             }
 
             {
                 UUID expUuid = UUID.randomUUID();
-                srv.set_GuidProp(expUuid);
-                assertEquals(expUuid, srv.get_GuidProp());
+                srv.setGuidProp(expUuid);
+                assertEquals(expUuid, srv.getGuidProp());
             }
 
             {
@@ -70,7 +70,7 @@ public class PlatformServiceCallTask extends AbstractPlatformServiceCallTask {
             }
 
             try {
-                srv.ErrorMethod();
+                srv.errorMethod();
 
                 throw new RuntimeException("Expected exception, but invocation was success");
             }
