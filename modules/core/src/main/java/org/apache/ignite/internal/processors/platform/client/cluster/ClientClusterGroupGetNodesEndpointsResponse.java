@@ -116,7 +116,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
      * @param writer Writer.
      * @param node Node.
      */
-    private boolean writeNode(BinaryRawWriterEx writer, ClusterNode node) {
+    private static boolean writeNode(BinaryRawWriterEx writer, ClusterNode node) {
         if (node.isClient())
             return false;
 
@@ -148,7 +148,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
      * @param writer Writer.
      * @param id id.
      */
-    private void writeUuid(BinaryRawWriterEx writer, UUID id) {
+    private static void writeUuid(BinaryRawWriterEx writer, UUID id) {
         writer.writeLong(id.getMostSignificantBits());
         writer.writeLong(id.getLeastSignificantBits());
     }
@@ -159,7 +159,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
      * @param nodes Nodes.
      * @return Set of node ids.
      */
-    private Map<UUID, ClusterNode> toMap(Collection<ClusterNode> nodes) {
+    private static Map<UUID, ClusterNode> toMap(Collection<ClusterNode> nodes) {
         Map<UUID, ClusterNode> res = new HashMap<>(nodes.size());
 
         for (ClusterNode node : nodes)
