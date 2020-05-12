@@ -42,16 +42,29 @@ COPY ./ssh-config /root/.ssh/config
 RUN ssh-keygen -m PEM -q -t rsa -N '' -f /root/.ssh/id_rsa && cp -f /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
 RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 
-# Install binary test dependencies.
-# we use the same versions as in vagrant/base.sh
-ARG IGNITE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
-ARG IGNITE_NAME="ignite-2.8.0"
-ARG RELEASE_NAME="apache-ignite-2.8.0-bin"
 RUN chmod a+wr /opt
-RUN curl -s "$IGNITE_MIRROR/ignite/2.8.0/$RELEASE_NAME.zip" > /opt/$RELEASE_NAME.zip
-RUN cd /opt && unzip $RELEASE_NAME.zip && rm $RELEASE_NAME.zip
-RUN mv /opt/$RELEASE_NAME /opt/$IGNITE_NAME
+
+ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
+
+# Install binary test dependencies.
+ARG IGNITE_VERSION="2.8.0"
+ARG IGNITE_NAME="ignite-$IGNITE_VERSION"
+ARG IGNITE_RELEASE_NAME="apache-ignite-$IGNITE_VERSION-bin"
+
+ADD $APACHE_MIRROR/ignite/$IGNITE_VERSION/$IGNITE_RELEASE_NAME.zip /opt/
+RUN cd /opt && unzip $IGNITE_RELEASE_NAME.zip && rm $IGNITE_RELEASE_NAME.zip
+RUN mv /opt/$IGNITE_RELEASE_NAME /opt/$IGNITE_NAME
 RUN chmod a+wr /opt/$IGNITE_NAME -R
+
+# Install spark
+ARG SPARK_VERSION="2.3.4"
+ARG SPARK_NAME="spark-$SPARK_VERSION"
+ARG SPARK_RELEASE_NAME="spark-$SPARK_VERSION-bin-hadoop2.7"
+
+ADD $APACHE_MIRROR/spark/$SPARK_NAME/$SPARK_RELEASE_NAME.tgz /opt/
+RUN cd /opt && tar xvf $SPARK_RELEASE_NAME.tgz && rm $SPARK_RELEASE_NAME.tgz
+RUN mv /opt/$SPARK_RELEASE_NAME /opt/$SPARK_NAME
+RUN chmod a+wr /opt/$SPARK_NAME -R
 
 # The version of Kibosh to use for testing.
 # If you update this, also update vagrant/base.sh

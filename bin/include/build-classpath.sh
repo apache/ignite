@@ -47,20 +47,25 @@ includeToClassPath() {
 
     for file in $1/*
     do
-        if [ -d ${file} ] && [ -d "${file}/target" ]; then
-            if [ -d "${file}/target/classes" ]; then
-                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/classes
-            fi
+        if [[ -z "${EXCLUDE_MODULES}" ]] || [[ ${EXCLUDE_MODULES} != *"`basename $file`"* ]]; then
+            echo "$file included"
+            if [ -d ${file} ] && [ -d "${file}/target" ]; then
+                if [ -d "${file}/target/classes" ]; then
+                    IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/classes
+                fi
 
-            if [[ -z "${EXCLUDE_TEST_CLASSES}" ]]; then
-              if [ -d "${file}/target/test-classes" ]; then
-                  IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/test-classes
-              fi
-            fi
+                if [[ -z "${EXCLUDE_TEST_CLASSES}" ]]; then
+                  if [ -d "${file}/target/test-classes" ]; then
+                      IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/test-classes
+                  fi
+                fi
 
-            if [ -d "${file}/target/libs" ]; then
-                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/libs/*
+                if [ -d "${file}/target/libs" ]; then
+                    IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/libs/*
+                fi
             fi
+        else
+          echo "$file excluded by EXCLUDE_MODULES settings"
         fi
     done
     

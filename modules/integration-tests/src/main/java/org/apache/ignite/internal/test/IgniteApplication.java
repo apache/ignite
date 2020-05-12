@@ -21,13 +21,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 public class IgniteApplication {
-    public static final String CONFIG_PATH = "/mnt/client_app/ignite-config.xml";
+    public static final String CONFIG_PATH = "/mnt/client_app/ignite-client-config.xml";
 
     public static void main(String[] args) throws IgniteCheckedException {
         IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfgs = IgnitionEx.loadConfiguration(CONFIG_PATH);
@@ -46,7 +47,16 @@ public class IgniteApplication {
                 cache.put(i, i);
             }
 
+            executeSql(cache, "CREATE TABLE person(id INT, fio VARCHAR, PRIMARY KEY(id))");
+            executeSql(cache, "INSERT INTO person(id, fio) VALUES(?, ?)", 1, "Ivanov Ivan");
+            executeSql(cache, "INSERT INTO person(id, fio) VALUES(?, ?)", 2, "Petrov Petr");
+            executeSql(cache, "INSERT INTO person(id, fio) VALUES(?, ?)", 3, "Sidorov Sidr");
+
             System.out.println("Ignite Client Finish.");
         }
+    }
+
+    private static void executeSql(IgniteCache<Integer, Integer> cache, String query, Object...args) {
+        cache.query(new SqlFieldsQuery(query).setArgs(args)).getAll();
     }
 }

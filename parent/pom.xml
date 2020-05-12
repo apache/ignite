@@ -123,7 +123,7 @@
         <slf4j16.version>1.6.4</slf4j16.version>
         <snappy.version>1.1.7.2</snappy.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
-        <spark.version>2.3.0</spark.version>
+        <spark.version>2.3.4</spark.version>
         <spring.data.version>1.13.23.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
         <spring.version>4.3.26.RELEASE</spring.version><!-- don't forget to update spring-data version -->
         <spring.data-2.0.version>2.0.13.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
