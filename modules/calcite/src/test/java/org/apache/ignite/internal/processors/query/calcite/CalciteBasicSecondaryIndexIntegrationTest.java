@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -505,6 +506,26 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     }
 
     @Test
+    public void testComplexIndexCondition16() {
+        checkQuery("SELECT * FROM Developer WHERE age=33 AND (city='Vienna' AND depId=3)",
+            "PUBLIC, DEVELOPER", DEPID_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    @Ignore
+    @Test
+    public void testComplexIndexCondition17() {
+        checkQuery("SELECT * FROM Developer WHERE depId=?+1",
+            "PUBLIC, DEVELOPER", DEPID_IDX, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33)),
+            3
+        );
+    }
+
+    @Test
     public void testEmptyResult() {
         checkQuery("SELECT * FROM Developer WHERE age=33 AND city='Leipzig'",
             "PUBLIC, DEVELOPER", PK, false,
@@ -513,12 +534,30 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     }
 
     @Test
-    public void testOrCondition() {
+    public void testOrCondition1() {
         checkQuery("SELECT * FROM Developer WHERE name='Mozart' OR depId=1",
             "PUBLIC, DEVELOPER", PK, false,
             asList(
                 asList(1, "Mozart", 3, "Vienna", 33),
                 asList(3, "Bach", 1, "Leipzig", 55))
+        );
+    }
+
+    @Test
+    public void testOrCondition2() {
+        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND (depId=1 OR depId=3)",
+            "PUBLIC, DEVELOPER", PK, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
+        );
+    }
+
+    @Test
+    public void testOrCondition3() {
+        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND (age > 22 AND (depId=1 OR depId=3))",
+            "PUBLIC, DEVELOPER", PK, false,
+            asList(
+                asList(1, "Mozart", 3, "Vienna", 33))
         );
     }
 

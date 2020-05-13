@@ -58,6 +58,7 @@ import static org.apache.calcite.sql.SqlKind.GREATER_THAN;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
+import static org.apache.calcite.sql.SqlKind.OR;
 
 /**
  * Relational operator that returns the contents of a table.
@@ -123,12 +124,13 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         buildIndexConditions();
     }
 
-    //        // TODO Merge OR filters result using several index cursors
-//        // TODO simplify and merge overlapping conditions
-//        // TODO do we always scan over index? datapages scan?
-//        // TODO IN operator
-//        // TODO BETWEEN
-//
+    // TODO Merge OR filters result using several index cursors
+    // TODO simplify and merge overlapping conditions on the same column.
+    // TODO do we always scan over index? datapages scan?
+    // TODO IN operator
+    // TODO BETWEEN
+    // TODO support expressions like WHERE a=?+1
+    // TODO handle correlVariable as constant?
 
     private void buildIndexConditions() {
         if (!boundsArePossible())
@@ -163,7 +165,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
                 SqlOperator op = pred.getOperator();
                 switch (op.kind) {
                     case EQUALS:
-                        bestUpper = cond; // TODO support and merge multiple conditions on the same column.
+                        bestUpper = cond;
                         bestLower = cond;
                         break;
 
@@ -229,12 +231,12 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
                 continue;
 
             RexCall predCall = (RexCall)rexNode;
-            RexLocalRef inputRef = (RexLocalRef)extractOperand(predCall, true);
+            RexLocalRef ref = (RexLocalRef)extractOperand(predCall, true);
 
-            if (inputRef == null)
+            if (ref == null)
                 continue;
 
-            int constraintFldIdx = inputRef.getIndex();
+            int constraintFldIdx = ref.getIndex();
 
             List<RexCall> fldPreds = fieldsToPredicates
                 .computeIfAbsent(constraintFldIdx, k -> new ArrayList<>(predicatesConjunction.size()));
@@ -252,8 +254,9 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         if (condition == null)
             return false;
 
+        RexCall dnf = ((RexCall)RexUtil.toDnf(getCluster().getRexBuilder(), condition));
 
-        if (RelOptUtil.disjunctions(condition).size() > 1)
+        if (dnf.isA(OR) && dnf.getOperands().size() > 1)
             return false;
 
         if (igniteTable.collations().isEmpty())
@@ -275,7 +278,6 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         leftOp = removeCast(leftOp);
         rightOp = removeCast(rightOp);
 
-        // TODO handle correlVariable as constant?
         if (leftOp instanceof RexLocalRef && (rightOp instanceof RexLiteral || rightOp instanceof RexDynamicParam))
             return inputRef ? leftOp : rightOp;
         else if ((leftOp instanceof RexLiteral || leftOp instanceof RexDynamicParam) && rightOp instanceof RexLocalRef)
