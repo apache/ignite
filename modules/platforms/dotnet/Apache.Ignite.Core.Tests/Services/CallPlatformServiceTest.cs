@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Resource;
@@ -29,8 +28,6 @@ namespace Apache.Ignite.Core.Tests.Services
     /// <summary>
     /// Tests calling platform service from java.
     /// </summary>
-    [TestFixture(false)]
-    [TestFixture(true)]
     public class CallPlatformServiceTest
     {
         /** */
@@ -50,23 +47,11 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         protected IIgnite Grid3;
-
-        /** */
-        private readonly bool _serviceGridLegacy;
-
-        /// <summary>
-        /// Constructor of test.
-        /// </summary>
-        /// <param name="serviceGridLegacy">Option to set if service grid should use legacy mode or not.</param>
-        public CallPlatformServiceTest(bool serviceGridLegacy)
-        {
-            _serviceGridLegacy = serviceGridLegacy;
-        }
         
         /// <summary>
         /// Start grids and deploy test service.
         /// </summary>
-        [TestFixtureSetUp]
+        [SetUp]
         public void SetUp()
         {
             StartGrids();
@@ -75,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Stop grids after test.
         /// </summary>
-        [TestFixtureTearDown]
+        [TearDown]
         public void TearDown()
         {
             StopGrids();
@@ -153,11 +138,6 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private IgniteConfiguration GetConfiguration(int idx)
         {
-            List<string> jvmOpts = new List<string>();
-
-            if (_serviceGridLegacy)
-                jvmOpts.Add("-DIGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED=false");
-
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 IgniteInstanceName = "grid" + idx,
@@ -165,8 +145,7 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof(BinarizableTestValue))
                 {
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance
-                },
-                JvmOptions = jvmOpts
+                }
             };
         }
         

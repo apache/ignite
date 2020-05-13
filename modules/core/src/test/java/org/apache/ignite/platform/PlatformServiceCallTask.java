@@ -65,8 +65,8 @@ public class PlatformServiceCallTask extends AbstractPlatformServiceCallTask {
 
             {
                 TestValue exp = new TestValue(1, "test");
-                srv.set_ValueProp(exp);
-                assertEquals(exp, srv.get_ValueProp());
+                srv.setValueProp(exp);
+                assertEquals(exp, srv.getValueProp());
             }
 
             try {

@@ -23,10 +23,36 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Annotation for setting mapping between java interface's method and setter of platform service property (mostly useful
+ * for .NET services). Name mapping is constructed by concatenating {@link PlatformServiceSetter#prefix}
+ * with {@link PlatformServiceSetter#value}.
+ * <p/>
+ * For example, this annotated java inerface method:
+ * <pre>
+ * {@code
+ * @PlatformServiceSetter("SomeProperty")
+ * void setSomeProperty(SomeProperty val)
+ * }
+ * </pre>
+ * will be mapped to {@code set_SomeProperty} method name and corresponds to the following .NET property:
+ * <pre>
+ * {@code
+ * SomeProperty { set; }
+ * }
+ * </pre>
+ */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface PlatformServiceSetter {
+    /**
+     * Property name in corresponding platform service.
+     */
     String value();
+
+    /**
+     * Prefix for platform setter.
+     */
     String prefix() default "set_";
 }

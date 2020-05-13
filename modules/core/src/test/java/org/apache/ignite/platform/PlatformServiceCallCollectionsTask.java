@@ -58,7 +58,7 @@ public class PlatformServiceCallCollectionsTask extends AbstractPlatformServiceC
                 TestValue[] exp = IntStream.range(0, 10).mapToObj(i -> new TestValue(i, "name_" + i))
                         .toArray(TestValue[]::new);
 
-                TestValue[] res = srv.AddOneToEach(exp);
+                TestValue[] res = srv.addOneToEach(exp);
 
                 assertEquals(exp.length, res.length);
 
@@ -70,7 +70,7 @@ public class PlatformServiceCallCollectionsTask extends AbstractPlatformServiceC
                 List<TestValue> exp = IntStream.range(0, 10).mapToObj(i -> new TestValue(i, "name_" + i))
                         .collect(Collectors.toList());
 
-                Collection<TestValue> res = srv.AddOneToEachCollection(exp);
+                Collection<TestValue> res = srv.addOneToEachCollection(exp);
 
                 assertEquals(exp.size(), res.size());
 
@@ -82,7 +82,7 @@ public class PlatformServiceCallCollectionsTask extends AbstractPlatformServiceC
                         .mapToObj(i -> new T2<>(new TestKey(i), new TestValue(i, "name_" + i)))
                         .collect(Collectors.toMap(T2::getKey, T2::getValue));
 
-                Map<TestKey, TestValue> res = srv.AddOneToEachDictionary(exp);
+                Map<TestKey, TestValue> res = srv.addOneToEachDictionary(exp);
 
                 assertEquals(exp.size(), res.size());
 

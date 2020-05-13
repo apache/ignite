@@ -23,9 +23,30 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Annotation for setting mapping between java interface's method and platform service's method. Name mapping
+ * is got from {@link PlatformServiceMethod#value}
+ * <p/>
+ * For example, this annotated java inerface method:
+ * <pre>
+ * {@code
+ * @PlatformServiceMethod("SomeMethod")
+ * Object someMethod(Object[] args)
+ * }
+ * </pre>
+ * will be mapped to {@code SomeMethod}, for example (.NET service):
+ * <pre>
+ * {@code
+ * object SomeMethod(object[] args)
+ * }
+ * </pre>
+ */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface PlatformServiceMethod {
+    /**
+     * Method name in corresponding platform service.
+     */
     String value();
 }

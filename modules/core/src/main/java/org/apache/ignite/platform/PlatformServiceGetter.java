@@ -23,10 +23,36 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Annotation for setting mapping between java interface's method and getter of platform service property (mostly useful
+ * for .NET services). Name mapping constructed by concatenating {@link PlatformServiceGetter#prefix}
+ * with {@link PlatformServiceGetter#value}.
+ * <p/>
+ * For example, this annotated java inerface method:
+ * <pre>
+ * {@code
+ * @PlatformServiceGetter("SomeProperty")
+ * SomeProperty getSomeProperty()
+ * }
+ * </pre>
+ * will be mapped to {@code get_SomeProperty} method name and corresponds to the following .NET property:
+ * <pre>
+ * {@code
+ * SomeProperty { get; }
+ * }
+ * </pre>
+ */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface PlatformServiceGetter {
+    /**
+     * Property name in corresponding platform service.
+     */
     String value();
+
+    /**
+     * Prefix for platform getter.
+     */
     String prefix() default "get_";
 }

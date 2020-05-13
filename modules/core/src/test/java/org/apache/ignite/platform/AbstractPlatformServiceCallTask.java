@@ -153,26 +153,32 @@ public abstract class AbstractPlatformServiceCallTask extends ComputeTaskAdapter
         void setGuidProp(UUID val);
 
         /** */
-        TestValue get_ValueProp();
+        @PlatformServiceGetter("ValueProp")
+        TestValue getValueProp();
 
         /** */
-        void set_ValueProp(TestValue val);
+        @PlatformServiceSetter("ValueProp")
+        void setValueProp(TestValue val);
 
         /** */
         @PlatformServiceMethod("ErrorMethod")
         void errorMethod();
 
         /** */
-        TestValue[] AddOneToEach(TestValue[] col);
+        @PlatformServiceMethod("AddOneToEach")
+        TestValue[] addOneToEach(TestValue[] col);
 
         /** */
-        Collection<TestValue> AddOneToEachCollection(Collection<TestValue> col);
+        @PlatformServiceMethod("AddOneToEachCollection")
+        Collection<TestValue> addOneToEachCollection(Collection<TestValue> col);
 
         /** */
-        Map<TestKey, TestValue> AddOneToEachDictionary(Map<TestKey, TestValue> dict);
+        @PlatformServiceMethod("AddOneToEachDictionary")
+        Map<TestKey, TestValue> addOneToEachDictionary(Map<TestKey, TestValue> dict);
 
         /** */
-        BinarizableTestValue AddOne(BinarizableTestValue val);
+        @PlatformServiceMethod("AddOne")
+        BinarizableTestValue addOne(BinarizableTestValue val);
     }
 
     /** */

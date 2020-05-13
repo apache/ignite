@@ -114,7 +114,7 @@ public class GridServiceProxy<T> implements Serializable {
     /** Service availability wait timeout. */
     private final long waitTimeout;
 
-    /** */
+    /** Mappings methods to method names (mostly for calling platform services). */
     private final Map<GridServiceMethodReflectKey, String> srvMtds;
 
     /**
@@ -415,7 +415,7 @@ public class GridServiceProxy<T> implements Serializable {
             GridServiceMethodReflectKey mtdKey = new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes());
 
             for (Annotation ann: mtd.getDeclaredAnnotations()) {
-                String rawMtdName = null;
+                String rawMtdName;
 
                 if (ann instanceof PlatformServiceGetter) {
                     PlatformServiceGetter getter = (PlatformServiceGetter)ann;
@@ -429,9 +429,10 @@ public class GridServiceProxy<T> implements Serializable {
                 }
                 else if (ann instanceof PlatformServiceMethod)
                     rawMtdName = ((PlatformServiceMethod)ann).value();
+                else
+                    rawMtdName = mtd.getName();
 
-                if (rawMtdName != null)
-                    map.putIfAbsent(mtdKey, rawMtdName);
+                map.putIfAbsent(mtdKey, rawMtdName);
             }
         }
 
