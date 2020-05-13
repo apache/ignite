@@ -35,7 +35,7 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -46,6 +46,9 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * Tests service invocation if requested service is not deployed on the local node and the service topology is required.
  */
 public class GridServiceProxyTopologyInitializationTest extends GridCommonAbstractTest {
+    /** Number of the test nodes. */
+    private static final int NODES_CNT = 2;
+
     /** Name of the service that throws exception during initialization. */
     private static final String BROKEN_SRVC = "broken-service";
 
@@ -63,9 +66,6 @@ public class GridServiceProxyTopologyInitializationTest extends GridCommonAbstra
 
     /** Latch that indicated whether {@link ServiceSingleNodeDeploymentResultBatch} was handled on the remote node. */
     private final CountDownLatch fullMsgHandledLatch = new CountDownLatch(1);
-
-    /** Number of the test nodes. */
-    private static final int NODES_CNT = 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -101,8 +101,8 @@ public class GridServiceProxyTopologyInitializationTest extends GridCommonAbstra
     /**
      * Ignores the test in case the legacy service processor is used.
      */
-    @Before
-    public void check() {
+    @BeforeClass
+    public static void checkServiceProcessorType() {
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 
@@ -124,11 +124,15 @@ public class GridServiceProxyTopologyInitializationTest extends GridCommonAbstra
 
         IgniteEx rmt = grid(NODES_CNT - 1);
 
+        assertEquals(1, fullMsgUnblockedLatch.getCount());
+
         fullMsgUnblockedLatch.countDown();
+
+        assertEquals(1, fullMsgHandledLatch.getCount());
 
         deployServices(loc);
 
-        fullMsgHandledLatch.await(getTestTimeout(), MILLISECONDS);
+        assertTrue(fullMsgHandledLatch.await(getTestTimeout(), MILLISECONDS));
 
         assertThrowsWithCause(
             () -> rmt.services().serviceProxy(BROKEN_SRVC, Invoker.class, false).invoke(),
@@ -149,9 +153,11 @@ public class GridServiceProxyTopologyInitializationTest extends GridCommonAbstra
 
         IgniteEx rmt = grid(NODES_CNT - 1);
 
+        assertEquals(1, fullMsgReceivedLatch.getCount());
+
         deployServices(loc);
 
-        fullMsgReceivedLatch.await(getTestTimeout(), MILLISECONDS);
+        assertTrue(fullMsgReceivedLatch.await(getTestTimeout(), MILLISECONDS));
 
         IgniteInternalFuture<Boolean> decentSvcFut = runAsync(() ->
             rmt.services().serviceProxy(DECENT_SRVC, Invoker.class, false).invoke());
@@ -160,6 +166,8 @@ public class GridServiceProxyTopologyInitializationTest extends GridCommonAbstra
             rmt.services().serviceProxy(BROKEN_SRVC, Invoker.class, false).invoke());
 
         U.sleep(500);
+
+        assertEquals(1, fullMsgUnblockedLatch.getCount());
 
         assertFalse(decentSvcFut.isDone());
         assertFalse(brokenSvcFut.isDone());

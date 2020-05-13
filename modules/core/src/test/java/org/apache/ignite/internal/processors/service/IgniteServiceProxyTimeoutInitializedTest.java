@@ -156,12 +156,14 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
 
         IgniteEx srv = startGrid(0);
 
-        latch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+        assertTrue(latch1.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
         IgniteInternalFuture<?> srvcFut = runAsync(() ->
             srv.services().serviceProxy("testService", TestService.class, false).test());
 
         U.sleep(500);
+
+        assertEquals(1, latch2.getCount());
 
         assertFalse(srvcFut.isDone());
 
