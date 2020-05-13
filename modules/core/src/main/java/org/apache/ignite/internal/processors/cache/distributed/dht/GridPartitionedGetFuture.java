@@ -608,7 +608,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private void validate(Collection<ClusterNode> cacheNodes, GridDhtTopologyFuture topFut) {
         assert topFut.isDone() : topFut;
 
-        Throwable err = topFut != null ? topFut.validateCache(cctx, recovery, true, null, keys) : null;
+        Throwable err = topFut.validateCache(cctx, recovery, true, null, keys);
 
         if (err != null) {
             onDone(err);

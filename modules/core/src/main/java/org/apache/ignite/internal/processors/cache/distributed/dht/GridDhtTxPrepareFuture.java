@@ -1066,7 +1066,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 err = tx.txState().validateTopology(cctx, writesEmpty, topFut);
 
                 if (err != null)
-                    onDone(null, this.err);
+                    onDone(null, err);
             }
         }
 

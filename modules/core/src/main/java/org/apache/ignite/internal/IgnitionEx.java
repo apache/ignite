@@ -2027,8 +2027,6 @@ public class IgnitionEx {
                 true,
                 DFLT_THREAD_KEEP_ALIVE_TIME);
 
-            rebalanceExecSvc.allowsCoreThreadTimeOut();
-
             if (!F.isEmpty(cfg.getExecutorConfiguration())) {
                 validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());
 

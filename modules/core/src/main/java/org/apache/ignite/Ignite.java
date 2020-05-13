@@ -677,7 +677,8 @@ public interface Ignite extends AutoCloseable {
     /**
      * Clears partition's lost state and moves caches to a normal mode.
      * <p>
-     * To avoid data loss with persistence it's recommended to return all owners to the grid before calling this method.
+     * To avoid permanent data loss for persistent caches it's recommended to return all previously failed baseline
+     * nodes to the topology before calling this method.
      */
     public void resetLostPartitions(Collection<String> cacheNames);
 

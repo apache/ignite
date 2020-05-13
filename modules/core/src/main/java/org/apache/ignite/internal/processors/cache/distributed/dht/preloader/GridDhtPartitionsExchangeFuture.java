@@ -2358,8 +2358,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
 
-                // Detection for joining node is done to avoid a case when joining node is first data node
-                // according to node filter and has no available supplier.
                 if (exchCtx.events().hasServerLeft() || activateCluster())
                     detectLostPartitions(res);
 

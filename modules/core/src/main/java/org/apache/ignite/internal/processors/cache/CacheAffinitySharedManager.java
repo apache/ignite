@@ -1918,7 +1918,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         });
 
         synchronized (mux) {
-            this.waitInfo = null;
+            waitInfo = null;
         }
 
         return true;

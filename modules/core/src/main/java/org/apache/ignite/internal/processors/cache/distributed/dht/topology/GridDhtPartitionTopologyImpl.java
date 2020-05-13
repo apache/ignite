@@ -677,7 +677,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         ClusterNode oldest = discoCache.oldestAliveServerNode();
 
-        // If this is the oldest node.
+        // If this is the oldest node (coordinator) or cache was added during this exchange
         if (oldest != null && (ctx.localNode().equals(oldest) || grpStarted)) {
             if (node2part == null) {
                 node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
@@ -697,7 +697,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (log.isDebugEnabled()) {
                     log.debug("Created new full topology map on oldest node [" +
-                        "grp=" +  grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
+                        "grp=" + grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
                         ", fullMap=" + node2part + ']');
                 }
             }
@@ -1461,7 +1461,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         @Nullable Map<Integer, Long> partSizes,
         @Nullable AffinityTopologyVersion msgTopVer,
         @Nullable GridDhtPartitionsExchangeFuture exchFut,
-        @Nullable Set<Integer> lostParts) {
+        @Nullable Set<Integer> lostParts
+    ) {
         if (log.isDebugEnabled()) {
             log.debug("Updating full partition map " +
                 "[grp=" + grp.cacheOrGroupName() + ", exchVer=" + exchangeVer + ", fullMap=" + fullMapString() + ']');

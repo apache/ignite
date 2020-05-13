@@ -562,7 +562,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             return true;
 
                         // Log LOST partitions as OWNING.
-                        ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState == LOST ? OWNING : toState, 0));
+                        ctx.wal().log(
+                            new PartitionMetaStateRecord(grp.groupId(), id, toState == LOST ? OWNING : toState, 0));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to log partition state change to WAL.", e);
