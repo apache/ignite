@@ -137,7 +137,6 @@ public class IdleVerifyUtility {
 
                 partsWithCounters.put(part.id(), new T2<>(lwmCntr, hwmCntr));
             }
-
         }
 
         return partsWithCountersPerGrp;

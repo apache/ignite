@@ -170,6 +170,7 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
             int partHash = 0;
             long partSize;
             long updateCntrBefore;
+            long reservedUpdCntrBefore;
             List<PartitionEntryHashRecord> partEntryHashRecords;
 
             try {
@@ -177,6 +178,8 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
                     return Collections.emptyMap();
 
                 updateCntrBefore = part.updateCounter();
+
+                reservedUpdCntrBefore = part.dataStore().partUpdateCounter().reserved();
 
                 partSize = part.dataStore().fullSize();
 
@@ -206,10 +209,13 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
 
                 long updateCntrAfter = part.updateCounter();
 
-                if (updateCntrBefore != updateCntrAfter) {
+                long reservedUpdCntrAfter = part.dataStore().partUpdateCounter().reserved();
+
+                if (updateCntrBefore != updateCntrAfter || reservedUpdCntrBefore != reservedUpdCntrAfter) {
                     throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
                         ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during hash calculation " +
-                        "[before=" + updateCntrBefore + ", after=" + updateCntrAfter + "]");
+                        "[before=" + updateCntrBefore + ", after=" + updateCntrAfter +
+                        ", reservedUpdCntrBefore=" + reservedUpdCntrBefore + ", reservedUpdCntrAfter=" + reservedUpdCntrAfter + "]");
                 }
             }
             catch (IgniteCheckedException e) {
