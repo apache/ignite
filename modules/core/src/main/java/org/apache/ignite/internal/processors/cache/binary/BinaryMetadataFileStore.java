@@ -115,6 +115,9 @@ class BinaryMetadataFileStore {
      * Starts worker thread for async writing of binary metadata.
      */
     void start() throws IgniteCheckedException {
+        if (!isPersistenceEnabled)
+            return;
+
         U.ensureDirectory(metadataDir, "directory for serialized binary metadata", log);
 
         writer = new BinaryMetadataAsyncWriter();
