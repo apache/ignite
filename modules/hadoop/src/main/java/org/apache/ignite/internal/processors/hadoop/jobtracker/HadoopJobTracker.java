@@ -694,7 +694,7 @@ public class HadoopJobTracker extends HadoopComponent {
             }
 
             // Iteration over all local entries is correct since system cache is REPLICATED.
-            for (IgniteCache.Entry<HadoopJobId, HadoopJobMetadata>  entry : entries) {
+            for (IgniteCache.Entry<HadoopJobId, HadoopJobMetadata> entry : entries) {
                 HadoopJobMetadata meta = entry.getValue();
 
                 HadoopJobId jobId = meta.jobId();

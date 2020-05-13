@@ -35,7 +35,7 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (testFooter) {
             cfg.setMarshaller(new BinaryMarshaller());

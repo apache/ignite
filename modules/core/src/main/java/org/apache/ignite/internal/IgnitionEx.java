@@ -1375,7 +1375,7 @@ public class IgnitionEx {
      * @param name Grid name.
      * @return Grid instance.
      */
-    public  static IgniteKernal gridx(@Nullable String name) {
+    public static IgniteKernal gridx(@Nullable String name) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         IgniteKernal res;
@@ -1702,8 +1702,9 @@ public class IgnitionEx {
 
                     start0(startCtx, myCfg, startNodeTimer);
 
-                    log.info("Node started : "
-                        + startNodeTimer.stagesTimings().stream().collect(joining(",", "[", "]")));
+                    if (log.isInfoEnabled())
+                        log.info("Node started : "
+                            + startNodeTimer.stagesTimings().stream().collect(joining(",", "[", "]")));
                 }
                 catch (Exception e) {
                     if (log != null)
@@ -1748,6 +1749,13 @@ public class IgnitionEx {
             UncaughtExceptionHandler oomeHnd = new UncaughtExceptionHandler() {
                 @Override public void uncaughtException(Thread t, Throwable e) {
                     if (grid != null && X.hasCause(e, OutOfMemoryError.class))
+                        grid.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                }
+            };
+
+            UncaughtExceptionHandler excHnd = new UncaughtExceptionHandler() {
+                @Override public void uncaughtException(Thread t, Throwable e) {
+                    if (grid != null)
                         grid.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
                 }
             };
@@ -2007,7 +2015,7 @@ public class IgnitionEx {
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<>(),
                 GridIoPolicy.UNDEFINED,
-                oomeHnd);
+                excHnd);
 
             rebalanceExecSvc.allowCoreThreadTimeOut(true);
 
@@ -2015,7 +2023,7 @@ public class IgnitionEx {
                 cfg.getRebalanceThreadPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "rebalance-striped",
-                oomeHnd,
+                excHnd,
                 true,
                 DFLT_THREAD_KEEP_ALIVE_TIME);
 

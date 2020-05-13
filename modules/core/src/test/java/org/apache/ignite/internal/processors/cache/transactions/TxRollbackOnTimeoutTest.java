@@ -492,7 +492,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
             fut.cancel(); // Try to interrupt hanging threads.
 
-            throw  e;
+            throw e;
         }
 
         log.info("Tx test stats: started=" + cntr0.sum() +

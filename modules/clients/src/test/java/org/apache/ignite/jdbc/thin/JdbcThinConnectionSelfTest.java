@@ -2185,7 +2185,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      */
     @Test
-    public void testSslClientAndPlainServer()  {
+    public void testSslClientAndPlainServer() {
         Throwable e = assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 DriverManager.getConnection(urlWithPartitionAwarenessProp + "&sslMode=require" +

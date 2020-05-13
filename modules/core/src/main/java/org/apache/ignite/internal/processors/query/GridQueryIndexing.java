@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -474,5 +476,15 @@ public interface GridQueryIndexing {
      */
     default long indexSize(String schemaName, String tblName, String idxName) throws IgniteCheckedException {
         return 0;
+    }
+
+    /**
+     * Information about secondary indexes efficient (actual) inline size.
+     *
+     * @return Map with inline sizes. The key of entry is a full index name (with schema and table name), the value of
+     * entry is a inline size.
+     */
+    default Map<String, Integer> secondaryIndexesInlineSize() {
+        return Collections.emptyMap();
     }
 }

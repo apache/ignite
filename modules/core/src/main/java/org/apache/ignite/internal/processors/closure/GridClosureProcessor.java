@@ -1030,7 +1030,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param plc Policy to choose executor pool.
      * @return Future.
      */
-    public  <R> IgniteInternalFuture<R> callLocalSafe(Callable<R> c, byte plc) {
+    public <R> IgniteInternalFuture<R> callLocalSafe(Callable<R> c, byte plc) {
         try {
             return callLocal(c, plc);
         }

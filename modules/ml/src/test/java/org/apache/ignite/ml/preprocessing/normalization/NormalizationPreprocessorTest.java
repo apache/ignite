@@ -51,6 +51,6 @@ public class NormalizationPreprocessorTest {
         };
 
        for (int i = 0; i < data.length; i++)
-           assertArrayEquals(postProcessedData[i],  preprocessor.apply(i, data[i]).features().asArray(), 1e-2);
+           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-2);
     }
 }

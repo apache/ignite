@@ -587,7 +587,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param expParallelism Expected degree of parallelism.
      */
     @SuppressWarnings("unchecked")
-    private void assertQueryParallelism(String tblName, final int expParallelism  ) {
+    private void assertQueryParallelism(String tblName, final int expParallelism) {
         final String cacheName = "SQL_PUBLIC_" + tblName;
 
         testAllNodes(node -> {
@@ -1059,7 +1059,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute(grid(0), "CREATE TABLE \"Person\" (id int primary key, name varchar)");
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override  public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 execute(client(), "CREATE TABLE \"Person\" (id int primary key, name varchar)");
 
                 return null;

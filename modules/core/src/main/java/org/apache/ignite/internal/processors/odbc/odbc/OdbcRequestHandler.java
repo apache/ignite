@@ -460,7 +460,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                         + paramSet.length + ']');
 
             // Getting meta and do the checks for the first execution.
-            for (Object[] set  : paramSet)
+            for (Object[] set : paramSet)
                 qry.addBatchedArgs(set);
 
             List<FieldsQueryCursor<List<?>>> qryCurs =

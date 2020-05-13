@@ -95,7 +95,7 @@ public class EncryptedFileIO implements FileIO {
         this.encSpi = encSpi;
 
         this.encryptionOverhead = pageSize - CU.encryptedPageSize(pageSize, encSpi);
-        this.zeroes =  new byte[encryptionOverhead];
+        this.zeroes = new byte[encryptionOverhead];
     }
 
     /** {@inheritDoc} */

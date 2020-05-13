@@ -49,6 +49,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
@@ -331,19 +332,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             }
         };
 
+        cctx.gridEvents().addDiscoveryEventListener(new TransactionRecoveryListener(), EVT_NODE_FAILED, EVT_NODE_LEFT);
+
         cctx.gridEvents().addDiscoveryEventListener(
             new DiscoveryEventListener() {
                 @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
                     if (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) {
                         UUID nodeId = evt.eventNode().id();
-
-                        IgniteInternalFuture<?> recInitFut = cctx.kernalContext().closure().runLocalSafe(
-                            new TxRecoveryInitRunnable(evt.eventNode(), cctx.coordinators().currentCoordinator()));
-
-                        recInitFut.listen(future -> {
-                            if (future.error() != null)
-                                cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, future.error()));
-                        });
 
                         for (TxDeadlockFuture fut : deadlockDetectFuts.values())
                             fut.onNodeLeft(nodeId);
@@ -1169,10 +1164,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private void removeObsolete(IgniteInternalTx tx) {
         Collection<IgniteTxEntry> entries = tx.local() ? tx.allEntries() : tx.writeEntries();
 
-        for (IgniteTxEntry entry : entries) {
-            cctx.database().checkpointReadLock();
+        if (F.isEmpty(entries))
+            return;
 
-            try {
+        cctx.database().checkpointReadLock();
+
+        try {
+            for (IgniteTxEntry entry : entries) {
                 GridCacheEntryEx cached = entry.cached();
 
                 GridCacheContext cacheCtx = entry.context();
@@ -1200,10 +1198,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     U.error(log, "Failed to remove obsolete entry from cache: " + cached, e);
                 }
             }
-            finally {
-                cctx.database().checkpointReadUnlock();
-            }
         }
+        finally {
+            cctx.database().checkpointReadUnlock();
+        }
+
     }
 
     /**
@@ -2356,7 +2355,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param failedNodeIds Failed nodes IDs.
      */
     public void commitIfPrepared(IgniteInternalTx tx, Set<UUID> failedNodeIds) {
-        assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
+        assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote : tx;
         assert !F.isEmpty(tx.transactionNodes()) : tx;
         assert tx.nearXidVersion() != null : tx;
 
@@ -3383,6 +3382,27 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TxTimeoutOnPartitionMapExchangeChangeFuture.class, this);
+        }
+    }
+
+    /**
+     * Starts the tx recovery.
+     */
+    private class TransactionRecoveryListener implements DiscoveryEventListener, HighPriorityListener {
+        /** {@inheritDoc} */
+        @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
+            IgniteInternalFuture<?> recInitFut = cctx.kernalContext().closure().runLocalSafe(
+                new TxRecoveryInitRunnable(evt.eventNode(), cctx.coordinators().currentCoordinator()));
+
+            recInitFut.listen(future -> {
+                if (future.error() != null)
+                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, future.error()));
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public int order() {
+            return 0;
         }
     }
 }

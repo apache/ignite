@@ -68,7 +68,12 @@ public enum CacheSubcommands {
     /**
      * Find and remove garbage.
      */
-    FIND_AND_DELETE_GARBAGE("find_garbage", FindAndDeleteGarbageArg.class, new FindAndDeleteGarbage());
+    FIND_AND_DELETE_GARBAGE("find_garbage", FindAndDeleteGarbageArg.class, new FindAndDeleteGarbage()),
+
+    /**
+     * Check secondary indexes inline size.
+     */
+    CHECK_INDEX_INLINE_SIZES("check_index_inline_sizes", null, new CheckIndexInlineSizes());
 
     /** Enumerated values. */
     private static final CacheSubcommands[] VALS = values();

@@ -110,7 +110,7 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage implements G
      * @return Request rows number.
      */
     public int batchSize() {
-        return keys == null ? 0  : keys.size();
+        return keys == null ? 0 : keys.size();
     }
 
     /**

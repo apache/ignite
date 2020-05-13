@@ -68,7 +68,7 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 /**
  * Basic continuous queries test with enabled mvcc.
  */
-public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
+public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest {
     /** */
     private static final long LATCH_TIMEOUT = 5000;
 
@@ -248,7 +248,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
 
                 return null;
             }
-        },  CacheException.class, "Transaction is too large. Consider reducing transaction size");
+        }, CacheException.class, "Transaction is too large. Consider reducing transaction size");
     }
 
     /**

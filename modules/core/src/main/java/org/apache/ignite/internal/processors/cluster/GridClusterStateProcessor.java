@@ -1795,7 +1795,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 try {
                     val = field.getBoolean(cfg);
                 }
-                catch (IllegalAccessException | IllegalArgumentException | NullPointerException  e) {
+                catch (IllegalAccessException | IllegalArgumentException | NullPointerException e) {
                     log.error("Can't get value of field with name " + fieldName + " from config: " + cfg, e);
                 }
 

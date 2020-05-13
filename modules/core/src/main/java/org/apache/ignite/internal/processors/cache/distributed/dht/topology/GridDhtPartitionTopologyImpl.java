@@ -568,11 +568,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
 
                 if (evts.hasServerLeft()) {
-                    List<DiscoveryEvent> evts0 = evts.events();
-
-                    for (int i = 0; i < evts0.size(); i++) {
-                        DiscoveryEvent evt = evts0.get(i);
-
+                    for (DiscoveryEvent evt : evts.events()) {
                         if (ExchangeDiscoveryEvents.serverLeftEvent(evt))
                             removeNode(evt.eventNode().id());
                     }
@@ -670,7 +666,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (log.isDebugEnabled()) {
                     log.debug("Created new full topology map on oldest node [" +
-                        "grp=" +  grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
+                        "grp=" + grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
                         ", fullMap=" + node2part + ']');
                 }
             }
@@ -2276,7 +2272,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         GridDhtPartitionsExchangeFuture exchFut) {
         Map<UUID, Set<Integer>> res = new HashMap<>();
 
-        List<DiscoveryEvent> evts = exchFut.events().events();
+        Collection<DiscoveryEvent> evts = exchFut.events().events();
 
         Set<UUID> joinedNodes = U.newHashSet(evts.size());
 
@@ -2708,14 +2704,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public void ownMoving(AffinityTopologyVersion rebFinishedTopVer) {
         lock.writeLock().lock();
 
-        AffinityTopologyVersion lastAffChangeVer = ctx.exchange().lastAffinityChangedTopologyVersion(lastTopChangeVer);
-
-        if (lastAffChangeVer.compareTo(rebFinishedTopVer) > 0)
-            log.info("Affinity topology changed, no MOVING partitions will be owned " +
-                "[rebFinishedTopVer=" + rebFinishedTopVer +
-                ", lastAffChangeVer=" + lastAffChangeVer + "]");
-
         try {
+            AffinityTopologyVersion lastAffChangeVer = ctx.exchange().lastAffinityChangedTopologyVersion(lastTopChangeVer);
+
+            if (lastAffChangeVer.compareTo(rebFinishedTopVer) > 0 && log.isInfoEnabled())
+                log.info("Affinity topology changed, no MOVING partitions will be owned " +
+                    "[rebFinishedTopVer=" + rebFinishedTopVer +
+                    ", lastAffChangeVer=" + lastAffChangeVer + "]");
+
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                 if (locPart.state() == MOVING) {
                     boolean reserved = locPart.reserve();

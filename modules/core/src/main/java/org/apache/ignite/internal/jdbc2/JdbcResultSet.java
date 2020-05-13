@@ -263,7 +263,7 @@ public class JdbcResultSet implements ResultSet {
      * If this result set is associated with locally executed query then query cursor will also closed.
      * @throws SQLException On error.
      */
-    void closeInternal() throws SQLException  {
+    void closeInternal() throws SQLException {
         if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null)
             JdbcQueryTask.remove(uuid);
 
