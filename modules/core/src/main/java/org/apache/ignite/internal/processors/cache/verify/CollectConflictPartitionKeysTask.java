@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -169,17 +170,14 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
 
             int partHash = 0;
             long partSize;
-            long updateCntrBefore;
-            long reservedUpdCntrBefore;
+            PartitionUpdateCounter updateCntrBefore;
             List<PartitionEntryHashRecord> partEntryHashRecords;
 
             try {
                 if (part.state() != GridDhtPartitionState.OWNING)
                     return Collections.emptyMap();
 
-                updateCntrBefore = part.updateCounter();
-
-                reservedUpdCntrBefore = part.dataStore().partUpdateCounter().reserved();
+                updateCntrBefore = part.dataStore().partUpdateCounter().copy();
 
                 partSize = part.dataStore().fullSize();
 
@@ -207,15 +205,12 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
                         row.key().valueBytes(grpCtx.cacheObjectContext()), row.version(), valHash));
                 }
 
-                long updateCntrAfter = part.updateCounter();
+                PartitionUpdateCounter updateCntrAfter = part.dataStore().partUpdateCounter();
 
-                long reservedUpdCntrAfter = part.dataStore().partUpdateCounter().reserved();
-
-                if (updateCntrBefore != updateCntrAfter || reservedUpdCntrBefore != reservedUpdCntrAfter) {
+                if (!updateCntrBefore.equals(updateCntrAfter)) {
                     throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
                         ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during hash calculation " +
-                        "[before=" + updateCntrBefore + ", after=" + updateCntrAfter +
-                        ", reservedUpdCntrBefore=" + reservedUpdCntrBefore + ", reservedUpdCntrAfter=" + reservedUpdCntrAfter + "]");
+                        "[before=" + updateCntrBefore + ", after=" + updateCntrAfter + "]");
                 }
             }
             catch (IgniteCheckedException e) {
@@ -232,7 +227,7 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
             boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
 
             PartitionHashRecord partHashRec = new PartitionHashRecord(
-                partKey, isPrimary, consId, partHash, updateCntrBefore, partSize);
+                partKey, isPrimary, consId, partHash, updateCntrBefore.get(), partSize);
 
             Map<PartitionHashRecord, List<PartitionEntryHashRecord>> res = new HashMap<>();
 

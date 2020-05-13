@@ -268,6 +268,11 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
+    @Override public PartitionUpdateCounter copy() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return delegate.toString();
     }

@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -163,7 +164,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
             Integer partHash = null;
             Long updateCntr = null;
-            Long reservedUpdCntr = null;
 
             for (PartitionHashRecordV2 record : e.getValue()) {
                 if (record.partitionState() == PartitionState.MOVING) {
@@ -184,14 +184,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     partHash = record.partitionHash();
 
                     updateCntr = record.updateCounter();
-
-                    reservedUpdCntr = record.reservedUpdCounter();
                 }
                 else {
                     if (record.updateCounter() != updateCntr)
-                        updateCntrConflicts.putIfAbsent(e.getKey(), e.getValue());
-
-                    if (record.reservedUpdCounter() != reservedUpdCntr)
                         updateCntrConflicts.putIfAbsent(e.getKey(), e.getValue());
 
                     if (record.partitionHash() != partHash)
@@ -534,11 +529,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
             int partHash = 0;
             long partSize;
-            long updateCntrBefore = part.updateCounter();
-
-            long reservedCntrBefore = part.dataStore().partUpdateCounter().reserved();
-
-            long reservedCntrAfter;
+            PartitionUpdateCounter updateCntrBefore = part.dataStore().partUpdateCounter().copy();
 
             PartitionKeyV2 partKey = new PartitionKeyV2(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
 
@@ -553,8 +544,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                         isPrimary,
                         consId,
                         partHash,
-                        updateCntrBefore,
-                        reservedCntrBefore,
+                        updateCntrBefore.get(),
                         part.state() == GridDhtPartitionState.MOVING ? PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
                         part.state() == GridDhtPartitionState.MOVING ? PartitionState.MOVING : PartitionState.LOST
                     );
@@ -580,15 +570,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     partHash += Arrays.hashCode(row.value().valueBytes(grpCtx.cacheObjectContext()));
                 }
 
-                long updateCntrAfter = part.updateCounter();
+                PartitionUpdateCounter updateCntrAfter = part.dataStore().partUpdateCounter();
 
-                reservedCntrAfter = part.dataStore().partUpdateCounter().reserved();
-
-                if (updateCntrBefore != updateCntrAfter || reservedCntrBefore != reservedCntrAfter) {
+                if (!updateCntrBefore.equals(updateCntrAfter)) {
                     throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
                         ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during size " +
-                        "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter +
-                        ", reservedUpdCntrBefore=" + reservedCntrBefore + ", reservedUpdCntrAfter=" + reservedCntrAfter + "]");
+                        "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter + "]");
                 }
             }
             catch (IgniteCheckedException e) {
@@ -603,7 +590,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
 
             PartitionHashRecordV2 partRec = new PartitionHashRecordV2(
-                partKey, isPrimary, consId, partHash, updateCntrBefore, reservedCntrAfter, partSize,
+                partKey, isPrimary, consId, partHash, updateCntrBefore.get(), partSize,
                 PartitionState.OWNING
             );
 

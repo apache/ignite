@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
@@ -238,7 +239,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         Set<Integer> grpIds = collectGroupIds();
 
         /** Update counters per partition per group. */
-        final Map<Integer, Map<Integer, T2<Long, Long>>> partsWithCntrsPerGrp =
+        final Map<Integer, Map<Integer, PartitionUpdateCounter>> partsWithCntrsPerGrp =
             getUpdateCountersSnapshot(ignite, grpIds);
 
         IdleVerifyUtility.IdleChecker idleChecker = new IdleVerifyUtility.IdleChecker(ignite, partsWithCntrsPerGrp);
@@ -355,7 +356,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                 checkSizes(cacheSizeFutures, idxSizeFutures, checkSizeResults);
 
-                Map<Integer, Map<Integer, T2<Long, Long>>> partsWithCntrsPerGrpAfterChecks =
+                Map<Integer, Map<Integer, PartitionUpdateCounter>> partsWithCntrsPerGrpAfterChecks =
                     getUpdateCountersSnapshot(ignite, grpIds);
 
                 List<Integer> diff = compareUpdateCounters(ignite, partsWithCntrsPerGrp, partsWithCntrsPerGrpAfterChecks);
@@ -523,9 +524,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             if (part.state() != OWNING)
                 return emptyMap();
 
-            long updateCntrBefore = part.updateCounter();
-
-            long reservedCntrBefore = part.dataStore().partUpdateCounter().reserved();
+            PartitionUpdateCounter updateCntrBefore = part.dataStore().partUpdateCounter().copy();
 
             GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
 
@@ -637,11 +636,9 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                 }
             }
 
-            long updateCntrAfter = part.updateCounter();
+            PartitionUpdateCounter updateCntrAfter = part.dataStore().partUpdateCounter();
 
-            long reservedCntrAfter = part.dataStore().partUpdateCounter().reserved();
-
-            if (updateCntrBefore != updateCntrAfter || reservedCntrBefore != reservedCntrAfter) {
+            if (!updateCntrBefore.equals(updateCntrAfter)) {
                 throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
                     ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during index validation " +
                     "[before=" + updateCntrBefore + ", after=" + updateCntrAfter + "]");
@@ -865,9 +862,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
     ) {
         return calcExecutor.submit(() -> {
             try {
-                long updateCntrBefore = locPart.updateCounter();
-
-                long reservedCntrBefore = locPart.dataStore().partUpdateCounter().reserved();
+                PartitionUpdateCounter updateCntrBefore = locPart.dataStore().partUpdateCounter().copy();
 
                 int grpId = grpCtx.groupId();
 
@@ -930,15 +925,12 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                             .computeIfAbsent(tableName, s -> new AtomicLong()).incrementAndGet();
                     }
 
-                    long updateCntrAfter = locPart.updateCounter();
+                    PartitionUpdateCounter updateCntrAfter = locPart.dataStore().partUpdateCounter();
 
-                    long reservedCntrAfter = locPart.dataStore().partUpdateCounter().reserved();
-
-                    if (updateCntrBefore != updateCntrAfter || reservedCntrBefore != reservedCntrAfter) {
+                    if (!updateCntrBefore.equals(updateCntrAfter)) {
                         throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
                             ", grpId=" + grpCtx.groupId() + ", partId=" + locPart.id() + "] changed during size " +
-                            "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter +
-                            ", reservedUpdCntrBefore=" + reservedCntrBefore + ", reservedUpdCntrAfter=" + reservedCntrAfter + "]");
+                            "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter + "]");
                     }
 
                     return new CacheSize(null, cacheSizeByTbl);

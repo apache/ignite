@@ -32,6 +32,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -102,18 +103,17 @@ public class IdleVerifyUtility {
 
     /**
      * Gather updateCounters info.
-     * Holds lwm {@link org.apache.ignite.internal.processors.cache.PartitionUpdateCounter#get} and
-     * hwm {@link org.apache.ignite.internal.processors.cache.PartitionUpdateCounter#reserved} update counters.
+     * Holds {@link org.apache.ignite.internal.processors.cache.PartitionUpdateCounter#copy} of update counters.
      *
      * @param ign Ignite instance.
      * @param grpIds Group Id`s.
      * @return Current groups distribution with update counters per partitions.
      */
-    public static Map<Integer, Map<Integer, T2<Long, Long>>> getUpdateCountersSnapshot(
+    public static Map<Integer, Map<Integer, PartitionUpdateCounter>> getUpdateCountersSnapshot(
         IgniteEx ign,
         Set<Integer> grpIds
     ) {
-        Map<Integer, Map<Integer, T2<Long, Long>>> partsWithCountersPerGrp = new HashMap<>();
+        Map<Integer, Map<Integer, PartitionUpdateCounter>> partsWithCountersPerGrp = new HashMap<>();
 
         for (Integer grpId : grpIds) {
             CacheGroupContext grpCtx = ign.context().cache().cacheGroup(grpId);
@@ -124,18 +124,14 @@ public class IdleVerifyUtility {
 
             GridDhtPartitionTopology top = grpCtx.topology();
 
-            Map<Integer, T2<Long, Long>> partsWithCounters =
+            Map<Integer, PartitionUpdateCounter> partsWithCounters =
                 partsWithCountersPerGrp.computeIfAbsent(grpId, k -> new HashMap<>());
 
             for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
                 if (part.state() != GridDhtPartitionState.OWNING)
                     continue;
 
-                long lwmCntr = part.updateCounter();
-
-                long hwmCntr = part.dataStore().partUpdateCounter().reserved();
-
-                partsWithCounters.put(part.id(), new T2<>(lwmCntr, hwmCntr));
+                partsWithCounters.put(part.id(), part.dataStore().partUpdateCounter().copy());
             }
         }
 
@@ -184,10 +180,10 @@ public class IdleVerifyUtility {
      */
     public static List<Integer> compareUpdateCounters(
         IgniteEx ign,
-        Map<Integer, Map<Integer, T2<Long, Long>>> cntrsIn,
+        Map<Integer, Map<Integer, PartitionUpdateCounter>> cntrsIn,
         Integer grpId
     ) {
-        Map<Integer, Map<Integer, T2<Long, Long>>> curCntrs =
+        Map<Integer, Map<Integer, PartitionUpdateCounter>> curCntrs =
             getUpdateCountersSnapshot(ign, Collections.singleton(grpId));
 
         if (curCntrs.isEmpty())
@@ -206,14 +202,14 @@ public class IdleVerifyUtility {
      */
     public static List<Integer> compareUpdateCounters(
         IgniteEx ign,
-        Map<Integer, Map<Integer, T2<Long, Long>>> cntrsEth,
-        Map<Integer, Map<Integer, T2<Long, Long>>> curCntrs
+        Map<Integer, Map<Integer, PartitionUpdateCounter>> cntrsEth,
+        Map<Integer, Map<Integer, PartitionUpdateCounter>> curCntrs
     ) {
         List<Integer> diff = new ArrayList<>();
 
         Integer grpId;
-        for (Map.Entry<Integer, Map<Integer, T2<Long, Long>>> curEntry : curCntrs.entrySet()) {
-            Map<Integer, T2<Long, Long>> partsWithCntrsCur = curEntry.getValue();
+        for (Map.Entry<Integer, Map<Integer, PartitionUpdateCounter>> curEntry : curCntrs.entrySet()) {
+            Map<Integer, PartitionUpdateCounter> partsWithCntrsCur = curEntry.getValue();
 
             grpId = curEntry.getKey();
 
@@ -221,7 +217,7 @@ public class IdleVerifyUtility {
                 throw new GridNotIdleException("Group not found: " + grpId + "."
                     + " Possible reasons: rebalance in progress or concurrent cache destroy.");
 
-            Map<Integer, T2<Long, Long>> partsWithCntrsIn = cntrsEth.get(grpId);
+            Map<Integer, PartitionUpdateCounter> partsWithCntrsIn = cntrsEth.get(grpId);
 
             if (!partsWithCntrsIn.equals(partsWithCntrsCur))
                 diff.add(grpId);
@@ -241,10 +237,10 @@ public class IdleVerifyUtility {
         private final IgniteEx ig;
 
         /** Group id`s snapshot with partitions and counters distrubution. */
-        private final Map<Integer, Map<Integer, T2<Long, Long>>> partsWithCntrsPerGrp;
+        private final Map<Integer, Map<Integer, PartitionUpdateCounter>> partsWithCntrsPerGrp;
 
         /** */
-        public IdleChecker(IgniteEx ig, Map<Integer, Map<Integer, T2<Long, Long>>> partsWithCntrsPerGrp) {
+        public IdleChecker(IgniteEx ig, Map<Integer, Map<Integer, PartitionUpdateCounter>> partsWithCntrsPerGrp) {
             this.ig = ig;
             this.partsWithCntrsPerGrp = partsWithCntrsPerGrp;
         }
