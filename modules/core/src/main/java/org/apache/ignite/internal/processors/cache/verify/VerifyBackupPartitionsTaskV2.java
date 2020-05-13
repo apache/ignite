@@ -163,6 +163,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
             Integer partHash = null;
             Long updateCntr = null;
+            Long reservedUpdCntr = null;
 
             for (PartitionHashRecordV2 record : e.getValue()) {
                 if (record.partitionState() == PartitionState.MOVING) {
@@ -183,9 +184,14 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     partHash = record.partitionHash();
 
                     updateCntr = record.updateCounter();
+
+                    reservedUpdCntr = record.reservedUpdCounter();
                 }
                 else {
                     if (record.updateCounter() != updateCntr)
+                        updateCntrConflicts.putIfAbsent(e.getKey(), e.getValue());
+
+                    if (record.reservedUpdCounter() != reservedUpdCntr)
                         updateCntrConflicts.putIfAbsent(e.getKey(), e.getValue());
 
                     if (record.partitionHash() != partHash)
@@ -530,6 +536,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             long partSize;
             long updateCntrBefore = part.updateCounter();
 
+            long reservedCntrBefore = part.dataStore().partUpdateCounter().reserved();
+
+            long reservedCntrAfter;
+
             PartitionKeyV2 partKey = new PartitionKeyV2(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
 
             Object consId = ignite.context().discovery().localNode().consistentId();
@@ -544,6 +554,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                         consId,
                         partHash,
                         updateCntrBefore,
+                        reservedCntrBefore,
                         part.state() == GridDhtPartitionState.MOVING ? PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
                         part.state() == GridDhtPartitionState.MOVING ? PartitionState.MOVING : PartitionState.LOST
                     );
@@ -571,10 +582,13 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                 long updateCntrAfter = part.updateCounter();
 
-                if (updateCntrBefore != updateCntrAfter) {
+                reservedCntrAfter = part.dataStore().partUpdateCounter().reserved();
+
+                if (updateCntrBefore != updateCntrAfter || reservedCntrBefore != reservedCntrAfter) {
                     throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
-                        ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during hash calculation " +
-                        "[before=" + updateCntrBefore + ", after=" + updateCntrAfter + "]");
+                        ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during size " +
+                        "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter +
+                        ", reservedUpdCntrBefore=" + reservedCntrBefore + ", reservedUpdCntrAfter=" + reservedCntrAfter + "]");
                 }
             }
             catch (IgniteCheckedException e) {
@@ -589,7 +603,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
 
             PartitionHashRecordV2 partRec = new PartitionHashRecordV2(
-                partKey, isPrimary, consId, partHash, updateCntrBefore, partSize, PartitionState.OWNING
+                partKey, isPrimary, consId, partHash, updateCntrBefore, reservedCntrAfter, partSize,
+                PartitionState.OWNING
             );
 
             completionCntr.incrementAndGet();

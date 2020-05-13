@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -54,6 +56,9 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     /** Update counter. */
     private long updateCntr;
 
+    /** Update counter. */
+    private long reservedUpdCntr;
+
     /** Size. */
     @GridToStringExclude
     private long size;
@@ -67,11 +72,20 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
      * @param consistentId Consistent id.
      * @param partHash Partition hash.
      * @param updateCntr Update counter.
+     * @param reservedUpdCntr Hwm {@link PartitionUpdateCounter#reserved()} counter.
      * @param size Size.
      * @param partitionState Partition state.
      */
-    public PartitionHashRecordV2(PartitionKeyV2 partKey, boolean isPrimary,
-        Object consistentId, int partHash, long updateCntr, long size, PartitionState partitionState) {
+    public PartitionHashRecordV2(
+        PartitionKeyV2 partKey,
+        boolean isPrimary,
+        Object consistentId,
+        int partHash,
+        long updateCntr,
+        long reservedUpdCntr,
+        long size,
+        PartitionState partitionState
+    ) {
         this.partKey = partKey;
         this.isPrimary = isPrimary;
         this.consistentId = consistentId;
@@ -79,6 +93,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         this.updateCntr = updateCntr;
         this.size = size;
         this.partitionState = partitionState;
+        this.reservedUpdCntr = reservedUpdCntr;
     }
 
     /**
@@ -120,6 +135,13 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
      */
     public long updateCounter() {
         return updateCntr;
+    }
+
+    /**
+     * @return Reserved {@link PartitionUpdateCounter#reserved()} update counter.
+     */
+    public long reservedUpdCounter() {
+        return reservedUpdCntr;
     }
 
     /**

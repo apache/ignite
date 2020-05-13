@@ -90,6 +90,8 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
+import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.compareUpdateCounters;
+import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.formatUpdateCountersDiff;
 import static org.apache.ignite.internal.util.IgniteUtils.error;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.getUpdateCountersSnapshot;
 
@@ -236,7 +238,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         Set<Integer> grpIds = collectGroupIds();
 
         /** Update counters per partition per group. */
-        final Map<Integer, Map<Integer, Long>> partsWithCntrsPerGrp =
+        final Map<Integer, Map<Integer, T2<Long, Long>>> partsWithCntrsPerGrp =
             getUpdateCountersSnapshot(ignite, grpIds);
 
         IdleVerifyUtility.IdleChecker idleChecker = new IdleVerifyUtility.IdleChecker(ignite, partsWithCntrsPerGrp);
@@ -344,13 +346,27 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                     idxResults.putAll(idxRes);
             }
 
-            for (; curCacheSize < cacheSizeFutures.size(); curCacheSize++)
-                cacheSizeFutures.get(curCacheSize).get3().get();
+            if (checkSizes) {
+                for (; curCacheSize < cacheSizeFutures.size(); curCacheSize++)
+                    cacheSizeFutures.get(curCacheSize).get3().get();
 
-            for (; curIdxSize < idxSizeFutures.size(); curIdxSize++)
-                idxSizeFutures.get(curIdxSize).get3().get();
+                for (; curIdxSize < idxSizeFutures.size(); curIdxSize++)
+                    idxSizeFutures.get(curIdxSize).get3().get();
 
-            checkSizes(cacheSizeFutures, idxSizeFutures, checkSizeResults);
+                checkSizes(cacheSizeFutures, idxSizeFutures, checkSizeResults);
+
+                Map<Integer, Map<Integer, T2<Long, Long>>> partsWithCntrsPerGrpAfterChecks =
+                    getUpdateCountersSnapshot(ignite, grpIds);
+
+                List<Integer> diff = compareUpdateCounters(ignite, partsWithCntrsPerGrp, partsWithCntrsPerGrpAfterChecks);
+
+                if (!F.isEmpty(diff)) {
+                    String res = formatUpdateCountersDiff(ignite, diff);
+
+                    if (!res.isEmpty())
+                        throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[" + res + "]");
+                }
+            }
 
             log.warning("ValidateIndexesClosure finished: processed " + totalPartitions + " partitions and "
                     + totalIndexes + " indexes.");
@@ -509,15 +525,11 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
             long updateCntrBefore = part.updateCounter();
 
-            long partSize = part.dataStore().fullSize();
+            long reservedCntrBefore = part.dataStore().partUpdateCounter().reserved();
 
             GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
 
-            Object consId = ignite.context().discovery().localNode().consistentId();
-
-            boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
-
-            partRes = new ValidateIndexesPartitionResult(updateCntrBefore, partSize, isPrimary, consId, null);
+            partRes = new ValidateIndexesPartitionResult();
 
             boolean enoughIssues = false;
 
@@ -627,7 +639,9 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
             long updateCntrAfter = part.updateCounter();
 
-            if (updateCntrBefore != updateCntrAfter) {
+            long reservedCntrAfter = part.dataStore().partUpdateCounter().reserved();
+
+            if (updateCntrBefore != updateCntrAfter || reservedCntrBefore != reservedCntrAfter) {
                 throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
                     ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during index validation " +
                     "[before=" + updateCntrBefore + ", after=" + updateCntrAfter + "]");
@@ -703,10 +717,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
         Index idx = cacheCtxWithIdx.get2();
 
-        Object consId = ignite.context().discovery().localNode().consistentId();
-
-        ValidateIndexesPartitionResult idxValidationRes = new ValidateIndexesPartitionResult(
-            -1, -1, true, consId, idx.getName());
+        ValidateIndexesPartitionResult idxValidationRes = new ValidateIndexesPartitionResult();
 
         boolean enoughIssues = false;
 
@@ -856,6 +867,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             try {
                 long updateCntrBefore = locPart.updateCounter();
 
+                long reservedCntrBefore = locPart.dataStore().partUpdateCounter().reserved();
+
                 int grpId = grpCtx.groupId();
 
                 if (failCalcCacheSizeGrpIds.contains(grpId))
@@ -919,10 +932,13 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                     long updateCntrAfter = locPart.updateCounter();
 
-                    if (updateCntrBefore != updateCntrAfter) {
+                    long reservedCntrAfter = locPart.dataStore().partUpdateCounter().reserved();
+
+                    if (updateCntrBefore != updateCntrAfter || reservedCntrBefore != reservedCntrAfter) {
                         throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
                             ", grpId=" + grpCtx.groupId() + ", partId=" + locPart.id() + "] changed during size " +
-                            "calculation [before=" + updateCntrBefore + ", after=" + updateCntrAfter + "]");
+                            "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter +
+                            ", reservedUpdCntrBefore=" + reservedCntrBefore + ", reservedUpdCntrAfter=" + reservedCntrAfter + "]");
                     }
 
                     return new CacheSize(null, cacheSizeByTbl);
