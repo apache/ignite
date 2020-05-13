@@ -20,7 +20,8 @@ package org.apache.ignite.jdbc;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.UUID;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,7 +37,7 @@ import org.junit.Test;
 import static java.sql.DriverManager.getConnection;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.jdbc.JdbcAuthorizationTest.StatementProvider.of;
+import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
@@ -58,6 +59,9 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
 
     /** Name of the table for DML operations testing. */
     private static final String TEST_DML_TABLE = TEST_DML_SCHEMA + '.' + Integer.class.getSimpleName();
+
+    /** Name of the table for bulk-load operation testing. */
+    private static final String TEST_BULKLOAD_CACHE = "test-bulkload-cache";
 
     /** Name of the cache for the CREATE TABLE query security permissions testing. */
     private static final String TEST_CREATE_TABLE_CACHE = "test-create-table-cache";
@@ -89,6 +93,13 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     /** Name of the user with no permission granted. */
     private static final String EMPTY_PERMS_USER = "empty-perms-user";
 
+    /** CSV file for bulk-load testing. */
+    private static final String BULKLOAD_CSV_FILE = Objects.requireNonNull(resolveIgnitePath(
+        "/modules/clients/src/test/resources/bulkload2.csv")).getAbsolutePath();
+
+    /** Counter that is used to obtain unique keys. */
+    private static final AtomicInteger KEY_CNTR = new AtomicInteger();
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -100,7 +111,10 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
             new TestSecurityData(CACHE_CREATE_CACHE_PERMS_USER, cachePermissions(TEST_CREATE_TABLE_CACHE, CACHE_CREATE)),
             new TestSecurityData(CACHE_DESTROY_CACHE_PERMS_USER, cachePermissions(TEST_DROP_TABLE_CACHE, CACHE_DESTROY)),
             new TestSecurityData(CACHE_READ_USER, cachePermissions(DEFAULT_CACHE_NAME, CACHE_READ)),
-            new TestSecurityData(CACHE_PUT_USER, cachePermissions(DEFAULT_CACHE_NAME, CACHE_PUT)),
+            new TestSecurityData(CACHE_PUT_USER, create().defaultAllowAll(false)
+                .appendCachePermissions(DEFAULT_CACHE_NAME, CACHE_PUT)
+                .appendCachePermissions(TEST_BULKLOAD_CACHE, CACHE_PUT)
+                .build()),
             new TestSecurityData(CACHE_REMOVE_USER, cachePermissions(DEFAULT_CACHE_NAME, CACHE_REMOVE)));
 
         startSecurityGrid(1);
@@ -121,40 +135,36 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      */
     @Test
     public void testInsert() throws Exception {
-        int key = UUID.randomUUID().hashCode();
+        int key = KEY_CNTR.getAndIncrement();
 
-        StatementProvider stmt = of("INSERT INTO " + TEST_DML_TABLE + "(_key, _val) VALUES (" + key + ", 0);");
+        String sql = "INSERT INTO " + TEST_DML_TABLE + "(_key, _val) VALUES (" + key + ", 0);";
 
-        assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
-        assertAuthorizationFailed(stmt, CACHE_READ_USER);
-        assertAuthorizationFailed(stmt, CACHE_REMOVE_USER);
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
+        assertAuthorizationFailed(sql, CACHE_READ_USER);
+        assertAuthorizationFailed(sql, CACHE_REMOVE_USER);
 
-        execute(stmt, CACHE_PUT_USER);
+        execute(sql, CACHE_PUT_USER);
     }
 
     /**
-     * Tests BULK INSERT query permissions check.
+     * Tests COPY FROM query permissions check.
      */
     @Test
-    public void testBulkInsert() throws Exception {
-        StatementProvider stmt = conn -> {
-            PreparedStatement res = conn.prepareStatement(
-                "INSERT INTO " + TEST_DML_TABLE + "(_key, _val) VALUES (?, ?);");
+    public void testCopyFrom() throws Exception {
+        String table = "test_table_copy_from";
 
-            for (int i = 1; i < 10; i++) {
-                res.setInt(1, UUID.randomUUID().hashCode());
-                res.setInt(2, 0);
-            }
+        execute("CREATE TABLE " + table + "(id LONG PRIMARY KEY, first_name VARCHAR, last_name VARCHAR, age LONG)" +
+                " WITH \"TEMPLATE=REPLICATED, CACHE_NAME=" + TEST_BULKLOAD_CACHE + "\";",
+            CACHE_CREATE_SYS_PERM_USER);
 
-            return res;
-        };
+        String sql = "COPY FROM '" + BULKLOAD_CSV_FILE + "' INTO " + table +
+            "(id, age, first_name, last_name) FORMAT csv";
 
-        assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
-        assertAuthorizationFailed(stmt, CACHE_READ_USER);
-        assertAuthorizationFailed(stmt, CACHE_REMOVE_USER);
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
+        assertAuthorizationFailed(sql, CACHE_READ_USER);
+        assertAuthorizationFailed(sql, CACHE_REMOVE_USER);
 
-        execute(stmt, CACHE_PUT_USER);
-
+        execute(sql, CACHE_PUT_USER);
     }
 
     /**
@@ -164,13 +174,13 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     public void testSelect() throws Exception {
         int key = insertKey();
 
-        StatementProvider stmt = of("SELECT _val FROM " + TEST_DML_TABLE + " WHERE _key=" + key + ";");
+        String sql = "SELECT _val FROM " + TEST_DML_TABLE + " WHERE _key=" + key + ";";
 
-        assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
-        assertAuthorizationFailed(stmt, CACHE_REMOVE_USER);
-        assertAuthorizationFailed(stmt, CACHE_PUT_USER);
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
+        assertAuthorizationFailed(sql, CACHE_REMOVE_USER);
+        assertAuthorizationFailed(sql, CACHE_PUT_USER);
 
-        execute(stmt, CACHE_READ_USER);
+        execute(sql, CACHE_READ_USER);
     }
 
     /**
@@ -180,13 +190,13 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     public void testUpdate() throws Exception {
         int key = insertKey();
 
-        StatementProvider stmt = of("UPDATE " + TEST_DML_TABLE + " SET _val=1 WHERE _key=" + key + ';');
+        String sql = "UPDATE " + TEST_DML_TABLE + " SET _val=1 WHERE _key=" + key + ';';
 
-        assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
-        assertAuthorizationFailed(stmt, CACHE_REMOVE_USER);
-        assertAuthorizationFailed(stmt, CACHE_READ_USER);
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
+        assertAuthorizationFailed(sql, CACHE_REMOVE_USER);
+        assertAuthorizationFailed(sql, CACHE_READ_USER);
 
-        execute(stmt, CACHE_PUT_USER);
+        execute(sql, CACHE_PUT_USER);
     }
 
     /**
@@ -196,13 +206,13 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     public void testDelete() throws Exception {
         int key = insertKey();
 
-        StatementProvider stmt = of("DELETE FROM " + TEST_DML_TABLE + " WHERE _key=" + key + ';');
+        String sql = "DELETE FROM " + TEST_DML_TABLE + " WHERE _key=" + key + ';';
 
-        assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
-        assertAuthorizationFailed(stmt, CACHE_PUT_USER);
-        assertAuthorizationFailed(stmt, CACHE_READ_USER);
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
+        assertAuthorizationFailed(sql, CACHE_PUT_USER);
+        assertAuthorizationFailed(sql, CACHE_READ_USER);
 
-        execute(stmt, CACHE_REMOVE_USER);
+        execute(sql, CACHE_REMOVE_USER);
     }
 
     /**
@@ -212,13 +222,13 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     public void testMerge() throws Exception {
         int key = insertKey();
 
-        StatementProvider stmt = of("MERGE INTO " + TEST_DML_TABLE + "(_key, _val) VALUES (" + key + ", 0);");
+        String sql = "MERGE INTO " + TEST_DML_TABLE + "(_key, _val) VALUES (" + key + ", 0);";
 
-        assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
-        assertAuthorizationFailed(stmt, CACHE_REMOVE_USER);
-        assertAuthorizationFailed(stmt, CACHE_READ_USER);
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
+        assertAuthorizationFailed(sql, CACHE_REMOVE_USER);
+        assertAuthorizationFailed(sql, CACHE_READ_USER);
 
-        execute(stmt, CACHE_PUT_USER);
+        execute(sql, CACHE_PUT_USER);
     }
 
     /**
@@ -226,12 +236,11 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      */
     @Test
     public void testCreateTableSystemPermissions() throws Exception {
-        StatementProvider stmt = of(
-            "CREATE TABLE sys_perm_table_create(id LONG PRIMARY KEY, val varchar) WITH \"TEMPLATE=REPLICATED\";");
+        String sql = "CREATE TABLE sys_perm_table_create(id LONG PRIMARY KEY, val VARCHAR) WITH \"TEMPLATE=REPLICATED\";";
 
-        assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
 
-        execute(stmt, CACHE_CREATE_SYS_PERM_USER);
+        execute(sql, CACHE_CREATE_SYS_PERM_USER);
     }
 
     /**
@@ -239,12 +248,12 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      */
     @Test
     public void testCreateTableCachePermissions() throws Exception {
-        StatementProvider stmt = of("CREATE TABLE cache_perm_table_create(id LONG PRIMARY KEY, val varchar) WITH " +
-            "\"TEMPLATE=REPLICATED, CACHE_NAME=" + TEST_CREATE_TABLE_CACHE + "\";");
+        String sql = "CREATE TABLE cache_perm_table_create(id LONG PRIMARY KEY, val VARCHAR) WITH " +
+            "\"TEMPLATE=REPLICATED, CACHE_NAME=" + TEST_CREATE_TABLE_CACHE + "\";";
 
-        assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
 
-        execute(stmt, CACHE_CREATE_CACHE_PERMS_USER);
+        execute(sql, CACHE_CREATE_CACHE_PERMS_USER);
     }
 
     /**
@@ -254,13 +263,14 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     public void testDropTableSystemPermissions() throws Exception {
         String table = "test_sys_perm_table_drop";
 
-        createTable(table);
+        execute("CREATE TABLE " + table + "(id LONG PRIMARY KEY, val VARCHAR)  WITH \"TEMPLATE=REPLICATED\";",
+            CACHE_CREATE_SYS_PERM_USER);
 
-        StatementProvider stmt = of("DROP TABLE " + table + ';');
+        String sql = "DROP TABLE " + table + ';';
 
-        assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
 
-        execute(stmt, CACHE_DESTROY_SYS_PERMS_USER);
+        execute(sql, CACHE_DESTROY_SYS_PERMS_USER);
     }
 
     /**
@@ -270,65 +280,15 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     public void testDropTableCachePermissions() throws Exception {
         String table = "test_cache_perm_table_drop";
 
-        execute(of("CREATE TABLE " + table + "(id LONG PRIMARY KEY, str_col varchar, long_col LONG)" +
-                " WITH \"TEMPLATE=REPLICATED, CACHE_NAME=" + TEST_DROP_TABLE_CACHE + "\";"),
+        execute("CREATE TABLE " + table + "(id LONG PRIMARY KEY, val VARCHAR)" +
+                " WITH \"TEMPLATE=REPLICATED, CACHE_NAME=" + TEST_DROP_TABLE_CACHE + "\";",
             CACHE_CREATE_SYS_PERM_USER);
 
-        StatementProvider stmt = of("DROP TABLE " + table + ';');
+        String sql = "DROP TABLE " + table + ';';
 
-        assertAuthorizationFailed(stmt, EMPTY_PERMS_USER);
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
 
-        execute(stmt, CACHE_DESTROY_CACHE_PERMS_USER);
-    }
-
-    /**
-     * Tests ALTER TABLE query permissions check.
-     */
-    @Test
-    public void testAlterTableAddColumn() throws Exception {
-        String table = "test_table_add_column";
-
-        createTable(table);
-
-        execute(of("ALTER TABLE " + table + " ADD test_add_column LONG;"), EMPTY_PERMS_USER);
-    }
-
-    /**
-     * Tests ALTER TABLE DROP COLUMN query permissions check.
-     */
-    @Test
-    public void testAlterTableDropColumn() throws Exception {
-        String table = "test_table_drop_column";
-
-        createTable(table);
-
-        execute(of("ALTER TABLE " + table + " DROP COLUMN long_col;"), EMPTY_PERMS_USER);
-    }
-
-    /**
-     * Tests CREATE INDEX queries permissions check.
-     */
-    @Test
-    public void testCreateIndex() throws Exception {
-        String table = "test_table_create_index";
-
-        createTable(table);
-
-        execute(of("CREATE INDEX test_create_idx ON " + table + "(id ASC);"), EMPTY_PERMS_USER);
-    }
-
-    /**
-     * Tests DROP INDEX queries permissions check.
-     */
-    @Test
-    public void testDropIndex() throws Exception {
-        String table = "test_table_drop_index";
-
-        createTable(table);
-
-        execute(of("CREATE INDEX test_drop_idx ON " + table + "(id ASC);"), EMPTY_PERMS_USER);
-
-        execute(of("DROP INDEX test_drop_idx ON " + table + ';'), EMPTY_PERMS_USER);
+        execute(sql, CACHE_DESTROY_CACHE_PERMS_USER);
     }
 
     /**
@@ -337,35 +297,24 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      * @return Inserted key.
      */
     private int insertKey() throws Exception {
-        int key = UUID.randomUUID().hashCode();
+        int key = KEY_CNTR.getAndIncrement();
 
-        execute(of("INSERT INTO " + TEST_DML_TABLE + "(_key, _val) VALUES (" + key + ", 0);"), CACHE_PUT_USER);
+        execute("INSERT INTO " + TEST_DML_TABLE + "(_key, _val) VALUES (" + key + ", 0);", CACHE_PUT_USER);
 
         return key;
     }
 
     /**
-     * Creates table with the specified name.
-     *
-     * @param name Name of the table to be created.
-     */
-    private void createTable(String name) throws Exception {
-        execute(of("CREATE TABLE " + name + "(id LONG PRIMARY KEY, str_col varchar, long_col LONG)" +
-                " WITH \"TEMPLATE=REPLICATED\";"),
-            CACHE_CREATE_SYS_PERM_USER);
-    }
-
-    /**
      * Asserts that authorization of SQL query on behalf of the user with the specified login.
      *
-     * @param stmt Provider of the SQL statement.
+     * @param sql SQL query to execute.
      * @param login Login of the user.
      */
-    private void assertAuthorizationFailed(StatementProvider stmt, String login) {
+    private void assertAuthorizationFailed(String sql, String login) {
         assertThrowsAnyCause(
             log,
             () -> {
-                execute(stmt, login);
+                execute(sql, login);
 
                 return null;
             },
@@ -374,14 +323,16 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     }
 
     /**
-     * Executes an SQL statement on behalf of a user with the specified login.
+     * Executes an SQL query on behalf of a user with the specified login.
      *
-     * @param stmt Provider of the SQL statement.
+     * @param sql SQL query to execute.
      * @param login Login of the user.
      */
-    private void execute(StatementProvider stmt, String login) throws Exception {
+    private void execute(String sql, String login) throws Exception {
         try (Connection conn = getConnection(JDBC_URL_PREFIX + Config.SERVER, login, "")) {
-            stmt.statement(conn).execute();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+
+            stmt.execute();
         }
     }
 
@@ -417,24 +368,5 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      */
     private SecurityPermissionSet cachePermissions(String cache, SecurityPermission... perms) {
         return create().defaultAllowAll(false).appendCachePermissions(cache, perms).build();
-    }
-
-    /**
-     * Provider of SQL statement.
-     */
-    static interface StatementProvider {
-        /**
-         * @param conn Connection to the cluster.
-         * @return SQL statement.
-         */
-        public PreparedStatement statement(Connection conn) throws Exception;
-
-        /**
-         * @param sql SQL query.
-         * @return Provider of statement for the specified SQL query.
-         */
-        public static StatementProvider of(String sql) {
-            return conn -> conn.prepareStatement(sql);
-        }
     }
 }
