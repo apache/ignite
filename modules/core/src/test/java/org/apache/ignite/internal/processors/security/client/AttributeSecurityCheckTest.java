@@ -34,7 +34,7 @@ import org.junit.runners.JUnit4;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
- * Checks user attributes presents in CridClient messages.
+ * Checks user attributes presents in GridClient messages.
  */
 @RunWith(JUnit4.class)
 public class AttributeSecurityCheckTest extends CommonSecurityCheckTest {
