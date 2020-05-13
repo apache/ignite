@@ -606,7 +606,7 @@ public class IgniteConfiguration {
     private PluginProvider[] pluginProvs;
 
     /** SQL configuration. */
-    private SqlConfiguration sqlInitCfg = new SqlConfiguration();
+    private SqlConfiguration sqlCfg = new SqlConfiguration();
 
     /**
      * Creates valid grid configuration with all default values.
@@ -736,7 +736,7 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        sqlInitCfg = cfg.getSqlConfiguration();
+        sqlCfg = cfg.getSqlConfiguration();
     }
 
     /**
@@ -1132,7 +1132,7 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public int getSqlQueryHistorySize() {
-        return sqlInitCfg.getSqlQueryHistorySize();
+        return sqlCfg.getSqlQueryHistorySize();
     }
 
     /**
@@ -1146,7 +1146,7 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public IgniteConfiguration setSqlQueryHistorySize(int size) {
-        sqlInitCfg.setSqlQueryHistorySize(size);
+        sqlCfg.setSqlQueryHistorySize(size);
 
         return this;
     }
@@ -1164,7 +1164,7 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public long getDefaultQueryTimeout() {
-        return sqlInitCfg.getDefaultQueryTimeout();
+        return sqlCfg.getDefaultQueryTimeout();
     }
 
     /**
@@ -1179,7 +1179,7 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public IgniteConfiguration setDefaultQueryTimeout(long dfltQryTimeout) {
-        sqlInitCfg.setDefaultQueryTimeout(dfltQryTimeout);
+        sqlCfg.setDefaultQueryTimeout(dfltQryTimeout);
 
         return this;
     }
@@ -3423,7 +3423,7 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public long getLongQueryWarningTimeout() {
-        return sqlInitCfg.getLongQueryWarningTimeout();
+        return sqlCfg.getLongQueryWarningTimeout();
     }
 
     /**
@@ -3436,7 +3436,7 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public IgniteConfiguration setLongQueryWarningTimeout(long longQryWarnTimeout) {
-        sqlInitCfg.setLongQueryWarningTimeout(longQryWarnTimeout);
+        sqlCfg.setLongQueryWarningTimeout(longQryWarnTimeout);
 
         return this;
     }
@@ -3595,7 +3595,7 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public String[] getSqlSchemas() {
-        return sqlInitCfg.getSqlSchemas();
+        return sqlCfg.getSqlSchemas();
     }
 
     /**
@@ -3612,8 +3612,9 @@ public class IgniteConfiguration {
      *
      * @deprecated Use {@link SqlConfiguration#setSqlSchemas(String...)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setSqlSchemas(String... sqlSchemas) {
-        sqlInitCfg.setSqlSchemas();
+        sqlCfg.setSqlSchemas(sqlSchemas);
 
         return this;
     }
@@ -3645,18 +3646,18 @@ public class IgniteConfiguration {
      * @return SQL configuration.
      */
     public SqlConfiguration getSqlConfiguration() {
-        return sqlInitCfg;
+        return sqlCfg;
     }
 
     /**
-     * @param sqlInitCfg Configuration of the SQL subsystem.
+     * @param sqlCfg Configuration of the SQL subsystem.
      *
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setSqlConfiguration(SqlConfiguration sqlInitCfg) {
-        A.ensure(sqlInitCfg != null, "SQL configuration cannot be null");
+    public IgniteConfiguration setSqlConfiguration(SqlConfiguration sqlCfg) {
+        A.ensure(sqlCfg != null, "SQL configuration cannot be null");
 
-        this.sqlInitCfg = sqlInitCfg;
+        this.sqlCfg = sqlCfg;
 
         return this;
     }
