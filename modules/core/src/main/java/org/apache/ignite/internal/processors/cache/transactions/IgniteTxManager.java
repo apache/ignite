@@ -2956,7 +2956,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         private final TimeBag timeBag = new TimeBag();
 
         /** Prepared tx to be recovered count. */
-        private final AtomicLong txCnt = new AtomicLong();
+        private final AtomicLong preparedTxCnt = new AtomicLong();
 
         /** Recovery finished future. */
         private final GridCompoundFuture<Boolean, ?> doneFut = new GridCompoundFuture<>();
@@ -3035,7 +3035,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 doneFut.markInitialized();
 
-                if (txCnt.get() > 0)
+                if (preparedTxCnt.get() > 0)
                     doneFut.listen(fut -> finishAndRecordTimings());
 
                 if (allTxFinFut == null)
@@ -3084,7 +3084,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (fut != null)
                 doneFut.add(fut);
 
-            txCnt.incrementAndGet();
+            preparedTxCnt.incrementAndGet();
         }
 
         /**
@@ -3095,7 +3095,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             StringBuilder timingsToLog = new StringBuilder();
 
-            timingsToLog.append("TxRecovery Status and Timings [txs=").append(txCnt.get());
+            timingsToLog.append("TxRecovery Status and Timings [txs=").append(preparedTxCnt.get());
 
             for (String stageTiming : timeBag.stagesTimings())
                 timingsToLog.append(", ").append(stageTiming);
