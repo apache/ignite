@@ -1575,13 +1575,17 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     GridDhtPartitionsExchangeFuture topFut =
                         exchFut == null ? ctx.exchange().lastFinishedFuture() : exchFut;
 
-                    if (topFut != null) { // topFut can be null if lastFinishedFuture has completed with error.
+                    // topFut can be null if lastFinishedFuture has completed with error.
+                    if (topFut != null) {
                         for (Iterator<UUID> it = partMap.keySet().iterator(); it.hasNext(); ) {
                             UUID nodeId = it.next();
 
-                            if (!topFut.firstEventCache().alive(nodeId)) {
+                            final ClusterNode node = topFut.events().discoveryCache().node(nodeId);
+
+                            if (node == null) {
                                 if (log.isTraceEnabled())
                                     log.trace("Removing left node from full map update [grp=" + grp.cacheOrGroupName() +
+                                        ", exchTopVer=" + exchangeVer + ", futVer=" + topFut.initialVersion() +
                                         ", nodeId=" + nodeId + ", partMap=" + partMap + ']');
 
                                 it.remove();
