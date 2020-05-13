@@ -31,9 +31,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         /// Constructor.
         /// </summary>
         /// <param name="ignite">Ignite.</param>
-        /// <param name="marsh">Marshaller.</param>
-        public ClientCluster(IgniteClient ignite, Marshaller marsh)
-            : base(ignite, marsh)
+        public ClientCluster(IgniteClient ignite)
+            : base(ignite)
         {
         }
 
