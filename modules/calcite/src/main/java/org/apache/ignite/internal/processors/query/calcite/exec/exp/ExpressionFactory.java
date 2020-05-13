@@ -173,14 +173,14 @@ public class ExpressionFactory {
     }
 
     /**
-     * Creates a Values relational node rows source.
+     * Creates objects row from RexNodes.
      *
      * @param ctx Execution context, holds a planner context, query and its parameters,
      *             execution specific variables (like queryId, current user, session, etc).
      * @param values Values.
      * @return Values relational node rows source.
      */
-    public Object[] singleRowValuesExp(ExecutionContext ctx, List<RexNode> values, RelDataType rowType) {
+    public Object[] convertToObjects(ExecutionContext ctx, List<RexNode> values, RelDataType rowType) {
         ProjectImpl project = new ProjectImpl<>(ctx, scalar(values, rowType), values.size());
 
         Object[] out = new Object[values.size()];

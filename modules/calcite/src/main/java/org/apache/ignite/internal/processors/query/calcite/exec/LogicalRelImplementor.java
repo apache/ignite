@@ -164,10 +164,10 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
             expressionFactory.predicate(ctx, scan.condition(), scan.getRowType());
 
         Object[] lowerBound = scan.lowerIndexCondition() == null ? null :
-            expressionFactory.singleRowValuesExp(ctx, scan.lowerIndexCondition(), scan.getRowType());
+            expressionFactory.convertToObjects(ctx, scan.lowerIndexCondition(), scan.getRowType());
 
         Object[] upperBound = scan.upperIndexCondition() == null ? null :
-            expressionFactory.singleRowValuesExp(ctx, scan.upperIndexCondition(), scan.getRowType());
+            expressionFactory.convertToObjects(ctx, scan.upperIndexCondition(), scan.getRowType());
 
         IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
 

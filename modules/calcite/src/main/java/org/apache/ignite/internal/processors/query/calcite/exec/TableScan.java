@@ -194,7 +194,6 @@ public class TableScan implements Iterable<Object[]> {
         /** */
         private void reserveReplicated(GridDhtPartitionTopology top) {
             List<GridDhtLocalPartition> localParts = top.localPartitions();
-
             parts = new ArrayDeque<>(localParts.size());
 
             for (GridDhtLocalPartition local : localParts) {
