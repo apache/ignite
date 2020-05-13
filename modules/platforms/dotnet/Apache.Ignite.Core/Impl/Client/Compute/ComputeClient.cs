@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Compute
 {
+    using System;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Impl.Common;
@@ -64,6 +65,24 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg)
         {
             throw new System.NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public IComputeClient WithTimeout(TimeSpan timeout)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public IComputeClient WithNoFailover()
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public IComputeClient WithNoResultCache()
+        {
+            throw new NotImplementedException();
         }
     }
 }

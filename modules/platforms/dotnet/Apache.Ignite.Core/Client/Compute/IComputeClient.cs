@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Client.Compute
 {
+    using System;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -41,5 +42,25 @@ namespace Apache.Ignite.Core.Client.Compute
         /// <returns>Task result.</returns>
         /// <typeparam name="TRes">Type of task result.</typeparam>
         Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg);
+
+        /// <summary>
+        /// Returns a new instance of <see cref="IComputeClient"/> with a timeout for all task executions.
+        /// </summary>
+        /// <param name="timeout">Timeout.</param>
+        /// <returns>New Compute instance with timeout.</returns>
+        IComputeClient WithTimeout(TimeSpan timeout);
+        
+        /// <summary>
+        /// Returns a new instance of <see cref="IComputeClient"/> with disabled failover.
+        /// When failover is disabled, compute jobs won't be retried in case of node crashes.
+        /// </summary>
+        /// <returns>New Compute instance with disabled failover.</returns>
+        IComputeClient WithNoFailover();
+        
+        /// <summary>
+        /// Returns a new instance of <see cref="IComputeClient"/> with disabled result cache.
+        /// </summary>
+        /// <returns>New Compute instance with disabled result cache.</returns>
+        IComputeClient WithNoResultCache();
     }
 }
