@@ -392,7 +392,7 @@ class Client(Connection):
                 for line in inner_result.value['data']:
                     yield line
 
-        schema = self.get_or_create_cache(schema)
+        schema = self.get_cache(schema)
         result = sql_fields(
             self, schema.cache_id, query_str,
             page_size, query_args, schema.name,
