@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
 {
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Compute client.
@@ -41,7 +42,22 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /** <inheritdoc /> */
         public TRes ExecuteJavaTask<TRes>(string taskName, object taskArg)
         {
-            throw new System.NotImplementedException();
+            IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
+
+            var taskId = _ignite.Socket.DoOutInOp(ClientOp.ComputeTaskExecute, ctx =>
+                {
+                    var w = ctx.Writer;
+
+                    w.WriteInt(0); // TODO: Projection.
+                    w.WriteByte(0); // TODO: Flags
+                    w.WriteLong(0); // TODO: Timeout
+                    w.WriteString(taskName);
+                    w.WriteObject(taskArg);
+                },
+                ctx => ctx.Stream.ReadLong());
+
+            // TODO: Wait for task completion.
+            return default(TRes);
         }
 
         /** <inheritdoc /> */
