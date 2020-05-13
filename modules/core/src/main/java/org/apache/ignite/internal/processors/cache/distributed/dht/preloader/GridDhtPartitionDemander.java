@@ -1009,7 +1009,7 @@ public class GridDhtPartitionDemander {
         private final GridCacheSharedContext<?, ?> ctx;
 
         /** Internal state. */
-        private volatile RebalanceFutureState state  = RebalanceFutureState.INIT;
+        private volatile RebalanceFutureState state = RebalanceFutureState.INIT;
 
         /** */
         private final CacheGroupContext grp;

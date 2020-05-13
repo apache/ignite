@@ -2162,7 +2162,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             }
 
             //Ensure exchanges merge.
-            spiC = igniteInstanceName ->  testSpis[getTestIgniteInstanceIndex(igniteInstanceName)];
+            spiC = igniteInstanceName -> testSpis[getTestIgniteInstanceIndex(igniteInstanceName)];
 
             GridTestUtils.runAsync(() -> {
                 try {

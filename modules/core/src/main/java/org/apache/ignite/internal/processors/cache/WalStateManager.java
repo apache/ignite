@@ -500,7 +500,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-        assert grp != null: "Can not find group with id: " + grpId;
+        assert grp != null : "Can not find group with id: " + grpId;
 
         AffinityTopologyVersion lastGroupTop = grp.topology().readyTopologyVersion();
 
