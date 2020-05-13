@@ -1835,21 +1835,32 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      *
      * @throws Exception If failed.
      */
-    public void testVisorGateway() throws Exception {
+    public void testVisorGatewayCacheConfigurationCollectorTask() throws Exception {
         ClusterNode locNode = grid(1).localNode();
-
-        final IgniteUuid cid = grid(1).context().cache().internalCache("person").context().dynamicDeploymentId();
 
         String ret = content(new VisorGatewayArgument(VisorCacheConfigurationCollectorTask.class)
             .setNode(locNode)
             .setTaskArgument(VisorCacheConfigurationCollectorTaskArg.class)
-            .addCollectionArgument(IgniteUuid.class, cid));
+            .addCollectionArgument(String.class, "person"));
 
         info("VisorCacheConfigurationCollectorTask result: " + ret);
 
         jsonTaskResult(ret);
 
-        ret = content(new VisorGatewayArgument(VisorCacheNodesTask.class)
+        assertTrue(ret.contains(String.format("\"memoryPolicyName\":\"%s\"",
+            grid(1).configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName()
+        )));
+    }
+
+        /**
+         * Tests execution of Visor tasks via {@link VisorGatewayTask}.
+         *
+         * @throws Exception If failed.
+         */
+    public void testVisorGateway() throws Exception {
+        ClusterNode locNode = grid(1).localNode();
+
+        String ret = content(new VisorGatewayArgument(VisorCacheNodesTask.class)
             .setNode(locNode)
             .setTaskArgument(VisorCacheNodesTaskArg.class, "person"));
 

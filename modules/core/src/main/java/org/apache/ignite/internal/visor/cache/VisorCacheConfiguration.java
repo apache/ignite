@@ -220,7 +220,9 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         evictFilter = compactClass(ccfg.getEvictionFilter());
         lsnrConfigurations = compactIterable(ccfg.getCacheEntryListenerConfigurations());
         loadPrevVal = ccfg.isLoadPreviousValue();
-        dataRegName = ccfg.getDataRegionName();
+        dataRegName = ccfg.getDataRegionName() != null
+            ? ccfg.getDataRegionName()
+            : ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
         sqlIdxMaxInlineSize = ccfg.getSqlIndexMaxInlineSize();
         nodeFilter = compactClass(ccfg.getNodeFilter());
         qryDetailMetricsSz = ccfg.getQueryDetailMetricsSize();
