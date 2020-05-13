@@ -58,6 +58,7 @@
     <Compile Include="Cache\IQueryMetrics.cs" />
     <Compile Include="Cache\Query\IQueryCursorField.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
+    <Compile Include="Client\Compute\IComputeClient.cs" />
     <Compile Include="Client\IClientCluster.cs" />
     <Compile Include="Client\IClientClusterGroup.cs" />
     <Compile Include="Client\IClientClusterNode.cs" />
@@ -110,6 +111,7 @@
     <Compile Include="Impl\Client\Cluster\ClientClusterGroup.cs" />
     <Compile Include="Impl\Client\Cluster\ClientClusterGroupProjection.cs" />
     <Compile Include="Impl\Client\Cluster\ClientClusterNode.cs" />
+    <Compile Include="Impl\Client\Compute\ComputeClient.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
     <Compile Include="Impl\Common\PlatformType.cs" />

@@ -179,6 +179,7 @@
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTestsSsl.cs" />
     <Compile Include="Client\Cluster\ClientClusterGroupTests.cs" />
     <Compile Include="Client\Cluster\ClientClusterTests.cs" />
+    <Compile Include="Client\Compute\ComputeClientTests.cs" />
     <Compile Include="Client\EndpointTest.cs" />
     <Compile Include="Client\RawSecureSocketTest.cs" />
     <Compile Include="Client\RawSocketTest.cs" />
