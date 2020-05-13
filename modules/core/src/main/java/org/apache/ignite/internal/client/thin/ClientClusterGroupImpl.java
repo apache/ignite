@@ -635,7 +635,6 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
             if (resultFilter != null)
                 return forResultFilter(resultFilterForPredicate(p));
 
-
             return new ProjectionFilters(nodeIds, attrs, nodeType, predicate == null ? p : predicate.and(p));
         }
 
