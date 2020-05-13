@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,33 +15,34 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
+namespace Apache.Ignite.Core.Client
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Net;
 
     /// <summary>
-    /// Version attribute for <see cref="ClientOp"/>.
+    /// Represents Ignite client connection.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Field)]
-    internal sealed class MinVersionAttribute : Attribute
+    public interface IClientConnection
     {
-        /** */
-        private readonly ClientProtocolVersion _version;
+        /// <summary>
+        /// Gets the remote EndPoint.
+        /// </summary>
+        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
+            Justification = "Consistency with EndPoint class name.")]
+        EndPoint RemoteEndPoint { get; }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="MinVersionAttribute"/> class.
+        /// Gets the local EndPoint.
         /// </summary>
-        public MinVersionAttribute(short major, short minor, short maintenance)
-        {
-            _version = new ClientProtocolVersion(major, minor, maintenance);
-        }
-
+        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
+            Justification = "Consistency with EndPoint class name.")]
+        EndPoint LocalEndPoint { get; }
+        
         /// <summary>
-        /// Gets the version.
+        /// Gets the server node id.
         /// </summary>
-        public ClientProtocolVersion Version
-        {
-            get { return _version; }
-        }
+        Guid NodeId { get; }
     }
 }

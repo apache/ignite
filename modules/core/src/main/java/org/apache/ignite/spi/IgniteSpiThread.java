@@ -31,9 +31,6 @@ import org.apache.ignite.thread.IgniteThread;
  * </ul>
  */
 public abstract class IgniteSpiThread extends IgniteThread {
-    /** Default thread's group. */
-    public static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite-spi");
-
     /** Number of all system threads in the system. */
     private static final AtomicLong cntr = new AtomicLong();
 
@@ -48,7 +45,7 @@ public abstract class IgniteSpiThread extends IgniteThread {
      * @param log Grid logger to use.
      */
     protected IgniteSpiThread(String igniteInstanceName, String name, IgniteLogger log) {
-        super(igniteInstanceName, DFLT_GRP, createName(cntr.incrementAndGet(), name, igniteInstanceName));
+        super(igniteInstanceName, createName(cntr.incrementAndGet(), name, igniteInstanceName));
 
         assert log != null;
 
