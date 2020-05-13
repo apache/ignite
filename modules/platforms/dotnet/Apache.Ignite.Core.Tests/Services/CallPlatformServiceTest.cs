@@ -290,7 +290,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** */
-            public int Id { get; }
+            public int Id { get; set; }
             
             /** <inheritdoc /> */
             public override int GetHashCode()
