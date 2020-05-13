@@ -1655,7 +1655,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         GridDhtPartitionTopology top = grp != null ? grp.topology() :
                             cctx.exchange().clientTopology(desc.groupId(), events().discoveryCache());
 
-                        top.beforeExchange(this, true, true);
+                        top.beforeExchange(this, true, false);
 
                         return null;
                     });
