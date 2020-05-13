@@ -15,6 +15,8 @@
  */
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -31,12 +33,11 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 /**
@@ -45,9 +46,9 @@ import static java.util.Collections.singletonList;
 public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstractTest {
     private static final String PK = IgniteTable.PK_INDEX_NAME;
     private static final String PK_ALIAS = IgniteTable.PK_ALIAS_INDEX_NAME;
-    private static final String DEPID_IDX =  "DEPID_IDX";
-    private static final String NAME_CITY_IDX =  "NAME_CITY_IDX";
-    private static final String NAME_DEPID_CITY_IDX =  "NAME_DEPID_CITY_IDX";
+    private static final String DEPID_IDX = "DEPID_IDX";
+    private static final String NAME_CITY_IDX = "NAME_CITY_IDX";
+    private static final String NAME_DEPID_CITY_IDX = "NAME_DEPID_CITY_IDX";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -108,14 +109,13 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testNoFilter() {
-        checkQuery("SELECT * FROM Developer",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33),
-                asList(2, "Beethoven", 2, "Vienna", 44),
-                asList(3, "Bach", 1, "Leipzig", 55),
-                asList(4, "Strauss", 2, "Munich", 66))
-        );
+        assertQuery("SELECT * FROM Developer")
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .check();
     }
 
     // ===== _key filter =====
@@ -123,54 +123,51 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testKeyColumnEqualsFilter() {
-        checkQuery("SELECT * FROM Developer WHERE _key=1",
-            "PUBLIC, DEVELOPER", PK, false,
-            singletonList(asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE _key=1")
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testKeyColumnGreaterThanFilter() {
-        checkQuery("SELECT * FROM Developer WHERE _key>3",
-            "PUBLIC, DEVELOPER", PK, false,
-            singletonList(asList(4, "Strauss", 2, "Munich", 66))
-        );
+        assertQuery("SELECT * FROM Developer WHERE _key>3")
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .check();
     }
 
     /** */
     @Test
     public void testKeyColumnGreaterThanOrEqualsFilter() {
-        checkQuery("SELECT * FROM Developer WHERE _key>=?",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(3, "Bach", 1, "Leipzig", 55),
-                asList(4, "Strauss", 2, "Munich", 66)),
-        3
-        );
+        assertQuery("SELECT * FROM Developer WHERE _key>=?")
+            .withParams(3)
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .check();
     }
 
     /** */
     @Test
     public void testKeyColumnLessThanFilter() {
-        checkQuery("SELECT * FROM Developer WHERE _key<?",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33),
-                asList(2, "Beethoven", 2, "Vienna", 44)),
-            3
-        );
+        assertQuery("SELECT * FROM Developer WHERE _key<?")
+            .withParams(3)
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .check();
     }
 
     /** */
     @Test
     public void testKeyColumnLessThanOrEqualsFilter() {
-        checkQuery("SELECT * FROM Developer WHERE _key<=2",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33),
-                asList(2, "Beethoven", 2, "Vienna", 44))
-        );
+        assertQuery("SELECT * FROM Developer WHERE _key<=2")
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .check();
     }
 
     // ===== alias filter =====
@@ -178,53 +175,50 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testKeyAliasEqualsFilter() {
-        checkQuery("SELECT * FROM Developer WHERE id=2",
-            "PUBLIC, DEVELOPER", PK_ALIAS, false,
-            singletonList(asList(2, "Beethoven", 2, "Vienna", 44))
-        );
+        assertQuery("SELECT * FROM Developer WHERE id=2")
+            .containsScan("PUBLIC", "DEVELOPER", PK_ALIAS)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .check();
     }
 
     /** */
     @Test
     public void testKeyAliasGreaterThanFilter() {
-        checkQuery("SELECT * FROM Developer WHERE id>?",
-            "PUBLIC, DEVELOPER", PK_ALIAS, false,
-            singletonList(asList(4, "Strauss", 2, "Munich", 66)),
-            3
-        );
+        assertQuery("SELECT * FROM Developer WHERE id>?")
+            .withParams(3)
+            .containsScan("PUBLIC", "DEVELOPER", PK_ALIAS)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .check();
     }
 
     /** */
     @Test
     public void testKeyAliasGreaterThanOrEqualsFilter() {
-        checkQuery("SELECT * FROM Developer WHERE id>=3",
-            "PUBLIC, DEVELOPER", PK_ALIAS, false,
-            asList(
-                asList(3, "Bach", 1, "Leipzig", 55),
-                asList(4, "Strauss", 2, "Munich", 66))
-        );
+        assertQuery("SELECT * FROM Developer WHERE id>=3")
+            .containsScan("PUBLIC", "DEVELOPER", PK_ALIAS)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .check();
     }
 
     /** */
     @Test
     public void testKeyAliasLessThanFilter() {
-        checkQuery("SELECT * FROM Developer WHERE id<3",
-            "PUBLIC, DEVELOPER", PK_ALIAS, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33),
-                asList(2, "Beethoven", 2, "Vienna", 44))
-        );
+        assertQuery("SELECT * FROM Developer WHERE id<3")
+            .containsScan("PUBLIC", "DEVELOPER", PK_ALIAS)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .check();
     }
 
     /** */
     @Test
     public void testKeyAliasLessThanOrEqualsFilter() {
-        checkQuery("SELECT * FROM Developer WHERE id<=2",
-            "PUBLIC, DEVELOPER", PK_ALIAS, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33),
-                asList(2, "Beethoven", 2, "Vienna", 44))
-        );
+        assertQuery("SELECT * FROM Developer WHERE id<=2")
+            .containsScan("PUBLIC", "DEVELOPER", PK_ALIAS)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .check();
     }
 
     // ===== indexed field filter =====
@@ -232,60 +226,56 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testIndexedFieldEqualsFilter() {
-        checkQuery("SELECT * FROM Developer WHERE depId=2",
-            "PUBLIC, DEVELOPER", DEPID_IDX, false,
-            asList(
-                asList(2, "Beethoven", 2, "Vienna", 44),
-                asList(4, "Strauss", 2, "Munich", 66))
-        );
+        assertQuery("SELECT * FROM Developer WHERE depId=2")
+            .containsScan("PUBLIC", "DEVELOPER", DEPID_IDX)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .check();
     }
 
     /** */
     @Test
     public void testIndexedFieldGreaterThanFilter() {
-        checkQuery("SELECT * FROM Developer WHERE depId>2",
-            "PUBLIC, DEVELOPER", DEPID_IDX, false,
-            singletonList(asList(1, "Mozart", 3, "Vienna", 33)),
-            3
-        );
+        assertQuery("SELECT * FROM Developer WHERE depId>2")
+            .withParams(3)
+            .containsScan("PUBLIC", "DEVELOPER", DEPID_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testIndexedFieldGreaterThanOrEqualsFilter() {
-        checkQuery("SELECT * FROM Developer WHERE depId>=2",
-            "PUBLIC, DEVELOPER", DEPID_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33),
-                asList(2, "Beethoven", 2, "Vienna", 44),
-                asList(4, "Strauss", 2, "Munich", 66))
-        );
+        assertQuery("SELECT * FROM Developer WHERE depId>=2")
+            .containsScan("PUBLIC", "DEVELOPER", DEPID_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .check();
     }
 
     /** */
     @Test
     public void testIndexedFieldLessThanFilter() {
-        checkQuery("SELECT * FROM Developer WHERE depId<?",
-            "PUBLIC, DEVELOPER", DEPID_IDX, false,
-            asList(
-                asList(2, "Beethoven", 2, "Vienna", 44),
-                asList(3, "Bach", 1, "Leipzig", 55),
-                asList(4, "Strauss", 2, "Munich", 66)),
-            3
-        );
+        assertQuery("SELECT * FROM Developer WHERE depId<?")
+            .withParams(3)
+            .containsScan("PUBLIC", "DEVELOPER", DEPID_IDX)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .check();
     }
 
     /** */
     @Test
     public void testIndexedFieldLessThanOrEqualsFilter() {
-        checkQuery("SELECT * FROM Developer WHERE depId<=?",
-            "PUBLIC, DEVELOPER", DEPID_IDX, false,
-            asList(
-                asList(2, "Beethoven", 2, "Vienna", 44),
-                asList(3, "Bach", 1, "Leipzig", 55),
-                asList(4, "Strauss", 2, "Munich", 66)),
-            2
-        );
+        assertQuery("SELECT * FROM Developer WHERE depId<=?")
+            .withParams(2)
+            .containsScan("PUBLIC", "DEVELOPER", DEPID_IDX)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .check();
     }
 
     // ===== non-indexed field filter =====
@@ -293,63 +283,58 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testNonIndexedFieldEqualsFilter() {
-        checkQuery("SELECT * FROM Developer WHERE age=?",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(2, "Beethoven", 2, "Vienna", 44)),
-            44
-        );
+        assertQuery("SELECT * FROM Developer WHERE age=?")
+            .withParams(44)
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .check();
     }
 
     /** */
     @Test
     public void testNonIndexedFieldGreaterThanFilter() {
-        checkQuery("SELECT * FROM Developer WHERE age>?",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(3, "Bach", 1, "Leipzig", 55),
-                asList(4, "Strauss", 2, "Munich", 66)),
-            50
-        );
+        assertQuery("SELECT * FROM Developer WHERE age>?")
+            .withParams(50)
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .check();
     }
 
     /** */
     @Test
     public void testNonIndexedFieldGreaterThanOrEqualsFilter() {
-        checkQuery("SELECT * FROM Developer WHERE age>=?",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(2, "Beethoven", 2, "Vienna", 44),
-                asList(3, "Bach", 1, "Leipzig", 55),
-                asList(4, "Strauss", 2, "Munich", 66)),
-            34
-        );
+        assertQuery("SELECT * FROM Developer WHERE age>=?")
+            .withParams(34)
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .check();
     }
 
     /** */
     @Test
     public void testNonIndexedFieldLessThanFilter() {
-        checkQuery("SELECT * FROM Developer WHERE age<?",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33),
-                asList(2, "Beethoven", 2, "Vienna", 44),
-                asList(3, "Bach", 1, "Leipzig", 55)),
-            56
-        );
+        assertQuery("SELECT * FROM Developer WHERE age<?")
+            .withParams(56)
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .check();
     }
 
     /** */
     @Test
     public void testNonIndexedFieldLessThanOrEqualsFilter() {
-        checkQuery("SELECT * FROM Developer WHERE age<=?",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33),
-                asList(2, "Beethoven", 2, "Vienna", 44),
-                asList(3, "Bach", 1, "Leipzig", 55)),
-            55
-        );
+        assertQuery("SELECT * FROM Developer WHERE age<=?")
+            .withParams(55)
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .check();
     }
 
     // ===== non-indexed field filter =====
@@ -357,242 +342,276 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testComplexIndexCondition1() {
-        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3",
-            "PUBLIC, DEVELOPER", NAME_DEPID_CITY_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3")
+            .containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testComplexIndexCondition2() {
-        checkQuery("SELECT * FROM Developer WHERE depId=? AND name=?",
-            "PUBLIC, DEVELOPER", NAME_DEPID_CITY_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33)),
-            3, "Mozart"
-        );
+        assertQuery("SELECT * FROM Developer WHERE depId=? AND name=?")
+            .withParams(3, "Mozart")
+            .containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
-
-
 
     /** */
     @Test
     public void testComplexIndexCondition3() {
-        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND city='Vienna'",
-            "PUBLIC, DEVELOPER", NAME_DEPID_CITY_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND city='Vienna'")
+            .containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testComplexIndexCondition4() {
-        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND city='Leipzig'",
-            "PUBLIC, DEVELOPER", NAME_DEPID_CITY_IDX, false,
-            emptyList()
-        );
+        assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND city='Leipzig'")
+            .containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX)
+            .check();
     }
 
     /** */
     @Test
     public void testComplexIndexCondition5() {
-        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND city='Vienna'",
-            "PUBLIC, DEVELOPER", NAME_CITY_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND city='Vienna'")
+            .containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testComplexIndexCondition6() {
-        checkQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId=3",
-            "PUBLIC, DEVELOPER", DEPID_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId=3")
+            .containsScan("PUBLIC", "DEVELOPER", DEPID_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testComplexIndexCondition7() {
-        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=2",
-            "PUBLIC, DEVELOPER", NAME_CITY_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=2")
+            .containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testComplexIndexCondition8() {
-        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=2 AND age>20",
-            "PUBLIC, DEVELOPER", NAME_CITY_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=2 AND age>20")
+            .containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testComplexIndexCondition9() {
-        checkQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId>=2 AND city>='Vienna'",
-            "PUBLIC, DEVELOPER", NAME_CITY_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId>=2 AND city>='Vienna'")
+            .containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testComplexIndexCondition10() {
-        checkQuery("SELECT * FROM Developer WHERE name>='Mozart' AND city>='Vienna'",
-            "PUBLIC, DEVELOPER", NAME_CITY_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND city>='Vienna'")
+            .containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testComplexIndexCondition11() {
-        checkQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId=3 AND city>='Vienna'",
-            "PUBLIC, DEVELOPER", DEPID_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId=3 AND city>='Vienna'")
+            .containsScan("PUBLIC", "DEVELOPER", DEPID_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testComplexIndexCondition12() {
-        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND city='Vienna'",
-            "PUBLIC, DEVELOPER", NAME_DEPID_CITY_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND city='Vienna'")
+            .containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testComplexIndexCondition13() {
-        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=3 AND city='Vienna'",
-            "PUBLIC, DEVELOPER", NAME_CITY_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=3 AND city='Vienna'")
+            .containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
     @Test
     public void testComplexIndexCondition14() {
-        checkQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId=3 AND city>='Vienna'",
-            "PUBLIC, DEVELOPER", DEPID_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
-    }
-
-    @Test
-    public void testComplexIndexCondition15() {
-        checkQuery("SELECT * FROM Developer WHERE age=33 AND city='Vienna'",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
-    }
-
-    @Test
-    public void testComplexIndexCondition16() {
-        checkQuery("SELECT * FROM Developer WHERE age=33 AND (city='Vienna' AND depId=3)",
-            "PUBLIC, DEVELOPER", DEPID_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
-    }
-
-    @Ignore
-    @Test
-    public void testComplexIndexCondition17() {
-        checkQuery("SELECT * FROM Developer WHERE depId=?+1",
-            "PUBLIC, DEVELOPER", DEPID_IDX, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33)),
-            3
-        );
-    }
-
-    @Test
-    public void testEmptyResult() {
-        checkQuery("SELECT * FROM Developer WHERE age=33 AND city='Leipzig'",
-            "PUBLIC, DEVELOPER", PK, false,
-            emptyList()
-        );
-    }
-
-    @Test
-    public void testOrCondition1() {
-        checkQuery("SELECT * FROM Developer WHERE name='Mozart' OR depId=1",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33),
-                asList(3, "Bach", 1, "Leipzig", 55))
-        );
-    }
-
-    @Test
-    public void testOrCondition2() {
-        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND (depId=1 OR depId=3)",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
-    }
-
-    @Test
-    public void testOrCondition3() {
-        checkQuery("SELECT * FROM Developer WHERE name='Mozart' AND (age > 22 AND (depId=1 OR depId=3))",
-            "PUBLIC, DEVELOPER", PK, false,
-            asList(
-                asList(1, "Mozart", 3, "Vienna", 33))
-        );
+        assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId=3 AND city>='Vienna'")
+            .containsScan("PUBLIC", "DEVELOPER", DEPID_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
     }
 
     /** */
-    public void checkQuery(String qry, String tblName, String idxName,boolean ordered, List<List> expRes,
-        Object... params) {
-        // Check plan.
-        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+    @Test
+    public void testComplexIndexCondition15() {
+        assertQuery("SELECT * FROM Developer WHERE age=33 AND city='Vienna'")
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
+    }
 
-        List<FieldsQueryCursor<List<?>>> explainCursors =
-            engine.query(null, "PUBLIC", "EXPLAIN PLAN FOR " + qry);
+    /** */
+    @Test
+    public void testComplexIndexCondition16() {
+        assertQuery("SELECT * FROM Developer WHERE age=33 AND (city='Vienna' AND depId=3)")
+            .containsScan("PUBLIC", "DEVELOPER", DEPID_IDX)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
+    }
 
-        FieldsQueryCursor<List<?>> explainCursor = explainCursors.get(0);
-        List<List<?>> explainRes = explainCursor.getAll();
-        String plan = (String)explainRes.get(0).get(0);
+    /** */
+    @Test
+    public void testEmptyResult() {
+        assertQuery("SELECT * FROM Developer WHERE age=33 AND city='Leipzig'")
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .check();
+    }
 
-        String idxScanName = "IgniteTableScan(table=[[" + tblName + "]], index=[" + idxName + ']';
+    /** */
+    @Test
+    public void testOrCondition1() {
+        assertQuery("SELECT * FROM Developer WHERE name='Mozart' OR depId=1")
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .check();
+    }
 
-        assertTrue("idxName=" + idxName + ", plan=" + plan, plan.contains(idxScanName));
+    /** */
+    @Test
+    public void testOrCondition2() {
+        assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND (depId=1 OR depId=3)")
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
+    }
 
-        // Check result set.
-        List<FieldsQueryCursor<List<?>>> cursors =
-            engine.query(null, "PUBLIC", qry, params);
+    /** */
+    @Test
+    public void testOrCondition3() {
+        assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND (age > 22 AND (depId=1 OR depId=3))")
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
+    }
 
-        FieldsQueryCursor<List<?>> cur = cursors.get(0);
+    /** */
+    private QueryChecker assertQuery(String qry) {
+        return new QueryChecker(qry);
+    }
 
-        List<List<?>> res = cur.getAll();
+    /** */
+    private class QueryChecker {
+        /** */
+        private String qry;
 
-        if (!ordered) {
-            // Avoid arbitrary order.
-            res.sort(new ListComparator());
-            explainRes.sort(new ListComparator());
+        /** */
+        private List<String> subPlans = new ArrayList<>();
+
+        /** */
+        private boolean ordered;
+
+        /** */
+        private List<List<?>> expectedResult = new ArrayList<>();
+
+        /** */
+        private Object[] params = X.EMPTY_OBJECT_ARRAY;
+
+        /** */
+        public QueryChecker(String qry) {
+            this.qry = qry;
         }
 
-        assertEqualsCollections(expRes, res);
+        /** */
+        public QueryChecker containsSubPlan(String subPlan) {
+            subPlans.add(subPlan);
+
+            return this;
+        }
+
+        /** */
+        public QueryChecker ordered() {
+            ordered = true;
+
+            return this;
+        }
+
+        /** */
+        public QueryChecker withParams(Object... params) {
+            this.params = params;
+
+            return this;
+        }
+
+        /** */
+        public QueryChecker returns(Object... res) {
+            expectedResult.add(Arrays.asList(res));
+
+            return this;
+        }
+
+        /** */
+        public QueryChecker containsScan(String schema, String tblName, String idxName) {
+            String idxScanName = "IgniteTableScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxName + ']';
+
+            return containsSubPlan(idxScanName);
+        }
+
+        /** */
+        public void check() {
+            // Check plan.
+            QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+
+            List<FieldsQueryCursor<List<?>>> explainCursors =
+                engine.query(null, "PUBLIC", "EXPLAIN PLAN FOR " + qry);
+
+            FieldsQueryCursor<List<?>> explainCursor = explainCursors.get(0);
+            List<List<?>> explainRes = explainCursor.getAll();
+            String plan = (String)explainRes.get(0).get(0);
+
+            for (String subPlan : subPlans)
+                assertTrue("\nExpected subPlan:\n" + subPlan + "\nactual plan:\n" + plan, plan.contains(subPlan));
+
+            // Check result.
+            List<FieldsQueryCursor<List<?>>> cursors =
+                engine.query(null, "PUBLIC", qry, params);
+
+            FieldsQueryCursor<List<?>> cur = cursors.get(0);
+
+            List<List<?>> res = cur.getAll();
+
+            if (!ordered) {
+                // Avoid arbitrary order.
+                res.sort(new ListComparator());
+                expectedResult.sort(new ListComparator());
+            }
+
+            assertEqualsCollections(expectedResult, res);
+        }
     }
 
     /** */
