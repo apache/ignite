@@ -108,6 +108,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /** User attributes key. */
     private static final int USER_ATTR_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** Credentials key. */
+    private static final int CREDS_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
     /** Supported protocol versions. */
     private static final Collection<Short> SUPP_VERS = new HashSet<>();
 
@@ -316,8 +319,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
             restReq.command(NOOP);
 
-            restReq.credentials(req.credentials());
-
+            ses.addMeta(CREDS_KEY, req.credentials());
             ses.addMeta(USER_ATTR_KEY, req.userAttributes());
         }
         else if (msg instanceof GridClientCacheRequest) {
@@ -421,6 +423,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restReq.sessionToken(msg.sessionToken());
             restReq.address(ses.remoteAddress());
             restReq.certificates(ses.certificates());
+            restReq.credentials(ses.meta(CREDS_KEY));
             restReq.userAttributes(ses.meta(USER_ATTR_KEY));
         }
 

@@ -34,7 +34,7 @@ import org.junit.runners.JUnit4;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
- * Security tests for thin client.
+ * Checks user attributes presents in CridClient messages.
  */
 @RunWith(JUnit4.class)
 public class AttributeSecurityCheckTest extends CommonSecurityCheckTest {
@@ -55,7 +55,7 @@ public class AttributeSecurityCheckTest extends CommonSecurityCheckTest {
 
     /** */
     @Test
-    public void testClientInfoGridClientNotFail() throws Exception {
+    public void testUserAttributesInMessage() throws Exception {
         Ignite ignite = startGrids(2);
 
         assertEquals(2, ignite.cluster().topologyVersion());

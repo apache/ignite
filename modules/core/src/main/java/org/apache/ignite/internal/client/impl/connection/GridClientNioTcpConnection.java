@@ -265,7 +265,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             ses.addMeta(SES_META_CONN, this);
 
-            if (cred != null || F.isEmpty(userAttrs)) {
+            if (cred != null || !F.isEmpty(userAttrs)) {
                 GridClientFuture<?> authFut = makeAuthRequest();
 
                 authFut.get(connTimeoutRest, MILLISECONDS);
