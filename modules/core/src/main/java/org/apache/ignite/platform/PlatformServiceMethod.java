@@ -29,16 +29,12 @@ import java.lang.annotation.Target;
  * <p/>
  * For example, this annotated java inerface method:
  * <pre>
- * {@code
- * @PlatformServiceMethod("SomeMethod")
+ * &#64;PlatformServiceMethod("SomeMethod")
  * Object someMethod(Object[] args)
- * }
  * </pre>
  * will be mapped to {@code SomeMethod}, for example (.NET service):
  * <pre>
- * {@code
  * object SomeMethod(object[] args)
- * }
  * </pre>
  */
 @Documented

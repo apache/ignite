@@ -30,16 +30,12 @@ import java.lang.annotation.Target;
  * <p/>
  * For example, this annotated java inerface method:
  * <pre>
- * {@code
- * @PlatformServiceSetter("SomeProperty")
+ * &#64;PlatformServiceSetter("SomeProperty")
  * void setSomeProperty(SomeProperty val)
- * }
  * </pre>
  * will be mapped to {@code set_SomeProperty} method name and corresponds to the following .NET property:
  * <pre>
- * {@code
- * SomeProperty { set; }
- * }
+ * SomeProperty &#123; set; &#125;
  * </pre>
  */
 @Documented
