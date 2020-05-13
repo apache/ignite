@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Impl.Client.Compute;
+    using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -33,7 +34,9 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTask()
         {
-            var compute = Client.GetCompute();
+            var res = Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeInt);
+            
+            Assert.AreEqual(1, res);
         }
 
         /// <summary>

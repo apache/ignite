@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private const int EchoTypeChar = 4;
 
         /** Echo type: int. */
-        private const int EchoTypeInt = 5;
+        public const int EchoTypeInt = 5;
 
         /** Echo type: long. */
         private const int EchoTypeLong = 6;
