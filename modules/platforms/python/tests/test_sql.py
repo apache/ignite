@@ -152,3 +152,66 @@ def test_sql_fields(client):
     # repeat cleanup
     result = sql_fields(client, 'PUBLIC', drop_query, page_size)
     assert result.status == 0
+
+
+def test_long_multipage_query(client):
+    """
+    The test creates a table with 13 columns (id and 12 enumerated columns)
+    and 20 records with id in range from 1 to 20. Values of enumerated columns
+    are = column number * id.
+
+    The goal is to ensure that all the values are selected in a right order.
+    """
+
+    field_range = range(1, 13)
+    record_range = range(1, 21)
+    drop_query = 'DROP TABLE LongMultipageQuery IF EXISTS'
+    create_query = '''CREATE TABLE LongMultipageQuery (
+        id INT(11) PRIMARY KEY,
+        field_1 INT(11),
+        field_2 INT(11),
+        field_3 INT(11),
+        field_4 INT(11),
+        field_5 INT(11),
+        field_6 INT(11),
+        field_7 INT(11),
+        field_8 INT(11),
+        field_9 INT(11),
+        field_10 INT(11),
+        field_11 INT(11),
+        field_12 INT(11),
+    )'''
+    insert_query = '''INSERT INTO LongMultipageQuery (
+        id,
+        field_1,
+        field_2,
+        field_3,
+        field_4,
+        field_5,
+        field_6,
+        field_7,
+        field_8,
+        field_9,
+        field_10,
+        field_11,
+        field_12,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
+    select_query = 'SELECT * FROM LongMultipageQuery'
+
+    client.sql(drop_query)
+    client.sql(create_query)
+
+    for id in record_range:
+        client.sql(
+            insert_query,
+            query_args=[id] + list(i * id for i in field_range),
+        )
+
+    result = client.sql(select_query, page_size=1)
+    for page in result:
+        assert len(page) == 13
+        id = page[0]
+        for field_number, value in enumerate(page[1:], start=1):
+            assert value == field_number * id
+
+    client.sql(drop_query)

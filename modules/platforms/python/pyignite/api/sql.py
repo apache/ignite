@@ -442,7 +442,10 @@ def sql_fields_cursor_get_page(
     }
     for row_dict in value['data']:
         row = []
-        for field_key in sorted(row_dict.keys()):
+        for field_key in sorted(
+            row_dict.keys(),
+            key=lambda x: int(x.lstrip('field_')),
+        ):
             row.append(row_dict[field_key])
         result.value['data'].append(row)
     return result
