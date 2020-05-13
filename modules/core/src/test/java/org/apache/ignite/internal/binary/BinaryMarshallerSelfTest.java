@@ -3000,7 +3000,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         Value[] arr = IntStream.range(0, 1000).mapToObj(Value::new).toArray(Value[]::new);
 
         testReadDetachObjectProperly(arr, obj -> {
-            Object[] desArr = (Object[])obj;
+            Object[] desArr = ((BinaryObjectArray)obj).items();
 
             assertEquals(arr.length, desArr.length);
 
@@ -4086,7 +4086,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         innerSimple.strArr = new String[] {"str1", "str2", "str3"};
         innerSimple.uuidArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
         innerSimple.dateArr = new Date[] {new Date(11111), new Date(22222), new Date(33333)};
-        innerSimple.objArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
+        innerSimple.objArr = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
         innerSimple.col = new ArrayList<>();
         innerSimple.map = new HashMap<>();
         innerSimple.enumVal = TestEnum.A;
