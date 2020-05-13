@@ -3036,7 +3036,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 doneFut.markInitialized();
 
                 if (txCnt.get() > 0)
-                    doneFut.listen(future -> finishAndRecordTimings());
+                    doneFut.listen(fut -> finishAndRecordTimings());
 
                 if (allTxFinFut == null)
                     return;
