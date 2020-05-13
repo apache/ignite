@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Compute
 {
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Compute;
 
     /// <summary>
@@ -33,7 +34,20 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /// <param name="ignite"></param>
         internal ComputeClient(IgniteClient ignite)
         {
+            // TODO: Projection?
             _ignite = ignite;
+        }
+
+        /** <inheritdoc /> */
+        public TRes ExecuteJavaTask<TRes>(string taskName, object taskArg)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

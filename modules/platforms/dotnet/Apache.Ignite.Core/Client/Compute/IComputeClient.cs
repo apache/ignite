@@ -17,11 +17,29 @@
 
 namespace Apache.Ignite.Core.Client.Compute
 {
+    using System.Threading.Tasks;
+
     /// <summary>
     /// Client Compute API. See <see cref="IIgniteClient.GetCompute"/>.
     /// </summary>
     public interface IComputeClient
     {
-        
+        /// <summary>
+        /// Executes Java task by class name.
+        /// </summary>
+        /// <param name="taskName">Java task name.</param>
+        /// <param name="taskArg">Optional argument of task execution, can be null.</param>
+        /// <returns>Task result.</returns>
+        /// <typeparam name="TRes">Type of task result.</typeparam>
+        TRes ExecuteJavaTask<TRes>(string taskName, object taskArg);
+
+        /// <summary>
+        /// Executes Java task by class name.
+        /// </summary>
+        /// <param name="taskName">Java task name.</param>
+        /// <param name="taskArg">Optional argument of task execution, can be null.</param>
+        /// <returns>Task result.</returns>
+        /// <typeparam name="TRes">Type of task result.</typeparam>
+        Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg);
     }
 }
