@@ -37,7 +37,7 @@ class HandshakeResult {
     private ClientListenerProtocolVersion srvProtoVer;
 
     /** Features. */
-    private EnumSet<JdbcThinFeature> features = EnumSet.noneOf(JdbcThinFeature.class);;
+    private EnumSet<JdbcThinFeature> features = EnumSet.noneOf(JdbcThinFeature.class);
 
     /**
      * @return Ignite server version.

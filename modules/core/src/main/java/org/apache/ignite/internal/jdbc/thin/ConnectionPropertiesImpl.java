@@ -241,7 +241,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             if (val == null)
                 return;
 
-            String [] features = val.split("\\W+");
+            String[] features = val.split("\\W+");
 
             for (String f : features) {
                 try {
