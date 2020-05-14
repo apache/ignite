@@ -15,35 +15,34 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Client.Transactions
+namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
-    using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Transactions;
+    using NUnit.Framework;
 
     /// <summary>
-    /// Thin client transaction.
+    /// Transactional cache client tests.
     /// </summary>
-    public interface IClientTransaction : IDisposable
+    public class CacheTransactionalTest : ClientTestBase
     {
-        /// <summary>
-        /// Commits this transaction.
-        /// </summary>
-        void Commit();
+        [Test]
+        public void TestCanStartEndTransaction()
+        {
+            var cache = Client.CreateCache<int, string>(new CacheClientConfiguration
+            {
+                Name = "TestCanStartEndTransaction",
+                AtomicityMode = CacheAtomicityMode.Transactional
+            });
 
-        /// <summary>
-        /// Commits this transaction.
-        /// </summary>
-        Task CommitAsync();
+            using (Client.Transactions.TxStart(TransactionConcurrency.Pessimistic,
+                TransactionIsolation.ReadCommitted,
+                TimeSpan.Zero))
+            {
 
-        /// <summary>
-        /// Rolls back this transaction.
-        /// </summary>
-        void Rollback();
-
-        /// <summary>
-        /// Rolls back this transaction.
-        /// </summary>
-        Task RollbackAsync();
-
+            }
+        }
     }
 }

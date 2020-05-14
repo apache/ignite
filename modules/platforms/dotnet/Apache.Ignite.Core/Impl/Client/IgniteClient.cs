@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Cache.Near;
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Client.Cluster;
+    using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
@@ -60,6 +61,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Configuration. */
         private readonly IgniteClientConfiguration _configuration;
 
+        /** Transactions. */
+        private ClientTransactions _transactions;
+
         /** Node info cache. */
         private readonly ConcurrentDictionary<Guid, IClientClusterNode> _nodes =
             new ConcurrentDictionary<Guid, IClientClusterNode>();
@@ -84,6 +88,8 @@ namespace Apache.Ignite.Core.Impl.Client
             _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
 
             _binary = new Binary(_marsh);
+
+            _transactions = new ClientTransactions(this);
         }
 
         /// <summary>
@@ -186,7 +192,10 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        public IClientTransactions Transactions { get; private set; }
+        public IClientTransactions Transactions
+        {
+            get { return _transactions; }
+        }
 
         /** <inheritDoc /> */
         public CacheAffinityImpl GetAffinity(string cacheName)

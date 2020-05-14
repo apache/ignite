@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System;
     using Apache.Ignite.Core.Client.Transactions;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -26,6 +27,13 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     /// </summary>
     internal class ClientTransactions : IClientTransactions
     {
+        private readonly IgniteClient _ignite;
+
+        public ClientTransactions(IgniteClient ignite)
+        {
+            _ignite = ignite;
+        }
+
         /** <inheritDoc /> */
         public IClientTransaction TxStart()
         {
@@ -39,9 +47,22 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         }
 
         /** <inheritDoc /> */
-        public IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation, TimeSpan timeout)
+        public IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
+            TimeSpan timeout)
         {
-            throw new NotImplementedException();
+            var txId = _ignite.Socket.DoOutInOp(
+                ClientOp.TxStart,
+                ctx =>
+                {
+                    ctx.Writer.WriteByte((byte) concurrency);
+                    ctx.Writer.WriteByte((byte) isolation);
+                    ctx.Writer.WriteTimeSpanAsLong(timeout);
+                    ctx.Writer.WriteString(null);
+                },
+                ctx => ctx.Reader.ReadInt()
+            );
+            
+            return new ClientTransaction(txId);
         }
 
         /** <inheritDoc /> */

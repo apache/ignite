@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
+    using System;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Transactions;
 
@@ -25,6 +26,24 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     /// </summary>
     internal class ClientTransaction: IClientTransaction
     {
+        /** Unique  transaction ID.*/
+        private readonly int _id;
+
+        // ReSharper disable once InconsistentNaming
+        /** Transaction for this thread. */
+        [ThreadStatic]
+        private static ClientTransaction THREAD_TX;
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="id">ID.</param>
+        public ClientTransaction(int id)
+        {
+            _id = id;
+            THREAD_TX = this;
+        }
+
         public void Commit()
         {
             throw new System.NotImplementedException();
@@ -43,6 +62,11 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         public Task RollbackAsync()
         {
             throw new System.NotImplementedException();
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
         }
     }
 }
