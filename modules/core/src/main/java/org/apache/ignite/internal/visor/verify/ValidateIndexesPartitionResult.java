@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Encapsulates intermediate results of validation of SQL index (if {@link #sqlIdxName} is present) or partition.
+ * Encapsulates intermediate results of validation of SQL index.
  */
 public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
     /** */
