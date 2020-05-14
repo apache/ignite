@@ -2787,7 +2787,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 sharedCtx.database().checkpointReadLock();
 
                                 try {
-                                    callWithContextIfNeed(exchActions.securitySubjectId(), () ->{
+                                    callWithContextIfNeed(exchActions.securitySubjectId(), () -> {
                                         prepareCacheStop(action.request().cacheName(), action.request().destroy());
 
                                         return null;

@@ -74,7 +74,7 @@ public class ThinClientCacheCreateDestroyEventsTest extends AbstractSecurityCach
 
     /** */
     @Test
-    public void testDestroyCacheEvent() throws Exception{
+    public void testDestroyCacheEvent() throws Exception {
         testCacheEvents(2, CLIENT, EVT_CACHE_STOPPED, cacheConfigurations(1),
             operation(false));
     }

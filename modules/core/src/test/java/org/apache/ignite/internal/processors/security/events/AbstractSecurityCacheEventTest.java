@@ -123,6 +123,7 @@ public abstract class AbstractSecurityCacheEventTest extends AbstractSecurityTes
             grid(LISTENER_NODE).events().stopRemoteListen(lsnrId);
         }
     }
+
     /** */
     protected Set<String> cacheNames(Collection<CacheConfiguration> ccfgs) {
         return ccfgs.stream().map(CacheConfiguration::getName).collect(Collectors.toSet());

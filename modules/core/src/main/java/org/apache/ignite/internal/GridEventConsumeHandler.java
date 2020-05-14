@@ -234,13 +234,8 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                                         continue;
 
                                                     if (ctx.config().isPeerClassLoadingEnabled()) {
-                                                        GridCacheAdapter gca = ctx.cache().internalCache(cacheName);
-                                                        //todo MY_TODO проверить на мастере и вбить ошибку
-                                                        // как повторить:
-                                                        // два узла с удалённым листенером от третьего узла, слушать событие на удаление кэша.
-                                                        // удаленный листнер отработает два раза, на каждом из удаленных узлов.
-                                                        // локальный только один раз, на втором узле будет ошибка отправки сообщения.
-                                                        GridCacheContext cctx = gca.context();
+                                                        GridCacheContext cctx =
+                                                            ctx.cache().internalCache(cacheName).context();
 
                                                         if (cctx.deploymentEnabled() &&
                                                             ctx.discovery().cacheNode(node, cacheName)) {
