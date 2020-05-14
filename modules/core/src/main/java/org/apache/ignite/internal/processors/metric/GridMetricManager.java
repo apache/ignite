@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.profiling.IgniteProfiling;
 import org.apache.ignite.internal.profiling.LogFileProfiling;
-import org.apache.ignite.internal.profiling.NoopProfiling;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -239,10 +238,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private final MemoryUsageMetrics nonHeap;
 
     /** Profiling. */
-    private final IgniteProfiling profiling;
-
-    /** Profiling enabled. */
-    private final boolean profilingEnabled;
+    private final LogFileProfiling profiling;
 
     /**
      * @param ctx Kernal context.
@@ -282,12 +278,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
 
-        profilingEnabled = IgniteSystemProperties.getBoolean("IGNITE_PROFILING_ENABLED", true);
-
-        // todo dev-only
-        log.info("Profiling is " + (profilingEnabled ? "enabled" : "disabled") + ".");
-
-        profiling = profilingEnabled ? new LogFileProfiling(ctx) : new NoopProfiling();
+        profiling = new LogFileProfiling(ctx);
     }
 
     /** {@inheritDoc} */
@@ -334,8 +325,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                 }
             });
 
-        if (profiling instanceof LogFileProfiling)
-            ((LogFileProfiling)profiling).onManagerStart(ctx);
+        // TODO bean/control.sh management.
+        boolean profilingEnabled = IgniteSystemProperties.getBoolean("IGNITE_PROFILING_ENABLED", true);
+
+        if (profilingEnabled)
+            profiling.startProfiling(ctx);
     }
 
     /** {@inheritDoc} */
@@ -345,8 +339,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         // Stop discovery worker and metrics updater.
         U.closeQuiet(metricsUpdateTask);
 
-        if (profiling instanceof LogFileProfiling)
-            ((LogFileProfiling)profiling).onManagerStop();
+        // TODO bean/control.sh management.
+        if (profilingEnabled())
+            profiling.stopProfiling();
     }
 
     /**
@@ -772,7 +767,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** @return {@code True} if profiling enabled. */
     public boolean profilingEnabled() {
-        return profilingEnabled;
+        return profiling.profilingEnabled();
     }
 
     /** @return Profiling. */

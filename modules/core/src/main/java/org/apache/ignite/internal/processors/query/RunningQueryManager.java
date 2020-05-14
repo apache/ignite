@@ -198,14 +198,16 @@ public class RunningQueryManager {
             }
         }
 
-        ctx.metric().profiling().query(
-            qry.queryType(),
-            qry.query(),
-            qry.nodeId(),
-            qryId,
-            qry.startTime(),
-            System.nanoTime() - qry.startTimeNanos(),
-            !failed);
+        if (ctx.metric().profilingEnabled()) {
+            ctx.metric().profiling().query(
+                qry.queryType(),
+                qry.query(),
+                qry.nodeId(),
+                qryId,
+                qry.startTime(),
+                System.nanoTime() - qry.startTimeNanos(),
+                !failed);
+        }
     }
 
     /**

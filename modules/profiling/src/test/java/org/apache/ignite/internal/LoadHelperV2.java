@@ -47,7 +47,7 @@ public class LoadHelperV2 extends GridCommonAbstractTest {
             }
         });
 
-        long duration = 1 * 60;
+        long duration = 60;
 
         for (int i = 0; i < duration; i++) {
             long old = cnt.get();

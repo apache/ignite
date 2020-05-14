@@ -70,7 +70,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.sizeInMegabytes;
  */
 public class ProfilingLogParser {
     /** Profiling log file name pattern. */
-    private static final Pattern PROFILING_FILE_PATTERN = compile(".*profiling-(.+).log$");
+    private static final Pattern PROFILING_FILE_PATTERN = compile(".*node-(.+).prf$");
 
     /** Maven-generated archive of UI report resources. */
     private static final String REPORT_RESOURCE_NAME = "report.zip";

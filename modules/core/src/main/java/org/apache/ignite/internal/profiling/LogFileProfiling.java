@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -30,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
@@ -37,23 +40,25 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.logger.java.JavaLogger;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.internal.profiling.LogFileProfiling.OperationType.PROFILING_START;
-import static org.apache.ignite.internal.util.IgniteUtils.sleep;
 
-/** */
+/**
+ * Log file profiling implementation.
+ */
 public class LogFileProfiling implements IgniteProfiling {
-    /** 16 GBytes */
-    public static final long DEFAULT_FILE_MAX_SIZE = 16 * 1024 * 1024 * 1024L;
+    /** Default max file size in bytes. Profiling will be stopped when the size exceeded. */
+    public static final long DFLT_FILE_MAX_SIZE = 16 * 1024 * 1024 * 1024L;
 
     /** Default file write buffer size in bytes. */
-    public static final int DFLT_BUFFER_SIZE = 16 * 1024 * 1024;
+    public static final int DFLT_BUFFER_SIZE = 32 * 1024 * 1024;
 
     /** Empty byte array. */
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+
+    /** Profiling enabled flag. */
+    private final AtomicBoolean enabled = new AtomicBoolean();
 
     /** File write buffer. */
     private final SegmentedRingByteBuffer ringByteBuffer;
@@ -61,56 +66,84 @@ public class LogFileProfiling implements IgniteProfiling {
     /** Factory to provide I/O interface for profiling file. */
     private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
 
-    /** */
+    /** Profiling file I/O. */
     private volatile FileIO fileIo;
 
-    /** */
+    /** Profiling file writer. */
+    private final FileWriter fileWriter;
+
+    /** Logger. */
     private final IgniteLogger log;
 
-    /** */
+    /** @param ctx Kernal context. */
     public LogFileProfiling(GridKernalContext ctx) {
-        ringByteBuffer = new SegmentedRingByteBuffer(DFLT_BUFFER_SIZE, Long.MAX_VALUE, SegmentedRingByteBuffer.BufferMode.DIRECT);
+        ringByteBuffer = new SegmentedRingByteBuffer(DFLT_BUFFER_SIZE, DFLT_FILE_MAX_SIZE, BufferMode.DIRECT);
 
         log = ctx.log(getClass());
+
+        fileWriter = new FileWriter(ctx, log);
     }
 
-    /** */
-    public void onManagerStart(GridKernalContext ctx) throws IgniteSpiException {
+    /** @return {@code True} if profiling enabled. */
+    public boolean profilingEnabled() {
+        return enabled.get();
+    }
+
+    /** @param ctx Kernal context. */
+    public void startProfiling(GridKernalContext ctx) {
+        // TODO multiple concurrent start/stop.
+        if (!enabled.compareAndSet(false, true))
+            return;
+
         ringByteBuffer.init(0);
-
-        FileSyncer syncerWorker = new FileSyncer(ctx.igniteInstanceName(), new JavaLogger());
-
-        new IgniteThread(syncerWorker).start();
 
         try {
             String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
 
             File profilingDir = U.resolveWorkDirectory(igniteWorkDir, "profiling", false);
 
-            File file = new File(profilingDir, "profiling-" + ctx.localNodeId() + ".log");
+            File file = new File(profilingDir, "node-" + ctx.localNodeId() + ".prf");
+
+            U.delete(file);
 
             fileIo = fileIoFactory.create(file);
 
             fileIo.position(0);
-        }
-        catch (Exception e) {
-            throw new IgniteSpiException("Failed to start profiling.", e);
-        }
 
-        profilingStart(ctx.localNodeId(), ctx.igniteInstanceName(), IgniteVersionUtils.VER_STR, U.currentTimeMillis());
+            new IgniteThread(fileWriter).start();
+
+            profilingStart(ctx.localNodeId(), ctx.igniteInstanceName(), IgniteVersionUtils.VER_STR, U.currentTimeMillis());
+
+            log.info("Profiling started [file=" + file.getAbsolutePath() + ']');
+        }
+        catch (IOException | IgniteCheckedException e) {
+            enabled.set(false);
+
+            log.error("Failed to start profiling.", e);
+        }
     }
 
     /** */
-    public void onManagerStop() throws IgniteSpiException {
+    public void stopProfiling() {
+        if (!enabled.compareAndSet(true, false))
+            return;
+
+        ringByteBuffer.close();
+
+        fileWriter.shutdown();
+
         try {
-            // todo stop receive operations and flush buffer.
             fileIo.force();
 
             fileIo.close();
         }
         catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to close profiling write handle.", e);
         }
+
+        log.info("Profiling stopped.");
+
+        // TODO safe free buffer's allocated memory.
     }
 
     /** {@inheritDoc} */
@@ -122,6 +155,9 @@ public class LogFileProfiling implements IgniteProfiling {
 
         SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.CACHE_OPERATION, size);
 
+        if (segment == null)
+            return;
+
         ByteBuffer buf = segment.buffer();
 
         buf.put((byte)type.ordinal());
@@ -129,7 +165,7 @@ public class LogFileProfiling implements IgniteProfiling {
         buf.putLong(startTime);
         buf.putLong(duration);
 
-        segment.release();
+        releaseSegmentAndWakeup(segment);
     }
 
     /** {@inheritDoc} */
@@ -140,6 +176,9 @@ public class LogFileProfiling implements IgniteProfiling {
             /*commit*/ 1;
 
         SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.TRANSACTION, size);
+
+        if (segment == null)
+            return;
 
         ByteBuffer buf = segment.buffer();
 
@@ -154,7 +193,7 @@ public class LogFileProfiling implements IgniteProfiling {
         buf.putLong(duration);
         buf.put(commit ? (byte)1 : 0);
 
-        segment.release();
+        releaseSegmentAndWakeup(segment);
     }
 
     /** {@inheritDoc} */
@@ -172,6 +211,9 @@ public class LogFileProfiling implements IgniteProfiling {
 
         SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.QUERY, size);
 
+        if (segment == null)
+            return;
+
         ByteBuffer buf = segment.buffer();
 
         buf.put((byte)type.ordinal());
@@ -183,7 +225,7 @@ public class LogFileProfiling implements IgniteProfiling {
         buf.putLong(duration);
         buf.put(success ? (byte)1 : 0);
 
-        segment.release();
+        releaseSegmentAndWakeup(segment);
     }
 
     /** {@inheritDoc} */
@@ -197,6 +239,9 @@ public class LogFileProfiling implements IgniteProfiling {
 
         SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.QUERY_READS, size);
 
+        if (segment == null)
+            return;
+
         ByteBuffer buf = segment.buffer();
 
         buf.put((byte)type.ordinal());
@@ -205,7 +250,7 @@ public class LogFileProfiling implements IgniteProfiling {
         buf.putLong(logicalReads);
         buf.putLong(physicalReads);
 
-        segment.release();
+        releaseSegmentAndWakeup(segment);
     }
 
     /** {@inheritDoc} */
@@ -220,6 +265,9 @@ public class LogFileProfiling implements IgniteProfiling {
 
         SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.TASK, size);
 
+        if (segment == null)
+            return;
+
         ByteBuffer buf = segment.buffer();
 
         writeIgniteUuid(buf, sesId);
@@ -229,7 +277,7 @@ public class LogFileProfiling implements IgniteProfiling {
         buf.putLong(duration);
         buf.putInt(affPartId);
 
-        segment.release();
+        releaseSegmentAndWakeup(segment);
     }
 
     /** {@inheritDoc} */
@@ -242,6 +290,9 @@ public class LogFileProfiling implements IgniteProfiling {
 
         SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.JOB, size);
 
+        if (segment == null)
+            return;
+
         ByteBuffer buf = segment.buffer();
 
         writeIgniteUuid(buf, sesId);
@@ -250,7 +301,7 @@ public class LogFileProfiling implements IgniteProfiling {
         buf.putLong(duration);
         buf.put(timedOut ? (byte)1 : 0);
 
-        segment.release();
+        releaseSegmentAndWakeup(segment);
     }
 
     /** {@inheritDoc} */
@@ -266,6 +317,9 @@ public class LogFileProfiling implements IgniteProfiling {
             /*userCacheFlag*/ 1;
 
         SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.CACHE_START, size);
+
+        if (segment == null)
+            return;
 
         ByteBuffer buf = segment.buffer();
 
@@ -284,7 +338,7 @@ public class LogFileProfiling implements IgniteProfiling {
 
         buf.put(userCache ? (byte)1 : 0);
 
-        segment.release();
+        releaseSegmentAndWakeup(segment);
     }
 
     /** {@inheritDoc} */
@@ -299,6 +353,9 @@ public class LogFileProfiling implements IgniteProfiling {
 
         SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(PROFILING_START, size);
 
+        if (segment == null)
+            return;
+
         ByteBuffer buf = segment.buffer();
 
         writeUuid(buf, nodeId);
@@ -306,28 +363,50 @@ public class LogFileProfiling implements IgniteProfiling {
         buf.put(nameBytes);
         buf.putInt(versionBytes.length);
         buf.put(versionBytes);
-        buf.putLong(System.currentTimeMillis());
+        buf.putLong(startTime);
 
-        segment.release();
+        releaseSegmentAndWakeup(segment);
     }
 
     /** */
     private SegmentedRingByteBuffer.WriteSegment reserveBuffer(OperationType type, int size) {
-        for (; ; ) {
-            SegmentedRingByteBuffer.WriteSegment seg = ringByteBuffer.offer(size + /*type*/ 1);
+        SegmentedRingByteBuffer.WriteSegment seg = ringByteBuffer.offer(size + /*type*/ 1);
 
-            if (seg == null) {
-                LT.warn(log, "Buffer size is too small.");
+        if (seg == null) {
+            LT.warn(log, "The profiling buffer size is too small. Some operations will not be profiled.");
 
-                continue;
+            return null;
+        }
+
+        if (seg.buffer() == null) {
+            seg.release();
+
+            if (enabled.get()) {
+                LT.warn(log, "The profiling file maximum size is reached. Operations will not be profiled more.");
+
+                // TODO async stop.
+                stopProfiling();
             }
 
-            ByteBuffer buf = seg.buffer();
-
-            buf.put((byte)type.ordinal());
-
-            return seg;
+            return null;
         }
+
+        ByteBuffer buf = seg.buffer();
+
+        buf.put((byte)type.ordinal());
+
+        return seg;
+    }
+
+    /**
+     * Releases write segment and wakeups writer.
+     *
+     * @param segment Write segment to release.
+     */
+    private void releaseSegmentAndWakeup(SegmentedRingByteBuffer.WriteSegment segment) {
+        segment.release();
+
+        // TODO wakeup writer thread.
     }
 
     /** */
@@ -356,60 +435,58 @@ public class LogFileProfiling implements IgniteProfiling {
     }
 
     /**
-     * Syncs WAL segment file.
+     * Writes to profiling file.
      */
-    private class FileSyncer extends GridWorker {
-        /** Sync timeout. */
-        private static final long SYNC_TIMEOUT = 100L;
-
+    private class FileWriter extends GridWorker {
         /**
-         * @param igniteInstanceName Ignite instance name.
+         * @param ctx Kernal context.
          * @param log Logger.
          */
-        private FileSyncer(String igniteInstanceName, IgniteLogger log) {
-            super(igniteInstanceName, "profiling-syncer", log);
+        private FileWriter(GridKernalContext ctx, IgniteLogger log) {
+            super(ctx.igniteInstanceName(), "profiling-writer%" + ctx.igniteInstanceName(), log);
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!isCancelled()) {
-                sleep(SYNC_TIMEOUT);
+                blockingSectionBegin();
 
-                updateHeartbeat();
+                try {
+                    List<SegmentedRingByteBuffer.ReadSegment> segs = ringByteBuffer.poll();
 
-                List<SegmentedRingByteBuffer.ReadSegment> segs = ringByteBuffer.poll();
+                    if (segs == null) {
+                        // TODO wait-notify.
+                        U.sleep(10);
 
-                if (segs == null)
-                    continue;
-
-                for (int i = 0; i < segs.size(); i++) {
-                    SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
-
-                    try {
-                        writeBuffer(seg.buffer());
+                        continue;
                     }
-                    catch (Throwable e) {
-                        log.error("Exception in profiling writer thread:", e);
-                        //Critical error.
+
+                    for (int i = 0; i < segs.size(); i++) {
+                        SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
+
+                        try {
+                            fileIo.writeFully(seg.buffer());
+
+                            fileIo.force();
+                        }
+                        catch (Throwable e) {
+                            log.error("Exception in profiling writer thread:", e);
+                            // TODO stop profiling.
+                        }
+                        finally {
+                            seg.release();
+                        }
                     }
-                    finally {
-                        seg.release();
-                    }
+                }
+                finally {
+                    blockingSectionEnd();
                 }
             }
         }
 
-        private void writeBuffer(ByteBuffer buffer) throws IOException {
-            fileIo.writeFully(buffer);
-
-            fileIo.force();
-        }
-
         /** Shutted down the worker. */
         private void shutdown() {
-            synchronized (this) {
-                U.cancel(this);
-            }
+            isCancelled = true;
 
             U.join(this, log);
         }
@@ -441,12 +518,12 @@ public class LogFileProfiling implements IgniteProfiling {
         /** Profiling start. */
         PROFILING_START;
 
-        /** */
+        /** Values. */
         private static final OperationType[] VALS = values();
 
-        /** */
-        public static OperationType fromOrdinal(byte idx) {
-            return idx < 0 || idx >= VALS.length ? null : VALS[idx];
+        /** @return Operation type from ordinal. */
+        public static OperationType fromOrdinal(byte ord) {
+            return ord < 0 || ord >= VALS.length ? null : VALS[ord];
         }
     }
 }

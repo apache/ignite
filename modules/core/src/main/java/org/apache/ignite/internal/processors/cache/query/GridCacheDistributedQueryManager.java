@@ -691,14 +691,16 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (fut != null)
                     fut.cancel();
 
-                cctx.kernalContext().metric().profiling().query(
-                    SCAN,
-                    cctx.name(),
-                    cctx.nodeId(),
-                    ((GridCacheDistributedQueryFuture)fut).requestId(),
-                    startTime,
-                    System.nanoTime() - startTimeNanos,
-                    true);
+                if (cctx.kernalContext().metric().profilingEnabled()) {
+                    cctx.kernalContext().metric().profiling().query(
+                        SCAN,
+                        cctx.name(),
+                        cctx.nodeId(),
+                        ((GridCacheDistributedQueryFuture)fut).requestId(),
+                        startTime,
+                        System.nanoTime() - startTimeNanos,
+                        true);
+                }
             }
         };
     }
