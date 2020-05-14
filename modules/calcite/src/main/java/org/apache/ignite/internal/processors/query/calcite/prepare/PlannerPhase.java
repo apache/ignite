@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.JoinTraitsPropag
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.PushFilterIntoScanRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionTraitsTraitsPropagationRule;
@@ -50,7 +51,9 @@ import static org.apache.ignite.internal.processors.query.calcite.prepare.Ignite
  * Represents a planner phase with its description and a used rule set.
  */
 public enum PlannerPhase {
-    /** */
+    /**
+     *
+     */
     HEURISTIC_OPTIMIZATION("Heuristic optimization phase") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
@@ -67,7 +70,9 @@ public enum PlannerPhase {
         }
     },
 
-    /** */
+    /**
+     *
+     */
     OPTIMIZATION("Main optimization phase") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
@@ -87,7 +92,8 @@ public enum PlannerPhase {
                 ProjectFilterTransposeRule.INSTANCE,
                 UnionMergeRule.INSTANCE,
                 UnionConverterRule.INSTANCE,
-                UnionTraitsTraitsPropagationRule.INSTANCE);
+                UnionTraitsTraitsPropagationRule.INSTANCE,
+                SortConverterRule.INSTANCE);
         }
 
         /** {@inheritDoc} */
@@ -96,7 +102,9 @@ public enum PlannerPhase {
         }
     };
 
-    /** */
+    /**
+     *
+     */
     public final String description;
 
     /**
@@ -108,6 +116,7 @@ public enum PlannerPhase {
 
     /**
      * Returns rule set, calculated on the basis of query, planner context and planner phase.
+     *
      * @param ctx Planner context.
      * @return Rule set.
      */
@@ -115,6 +124,7 @@ public enum PlannerPhase {
 
     /**
      * Returns a program, calculated on the basis of query, planner context planner phase and rules set.
+     *
      * @param ctx Planner context.
      * @return Rule set.
      */

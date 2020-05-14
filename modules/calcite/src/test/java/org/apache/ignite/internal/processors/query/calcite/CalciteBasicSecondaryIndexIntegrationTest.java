@@ -520,6 +520,19 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     }
 
     /** */
+    @Test
+    public void testOrderBy1() {
+        assertQuery("SELECT * FROM Developer ORDER BY id")
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .ordered()
+            .check();
+    }
+
+    /** */
     private QueryChecker assertQuery(String qry) {
         return new QueryChecker(qry);
     }

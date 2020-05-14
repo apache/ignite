@@ -131,6 +131,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
     // TODO BETWEEN
     // TODO support expressions like WHERE a=?+1
     // TODO handle correlVariable as constant?
+    // TODO limit offset
 
     private void buildIndexConditions() {
         if (!boundsArePossible())

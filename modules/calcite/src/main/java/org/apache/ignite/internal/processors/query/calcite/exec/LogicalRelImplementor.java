@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggre
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
@@ -188,6 +189,10 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
         UnionAllNode<Object[]> node = new UnionAllNode<>(ctx);
         node.register(Commons.transform(rel.getInputs(), this::visit));
         return node;
+    }
+
+    @Override public Node<Object[]> visit(IgniteSort rel) {
+        return null; // TODO: CODE: implement.
     }
 
     /** {@inheritDoc} */
