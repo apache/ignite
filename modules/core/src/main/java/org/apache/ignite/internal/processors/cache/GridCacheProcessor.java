@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -1709,9 +1710,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .map(desc -> new StartCacheInfo(desc, null, exchTopVer, false))
             .collect(Collectors.toList());
 
-        prepareStartCaches(startCacheInfos);
+        callWithContextIfNeed(nodeId, () -> {
+            prepareStartCaches(startCacheInfos);
+
+            return null;
+        });
 
         return receivedCaches;
+    }
+
+    /** */
+    private <T> T callWithContextIfNeed(UUID secSubjId, Callable<T> c) throws IgniteCheckedException {
+        IgniteSecurity security = ctx.security();
+
+        try {
+            if (security.enabled() && secSubjId != null) {
+                try (OperationSecurityContext s = security.withContext(secSubjId)) {
+                    return c.call();
+                }
+            }
+
+            return c.call();
+        }
+        catch (Exception e) {
+            if (e instanceof IgniteCheckedException)
+                throw (IgniteCheckedException)e;
+
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**
@@ -1772,6 +1798,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<StartCacheInfo> startCacheInfos,
         StartCacheFailHandler<StartCacheInfo, Void> cacheStartFailHandler
     ) throws IgniteCheckedException {
+        final UUID secSubjId = ctx.security().enabled() ? ctx.security().securityContext().subject().id() : null;
+
         if (!IGNITE_ALLOW_START_CACHES_IN_PARALLEL || startCacheInfos.size() <= 1) {
             for (StartCacheInfo startCacheInfo : startCacheInfos) {
                 cacheStartFailHandler.handle(
@@ -1806,12 +1834,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cacheStartFailHandler.handle(
                         startCacheInfo,
                         cacheInfo -> {
-                            GridCacheContext cacheCtx = prepareCacheContext(
+                            GridCacheContext cacheCtx = callWithContextIfNeed(secSubjId, () -> prepareCacheContext(
                                 cacheInfo.getCacheDescriptor(),
                                 cacheInfo.getReqNearCfg(),
                                 cacheInfo.getExchangeTopVer(),
                                 cacheInfo.isDisabledAfterStart()
-                            );
+                            ));
                             cacheContexts.put(cacheInfo, cacheCtx);
 
                             context().exchange().exchangerUpdateHeartbeat();
@@ -1872,8 +1900,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                             if (cacheContext.isRecoveryMode())
                                 finishRecovery(cacheInfo.getExchangeTopVer(), cacheContext);
-                            else
-                                onCacheStarted(cacheCtxEntry.getValue());
+                            else {
+                                callWithContextIfNeed(secSubjId, () -> {
+                                    onCacheStarted(cacheCtxEntry.getValue());
+
+                                    return null;
+                                });
+                            }
 
                             context().exchange().exchangerUpdateHeartbeat();
 
@@ -2754,7 +2787,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 sharedCtx.database().checkpointReadLock();
 
                                 try {
-                                    prepareCacheStop(action.request().cacheName(), action.request().destroy());
+                                    callWithContextIfNeed(exchActions.securitySubjectId(), () ->{
+                                        prepareCacheStop(action.request().cacheName(), action.request().destroy());
+
+                                        return null;
+                                    });
                                 }
                                 finally {
                                     sharedCtx.database().checkpointReadUnlock();
@@ -2875,17 +2912,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ((GridServiceProcessor)ctx.service()).updateUtilityCache();
         }
 
-        if (err == null) {
-            IgniteSecurity security = ctx.security();
-
-            if (security.enabled() && exchActions.securitySubjectId() != null) {
-                try (OperationSecurityContext s = security.withContext(exchActions.securitySubjectId())) {
-                    processCacheStopRequestOnExchangeDone(exchActions);
-                }
-            }
-            else
-                processCacheStopRequestOnExchangeDone(exchActions);
-        }
+        if (err == null)
+            processCacheStopRequestOnExchangeDone(exchActions);
     }
 
     /**
