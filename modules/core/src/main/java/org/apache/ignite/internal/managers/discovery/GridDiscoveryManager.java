@@ -1864,7 +1864,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return discoCache().allNodes();
     }
 
-    /** @return all alive server nodes is topology */
+    /** @return all alive server nodes in topology */
     public Collection<ClusterNode> aliveServerNodes() {
         return discoCache().aliveServerNodes();
     }
