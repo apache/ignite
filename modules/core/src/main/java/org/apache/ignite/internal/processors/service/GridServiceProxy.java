@@ -73,16 +73,13 @@ public class GridServiceProxy<T> implements Serializable {
     private static final Method PLATFORM_SERVICE_INVOKE_METHOD;
 
     static {
-        Method mtd;
-
         try {
-            mtd = PlatformService.class.getMethod("invokeMethod", String.class, boolean.class, Object[].class);
+            PLATFORM_SERVICE_INVOKE_METHOD = PlatformService.class.getMethod("invokeMethod", String.class,
+                    boolean.class, Object[].class);
         }
         catch (NoSuchMethodException e) {
-            mtd = null;
+            throw new ExceptionInInitializerError("'invokeMethod' is not defined in " + PlatformService.class.getName());
         }
-
-        PLATFORM_SERVICE_INVOKE_METHOD = mtd;
     }
 
     /** Grid logger. */
@@ -133,7 +130,6 @@ public class GridServiceProxy<T> implements Serializable {
         GridKernalContext ctx)
     {
         assert timeout >= 0 : timeout;
-        assert PLATFORM_SERVICE_INVOKE_METHOD != null;
 
         this.prj = prj;
         this.ctx = ctx;

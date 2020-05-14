@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation for setting mapping between java interface's method and getter of platform service property (mostly useful
- * for .NET services). Name mapping constructed by concatenating {@link PlatformServiceGetter#prefix}
+ * for .NET services). Name mapping is constructed by concatenating {@link PlatformServiceGetter#prefix}
  * with {@link PlatformServiceGetter#value}.
  * <p/>
  * For example, this annotated java inerface method:
