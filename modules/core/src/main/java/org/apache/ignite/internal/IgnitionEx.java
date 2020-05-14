@@ -1698,7 +1698,7 @@ public class IgnitionEx {
                         startCtx.config() != null ? startCtx.config() : new IgniteConfiguration()
                     );
 
-                    TimeBag startNodeTimer = new TimeBag(TimeUnit.MILLISECONDS);
+                    TimeBag startNodeTimer = new TimeBag(TimeUnit.MILLISECONDS, log.isInfoEnabled());
 
                     start0(startCtx, myCfg, startNodeTimer);
 
