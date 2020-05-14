@@ -157,7 +157,6 @@ public class CachePartitionLossWithPersistenceTest extends GridCommonAbstractTes
         doTestConsistencyAfterResettingLostPartitions(2, false);
     }
 
-
     /**
      * Test scenario: two nodes are left causing data loss and later returned to topology in various order.
      * <p>
