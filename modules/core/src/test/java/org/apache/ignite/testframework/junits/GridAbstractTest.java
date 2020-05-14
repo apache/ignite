@@ -1511,7 +1511,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 IgniteUtils.setCurrentIgniteName(igniteInstanceName);
 
                 try {
-                    G.stop(igniteInstanceName, cancel, null, stopNotStarted);
+                    IgnitionEx.stop(igniteInstanceName, cancel, null, stopNotStarted);
                 }
                 finally {
                     IgniteUtils.setCurrentIgniteName(null);

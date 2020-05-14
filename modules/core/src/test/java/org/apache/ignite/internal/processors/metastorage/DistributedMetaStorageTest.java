@@ -93,6 +93,9 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         if (discoSpi instanceof TcpDiscoverySpi)
             ((TcpDiscoverySpi)discoSpi).setNetworkTimeout(1000);
 
+        if (igniteInstanceName.contains("client"))
+            cfg.setClientMode(true);
+
         return cfg;
     }
 
