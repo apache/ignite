@@ -49,8 +49,7 @@ public class SqlConfiguration {
      * Defines the default query timeout.
      *
      * Defaults to {@link #DFLT_QRY_TIMEOUT}.
-     * {@code 0} means there is no timeout (this
-     * is a default value)
+     * {@code 0} means there is no timeout (this is a default value)
      *
      * @return Default query timeout.
      */
@@ -60,14 +59,15 @@ public class SqlConfiguration {
 
     /**
      * Sets timeout in milliseconds for default query timeout.
-     * {@code 0} means there is no timeout (this
-     * is a default value)
+     * {@code 0} means there is no timeout (this is a default value)
      *
      * @param dfltQryTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
      */
     public SqlConfiguration setDefaultQueryTimeout(long dfltQryTimeout) {
-        A.ensure(dfltQryTimeout >= 0 && dfltQryTimeout <= Integer.MAX_VALUE, "default query timeout value should be valid Integer.");
+        A.ensure(dfltQryTimeout >= 0 && dfltQryTimeout <= Integer.MAX_VALUE,
+            "default query timeout value should be valid Integer.");
+
         this.dfltQryTimeout = dfltQryTimeout;
 
         return this;
