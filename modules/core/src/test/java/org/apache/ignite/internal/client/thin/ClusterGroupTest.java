@@ -360,6 +360,16 @@ public class ClusterGroupTest extends GridCommonAbstractTest {
         assertEquals(Collections.singleton(nodeId(0)), new HashSet<>(nodeIds));
 
         // Check filters combination.
+        nodeIds = ((ClientClusterGroupImpl)client.cluster().forServers().forClients()).nodeIds();
+
+        assertTrue(nodeIds.isEmpty());
+
+        nodeIds = ((ClientClusterGroupImpl)client.cluster().forServers().forNodeId(nodeId(0),
+            nodeId(1))).nodeIds();
+
+        assertEquals(new HashSet<>(F.asList(nodeId(0), nodeId(1))),
+            new HashSet<>(nodeIds));
+
         nodeIds = ((ClientClusterGroupImpl)client.cluster().forNodeId(nodeId(1), nodeId(2),
             nodeId(3), UUID.randomUUID()).forServers().forYoungest()).nodeIds();
 

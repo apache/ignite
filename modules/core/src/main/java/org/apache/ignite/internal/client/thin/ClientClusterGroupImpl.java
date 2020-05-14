@@ -270,9 +270,14 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
             return null;
         else if (projectionFilters.hasOnlyNodeIdsFilters())
             return Collections.unmodifiableCollection(projectionFilters.nodeIds);
-        else if (projectionFilters.hasOnlyServerSideFilters())
-            return requestNodeIds();
-        else
+        else if (projectionFilters.hasOnlyServerSideFilters()) {
+            Collection<UUID> nodeIds = requestNodeIds();
+
+            if (projectionFilters.nodeIds != null)
+                nodeIds.retainAll(projectionFilters.nodeIds);
+
+            return nodeIds;
+        } else
             return F.nodeIds(nodes0());
     }
 
