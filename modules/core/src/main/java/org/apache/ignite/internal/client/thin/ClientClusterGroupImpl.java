@@ -65,7 +65,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     /** Cached topology version. */
     private long cachedTopVer;
 
-    /** Cached node IDs. */
+    /** Cached node IDs. Should be changed atomically with cachedTopVer under lock on ClientClusterGroupImpl instance. */
     private Collection<UUID> cachedNodeIds;
 
     /** Cached nodes. */
@@ -97,7 +97,8 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
 
         ClientClusterGroupImpl grp = forProjectionFilters(projectionFilters.forNodeIds(new HashSet<>(F.nodeIds(nodes))));
 
-        grp.cachedNodes.putAll(nodes.stream().collect(Collectors.toMap(ClusterNode::id, Function.identity())));
+        for (ClusterNode node : nodes)
+            grp.cachedNodes.put(node.id(), node);
 
         return grp;
     }

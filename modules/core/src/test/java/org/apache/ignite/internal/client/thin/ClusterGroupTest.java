@@ -141,18 +141,18 @@ public class ClusterGroupTest extends GridCommonAbstractTest {
      */
     @Test
     public void testForNodeIds() {
-        UUID node0Id = nodeId(0);
-        UUID node1Id = nodeId(1);
+        UUID id0 = nodeId(0);
+        UUID id1 = nodeId(1);
 
-        assertNodes(client.cluster().forNodeId(node0Id, node1Id), 0, 1);
-        assertNodes(client.cluster().forNodeId(node0Id), 0);
-        assertNodes(client.cluster().forNodeId(node1Id), 1);
-        assertNodes(client.cluster().forNodeIds(F.asList(node0Id, node1Id)), 0, 1);
-        assertNodes(client.cluster().forNodeIds(F.asList(node0Id)), 0);
-        assertNodes(client.cluster().forNodeIds(F.asList(node0Id, node1Id)).forNodeId(node0Id), 0);
-        assertNodes(client.cluster().forNodeId(node0Id, node1Id).forNodeIds(F.asList(node0Id, node1Id)), 0, 1);
-        assertNodes(client.cluster().forNodeId(node0Id).forNodeIds(F.asList(node0Id, node1Id)), 0);
-        assertNodes(client.cluster().forNodeId(node0Id).forNodeIds(F.asList(node1Id)));
+        assertNodes(client.cluster().forNodeId(id0, id1), 0, 1);
+        assertNodes(client.cluster().forNodeId(id0), 0);
+        assertNodes(client.cluster().forNodeId(id1), 1);
+        assertNodes(client.cluster().forNodeIds(F.asList(id0, id1)), 0, 1);
+        assertNodes(client.cluster().forNodeIds(F.asList(id0)), 0);
+        assertNodes(client.cluster().forNodeIds(F.asList(id0, id1)).forNodeId(id0), 0);
+        assertNodes(client.cluster().forNodeId(id0, id1).forNodeIds(F.asList(id0, id1)), 0, 1);
+        assertNodes(client.cluster().forNodeId(id0).forNodeIds(F.asList(id0, id1)), 0);
+        assertNodes(client.cluster().forNodeId(id0).forNodeIds(F.asList(id1)));
         assertNodes(client.cluster().forNodeId(UUID.randomUUID()));
         assertNodes(client.cluster().forNodeIds(F.asList(UUID.randomUUID())));
     }

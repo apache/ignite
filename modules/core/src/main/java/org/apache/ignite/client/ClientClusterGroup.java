@@ -98,7 +98,7 @@ public interface ClientClusterGroup {
      * for more information.
      *
      * @param name Name of the attribute.
-     * @param val Optional attribute value to match.
+     * @param val Optional attribute value to match (if null, just check if attribute exists).
      * @return Cluster group for nodes containing specified attribute.
      */
     public ClientClusterGroup forAttribute(String name, @Nullable Object val);
@@ -152,7 +152,7 @@ public interface ClientClusterGroup {
 
     /**
      * Gets cluster group consisting from the nodes in this cluster group residing on the
-     * same host as the given node.
+     * same host (with the same MAC address) as the given node.
      *
      * @param node Node to select the host for.
      * @return Cluster group for nodes residing on the same host as the specified node.
