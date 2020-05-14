@@ -17,50 +17,20 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
-    using System.IO;
-    using System.Net;
-    using System.Security.Authentication;
-    using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
     /// <summary>
-    /// Async cache test.
+    /// SSL cache test.
     /// </summary>
     [TestFixture]
     public sealed class CacheTestSsl : CacheTest
     {
         /// <summary>
-        /// Gets the Ignite configuration.
+        /// Initializes a new instance of the <see cref="CacheTestSsl"/> class.
         /// </summary>
-        protected override IgniteConfiguration GetIgniteConfiguration()
+        public CacheTestSsl() : base(1, true)
         {
-            return new IgniteConfiguration(base.GetIgniteConfiguration())
-            {
-                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl.xml")
-            };
-        }
-
-        /// <summary>
-        /// Gets the client configuration.
-        /// </summary>
-        protected override IgniteClientConfiguration GetClientConfiguration()
-        {
-            return new IgniteClientConfiguration(base.GetClientConfiguration())
-            {
-                Endpoints = new[] {IPAddress.Loopback + ":11110"},
-                SslStreamFactory = new SslStreamFactory
-                {
-                    CertificatePath = Path.Combine("Config", "Client", "thin-client-cert.pfx"),
-                    CertificatePassword = "123456",
-                    SkipServerCertificateValidation = true,
-                    CheckCertificateRevocation = true,
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0
-                    SslProtocols = SslProtocols.Tls
-#else
-                    SslProtocols = SslProtocols.Tls12
-#endif
-                }
-            };
+            //No-op.
         }
     }
 }
