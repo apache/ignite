@@ -33,22 +33,22 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly Marshaller _marshaller;
 
         /** */
-        private readonly ClientProtocolVersion _protocolVersion;
+        private readonly ClientFeatures _features;
         
         /// <summary>
         /// Initializes a new instance of <see cref="ClientContextBase"/> class.
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <param name="marshaller">Marshaller.</param>
-        /// <param name="protocolVersion">Protocol version to be used for this request.</param>
-        protected ClientContextBase(IBinaryStream stream, Marshaller marshaller, ClientProtocolVersion protocolVersion)
+        /// <param name="features">Features supported by this request.</param>
+        protected ClientContextBase(IBinaryStream stream, Marshaller marshaller, ClientFeatures features)
         {
             Debug.Assert(stream != null);
             Debug.Assert(marshaller != null);
             
             _stream = stream;
             _marshaller = marshaller;
-            _protocolVersion = protocolVersion;
+            _features = features;
         }
 
         /// <summary>
@@ -68,12 +68,12 @@ namespace Apache.Ignite.Core.Impl.Client
         }
         
         /// <summary>
-        /// Protocol version to be used for this request.
+        /// Features for this request.
         /// (Takes partition awareness, failover and reconnect into account).
         /// </summary>
-        public ClientProtocolVersion ProtocolVersion
+        public ClientFeatures Features
         {
-            get { return _protocolVersion; }
+            get { return _features; }
         }
     }
 }
