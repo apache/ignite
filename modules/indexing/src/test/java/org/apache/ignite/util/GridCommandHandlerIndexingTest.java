@@ -31,7 +31,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -147,13 +146,10 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
 
         createCacheAndPreload(ig, cntPreload, 1, new CachePredicate(F.asList(ig.name())));
 
-        GridCacheDatabaseSharedManager db = null;
-
         if (persistenceEnable()) {
             forceCheckpoint();
 
-            db = (GridCacheDatabaseSharedManager)ig.context().cache().context().database();
-            db.enableCheckpoints(false).get();
+            enableCheckpoints(G.allGrids(), false);
         }
 
         AtomicBoolean stopFlag = new AtomicBoolean();
@@ -208,7 +204,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
         testOut.reset();
 
         if (persistenceEnable())
-            db.enableCheckpoints(true).get();
+            enableCheckpoints(G.allGrids(), true);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", "--check-crc", "--check-sizes"));
 
