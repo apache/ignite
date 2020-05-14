@@ -29,6 +29,7 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
@@ -2321,6 +2322,111 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         assertNotNull(nodes);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testJoinPushExpressionRule() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable emp = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("DEPTNO", f.createJavaType(Integer.class))
+                .build()) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        TestTable dept = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("DEPTNO", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .build()) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("EMP", emp);
+        publicSchema.addTable("DEPT", dept);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "select d.deptno, e.deptno " +
+            "from dept d, emp e " +
+            "where d.deptno + 10 = e.deptno * 2";
+
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        RelRoot relRoot;
+
+        try (IgnitePlanner planner = ctx.planner()) {
+            assertNotNull(planner);
+
+            String query = ctx.query();
+
+            assertNotNull(query);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            assertNotNull(rel);
+            assertEquals("LogicalProject(DEPTNO=[$0], DEPTNO0=[$4])\n" +
+                    "  LogicalFilter(condition=[=(+($0, 10), *($4, 2))])\n" +
+                    "    LogicalJoin(condition=[true], joinType=[inner])\n" +
+                    "      IgniteTableScan(table=[[PUBLIC, DEPT]])\n" +
+                    "      IgniteTableScan(table=[[PUBLIC, EMP]])\n",
+                RelOptUtil.toString(rel));
+
+            // Transformation chain
+            RelTraitSet desired = rel.getCluster().traitSet()
+                .replace(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single())
+                .simplify();
+
+            RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+
+            assertNotNull(phys);
+            assertEquals("IgniteProject(DEPTNO=[$0], DEPTNO0=[$4])\n" +
+                    "  IgniteJoin(condition=[=(+($0, 10), *($4, 2))], joinType=[inner])\n" +
+                    "    IgniteTableScan(table=[[PUBLIC, DEPT]])\n" +
+                    "    IgniteTableScan(table=[[PUBLIC, EMP]])\n",
+                RelOptUtil.toString(phys));
+        }
     }
 
     /** */
