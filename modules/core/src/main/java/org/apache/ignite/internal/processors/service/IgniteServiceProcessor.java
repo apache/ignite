@@ -826,12 +826,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         ServiceInfo desc;
 
         while (true) {
-             desc = lookupInRegisteredServices(name);
-
-            if (timeout == 0 && desc == null)
-                return null;
-
             synchronized (servicesTopsUpdateMux) {
+                desc = lookupInRegisteredServices(name);
+
+                if (timeout == 0 && desc == null)
+                    return null;
+
                 if (desc != null && desc.topologyInitialized())
                     return desc.topologySnapshot();
 
