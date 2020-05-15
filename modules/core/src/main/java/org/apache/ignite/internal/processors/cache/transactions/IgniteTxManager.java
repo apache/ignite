@@ -2980,7 +2980,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         private final MvccCoordinator mvccCrd;
 
         /** Time bag to measure and store tx recovery stages times. */
-        private final TimeBag timeBag = new TimeBag();
+        private final TimeBag timeBag = new TimeBag(log.isInfoEnabled());
 
         /** Prepared tx to be recovered count. */
         private final AtomicLong preparedTxCnt = new AtomicLong();
@@ -3062,7 +3062,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 doneFut.markInitialized();
 
-                if (preparedTxCnt.get() > 0)
+                if (log.isInfoEnabled() && preparedTxCnt.get() > 0)
                     doneFut.listen(fut -> finishAndRecordTimings());
 
                 if (allTxFinFut == null)
