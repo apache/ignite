@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rule;
+package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -24,6 +24,7 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
+import org.apache.calcite.rel.rules.JoinPushExpressionsRule;
 
 public class FilterJoinRule {
     /** Rule that pushes predicates from a Filter into the Join below them. */
@@ -31,6 +32,10 @@ public class FilterJoinRule {
 
     /** Rule that pushes predicates in a Join into the inputs to the join. */
     public static final JoinConditionPushRule JOIN = new JoinConditionPushRule();
+
+    /** Rule that pushes down expressions in "equal" join condition. */
+    public static final JoinPushExpressionsRule PUSH_JOIN_CONDITION =
+        new JoinPushExpressionsRule(LogicalJoin.class, RelFactories.LOGICAL_BUILDER);
 
     /**
      * Rule that tries to push filter expressions into a join condition and into the inputs of the join.

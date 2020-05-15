@@ -25,10 +25,8 @@ import org.apache.calcite.tools.RuleSets;
 import org.apache.ignite.internal.processors.query.calcite.rule.AggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.AggregateTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.FilterJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.JoinPushExpressionsRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.JoinTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectTraitsPropagationRule;
@@ -36,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConve
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionTraitsTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterJoinRule;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.decorrelate;
@@ -71,7 +70,7 @@ public enum PlannerPhase {
                 AggregateConverterRule.INSTANCE,
                 AggregateTraitsPropagationRule.INSTANCE,
                 JoinConverterRule.INSTANCE,
-                JoinPushExpressionsRule.INSTANCE,
+                FilterJoinRule.PUSH_JOIN_CONDITION,
                 FilterJoinRule.FILTER_ON_JOIN,
 //                FilterJoinRule.JOIN,
                 JoinTraitsPropagationRule.INSTANCE,
