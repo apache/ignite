@@ -44,7 +44,7 @@ public class ContinuousQueryWithTransformerSandboxTest extends AbstractContinuou
     /** */
     @Test
     public void testRemoteFilterFactory() {
-        checkContinuousQuery(()->{
+        checkContinuousQuery(() -> {
             ContinuousQueryWithTransformer<Integer, Integer, Integer> q = new ContinuousQueryWithTransformer<>();
 
             q.setRemoteFilterFactory(() -> RMT_FILTER);
@@ -57,7 +57,7 @@ public class ContinuousQueryWithTransformerSandboxTest extends AbstractContinuou
     /** */
     @Test
     public void testTransformerFactory() {
-        checkContinuousQuery(()->{
+        checkContinuousQuery(() -> {
             ContinuousQueryWithTransformer<Integer, Integer, Integer> q = new ContinuousQueryWithTransformer<>();
 
             q.setRemoteTransformerFactory(() -> e -> {
