@@ -169,7 +169,7 @@ public class QueryParser {
         if (qry.getTimeout() >= 0)
             timeout = qry.getTimeout();
         else
-            timeout = (int)idx.kernalContext().config().getDefaultQueryTimeout();
+            timeout = (int)idx.kernalContext().config().getSqlConfiguration().getDefaultQueryTimeout();
 
         return new QueryParameters(
             qry.getArgs(),
