@@ -2387,9 +2387,20 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             // Convert to Relational operators graph
             relRoot = planner.rel(sqlNode);
-        }
 
-        System.out.println("+++" + RelOptUtil.toString(relRoot.rel));
+            RelNode rel = relRoot.rel;
+
+            // Transformation chain
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
+
+            RelTraitSet desired = rel.getCluster()
+                .traitSetOf(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single());
+
+            RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+
+            System.out.println("+++" + RelOptUtil.toString(phys));
+        }
     }
 
     /** */
