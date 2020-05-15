@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.binary.BinaryObjectArray;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -140,13 +141,17 @@ public class CacheObjectUtils {
     /**
      * Unwrap array of binaries if needed.
      *
-     * @param arr Array.
+     * @param val Array.
      * @param keepBinary Keep binary flag.
      * @param cpy Copy.
      * @return Result.
      */
-    private static Object[] unwrapBinariesInArrayIfNeeded(CacheObjectValueContext ctx, Object[] arr, boolean keepBinary,
+    private static Object[] unwrapBinariesInArrayIfNeeded(CacheObjectValueContext ctx, Object val, boolean keepBinary,
         boolean cpy) {
+        boolean isBinary = val instanceof BinaryObjectArray;
+
+        Object[] arr = isBinary ? ((BinaryObjectArray)val).items() : (Object[])val;
+
         if (BinaryUtils.knownArray(arr))
             return arr;
 
@@ -180,8 +185,8 @@ public class CacheObjectUtils {
             return unwrapKnownCollection(ctx, (Collection<Object>)o, keepBinary, cpy);
         else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, keepBinary, cpy);
-        else if (o instanceof Object[])
-            return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
+        else if ((o instanceof Object[]) || (o instanceof BinaryObjectArray))
+            return unwrapBinariesInArrayIfNeeded(ctx, o, keepBinary, cpy);
 
         return o;
     }

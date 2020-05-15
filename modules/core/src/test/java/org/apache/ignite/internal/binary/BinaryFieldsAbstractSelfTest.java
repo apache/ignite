@@ -462,6 +462,9 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
             if (val instanceof BinaryObject)
                 val = ((BinaryObject) val).deserialize();
 
+            if (val instanceof BinaryObjectArray)
+                val = ((BinaryObjectArray) val).items();
+
             if (val != null && val.getClass().isArray()) {
                 assertNotNull(expVal);
 
