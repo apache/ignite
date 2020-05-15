@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
@@ -36,6 +37,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
@@ -73,6 +75,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.DistributedTable;
@@ -2322,6 +2325,107 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         assertNotNull(nodes);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMergeFilters() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable testTbl = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("VAL", f.createJavaType(String.class))
+                .build()) {
+        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("TEST", testTbl);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "" +
+            "SELECT val from (\n" +
+            "   SELECT * \n" +
+            "   FROM TEST \n" +
+            "   WHERE VAL = 10) \n" +
+            "WHERE VAL = 10";
+
+        RelTraitDef<?>[] traitDefs = {
+            ConventionTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .parameters(new Object[]{2})
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        RelRoot relRoot;
+
+        try (IgnitePlanner planner = ctx.planner()){
+            assertNotNull(planner);
+
+            String query = ctx.query();
+
+            assertNotNull(query);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            // Transformation chain
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
+
+            RelTraitSet desired = rel.getCluster()
+                .traitSetOf(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single());
+
+            RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+
+            assertNotNull(phys);
+
+            AtomicInteger filterCnt = new AtomicInteger();
+
+            // Counts filters af the plan.
+            phys.childrenAccept(
+                new RelVisitor() {
+                    @Override public void visit(RelNode node, int ordinal, RelNode parent) {
+                        if (node instanceof IgniteFilter)
+                            filterCnt.incrementAndGet();
+
+                        super.visit(node, ordinal, parent);
+                    }
+                }
+            );
+
+            // Checks that two filter merged into one filter.
+            // Expected plan:
+            // IgniteProject(VAL=[$1])
+            //  IgniteProject(ID=[$0], VAL=[$1])
+            //    IgniteFilter(condition=[=(CAST($1):INTEGER, 10)])
+            //      IgniteTableScan(table=[[PUBLIC, TEST]])
+            assertEquals(1, filterCnt.get());
+        }
     }
 
     /**
