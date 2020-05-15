@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import org.apache.calcite.rel.rules.FilterMergeRule;
-import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
-import org.apache.calcite.rel.rules.ProjectMergeRule;
 import org.apache.calcite.rel.rules.SubQueryRemoveRule;
 import org.apache.calcite.rel.rules.UnionMergeRule;
 import org.apache.calcite.tools.Program;
@@ -37,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConve
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionTraitsTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalFilterRules;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.decorrelate;
@@ -76,8 +74,8 @@ public enum PlannerPhase {
                 ProjectConverterRule.INSTANCE,
                 ProjectTraitsPropagationRule.INSTANCE,
                 FilterConverterRule.INSTANCE,
-                FilterMergeRule.INSTANCE,
-                FilterProjectTransposeRule.INSTANCE,
+                LogicalFilterRules.FILTER_MERGE_RULE,
+                LogicalFilterRules.FILTER_PROJECT_TRANSPOSE_RULE,
                 FilterTraitsPropagationRule.INSTANCE,
                 TableModifyConverterRule.INSTANCE,
                 UnionMergeRule.INSTANCE,
