@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * A part of exchange.
  */
-public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Downstream<T>, AutoCloseable {
+public class Outbox extends AbstractNode<Object[]> implements SingleNode<Object[]>, Downstream<Object[]>, AutoCloseable {
     /** */
     private final ExchangeService exchange;
 
@@ -54,7 +54,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Downstr
     private final Destination destination;
 
     /** */
-    private final Deque<T> inBuffer = new ArrayDeque<>(IN_BUFFER_SIZE);
+    private final Deque<Object[]> inBuffer = new ArrayDeque<>(IN_BUFFER_SIZE);
 
     /** */
     private final Map<UUID, Buffer> nodeBuffers = new HashMap<>();
@@ -114,7 +114,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Downstr
     }
 
     /** {@inheritDoc} */
-    @Override public void push(T row) {
+    @Override public void push(Object[] row) {
         checkThread();
 
         assert waiting > 0;
@@ -181,12 +181,12 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Downstr
     }
 
     /** {@inheritDoc} */
-    @Override public void onRegister(Downstream<T> downstream) {
+    @Override public void onRegister(Downstream<Object[]> downstream) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<T> requestDownstream(int idx) {
+    @Override protected Downstream<Object[]> requestDownstream(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
 
@@ -222,7 +222,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Downstr
     private void flushFromBuffer() {
         try {
             while (!inBuffer.isEmpty()) {
-                T row = inBuffer.remove();
+                Object[] row = inBuffer.remove();
 
                 List<UUID> nodes = destination.targets(row);
 
@@ -257,7 +257,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Downstr
     /** */
     private static final class Buffer {
         /** */
-        private final Outbox<?> owner;
+        private final Outbox owner;
 
         /** */
         private final UUID nodeId;
@@ -272,7 +272,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Downstr
         private List<Object> curr;
 
         /** */
-        private Buffer(UUID nodeId, Outbox<?> owner) {
+        private Buffer(UUID nodeId, Outbox owner) {
             this.nodeId = nodeId;
             this.owner = owner;
 

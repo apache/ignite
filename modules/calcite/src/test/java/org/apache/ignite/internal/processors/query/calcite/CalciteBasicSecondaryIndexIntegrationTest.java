@@ -337,7 +337,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .check();
     }
 
-    // ===== non-indexed field filter =====
+    // ===== various complex conditions =====
 
     /** */
     @Test
@@ -518,6 +518,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
+
+    // ===== various complex conditions =====
 
     /** */
     @Test

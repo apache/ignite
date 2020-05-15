@@ -37,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A part of exchange.
  */
-public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoCloseable {
+public class Inbox extends AbstractNode<Object[]> implements SingleNode<Object[]>, AutoCloseable {
     /** */
     private final ExchangeService exchange;
 
@@ -57,7 +57,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     private Collection<UUID> nodes;
 
     /** */
-    private Comparator<T> comparator;
+    private Comparator<Object[]> comparator;
 
     /** */
     private List<Buffer> buffers;
@@ -107,7 +107,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
      * @param nodes Source nodes.
      * @param comparator Optional comparator for merge exchange.
      */
-    public void init(ExecutionContext ctx, Collection<UUID> nodes, Comparator<T> comparator) {
+    public void init(ExecutionContext ctx, Collection<UUID> nodes, Comparator<Object[]> comparator) {
         this.ctx = ctx;
         this.nodes = nodes;
         this.comparator = comparator;
@@ -146,12 +146,12 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<T> requestDownstream(int idx) {
+    @Override protected Downstream<Object[]> requestDownstream(int idx) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public void register(List<Node<T>> sources) {
+    @Override public void register(List<Node<Object[]>> sources) {
         throw new UnsupportedOperationException();
     }
 
@@ -197,7 +197,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private void pushOrdered() throws IgniteCheckedException {
-         PriorityQueue<Pair<T, Buffer>> heap =
+         PriorityQueue<Pair<Object[], Buffer>> heap =
             new PriorityQueue<>(buffers.size(), Map.Entry.comparingByKey(comparator));
 
         Iterator<Buffer> it = buffers.iterator();
@@ -211,7 +211,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
                     break;
                 case READY:
-                    heap.offer(Pair.of((T)buffer.peek(), buffer));
+                    heap.offer(Pair.of((Object[])buffer.peek(), buffer));
 
                     break;
                 case WAITING:
@@ -227,7 +227,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
             Buffer buffer = heap.poll().right;
 
             requested--;
-            downstream.push((T)buffer.remove());
+            downstream.push((Object[])buffer.remove());
 
             switch (buffer.check()) {
                 case END:
@@ -235,7 +235,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
                     break;
                 case READY:
-                    heap.offer(Pair.of((T)buffer.peek(), buffer));
+                    heap.offer(Pair.of((Object[])buffer.peek(), buffer));
 
                     break;
                 case WAITING:
@@ -272,7 +272,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
                 case READY:
                     noProgress = 0;
                     requested--;
-                    downstream.push((T)buffer.remove());
+                    downstream.push((Object[])buffer.remove());
 
                     break;
                 case WAITING:
@@ -363,7 +363,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         private static final Batch END = new Batch(0, null);
 
         /** */
-        private final Inbox<?> owner;
+        private final Inbox owner;
 
         /** */
         private final UUID nodeId;
@@ -378,7 +378,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         private Batch curr = WAITING;
 
         /** */
-        private Buffer(UUID nodeId, Inbox<?> owner) {
+        private Buffer(UUID nodeId, Inbox owner) {
             this.nodeId = nodeId;
             this.owner = owner;
         }

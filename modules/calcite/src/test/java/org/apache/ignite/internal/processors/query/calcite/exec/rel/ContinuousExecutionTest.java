@@ -121,7 +121,7 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
 
             MailboxRegistry registry = mailboxRegistry(localNodeId);
 
-            Outbox<Object[]> outbox = new Outbox<>(ectx, exchangeService(localNodeId), registry,
+            Outbox outbox = new Outbox(ectx, exchangeService(localNodeId), registry,
                 0, 1, new AllNodes(nodes.subList(0, 1)));
 
             outbox.register(filter);
@@ -136,8 +136,8 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
 
         MailboxRegistry registry = mailboxRegistry(localNodeId);
 
-        Inbox<Object[]> inbox = (Inbox<Object[]>) registry.register(
-            new Inbox<Object[]>(ectx, exchangeService(localNodeId), registry, 0, 0));
+        Inbox inbox =  registry.register(
+            new Inbox(ectx, exchangeService(localNodeId), registry, 0, 0));
 
         inbox.init(ectx, nodes.subList(1, nodes.size()), null);
 

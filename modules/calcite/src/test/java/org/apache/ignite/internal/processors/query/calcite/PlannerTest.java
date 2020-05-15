@@ -1353,7 +1353,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assert exec instanceof Outbox;
 
-            exec.context().execute(((Outbox<Object[]>) exec)::init);
+            exec.context().execute(((Outbox) exec)::init);
 
             ArrayList<Object[]> res = new ArrayList<>();
 
@@ -1595,7 +1595,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assert exec instanceof Outbox;
 
-            exec.context().execute(((Outbox<Object[]>) exec)::init);
+            exec.context().execute(((Outbox) exec)::init);
 
             ArrayList<Object[]> res = new ArrayList<>();
 

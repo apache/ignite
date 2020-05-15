@@ -133,7 +133,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** */
     protected void onMessage(UUID nodeId, InboxCancelMessage msg) {
-        Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
+        Inbox inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
 
         if (inbox != null)
             inbox.cancel();
@@ -149,7 +149,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** */
     protected void onMessage(UUID nodeId, QueryBatchAcknowledgeMessage msg) {
-        Outbox<?> outbox = mailboxRegistry().outbox(msg.queryId(), msg.exchangeId());
+        Outbox outbox = mailboxRegistry().outbox(msg.queryId(), msg.exchangeId());
 
         if (outbox != null)
             outbox.onAcknowledge(nodeId, msg.batchId());
@@ -165,12 +165,12 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** */
     protected void onMessage(UUID nodeId, QueryBatchMessage msg) {
-        Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
+        Inbox inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
 
         if (inbox == null && msg.batchId() == 0)
             // first message sent before a fragment is built
             // note that an inbox source fragment id is also used as an exchange id
-            inbox = mailboxRegistry().register(new Inbox<>(baseInboxContext(msg.queryId(), msg.fragmentId()), this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId()));
+            inbox = mailboxRegistry().register(new Inbox(baseInboxContext(msg.queryId(), msg.fragmentId()), this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId()));
 
         if (inbox != null)
             inbox.onBatchReceived(nodeId, msg.batchId(), msg.rows());

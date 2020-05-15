@@ -22,6 +22,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
@@ -112,10 +114,12 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteSender rel) {
         IgniteDistribution distribution = rel.distribution();
+
         Destination destination = distribution.function().destination(partitionService, ctx.targetMapping(), distribution.getKeys());
 
         // Outbox fragment ID is used as exchange ID as well.
-        Outbox<Object[]> outbox = new Outbox<>(ctx, exchangeService, mailboxRegistry, rel.exchangeId(), rel.targetFragmentId(), destination);
+        Outbox outbox = new Outbox(ctx, exchangeService, mailboxRegistry, rel.exchangeId(), rel.targetFragmentId(), destination);
+
         outbox.register(visit(rel.getInput()));
 
         mailboxRegistry.register(outbox);
@@ -126,8 +130,12 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteFilter rel) {
         Predicate<Object[]> predicate = expressionFactory.predicate(ctx, rel.getCondition(), rel.getRowType());
+
         FilterNode node = new FilterNode(ctx, predicate);
-        node.register(visit(rel.getInput()));
+
+        Node<Object[]> input = visit(rel.getInput());
+
+        node.register(input);
 
         return node;
     }
@@ -135,7 +143,10 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteTrimExchange rel) {
         FilterNode node = new FilterNode(ctx, partitionFilter(rel.distribution()));
-        node.register(visit(rel.getInput()));
+
+        Node<Object[]> input = visit(rel.getInput());
+
+        node.register(input);
 
         return node;
     }
@@ -143,8 +154,12 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteProject rel) {
         Function<Object[], Object[]> projection = expressionFactory.project(ctx, rel.getProjects(), rel.getInput().getRowType());
+
         ProjectNode node = new ProjectNode(ctx, projection);
-        node.register(visit(rel.getInput()));
+
+        Node<Object[]> input = visit(rel.getInput());
+
+        node.register(input);
 
         return node;
     }
@@ -152,9 +167,15 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteJoin rel) {
         RelDataType rowType = Commons.combinedRowType(ctx.getTypeFactory(), rel.getLeft().getRowType(), rel.getRight().getRowType());
+
         Predicate<Object[]> condition = expressionFactory.predicate(ctx, rel.getCondition(), rowType);
+
         JoinNode node = new JoinNode(ctx, condition);
-        node.register(F.asList(visit(rel.getLeft()), visit(rel.getRight())));
+
+        Node<Object[]> leftInput = visit(rel.getLeft());
+        Node<Object[]> rightInput = visit(rel.getRight());
+
+        node.register(F.asList(leftInput, rightInput));
 
         return node;
     }
@@ -176,7 +197,7 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
 
         Iterable<Object[]> rowsIterator = idx.scan(ctx, filters, lowerBound, upperBound);
 
-        return new ScanNode(ctx, rowsIterator); // TODO refactor other methods.
+        return new ScanNode(ctx, rowsIterator);
     }
 
     /** {@inheritDoc} */
@@ -187,12 +208,22 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteUnionAll rel) {
         UnionAllNode<Object[]> node = new UnionAllNode<>(ctx);
-        node.register(Commons.transform(rel.getInputs(), this::visit));
+
+        List<Node<Object[]>> inputs = Commons.transform(rel.getInputs(), this::visit);
+
+        node.register(inputs);
+
         return node;
     }
 
     @Override public Node<Object[]> visit(IgniteSort rel) {
-        return null; // TODO: CODE: implement.
+        SortNode node = new SortNode(ctx, rel.getCollation());
+
+        Node<Object[]> input = visit(rel.getInput());
+
+        node.register(input);
+
+        return node;
     }
 
     /** {@inheritDoc} */
@@ -202,7 +233,10 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
             case UPDATE:
             case DELETE:
                 ModifyNode node = new ModifyNode(ctx, rel.getTable().unwrap(TableDescriptor.class), rel.getOperation(), rel.getUpdateColumnList());
-                node.register(visit(rel.getInput()));
+
+                Node<Object[]> input = visit(rel.getInput());
+
+                node.register(input);
 
                 return node;
             case MERGE:
@@ -214,12 +248,14 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteReceiver rel) {
-        Inbox<?> inbox = mailboxRegistry.register(
-            new Inbox<>(ctx, exchangeService, mailboxRegistry, rel.exchangeId(), rel.sourceFragmentId()));
+        Inbox inbox = mailboxRegistry.register(
+            new Inbox(ctx, exchangeService, mailboxRegistry, rel.exchangeId(), rel.sourceFragmentId()));
+
+        RelCollation collation = F.isEmpty(rel.collations()) ? null : rel.collations().get(0);
 
         // here may be an already created (to consume rows from remote nodes) inbox
         // without proper context, we need to init it with a right one.
-        inbox.init(ctx, ctx.remoteSources(rel.exchangeId()), expressionFactory.comparator(ctx, rel.collations(), rel.getRowType()));
+        inbox.init(ctx, ctx.remoteSources(rel.exchangeId()), Commons.comparator(collation));
 
         return (Node<Object[]>)inbox;
     }
@@ -233,7 +269,10 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
             rowHandler, type, rel.getAggCallList(), rel.getInput().getRowType());
 
         AggregateNode<Object[]> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), factory, rowHandler);
-        node.register(visit(rel.getInput()));
+
+        Node<Object[]> input = visit(rel.getInput());
+
+        node.register(input);
 
         return node;
     }
@@ -247,7 +286,10 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
             rowHandler, type, rel.getAggCallList(), rel.getInput().getRowType());
 
         AggregateNode<Object[]> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), factory, rowHandler);
-        node.register(visit(rel.getInput()));
+
+        Node<Object[]> input = visit(rel.getInput());
+
+        node.register(input);
 
         return node;
     }
@@ -261,7 +303,10 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
             rowHandler, type, rel.aggregateCalls(), null);
 
         AggregateNode<Object[]> node = new AggregateNode<>(ctx, type, rel.groupSets(), factory, rowHandler);
-        node.register(visit(rel.getInput()));
+
+        Node<Object[]> input = visit(rel.getInput());
+
+        node.register(input);
 
         return node;
     }

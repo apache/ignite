@@ -33,10 +33,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class MailboxRegistryImpl extends AbstractService implements MailboxRegistry {
     /** */
-    private final Map<MailboxKey, Outbox<?>> locals;
+    private final Map<MailboxKey, Outbox> locals;
 
     /** */
-    private final Map<MailboxKey, Inbox<?>> remotes;
+    private final Map<MailboxKey, Inbox> remotes;
 
     /**
      * @param ctx Kernal.
@@ -49,41 +49,41 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
     }
 
     /** {@inheritDoc} */
-    @Override public Inbox<?> register(Inbox<?> inbox) {
-        Inbox<?> old = remotes.putIfAbsent(new MailboxKey(inbox.queryId(), inbox.exchangeId()), inbox);
+    @Override public Inbox register(Inbox inbox) {
+        Inbox old = remotes.putIfAbsent(new MailboxKey(inbox.queryId(), inbox.exchangeId()), inbox);
 
         return old != null ? old : inbox;
     }
 
     /** {@inheritDoc} */
-    @Override public void unregister(Inbox<?> inbox) {
+    @Override public void unregister(Inbox inbox) {
         remotes.remove(new MailboxKey(inbox.queryId(), inbox.exchangeId()));
     }
 
     /** {@inheritDoc} */
-    @Override public void register(Outbox<?> outbox) {
-        Outbox<?> res = locals.put(new MailboxKey(outbox.queryId(), outbox.exchangeId()), outbox);
+    @Override public void register(Outbox outbox) {
+        Outbox res = locals.put(new MailboxKey(outbox.queryId(), outbox.exchangeId()), outbox);
 
         assert res == null : res;
     }
 
     /** {@inheritDoc} */
-    @Override public void unregister(Outbox<?> outbox) {
+    @Override public void unregister(Outbox outbox) {
         locals.remove(new MailboxKey(outbox.queryId(), outbox.exchangeId()));
     }
 
     /** {@inheritDoc} */
-    @Override public Outbox<?> outbox(UUID queryId, long exchangeId) {
+    @Override public Outbox outbox(UUID queryId, long exchangeId) {
         return locals.get(new MailboxKey(queryId, exchangeId));
     }
 
     /** {@inheritDoc} */
-    @Override public Inbox<?> inbox(UUID queryId, long exchangeId) {
+    @Override public Inbox inbox(UUID queryId, long exchangeId) {
         return remotes.get(new MailboxKey(queryId, exchangeId));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Inbox<?>> inboxes(@Nullable UUID queryId) {
+    @Override public Collection<Inbox> inboxes(@Nullable UUID queryId) {
         if (queryId == null)
             return remotes.values();
 
@@ -94,7 +94,7 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Outbox<?>> outboxes(@Nullable UUID queryId) {
+    @Override public Collection<Outbox> outboxes(@Nullable UUID queryId) {
         if (queryId == null)
             return locals.values();
 

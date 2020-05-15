@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +43,7 @@ import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -370,6 +373,49 @@ public final class Commons {
             return (T) cbe.createInstance(new StringReader(body));
         } catch (Exception e) {
             throw new IgniteException(e);
+        }
+    }
+
+
+    /**
+     * Makes comparator from collation.
+     *
+     * @param collation Collation.
+     * @return Comparator.
+     */
+    public static Comparator<Object[]> comparator(RelCollation collation) {
+        if (collation == null || collation.getFieldCollations().isEmpty())
+            return null;
+        else if (collation.getFieldCollations().size() == 1)
+            return comparator(collation.getFieldCollations().get(0));
+        return Ordering.compound(collation.getFieldCollations()
+            .stream()
+            .map(Commons::comparator)
+            .collect(Collectors.toList()));
+    }
+
+    /**
+     * Makes comparator from field collation.
+     *
+     * @param fieldCollation Field collation.
+     * @return Comparator.
+     */
+    public static Comparator<Object[]> comparator(RelFieldCollation fieldCollation) {
+        final int nullComparison = fieldCollation.nullDirection.nullComparison;
+        final int x = fieldCollation.getFieldIndex();
+        switch (fieldCollation.direction) {
+            case ASCENDING:
+                return (o1, o2) -> {
+                    final Comparable c1 = (Comparable)o1[x];
+                    final Comparable c2 = (Comparable)o2[x];
+                    return RelFieldCollation.compare(c1, c2, nullComparison);
+                };
+            default:
+                return (o1, o2) -> {
+                    final Comparable c1 = (Comparable)o1[x];
+                    final Comparable c2 = (Comparable)o2[x];
+                    return RelFieldCollation.compare(c2, c1, -nullComparison);
+                };
         }
     }
 

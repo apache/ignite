@@ -35,7 +35,9 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlExplain;
@@ -468,8 +470,8 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         // TODO pass to context user locale and timezone.
 
         RelTraitDef<?>[] traitDefs = {
-            ConventionTraitDef.INSTANCE
-            //, RelCollationTraitDef.INSTANCE TODO
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         return PlanningContext.builder()
@@ -588,7 +590,9 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
     private IgniteRel optimize(SqlNode sqlNode, IgnitePlanner planner) {
         // Convert to Relational operators graph
-        RelNode rel = planner.convert(sqlNode);
+        RelRoot root = planner.rel(sqlNode);
+
+        RelNode rel = root.rel;
 
         // Transformation chain
         rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
@@ -596,6 +600,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         RelTraitSet desired = rel.getCluster().traitSet()
             .replace(IgniteConvention.INSTANCE)
             .replace(IgniteDistributions.single())
+            .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
             .simplify();
 
         return planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
@@ -821,7 +826,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
             assert node instanceof Outbox : node;
 
-            node.context().execute(((Outbox<Object[]>) node)::init);
+            node.context().execute(((Outbox) node)::init);
 
             messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentDescription().fragmentId()));
         }
@@ -884,7 +889,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     private void onNodeLeft(UUID nodeId) {
         running.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(nodeId));
 
-        final Predicate<Node<?>> p = new OriginatingFilter(nodeId);
+        final Predicate<Node<Object[]>> p = new OriginatingFilter(nodeId);
 
         mailboxRegistry().outboxes(null).stream()
             .filter(p).forEach(this::executeCancel);
@@ -1116,7 +1121,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private static class OriginatingFilter implements Predicate<Node<?>> {
+    private static class OriginatingFilter implements Predicate<Node<Object[]>> {
         /** */
         private final UUID nodeId;
 
@@ -1126,7 +1131,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean test(Node<?> node) {
+        @Override public boolean test(Node<Object[]> node) {
             // Uninitialized inbox doesn't know originating node ID.
             return Objects.equals(node.context().originatingNodeId(), nodeId);
         }

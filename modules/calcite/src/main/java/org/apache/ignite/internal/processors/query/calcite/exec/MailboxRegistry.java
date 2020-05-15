@@ -34,28 +34,28 @@ public interface MailboxRegistry extends Service {
      * @param inbox Inbox.
      * @return Registered inbox.
      */
-    Inbox<?> register(Inbox<?> inbox);
+    Inbox register(Inbox inbox);
 
     /**
      * Unregisters an inbox.
      *
      * @param inbox Inbox to unregister.
      */
-    void unregister(Inbox<?> inbox);
+    void unregister(Inbox inbox);
 
     /**
      * Registers an outbox.
      *
      * @param outbox Outbox to register.
      */
-    void register(Outbox<?> outbox);
+    void register(Outbox outbox);
 
     /**
      * Unregisters an outbox.
      *
      * @param outbox Outbox to unregister.
      */
-    void unregister(Outbox<?> outbox);
+    void unregister(Outbox outbox);
 
     /**
      * Returns a registered outbox by provided query ID, exchange ID pair.
@@ -65,7 +65,7 @@ public interface MailboxRegistry extends Service {
      *
      * @return Registered outbox. May be {@code null} if execution was cancelled.
      */
-    Outbox<?> outbox(UUID queryId, long exchangeId);
+    Outbox outbox(UUID queryId, long exchangeId);
 
     /**
      * Returns a registered inbox by provided query ID, exchange ID pair.
@@ -75,7 +75,7 @@ public interface MailboxRegistry extends Service {
      *
      * @return Registered inbox. May be {@code null} if execution was cancelled.
      */
-    Inbox<?> inbox(UUID queryId, long exchangeId);
+    Inbox inbox(UUID queryId, long exchangeId);
 
     /**
      * Returns all registered inboxes for provided query ID.
@@ -83,7 +83,7 @@ public interface MailboxRegistry extends Service {
      * @param queryId Query ID. {@code null} means return all registered inboxes.
      * @return Registered inboxes.
      */
-    Collection<Inbox<?>> inboxes(@Nullable UUID queryId);
+    Collection<Inbox> inboxes(@Nullable UUID queryId);
 
     /**
      * Returns all registered outboxes for provided query ID.
@@ -91,5 +91,5 @@ public interface MailboxRegistry extends Service {
      * @param queryId Query ID. {@code null} means return all registered outboxes.
      * @return Registered outboxes.
      */
-    Collection<Outbox<?>> outboxes(@Nullable UUID queryId);
+    Collection<Outbox> outboxes(@Nullable UUID queryId);
 }
