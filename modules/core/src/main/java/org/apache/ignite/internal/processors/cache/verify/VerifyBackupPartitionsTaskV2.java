@@ -529,7 +529,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
             int partHash = 0;
             long partSize;
-            PartitionUpdateCounter updateCntrBefore = part.dataStore().partUpdateCounter().copy();
+
+            @Nullable PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
+
+            PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
 
             PartitionKeyV2 partKey = new PartitionKeyV2(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
 
@@ -544,7 +547,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                         isPrimary,
                         consId,
                         partHash,
-                        updateCntrBefore.get(),
+                        updateCntrBefore == null ? 0 : updateCntrBefore.get(),
                         part.state() == GridDhtPartitionState.MOVING ? PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
                         part.state() == GridDhtPartitionState.MOVING ? PartitionState.MOVING : PartitionState.LOST
                     );
@@ -572,7 +575,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                 PartitionUpdateCounter updateCntrAfter = part.dataStore().partUpdateCounter();
 
-                if (!updateCntrBefore.equals(updateCntrAfter)) {
+                if (updateCntrAfter != null && !updateCntrAfter.equals(updateCntrBefore)) {
                     throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
                         ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during size " +
                         "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter + "]");
@@ -590,7 +593,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
 
             PartitionHashRecordV2 partRec = new PartitionHashRecordV2(
-                partKey, isPrimary, consId, partHash, updateCntrBefore.get(), partSize,
+                partKey, isPrimary, consId, partHash, updateCntrBefore == null ? 0 : updateCntrBefore.get(), partSize,
                 PartitionState.OWNING
             );
 

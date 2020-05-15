@@ -130,7 +130,9 @@ public class IdleVerifyUtility {
                 if (part.state() != GridDhtPartitionState.OWNING)
                     continue;
 
-                partsWithCounters.put(part.id(), part.dataStore().partUpdateCounter().copy());
+                @Nullable PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
+
+                partsWithCounters.put(part.id(), updCntr == null ? null : updCntr.copy());
             }
         }
 

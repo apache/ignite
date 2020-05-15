@@ -177,7 +177,9 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
                 if (part.state() != GridDhtPartitionState.OWNING)
                     return Collections.emptyMap();
 
-                updateCntrBefore = part.dataStore().partUpdateCounter().copy();
+                @Nullable PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
+
+                updateCntrBefore = updCntr == null ? null : updCntr.copy();
 
                 partSize = part.dataStore().fullSize();
 
@@ -207,7 +209,7 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
 
                 PartitionUpdateCounter updateCntrAfter = part.dataStore().partUpdateCounter();
 
-                if (!updateCntrBefore.equals(updateCntrAfter)) {
+                if (updateCntrAfter != null && !updateCntrAfter.equals(updateCntrBefore)) {
                     throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
                         ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during hash calculation " +
                         "[before=" + updateCntrBefore + ", after=" + updateCntrAfter + "]");
@@ -227,7 +229,7 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
             boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
 
             PartitionHashRecord partHashRec = new PartitionHashRecord(
-                partKey, isPrimary, consId, partHash, updateCntrBefore.get(), partSize);
+                partKey, isPrimary, consId, partHash, updateCntrBefore == null ? 0 : updateCntrBefore.get(), partSize);
 
             Map<PartitionHashRecord, List<PartitionEntryHashRecord>> res = new HashMap<>();
 

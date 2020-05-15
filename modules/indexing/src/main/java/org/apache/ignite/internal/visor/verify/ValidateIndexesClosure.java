@@ -524,7 +524,9 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             if (part.state() != OWNING)
                 return emptyMap();
 
-            PartitionUpdateCounter updateCntrBefore = part.dataStore().partUpdateCounter().copy();
+            @Nullable PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
+
+            PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
 
             GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
 
@@ -638,7 +640,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
             PartitionUpdateCounter updateCntrAfter = part.dataStore().partUpdateCounter();
 
-            if (!updateCntrBefore.equals(updateCntrAfter)) {
+            if (updateCntrAfter != null && !updateCntrAfter.equals(updateCntrBefore)) {
                 throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
                     ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during index validation " +
                     "[before=" + updateCntrBefore + ", after=" + updateCntrAfter + "]");
@@ -862,7 +864,9 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
     ) {
         return calcExecutor.submit(() -> {
             try {
-                PartitionUpdateCounter updateCntrBefore = locPart.dataStore().partUpdateCounter().copy();
+                @Nullable PartitionUpdateCounter updCntr = locPart.dataStore().partUpdateCounter();
+
+                PartitionUpdateCounter updateCntrBefore = updCntr == null ? updCntr : updCntr.copy();
 
                 int grpId = grpCtx.groupId();
 
@@ -927,7 +931,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                     PartitionUpdateCounter updateCntrAfter = locPart.dataStore().partUpdateCounter();
 
-                    if (!updateCntrBefore.equals(updateCntrAfter)) {
+                    if (updateCntrAfter != null && !updateCntrAfter.equals(updateCntrBefore)) {
                         throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
                             ", grpId=" + grpCtx.groupId() + ", partId=" + locPart.id() + "] changed during size " +
                             "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter + "]");
