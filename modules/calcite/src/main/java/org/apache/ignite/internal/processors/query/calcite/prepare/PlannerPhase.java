@@ -79,7 +79,6 @@ public enum PlannerPhase {
                 FilterMergeRule.INSTANCE,
                 FilterProjectTransposeRule.INSTANCE,
                 FilterTraitsPropagationRule.INSTANCE,
-                ProjectMergeRule.INSTANCE,
                 TableModifyConverterRule.INSTANCE,
                 UnionMergeRule.INSTANCE,
                 UnionConverterRule.INSTANCE,
