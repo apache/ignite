@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
@@ -36,6 +37,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
@@ -73,6 +75,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.DistributedTable;
@@ -2328,7 +2331,7 @@ public class PlannerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testFilterMerger() throws Exception {
+    public void testMergeFilters() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable testTbl = new TestTable(
@@ -2399,7 +2402,29 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
-            System.out.println("+++" + RelOptUtil.toString(phys));
+            assertNotNull(phys);
+
+            AtomicInteger filterCnt = new AtomicInteger();
+
+            // Counts filters af the plan.
+            phys.childrenAccept(
+                new RelVisitor() {
+                    @Override public void visit(RelNode node, int ordinal, RelNode parent) {
+                        if (node instanceof IgniteFilter)
+                            filterCnt.incrementAndGet();
+
+                        super.visit(node, ordinal, parent);
+                    }
+                }
+            );
+
+            // Checks that two filter merged into one filter.
+            // Expected plan:
+            // IgniteProject(VAL=[$1])
+            //  IgniteProject(ID=[$0], VAL=[$1])
+            //    IgniteFilter(condition=[=(CAST($1):INTEGER, 10)])
+            //      IgniteTableScan(table=[[PUBLIC, TEST]])
+            assertEquals(1, filterCnt.get());
         }
     }
 
