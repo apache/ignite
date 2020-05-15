@@ -159,10 +159,10 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")
                 .setPersistenceEnabled(true)
-                .setMaxSize(512 * 1024 * 1024)
+                .setMaxSize(256 * 1024 * 1024)
             ).setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName(IN_MEMORY_REGION)
-                .setMaxSize(512 * 1024 * 1024)
+                .setMaxSize(256 * 1024 * 1024)
             );
 
         cfg.setDataStorageConfiguration(dsCfg);
