@@ -43,6 +43,18 @@ public abstract class SqlListenerUtils {
         throws BinaryObjectException {
         byte type = reader.readByte();
 
+        return readObject(type, reader, binObjAllow);
+    }
+
+    /**
+     * @param type Object type.
+     * @param reader Reader.
+     * @param binObjAllow Allow to read non plaint objects.
+     * @return Read object.
+     * @throws BinaryObjectException On error.
+     */
+    @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow)
+        throws BinaryObjectException {
         switch (type) {
             case GridBinaryMarshaller.NULL:
                 return null;
