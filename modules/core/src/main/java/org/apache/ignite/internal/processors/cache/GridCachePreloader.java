@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.ForceRebalanceExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander.RebalanceFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -65,11 +66,10 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * @param rebTopVer Previous rebalance topology version or {@code NONE} if there is no info.
      * @param exchFut Completed exchange future.
      * @return {@code True} if rebalance should be started (previous will be interrupted).
      */
-    public boolean rebalanceRequired(AffinityTopologyVersion rebTopVer, GridDhtPartitionsExchangeFuture exchFut);
+    public boolean rebalanceRequired(GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * @param exchId Exchange ID.
@@ -85,15 +85,17 @@ public interface GridCachePreloader {
      * @param assignments Assignments to add.
      * @param forcePreload {@code True} if preload requested by {@link ForceRebalanceExchangeTask}.
      * @param rebalanceId Rebalance id created by exchange thread.
-     * @param next Runnable responsible for cache rebalancing chain.
+     * @param next Rebalance's future follows after the current one.
      * @param forcedRebFut External future for forced rebalance.
-     * @return Rebalancing runnable.
+     * @param compatibleRebFut Future for waiting for compatible rebalances.
+     * @return Future if rebalance was planned or null.
      */
-    public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
+    public RebalanceFuture addAssignments(GridDhtPreloaderAssignments assignments,
         boolean forcePreload,
         long rebalanceId,
-        Runnable next,
-        @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut);
+        final RebalanceFuture next,
+        @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut,
+        GridCompoundFuture<Boolean, Boolean> compatibleRebFut);
 
     /**
      * @return Future which will complete when preloader is safe to use.
