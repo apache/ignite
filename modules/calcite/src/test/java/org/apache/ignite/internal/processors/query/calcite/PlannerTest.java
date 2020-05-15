@@ -196,7 +196,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -274,7 +274,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -348,7 +348,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -478,7 +478,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelNode root;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -619,7 +619,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelNode root;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -709,7 +709,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelNode root;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -838,7 +838,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -930,7 +930,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -1052,7 +1052,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -1183,7 +1183,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -1419,7 +1419,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -1670,7 +1670,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -1792,7 +1792,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -1913,7 +1913,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -2034,7 +2034,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -2152,7 +2152,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
@@ -2258,7 +2258,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelNode rel;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String query = ctx.query();
