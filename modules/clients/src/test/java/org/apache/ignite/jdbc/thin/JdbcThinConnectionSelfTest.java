@@ -1729,7 +1729,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             "Unknown feature: unknownFeature");
 
         try (Connection conn = DriverManager.getConnection(url + "?disabledFeatures=reserved")) {
-
+            // NO-OP
         }
     }
 
