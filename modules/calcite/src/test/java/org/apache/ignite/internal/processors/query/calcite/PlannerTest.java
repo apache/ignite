@@ -2328,7 +2328,7 @@ public class PlannerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testFilterTranspose() throws Exception {
+    public void testFilterMerger() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable testTbl = new TestTable(
