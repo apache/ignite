@@ -18,47 +18,21 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
-import org.apache.calcite.rel.rules.FilterMergeRule;
 import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
 
 /**
  *
  */
-public final class LogicalFilterRules {
+public class LogicalFilterProjectTransposeRule extends FilterProjectTransposeRule {
     /** */
-    public static final RelOptRule FILTER_MERGE_RULE = new LogicalFilterMergeRule();
+    public static final RelOptRule INSTANCE = new LogicalFilterProjectTransposeRule();
 
     /** */
-    public static final RelOptRule FILTER_PROJECT_TRANSPOSE_RULE =
-        new FilterProjectTransposeRule(LogicalFilter.class, LogicalProject.class, true, true,
+    public LogicalFilterProjectTransposeRule() {
+        super(LogicalFilter.class, LogicalProject.class, true, true,
             RelFactories.LOGICAL_BUILDER);
-
-    /**
-     *
-     */
-    private static class LogicalFilterMergeRule extends RelOptRule {
-        /** */
-        public LogicalFilterMergeRule() {
-            super(
-                operand(LogicalFilter.class,
-                    operand(LogicalFilter.class, any())),
-                RelFactories.LOGICAL_BUILDER, null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onMatch(RelOptRuleCall call) {
-            FilterMergeRule.INSTANCE.onMatch(call);
-        }
-    }
-
-    /** */
-    private LogicalFilterRules() {
-        // No-op.
     }
 }
