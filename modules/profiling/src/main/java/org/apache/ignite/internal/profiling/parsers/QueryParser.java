@@ -18,17 +18,19 @@
 package org.apache.ignite.internal.profiling.parsers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.profiling.ProfilingLogParser;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.profiling.util.OrderedFixedSizeStructure;
+import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.internal.profiling.ProfilingLogParser.currentPhase;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 
 /**
@@ -60,93 +62,42 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  *  }
  * ]
  * </pre>
- *
- * @see TopSlowQueryHelper
  */
 public class QueryParser implements IgniteLogParser {
-    /** SQL queries results: queryText -> aggregatedInfo. */
-    private final Map<String, AggregatedQueryInfo> sqlRes = new HashMap<>();
+    /**  Queries results: queryType -> queryText -> aggregatedInfo. */
+    private final Map<GridCacheQueryType, Map<String, AggregatedQueryInfo>> aggrQuery =
+        new EnumMap<>(GridCacheQueryType.class);
 
-    /** SCAN queries results: cacheName -> aggregatedInfo. */
-    private final Map<String, AggregatedQueryInfo> scanRes = new HashMap<>();
+    /** Parsed reads: queryType -> queryNodeId -> queryId -> reads. */
+    private final Map<GridCacheQueryType, Map<UUID, Map<Long, long[]>>> readsById =
+        new EnumMap<>(GridCacheQueryType.class);
 
-    /** Parsed reads that have not mapped to queries yet: queryNodeId -> queryId -> reads. */
-    private final Map<UUID, Map<Long, long[]>> unmergedIds = new HashMap<>();
-
-    /** Top of slowest queries. */
-    private final TopSlowQueryHelper slowQueries = new TopSlowQueryHelper();
+    /** Structure to store top of slow SQL queries: queryType -> duration -> query. */
+    private final Map<GridCacheQueryType, OrderedFixedSizeStructure<Long, Query>> topSlow =
+        new EnumMap<>(GridCacheQueryType.class);
 
     /** {@inheritDoc} */
     @Override public void query(GridCacheQueryType type, String text, UUID queryNodeId, long id, long startTime,
         long duration, boolean success) {
-        if (currentPhase() == ProfilingLogParser.ParsePhase.REDUCE) {
-            slowQueries.mergeQuery(type, text, queryNodeId, id, startTime, duration, success);
+        Query query = new Query(type, text, queryNodeId, id, startTime, duration, success);
 
-            return;
-        }
+        OrderedFixedSizeStructure<Long, Query> tree = topSlow.computeIfAbsent(type,
+            t -> new OrderedFixedSizeStructure<>());
 
-        slowQueries.value(type, duration, queryNodeId, id);
+        tree.put(duration, query);
 
-        Map<String, AggregatedQueryInfo> res;
-
-        if (type == GridCacheQueryType.SQL_FIELDS)
-            res = sqlRes;
-        else if (type == GridCacheQueryType.SCAN)
-            res = scanRes;
-        else
-            return;
-
-        AggregatedQueryInfo info = res.computeIfAbsent(text, k -> new AggregatedQueryInfo());
+        AggregatedQueryInfo info = aggrQuery.computeIfAbsent(type, t -> new HashMap<>())
+            .computeIfAbsent(text, k -> new AggregatedQueryInfo());
 
         info.merge(queryNodeId, id, duration, success);
-
-        // Try merge unmerged ids.
-        Map<Long, long[]> nodeIds = unmergedIds.get(queryNodeId);
-
-        if (nodeIds != null) {
-            long[] reads = nodeIds.get(id);
-
-            if (reads != null) {
-                info.addReads(reads[0], reads[1]);
-
-                nodeIds.remove(id);
-
-                if (nodeIds.isEmpty())
-                    unmergedIds.remove(queryNodeId);
-            }
-        }
     }
 
     /** {@inheritDoc} */
     @Override public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
         long physicalReads) {
-        if (currentPhase() == ProfilingLogParser.ParsePhase.REDUCE) {
-            slowQueries.mergeReads(type, queryNodeId, id, logicalReads, physicalReads);
 
-            return;
-        }
-
-        Map<String, AggregatedQueryInfo> res;
-
-        if (type == GridCacheQueryType.SQL_FIELDS)
-            res = sqlRes;
-        else if (type == GridCacheQueryType.SCAN)
-            res = scanRes;
-        else
-            return;
-
-        for (AggregatedQueryInfo info : res.values()) {
-            Set<Long> ids = info.ids.get(queryNodeId);
-
-            if (ids != null && ids.contains(id)) {
-                info.addReads(logicalReads, physicalReads);
-
-                // Merged.
-                return;
-            }
-        }
-
-        Map<Long, long[]> ids = unmergedIds.computeIfAbsent(queryNodeId, k -> new HashMap<>());
+        Map<Long, long[]> ids = readsById.computeIfAbsent(type, t -> new HashMap<>())
+            .computeIfAbsent(queryNodeId, k -> new HashMap<>());
 
         long[] readsArr = ids.computeIfAbsent(id, k -> new long[] {0, 0});
 
@@ -159,32 +110,89 @@ public class QueryParser implements IgniteLogParser {
         ObjectNode sqlRes = MAPPER.createObjectNode();
         ObjectNode scanRes = MAPPER.createObjectNode();
 
-        buildResult(this.sqlRes, sqlRes);
-        buildResult(this.scanRes, scanRes);
+        buildResult(GridCacheQueryType.SQL_FIELDS, sqlRes);
+        buildResult(GridCacheQueryType.SCAN, scanRes);
 
-        Map<String, JsonNode> res = U.map("sql", sqlRes, "scan", scanRes);
+        ArrayNode topSlowSql = MAPPER.createArrayNode();
+        ArrayNode topSlowScan = MAPPER.createArrayNode();
 
-        res.putAll(slowQueries.results());
+        buildTopSlowResult(GridCacheQueryType.SQL_FIELDS, topSlowSql);
+        buildTopSlowResult(GridCacheQueryType.SCAN, topSlowScan);
 
-        return res;
+        return F.asMap("sql", sqlRes, "scan", scanRes, "topSlowSql", topSlowSql, "topSlowScan", topSlowScan);
     }
 
     /** Builds JSON. */
-    private void buildResult(Map<String, AggregatedQueryInfo> res, ObjectNode jsonRes) {
+    private void buildResult(GridCacheQueryType type, ObjectNode jsonRes) {
+        if (!aggrQuery.containsKey(type))
+            return;
+
+        Map<String, AggregatedQueryInfo> res = aggrQuery.get(type);
+
         res.forEach((text, info) -> {
+            info.ids.forEach((uuid, ids) -> {
+                if (!readsById.containsKey(type) || !readsById.get(type).containsKey(uuid))
+                    return;
+
+                Map<Long, long[]> reads = readsById.get(type).get(uuid);
+
+                ids.forEach(id -> {
+                    long[] readsArr = reads.get(id);
+
+                    if (readsArr == null)
+                        return;
+
+                    info.logicalReads += readsArr[0];
+                    info.physicalReads += readsArr[1];
+                });
+            });
+
             ObjectNode sql = (ObjectNode)jsonRes.get(text);
 
             if (sql == null) {
                 sql = MAPPER.createObjectNode();
 
                 sql.put("count", info.count);
-                sql.put("duration", info.totalDuration);
+                sql.put("duration", TimeUnit.NANOSECONDS.toMillis(info.totalDuration));
                 sql.put("logicalReads", info.logicalReads);
                 sql.put("physicalReads", info.physicalReads);
                 sql.put("failures", info.failures);
 
                 jsonRes.set(text, sql);
             }
+        });
+    }
+
+    /** Builds JSON. */
+    private void buildTopSlowResult(GridCacheQueryType type, ArrayNode jsonRes) {
+        if (!topSlow.containsKey(type))
+            return;
+
+        OrderedFixedSizeStructure<Long, Query> tree = topSlow.get(type);
+
+        tree.values().forEach(query -> {
+            ObjectNode json = MAPPER.createObjectNode();
+
+            json.put("text", query.text);
+            json.put("startTime", query.startTime);
+            json.put("duration", TimeUnit.NANOSECONDS.toMillis(query.duration));
+            json.put("nodeId", String.valueOf(query.queryNodeId));
+            json.put("success", query.success);
+            json.put("logicalReads", 0);
+            json.put("physicalReads", 0);
+
+            jsonRes.add(json);
+
+            if (!readsById.containsKey(type) || !readsById.get(type).containsKey(query.queryNodeId))
+                return;
+
+            long[] readsArr = readsById.get(type).get(query.queryNodeId).get(query.id);
+
+            if (readsArr == null)
+                return;
+
+            json.put("logicalReads", readsArr[0]);
+            json.put("physicalReads", readsArr[1]);
         });
     }
 
@@ -224,6 +232,50 @@ public class QueryParser implements IgniteLogParser {
 
             ids.computeIfAbsent(queryNodeId, k -> new HashSet<>())
                 .add(id);
+        }
+    }
+
+    /** Query. */
+    public class Query {
+        /** Cache query type. */
+        final GridCacheQueryType type;
+
+        /** Query text in case of SQL query. Cache name in case of SCAN query. */
+        final String text;
+
+        /** Originating node id (as part of global query id). */
+        final UUID queryNodeId;
+
+        /** Query id. */
+        final long id;
+
+        /** Start time. */
+        final long startTime;
+
+        /** Duration. */
+        final long duration;
+
+        /** Success flag. */
+        final boolean success;
+
+        /**
+         * @param type Cache query type.
+         * @param text Query text in case of SQL query. Cache name in case of SCAN query.
+         * @param queryNodeId Originating node id.
+         * @param id Query id.
+         * @param startTime Start time.
+         * @param duration Duration.
+         * @param success Success flag.
+         */
+        public Query(GridCacheQueryType type, String text, UUID queryNodeId, long id, long startTime, long duration,
+            boolean success) {
+            this.type = type;
+            this.text = text;
+            this.queryNodeId = queryNodeId;
+            this.id = id;
+            this.startTime = startTime;
+            this.duration = duration;
+            this.success = success;
         }
     }
 }

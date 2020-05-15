@@ -79,9 +79,4 @@ public interface IgniteLogParser extends IgniteProfiling {
         long startTime) {
         // No-op.
     }
-
-    /** */
-    default void onPhaseEnd() {
-        // No-op.
-    }
 }

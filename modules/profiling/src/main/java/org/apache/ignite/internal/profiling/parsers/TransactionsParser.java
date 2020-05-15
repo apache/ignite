@@ -54,13 +54,13 @@ public class TransactionsParser implements IgniteLogParser {
     /** Field name of aggregated by caches/nodes values. */
     private static final String TOTAL = "total";
 
-    /** Histogram buckets for duration get, put, remove, commit, rollback operations in milliseconds. */
+    /** Transaction durations histogram buckets in milliseconds. */
     public static final long[] HISTOGRAM_BUCKETS = new long[] {1, 10, 100, 250, 1000};
 
-    /** Aggregated results: nodeId->cacheId->opType->aggregatedResults. */
+    /** Aggregated results: nodeId -> cacheId -> opType -> aggregatedResults. */
     private final Map<UUID, Map<Integer, Map<TransactionState, Map<Long, Integer>>>> res = new HashMap<>();
 
-    /** Transaction durations histogram data: nodeId->cacheId->histogram. */
+    /** Transaction durations histogram data: nodeId -> cacheId -> histogram. */
     private final Map<UUID, Map<Integer, HistogramMetricImpl>> histogram = new HashMap<>();
 
     /** {@inheritDoc} */

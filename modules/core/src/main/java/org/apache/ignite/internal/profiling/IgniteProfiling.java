@@ -132,12 +132,12 @@ public interface IgniteProfiling {
         /** */
         INVOKE_ALL;
 
-        /** */
+        /** Values. */
         private static final CacheOperationType[] VALS = values();
 
-        /** */
-        public static CacheOperationType fromOrdinal(byte idx) {
-            return idx < 0 || idx >= VALS.length ? null : VALS[idx];
+        /** @return Operation type from ordinal. */
+        public static CacheOperationType fromOrdinal(byte ord) {
+            return ord < 0 || ord >= VALS.length ? null : VALS[ord];
         }
     }
 }

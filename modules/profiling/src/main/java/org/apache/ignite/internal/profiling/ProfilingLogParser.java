@@ -87,9 +87,6 @@ public class ProfilingLogParser {
     /** Node id of current parsed log. */
     private static UUID curNodeId;
 
-    /** Current parse phase. */
-    private static ParsePhase curPhase;
-
     /**
      * @param args Only one argument: profiling logs directory to parse or '-h' to get usage help.
      */
@@ -210,31 +207,21 @@ public class ProfilingLogParser {
             new TopologyChangesParser()
         };
 
-        for (ParsePhase phase : ParsePhase.values()) {
-            curPhase = phase;
+        int currLog = 1;
 
-            if (phase == ParsePhase.REDUCE)
-                continue;
+        for (Map.Entry<UUID, File> entry : logs.entrySet()) {
+            UUID nodeId = entry.getKey();
+            File log = entry.getValue();
 
-            int currLog = 1;
+            String progressMsg = "[" + currLog + '/' + logs.size() + " log]";
 
-            for (Map.Entry<UUID, File> entry : logs.entrySet()) {
-                UUID nodeId = entry.getKey();
-                File log = entry.getValue();
+            curNodeId = nodeId;
 
-                String progressMsg = "[" + currLog + '/' + logs.size() + " log]";
+            parseLog(parsers, nodeId, log, progressMsg);
 
-                curNodeId = nodeId;
+            curNodeId = null;
 
-                parseLog(parsers, nodeId, log, progressMsg);
-
-                curNodeId = null;
-
-                currLog++;
-            }
-
-            for (IgniteLogParser parser : parsers)
-                parser.onPhaseEnd();
+            currLog++;
         }
 
         for (IgniteLogParser parser : parsers) {
@@ -317,11 +304,6 @@ public class ProfilingLogParser {
         return curNodeId;
     }
 
-    /** @return Current parse phase. */
-    public static ParsePhase currentPhase() {
-        return curPhase;
-    }
-
     /**
      * Writes JSON to file.
      *
@@ -399,14 +381,5 @@ public class ProfilingLogParser {
                 }
             }
         }
-    }
-
-    /** */
-    public enum ParsePhase {
-        /** */
-        PARSE,
-
-        /** */
-        REDUCE
     }
 }

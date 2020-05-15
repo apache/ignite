@@ -89,7 +89,11 @@ public class LogFileProfiling implements IgniteProfiling {
         return enabled.get();
     }
 
-    /** @param ctx Kernal context. */
+    /**
+     * Starts profiling.
+     *
+     * @param ctx Kernal context.
+     */
     public void startProfiling(GridKernalContext ctx) {
         // TODO multiple concurrent start/stop.
         if (!enabled.compareAndSet(false, true))
@@ -123,7 +127,7 @@ public class LogFileProfiling implements IgniteProfiling {
         }
     }
 
-    /** */
+    /** Stops profiling. */
     public void stopProfiling() {
         if (!enabled.compareAndSet(true, false))
             return;

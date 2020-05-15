@@ -62,9 +62,6 @@ public class LoadTestHelper {
     /** Count load threads. */
     private static final int THREADS_PER_NODE = 4;
 
-    /** Path to log configuration. */
-    private static final String LOG_CONFIG = "modules/profiling/config/log4j2-profiling.xml";
-
     /** */
     private static final String CACHE1 = "cache1_tx_one_backup_full_sync";
 
@@ -161,7 +158,6 @@ public class LoadTestHelper {
         };
 
         return new IgniteConfiguration()
-            .setGridLogger(new Log4J2Logger(LOG_CONFIG))
             .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER))
             .setClientMode(client)
             .setCacheConfiguration(ccfg)
