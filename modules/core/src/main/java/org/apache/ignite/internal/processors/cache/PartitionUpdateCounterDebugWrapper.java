@@ -269,7 +269,7 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public PartitionUpdateCounter copy() {
-        return new PartitionUpdateCounterDebugWrapper(partId, delegate);
+        return new PartitionUpdateCounterDebugWrapper(partId, delegate.copy());
     }
 
     /** {@inheritDoc} */
