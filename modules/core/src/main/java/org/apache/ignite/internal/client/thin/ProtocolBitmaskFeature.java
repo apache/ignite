@@ -35,7 +35,10 @@ public enum ProtocolBitmaskFeature {
      * Cluster operations (state and WAL). In addition to {@link ProtocolVersionFeature#CLUSTER_API} this feature
      * also allows to use other cluster states beside ACTIVE and INACTIVE.
      */
-    CLUSTER_API(2);
+    CLUSTER_API(2),
+
+    /** Cluster groups. */
+    CLUSTER_GROUPS(4);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =
