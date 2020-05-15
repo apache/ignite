@@ -1347,7 +1347,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     topVer);
             }
 
-            deferred = cctx.deferredDelete() && !detached() && !isInternal();
+            deferred = cctx.deferredDelete() && !detached();
 
             if (intercept)
                 entry0.updateCounter(updateCntr0);
@@ -2274,7 +2274,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
             else {
-                if (cctx.deferredDelete() && !isStartVersion() && !detached() && !isInternal()) {
+                if (cctx.deferredDelete() && !isStartVersion() && !detached()) {
                     if (!deletedUnlocked()) {
                         update(null, 0L, 0L, ver, true);
 
