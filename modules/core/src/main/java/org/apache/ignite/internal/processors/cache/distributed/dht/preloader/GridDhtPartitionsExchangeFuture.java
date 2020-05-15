@@ -377,6 +377,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Specified only in case of 'cluster is fully rebalanced' state achieved. */
     private volatile RebalancedInfo rebalancedInfo;
 
+    /** Some of owned by affinity partitions were changed state to moving on this exchange. */
+    private volatile boolean affinityReassign;
+
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
@@ -2427,7 +2430,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 if (changedAffinity())
-                    cctx.walState().changeLocalStatesOnExchangeDone(res, changedBaseline());
+                    cctx.walState().changeLocalStatesOnExchangeDone(res, this);
             }
         }
         catch (Throwable t) {
@@ -3697,8 +3700,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
-                    && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions())
+                    && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions()) {
+                    markAffinityReassign();
+
                     assignPartitionsStates();
+                }
             }
             else {
                 if (exchCtx.events().hasServerJoin())
@@ -4464,6 +4470,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (stateChangeExchange() && !F.isEmpty(msg.getErrorsMap()))
                 cctx.kernalContext().state().onStateChangeError(msg.getErrorsMap(), exchActions.stateChangeRequest());
 
+            if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                DiscoveryCustomMessage discoveryCustomMessage = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
+
+                if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
+                    && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions())
+                    markAffinityReassign();
+            }
+
             onDone(resTopVer, null);
         }
         catch (IgniteCheckedException e) {
@@ -5169,6 +5183,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert !rebalanced() && wasRebalanced();
 
         rebalancedInfo = sharedContext().exchange().lastFinishedFuture().rebalancedInfo;
+    }
+
+    /**
+     * Marks this future as affinity reassign.
+     */
+    public void markAffinityReassign() {
+        affinityReassign = true;
+    }
+
+    /**
+     * @return True if some owned partition was reassigned, false otherwise.
+     */
+    public boolean affinityReassign() {
+        return affinityReassign;
     }
 
     /**
