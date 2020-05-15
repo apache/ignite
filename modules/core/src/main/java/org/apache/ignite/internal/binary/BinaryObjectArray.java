@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.binary;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Binary object array.
@@ -53,5 +55,29 @@ public final class BinaryObjectArray implements Serializable {
      */
     public Object[] items() {
         return items;
+    }
+
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (!(o instanceof BinaryObjectArray))
+            return false;
+
+        BinaryObjectArray array = (BinaryObjectArray)o;
+
+        return itemTypeId == array.itemTypeId && Arrays.equals(items, array.items);
+    }
+
+    @Override public int hashCode() {
+        int result = Objects.hash(itemTypeId);
+
+        result = 31 * result + Arrays.hashCode(items);
+
+        return result;
+    }
+
+    @Override public String toString() {
+        return Arrays.toString(items);
     }
 }

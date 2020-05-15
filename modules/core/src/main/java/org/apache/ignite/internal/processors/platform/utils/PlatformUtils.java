@@ -35,6 +35,7 @@ import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryObjectArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinarySchema;
@@ -908,8 +909,8 @@ public class PlatformUtils {
             return unwrapKnownCollection((Collection<Object>)o);
         else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded((Map<Object, Object>)o);
-        else if (o instanceof Object[])
-            return unwrapBinariesInArray((Object[])o);
+        else if ((o instanceof Object[]) || (o instanceof BinaryObjectArray))
+            return unwrapBinariesInArray(o);
         else if (o instanceof BinaryObject)
             return ((BinaryObject)o).deserialize();
 
@@ -972,10 +973,14 @@ public class PlatformUtils {
     /**
      * Unwrap array of binaries if needed.
      *
-     * @param arr Array.
+     * @param val Array.
      * @return Result.
      */
-    public static Object[] unwrapBinariesInArray(Object[] arr) {
+    public static Object[] unwrapBinariesInArray(Object val) {
+        boolean isBinary = val instanceof BinaryObjectArray;
+
+        Object[] arr = isBinary ? ((BinaryObjectArray)val).items() : (Object[])val;
+
         Object[] res = new Object[arr.length];
 
         for (int i = 0; i < arr.length; i++)
