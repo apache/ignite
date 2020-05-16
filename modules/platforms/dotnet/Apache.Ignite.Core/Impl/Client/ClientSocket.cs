@@ -241,6 +241,8 @@ namespace Apache.Ignite.Core.Impl.Client
             _notificationListeners.AddOrUpdate(notificationId,
                 _ => new ClientNotificationHandler(_logger, handler),
                 (_, oldHandler) => oldHandler.SetHandler(handler));
+            
+            _listenerEvent.Set();
         }
 
         /// <summary>
