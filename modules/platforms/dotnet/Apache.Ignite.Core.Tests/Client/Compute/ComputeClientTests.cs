@@ -102,6 +102,15 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         }
 
         /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with a user-defined timeout.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskWithTimeout()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Tests that <see cref="IIgniteClient.GetCompute"/> always returns the same instance.
         /// </summary>
         [Test]

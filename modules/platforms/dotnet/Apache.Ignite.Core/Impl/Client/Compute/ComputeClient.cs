@@ -32,14 +32,17 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /** */
         private readonly IgniteClient _ignite;
 
+        /** */
+        private readonly ComputeClientFlags _flags; 
+
         /// <summary>
         /// Initializes a new instance of <see cref="ComputeClient"/>.
         /// </summary>
-        /// <param name="ignite"></param>
-        internal ComputeClient(IgniteClient ignite)
+        internal ComputeClient(IgniteClient ignite, ComputeClientFlags flags = ComputeClientFlags.None)
         {
             // TODO: Projection, flags.
             _ignite = ignite;
+            _flags = flags;
         }
 
         /** <inheritdoc /> */
