@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Compute
 {
+    using System.Threading;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Configuration;
@@ -37,6 +38,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             var res = Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeInt);
             
+            Thread.Sleep(50000);
             Assert.AreEqual(1, res);
         }
 

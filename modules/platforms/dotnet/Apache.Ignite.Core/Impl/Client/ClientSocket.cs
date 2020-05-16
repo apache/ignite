@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System;
     using System.Collections;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
@@ -66,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Current version. */
         public static readonly ClientProtocolVersion CurrentProtocolVersion = Ver170;
-
+        
         /** Handshake opcode. */
         private const byte OpHandshake = 1;
 
@@ -91,6 +92,15 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Current async operations, map from request id. */
         private readonly ConcurrentDictionary<long, Request> _requests
             = new ConcurrentDictionary<long, Request>();
+
+        /** Server -> Client notification listeners. */
+        private readonly ConcurrentDictionary<long, Action<IBinaryStream>> _notificationListeners
+            = new ConcurrentDictionary<long, Action<IBinaryStream>>();
+
+        /** Server -> Client notification queue. Listener can be added later than the notification arrives,
+         * so when listener is not present, we put notification to a queue. */
+        private readonly ConcurrentQueue<KeyValuePair<long, IBinaryStream>> _notificationQueue 
+            = new ConcurrentQueue<KeyValuePair<long, IBinaryStream>>();
 
         /** Request id generator. */
         private long _requestId;
@@ -274,8 +284,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 // Null exception means active socket.
                 while (_exception == null)
                 {
-                    // Do not call Receive if there are no async requests pending.
-                    while (_requests.IsEmpty)
+                    // Do not call Receive if there are no pending async requests or notification listeners.
+                    while (_requests.IsEmpty && _notificationListeners.IsEmpty)
                     {
                         // Wait with a timeout so we check for disposed state periodically.
                         _listenerEvent.Wait(1000);
@@ -309,6 +319,12 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             var stream = new BinaryHeapStream(response);
             var requestId = stream.ReadLong();
+            
+            // TODO: Check if response in a Notification
+            // When a notification is not registered - put it to a queue (registration may come later)
+            // TODO: Backpressure can be controlled by the notification handler (where this is needed, e.g. cont query):
+            // we will send notifications in the receiver thread,
+            // and listener can block the thread if the queue hits the limit.
 
             Request req;
             if (!_requests.TryRemove(requestId, out req))
