@@ -28,6 +28,7 @@ import org.apache.ignite.spi.discovery.LongClientConnectToClusterTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryUnmarshalVulnerabilityTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectSslTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectTest;
+import org.apache.ignite.spi.discovery.tcp.IgniteClientLongConnectionTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownSslTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteMetricsOverflowTest;
@@ -136,6 +137,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     // Client connect.
     IgniteClientConnectTest.class,
+    IgniteClientLongConnectionTest.class,
     IgniteClientConnectSslTest.class,
     IgniteClientReconnectMassiveShutdownTest.class,
     IgniteClientReconnectMassiveShutdownSslTest.class,

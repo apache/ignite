@@ -286,7 +286,7 @@ import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastRecei
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends IgniteSpiAdapter implements CommunicationSpi<Message> {
     /** Time threshold to log too long connection establish. */
-    private static final int CONNECTION_ESTABLISH_THRESHOLD_MS = 100;
+    protected static final int CONNECTION_ESTABLISH_THRESHOLD_MS = 100;
 
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
