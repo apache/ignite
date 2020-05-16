@@ -238,6 +238,30 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
+        /// Adds a notification handler.
+        /// </summary>
+        /// <param name="notificationId">Notification id.</param>
+        /// <param name="handler">Handler delegate.</param>
+        public void AddNotificationHandler(long notificationId, Action<IBinaryStream> handler)
+        {
+            _notificationListeners[notificationId] = handler;
+            
+            // TODO: Drain the queue.
+            // TODO: How to avoid a race between queue and listeners? - introduce a class to handle.
+        }
+
+        /// <summary>
+        /// Removes a notification handler with the given id.
+        /// </summary>
+        /// <param name="notificationId">Notification id.</param>
+        /// <returns>True when removed, false otherwise.</returns>
+        public bool RemoveNotificationHandler(long notificationId)
+        {
+            Action<IBinaryStream> unused;
+            return _notificationListeners.TryRemove(notificationId, out unused);
+        }
+
+        /// <summary>
         /// Gets the features.
         /// </summary>
         public ClientFeatures Features
