@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             var requiredFeature = GetFeature(operation);
 
-            if (_features != null && requiredFeature != null && !_features.Get((int) requiredFeature.Value))
+            if (requiredFeature != null && (_features == null || !_features.Get((int) requiredFeature.Value)))
             {
                 if (shouldThrow)
                 {

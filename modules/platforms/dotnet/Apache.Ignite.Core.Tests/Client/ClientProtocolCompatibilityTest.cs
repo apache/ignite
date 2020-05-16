@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Text.RegularExpressions;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
@@ -79,8 +80,10 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 var compute = client.GetCompute();
 
-                AssertNotSupportedOperation(
-                    () => compute.ExecuteJavaTask<int>("unused", null), version.ToString(), "ClusterIsActive");
+                AssertNotSupportedFeatureOperation(
+                    () => compute.ExecuteJavaTask<int>("unused", null),
+                    ClientBitmaskFeature.ExecuteTaskByName,
+                    ClientOp.ComputeTaskExecute);
             }
         }
 
@@ -194,6 +197,21 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Asserts proper exception for non-supported operation.
+        /// </summary>
+        private static void AssertNotSupportedFeatureOperation(Action action, ClientBitmaskFeature feature, ClientOp op)
+        {
+            var ex = Assert.Throws<IgniteClientException>(() => action());
+            
+            var expectedMessage = string.Format(
+                "Operation {0} is not supported by the server. " +
+                "Feature {1} is missing.",
+                op, feature);
+
+            Assert.AreEqual(expectedMessage, ex.Message);
+        }
+
+        /// <summary>
         /// Gets the client with specified protocol version.
         /// </summary>
         private IgniteClient GetClient(ClientProtocolVersion version, bool enablePartitionAwareness = false)
@@ -205,6 +223,21 @@ namespace Apache.Ignite.Core.Tests.Client
             };
 
             return (IgniteClient) Ignition.StartClient(cfg);
+        }
+
+        /** <inheritdoc /> */
+        protected override IgniteConfiguration GetIgniteConfiguration()
+        {
+            return new IgniteConfiguration(base.GetIgniteConfiguration())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientConfiguration = new ThinClientConfiguration
+                    {
+                        MaxActiveComputeTasksPerConnection = 1
+                    }
+                }
+            };
         }
     }
 }
