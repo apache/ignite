@@ -94,13 +94,8 @@ namespace Apache.Ignite.Core.Impl.Client
             = new ConcurrentDictionary<long, Request>();
 
         /** Server -> Client notification listeners. */
-        private readonly ConcurrentDictionary<long, Action<IBinaryStream>> _notificationListeners
-            = new ConcurrentDictionary<long, Action<IBinaryStream>>();
-
-        /** Server -> Client notification queue. Listener can be added later than the notification arrives,
-         * so when listener is not present, we put notification to a queue. */
-        private readonly ConcurrentQueue<KeyValuePair<long, IBinaryStream>> _notificationQueue 
-            = new ConcurrentQueue<KeyValuePair<long, IBinaryStream>>();
+        private readonly ConcurrentDictionary<long, ClientNotificationHandler> _notificationListeners
+            = new ConcurrentDictionary<long, ClientNotificationHandler>();
 
         /** Request id generator. */
         private long _requestId;
@@ -244,10 +239,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <param name="handler">Handler delegate.</param>
         public void AddNotificationHandler(long notificationId, Action<IBinaryStream> handler)
         {
-            _notificationListeners[notificationId] = handler;
-            
-            // TODO: Drain the queue.
-            // TODO: How to avoid a race between queue and listeners? - introduce a class to handle.
+            _notificationListeners.AddOrUpdate(notificationId,
+                _ => new ClientNotificationHandler(_logger, handler),
+                (_, oldHandler) => oldHandler.SetHandler(handler));
         }
 
         /// <summary>
@@ -257,7 +251,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <returns>True when removed, false otherwise.</returns>
         public bool RemoveNotificationHandler(long notificationId)
         {
-            Action<IBinaryStream> unused;
+            ClientNotificationHandler unused;
             return _notificationListeners.TryRemove(notificationId, out unused);
         }
 

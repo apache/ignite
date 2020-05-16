@@ -45,12 +45,12 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Initializes a new instance of <see cref="ClientNotificationHandler"/>.
         /// </summary>
-        /// <param name="logger">Logger.</param>
-        public ClientNotificationHandler(ILogger logger)
+        public ClientNotificationHandler(ILogger logger, Action<IBinaryStream> handler = null)
         {
             Debug.Assert(logger != null);
             
             _logger = logger;
+            _handler = handler;
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Sets the handler.
         /// </summary>
         /// <param name="handler">Handler.</param>
-        public void SetHandler(Action<IBinaryStream> handler)
+        public ClientNotificationHandler SetHandler(Action<IBinaryStream> handler)
         {
             Debug.Assert(handler != null);
             
@@ -88,11 +88,16 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 _handler = handler;
 
-                var queue = _queue;
-                _queue = null;
+                if (_queue != null)
+                {
+                    var queue = _queue;
+                    _queue = null;
 
-                ThreadPool.QueueUserWorkItem(_ => Drain(handler, queue));
+                    ThreadPool.QueueUserWorkItem(_ => Drain(handler, queue));
+                }
             }
+
+            return this;
         }
 
         /// <summary>
