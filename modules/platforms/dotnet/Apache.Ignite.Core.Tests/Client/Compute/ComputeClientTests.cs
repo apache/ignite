@@ -153,6 +153,25 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             // TODO
         }
 
+        /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTaskAsync{TRes}"/> from multiple threads.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskAsyncMultithreaded()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests that <see cref="IComputeClient.ExecuteJavaTaskAsync{TRes}"/> with a long-running job
+        /// does not block other client operations.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskAsyncWithLongJobDoesNotBlockOtherOperations()
+        {
+            // TODO
+        }
+
         /** <inheritdoc /> */
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
