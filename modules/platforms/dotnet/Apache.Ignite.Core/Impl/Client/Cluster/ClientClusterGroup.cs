@@ -64,7 +64,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         /// Constructor.
         /// </summary>
         /// <param name="ignite">Ignite.</param>
-        /// <param name="marsh">Marshaller.</param>
         internal ClientClusterGroup(IgniteClient ignite)
             : this(ignite, ClientClusterGroupProjection.Empty)
         {
