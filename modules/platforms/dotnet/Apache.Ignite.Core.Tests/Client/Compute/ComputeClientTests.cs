@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         /// Tests that <see cref="IIgniteClient.GetCompute"/> always returns the same instance.
         /// </summary>
         [Test]
-        public void GetComputeAlwaysReturnsSameInstance()
+        public void TestGetComputeAlwaysReturnsSameInstance()
         {
             Assert.AreSame(Client.GetCompute(), Client.GetCompute());
         }
