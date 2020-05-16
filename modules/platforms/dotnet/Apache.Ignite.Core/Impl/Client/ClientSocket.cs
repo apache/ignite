@@ -291,6 +291,14 @@ namespace Apache.Ignite.Core.Impl.Client
         public ClientProtocolVersion ServerVersion { get; private set; }
 
         /// <summary>
+        /// Gets the marshaller.
+        /// </summary>
+        public Marshaller Marshaller
+        {
+            get { return _marsh; }
+        }
+
+        /// <summary>
         /// Starts waiting for the new message.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
@@ -416,7 +424,7 @@ namespace Apache.Ignite.Core.Impl.Client
             if (statusCode == ClientStatusCode.Success)
             {
                 return readFunc != null 
-                    ? readFunc(new ClientResponseContext(stream, _marsh, _features)) 
+                    ? readFunc(new ClientResponseContext(stream, this)) 
                     : default(T);
             }
 
@@ -687,7 +695,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (writeAction != null)
             {
-                var ctx = new ClientRequestContext(stream, _marsh, _features);
+                var ctx = new ClientRequestContext(stream, this);
                 writeAction(ctx);
                 ctx.FinishMarshal();
             }

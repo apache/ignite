@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         {
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
 
-            var taskId = _ignite.Socket.DoOutInOp(ClientOp.ComputeTaskExecute, ctx =>
+            _ignite.Socket.DoOutInOp(ClientOp.ComputeTaskExecute, ctx =>
                 {
                     var w = ctx.Writer;
 
@@ -55,7 +55,14 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
                     w.WriteString(taskName);
                     w.WriteObject(taskArg);
                 },
-                ctx => ctx.Stream.ReadLong());
+                ctx =>
+                {
+                    var taskId = ctx.Stream.ReadLong();
+                    
+                    // ctx.
+                    
+                    return taskId;
+                });
 
             // TODO: Wait for task completion.
             return default(TRes);
