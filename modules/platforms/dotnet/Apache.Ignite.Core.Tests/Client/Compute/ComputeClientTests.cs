@@ -34,10 +34,13 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/>.
         /// </summary>
         [Test]
-        public void TestExecuteJavaTask()
+        public void TestExecuteJavaTask([Values(true, false)] bool async)
         {
-            var res = Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeInt);
-            
+            var res = async
+                ? Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeInt)
+                : Client.GetCompute().ExecuteJavaTaskAsync<int>(ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeInt)
+                    .Result;
+
             Assert.AreEqual(1, res);
         }
 
