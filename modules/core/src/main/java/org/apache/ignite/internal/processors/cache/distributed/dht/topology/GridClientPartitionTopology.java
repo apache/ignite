@@ -713,9 +713,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @return True if current partition map should be overwritten by new partition map, false in other case.
      */
     private boolean shouldOverridePartitionMap(GridDhtPartitionMap currentMap, GridDhtPartitionMap newMap) {
-        return newMap != null &&
-            (newMap.topologyVersion().compareTo(currentMap.topologyVersion()) > 0 ||
-                newMap.topologyVersion().compareTo(currentMap.topologyVersion()) == 0 && newMap.updateSequence() > currentMap.updateSequence());
+        return newMap != null && newMap.compareTo(currentMap) > 0;
     }
 
     /** {@inheritDoc} */

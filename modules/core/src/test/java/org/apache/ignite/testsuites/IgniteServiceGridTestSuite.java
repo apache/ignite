@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessorSingleN
 import org.apache.ignite.internal.processors.service.GridServiceProcessorStopSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProxyClientReconnectSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProxyNodeStopSelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceProxyTopologyInitializationTest;
 import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
@@ -111,6 +112,7 @@ import org.junit.runners.Suite;
     ServiceInfoSelfTest.class,
     ServiceDeploymentProcessIdSelfTest.class,
     ServiceHotRedeploymentViaDeploymentSpiTest.class,
+    GridServiceProxyTopologyInitializationTest.class,
 })
 public class IgniteServiceGridTestSuite {
 }
