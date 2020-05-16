@@ -45,6 +45,52 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         }
 
         /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with server-side error.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskWithError([Values(true, false)] bool async)
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> throws exception
+        /// when client disconnects during task execution.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskThrowsExceptionOnDisconnect([Values(true, false)] bool async)
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with binary flag.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskWithKeepBinary()
+        {
+            // TODO: Binary mode on server and client.
+        }
+
+        /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with no-failover flag.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskWithNoFailover()
+        {
+            // TODO:
+        }
+
+        /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with no-result-cache flag.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskWithNoResultCache()
+        {
+            // TODO:
+        }
+
+        /// <summary>
         /// Tests that <see cref="IIgniteClient.GetCompute"/> always returns the same instance.
         /// </summary>
         [Test]
