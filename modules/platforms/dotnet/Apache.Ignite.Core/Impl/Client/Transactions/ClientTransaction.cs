@@ -29,6 +29,12 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** Unique  transaction ID.*/
         private readonly int _id;
 
+        /** Ignite. */
+        private readonly IgniteClient _ignite;
+
+        /** Transaction is closed. */
+        private volatile bool _closed; 
+
         // ReSharper disable once InconsistentNaming
         /** Transaction for this thread. */
         [ThreadStatic]
@@ -38,9 +44,10 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Constructor.
         /// </summary>
         /// <param name="id">ID.</param>
-        public ClientTransaction(int id)
+        public ClientTransaction(int id, IgniteClient ignite)
         {
             _id = id;
+            _ignite = ignite;
             THREAD_TX = this;
         }
 
@@ -66,7 +73,42 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            try
+            {
+                Close(false);
+            }
+            finally
+            {
+                GC.SuppressFinalize(this);
+            }
+        }
+
+        private void Close(bool committed)
+        {
+            if (!_closed)
+            {
+                try
+                {
+                    _ignite.Socket.DoOutInOp<object>(ClientOp.TxEnd,
+                        ctx =>
+                        {
+                            ctx.Writer.WriteBoolean(committed);
+                            ctx.Writer.WriteInt(THREAD_TX._id);
+                        },
+                        null);
+                }
+                finally
+                {
+                    _closed = true;
+                }
+
+            }
+        }
+
+        /** <inheritdoc /> */
+        ~ClientTransaction()
+        {
+            Dispose();
         }
     }
 }

@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     /// </summary>
     internal class ClientTransactions : IClientTransactions
     {
+        /** Ignite. */
         private readonly IgniteClient _ignite;
 
         public ClientTransactions(IgniteClient ignite)
@@ -62,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                 ctx => ctx.Reader.ReadInt()
             );
             
-            return new ClientTransaction(txId);
+            return new ClientTransaction(txId, _ignite);
         }
 
         /** <inheritDoc /> */

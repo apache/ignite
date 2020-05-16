@@ -41,6 +41,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 TransactionIsolation.ReadCommitted,
                 TimeSpan.Zero))
             {
+                cache.Put(1, "");
 
             }
         }
