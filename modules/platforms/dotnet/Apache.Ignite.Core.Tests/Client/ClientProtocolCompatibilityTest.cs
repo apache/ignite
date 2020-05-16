@@ -67,6 +67,24 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests that Client Compute throws exception on older protocols.
+        /// </summary>
+        [Test]
+        public void TestComputeThrowsNotSupportedOnVersionsOlderThan170(
+            [Values(0, 1, 2, 3, 4, 5, 6)] short minor)
+        {
+            var version = new ClientProtocolVersion(1, minor, 0);
+            
+            using (var client = GetClient(version))
+            {
+                var compute = client.GetCompute();
+
+                AssertNotSupportedOperation(
+                    () => compute.ExecuteJavaTask<int>("unused", null), version.ToString(), "ClusterIsActive");
+            }
+        }
+
+        /// <summary>
         /// Tests that partition awareness disables automatically on older server versions.
         /// </summary>
         [Test]
