@@ -18,7 +18,9 @@
 namespace Apache.Ignite.Core.Impl.Client.Compute
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -36,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /// <param name="ignite"></param>
         internal ComputeClient(IgniteClient ignite)
         {
-            // TODO: Projection?
+            // TODO: Projection, flags.
             _ignite = ignite;
         }
 
@@ -45,6 +47,14 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         {
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
 
+            return ExecuteJavaTaskAsync<TRes>(taskName, taskArg).Result;
+        }
+
+        /** <inheritdoc /> */
+        public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg)
+        {
+            var tcs = new TaskCompletionSource<TRes>();
+            
             _ignite.Socket.DoOutInOp(ClientOp.ComputeTaskExecute, ctx =>
                 {
                     var w = ctx.Writer;
@@ -59,19 +69,39 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
                 {
                     var taskId = ctx.Stream.ReadLong();
                     
-                    // ctx.
+                    // TODO: Extract common logic to some method like "HandleSingleNotification".
+                    // TODO: Make sure to fail the task on disconnect.
+                    ctx.Socket.AddNotificationHandler(taskId, s =>
+                    {
+                        ctx.Socket.RemoveNotificationHandler(taskId);
+                        
+                        var reader = ctx.Marshaller.StartUnmarshal(s);
+                        var flags = (ClientFlags) reader.ReadShort();
+                        var opCode = (ClientOp) reader.ReadShort();
+
+                        if (opCode != ClientOp.ComputeTaskFinished)
+                        {
+                            tcs.SetException(new IgniteClientException(
+                                string.Format("Invalid server notification code. Expected {0}, but got {1}",
+                                    ClientOp.ComputeTaskFinished, opCode)));
+                        } 
+                        else if ((flags & ClientFlags.Error) == ClientFlags.Error)
+                        {
+                            var status = (ClientStatusCode) reader.ReadInt();
+                            var msg = reader.ReadString();
+                            
+                            tcs.SetException(new IgniteClientException(msg, null, status));
+                        }
+                        else
+                        {
+                            tcs.SetResult(reader.ReadObject<TRes>());
+                        }
+                    });
                     
                     return taskId;
                 });
 
-            // TODO: Wait for task completion.
-            return default(TRes);
-        }
-
-        /** <inheritdoc /> */
-        public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg)
-        {
-            throw new System.NotImplementedException();
+            return tcs.Task;
         }
 
         /** <inheritdoc /> */
