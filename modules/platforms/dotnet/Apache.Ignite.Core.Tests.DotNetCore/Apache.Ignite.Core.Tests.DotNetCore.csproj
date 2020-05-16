@@ -255,6 +255,9 @@
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterGroupTests.cs" Link="ThinClient\Cluster\ClientClusterGroupTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterTests.cs" Link="ThinClient\Cluster\ClientClusterTests.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Compute\ComputeClientDisabledTests.cs">
+      <Link>ThinClient\Compute\ComputeClientDisabledTests.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Compute\ComputeClientTests.cs">
       <Link>ThinClient\Compute\ComputeClientTests.cs</Link>
     </Compile>
