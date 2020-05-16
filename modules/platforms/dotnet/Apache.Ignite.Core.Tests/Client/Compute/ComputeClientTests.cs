@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 {
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Client.Compute;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
@@ -46,6 +47,21 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         public void GetComputeAlwaysReturnsSameInstance()
         {
             Assert.AreSame(Client.GetCompute(), Client.GetCompute());
+        }
+
+        /** <inheritdoc /> */
+        protected override IgniteConfiguration GetIgniteConfiguration()
+        {
+            return new IgniteConfiguration(base.GetIgniteConfiguration())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientConfiguration = new ThinClientConfiguration
+                    {
+                        MaxActiveComputeTasksPerConnection = 10
+                    }
+                }
+            };
         }
     }
 }
