@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Client
     using System;
     using System.Collections;
     using System.Collections.Concurrent;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
@@ -337,12 +336,11 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             var stream = new BinaryHeapStream(response);
             var requestId = stream.ReadLong();
-            
-            // TODO: Check if response in a Notification
-            // When a notification is not registered - put it to a queue (registration may come later)
-            // TODO: Backpressure can be controlled by the notification handler (where this is needed, e.g. cont query):
-            // we will send notifications in the receiver thread,
-            // and listener can block the thread if the queue hits the limit.
+
+            if (HandleNotification(requestId, stream))
+            {
+                return;
+            }
 
             Request req;
             if (!_requests.TryRemove(requestId, out req))
@@ -360,6 +358,29 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 req.CompletionSource.TrySetResult(stream);
             }
+        }
+
+        /// <summary>
+        /// Handles the notification message, if present in the given stream.
+        /// </summary>
+        private bool HandleNotification(long requestId, BinaryHeapStream stream)
+        {
+            if (ServerVersion < Ver160)
+            {
+                return false;
+            }
+            
+            var flags = (ClientFlags) stream.ReadShort();
+            stream.Seek(-2, SeekOrigin.Current);
+
+            if ((flags & ClientFlags.Notification) != ClientFlags.Notification)
+            {
+                return false;
+            }
+
+            _notificationListeners.GetOrAdd(requestId, _ => new ClientNotificationHandler(_logger)).Handle(stream);
+                    
+            return true;
         }
 
         /// <summary>
