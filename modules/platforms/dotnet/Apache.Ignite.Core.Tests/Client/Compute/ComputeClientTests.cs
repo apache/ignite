@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Compute
 {
-    using System.Threading;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Configuration;
@@ -30,6 +29,14 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
     /// </summary>
     public class ComputeClientTests : ClientTestBase
     {
+        /** */
+        private const string TestResultCacheTask =
+            "org.apache.ignite.internal.client.thin.ComputeTaskTest.TestResultCacheTask";
+        
+        /** */
+        private const string TestFailoverTask =
+            "org.apache.ignite.internal.client.thin.ComputeTaskTest.TestFailoverTask";
+        
         /// <summary>
         /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/>.
         /// </summary>
@@ -87,7 +94,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskWithNoResultCache()
         {
-            // TODO:
+            var computeWithCache = Client.GetCompute();
+            var computeWithNoCache = Client.GetCompute().WithNoResultCache();
         }
 
         /// <summary>
@@ -97,6 +105,52 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         public void TestGetComputeAlwaysReturnsSameInstance()
         {
             Assert.AreSame(Client.GetCompute(), Client.GetCompute());
+        }
+
+        /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with cancellation.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskAsyncCancellation()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with custom cluster group.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskWithClusterGroup()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with custom cluster group.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskWithMixedModifiers()
+        {
+            // TODO: see testComputeWithMixedModificators in Java
+        }
+
+        /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with unknown task class.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskWithUnknownClass()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with exceeded
+        /// <see cref="ThinClientConfiguration.MaxActiveComputeTasksPerConnection"/>.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskWithExceededTaskLimit()
+        {
+            // TODO
         }
 
         /** <inheritdoc /> */
