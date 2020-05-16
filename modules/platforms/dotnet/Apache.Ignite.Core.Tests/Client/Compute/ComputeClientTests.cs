@@ -96,6 +96,9 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             var computeWithCache = Client.GetCompute();
             var computeWithNoCache = Client.GetCompute().WithNoResultCache();
+            
+            Assert.IsTrue(computeWithCache.ExecuteJavaTask<bool>(TestResultCacheTask, null));
+            Assert.IsFalse(computeWithNoCache.ExecuteJavaTask<bool>(TestResultCacheTask, null));
         }
 
         /// <summary>
