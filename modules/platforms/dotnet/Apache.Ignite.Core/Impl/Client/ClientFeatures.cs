@@ -48,13 +48,14 @@ namespace Apache.Ignite.Core.Impl.Client
                 {ClientOp.ClusterGroupGetNodeIds, new ClientProtocolVersion(1, 5, 0)},
                 {ClientOp.ClusterGroupGetNodesInfo, new ClientProtocolVersion(1, 5, 0)},
             };
-        
+
         /** */
-        private static readonly Dictionary<ClientOp, ClientBitmaskFeature> OpFeature = 
+        private static readonly Dictionary<ClientOp, ClientBitmaskFeature> OpFeature =
             new Dictionary<ClientOp, ClientBitmaskFeature>
-        {
-            {ClientOp.ClusterGroupGetNodesEndpoints, ClientBitmaskFeature.ClusterGroupGetNodesEndpoints}
-        };
+            {
+                {ClientOp.ClusterGroupGetNodesEndpoints, ClientBitmaskFeature.ClusterGroupGetNodesEndpoints},
+                {ClientOp.ComputeTaskExecute, ClientBitmaskFeature.ExecuteTaskByName}
+            };
         
         /** */
         private readonly ClientProtocolVersion _protocolVersion;
