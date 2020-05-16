@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
     /// Client compute flags.
     /// </summary>
     [Flags]
-    public enum ComputeClientFlags
+    public enum ComputeClientFlags : byte
     {
         None = 0,
         NoFailover = 1,

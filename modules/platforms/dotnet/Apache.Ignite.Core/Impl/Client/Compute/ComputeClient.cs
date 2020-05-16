@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Client.Compute
 {
     using System;
-    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
@@ -63,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
                     var w = ctx.Writer;
 
                     w.WriteInt(0); // TODO: Projection.
-                    w.WriteByte(0); // TODO: Flags
+                    w.WriteByte((byte) _flags);
                     w.WriteLong(0); // TODO: Timeout
                     w.WriteString(taskName);
                     w.WriteObject(taskArg);
@@ -116,13 +115,17 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /** <inheritdoc /> */
         public IComputeClient WithNoFailover()
         {
-            throw new NotImplementedException();
+            var flags = _flags | ComputeClientFlags.NoFailover;
+
+            return flags != _flags ? new ComputeClient(_ignite, flags) : this;
         }
 
         /** <inheritdoc /> */
         public IComputeClient WithNoResultCache()
         {
-            throw new NotImplementedException();
+            var flags = _flags | ComputeClientFlags.NoResultCache;
+
+            return flags != _flags ? new ComputeClient(_ignite, flags) : this;
         }
     }
 }
