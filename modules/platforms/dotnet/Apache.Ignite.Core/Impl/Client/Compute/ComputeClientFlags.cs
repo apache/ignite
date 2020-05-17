@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
     {
         None = 0,
         NoFailover = 1,
-        NoResultCache = 2
+        NoResultCache = 2,
+        KeepBinary = 4
     }
 }

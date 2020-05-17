@@ -118,7 +118,13 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
                 ? new ComputeClient(_ignite, flags, _timeout, _clusterGroup) 
                 : this;
         }
-        
+
+        /** <inheritdoc /> */
+        public IComputeClient WithKeepBinary()
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Writes the java task.
         /// </summary>

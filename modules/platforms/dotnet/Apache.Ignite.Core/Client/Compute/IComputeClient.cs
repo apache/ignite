@@ -73,5 +73,12 @@ namespace Apache.Ignite.Core.Client.Compute
         /// </summary>
         /// <returns>New Compute instance with disabled result cache.</returns>
         IComputeClient WithNoResultCache();
+        
+        /// <summary>
+        /// Returns a new instance of <see cref="IComputeClient"/> with binary mode enabled:
+        /// Java task argument (on server side) and result (on client side) won't be deserialized.
+        /// </summary>
+        /// <returns>New Compute instance with binary mode enabled.</returns>
+        IComputeClient WithKeepBinary();
     }
 }
