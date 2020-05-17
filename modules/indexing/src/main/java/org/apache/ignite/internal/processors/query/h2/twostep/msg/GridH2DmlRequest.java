@@ -238,7 +238,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
      * @return {@code this}.
      */
     public GridH2DmlRequest flags(int flags) {
-        assert flags >= 0 && flags <= 255: flags;
+        assert flags >= 0 && flags <= 255 : flags;
 
         this.flags = (byte)flags;
 

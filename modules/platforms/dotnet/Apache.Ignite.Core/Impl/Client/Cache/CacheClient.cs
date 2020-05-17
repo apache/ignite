@@ -562,7 +562,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public CacheClientConfiguration GetConfiguration()
         {
             return DoOutInOp(ClientOp.CacheGetConfiguration, null,
-                ctx => new CacheClientConfiguration(ctx.Stream, ctx.ProtocolVersion));
+                ctx => new CacheClientConfiguration(ctx.Stream, ctx.Features));
         }
 
         /** <inheritDoc /> */
@@ -759,6 +759,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             var flags = ClientCacheRequestFlag.None;
             if (_expiryPolicy != null)
             {
+                ctx.Features.ValidateWithExpiryPolicyFlag();
+                ctx.Stream.WriteByte((byte) ClientCacheRequestFlag.WithExpiryPolicy);
                 // Check whether WithExpiryPolicy is supported by the protocol here - 
                 // ctx.ProtocolVersion refers to exact connection for this request. 
                 ClientUtils.ValidateOp(

@@ -115,7 +115,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override  protected long nextPartitionCounter(IgniteInternalTx tx, @Nullable Long primaryCntr) {
+    @Override protected long nextPartitionCounter(IgniteInternalTx tx, @Nullable Long primaryCntr) {
         try {
             return locPart.nextUpdateCounter(cctx.cacheId(), tx, primaryCntr);
         }
@@ -683,7 +683,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
             if (cctx.store().isLocal())
                 cctx.store().remove(null, key);
 
-            updatePlatformNearCache(null, null);
+            updatePlatformCache(null, null);
 
             rmv = true;
 

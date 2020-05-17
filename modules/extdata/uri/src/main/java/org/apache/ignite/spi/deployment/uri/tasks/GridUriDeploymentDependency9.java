@@ -17,11 +17,10 @@
 
 package org.apache.ignite.spi.deployment.uri.tasks;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * This class is used by {@link GridUriDeploymentTestTask9} which is loaded from a JAR file.
@@ -49,7 +48,7 @@ public class GridUriDeploymentDependency9 {
         catch (IOException e) {
             e.printStackTrace();
         }
-        finally{
+        finally {
             U.close(in, null);
         }
 

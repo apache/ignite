@@ -447,7 +447,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
      * @throws Exception If any error occurs.
      */
     @Test
-    public void testMultipleStartOnCoordinatorStop() throws Exception{
+    public void testMultipleStartOnCoordinatorStop() throws Exception {
         for (int k = 0; k < 3; k++) {
             log.info("Iteration: " + k);
 

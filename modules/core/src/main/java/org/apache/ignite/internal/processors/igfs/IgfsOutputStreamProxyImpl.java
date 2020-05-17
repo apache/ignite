@@ -126,7 +126,7 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
             // Increment metrics.
             bytes += writeLen;
 
-            byte [] dataBuf = new byte[writeLen];
+            byte[] dataBuf = new byte[writeLen];
 
             if (data instanceof ByteBuffer) {
                 ByteBuffer byteBuf = (ByteBuffer)data;

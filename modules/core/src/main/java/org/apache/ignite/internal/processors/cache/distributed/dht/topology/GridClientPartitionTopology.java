@@ -355,11 +355,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
 
         if (exchFut.context().events().hasServerLeft()) {
-            List<DiscoveryEvent> evts0 = exchFut.context().events().events();
-
-            for (int i = 0; i < evts0.size(); i++) {
-                DiscoveryEvent evt = evts0.get(i);
-
+            for (DiscoveryEvent evt : exchFut.context().events().events()) {
                 if (ExchangeDiscoveryEvents.serverLeftEvent(evt))
                     removeNode(evt.eventNode().id());
             }
@@ -717,9 +713,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @return True if current partition map should be overwritten by new partition map, false in other case.
      */
     private boolean shouldOverridePartitionMap(GridDhtPartitionMap currentMap, GridDhtPartitionMap newMap) {
-        return newMap != null &&
-            (newMap.topologyVersion().compareTo(currentMap.topologyVersion()) > 0 ||
-                newMap.topologyVersion().compareTo(currentMap.topologyVersion()) == 0 && newMap.updateSequence() > currentMap.updateSequence());
+        return newMap != null && newMap.compareTo(currentMap) > 0;
     }
 
     /** {@inheritDoc} */

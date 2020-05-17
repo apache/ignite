@@ -20,11 +20,13 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
@@ -45,6 +47,9 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         public const int DfltBusywaitSleepInterval = 200;
+
+        /** System cache name. */
+        public const string utilityCacheName = "ignite-sys-cache";
 
         /** Work dir. */
         private static readonly string WorkDir =
@@ -241,6 +246,45 @@ namespace Apache.Ignite.Core.Tests
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Waits for particular topology on specific cache (system cache by default).
+        /// </summary>
+        /// <param name="grid">Grid.</param>
+        /// <param name="waitingTop">Topology version.</param>
+        /// <param name="cacheName">Cache name.</param>
+        /// <param name="timeout">Timeout.</param>
+        /// <returns>
+        ///   <c>True</c> if topology took required size.
+        /// </returns>
+        public static bool WaitTopology(this IIgnite grid, AffinityTopologyVersion waitingTop,
+            string cacheName = utilityCacheName, int timeout = 30000)
+        {
+            int checkPeriod = 200;
+
+            // Wait for late affinity.
+            for (var iter = 0;; iter++)
+            {
+                var result = grid.GetCompute().ExecuteJavaTask<long[]>(
+                    "org.apache.ignite.platform.PlatformCacheAffinityVersionTask", cacheName);
+                var top = new AffinityTopologyVersion(result[0], (int) result[1]);
+                if (top.CompareTo(waitingTop) >= 0)
+                {
+                    Console.Out.WriteLine("Current topology: " + top);
+                    break;
+                }
+
+                if (iter % 10 == 0)
+                    Console.Out.WriteLine("Waiting topology cur=" + top + " wait=" + waitingTop);
+
+                if (iter * checkPeriod > timeout)
+                    return false;
+
+                Thread.Sleep(checkPeriod);
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -446,6 +490,32 @@ namespace Apache.Ignite.Core.Tests
             }
 
             throw new InvalidOperationException("Could not resolve Ignite.NET source directory.");
+        }
+        
+        /// <summary>
+        /// Gets a value indicating whether specified partition is reserved.
+        /// </summary>
+        public static bool IsPartitionReserved(IIgnite ignite, string cacheName, int part)
+        {
+            Debug.Assert(ignite != null);
+            Debug.Assert(cacheName != null);
+            
+            const string taskName = "org.apache.ignite.platform.PlatformIsPartitionReservedTask";
+
+            return ignite.GetCompute().ExecuteJavaTask<bool>(taskName, new object[] {cacheName, part});
+        }
+
+        /// <summary>
+        /// Gets the innermost exception.
+        /// </summary>
+        public static Exception GetInnermostException(this Exception ex)
+        {
+            while (ex.InnerException != null)
+            {
+                ex = ex.InnerException;
+            }
+
+            return ex;
         }
     }
 }

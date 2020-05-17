@@ -98,7 +98,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
             try {
                 ComputeTaskFuture<String> fut;
 
-                synchronized(mux){
+                synchronized (mux) {
                     fut = ignite1.compute().executeAsync(JobTask.class, null);
 
                     mux.wait();
@@ -171,7 +171,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
                     if (!nodeId.equals(argument(0))) {
                         try {
-                            synchronized(mux) {
+                            synchronized (mux) {
                                 mux.notifyAll();
                             }
 

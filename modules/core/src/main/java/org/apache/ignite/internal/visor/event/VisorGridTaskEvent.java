@@ -128,7 +128,7 @@ public class VisorGridTaskEvent extends VisorGridEvent {
 
         U.writeString(out, taskName);
         U.writeString(out, taskClsName);
-        U.writeGridUuid(out, taskSesId);
+        U.writeIgniteUuid(out, taskSesId);
         out.writeBoolean(internal);
     }
 
@@ -140,7 +140,7 @@ public class VisorGridTaskEvent extends VisorGridEvent {
 
         taskName = U.readString(in);
         taskClsName = U.readString(in);
-        taskSesId = U.readGridUuid(in);
+        taskSesId = U.readIgniteUuid(in);
         internal = in.readBoolean();
     }
 

@@ -61,7 +61,7 @@ public abstract class IgfsThread extends Thread {
                 cleanup();
             }
             // Catch all.
-            catch (Throwable  e) {
+            catch (Throwable e) {
                 X.error("Failed to clean up IGFS ad-hoc thread: " + e.getMessage());
 
                 e.printStackTrace();

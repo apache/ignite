@@ -132,11 +132,12 @@ namespace Apache.Ignite.Core
         /// <typeparam name="TV">Cache value type.</typeparam>
         /// <param name="configuration">Cache configuration.</param>
         /// /// <param name="nearConfiguration">Near cache configuration for client.</param>
-        /// <param name="platformNearConfiguration">Platform near configuration. Can be null.
-        /// When not null, native .NET near cache is created additionally.</param>
+        /// <param name="platformCacheConfiguration">Platform cache configuration. Can be null.
+        /// When not null, native .NET cache is created additionally.</param>
         /// <returns>Existing or newly created cache.</returns>
+        [IgniteExperimental]
         ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, 
-            NearCacheConfiguration nearConfiguration, PlatformNearCacheConfiguration platformNearConfiguration);
+            NearCacheConfiguration nearConfiguration, PlatformCacheConfiguration platformCacheConfiguration);
 
         /// <summary>
         /// Dynamically starts new cache using template configuration.
@@ -174,11 +175,12 @@ namespace Apache.Ignite.Core
         /// <typeparam name="TV">Cache value type.</typeparam>
         /// <param name="configuration">Cache configuration.</param>
         /// <param name="nearConfiguration">Near cache configuration for client.</param>
-        /// <param name="platformNearConfiguration">Platform near configuration. Can be null.
-        /// When not null, native .NET near cache is created additionally.</param>
+        /// <param name="platformCacheConfiguration">Platform cache configuration. Can be null.
+        /// When not null, native .NET cache is created additionally.</param>
         /// <returns>Existing or newly created cache.</returns>
+        [IgniteExperimental]
         ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, 
-            NearCacheConfiguration nearConfiguration, PlatformNearCacheConfiguration platformNearConfiguration);
+            NearCacheConfiguration nearConfiguration, PlatformCacheConfiguration platformCacheConfiguration);
 
         /// <summary>
         /// Destroys dynamically created (with <see cref="CreateCache{TK,TV}(string)"/> or 
@@ -302,13 +304,14 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="configuration">The configuration.</param>
-        /// <param name="platformConfiguration">Platform near configuration. Can be null.
-        /// When not null, native .NET near cache is created additionally.</param>
+        /// <param name="platformConfiguration">Platform cache configuration. Can be null.
+        /// When not null, native .NET cache is created additionally.</param>
         /// <typeparam name="TK">Cache key type.</typeparam>
         /// <typeparam name="TV">Cache value type.</typeparam>
         /// <returns>Near cache instance.</returns>
+        [IgniteExperimental]
         ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration,
-            PlatformNearCacheConfiguration platformConfiguration);
+            PlatformCacheConfiguration platformConfiguration);
 
         /// <summary>
         /// Gets existing near cache with the given name or creates a new one.
@@ -325,13 +328,14 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="configuration">The configuration.</param>
-        /// <param name="platformConfiguration">Platform near configuration. Can be null.
-        /// When not null, native .NET near cache is created additionally.</param>
+        /// <param name="platformConfiguration">Platform cache configuration. Can be null.
+        /// When not null, native .NET cache is created additionally.</param>
         /// <typeparam name="TK">Cache key type.</typeparam>
         /// <typeparam name="TV">Cache value type.</typeparam>
         /// <returns>Near cache instance.</returns>
+        [IgniteExperimental]
         ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration,
-            PlatformNearCacheConfiguration platformConfiguration);
+            PlatformCacheConfiguration platformConfiguration);
 
         /// <summary>
         /// Gets the collection of names of currently available caches, or empty collection if there are no caches.

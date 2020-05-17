@@ -164,7 +164,7 @@ public class GridifySetToValueTarget implements GridifySetToValueTargetInterface
 
         long maximum = input.next();
 
-        while(input.hasNext()) {
+        while (input.hasNext()) {
             Long val = input.next();
 
             if (val > maximum)
@@ -191,7 +191,7 @@ public class GridifySetToValueTarget implements GridifySetToValueTargetInterface
 
         long maximum = input.nextElement();
 
-        while(input.hasMoreElements()) {
+        while (input.hasMoreElements()) {
             Long val = input.nextElement();
 
             if (val > maximum)

@@ -37,6 +37,7 @@ import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -114,7 +115,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(configureCache("A"), configureCache("B"));
 
-        cfg.setSqlQueryHistorySize(QUERY_HISTORY_SIZE);
+        cfg.setSqlConfiguration(new SqlConfiguration().setSqlQueryHistorySize(QUERY_HISTORY_SIZE));
 
         return cfg;
     }

@@ -120,7 +120,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
      * @param max Max level.
      */
     private static void checkCompressionLevelBounds(int compressLevel, int min, int max) {
-        if (compressLevel < min  || compressLevel > max) {
+        if (compressLevel < min || compressLevel > max) {
             throw new IllegalArgumentException("Compression level for LZ4 must be between " + min +
                 " and " + max + ".");
         }

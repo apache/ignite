@@ -426,10 +426,12 @@ public class ReducePartitionMapper {
                     continue;
                 }
                 else if (!F.isEmpty(dataNodes(cctx.groupId(), NONE))) {
-                    logRetry("Failed to calculate nodes for SQL query (partition has no owners, but corresponding " +
-                        "cache group has data nodes) [cacheIds=" + cacheIds +
-                        ", cacheName=" + cctx.name() + ", cacheId=" + cctx.cacheId() + ", part=" + p +
-                        ", cacheGroupId=" + cctx.groupId() + ']');
+                    if (log.isInfoEnabled()) {
+                        logRetry("Failed to calculate nodes for SQL query (partition has no owners, but corresponding " +
+                            "cache group has data nodes) [cacheIds=" + cacheIds +
+                            ", cacheName=" + cctx.name() + ", cacheId=" + cctx.cacheId() + ", part=" + p +
+                            ", cacheGroupId=" + cctx.groupId() + ']');
+                    }
 
                     return null; // Retry.
                 }
@@ -461,10 +463,12 @@ public class ReducePartitionMapper {
 
                     if (F.isEmpty(owners)) {
                         if (!F.isEmpty(dataNodes(extraCctx.groupId(), NONE))) {
-                            logRetry("Failed to calculate nodes for SQL query (partition has no owners, but " +
-                                "corresponding cache group has data nodes) [ cacheIds=" + cacheIds + ", cacheName=" + extraCctx.name() +
-                                ", cacheId=" + extraCctx.cacheId() + ", part=" + p +
-                                ", cacheGroupId=" + extraCctx.groupId() + ']');
+                            if (log.isInfoEnabled()) {
+                                logRetry("Failed to calculate nodes for SQL query (partition has no owners, but " +
+                                    "corresponding cache group has data nodes) [ cacheIds=" + cacheIds + ", cacheName=" + extraCctx.name() +
+                                    ", cacheId=" + extraCctx.cacheId() + ", part=" + p +
+                                    ", cacheGroupId=" + extraCctx.groupId() + ']');
+                            }
 
                             return null; // Retry.
                         }
@@ -479,10 +483,12 @@ public class ReducePartitionMapper {
                         partLocs[p].retainAll(owners); // Intersection of owners.
 
                         if (partLocs[p].isEmpty()) {
-                            logRetry("Failed to calculate nodes for SQL query (caches have no common data nodes for " +
-                                "partition) [cacheIds=" + cacheIds +
-                                ", lastCacheName=" + extraCctx.name() + ", lastCacheId=" + extraCctx.cacheId() +
-                                ", part=" + p + ']');
+                            if (log.isInfoEnabled()) {
+                                logRetry("Failed to calculate nodes for SQL query (caches have no common data nodes for " +
+                                    "partition) [cacheIds=" + cacheIds +
+                                    ", lastCacheName=" + extraCctx.name() + ", lastCacheId=" + extraCctx.cacheId() +
+                                    ", part=" + p + ']');
+                            }
 
                             return null; // Intersection is empty -> retry.
                         }
@@ -511,10 +517,12 @@ public class ReducePartitionMapper {
                     partLoc.retainAll(dataNodes);
 
                     if (partLoc.isEmpty()) {
-                        logRetry("Failed to calculate nodes for SQL query (caches have no common data nodes for " +
-                            "partition) [cacheIds=" + cacheIds +
-                            ", lastReplicatedCacheName=" + extraCctx.name() +
-                            ", lastReplicatedCacheId=" + extraCctx.cacheId() + ", part=" + part + ']');
+                        if (log.isInfoEnabled()) {
+                            logRetry("Failed to calculate nodes for SQL query (caches have no common data nodes for " +
+                                "partition) [cacheIds=" + cacheIds +
+                                ", lastReplicatedCacheName=" + extraCctx.name() +
+                                ", lastReplicatedCacheId=" + extraCctx.cacheId() + ", part=" + part + ']');
+                        }
 
                         return null; // Retry.
                     }
@@ -563,12 +571,12 @@ public class ReducePartitionMapper {
 
         // The main cache is allowed to be partitioned.
         if (!cctx.isReplicated()) {
-            assert cacheIds.size() > 1: "no extra replicated caches with partitioned main cache";
+            assert cacheIds.size() > 1 : "no extra replicated caches with partitioned main cache";
 
             // Just replace the main cache with the first one extra.
             cctx = cacheContext(cacheIds.get(i++));
 
-            assert cctx.isReplicated(): "all the extra caches must be replicated here";
+            assert cctx.isReplicated() : "all the extra caches must be replicated here";
         }
 
         Set<ClusterNode> nodes = replicatedUnstableDataNodes(cctx);

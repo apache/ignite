@@ -141,7 +141,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         final IgniteConfiguration cfg = getConfiguration(igniteInstanceName); // stub - won't be used at node startup
 
-        IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, log, locJvmInstance == null ? null: (x) -> locJvmInstance, true) {
+        IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, log, locJvmInstance == null ? null : (x) -> locJvmInstance, true) {
             @Override protected IgniteLogger logger(IgniteLogger log, Object ctgr) {
                 return ListenedGridTestLog4jLogger.createLogger(ctgr + "#" + ver.replaceAll("\\.", "_"));
             }

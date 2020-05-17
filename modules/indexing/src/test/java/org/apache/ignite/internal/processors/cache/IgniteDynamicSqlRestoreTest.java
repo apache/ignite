@@ -249,7 +249,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10802")) {
             try (PreparedStatement stmt = conn.prepareStatement(
                 "SELECT COUNT(*) FROM Person USE INDEX(PERSON_FIRST_NAME_IDX) WHERE FIRST_NAME=?")) {
-                for (int i = 0; i < entryCnt; i ++) {
+                for (int i = 0; i < entryCnt; i++) {
                     stmt.setString(1, String.valueOf(i));
 
                     try (ResultSet rs = stmt.executeQuery()) {

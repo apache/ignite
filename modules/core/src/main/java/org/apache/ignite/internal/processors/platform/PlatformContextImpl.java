@@ -89,7 +89,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     private static final Set<Integer> evtTyps;
 
     /** Whether to use thread-local data to update platform near cache. */
-    private static final ThreadLocal<Boolean> nearUpdateUseThreadLocal = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> platformCacheUpdateUseThreadLocal = new ThreadLocal<>();
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -595,21 +595,21 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isNativeNearCacheSupported() {
+    @Override public boolean isPlatformCacheSupported() {
         return platform.equals(PlatformUtils.PLATFORM_DOTNET);
     }
 
     /** {@inheritDoc} */
-    @Override public void updateNearCache(int cacheId, byte[] keyBytes, byte[] valBytes,
-                                          int part, AffinityTopologyVersion ver) {
-        if (!isNativeNearCacheSupported())
+    @Override public void updatePlatformCache(int cacheId, byte[] keyBytes, byte[] valBytes,
+                                              int part, AffinityTopologyVersion ver) {
+        if (!isPlatformCacheSupported())
             return;
 
-        Boolean useTls = nearUpdateUseThreadLocal.get();
+        Boolean useTls = platformCacheUpdateUseThreadLocal.get();
         if (useTls != null && useTls) {
             long cacheIdAndPartition = ((long)part << 32) + cacheId;
 
-            gateway().nearCacheUpdateFromThreadLocal(
+            gateway().platformCacheUpdateFromThreadLocal(
                     cacheIdAndPartition, ver.topologyVersion(), ver.minorTopologyVersion());
 
             return;
@@ -639,18 +639,18 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
             out.synchronize();
 
-            gateway().nearCacheUpdate(mem0.pointer());
+            gateway().platformCacheUpdate(mem0.pointer());
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void enableThreadLocalForNearUpdate() {
-        nearUpdateUseThreadLocal.set(true);
+    @Override public void enableThreadLocalForPlatformCacheUpdate() {
+        platformCacheUpdateUseThreadLocal.set(true);
     }
 
     /** {@inheritDoc} */
-    @Override public void disableThreadLocalForNearUpdate() {
-        nearUpdateUseThreadLocal.set(false);
+    @Override public void disableThreadLocalForPlatformCacheUpdate() {
+        platformCacheUpdateUseThreadLocal.set(false);
     }
 
     /** {@inheritDoc} */

@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.text.DateFormat;
-import java.util.Locale;
-
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.BeanProperty;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
@@ -33,15 +34,25 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import com.fasterxml.jackson.databind.ser.SerializerFactory;
-
+import java.io.IOException;
+import java.sql.Date;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.util.Locale;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -52,6 +63,13 @@ public class GridJettyObjectMapper extends ObjectMapper {
      * Default constructor.
      */
     public GridJettyObjectMapper() {
+        this(null);
+    }
+
+    /**
+     * @param ctx Defines a kernal context to enable deserialization into the Ignite binary object.
+     */
+    GridJettyObjectMapper(GridKernalContext ctx) {
         super(null, new CustomSerializerProvider(), null);
 
         setDateFormat(DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US));
@@ -65,7 +83,24 @@ public class GridJettyObjectMapper extends ObjectMapper {
         module.addSerializer(GridCacheSqlIndexMetadata.class, IGNITE_SQL_INDEX_METADATA_SERIALIZER);
         module.addSerializer(BinaryObjectImpl.class, IGNITE_BINARY_OBJECT_SERIALIZER);
 
+        // Standard serializer loses nanoseconds.
+        module.addSerializer(Timestamp.class, IGNITE_TIMESTAMP_SERIALIZER);
+        module.addDeserializer(Timestamp.class, IGNITE_TIMESTAMP_DESERIALIZER);
+
+        // Standard serializer may incorrectly apply timezone.
+        module.addSerializer(Date.class, IGNITE_SQLDATE_SERIALIZER);
+        module.addDeserializer(Date.class, IGNITE_SQLDATE_DESERIALIZER);
+
+        if (ctx != null) {
+            module.addDeserializer(BinaryObject.class, new IgniteBinaryObjectJsonDeserializer(ctx));
+
+            IgnitePredicate<String> clsFilter = ctx.marshallerContext().classNameFilter();
+
+            setDefaultTyping(new RestrictedTypeResolverBuilder(clsFilter).init(JsonTypeInfo.Id.CLASS, null));
+        }
+
         configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         registerModule(module);
     }
@@ -247,7 +282,10 @@ public class GridJettyObjectMapper extends ObjectMapper {
                                 throw ser.mappingException("Failed convert to JSON object for circular references");
                         }
 
-                        gen.writeObjectField(name, val);
+                        if (val instanceof BinaryEnumObjectImpl)
+                            gen.writeObjectField(name, ((BinaryObject)val).enumName());
+                        else
+                            gen.writeObjectField(name, val);
                     }
 
                     gen.writeEndObject();
@@ -264,4 +302,64 @@ public class GridJettyObjectMapper extends ObjectMapper {
             }
         }
     };
+
+    /** Custom serializer for {@link java.sql.Timestamp}. */
+    private static final JsonSerializer<Timestamp> IGNITE_TIMESTAMP_SERIALIZER = new JsonSerializer<Timestamp>() {
+        /** {@inheritDoc} */
+        @Override public void serialize(Timestamp timestamp, JsonGenerator gen,
+            SerializerProvider provider) throws IOException {
+            gen.writeString(timestamp.toString());
+        }
+    };
+
+    /** Custom serializer for {@link java.sql.Date}. */
+    private static final JsonSerializer<Date> IGNITE_SQLDATE_SERIALIZER = new JsonSerializer<Date>() {
+        /** {@inheritDoc} */
+        @Override public void serialize(Date date, JsonGenerator gen, SerializerProvider prov) throws IOException {
+            gen.writeString(date.toString());
+        }
+    };
+
+    /** Custom deserializer for {@link java.sql.Timestamp}. */
+    private static final JsonDeserializer<Timestamp> IGNITE_TIMESTAMP_DESERIALIZER = new JsonDeserializer<Timestamp>() {
+        /** {@inheritDoc} */
+        @Override public Timestamp deserialize(JsonParser parser,
+            DeserializationContext ctx) throws IOException, JsonProcessingException {
+            return Timestamp.valueOf(parser.getText());
+        }
+    };
+
+    /** Custom deserializer for {@link java.sql.Date}. */
+    private static final JsonDeserializer<Date> IGNITE_SQLDATE_DESERIALIZER = new JsonDeserializer<Date>() {
+        /** {@inheritDoc} */
+        @Override public Date deserialize(JsonParser parser,
+            DeserializationContext ctx) throws IOException, JsonProcessingException {
+            return Date.valueOf(parser.getText());
+        }
+    };
+
+    /** */
+    private static class RestrictedTypeResolverBuilder extends DefaultTypeResolverBuilder {
+        /** */
+        private final IgnitePredicate<String> clsFilter;
+
+        /**
+         * @param clsFilter Class name filter.
+         */
+        public RestrictedTypeResolverBuilder(IgnitePredicate<String> clsFilter) {
+            super(DefaultTyping.NON_FINAL);
+
+            this.clsFilter = clsFilter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean useForType(JavaType type) {
+            String clsName = type.getRawClass().getName();
+
+            if (!clsFilter.apply(clsName))
+                throw new IgniteException("Deserialization of class " + clsName + " is disallowed.");
+
+            return false;
+        }
+    }
 }

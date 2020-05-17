@@ -67,7 +67,6 @@
         <easymock.version>3.4</easymock.version>
         <ezmorph.bundle.version>1.0.6_1</ezmorph.bundle.version>
         <ezmorph.version>1.0.6</ezmorph.version>
-        <flume.ng.version>1.7.0</flume.ng.version>
         <guava.retrying.version>2.0.0</guava.retrying.version>
         <guava.version>25.1-jre</guava.version>
         <guava14.version>14.0.1</guava14.version>
@@ -772,6 +771,7 @@
                                     <configLocation>../checkstyle/checkstyle.xml</configLocation>
                                     <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
                                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                                    <excludes>**/generated/**/*</excludes>
                                 </configuration>
                             </execution>
                         </executions>
@@ -867,6 +867,8 @@
                                         <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
+                                        <exclude>.travis.yml</exclude>
+                                        <exclude>.github/PULL_REQUEST_TEMPLATE.md</exclude>
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
                                         <exclude>**/DEVNOTES*.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>

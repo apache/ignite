@@ -811,7 +811,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         return GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @Override public boolean applyx() {
-                return actualCount(srvcName, g.services().serviceDescriptors())  == expectedDeps;
+                return actualCount(srvcName, g.services().serviceDescriptors()) == expectedDeps;
             }
         }, 12_000);
     }

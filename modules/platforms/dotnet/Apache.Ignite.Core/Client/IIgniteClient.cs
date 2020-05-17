@@ -135,5 +135,11 @@ namespace Apache.Ignite.Core.Client
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
             Justification = "Consistency with EndPoint class name.")]
         EndPoint LocalEndPoint { get; }
+
+        /// <summary>
+        /// Gets all active connections. Ignite Thin Client maintains connections to multiple server nodes when
+        /// <see cref="IgniteClientConfiguration.EnablePartitionAwareness"/> is true.
+        /// </summary>
+        IEnumerable<IClientConnection> GetConnections();
     }
 }

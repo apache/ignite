@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -108,6 +109,10 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
 
         awaitPartitionMapExchange();
 
+        forceCheckpoint();
+
+        enableCheckpoints(G.allGrids(), false);
+
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", "--check-crc", CACHE_NAME));
@@ -136,6 +141,10 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
 
         awaitPartitionMapExchange();
 
+        forceCheckpoint();
+
+        enableCheckpoints(G.allGrids(), false);
+
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
@@ -149,7 +158,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
      *
      * @throws Exception
      */
-    private Ignite prepareGridForTest() throws Exception{
+    private Ignite prepareGridForTest() throws Exception {
         Ignite ignite = startGrids(GRID_CNT);
 
         ignite.cluster().active(true);

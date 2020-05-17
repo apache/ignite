@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Cache.Near;
+    using Apache.Ignite.Core.Impl.Cache.Platform;
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Client.Cluster;
     using Apache.Ignite.Core.Impl.Client.Transactions;
@@ -67,6 +67,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Node info cache. */
         private readonly ConcurrentDictionary<Guid, IClientClusterNode> _nodes =
             new ConcurrentDictionary<Guid, IClientClusterNode>();
+        
+        /** Cluster. */
+        private readonly ClientCluster _cluster;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClient"/> class.
@@ -88,6 +91,8 @@ namespace Apache.Ignite.Core.Impl.Client
             _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
 
             _binary = new Binary(_marsh);
+            
+            _cluster = new ClientCluster(this, _marsh);
 
             _transactions = new ClientTransactions(this);
         }
@@ -132,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(ClientOp.CacheGetOrCreateWithConfiguration,
-                ctx => ClientCacheConfigurationSerializer.Write(ctx.Stream, configuration, ctx.ProtocolVersion));
+                ctx => ClientCacheConfigurationSerializer.Write(ctx.Stream, configuration, ctx.Features));
 
             return GetCache<TK, TV>(configuration.Name);
         }
@@ -153,7 +158,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(ClientOp.CacheCreateWithConfiguration,
-                ctx => ClientCacheConfigurationSerializer.Write(ctx.Stream, configuration, ctx.ProtocolVersion));
+                ctx => ClientCacheConfigurationSerializer.Write(ctx.Stream, configuration, ctx.Features));
 
             return GetCache<TK, TV>(configuration.Name);
         }
@@ -167,7 +172,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritDoc /> */
         public IClientCluster GetCluster()
         {
-            return new ClientCluster(this, _marsh);
+            return _cluster;
         }
 
         /** <inheritDoc /> */
@@ -231,6 +236,12 @@ namespace Apache.Ignite.Core.Impl.Client
         public EndPoint LocalEndPoint
         {
             get { return _socket.LocalEndPoint; }
+        }
+
+        /** <inheritDoc /> */
+        public IEnumerable<IClientConnection> GetConnections()
+        {
+            return _socket.GetConnections();
         }
 
         /** <inheritDoc /> */
@@ -300,7 +311,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        public NearCacheManager NearCacheManager
+        public PlatformCacheManager PlatformCacheManager
         {
             get { throw GetClientNotSupportedException(); }
         }

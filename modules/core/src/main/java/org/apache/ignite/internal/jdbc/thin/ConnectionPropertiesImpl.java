@@ -26,6 +26,7 @@ import java.util.StringTokenizer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
@@ -51,7 +52,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private String url;
 
     /** Addresses. */
-    private HostAndPortRange [] addrs;
+    private HostAndPortRange[] addrs;
 
     /** Schema name. Hidden property. Is used to set default schema name part of the URL. */
     private StringProperty schema = new StringProperty(PROP_SCHEMA,
@@ -233,8 +234,28 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             " Zero means there is no limits.",
         0, false, 0, Integer.MAX_VALUE);
 
+    /** Disabled features. */
+    private StringProperty disabledFeatures = new StringProperty("disabledFeatures",
+        "Sets enumeration of features to force disable its.", null, null, false, new PropertyValidator() {
+        @Override public void validate(String val) throws SQLException {
+            if (val == null)
+                return;
+
+            String[] features = val.split("\\W+");
+
+            for (String f : features) {
+                try {
+                    JdbcThinFeature.valueOf(f.toUpperCase());
+                }
+                catch (IllegalArgumentException e) {
+                    throw new SQLException("Unknown feature: " + f);
+                }
+            }
+        }
+    });
+
     /** Properties array. */
-    private final ConnectionProperty [] propsArray = {
+    private final ConnectionProperty[] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, nestedTxMode,
         sslMode, sslCipherSuites, sslProtocol, sslKeyAlgorithm,
@@ -249,7 +270,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             partitionAwarenessSQLCacheSize,
             partitionAwarenessPartDistributionsCacheSize,
         qryTimeout,
-        connTimeout
+        connTimeout,
+        disabledFeatures
     };
 
     /** {@inheritDoc} */
@@ -272,7 +294,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
             StringBuilder sbUrl = new StringBuilder(JdbcThinUtils.URL_PREFIX);
 
-            HostAndPortRange [] addrs = getAddresses();
+            HostAndPortRange[] addrs = getAddresses();
 
             for (int i = 0; i < addrs.length; i++) {
                 if (i > 0)
@@ -638,6 +660,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         userAttrsFactory.setValue(cls);
     }
 
+    /** {@inheritDoc} */
+    @Override public String disabledFeatures() {
+        return disabledFeatures.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disabledFeatures(String features) {
+        disabledFeatures.setValue(features);
+    }
+
     /**
      * @param url URL connection.
      * @param props Environment properties.
@@ -780,7 +812,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      * @throws SQLException If failed.
      */
     private void parseEndpoints(String endpointStr) throws SQLException {
-        String [] endpoints = endpointStr.split(",");
+        String[] endpoints = endpointStr.split(",");
 
         if (endpoints.length > 0)
             addrs = new HostAndPortRange[endpoints.length];
@@ -922,7 +954,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * An array of possible values if the value may be selected
          * from a particular set of values; otherwise null.
          */
-        protected String [] choices;
+        protected String[] choices;
 
         /** Required flag. */
         protected boolean required;
@@ -1059,7 +1091,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         private static final long serialVersionUID = 0L;
 
         /** Bool choices. */
-        private static final String [] boolChoices = new String[] {Boolean.TRUE.toString(), Boolean.FALSE.toString()};
+        private static final String[] boolChoices = new String[] {Boolean.TRUE.toString(), Boolean.FALSE.toString()};
 
         /** Value. */
         private Boolean val;
@@ -1125,7 +1157,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         protected Number val;
 
         /** Allowed value range. */
-        private Number [] range;
+        private Number[] range;
 
         /**
          * @param name Name.

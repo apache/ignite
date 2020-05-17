@@ -157,7 +157,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         final IgniteCache<Integer, Account> cache = ignite.cache(DEFAULT_CACHE_NAME);
         final List<Integer> keys = new ArrayList<>(keysCnt);
 
-        for (int i = 0; i < keysCnt; i ++) {
+        for (int i = 0; i < keysCnt; i++) {
             keys.add(i);
             cache.put(i, new Account(i, i * 100));
         }
@@ -179,7 +179,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
                     for (int i = 0; i < keys0.size(); i++) {
                         Integer key = keys0.get(i);
 
-                        if(oneOp)
+                        if (oneOp)
                             cache.getAndPut(key, new Account(key, (key + 1) * 100));
                         else
                             cache.put(key, new Account(cache.get(key).id, (key + 1) * 100));
@@ -203,7 +203,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
 
         boolean detected = X.hasCause(e, TransactionDeadlockException.class);
 
-        if(!detected)
+        if (!detected)
             U.error(log, "Failed to detect a deadlock.", e);
         else
             log.info(X.cause(e, TransactionDeadlockException.class).getMessage());
@@ -229,7 +229,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         while (true) {
             boolean res = b.get();
 
-            if(b.compareAndSet(res, !res))
+            if (b.compareAndSet(res, !res))
                 return res;
         }
     }
