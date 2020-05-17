@@ -102,27 +102,31 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /** <inheritdoc /> */
         public IComputeClient WithNoFailover()
         {
-            var flags = _flags | ComputeClientFlags.NoFailover;
-
-            return flags != _flags 
-                ? new ComputeClient(_ignite, flags, _timeout, _clusterGroup) 
-                : this;
+            return SetFlag(ComputeClientFlags.NoFailover);
         }
 
         /** <inheritdoc /> */
         public IComputeClient WithNoResultCache()
         {
-            var flags = _flags | ComputeClientFlags.NoResultCache;
-
-            return flags != _flags 
-                ? new ComputeClient(_ignite, flags, _timeout, _clusterGroup) 
-                : this;
+            return SetFlag(ComputeClientFlags.NoResultCache);
         }
 
         /** <inheritdoc /> */
         public IComputeClient WithKeepBinary()
         {
-            throw new NotImplementedException();
+            return SetFlag(ComputeClientFlags.KeepBinary);
+        }
+
+        /// <summary>
+        /// Returns a new instance with the given flag enabled, or this instance if the flag is already present.
+        /// </summary>
+        private IComputeClient SetFlag(ComputeClientFlags newFlag)
+        {
+            var flags = _flags | newFlag;
+
+            return flags != _flags
+                ? new ComputeClient(_ignite, flags, _timeout, _clusterGroup)
+                : this;
         }
 
         /// <summary>
