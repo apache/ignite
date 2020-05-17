@@ -32,11 +32,11 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
     {
         /** */
         private const string TestResultCacheTask =
-            "org.apache.ignite.internal.client.thin.ComputeTaskTest.TestResultCacheTask";
+            "org.apache.ignite.internal.client.thin.TestResultCacheTask";
         
         /** */
         private const string TestFailoverTask =
-            "org.apache.ignite.internal.client.thin.ComputeTaskTest.TestFailoverTask";
+            "org.apache.ignite.internal.client.thin.TestFailoverTask";
         
         /// <summary>
         /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/>.
