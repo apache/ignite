@@ -164,6 +164,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskWithClusterGroup()
         {
+            // TODO: Either add tuple system type, mapped to T2 in Java (62) - Tuple<object, object>)
+            // or refactor Java test class.
             var compute = Client.GetCompute().WithKeepBinary();
 
             var res = compute.ExecuteJavaTask<IBinaryObject>(TestTask, null);
