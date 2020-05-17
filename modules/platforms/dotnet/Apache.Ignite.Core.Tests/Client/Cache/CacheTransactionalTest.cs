@@ -39,11 +39,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             using (Client.Transactions.TxStart(TransactionConcurrency.Pessimistic,
                 TransactionIsolation.ReadCommitted,
-                TimeSpan.Zero))
+                TimeSpan.MaxValue))
             {
-                cache.Put(1, "");
+                cache.Put(1, "HMMMM");
 
             }
+
+            Assert.IsFalse(cache.ContainsKey(1));
         }
     }
 }

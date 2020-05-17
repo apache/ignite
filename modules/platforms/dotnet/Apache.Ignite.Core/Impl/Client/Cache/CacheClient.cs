@@ -36,6 +36,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Client.Cache.Query;
+    using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Impl.Common;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
@@ -45,8 +46,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     internal sealed class CacheClient<TK, TV> : ICacheClient<TK, TV>, ICacheInternal
     {
         /// <summary>
-        /// Additional flag values for cache operations.
+        /// Additional flags values for cache operations.
         /// </summary>
+        [Flags]
         private enum ClientCacheRequestFlag : byte
         {
             /// <summary>
@@ -754,18 +756,30 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             ctx.Stream.WriteInt(_id);
 
+            var flags = ClientCacheRequestFlag.None;
             if (_expiryPolicy != null)
             {
                 // Check whether WithExpiryPolicy is supported by the protocol here - 
                 // ctx.ProtocolVersion refers to exact connection for this request. 
                 ClientUtils.ValidateOp(
                     ClientCacheRequestFlag.WithExpiryPolicy, ctx.ProtocolVersion, ClientSocket.Ver150);
-                
-                ctx.Stream.WriteByte((byte) ClientCacheRequestFlag.WithExpiryPolicy);
-                ExpiryPolicySerializer.WritePolicy(ctx.Writer, _expiryPolicy);
+
+                flags = flags | ClientCacheRequestFlag.WithExpiryPolicy;
             }
-            else
-                ctx.Stream.WriteByte((byte) ClientCacheRequestFlag.None); // Flags (skipStore, etc).
+
+            var tx = ClientTransaction.Current;
+            if (tx != null)
+            {
+                flags |= ClientCacheRequestFlag.WithTransactional;
+            }
+
+            ctx.Stream.WriteByte((byte) flags);
+
+            if (flags.HasFlag(ClientCacheRequestFlag.WithExpiryPolicy))
+                ExpiryPolicySerializer.WritePolicy(ctx.Writer, _expiryPolicy);
+            
+            if(flags.HasFlag(ClientCacheRequestFlag.WithTransactional))
+                ctx.Writer.WriteInt(tx.Id);
 
             if (writeAction != null)
             {

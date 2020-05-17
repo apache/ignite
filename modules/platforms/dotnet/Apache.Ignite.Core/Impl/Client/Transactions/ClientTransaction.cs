@@ -51,6 +51,29 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             THREAD_TX = this;
         }
 
+        /// <summary>
+        /// Transaction assigned to this thread.
+        /// </summary>
+        public static ClientTransaction Current
+        {
+            get
+            {
+                var tx = THREAD_TX;
+
+                if (tx == null)
+                    return null;
+
+                if (tx._closed)
+                {
+                    THREAD_TX = null;
+
+                    return null;
+                }
+
+                return tx;
+            }
+        }
+
         public void Commit()
         {
             throw new System.NotImplementedException();
@@ -83,6 +106,14 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             }
         }
 
+        /// <summary>
+        /// Transaction ID.
+        /// </summary>
+        internal int Id
+        {
+            get { return _id; }
+        }
+
         private void Close(bool committed)
         {
             if (!_closed)
@@ -92,8 +123,8 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                     _ignite.Socket.DoOutInOp<object>(ClientOp.TxEnd,
                         ctx =>
                         {
-                            ctx.Writer.WriteBoolean(committed);
                             ctx.Writer.WriteInt(THREAD_TX._id);
+                            ctx.Writer.WriteBoolean(committed);
                         },
                         null);
                 }

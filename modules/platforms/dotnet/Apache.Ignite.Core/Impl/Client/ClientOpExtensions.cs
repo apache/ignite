@@ -28,6 +28,9 @@ namespace Apache.Ignite.Core.Impl.Client
     {
         /** */
         private static readonly Dictionary<ClientOp, ClientProtocolVersion> VersionMap = GetVersionMap();
+        
+        /** */
+        private static readonly HashSet<ClientOp> TransactionalOpCodes = GetTransactionalOpCodes();
 
         /// <summary>
         /// Gets minimum protocol version that is required to perform specified operation.
@@ -42,7 +45,12 @@ namespace Apache.Ignite.Core.Impl.Client
                 ? minVersion 
                 : ClientSocket.Ver100;
         }
-        
+
+        public static bool IsTransactional(this ClientOp op)
+        {
+            return TransactionalOpCodes.Contains(op);
+        }
+
         /// <summary>
         /// Gets the version map.
         /// </summary>
@@ -63,6 +71,32 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 var clientOp = (ClientOp) Enum.Parse(typeof(ClientOp), memberInfo.Name);
                 res[clientOp] = attr.Version;
+            }
+
+            return res;
+        }
+
+        // TODO: combine with GetVersionMap
+        /// <summary>
+        /// Gets transactional operations codes
+        /// </summary>
+        private static HashSet<ClientOp> GetTransactionalOpCodes()
+        {
+            var res = new HashSet<ClientOp>();
+            
+            foreach (var memberInfo in typeof(ClientOp).GetMembers())
+            {
+                var attr = memberInfo.GetCustomAttributes(false)
+                   .OfType<MinVersionAttribute>()
+                   .SingleOrDefault();
+
+                if (attr == null)
+                {
+                    continue;
+                }
+
+                var clientOp = (ClientOp) Enum.Parse(typeof(ClientOp), memberInfo.Name);
+                res.Add(clientOp);
             }
 
             return res;
