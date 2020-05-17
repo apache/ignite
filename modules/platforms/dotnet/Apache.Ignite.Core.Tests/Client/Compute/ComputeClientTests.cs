@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             var task = Client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
             
             cts.Cancel();
-            TestUtils.WaitForTrueCondition(() => task.IsCanceled);
+            Assert.IsTrue(task.IsCanceled);
         }
 
         /// <summary>
