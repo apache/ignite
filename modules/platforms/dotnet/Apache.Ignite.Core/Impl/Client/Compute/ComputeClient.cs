@@ -33,15 +33,26 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
 
         /** */
         private readonly ComputeClientFlags _flags; 
+        
+        /** */
+        private readonly TimeSpan _timeout;
+
+        /** */
+        private readonly IClientClusterGroup _clusterGroup;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ComputeClient"/>.
         /// </summary>
-        internal ComputeClient(IgniteClient ignite, ComputeClientFlags flags = ComputeClientFlags.None)
+        internal ComputeClient(
+            IgniteClient ignite, 
+            ComputeClientFlags flags = ComputeClientFlags.None, 
+            TimeSpan? timeout = null,
+            IClientClusterGroup clusterGroup = null)
         {
-            // TODO: Projection, flags.
             _ignite = ignite;
             _flags = flags;
+            _timeout = timeout ?? TimeSpan.Zero;
+            _clusterGroup = clusterGroup;
         }
 
         /** <inheritdoc /> */
@@ -61,9 +72,18 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
                 {
                     var w = ctx.Writer;
 
-                    w.WriteInt(0); // TODO: Projection.
+                    if (_clusterGroup != null)
+                    {
+                        // TODO: Get ids directly?
+                        var nodeIds = _clusterGroup.GetNodes();
+                    }
+                    else
+                    {
+                        w.WriteInt(0);
+                    }
+
                     w.WriteByte((byte) _flags);
-                    w.WriteLong(0); // TODO: Timeout
+                    w.WriteLong((long) _timeout.TotalMilliseconds);
                     w.WriteString(taskName);
                     w.WriteObject(taskArg);
                 },

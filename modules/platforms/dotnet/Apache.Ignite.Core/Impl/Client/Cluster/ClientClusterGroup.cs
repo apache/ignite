@@ -177,6 +177,11 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         /// <returns>Topology version with nodes identifiers.</returns>rns>
         private Tuple<long, Guid[]> RequestTopologyInformation(long oldTopVer)
         {
+            if (oldTopVer == _ignite.Socket.TopologyVersion)
+            {
+                return null;
+            }
+            
             Action<ClientRequestContext> writeAction = ctx =>
             {
                 ctx.Stream.WriteLong(oldTopVer);
