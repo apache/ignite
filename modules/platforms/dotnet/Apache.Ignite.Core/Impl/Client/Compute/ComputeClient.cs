@@ -116,8 +116,10 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
                     return taskId; // Unused.
                 });
 
-            // ContinueWhenAll is necessary to capture errors & cancellation from the first task.
-            return Task.Factory.ContinueWhenAll(new Task[] {task, tcs.Task}, _ => tcs.Task.Result, cancellationToken);        
+            task.ContinueWith(t => tcs.SetException(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+            task.ContinueWith(t => tcs.SetCanceled(), TaskContinuationOptions.OnlyOnCanceled);
+
+            return tcs.Task;
         }
 
         private void ExecuteJavaTaskWrite(string taskName, object taskArg, ClientRequestContext ctx)
