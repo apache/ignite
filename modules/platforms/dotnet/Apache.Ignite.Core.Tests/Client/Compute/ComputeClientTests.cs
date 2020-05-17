@@ -37,7 +37,15 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         /** */
         private const string TestFailoverTask =
             "org.apache.ignite.internal.client.thin.TestFailoverTask";
-        
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ComputeClientTests"/>.
+        /// </summary>
+        public ComputeClientTests() : base(2)
+        {
+            // No-op.
+        }
+
         /// <summary>
         /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/>.
         /// </summary>
@@ -86,7 +94,11 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskWithNoFailover()
         {
-            // TODO:
+            var computeWithFailover = Client.GetCompute();
+            var computeWithNoFailover = Client.GetCompute().WithNoFailover();
+            
+            Assert.IsTrue(computeWithFailover.ExecuteJavaTask<bool>(TestFailoverTask, null));
+            Assert.IsFalse(computeWithNoFailover.ExecuteJavaTask<bool>(TestFailoverTask, null));
         }
 
         /// <summary>
