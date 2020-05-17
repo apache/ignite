@@ -728,7 +728,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     if (desc == null)
                     {
                         throw new BinaryObjectException(string.Format(
-                            "No matching type found for object [typeId={0}, userType={1}]. ",
+                            "No matching type found for object [typeId={0}, userType={1}].",
                             hdr.TypeId, hdr.IsUserType));
                     }
 

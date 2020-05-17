@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client.Compute
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
@@ -149,6 +150,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /// <summary>
         /// Reads java task execution response.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static object ReadJavaTaskResponse<TRes>(ClientResponseContext ctx, TaskCompletionSource<TRes> tcs)
         {
             var taskId = ctx.Stream.ReadLong();
@@ -158,25 +160,33 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
                 ctx.Socket.RemoveNotificationHandler(taskId);
 
                 var reader = ctx.Marshaller.StartUnmarshal(s);
-                var flags = (ClientFlags) reader.ReadShort();
-                var opCode = (ClientOp) reader.ReadShort();
 
-                if (opCode != ClientOp.ComputeTaskFinished)
+                try
                 {
-                    tcs.SetException(new IgniteClientException(
-                        string.Format("Invalid server notification code. Expected {0}, but got {1}",
-                            ClientOp.ComputeTaskFinished, opCode)));
-                }
-                else if ((flags & ClientFlags.Error) == ClientFlags.Error)
-                {
-                    var status = (ClientStatusCode) reader.ReadInt();
-                    var msg = reader.ReadString();
+                    var flags = (ClientFlags) reader.ReadShort();
+                    var opCode = (ClientOp) reader.ReadShort();
 
-                    tcs.SetException(new IgniteClientException(msg, null, status));
+                    if (opCode != ClientOp.ComputeTaskFinished)
+                    {
+                        tcs.SetException(new IgniteClientException(
+                            string.Format("Invalid server notification code. Expected {0}, but got {1}",
+                                ClientOp.ComputeTaskFinished, opCode)));
+                    }
+                    else if ((flags & ClientFlags.Error) == ClientFlags.Error)
+                    {
+                        var status = (ClientStatusCode) reader.ReadInt();
+                        var msg = reader.ReadString();
+
+                        tcs.SetException(new IgniteClientException(msg, null, status));
+                    }
+                    else
+                    {
+                        tcs.SetResult(reader.ReadObject<TRes>());
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    tcs.SetResult(reader.ReadObject<TRes>());
+                    tcs.SetException(e);
                 }
             });
 

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 {
     using System;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Configuration;
@@ -222,13 +223,14 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         /// Tests that failed deserialization (caused by missing type) produces correct exception. 
         /// </summary>
         [Test]
-        public void TestExecuteJavaTaskWithFailedResultDeserialization()
+        public void TestExecuteJavaTaskWithFailedResultDeserializationProducesBinaryObjectException()
         {
             var ex = Assert.Throws<AggregateException>(
                 () => Client.GetCompute().ExecuteJavaTask<object>(TestTask, null));
-            var clientEx = (IgniteClientException) ex.GetInnermostException();
             
-            StringAssert.StartsWith("Task timed out (check logs for error messages):", clientEx.Message);
+            var clientEx = (BinaryObjectException) ex.GetInnermostException();
+            
+            Assert.AreEqual("No matching type found for object [typeId=62, userType=False].", clientEx.Message);
         }
 
         /** <inheritdoc /> */
