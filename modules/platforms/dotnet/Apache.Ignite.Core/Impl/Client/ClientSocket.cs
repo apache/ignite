@@ -238,11 +238,14 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <param name="handler">Handler delegate.</param>
         public void AddNotificationHandler(long notificationId, Action<IBinaryStream> handler)
         {
-            _notificationListeners.AddOrUpdate(notificationId,
-                _ => new ClientNotificationHandler(_logger, handler),
-                (_, oldHandler) => oldHandler.SetHandler(handler));
+            lock (_sendRequestSyncRoot) // TODO: Needed?
+            {
+                _notificationListeners.AddOrUpdate(notificationId,
+                    _ => new ClientNotificationHandler(_logger, handler),
+                    (_, oldHandler) => oldHandler.SetHandler(handler));
             
-            _listenerEvent.Set();
+                _listenerEvent.Set();
+            }
         }
 
         /// <summary>
@@ -252,8 +255,11 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <returns>True when removed, false otherwise.</returns>
         public bool RemoveNotificationHandler(long notificationId)
         {
-            ClientNotificationHandler unused;
-            return _notificationListeners.TryRemove(notificationId, out unused);
+            lock (_sendRequestSyncRoot) // TODO: Needed?
+            {
+                ClientNotificationHandler unused;
+                return _notificationListeners.TryRemove(notificationId, out unused);
+            }
         }
 
         /// <summary>
@@ -388,6 +394,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 return false;
             }
 
+            // TODO: Race condition here. We don't have a notification handler,
+            // so other sync ops attempt to read data in parallel.
             _notificationListeners.GetOrAdd(requestId, _ => new ClientNotificationHandler(_logger)).Handle(stream);
                     
             return true;
