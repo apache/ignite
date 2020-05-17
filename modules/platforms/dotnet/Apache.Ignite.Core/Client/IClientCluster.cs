@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Core.Client
 {
+    using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Client.Compute;
+
     /// <summary>
     /// Represents whole cluster (group of all nodes in a cluster).
     /// </summary>
