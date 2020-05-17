@@ -18,11 +18,14 @@
 namespace Apache.Ignite.Core.Tests.Client.Compute
 {
     using System;
+    using System.Collections;
+    using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Client.Compute;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
@@ -44,7 +47,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         /// <summary>
         /// Initializes a new instance of <see cref="ComputeClientTests"/>.
         /// </summary>
-        public ComputeClientTests() : base(2)
+        public ComputeClientTests() : base(3)
         {
             // No-op.
         }
@@ -164,11 +167,21 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskWithClusterGroup()
         {
-            var compute = Client.GetCompute().WithKeepBinary();
+            Func<IComputeClient, Guid[]> getProjection = c =>
+            {
+                var res = c.ExecuteJavaTask<IgniteBiTuple>(TestTask, null);
 
-            var res = compute.ExecuteJavaTask<object>(TestTask, null);
+                return ((ArrayList) res.Item2).OfType<Guid>().ToArray();
+            };
             
-            Console.WriteLine(res);
+            // Default: full cluster.
+            var nodeIds = Client.GetCluster().GetNodes().Select(n => n.Id).ToArray();
+
+            CollectionAssert.AreEquivalent(nodeIds, getProjection(Client.GetCompute()));
+            
+            // One node.
+            
+            // Two nodes.
         }
 
         /// <summary>
