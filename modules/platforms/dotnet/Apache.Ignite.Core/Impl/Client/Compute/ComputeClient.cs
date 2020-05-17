@@ -46,9 +46,9 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /// </summary>
         internal ComputeClient(
             IgniteClient ignite, 
-            ComputeClientFlags flags = ComputeClientFlags.None, 
-            TimeSpan? timeout = null,
-            IClientClusterGroup clusterGroup = null)
+            ComputeClientFlags flags, 
+            TimeSpan? timeout,
+            IClientClusterGroup clusterGroup)
         {
             _ignite = ignite;
             _flags = flags;
@@ -150,7 +150,9 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /** <inheritdoc /> */
         public IComputeClient WithTimeout(TimeSpan timeout)
         {
-            throw new NotImplementedException();
+            return _timeout != timeout 
+                ? new ComputeClient(_ignite, _flags, timeout, _clusterGroup) 
+                : this;
         }
 
         /** <inheritdoc /> */
@@ -158,7 +160,9 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         {
             var flags = _flags | ComputeClientFlags.NoFailover;
 
-            return flags != _flags ? new ComputeClient(_ignite, flags) : this;
+            return flags != _flags 
+                ? new ComputeClient(_ignite, flags, _timeout, _clusterGroup) 
+                : this;
         }
 
         /** <inheritdoc /> */
@@ -166,7 +170,9 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         {
             var flags = _flags | ComputeClientFlags.NoResultCache;
 
-            return flags != _flags ? new ComputeClient(_ignite, flags) : this;
+            return flags != _flags 
+                ? new ComputeClient(_ignite, flags, _timeout, _clusterGroup) 
+                : this;
         }
     }
 }

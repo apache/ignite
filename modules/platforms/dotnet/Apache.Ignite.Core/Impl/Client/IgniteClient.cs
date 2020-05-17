@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Client
             
             _cluster = new ClientCluster(this);
             
-            _compute = new ComputeClient(this);
+            _compute = new ComputeClient(this, ComputeClientFlags.None, TimeSpan.Zero, null);
         }
 
         /// <summary>
