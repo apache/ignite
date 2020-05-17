@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Compute
 {
+    using System;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Configuration;
@@ -152,7 +153,14 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskWithUnknownClass()
         {
-            // TODO
+            var ex = Assert.Throws<AggregateException>(
+                    () => Client.GetCompute().ExecuteJavaTask<int>("bad", null));
+
+            var innerEx = ex.GetInnermostException();
+            
+            StringAssert.StartsWith(
+                "Unknown task name or failed to auto-deploy task (was task (re|un)deployed?) [taskName=bad, ", 
+                innerEx.Message);
         }
 
         /// <summary>
