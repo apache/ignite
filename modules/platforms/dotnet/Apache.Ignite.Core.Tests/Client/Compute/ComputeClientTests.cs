@@ -164,7 +164,11 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskWithClusterGroup()
         {
-            // TODO
+            var compute = Client.GetCompute().WithKeepBinary();
+
+            var res = compute.ExecuteJavaTask<IBinaryObject>(TestTask, null);
+            
+            Console.WriteLine(res);
         }
 
         /// <summary>

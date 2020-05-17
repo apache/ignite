@@ -105,8 +105,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Drains the queue.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
-            Justification = "Thread root must catch all exceptions to avoid crashing the process.")]
         private void Drain(Action<IBinaryStream> handler, List<IBinaryStream> queue)
         {
             foreach (var stream in queue)
@@ -118,6 +116,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Handles the notification.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "Thread root must catch all exceptions to avoid crashing the process.")]
         private void Handle(Action<IBinaryStream> handler, IBinaryStream stream)
         {
             try
