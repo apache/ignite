@@ -613,7 +613,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     CheckException();
 
-                    if (_requests.IsEmpty)
+                    if (_requests.IsEmpty && _notificationListeners.IsEmpty)
                     {
                         SocketWrite(reqMsg.Buffer, reqMsg.Length);
 
