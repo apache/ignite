@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Client.Compute
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -42,6 +43,16 @@ namespace Apache.Ignite.Core.Client.Compute
         /// <returns>Task result.</returns>
         /// <typeparam name="TRes">Type of task result.</typeparam>
         Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg);
+
+        /// <summary>
+        /// Executes Java task by class name.
+        /// </summary>
+        /// <param name="taskName">Java task name.</param>
+        /// <param name="taskArg">Optional argument of task execution, can be null.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Task result.</returns>
+        /// <typeparam name="TRes">Type of task result.</typeparam>
+        Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg, CancellationToken cancellationToken);
 
         /// <summary>
         /// Returns a new instance of <see cref="IComputeClient"/> with a timeout for all task executions.

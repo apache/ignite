@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client.Compute
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
@@ -66,31 +67,14 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /** <inheritdoc /> */
         public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg)
         {
-            var tcs = new TaskCompletionSource<TRes>();
-            
-            _ignite.Socket.DoOutInOp(ClientOp.ComputeTaskExecute, ctx =>
-                {
-                    var w = ctx.Writer;
-
-                    if (_clusterGroup != null)
-                    {
-                        // TODO: Get ids directly?
-                        var nodeIds = _clusterGroup.GetNodes();
-                    }
-                    else
-                    {
-                        w.WriteInt(0);
-                    }
-
-                    w.WriteByte((byte) _flags);
-                    w.WriteLong((long) _timeout.TotalMilliseconds);
-                    w.WriteString(taskName);
-                    w.WriteObject(taskArg);
-                },
+            var task = _ignite.Socket.DoOutInOpAsync(
+                ClientOp.ComputeTaskExecute,
+                ctx => ExecuteJavaTaskWrite(taskName, taskArg, ctx),
                 ctx =>
                 {
+                    var tcs = new TaskCompletionSource<TRes>();
                     var taskId = ctx.Stream.ReadLong();
-                    
+
                     // TODO: Extract common logic to some method like "HandleSingleNotification".
                     // TODO: Make sure to fail the task on disconnect.
                     ctx.Socket.AddNotificationHandler(taskId, s =>
@@ -120,10 +104,42 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
                         }
                     });
                     
-                    return taskId;
+                    return tcs;
                 });
 
-            return tcs.Task;
+            // TODO: How to get tcs then return the task?
+            return TaskRunner.FromResult(default(TRes));
+        }
+
+        public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg, 
+            CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void ExecuteJavaTaskWrite(string taskName, object taskArg, ClientRequestContext ctx)
+        {
+            var writer = ctx.Writer;
+
+            if (_clusterGroup != null)
+            {
+                var nodes = _clusterGroup.GetNodes();
+                writer.WriteInt(nodes.Count);
+
+                foreach (var node in nodes)
+                {
+                    writer.WriteGuid(node.Id);
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
+
+            writer.WriteByte((byte) _flags);
+            writer.WriteLong((long) _timeout.TotalMilliseconds);
+            writer.WriteString(taskName);
+            writer.WriteObject(taskArg);
         }
 
         /** <inheritdoc /> */
