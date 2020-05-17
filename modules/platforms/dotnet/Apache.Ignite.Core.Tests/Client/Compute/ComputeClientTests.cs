@@ -218,6 +218,19 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             // TODO
         }
 
+        /// <summary>
+        /// Tests that failed deserialization (caused by missing type) produces correct exception. 
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskWithFailedResultDeserialization()
+        {
+            var ex = Assert.Throws<AggregateException>(
+                () => Client.GetCompute().ExecuteJavaTask<object>(TestTask, null));
+            var clientEx = (IgniteClientException) ex.GetInnermostException();
+            
+            StringAssert.StartsWith("Task timed out (check logs for error messages):", clientEx.Message);
+        }
+
         /** <inheritdoc /> */
         protected override IgniteConfiguration GetIgniteConfiguration()
         {

@@ -59,17 +59,19 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <param name="stream">Notification data.</param>
         public void Handle(IBinaryStream stream)
         {
-            // ClientSocket handles notifications in a single receiver thread,
-            // but handler will be set from another thread.
+            // We are in the socket receiver thread here.
+            // However, handler is set from another thread, so lock is required.
             lock (this)
             {
-                if (_handler != null)
+                // NOTE: Back pressure control should be added here when needed (e.g. for Continuous Queries).
+                var handler = _handler;
+                
+                if (handler != null)
                 {
-                    _handler(stream);
+                    ThreadPool.QueueUserWorkItem(_ => Handle(handler, stream));
                 }
                 else
                 {
-                    // NOTE: Back pressure control should be added here when needed (e.g. for Continuous Queries). 
                     _queue = _queue ?? new List<IBinaryStream>();
                     _queue.Add(stream);
                 }
@@ -107,9 +109,20 @@ namespace Apache.Ignite.Core.Impl.Client
             Justification = "Thread root must catch all exceptions to avoid crashing the process.")]
         private void Drain(Action<IBinaryStream> handler, List<IBinaryStream> queue)
         {
+            foreach (var stream in queue)
+            {
+                Handle(handler, stream);
+            }
+        }
+
+        /// <summary>
+        /// Handles the notification.
+        /// </summary>
+        private void Handle(Action<IBinaryStream> handler, IBinaryStream stream)
+        {
             try
             {
-                queue.ForEach(handler);
+                handler(stream);
             }
             catch (Exception e)
             {
