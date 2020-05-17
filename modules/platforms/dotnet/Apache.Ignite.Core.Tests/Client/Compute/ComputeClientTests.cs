@@ -180,8 +180,15 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             CollectionAssert.AreEquivalent(nodeIds, getProjection(Client.GetCompute()));
             
             // One node.
+            var nodeId = nodeIds[1];
+            var proj = Client.GetCluster().ForPredicate(n => n.Id == nodeId);
             
+            Assert.AreEqual(new[]{nodeId}, getProjection(proj.GetCompute()));
+
             // Two nodes.
+            proj = Client.GetCluster().ForPredicate(n => n.Id != nodeId);
+
+            CollectionAssert.AreEquivalent(new[] {nodeIds[0], nodeIds[2]}, getProjection(proj.GetCompute()));
         }
 
         /// <summary>
