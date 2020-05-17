@@ -18,12 +18,15 @@
 namespace Apache.Ignite.Core.Impl.Client.Compute
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Client compute flags.
     /// </summary>
     [Flags]
-    public enum ComputeClientFlags : byte
+    [SuppressMessage("Design", "CA1028:Enum Storage should be Int32", 
+        Justification = "Dictated by thin client protocol.")]
+    internal enum ComputeClientFlags : byte
     {
         None = 0,
         NoFailover = 1,
