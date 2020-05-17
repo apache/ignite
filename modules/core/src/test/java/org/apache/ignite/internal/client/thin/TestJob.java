@@ -20,8 +20,8 @@ package org.apache.ignite.internal.client.thin;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Compute job which returns node id where it was executed.
@@ -48,8 +48,13 @@ public class TestJob implements ComputeJob {
 
     /** {@inheritDoc} */
     @Override public Object execute() throws IgniteException {
-        if (sleepTime != null)
-            GridAbstractTest.doSleep(sleepTime);
+        if (sleepTime != null) {
+            try {
+                U.sleep(sleepTime);
+            } catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
 
         return ignite.cluster().localNode().id();
     }

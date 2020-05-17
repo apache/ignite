@@ -125,7 +125,10 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             
             var compute = Client.GetCompute().WithTimeout(TimeSpan.FromMilliseconds(timeoutMs));
 
-            compute.ExecuteJavaTask<object>(TestTask, timeoutMs * 4);
+            var ex = Assert.Throws<AggregateException>(() => compute.ExecuteJavaTask<object>(TestTask, timeoutMs * 4));
+            var clientEx = (IgniteClientException) ex.GetInnermostException();
+            
+            StringAssert.StartsWith("Task timed out (check logs for error messages):", clientEx.Message);
         }
 
         /// <summary>
