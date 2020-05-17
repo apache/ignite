@@ -75,11 +75,12 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         {
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
             
-            var tcs = new TaskCompletionSource<TRes>(cancellationToken);
+            var tcs = new TaskCompletionSource<TRes>();
+            cancellationToken.Register(() => tcs.SetCanceled());
             
             var task = _ignite.Socket.DoOutInOpAsync(
                 ClientOp.ComputeTaskExecute,
-                ctx => ExecuteJavaTaskWrite(taskName, taskArg, ctx),
+                ctx => WriteJavaTask(taskName, taskArg, ctx),
                 ctx =>
                 {
                     var taskId = ctx.Stream.ReadLong();
@@ -122,31 +123,6 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
             return tcs.Task;
         }
 
-        private void ExecuteJavaTaskWrite(string taskName, object taskArg, ClientRequestContext ctx)
-        {
-            var writer = ctx.Writer;
-
-            if (_clusterGroup != null)
-            {
-                var nodes = _clusterGroup.GetNodes();
-                writer.WriteInt(nodes.Count);
-
-                foreach (var node in nodes)
-                {
-                    writer.WriteGuid(node.Id);
-                }
-            }
-            else
-            {
-                writer.WriteInt(0);
-            }
-
-            writer.WriteByte((byte) _flags);
-            writer.WriteLong((long) _timeout.TotalMilliseconds);
-            writer.WriteString(taskName);
-            writer.WriteObject(taskArg);
-        }
-
         /** <inheritdoc /> */
         public IComputeClient WithTimeout(TimeSpan timeout)
         {
@@ -173,6 +149,34 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
             return flags != _flags 
                 ? new ComputeClient(_ignite, flags, _timeout, _clusterGroup) 
                 : this;
+        }
+        
+        /// <summary>
+        /// Writes the java task.
+        /// </summary>
+        private void WriteJavaTask(string taskName, object taskArg, ClientRequestContext ctx)
+        {
+            var writer = ctx.Writer;
+
+            if (_clusterGroup != null)
+            {
+                var nodes = _clusterGroup.GetNodes();
+                writer.WriteInt(nodes.Count);
+
+                foreach (var node in nodes)
+                {
+                    writer.WriteGuid(node.Id);
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
+
+            writer.WriteByte((byte) _flags);
+            writer.WriteLong((long) _timeout.TotalMilliseconds);
+            writer.WriteString(taskName);
+            writer.WriteObject(taskArg);
         }
     }
 }
