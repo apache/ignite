@@ -208,20 +208,6 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Gets current topology version.
-        /// Returns -1 when unknown (on old protocol versions).
-        /// </summary>
-        public long TopologyVersion
-        {
-            get
-            {
-                var ver = _affinityTopologyVersion;
-
-                return ver == null ? UnknownTopologyVersion : ((AffinityTopologyVersion) ver).Version;
-            }
-        }
-
-        /// <summary>
         /// Gets active connections.
         /// </summary>
         public IEnumerable<IClientConnection> GetConnections()
@@ -773,7 +759,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 return;
             }
             
-            var newVer = TopologyVersion;
+            var newVer = GetTopologyVersion();
 
             if (newVer <= _discoveryTopologyVersion)
             {
@@ -827,6 +813,16 @@ namespace Apache.Ignite.Core.Impl.Client
                     
                     return topVer;
                 });
+        }
+
+        /// <summary>
+        /// Gets current topology version.
+        /// </summary>
+        private long GetTopologyVersion()
+        {
+            var ver = _affinityTopologyVersion;
+            
+            return ver == null ? UnknownTopologyVersion : ((AffinityTopologyVersion) ver).Version;
         }
     }
 }
