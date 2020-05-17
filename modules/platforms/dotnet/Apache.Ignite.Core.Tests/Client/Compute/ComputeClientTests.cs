@@ -89,6 +89,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         public void TestExecuteJavaTaskWithKeepBinary()
         {
             // TODO: Binary mode on server and client.
+            // 1. Pass unknown class from client to server, handle binary object there
+            // 2. Pass unknown class back, handle in .NET
         }
 
         /// <summary>
