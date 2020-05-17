@@ -67,12 +67,21 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /** <inheritdoc /> */
         public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg)
         {
+            return ExecuteJavaTaskAsync<TRes>(taskName, taskArg, CancellationToken.None);
+        }
+
+        public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg, 
+            CancellationToken cancellationToken)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
+            
+            var tcs = new TaskCompletionSource<TRes>(cancellationToken);
+            
             var task = _ignite.Socket.DoOutInOpAsync(
                 ClientOp.ComputeTaskExecute,
                 ctx => ExecuteJavaTaskWrite(taskName, taskArg, ctx),
                 ctx =>
                 {
-                    var tcs = new TaskCompletionSource<TRes>();
                     var taskId = ctx.Stream.ReadLong();
 
                     // TODO: Extract common logic to some method like "HandleSingleNotification".
@@ -103,18 +112,12 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
                             tcs.SetResult(reader.ReadObject<TRes>());
                         }
                     });
-                    
-                    return tcs;
+
+                    return taskId; // Unused.
                 });
 
-            // TODO: How to get tcs then return the task?
-            return TaskRunner.FromResult(default(TRes));
-        }
-
-        public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg, 
-            CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
+            // ContinueWhenAll is necessary to capture errors & cancellation from the first task.
+            return Task.Factory.ContinueWhenAll(new Task[] {task, tcs.Task}, _ => tcs.Task.Result, cancellationToken);        
         }
 
         private void ExecuteJavaTaskWrite(string taskName, object taskArg, ClientRequestContext ctx)

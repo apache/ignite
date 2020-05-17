@@ -113,6 +113,7 @@
     <Compile Include="Impl\Client\Cluster\ClientClusterGroupProjection.cs" />
     <Compile Include="Impl\Client\Cluster\ClientClusterNode.cs" />
     <Compile Include="Impl\Client\Compute\ComputeClient.cs" />
+    <Compile Include="Impl\Client\Compute\ComputeClientFlags.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
     <Compile Include="Impl\Common\PlatformType.cs" />
