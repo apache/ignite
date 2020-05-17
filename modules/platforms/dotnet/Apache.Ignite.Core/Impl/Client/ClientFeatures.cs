@@ -47,6 +47,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 {ClientOp.ClusterGetWalState, new ClientProtocolVersion(1, 5, 0)},
                 {ClientOp.ClusterGroupGetNodeIds, new ClientProtocolVersion(1, 5, 0)},
                 {ClientOp.ClusterGroupGetNodesInfo, new ClientProtocolVersion(1, 5, 0)},
+                {ClientOp.TxStart, new ClientProtocolVersion(1, 5, 0)},
+                {ClientOp.TxEnd, new ClientProtocolVersion(1, 5, 0)},
             };
         
         /** */

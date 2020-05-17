@@ -30,6 +30,10 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** Ignite. */
         private readonly IgniteClient _ignite;
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="ignite">Ignite.</param>
         public ClientTransactions(IgniteClient ignite)
         {
             _ignite = ignite;

@@ -117,7 +117,6 @@
     <Compile Include="Impl\Common\PlatformType.cs" />
     <Compile Include="Impl\Client\Transactions\ClientTransaction.cs" />
     <Compile Include="Impl\Client\Transactions\ClientTransactions.cs" />
-    <Compile Include="Impl\Client\Transactions\TransactionalOperationAttribute.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />
     <Compile Include="Impl\Compute\ComputeRunner.cs" />
     <Compile Include="Impl\Log\NoopLogger.cs" />

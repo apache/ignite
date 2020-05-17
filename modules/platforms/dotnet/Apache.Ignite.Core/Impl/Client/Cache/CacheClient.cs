@@ -760,12 +760,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             if (_expiryPolicy != null)
             {
                 ctx.Features.ValidateWithExpiryPolicyFlag();
-                ctx.Stream.WriteByte((byte) ClientCacheRequestFlag.WithExpiryPolicy);
-                // Check whether WithExpiryPolicy is supported by the protocol here - 
-                // ctx.ProtocolVersion refers to exact connection for this request. 
-                ClientUtils.ValidateOp(
-                    ClientCacheRequestFlag.WithExpiryPolicy, ctx.ProtocolVersion, ClientSocket.Ver150);
-
                 flags = flags | ClientCacheRequestFlag.WithExpiryPolicy;
             }
 

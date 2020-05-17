@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Client
 {
-    using Apache.Ignite.Core.Impl.Client.Transactions;
-
     /// <summary>
     /// Client op code.
     /// </summary>
@@ -28,45 +26,25 @@ namespace Apache.Ignite.Core.Impl.Client
         ResourceClose = 0,
 
         // Cache.
-        [TransactionalOperation]
         CacheGet = 1000,
-        [TransactionalOperation]
         CachePut = 1001,
-        [TransactionalOperation]
         CachePutIfAbsent = 1002,
-        [TransactionalOperation]
         CacheGetAll = 1003,
-        [TransactionalOperation]
         CachePutAll = 1004,
-        [TransactionalOperation]
         CacheGetAndPut = 1005,
-        [TransactionalOperation]
         CacheGetAndReplace = 1006,
-        [TransactionalOperation]
         CacheGetAndRemove = 1007,
-        [TransactionalOperation]
         CacheGetAndPutIfAbsent = 1008,
-        [TransactionalOperation]
         CacheReplace = 1009,
-        [TransactionalOperation]
         CacheReplaceIfEquals = 1010,
-        [TransactionalOperation]
         CacheContainsKey = 1011,
-        [TransactionalOperation]
         CacheContainsKeys = 1012,
-        [TransactionalOperation]
         CacheClear = 1013,
-        [TransactionalOperation]
         CacheClearKey = 1014,
-        [TransactionalOperation]
         CacheClearKeys = 1015,
-        [TransactionalOperation]
         CacheRemoveKey = 1016,
-        [TransactionalOperation]
         CacheRemoveIfEquals = 1017,
-        [TransactionalOperation]
         CacheRemoveKeys = 1018,
-        [TransactionalOperation]
         CacheRemoveAll = 1019,
         CacheGetSize = 1020,
         CacheGetNames = 1050,
@@ -93,9 +71,7 @@ namespace Apache.Ignite.Core.Impl.Client
         BinaryTypePut = 3003,
 
         // Transactions
-        [MinVersion(1, 5, 0)]
         TxStart = 4000,
-        [MinVersion(1, 5, 0)]
         TxEnd = 4001,
 
         // Cluster.
