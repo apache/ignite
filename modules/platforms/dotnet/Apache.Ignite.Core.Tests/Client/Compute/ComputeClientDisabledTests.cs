@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Compute
 {
+    using System;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
@@ -32,12 +33,14 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestComputeThrowsCorrectExceptionWhenNotEnabledOnServer()
         {
-            var ex = Assert.Throws<IgniteClientException>(
+            var ex = Assert.Throws<AggregateException>(
                 () => Client.GetCompute().ExecuteJavaTask<int>("unused", null));
+
+            var clientEx = (IgniteClientException) ex.GetInnermostException();
 
             Assert.AreEqual("Compute grid functionality is disabled for thin clients on server node. " +
                             "To enable it set up the " + typeof(ThinClientConfiguration).Name +
-                            ".MaxActiveComputeTasksPerConnection property.", ex.Message);
+                            ".MaxActiveComputeTasksPerConnection property.", clientEx.Message);
         }
     }
 }
