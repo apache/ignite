@@ -79,11 +79,13 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
             
             var tcs = new TaskCompletionSource<TRes>();
             cancellationToken.Register(() => tcs.SetCanceled());
+
+            var keepBinary = (_flags | ComputeClientFlags.KeepBinary) == ComputeClientFlags.KeepBinary;
             
             var task = _ignite.Socket.DoOutInOpAsync(
                 ClientOp.ComputeTaskExecute,
                 ctx => WriteJavaTaskRequest(taskName, taskArg, ctx),
-                ctx => ReadJavaTaskResponse(ctx, tcs));
+                ctx => ReadJavaTaskResponse(ctx, tcs, keepBinary));
 
             task.ContinueWith(t => tcs.SetException(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
             task.ContinueWith(t => tcs.SetCanceled(), TaskContinuationOptions.OnlyOnCanceled);
@@ -161,15 +163,16 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /// Reads java task execution response.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static object ReadJavaTaskResponse<TRes>(ClientResponseContext ctx, TaskCompletionSource<TRes> tcs)
+        private static object ReadJavaTaskResponse<TRes>(ClientResponseContext ctx, TaskCompletionSource<TRes> tcs,
+            bool keepBinary)
         {
             var taskId = ctx.Stream.ReadLong();
 
-            ctx.Socket.AddNotificationHandler(taskId, s =>
+            ctx.Socket.AddNotificationHandler(taskId, stream =>
             {
                 ctx.Socket.RemoveNotificationHandler(taskId);
 
-                var reader = ctx.Marshaller.StartUnmarshal(s);
+                var reader = ctx.Marshaller.StartUnmarshal(stream, keepBinary);
 
                 try
                 {
