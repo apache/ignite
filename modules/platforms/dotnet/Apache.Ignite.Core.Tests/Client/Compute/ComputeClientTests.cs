@@ -31,12 +31,13 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
     public class ComputeClientTests : ClientTestBase
     {
         /** */
-        private const string TestResultCacheTask =
-            "org.apache.ignite.internal.client.thin.TestResultCacheTask";
+        private const string TestTask = "org.apache.ignite.internal.client.thin.TestTask";
         
         /** */
-        private const string TestFailoverTask =
-            "org.apache.ignite.internal.client.thin.TestFailoverTask";
+        private const string TestResultCacheTask = "org.apache.ignite.internal.client.thin.TestResultCacheTask";
+        
+        /** */
+        private const string TestFailoverTask = "org.apache.ignite.internal.client.thin.TestFailoverTask";
 
         /// <summary>
         /// Initializes a new instance of <see cref="ComputeClientTests"/>.
@@ -120,7 +121,11 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskWithTimeout()
         {
-            // TODO
+            const long timeoutMs = 50;
+            
+            var compute = Client.GetCompute().WithTimeout(TimeSpan.FromMilliseconds(timeoutMs));
+
+            compute.ExecuteJavaTask<object>(TestTask, timeoutMs * 4);
         }
 
         /// <summary>
