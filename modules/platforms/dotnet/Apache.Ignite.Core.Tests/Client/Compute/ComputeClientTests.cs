@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Compute
 {
     using System;
+    using System.Threading;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Configuration;
@@ -122,7 +123,6 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         public void TestExecuteJavaTaskWithTimeout()
         {
             const long timeoutMs = 50;
-            
             var compute = Client.GetCompute().WithTimeout(TimeSpan.FromMilliseconds(timeoutMs));
 
             var ex = Assert.Throws<AggregateException>(() => compute.ExecuteJavaTask<object>(TestTask, timeoutMs * 4));
@@ -146,7 +146,13 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskAsyncCancellation()
         {
-            // TODO
+            const long delayMs = 1000;
+            
+            var cts = new CancellationTokenSource();
+            var task = Client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
+            
+            cts.Cancel();
+            TestUtils.WaitForTrueCondition(() => task.IsCanceled);
         }
 
         /// <summary>
