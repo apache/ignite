@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -45,10 +46,7 @@ public class PushFilterIntoScanRule extends RelOptRule {
             desc);
     }
 
-    @Override public boolean matches(RelOptRuleCall call) {
-        return super.matches(call); // TODO: CODE: implement.
-    }
-
+    /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
         IgniteTableScan scan = call.rel(1);
         Filter filter = call.rel(0);
@@ -71,6 +69,7 @@ public class PushFilterIntoScanRule extends RelOptRule {
             new IgniteTableScan(scan.getCluster(), scan.getTraitSet(), scan.getTable(), scan.indexName(), cond));
     }
 
+    /** Visitor for replacing input refs to local refs. We need it for proper plan serialization. */
     private class InputRefReplacer extends RexShuttle {
         @Override public RexNode visitInputRef(RexInputRef inputRef) {
             int idx = inputRef.getIndex();
