@@ -423,7 +423,9 @@ public class MarshallerContextImpl implements MarshallerContext {
 
                             throw new ClassNotFoundException(
                                     "Failed to resolve " + otherPlatformName + " class " + clsName
-                                            + " for " + platformName + " platform [typeId=" + typeId + "].");
+                                            + " for " + platformName
+                                            + " platform [platformId=" + platformId
+                                            + ", typeId=" + typeId + "].");
                         }
                         catch (ClassNotFoundException ignored) {
                             // No-op.
