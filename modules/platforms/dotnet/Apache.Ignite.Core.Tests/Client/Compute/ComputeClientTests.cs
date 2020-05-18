@@ -312,7 +312,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                         break;
                     }
                 }
-            }, MaxTasks - 1);
+            }, MaxTasks - 2);
         }
 
         /// <summary>
@@ -347,7 +347,21 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestClientTimeoutShorterThanTaskDuration()
         {
-            // TODO
+            const long timeoutMs = 300;
+            
+            var cfg = new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                SocketTimeout = TimeSpan.FromMilliseconds(timeoutMs)
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var compute = client.GetCompute().WithKeepBinary();
+
+                var res = compute.ExecuteJavaTask<IgniteBiTuple>(TestTask, timeoutMs * 3);
+                
+                Assert.IsInstanceOf<Guid>(res.Item1);
+            }
         }
 
         /** <inheritdoc /> */
