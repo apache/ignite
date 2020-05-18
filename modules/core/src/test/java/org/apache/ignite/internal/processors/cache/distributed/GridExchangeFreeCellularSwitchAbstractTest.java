@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -57,6 +58,9 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
 
     /** Replicated cache name. */
     protected static final String REPL_CACHE_NAME = "replicated";
+
+    /** */
+    protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /**
      * {@inheritDoc}
@@ -81,6 +85,8 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
         dsCfg.setDefaultDataRegionConfiguration(drCfg);
 
         cfg.setDataStorageConfiguration(dsCfg);
+
+        cfg.setGridLogger(listeningLog);
 
         return cfg;
     }
