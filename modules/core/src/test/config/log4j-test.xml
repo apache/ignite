@@ -126,7 +126,7 @@
     <!-- Disable all open source debugging. -->
 
     <category name="org.apache.calcite.plan">
-        <level value="TRACE"/>
+        <level value="ERROR"/>
     </category>
 
     <category name="org">

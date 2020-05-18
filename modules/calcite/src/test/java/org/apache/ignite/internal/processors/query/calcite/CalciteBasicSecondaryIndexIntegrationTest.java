@@ -557,6 +557,9 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         private Object[] params = X.EMPTY_OBJECT_ARRAY;
 
         /** */
+        private String exactPlan;
+
+        /** */
         public QueryChecker(String qry) {
             this.qry = qry;
         }
@@ -597,6 +600,13 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         }
 
         /** */
+        public QueryChecker planEquals(String plan) {
+            exactPlan = plan;
+
+            return this;
+        }
+
+        /** */
         public void check() {
             // Check plan.
             QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
@@ -606,10 +616,15 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
 
             FieldsQueryCursor<List<?>> explainCursor = explainCursors.get(0);
             List<List<?>> explainRes = explainCursor.getAll();
-            String plan = (String)explainRes.get(0).get(0);
+            String actualPlan = (String)explainRes.get(0).get(0);
 
-            for (String subPlan : subPlans)
-                assertTrue("\nExpected subPlan:\n" + subPlan + "\nactual plan:\n" + plan, plan.contains(subPlan));
+            for (String subPlan : subPlans) {
+                assertTrue("\nExpected subPlan:\n" + subPlan + "\nactual plan:\n" + actualPlan,
+                    actualPlan.contains(subPlan));
+            }
+
+            if (exactPlan != null)
+                assertEquals(exactPlan, actualPlan);
 
             // Check result.
             List<FieldsQueryCursor<List<?>>> cursors =

@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -54,10 +55,12 @@ public class ProjectTraitsPropagationRule extends RelOptRule {
         RelTraitSet traits = rel.getTraitSet()
             .replace(IgniteDistributions.project(mq, input, rel.getProjects()));
 
-        List<RelCollation> projCollations = RelMdCollation.project(mq, input, rel.getProjects());
+        if (call.getPlanner().getRelTraitDefs().contains(RelCollationTraitDef.INSTANCE)) {
+            List<RelCollation> projCollations = RelMdCollation.project(mq, input, rel.getProjects());
 
-        if (!F.isEmpty(projCollations))
-            traits = traits.replace(projCollations.get(0));
+            if (!F.isEmpty(projCollations))
+                traits = traits.replace(projCollations.get(0));
+        }
 
         RuleUtils.transformTo(call,
             new IgniteProject(cluster, traits, input, rel.getProjects(), rel.getRowType()));

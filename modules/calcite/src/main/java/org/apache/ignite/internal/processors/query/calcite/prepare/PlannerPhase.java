@@ -22,6 +22,7 @@ import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
+import org.apache.calcite.rel.rules.SortRemoveRule;
 import org.apache.calcite.rel.rules.SubQueryRemoveRule;
 import org.apache.calcite.rel.rules.UnionMergeRule;
 import org.apache.calcite.tools.Program;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverter
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.PushFilterIntoScanRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.SortTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionTraitsPropagationRule;
@@ -95,8 +95,9 @@ public enum PlannerPhase {
                 UnionConverterRule.INSTANCE,
                 UnionTraitsPropagationRule.INSTANCE,
                 SortConverterRule.INSTANCE,
-                /*SortRemoveRule.INSTANCE,*/
-                SortTraitsPropagationRule.INSTANCE);
+                SortRemoveRule.INSTANCE/*,
+                *//*,*//*
+                SortTraitsPropagationRule.INSTANCE*/);
         }
 
         /** {@inheritDoc} */
