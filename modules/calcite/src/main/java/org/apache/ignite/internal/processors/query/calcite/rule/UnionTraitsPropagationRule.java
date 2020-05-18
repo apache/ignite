@@ -32,12 +32,12 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 /**
  *
  */
-public class UnionTraitsTraitsPropagationRule extends RelOptRule {
+public class UnionTraitsPropagationRule extends RelOptRule {
     /** */
-    public static final RelOptRule INSTANCE = new UnionTraitsTraitsPropagationRule();
+    public static final RelOptRule INSTANCE = new UnionTraitsPropagationRule();
 
     /** */
-    public UnionTraitsTraitsPropagationRule() {
+    public UnionTraitsPropagationRule() {
         super(RuleUtils.traitPropagationOperand(IgniteUnionAll.class));
     }
 
