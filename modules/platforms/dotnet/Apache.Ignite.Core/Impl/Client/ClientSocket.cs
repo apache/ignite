@@ -651,12 +651,26 @@ namespace Apache.Ignite.Core.Impl.Client
                     {
                         SocketWrite(reqMsg.Buffer, reqMsg.Length);
 
-                        var respMsg = ReceiveMessage();
-                        var response = new BinaryHeapStream(respMsg);
-                        var responseId = response.ReadLong();
-                        Debug.Assert(responseId == reqMsg.Id);
+                        // Sync operations rely on stream timeout.
+                        // TODO: Is this expensive? Benchmark!
+                        _stream.ReadTimeout = _stream.WriteTimeout;
+                        
+                        try
+                        {
+                            var respMsg = ReceiveMessage();
+                            var response = new BinaryHeapStream(respMsg);
+                            var responseId = response.ReadLong();
+                            Debug.Assert(responseId == reqMsg.Id);
 
-                        return response;
+                            return response;
+                        }
+                        finally
+                        {
+                            if (!_isDisposed)
+                            {
+                                _stream.ReadTimeout = Timeout.Infinite;
+                            }
+                        }
                     }
                 }
             }
@@ -786,10 +800,9 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 NoDelay = cfg.TcpNoDelay,
                 Blocking = true,
-                SendTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
-                ReceiveTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
+                SendTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
             };
-
+            
             if (cfg.SocketSendBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
             {
                 socket.SendBufferSize = cfg.SocketSendBufferSize;
@@ -816,10 +829,9 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             var stream = new NetworkStream(socket)
             {
-                ReadTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
                 WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
             };
-
+            
             if (cfg.SslStreamFactory == null)
             {
                 return stream;
