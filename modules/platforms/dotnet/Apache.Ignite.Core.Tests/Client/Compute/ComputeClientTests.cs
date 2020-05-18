@@ -27,6 +27,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Client.Compute;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
@@ -50,6 +52,23 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         public ComputeClientTests() : base(3)
         {
             // No-op.
+        }
+
+        /// <summary>
+        /// Tears down the test.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            var logger = (ListLogger) Client.GetConfiguration().Logger;
+
+            foreach (var entry in logger.Entries)
+            {
+                if (entry.Level >= LogLevel.Warn)
+                {
+                    Assert.Fail(entry.Message);
+                }
+            }
         }
 
         /// <summary>
