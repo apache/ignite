@@ -88,6 +88,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Callback checker guard. */
         private volatile bool _checkingTimeouts;
 
+        /** Read timeout flag. */
+        private int _isReadTimeoutEnabled;
+
         /** Current async operations, map from request id. */
         private readonly ConcurrentDictionary<long, Request> _requests
             = new ConcurrentDictionary<long, Request>();
@@ -348,9 +351,14 @@ namespace Apache.Ignite.Core.Impl.Client
                         _listenerEvent.Reset();
                     }
 
-                    // TODO: Receive is called whenever notifications are enabled, but this can lead to a timeout
-                    // when notification has already been processed before.
+                    // Async operations should not have a read timeout.
+                    if (Interlocked.CompareExchange(ref _isReadTimeoutEnabled, 0, 1) == 1)
+                    {
+                        _stream.ReadTimeout = Timeout.Infinite;
+                    }
+
                     var msg = ReceiveMessage();
+                    
                     HandleResponse(msg);
                 }
             }
@@ -652,25 +660,17 @@ namespace Apache.Ignite.Core.Impl.Client
                         SocketWrite(reqMsg.Buffer, reqMsg.Length);
 
                         // Sync operations rely on stream timeout.
-                        // TODO: Is this expensive? Benchmark!
-                        _stream.ReadTimeout = _stream.WriteTimeout;
-                        
-                        try
+                        if (Interlocked.CompareExchange(ref _isReadTimeoutEnabled, 1, 0) == 0)
                         {
-                            var respMsg = ReceiveMessage();
-                            var response = new BinaryHeapStream(respMsg);
-                            var responseId = response.ReadLong();
-                            Debug.Assert(responseId == reqMsg.Id);
+                            _stream.ReadTimeout = _stream.WriteTimeout;
+                        }
 
-                            return response;
-                        }
-                        finally
-                        {
-                            if (!_isDisposed)
-                            {
-                                _stream.ReadTimeout = Timeout.Infinite;
-                            }
-                        }
+                        var respMsg = ReceiveMessage();
+                        var response = new BinaryHeapStream(respMsg);
+                        var responseId = response.ReadLong();
+                        Debug.Assert(responseId == reqMsg.Id);
+
+                        return response;
                     }
                 }
             }
@@ -830,7 +830,6 @@ namespace Apache.Ignite.Core.Impl.Client
             var stream = new NetworkStream(socket)
             {
                 WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
-                ReadTimeout = Timeout.Infinite
             };
             
             if (cfg.SslStreamFactory == null)
