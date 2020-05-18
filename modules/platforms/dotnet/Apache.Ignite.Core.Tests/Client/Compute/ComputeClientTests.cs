@@ -144,12 +144,15 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskWithDotnetOnlyArgClassThrowsCorrectException()
         {
-            // TODO: Why does this cause connection abort?
             var arg = new PlatformComputeNetBinarizable {Field = 42};
 
-            var res = Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
+            var ex = Assert.Throws<AggregateException>(() =>
+                Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg));
+
+            var clientEx = (IgniteClientException) ex.GetInnermostException();
             
-            Assert.AreEqual(arg.Field, res);
+            // TODO: This error message is awful.
+            Assert.AreEqual("Unknown pair [platformId=0, typeId=-315989221]", clientEx.Message);
         }
 
         /// <summary>
