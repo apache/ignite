@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -315,7 +316,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.AreEqual(val, binRes.GetField<long>("Field"));
 
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0
+#if !NETCOREAPP
                 var dotNetBin = _grid1.GetBinary().ToBinary<BinaryObject>(res);
 
                 Assert.AreEqual(dotNetBin.Header.HashCode, ((BinaryObject)binRes).Header.HashCode);
