@@ -24,7 +24,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     /// <summary>
     /// Thin client compute benchmarks.
     /// </summary>
-    [ThreadingDiagnoser]
+    // [ThreadingDiagnoser]
     [MemoryDiagnoser]
     public class ThinClientComputeBenchmark
     {
