@@ -147,8 +147,9 @@ public class Outbox extends AbstractNode<Object[]> implements SingleNode<Object[
 
     /** {@inheritDoc} */
     @Override public void onError(Throwable e) {
-        context().planningContext().logger();
-        System.out.println("ERROR!=" + X.getFullStackTrace(e));
+        U.error(context().planningContext().logger(),
+            "Error occurred during execution: " + X.getFullStackTrace(e));
+
         cancel(); // TODO send cause to originator.
     }
 

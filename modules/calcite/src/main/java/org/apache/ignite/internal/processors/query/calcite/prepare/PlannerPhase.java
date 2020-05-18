@@ -52,9 +52,7 @@ import static org.apache.ignite.internal.processors.query.calcite.prepare.Ignite
  * Represents a planner phase with its description and a used rule set.
  */
 public enum PlannerPhase {
-    /**
-     *
-     */
+    /** */
     HEURISTIC_OPTIMIZATION("Heuristic optimization phase") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
@@ -71,9 +69,7 @@ public enum PlannerPhase {
         }
     },
 
-    /**
-     *
-     */
+    /** */
     OPTIMIZATION("Main optimization phase") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
@@ -89,15 +85,13 @@ public enum PlannerPhase {
                 TableModifyConverterRule.INSTANCE,
                 PushFilterIntoScanRule.FILTER_INTO_SCAN,
                 new FilterProjectTransposeRule(Filter.class, Project.class, true, true,
-                    RelFactories.LOGICAL_BUILDER),
+                    RelFactories.LOGICAL_BUILDER), // TODO replace with logical nodes.
                 ProjectFilterTransposeRule.INSTANCE,
                 UnionMergeRule.INSTANCE,
                 UnionConverterRule.INSTANCE,
                 UnionTraitsPropagationRule.INSTANCE,
                 SortConverterRule.INSTANCE,
-                SortRemoveRule.INSTANCE/*,
-                *//*,*//*
-                SortTraitsPropagationRule.INSTANCE*/);
+                SortRemoveRule.INSTANCE);
         }
 
         /** {@inheritDoc} */
@@ -106,9 +100,7 @@ public enum PlannerPhase {
         }
     };
 
-    /**
-     *
-     */
+    /** */
     public final String description;
 
     /**

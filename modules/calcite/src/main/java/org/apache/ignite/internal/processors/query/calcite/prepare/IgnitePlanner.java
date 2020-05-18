@@ -232,7 +232,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public RelNode transform(int programIdx, RelTraitSet targetTraits, RelNode rel) {
-
         return programs.get(programIdx).run(planner(), rel, targetTraits.simplify(), materializations(rel), latices());
     }
 
@@ -294,7 +293,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return ImmutableList.of(); // TODO
     }
 
-    /** */
+    /**
+     * Returns all applicable materializations (i.e. secondary indexes) for the given rel node,
+     * @param root Rel node
+     * @return Materializations.
+     */
     private List<RelOptMaterialization> materializations(RelNode root) {
         RelOptCluster cluster = root.getCluster();
 
@@ -313,10 +316,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                     .add(igniteTbl.name() + "[" + idx.name() + "]")
                     .build();
 
-               // RelOptTable idxRelTbl = RelOptTableImpl.create(tbl.getRelOptSchema(), tbl.getRowType(), idx,  names);
-
                 IgniteTableScan idxTblScan = igniteTbl.toRel(cluster, tbl, idx.name());
-                //IgniteTableScan idxScan = idx.toRel(cluster, idxRelTbl, idx.indexName());
 
                 idxMaterializations.add(new RelOptMaterialization(idxTblScan, tblScan, null, names));
             }

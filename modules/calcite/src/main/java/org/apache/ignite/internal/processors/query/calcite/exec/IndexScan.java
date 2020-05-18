@@ -48,7 +48,7 @@ import org.h2.value.DataType;
 import org.h2.value.Value;
 
 /**
- * TODO: Add class description.
+ * Scan on index.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class IndexScan implements Iterable<Object[]> {
@@ -250,7 +250,7 @@ public class IndexScan implements Iterable<Object[]> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void onClose() throws IgniteCheckedException {
+        @Override protected void onClose() {
             releasePartitions();
         }
     }

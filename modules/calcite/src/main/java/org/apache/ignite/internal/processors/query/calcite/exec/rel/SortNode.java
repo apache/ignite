@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * TODO: Add class description.
+ * Sort node.
  */
 public class SortNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Downstream<Object[]> {
     /** How many rows are requested by downstream. */
@@ -171,7 +171,5 @@ public class SortNode extends AbstractNode<Object[]> implements SingleNode<Objec
         finally {
             inLoop = false;
         }
-
     }
-
 }

@@ -446,7 +446,6 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
             DistributionTraitDef.INSTANCE
-
         };
 
         return PlanningContext.builder()
@@ -471,7 +470,8 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
         RelTraitDef<?>[] traitDefs = {
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+            DistributionTraitDef.INSTANCE
         };
 
         return PlanningContext.builder()
@@ -588,6 +588,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         return new MultiStepDmlPlan(fragments, fieldsMetadata(ctx, igniteRel.getRowType(), null));
     }
 
+    /** */
     private IgniteRel optimize(SqlNode sqlNode, IgnitePlanner planner) {
         // Convert to Relational operators graph
         RelRoot root = planner.rel(sqlNode);
@@ -606,7 +607,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         return planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
     }
 
-
+    /** */
     private QueryPlan prepareExplain(SqlNode explain, PlanningContext ctx) throws ValidationException {
         IgnitePlanner planner = ctx.planner();
 
@@ -625,6 +626,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         return new ExplainPlan(plan, meta);
     }
 
+    /** */
     private List<GridQueryFieldMetadata> buildExplainColumnMeta(PlanningContext ctx) {
         IgniteTypeFactory factory = ctx.typeFactory();
         RelDataType planStrDataType =
@@ -644,7 +646,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                 return executeQuery(qryId, (MultiStepPlan) plan, pctx);
 
             case EXPLAIN:
-                return executeExplain(qryId, plan, pctx);
+                return executeExplain(plan);
 
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);
@@ -741,12 +743,14 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         return new ListFieldsQueryCursor<>(plan, info.iterator(), Arrays::asList);
     }
 
-
-    private FieldsQueryCursor<List<?>> executeExplain(UUID id, QueryPlan plan, PlanningContext pctx) {
+    /** */
+    private FieldsQueryCursor<List<?>> executeExplain(QueryPlan plan) {
         ExplainPlan explainPlan = (ExplainPlan)plan;
         List<List<?>> resSet = singletonList(singletonList(explainPlan.plan()));
+
         QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(resSet);
         cur.fieldsMeta(explainPlan.fieldsMeta());
+
         return cur;
     }
 
@@ -807,7 +811,6 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
     /** */
     private void onMessage(UUID nodeId, QueryStartRequest msg) {
-        System.out.println("onMessage!!!=" + localNodeId);
         assert nodeId != null && msg != null;
 
         PlanningContext ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());

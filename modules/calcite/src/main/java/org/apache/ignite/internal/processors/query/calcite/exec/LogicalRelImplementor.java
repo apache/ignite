@@ -26,7 +26,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -106,7 +106,6 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
 
         final IgniteTypeFactory typeFactory = ctx.getTypeFactory();
         final SqlConformance conformance = ctx.planningContext().conformance();
-        final SqlOperatorTable opTable = ctx.planningContext().opTable();
 
         expressionFactory = new ExpressionFactory(typeFactory, conformance);
     }
@@ -185,11 +184,13 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
         Predicate<Object[]> filters = scan.condition() == null ? null :
             expressionFactory.predicate(ctx, scan.condition(), scan.getRowType());
 
-        Object[] lowerBound = scan.lowerIndexCondition() == null ? null :
-            expressionFactory.convertToObjects(ctx, scan.lowerIndexCondition(), scan.getRowType());
+        List<RexNode> lowerCond = scan.lowerIndexCondition();
+        Object[] lowerBound = lowerCond == null ? null :
+            expressionFactory.convertToObjects(ctx, lowerCond, scan.getRowType());
 
-        Object[] upperBound = scan.upperIndexCondition() == null ? null :
-            expressionFactory.convertToObjects(ctx, scan.upperIndexCondition(), scan.getRowType());
+        List<RexNode> upperCond = scan.upperIndexCondition();
+        Object[] upperBound = upperCond == null ? null :
+            expressionFactory.convertToObjects(ctx, upperCond, scan.getRowType());
 
         IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
 
@@ -216,6 +217,7 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
         return node;
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteSort rel) {
         SortNode node = new SortNode(ctx, rel.getCollation());
 

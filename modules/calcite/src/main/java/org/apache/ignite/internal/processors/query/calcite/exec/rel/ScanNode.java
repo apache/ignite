@@ -85,7 +85,6 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
 
     /** */
     private void pushInternal() {
-        System.out.println("Scan node push internal");
         inLoop = true;
         try {
             if (it == null)

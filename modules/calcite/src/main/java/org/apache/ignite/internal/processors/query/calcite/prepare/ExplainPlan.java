@@ -20,33 +20,40 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * TODO: Add class description.
+ * Query explain plan.
  */
 public class ExplainPlan implements QueryPlan {
-
+    /** Column name. */
     public static final String PLAN_COL_NAME = "PLAN";
 
+    /** */
     private final List<GridQueryFieldMetadata> fieldsMeta;
 
+    /** */
     private final String plan;
 
+    /** */
     public ExplainPlan(String plan, List<GridQueryFieldMetadata> meta) {
         this.fieldsMeta = meta;
         this.plan = plan;
     }
 
+    /** {@inheritDoc} */
     @Override public Type type() {
         return Type.EXPLAIN;
     }
 
+    /** {@inheritDoc} */
     @Override public QueryPlan clone(@Nullable PlanningContext ctx) {
         return this;
     }
 
+    /** */
     public List<GridQueryFieldMetadata> fieldsMeta() {
         return fieldsMeta;
     }
 
+    /** */
     public String plan() {
         return plan;
     }

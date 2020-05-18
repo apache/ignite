@@ -188,7 +188,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
     /** {@inheritDoc} */
     @Override public void send(UUID nodeId, CalciteMessage msg) throws IgniteCheckedException {
-        System.out.println("send msg=" + msg.getClass().getSimpleName() + ", from=" + localNodeId() + ", to=" + nodeId);
         if (localNodeId().equals(nodeId))
             onMessage(nodeId, msg, true);
         else {
@@ -251,7 +250,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
     /** */
     private void onMessage(UUID nodeId, Object msg, byte plc) {
-        System.out.println("onMessage: " + msg + ", node=" + localNodeId);
         if (msg instanceof CalciteMessage)
             onMessage(nodeId, (CalciteMessage) msg, false);
     }

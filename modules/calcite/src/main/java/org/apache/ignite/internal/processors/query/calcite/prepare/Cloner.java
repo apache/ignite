@@ -136,6 +136,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
         return new IgniteUnionAll(cluster, rel.getTraitSet(), inputs);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteSort rel) {
         RelNode input = visit((IgniteRel) rel.getInput());
 
