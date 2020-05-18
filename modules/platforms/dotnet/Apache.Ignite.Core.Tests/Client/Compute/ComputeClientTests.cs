@@ -96,9 +96,13 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with server-side error.
         /// </summary>
         [Test]
-        public void TestExecuteJavaTaskWithError([Values(true, false)] bool async)
+        public void TestExecuteJavaTaskWithError()
         {
-            // TODO
+            var ex = (IgniteClientException) Assert.Throws<AggregateException>(
+                    () => Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.EchoTask, -42))
+                .GetInnermostException();
+            
+            StringAssert.EndsWith("Unknown type: -42", ex.Message);
         }
 
         /// <summary>
