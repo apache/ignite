@@ -404,5 +404,14 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 }
             };
         }
+
+        /** <inheritdoc /> */
+        protected override IgniteClientConfiguration GetClientConfiguration()
+        {
+            return new IgniteClientConfiguration(base.GetClientConfiguration())
+            {
+                SocketTimeout = TimeSpan.FromSeconds(3)
+            };
+        }
     }
 }
