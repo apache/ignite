@@ -64,8 +64,11 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         public void TearDown()
         {
             var logger = (ListLogger) Client.GetConfiguration().Logger;
-
-            foreach (var entry in logger.Entries)
+            var entries = logger.Entries;
+            
+            logger.Clear();
+            
+            foreach (var entry in entries)
             {
                 if (entry.Level >= LogLevel.Warn)
                 {

@@ -88,8 +88,8 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
                 ctx => WriteJavaTaskRequest(taskName, taskArg, ctx),
                 ctx => ReadJavaTaskResponse(ctx, tcs, keepBinary));
 
-            task.ContinueWith(t => tcs.SetException(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
-            task.ContinueWith(t => tcs.SetCanceled(), TaskContinuationOptions.OnlyOnCanceled);
+            task.ContinueWith(t => tcs.TrySetException(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+            task.ContinueWith(t => tcs.TrySetCanceled(), TaskContinuationOptions.OnlyOnCanceled);
 
             return tcs.Task;
         }
@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
 
                     if (opCode != ClientOp.ComputeTaskFinished)
                     {
-                        tcs.SetException(new IgniteClientException(
+                        tcs.TrySetException(new IgniteClientException(
                             string.Format("Invalid server notification code. Expected {0}, but got {1}",
                                 ClientOp.ComputeTaskFinished, opCode)));
                     }
@@ -194,16 +194,16 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
                         var status = (ClientStatusCode) reader.ReadInt();
                         var msg = reader.ReadString();
 
-                        tcs.SetException(new IgniteClientException(msg, null, status));
+                        tcs.TrySetException(new IgniteClientException(msg, null, status));
                     }
                     else
                     {
-                        tcs.SetResult(reader.ReadObject<TRes>());
+                        tcs.TrySetResult(reader.ReadObject<TRes>());
                     }
                 }
                 catch (Exception e)
                 {
-                    tcs.SetException(e);
+                    tcs.TrySetException(e);
                 }
             });
 

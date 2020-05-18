@@ -126,7 +126,7 @@ namespace Apache.Ignite.Core.Impl.Client
             }
             catch (Exception e)
             {
-                _logger.Error("Failed to handle client notification", e);
+                _logger.Error(e, "Failed to handle client notification");
             }
         }
     }
