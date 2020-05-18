@@ -346,8 +346,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                 compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
             });
 
-            Console.WriteLine(ex.Message);
-            Assert.AreEqual("Unknown pair [platformId=1, typeId=2009791293]", ex.Message);
+            Assert.AreEqual(
+                "Failed to resolve class name [platformId=1, platform=.NET, typeId=2009791293]", ex.Message);
         }
 
         /// <summary>
