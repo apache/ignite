@@ -27,7 +27,23 @@ public final class MarshallerPlatformIds {
     /** */
     public static final byte DOTNET_ID = 1;
 
+    /**
+     * Gets the platform name by id.
+     *
+     * @param platformId Id.
+     * @return Name.
+     */
+    public static String platformName(int platformId) {
+        switch (platformId) {
+            case JAVA_ID: return "Java";
+            case DOTNET_ID: return ".NET";
+        }
+
+        return "Unknown";
+    }
+
     /** */
     private MarshallerPlatformIds() {
+        // No-op.
     }
 }
