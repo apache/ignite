@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -522,14 +523,86 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     // ===== various complex conditions =====
 
     /** */
+    @Ignore("TODO")
     @Test
-    public void testOrderBy1() {
-        assertQuery("SELECT * FROM Developer ORDER BY id")
+    public void testOrderByKey() {
+        assertQuery("SELECT id, name, depId, age FROM Developer ORDER BY _key")
             .containsScan("PUBLIC", "DEVELOPER", PK)
+            .doesNotContainSubPlan("IgniteSort")
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(2, "Beethoven", 2, "Vienna", 44)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(4, "Strauss", 2, "Munich", 66)
+            .ordered()
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testOrderByKeyAlias() {
+        assertQuery("SELECT * FROM Developer ORDER BY id")
+            .containsScan("PUBLIC", "DEVELOPER", PK_ALIAS)
+            .doesNotContainSubPlan("IgniteSort")
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .ordered()
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testOrderByDepId() {
+        assertQuery("SELECT * FROM Developer ORDER BY depId")
+            .containsScan("PUBLIC", "DEVELOPER", DEPID_IDX)
+            .doesNotContainSubPlan("IgniteSort")
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .ordered()
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testOrderByNameCityAsc() {
+        assertQuery("SELECT * FROM Developer ORDER BY name, city")
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .containsSubPlan("IgniteSort")
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .ordered()
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testOrderByNameCityDesc() {
+        assertQuery("SELECT * FROM Developer ORDER BY name DESC, city DESC")
+            .containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX)
+            .doesNotContainSubPlan("IgniteSort")
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .ordered()
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testOrderByNoIndexedColumn() {
+        assertQuery("SELECT * FROM Developer ORDER BY age DESC")
+            .containsScan("PUBLIC", "DEVELOPER", PK)
+            .containsSubPlan("IgniteSort")
+            .returns(4, "Strauss", 2, "Munich", 66)
+            .returns(3, "Bach", 1, "Leipzig", 55)
+            .returns(2, "Beethoven", 2, "Vienna", 44)
+            .returns(1, "Mozart", 3, "Vienna", 33)
             .ordered()
             .check();
     }
@@ -546,6 +619,9 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
 
         /** */
         private List<String> subPlans = new ArrayList<>();
+
+        /** */
+        private List<String> excludedSubPlans = new ArrayList<>();
 
         /** */
         private boolean ordered;
@@ -567,6 +643,13 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         /** */
         public QueryChecker containsSubPlan(String subPlan) {
             subPlans.add(subPlan);
+
+            return this;
+        }
+
+        /** */
+        public QueryChecker doesNotContainSubPlan(String subPlan) {
+            excludedSubPlans.add(subPlan);
 
             return this;
         }
@@ -623,8 +706,14 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
                     actualPlan.contains(subPlan));
             }
 
-            if (exactPlan != null)
+            for (String subPlan : excludedSubPlans) {
+                assertTrue("\nExpected plan should not contain:\n" + subPlan + "\nactual plan:\n" + actualPlan,
+                    !actualPlan.contains(subPlan));
+            }
+
+            if (exactPlan != null) {
                 assertEquals(exactPlan, actualPlan);
+            }
 
             // Check result.
             List<FieldsQueryCursor<List<?>>> cursors =
