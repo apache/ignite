@@ -309,7 +309,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskAsyncMultithreaded()
         {
-            var count = 20000;
+            var count = 10000;
             var compute = Client.GetCompute().WithKeepBinary();
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
             cache[1] = 1;
@@ -326,6 +326,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 
                     // Perform other operations to mix notifications and responses.
                     Assert.AreEqual(1, cache[1]);
+                    Assert.AreEqual(1, cache.GetAsync(1).Result);
 
                     if (res < 0)
                     {

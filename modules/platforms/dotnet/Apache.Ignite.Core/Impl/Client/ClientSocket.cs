@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private volatile bool _checkingTimeouts;
 
         /** Read timeout flag. */
-        private int _isReadTimeoutEnabled;
+        private bool _isReadTimeoutEnabled;
 
         /** Current async operations, map from request id. */
         private readonly ConcurrentDictionary<long, Request> _requests
@@ -110,6 +110,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Locker. */
         private readonly object _sendRequestSyncRoot = new object();
+
+        /** Locker. */
+        private readonly object _receiveMessageSyncRoot = new object();
 
         /** Background socket receiver trigger. */
         private readonly ManualResetEventSlim _listenerEvent = new ManualResetEventSlim();
@@ -351,18 +354,19 @@ namespace Apache.Ignite.Core.Impl.Client
                         _listenerEvent.Reset();
                     }
 
-                    // Async operations should not have a read timeout.
-                    if (Interlocked.CompareExchange(ref _isReadTimeoutEnabled, 0, 1) == 1)
+                    lock (_receiveMessageSyncRoot)
                     {
-                        _stream.ReadTimeout = Timeout.Infinite;
-                    }
+                        // Async operations should not have a read timeout.
+                        if (_isReadTimeoutEnabled)
+                        {
+                            _stream.ReadTimeout = Timeout.Infinite;
+                            _isReadTimeoutEnabled = false;
+                        }
 
-                    // TODO: There is a race with sync operation somehow.
-                    // We could simply add a lock inside ReceiveMessage - it should be always uncontended.
-                    // TODO: Maybe get rid of sync mode? So much complexity.
-                    var msg = ReceiveMessage();
+                        var msg = ReceiveMessage();
                     
-                    HandleResponse(msg);
+                        HandleResponse(msg);
+                    }
                 }
             }
             catch (Exception ex)
@@ -655,11 +659,18 @@ namespace Apache.Ignite.Core.Impl.Client
                 return null;
             }
 
-            var lockTaken = false;
+            var sendLockTaken = false;
+            var receiveLockTaken = false;
             try
             {
-                Monitor.TryEnter(_sendRequestSyncRoot, 0, ref lockTaken);
-                if (!lockTaken)
+                Monitor.TryEnter(_sendRequestSyncRoot, 0, ref sendLockTaken);
+                if (!sendLockTaken)
+                {
+                    return null;
+                }
+
+                Monitor.TryEnter(_receiveMessageSyncRoot, 0, ref receiveLockTaken);
+                if (!receiveLockTaken)
                 {
                     return null;
                 }
@@ -674,9 +685,10 @@ namespace Apache.Ignite.Core.Impl.Client
                 SocketWrite(reqMsg.Buffer, reqMsg.Length);
 
                 // Sync operations rely on stream timeout.
-                if (Interlocked.CompareExchange(ref _isReadTimeoutEnabled, 1, 0) == 0)
+                if (!_isReadTimeoutEnabled)
                 {
                     _stream.ReadTimeout = _stream.WriteTimeout;
+                    _isReadTimeoutEnabled = true;
                 }
 
                 var respMsg = ReceiveMessage();
@@ -688,9 +700,14 @@ namespace Apache.Ignite.Core.Impl.Client
             }
             finally
             {
-                if (lockTaken)
+                if (sendLockTaken)
                 {
                     Monitor.Exit(_sendRequestSyncRoot);
+                }
+
+                if (receiveLockTaken)
+                {
+                    Monitor.Exit(_receiveMessageSyncRoot);
                 }
             }
         }
