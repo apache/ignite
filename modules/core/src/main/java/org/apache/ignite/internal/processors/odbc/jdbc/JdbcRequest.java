@@ -24,11 +24,8 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
 
 /**
  * JDBC request.
@@ -98,19 +95,23 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         writer.writeByte(type);
 
-        if (ver.compareTo(VER_2_8_0) >= 0)
+        if (protoCtx.isAffinityAwarenessSupported())
             writer.writeLong(reqId);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
 
-        if (ver.compareTo(VER_2_8_0) >= 0)
+        if (protoCtx.isAffinityAwarenessSupported())
             reqId = reader.readLong();
     }
 
@@ -128,12 +129,14 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
     /**
      * @param reader Binary reader.
-     * @param ver Protocol version.
+     * @param protoCtx Protocol context.
      * @return Request object.
      * @throws BinaryObjectException On error.
      */
-    public static JdbcRequest readRequest(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    public static JdbcRequest readRequest(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         int reqType = reader.readByte();
 
         JdbcRequest req;
@@ -218,7 +221,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqType + ']');
         }
 
-        req.readBinary(reader, ver);
+        req.readBinary(reader, protoCtx);
 
         return req;
     }

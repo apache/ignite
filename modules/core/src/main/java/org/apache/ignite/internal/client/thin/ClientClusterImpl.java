@@ -28,20 +28,11 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  * Implementation of {@link ClientCluster}.
  */
 class ClientClusterImpl extends ClientClusterGroupImpl implements ClientCluster {
-    /** Channel. */
-    private final ReliableChannel ch;
-
-    /** Binary marshaller. */
-    private final ClientBinaryMarshaller marsh;
-
     /**
      * Constructor.
      */
     ClientClusterImpl(ReliableChannel ch, ClientBinaryMarshaller marsh) {
-        super(null);
-
-        this.ch = ch;
-        this.marsh = marsh;
+        super(ch, marsh);
     }
 
     /** {@inheritDoc} */

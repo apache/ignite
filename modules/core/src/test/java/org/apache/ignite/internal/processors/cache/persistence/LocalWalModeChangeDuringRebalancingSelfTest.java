@@ -519,9 +519,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         // Await fully exchange complete.
         awaitExchange(newIgnite);
 
-        for (Ignite g : G.allGrids())
-            g.cache(DEFAULT_CACHE_NAME).rebalance();
-
         assertFalse(grpCtx.walEnabled());
 
         // TODO : test with client node as well
