@@ -48,6 +48,9 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     /** Initiator node ID. */
     private UUID initiatingNodeId;
 
+    /** Security subject id. */
+    private UUID secSubjId;
+
     /** Cluster state */
     private ClusterState state;
 
@@ -115,6 +118,20 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /**
+     * @return Security subject id.
+     */
+    public UUID securitySubjectId() {
+        return secSubjId;
+    }
+
+    /**
+     * Sets security subject id.
+     */
+    public void securitySubjectId(UUID secSubjId) {
+        this.secSubjId = secSubjId;
+    }
+
+    /**
      * @return Cache updates to be executed on exchange. If {@code null} exchange is not needed.
      */
     @Nullable public ExchangeActions exchangeActions() {
@@ -126,6 +143,8 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      */
     void exchangeActions(ExchangeActions exchangeActions) {
         assert exchangeActions != null && !exchangeActions.empty() : exchangeActions;
+
+        exchangeActions.securitySubjectId(securitySubjectId());
 
         this.exchangeActions = exchangeActions;
     }

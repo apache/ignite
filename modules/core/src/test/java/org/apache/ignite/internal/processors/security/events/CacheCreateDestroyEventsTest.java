@@ -29,7 +29,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  * Test that a local listener and a remote filter get correct subjectId when
  * a server (client) node create or destroy a cache.
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SuppressWarnings({"rawtypes", "unchecked", "ZeroLengthArrayAllocation"})
 public class CacheCreateDestroyEventsTest extends AbstractSecurityCacheEventTest {
     /** Client. */
     private static final String CLNT = "client";
@@ -121,6 +121,7 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityCacheEventTest
     /** */
     private void testCreateCacheOnNodeJoin(boolean isClient) throws Exception {
         final String login = "new_node_" + COUNTER.incrementAndGet();
+
         try {
             testCacheEvents(6, login, EVT_CACHE_STARTED, cacheConfigurations(2), ccfgs -> {
                 try {
