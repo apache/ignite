@@ -33,13 +33,28 @@ public final class MarshallerPlatformIds {
      * @param platformId Id.
      * @return Name.
      */
-    public static String platformName(int platformId) {
+    public static String platformName(byte platformId) {
         switch (platformId) {
             case JAVA_ID: return "Java";
             case DOTNET_ID: return ".NET";
         }
 
         return "Unknown";
+    }
+
+    /**
+     * Gets all known platform ids except the specified one.
+     *
+     * @param platformId Id.
+     * @return Other ids.
+     */
+    public static byte[] otherPlatforms(byte platformId) {
+        switch (platformId) {
+            case JAVA_ID: return new byte[]{DOTNET_ID};
+            case DOTNET_ID: return new byte[]{JAVA_ID};
+        }
+
+        return new byte[]{JAVA_ID, DOTNET_ID};
     }
 
     /** */

@@ -58,8 +58,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
-import static org.apache.ignite.internal.MarshallerPlatformIds.platformName;
+import static org.apache.ignite.internal.MarshallerPlatformIds.*;
 import static org.apache.ignite.marshaller.MarshallerUtils.CLS_NAMES_FILE;
 import static org.apache.ignite.marshaller.MarshallerUtils.JDK_CLS_NAMES_FILE;
 
@@ -415,6 +414,22 @@ public class MarshallerContextImpl implements MarshallerContext {
                     return clsName;
                 }
                 else {
+                    String platformName = platformName(platformId);
+
+                    for (byte otherPlatformId : otherPlatforms(platformId)) {
+                        try {
+                            clsName = getClassName(otherPlatformId, typeId);
+                            String otherPlatformName = platformName(otherPlatformId);
+
+                            throw new ClassNotFoundException(
+                                    "Failed to resolve " + otherPlatformName + " class " + clsName
+                                            + " for " + platformName + " platform [typeId=" + typeId + "].");
+                        }
+                        catch (ClassNotFoundException ignored) {
+                            // No-op.
+                        }
+                    }
+
                     throw new ClassNotFoundException(
                             "Failed to resolve class name [" +
                                     "platformId=" + platformId
