@@ -46,6 +46,9 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         /** */
         private const string TestFailoverTask = "org.apache.ignite.internal.client.thin.TestFailoverTask";
 
+        /** */
+        private const int MaxTasks = 8;
+
         /// <summary>
         /// Initializes a new instance of <see cref="ComputeClientTests"/>.
         /// </summary>
@@ -258,16 +261,25 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         }
 
         /// <summary>
-        /// Tests <see cref="IComputeClient.ExecuteJavaTaskAsync{TRes}"/> from multiple threads.
+        /// Tests <see cref="IComputeClient.ExecuteJavaTaskAsync{TRes}(string,object)"/> from multiple threads.
         /// </summary>
         [Test]
         public void TestExecuteJavaTaskAsyncMultithreaded()
         {
-            // TODO
+            var id = 0;
+            
+            TestUtils.RunMultiThreaded(() =>
+            {
+                var arg = new PlatformComputeNetBinarizable { Field = Interlocked.Increment(ref id) };
+                
+                var res = Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
+                
+                Assert.AreEqual(arg.Field, res);
+            }, MaxTasks);
         }
 
         /// <summary>
-        /// Tests that <see cref="IComputeClient.ExecuteJavaTaskAsync{TRes}"/> with a long-running job
+        /// Tests that <see cref="IComputeClient.ExecuteJavaTaskAsync{TRes}(string,object)"/> with a long-running job
         /// does not block other client operations.
         /// </summary>
         [Test]
@@ -300,7 +312,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 {
                     ThinClientConfiguration = new ThinClientConfiguration
                     {
-                        MaxActiveComputeTasksPerConnection = 10
+                        MaxActiveComputeTasksPerConnection = MaxTasks
                     }
                 }
             };
