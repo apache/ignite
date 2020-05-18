@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Impl.Client
             var reqMsg = WriteMessage(writeAction, opId);
 
             // Send.
-            var response = SendRequest(ref reqMsg);
+            var response = SendRequest(ref reqMsg) ?? SendRequestAsync(ref  reqMsg).Result;
 
             // Decode.
             return DecodeResponse(response, readFunc, errorFunc);
@@ -647,32 +647,41 @@ namespace Apache.Ignite.Core.Impl.Client
 
             // If there are no pending async requests, we can execute this operation synchronously,
             // which is more efficient.
+            if (IsAsyncMode)
+            {
+                return null;
+            }
+
             var lockTaken = false;
             try
             {
                 Monitor.TryEnter(_sendRequestSyncRoot, 0, ref lockTaken);
-                if (lockTaken)
+                if (!lockTaken)
                 {
-                    CheckException();
-
-                    if (!IsAsyncMode)
-                    {
-                        SocketWrite(reqMsg.Buffer, reqMsg.Length);
-
-                        // Sync operations rely on stream timeout.
-                        if (Interlocked.CompareExchange(ref _isReadTimeoutEnabled, 1, 0) == 0)
-                        {
-                            _stream.ReadTimeout = _stream.WriteTimeout;
-                        }
-
-                        var respMsg = ReceiveMessage();
-                        var response = new BinaryHeapStream(respMsg);
-                        var responseId = response.ReadLong();
-                        Debug.Assert(responseId == reqMsg.Id);
-
-                        return response;
-                    }
+                    return null;
                 }
+
+                CheckException();
+
+                if (IsAsyncMode)
+                {
+                    return null;
+                }
+
+                SocketWrite(reqMsg.Buffer, reqMsg.Length);
+
+                // Sync operations rely on stream timeout.
+                if (Interlocked.CompareExchange(ref _isReadTimeoutEnabled, 1, 0) == 0)
+                {
+                    _stream.ReadTimeout = _stream.WriteTimeout;
+                }
+
+                var respMsg = ReceiveMessage();
+                var response = new BinaryHeapStream(respMsg);
+                var responseId = response.ReadLong();
+                Debug.Assert(responseId == reqMsg.Id);
+
+                return response;
             }
             finally
             {
@@ -681,9 +690,6 @@ namespace Apache.Ignite.Core.Impl.Client
                     Monitor.Exit(_sendRequestSyncRoot);
                 }
             }
-
-            // Fallback to async mechanism.
-            return SendRequestAsync(ref reqMsg).Result;
         }
 
         /// <summary>
