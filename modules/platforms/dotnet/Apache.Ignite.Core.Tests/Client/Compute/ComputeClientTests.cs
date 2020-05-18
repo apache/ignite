@@ -151,8 +151,11 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 
             var clientEx = (IgniteClientException) ex.GetInnermostException();
             
-            // TODO: This error message is awful.
-            Assert.AreEqual("Unknown pair [platformId=0, typeId=-315989221]", clientEx.Message);
+            var expected = string.Format(
+                "Failed to resolve .NET class '{0}' in Java [platformId=0, typeId=-315989221].", 
+                arg.GetType().FullName);
+            
+            Assert.AreEqual(expected, clientEx.Message);
         }
 
         /// <summary>
