@@ -311,6 +311,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             var count = 20000;
             var compute = Client.GetCompute().WithKeepBinary();
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            cache[1] = 1;
             
             TestUtils.RunMultiThreaded(() =>
             {
@@ -321,6 +323,9 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                     var res = compute.ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
                 
                     Assert.AreEqual(arg.Field, res);
+
+                    // Perform other operations to mix notifications and responses.
+                    Assert.AreEqual(1, cache[1]);
 
                     if (res < 0)
                     {
