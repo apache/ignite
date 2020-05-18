@@ -60,7 +60,7 @@ public enum CommandList {
     /** Kill command. */
     KILL("--kill", new KillCommand()),
 
-    /** Snapshot command. */
+    /** Snapshot commands. */
     SNAPSHOT("--snapshot", new SnapshotCommand());
 
     /** Private values copy so there's no need in cloning it every time. */

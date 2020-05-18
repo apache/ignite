@@ -2093,18 +2093,24 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** @throws Exception If failed. */
     @Test
     public void testClusterSnapshotCreate() throws Exception {
-        injectTestSystemOut();
+        Ignite ignite = startGrids(2);
+        ignite.cluster().state(ACTIVE);
 
-        Ignite ignite = startGrids(1);
-
-//        ignite.cluster().state(ACTIVE);
-
-//        createCacheAndPreload(ignite, 10);
+        createCacheAndPreload(ignite, 10);
 
         CommandHandler h = new CommandHandler();
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", "snapshot_02052020"));
+    }
 
-        testOut.reset();
+    /** @throws Exception If failed. */
+    @Test
+    public void testClusterSnapshotOnInactive() throws Exception {
+        injectTestSystemOut();
+
+        startGrids(1);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(new CommandHandler(), "--snapshot", "create", "testSnapshotName"));
+        assertContains(log, testOut.toString(), "Snapshot operation has been rejected. The cluster is inactive.");
     }
 }

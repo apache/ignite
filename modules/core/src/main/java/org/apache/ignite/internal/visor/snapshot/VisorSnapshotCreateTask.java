@@ -20,27 +20,27 @@ package org.apache.ignite.internal.visor.snapshot;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * @see SnapshotCommand
  * @see IgniteSnapshot#createSnapshot(String)
  */
 @GridInternal
-public class VisorSnapshotCreateTask extends VisorOneNodeTask<String, String> {
+public class VisorSnapshotCreateTask extends VisorOneNodeTask<String, Void> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<String, String> job(String arg) {
+    @Override protected VisorJob<String, Void> job(String arg) {
         return new VisorSnapshotCreateJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCreateJob extends VisorJob<String, String> {
+    private static class VisorSnapshotCreateJob extends VisorJob<String, Void> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -53,13 +53,10 @@ public class VisorSnapshotCreateTask extends VisorOneNodeTask<String, String> {
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(String name) throws IgniteException {
-            IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(name);
+        @Override protected Void run(String name) throws IgniteException {
+            new SnapshotMXBeanImpl(ignite.context()).createSnapshot(name);
 
-            if (fut.isDone())
-                fut.get();
-
-            return "Cluster snapshot started with name: " + name;
+            return null;
         }
     }
 }
