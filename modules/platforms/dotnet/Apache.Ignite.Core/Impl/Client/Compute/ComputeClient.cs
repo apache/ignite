@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
             var tcs = new TaskCompletionSource<TRes>();
             cancellationToken.Register(() => tcs.SetCanceled());
 
-            var keepBinary = (_flags | ComputeClientFlags.KeepBinary) == ComputeClientFlags.KeepBinary;
+            var keepBinary = (_flags & ComputeClientFlags.KeepBinary) == ComputeClientFlags.KeepBinary;
             
             var task = _ignite.Socket.DoOutInOpAsync(
                 ClientOp.ComputeTaskExecute,
