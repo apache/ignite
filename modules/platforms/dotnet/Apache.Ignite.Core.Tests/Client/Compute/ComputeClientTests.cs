@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
     using System.Collections;
     using System.Linq;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
@@ -285,7 +286,17 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskWithExceededTaskLimit()
         {
-            // TODO
+            var compute = Client.GetCompute().WithKeepBinary();
+
+            var tasks = Enumerable
+                .Range(1, MaxTasks * 2)
+                .Select(_ => (Task) compute.ExecuteJavaTaskAsync<object>(TestTask, (long) 500))
+                .ToArray();
+
+            var ex = Assert.Throws<AggregateException>(() => Task.WaitAll(tasks));
+            var clientEx = ex.GetInnermostException();
+
+            StringAssert.StartsWith("Active compute tasks per connection limit (8) exceeded", clientEx.Message);
         }
 
         /// <summary>
