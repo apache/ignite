@@ -30,7 +30,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
  * Test that a local listener and a remote filter get correct subjectId when
  * a server (client) node activates/deactivates the cluster.
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SuppressWarnings({"rawtypes"})
 public class ActivateDeactivateClusterCacheEventTest extends AbstractSecurityCacheEventTest {
     /** Server. */
     private static final String SRV = "server";
@@ -77,8 +77,7 @@ public class ActivateDeactivateClusterCacheEventTest extends AbstractSecurityCac
 
         Collection<CacheConfiguration> configurations = cacheConfigurations(2);
 
-        configurations.forEach(c -> grid(SRV).createCache(c));
-        configurations.forEach(c -> grid(CLNT).cache(c.getName()));
+        configurations.forEach(c -> grid(CLNT).createCache(c.getName()));
 
         grid(SRV).cluster().state(INACTIVE);
 
