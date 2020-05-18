@@ -419,17 +419,18 @@ public class MarshallerContextImpl implements MarshallerContext {
                     for (byte otherPlatformId : otherPlatforms(platformId)) {
                         try {
                             clsName = getClassName(otherPlatformId, typeId);
-                            String otherPlatformName = platformName(otherPlatformId);
-
-                            throw new ClassNotFoundException(
-                                    "Failed to resolve " + otherPlatformName + " class " + clsName
-                                            + " for " + platformName
-                                            + " platform [platformId=" + platformId
-                                            + ", typeId=" + typeId + "].");
                         }
                         catch (ClassNotFoundException ignored) {
-                            // No-op.
+                            continue;
                         }
+
+                        String otherPlatformName = platformName(otherPlatformId);
+
+                        throw new ClassNotFoundException(
+                                "Failed to resolve " + otherPlatformName + " class " + clsName
+                                        + " for " + platformName
+                                        + " platform [platformId=" + platformId
+                                        + ", typeId=" + typeId + "].");
                     }
 
                     throw new ClassNotFoundException(
