@@ -263,9 +263,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <returns>True when removed, false otherwise.</returns>
         public void RemoveNotificationHandler(long notificationId)
         {
-            var count = Interlocked.Decrement(ref _expectedNotifications);
-            Debug.Assert(count >= 0);
-
             ClientNotificationHandler unused;
             var removed = _notificationListeners.TryRemove(notificationId, out unused);
             Debug.Assert(removed);
@@ -351,6 +348,8 @@ namespace Apache.Ignite.Core.Impl.Client
                         _listenerEvent.Reset();
                     }
 
+                    // TODO: Receive is called whenever notifications are enabled, but this can lead to a timeout
+                    // when notification has already been processed before.
                     var msg = ReceiveMessage();
                     HandleResponse(msg);
                 }
@@ -414,8 +413,12 @@ namespace Apache.Ignite.Core.Impl.Client
                 return false;
             }
 
-            // TODO: Race condition here. We don't have a notification handler,
-            // so other sync ops attempt to read data in parallel.
+            var count = Interlocked.Decrement(ref _expectedNotifications);
+            if (count < 0)
+            {
+                throw new IgniteClientException("Unexpected thin client notification: " + requestId); 
+            }
+            
             _notificationListeners.GetOrAdd(requestId, _ => new ClientNotificationHandler(_logger)).Handle(stream);
                     
             return true;
