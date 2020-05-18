@@ -58,7 +58,9 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.MarshallerPlatformIds.*;
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+import static org.apache.ignite.internal.MarshallerPlatformIds.otherPlatforms;
+import static org.apache.ignite.internal.MarshallerPlatformIds.platformName;
 import static org.apache.ignite.marshaller.MarshallerUtils.CLS_NAMES_FILE;
 import static org.apache.ignite.marshaller.MarshallerUtils.JDK_CLS_NAMES_FILE;
 
