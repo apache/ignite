@@ -28,9 +28,9 @@ namespace Apache.Ignite.BenchmarkDotNet
         /// <summary>
         /// Main.
         /// </summary>
-        static void Main(string[] args)
+        public static void Main()
         {
-            BenchmarkRunner.Run<ThinClientComputeBenchmark>();
+            BenchmarkRunner.Run<ThinClientCacheGetBenchmark>();
         }
     }
 }

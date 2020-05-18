@@ -22,6 +22,11 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
 
     /// <summary>
     /// Cache get benchmarks.
+    /// <para />
+    /// |   Method |     Mean |    Error |   StdDev | Ratio | RatioSD |
+    /// |--------- |---------:|---------:|---------:|------:|--------:|
+    /// |      Get | 25.97 us | 0.514 us | 0.953 us |  1.00 |    0.00 |
+    /// | GetAsync | 32.90 us | 0.638 us | 0.935 us |  1.27 |    0.06 |
     /// </summary>
     public class ThinClientCacheGetBenchmark : ThinClientBenchmarkBase
     {
@@ -40,7 +45,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
         /// <summary>
         /// Get benchmark.
         /// </summary>
-        [Benchmark]
+        [Benchmark(Baseline = true)]
         public void Get()
         {
             _cache.Get(1);
