@@ -261,12 +261,14 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         /// <param name="notificationId">Notification id.</param>
         /// <returns>True when removed, false otherwise.</returns>
-        public bool RemoveNotificationHandler(long notificationId)
+        public void RemoveNotificationHandler(long notificationId)
         {
-            Interlocked.Decrement(ref _expectedNotifications);
+            var count = Interlocked.Decrement(ref _expectedNotifications);
+            Debug.Assert(count >= 0);
 
             ClientNotificationHandler unused;
-            return _notificationListeners.TryRemove(notificationId, out unused);
+            var removed = _notificationListeners.TryRemove(notificationId, out unused);
+            Debug.Assert(removed);
         }
 
         /// <summary>
