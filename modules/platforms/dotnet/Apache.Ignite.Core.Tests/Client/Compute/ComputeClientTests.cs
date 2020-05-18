@@ -129,6 +129,21 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             var arg = new PlatformComputeNetBinarizable {Field = 42};
 
+            var res = Client.GetCompute().WithKeepBinary().ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
+            
+            Assert.AreEqual(arg.Field, res);
+        }
+
+        /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with .NET-only arg class
+        /// and without WithKeepBinary.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskWithDotnetOnlyArgClassThrowsCorrectException()
+        {
+            // TODO: Why does this cause connection abort?
+            var arg = new PlatformComputeNetBinarizable {Field = 42};
+
             var res = Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
             
             Assert.AreEqual(arg.Field, res);
@@ -271,14 +286,15 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         public void TestExecuteJavaTaskAsyncMultithreaded()
         {
             var count = 10000;
+            var compute = Client.GetCompute().WithKeepBinary();
             
             TestUtils.RunMultiThreaded(() =>
             {
                 while (true)
                 {
                     var arg = new PlatformComputeNetBinarizable { Field = Interlocked.Decrement(ref count) };
-                
-                    var res = Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
+
+                    var res = compute.ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
                 
                     Assert.AreEqual(arg.Field, res);
 
