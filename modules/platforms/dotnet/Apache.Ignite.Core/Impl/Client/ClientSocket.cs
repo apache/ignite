@@ -829,7 +829,8 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             var stream = new NetworkStream(socket)
             {
-                WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
+                WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
+                ReadTimeout = Timeout.Infinite
             };
             
             if (cfg.SslStreamFactory == null)
