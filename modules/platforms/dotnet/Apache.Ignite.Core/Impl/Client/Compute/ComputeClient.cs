@@ -157,6 +157,8 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
             writer.WriteLong((long) _timeout.TotalMilliseconds);
             writer.WriteString(taskName);
             writer.WriteObject(taskArg);
+            
+            ctx.Socket.ExpectNotifications();
         }
         
         /// <summary>

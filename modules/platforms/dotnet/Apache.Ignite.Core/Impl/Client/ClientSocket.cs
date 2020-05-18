@@ -96,6 +96,9 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly ConcurrentDictionary<long, ClientNotificationHandler> _notificationListeners
             = new ConcurrentDictionary<long, ClientNotificationHandler>();
 
+        /** Expected notifications counter. */
+        private long _expectedNotifications;
+
         /** Request id generator. */
         private long _requestId;
 
@@ -232,20 +235,25 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
+        /// Enables notifications on this socket.
+        /// </summary>
+        public void ExpectNotifications()
+        {
+            Interlocked.Increment(ref _expectedNotifications);
+        }
+
+        /// <summary>
         /// Adds a notification handler.
         /// </summary>
         /// <param name="notificationId">Notification id.</param>
         /// <param name="handler">Handler delegate.</param>
         public void AddNotificationHandler(long notificationId, Action<IBinaryStream> handler)
         {
-            lock (_sendRequestSyncRoot) // TODO: Needed?
-            {
-                _notificationListeners.AddOrUpdate(notificationId,
-                    _ => new ClientNotificationHandler(_logger, handler),
-                    (_, oldHandler) => oldHandler.SetHandler(handler));
-            
-                _listenerEvent.Set();
-            }
+            _notificationListeners.AddOrUpdate(notificationId,
+                _ => new ClientNotificationHandler(_logger, handler),
+                (_, oldHandler) => oldHandler.SetHandler(handler));
+
+            _listenerEvent.Set();
         }
 
         /// <summary>
@@ -255,11 +263,10 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <returns>True when removed, false otherwise.</returns>
         public bool RemoveNotificationHandler(long notificationId)
         {
-            lock (_sendRequestSyncRoot) // TODO: Needed?
-            {
-                ClientNotificationHandler unused;
-                return _notificationListeners.TryRemove(notificationId, out unused);
-            }
+            Interlocked.Decrement(ref _expectedNotifications);
+
+            ClientNotificationHandler unused;
+            return _notificationListeners.TryRemove(notificationId, out unused);
         }
 
         /// <summary>
@@ -307,6 +314,17 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
+        /// Gets a value indicating that this socket is in async mode:
+        /// async requests are pending, or notifications are expected.
+        /// <para />
+        /// We have sync and async modes because sync mode is faster.
+        /// </summary>
+        private bool IsAsyncMode
+        {
+            get { return !_requests.IsEmpty || Interlocked.Read(ref _expectedNotifications) > 0; }
+        }
+
+        /// <summary>
         /// Starts waiting for the new message.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
@@ -318,7 +336,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 while (_exception == null)
                 {
                     // Do not call Receive if there are no pending async requests or notification listeners.
-                    while (_requests.IsEmpty && _notificationListeners.IsEmpty)
+                    while (!IsAsyncMode)
                     {
                         // Wait with a timeout so we check for disposed state periodically.
                         _listenerEvent.Wait(1000);
@@ -621,7 +639,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     CheckException();
 
-                    if (_requests.IsEmpty && _notificationListeners.IsEmpty)
+                    if (!IsAsyncMode)
                     {
                         SocketWrite(reqMsg.Buffer, reqMsg.Length);
 
