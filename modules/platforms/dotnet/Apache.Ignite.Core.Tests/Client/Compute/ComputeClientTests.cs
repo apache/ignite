@@ -295,11 +295,11 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             const long timeoutMs = 200;
             
             var cluster = Client.GetCluster();
+            var nodeId = cluster.GetNode().Id;
 
-            var compute = cluster.ForPredicate(n => n.Id == cluster.GetNode().Id)
+            var compute = cluster.ForPredicate(n => n.Id == nodeId)
                 .GetCompute()
                 .WithNoFailover()
-                .WithNoResultCache()
                 .WithKeepBinary()
                 .WithTimeout(TimeSpan.FromMilliseconds(timeoutMs));
 
@@ -317,10 +317,11 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             
             // Flags.
             Assert.IsFalse(compute.ExecuteJavaTask<bool>(TestFailoverTask, null));
-            Assert.IsFalse(compute.ExecuteJavaTask<bool>(TestResultCacheTask, null));
+            Assert.IsFalse(compute.WithNoResultCache().ExecuteJavaTask<bool>(TestResultCacheTask, null));
             
-            // Cluster
-            // TODO
+            // Cluster.
+            var executedNodeIds = (ArrayList) compute.ExecuteJavaTask<IgniteBiTuple>(TestTask, null).Item2;
+            Assert.AreEqual(nodeId, executedNodeIds.Cast<Guid>().Single());
         }
 
         /// <summary>
