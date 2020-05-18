@@ -127,7 +127,11 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskWithKeepBinaryDotnetOnlyArgClass()
         {
-            // TODO
+            var arg = new PlatformComputeNetBinarizable {Field = 42};
+
+            var res = Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
+            
+            Assert.AreEqual(arg.Field, res);
         }
 
         /// <summary>
@@ -249,7 +253,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 "Unknown task name or failed to auto-deploy task (was task (re|un)deployed?) [taskName=bad, ", 
                 innerEx.Message);
         }
-
+        
         /// <summary>
         /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with exceeded
         /// <see cref="ThinClientConfiguration.MaxActiveComputeTasksPerConnection"/>.
