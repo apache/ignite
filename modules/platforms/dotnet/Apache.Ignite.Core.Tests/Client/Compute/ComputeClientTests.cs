@@ -266,15 +266,23 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskAsyncMultithreaded()
         {
-            var id = 0;
+            var count = 10000;
             
             TestUtils.RunMultiThreaded(() =>
             {
-                var arg = new PlatformComputeNetBinarizable { Field = Interlocked.Increment(ref id) };
+                while (true)
+                {
+                    var arg = new PlatformComputeNetBinarizable { Field = Interlocked.Decrement(ref count) };
                 
-                var res = Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
+                    var res = Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
                 
-                Assert.AreEqual(arg.Field, res);
+                    Assert.AreEqual(arg.Field, res);
+
+                    if (res < 0)
+                    {
+                        break;
+                    }
+                }
             }, MaxTasks);
         }
 
