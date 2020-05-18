@@ -61,7 +61,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
         [Benchmark]
         public void ExecuteJavaTask()
         {
-            _client.GetCompute().ExecuteJavaTask<int>(TaskName, 0);
+            _client.GetCompute().ExecuteJavaTask<object>(TaskName, 0);
         }
     }
 }
