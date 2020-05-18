@@ -49,7 +49,6 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.rex.RexUtil.removeCast;
@@ -65,23 +64,32 @@ import static org.apache.calcite.sql.SqlKind.OR;
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class IgniteTableScan extends TableScan implements IgniteRel {
+    /** Supported index operations. */
     public static final Set<SqlKind> TREE_INDEX_COMPARISON =
         EnumSet.of(
             EQUALS,
             LESS_THAN, GREATER_THAN,
             GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
-    private static final int EQUALS_MASK = 1;
-    private static final int LESS_MASK = EQUALS_MASK << 1;
-    private static final int GREATER_MASK = LESS_MASK << 1;
 
+    /** */
     private final String idxName;
+
+    /** */
     private final RexNode condition;
+
+    /** */
     private final IgniteTable igniteTable;
+
+    /** */
     private final RelCollation collation;
+
+    /** */
     private List<RexNode> lowerIdxCond;
+
+    /** */
     private List<RexNode> upperIdxCond;
-//    private List<RexNode> lowerIdxCondition;
-//    private List<RexNode> upperIdxCondition;
+
+    /** */
     private double idxSelectivity = 1.0;
 
     /**
@@ -126,15 +134,9 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         buildIndexConditions();
     }
 
-    // TODO Merge OR filters result using several index cursors
-    // TODO simplify and merge overlapping conditions on the same column.
-    // TODO do we always scan over index? datapages scan?
-    // TODO IN operator
-    // TODO BETWEEN
-    // TODO support expressions like WHERE a=?+1
-    // TODO handle correlVariable as constant?
-    // TODO limit offset
-
+    /**
+     * Builds index conditions.
+     */
     private void buildIndexConditions() {
         if (!boundsArePossible())
             return;
@@ -224,7 +226,8 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         idxSelectivity = selectivity;
     }
 
-    @NotNull private Map<Integer, List<RexCall>> mapPredicatesToFields() {
+    /** */
+    private Map<Integer, List<RexCall>> mapPredicatesToFields() {
         List<RexNode> predicatesConjunction = RelOptUtil.conjunctions(condition);
 
         Map<Integer, List<RexCall>> fieldsToPredicates = new HashMap<>(predicatesConjunction.size());
@@ -253,6 +256,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         return fieldsToPredicates;
     }
 
+    /** */
     private boolean boundsArePossible() {
         if (condition == null)
             return false;
@@ -272,6 +276,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         return true;
     }
 
+    /** */
     private static RexNode extractRef(RexCall call) {
         assert isBinaryComparison(call);
 
@@ -289,6 +294,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         return null;
     }
 
+    /** */
     private static boolean refOnTheRight(RexCall predCall) {
         RexNode rightOp = predCall.getOperands().get(1);
 
@@ -297,10 +303,12 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         return rightOp.isA(SqlKind.LOCAL_REF);
     }
 
+    /** */
     public String indexName() {
         return idxName;
     }
 
+    /** */
     public List<RexNode> lowerIndexCondition() {
         if (F.isEmpty(lowerIdxCond))
             return null;
@@ -308,7 +316,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         return buildIndexCondition(lowerIdxCond);
     }
 
-
+    /** */
     public List<RexNode>  upperIndexCondition() {
         if (F.isEmpty(upperIdxCond))
             return null;
@@ -316,8 +324,8 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         return buildIndexCondition(upperIdxCond);
     }
 
-
-    @NotNull public List<RexNode> buildIndexCondition(List<RexNode> idxCond) {
+    /** */
+    public List<RexNode> buildIndexCondition(List<RexNode> idxCond) {
         List<RexNode> lowerIdxCondition = makeListOfNullLiterals(igniteTable.columnDescriptors().length);
 
         for (RexNode pred : idxCond) {
@@ -331,18 +339,11 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
             lowerIdxCondition.set(ref.getIndex(), cond);
         }
+
         return lowerIdxCondition;
     }
 
-    private static boolean allNulls(List arr) {
-        for (int i = 0; i < arr.size(); i++) {
-            if (arr.get(i) != null)
-                return false;
-        }
-        return true;
-    }
-
-
+    /** */
     private List<RexNode> makeListOfNullLiterals(int size) {
         List<RexNode> list = new ArrayList<>(size);
         RexNode nullLiteral = getCluster().getRexBuilder()
@@ -353,6 +354,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         return list;
     }
 
+    /** {@inheritDoc} */
     @Override public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         return pw.item("index", idxName )
@@ -374,49 +376,19 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         return visitor.visit(this);
     }
 
-    /**
-     *
-     */
+    /** */
     public RexNode condition() {
         return condition;
     }
 
-    private static double guessSelectivity(RexNode predicate) {
-        double sel = 1.0;
-        if ((predicate == null) || predicate.isAlwaysTrue()) {
-            return sel;
-        }
-
-        for (RexNode pred : RelOptUtil.conjunctions(predicate)) {
-            if (pred.getKind() == SqlKind.IS_NOT_NULL) {
-                sel *= 0.9;
-            }
-            else if (pred.isA(EQUALS)) {
-                sel *= 0.15;
-            }
-            else if (pred.isA(SqlKind.IN)) {
-                sel *= 0.2;
-            }
-            else if (pred.isA(SqlKind.BETWEEN)) {
-                sel *= 0.3;
-            }
-            else if (pred.isA(SqlKind.COMPARISON)) {
-                sel *= 0.4;
-            }
-            else {
-                sel *= 0.25;
-            }
-        }
-
-        return sel;
-    }
-
+    /** */
     private static boolean isBinaryComparison(RexNode exp) {
         return TREE_INDEX_COMPARISON.contains(exp.getKind()) &&
-            (exp instanceof RexCall) && // TODO is it possible to be the not RexCall here?
+            (exp instanceof RexCall) &&
             ((RexCall)exp).getOperands().size() == 2;
     }
 
+    /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rows = estimateRowCount(mq);
 
@@ -425,9 +397,8 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         return cost;
     }
 
+    /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        // TODO cost model that takes cpu and io into account.
-        // TODO metadata fix: rows selected by filtered out by embedded filter.
         double rows = table.getRowCount();
 
         double rowsIn = rows * idxSelectivity;

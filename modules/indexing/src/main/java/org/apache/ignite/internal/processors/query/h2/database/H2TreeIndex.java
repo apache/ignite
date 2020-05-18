@@ -437,11 +437,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
         BPlusTree.TreeRowClosure<H2Row, H2Row> filterClosure
     ) {
         try {
-            int seg = 0; // TODO segments support threadLocalSegment();
+            int seg = 0; // TODO segments support
 
             H2Tree tree = treeForRead(seg);
-
-           // BPlusTree.TreeRowClosure<H2Row, H2Row> filterC = filter(qryCtxRegistry.getThreadLocal());
 
             return tree.find(lower, upper, filterClosure, null);
         }

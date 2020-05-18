@@ -68,6 +68,11 @@ public class IgniteSchema extends AbstractSchema {
         tableMap.remove(tableName);
     }
 
+    /**
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @return Index.
+     */
     public IgniteIndex getIndex(String tblName, String idxName) {
         Table tbl = tableMap.get(tblName);
 

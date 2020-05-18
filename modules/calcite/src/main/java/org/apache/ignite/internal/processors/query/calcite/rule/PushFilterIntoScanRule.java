@@ -31,7 +31,7 @@ import org.apache.calcite.rex.RexVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 
 /**
- * TODO: Add class description.
+ * Rule that pushes filter into the scan. This might be useful for index range scans.
  */
 public class PushFilterIntoScanRule extends RelOptRule {
 

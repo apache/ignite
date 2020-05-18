@@ -45,10 +45,19 @@ import static java.util.Collections.singletonList;
  * Basic index tests.
  */
 public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstractTest {
+    /** */
     private static final String PK = IgniteTable.PK_INDEX_NAME;
+
+    /** */
     private static final String PK_ALIAS = IgniteTable.PK_ALIAS_INDEX_NAME;
+
+    /** */
     private static final String DEPID_IDX = "DEPID_IDX";
+
+    /** */
     private static final String NAME_CITY_IDX = "NAME_CITY_IDX";
+
+    /** */
     private static final String NAME_DEPID_CITY_IDX = "NAME_DEPID_CITY_IDX";
 
     /** {@inheritDoc} */

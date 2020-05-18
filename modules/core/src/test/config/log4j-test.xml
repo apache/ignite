@@ -31,7 +31,7 @@
         <param name="Target" value="System.out"/>
 
         <!-- Log from DEBUG and higher. -->
-        <param name="Threshold" value="TRACE"/>
+        <param name="Threshold" value="DEBUG"/>
 
         <!-- The default pattern: Date Priority [Category] Message\n -->
         <layout class="org.apache.log4j.PatternLayout">
@@ -40,7 +40,7 @@
 
         <!-- Do not log beyond INFO level. -->
         <filter class="org.apache.log4j.varia.LevelRangeFilter">
-            <param name="levelMin" value="TRACE"/>
+            <param name="levelMin" value="DEBUG"/>
             <param name="levelMax" value="INFO"/>
         </filter>
     </appender>
@@ -124,11 +124,6 @@
     -->
 
     <!-- Disable all open source debugging. -->
-
-    <category name="org.apache.calcite.plan">
-        <level value="ERROR"/>
-    </category>
-
     <category name="org">
         <level value="INFO"/>
     </category>

@@ -901,9 +901,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
-        String sql = "SELECT d.id,  p.ver " +
-            "FROM PUBLIC.Developer d JOIN PUBLIC.Project p " +
-            "ON d.projectId = p.id " ;
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
+            "FROM PUBLIC.Developer d JOIN (" +
+            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
+            ") p " +
+            "ON d.projectId = p.id0 " +
+            "WHERE (d.projectId + 1) > ?";
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
@@ -2232,7 +2235,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             @Override public IgniteDistribution distribution() {
                 return IgniteDistributions.affinity(0, "Project", "hash");
             }
-
         };
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
@@ -2401,6 +2403,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             return Collections.emptyList();
         }
 
+        /** {@inheritDoc} */
         @Override public ColumnDescriptor[] columnDescriptors() {
             return new ColumnDescriptor[0];
         }

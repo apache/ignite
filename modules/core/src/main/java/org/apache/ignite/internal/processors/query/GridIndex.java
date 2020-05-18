@@ -19,7 +19,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 
 /**
- * TODO: Add class description.
+ * Index interface.
  */
 public interface GridIndex<T> {
 

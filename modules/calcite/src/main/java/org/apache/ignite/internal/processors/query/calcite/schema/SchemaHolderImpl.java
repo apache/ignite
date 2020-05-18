@@ -127,7 +127,6 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         rebuild();
     }
 
-
     /** */
     private static Object affinityIdentity(GridCacheContextInfo<?, ?> cacheInfo) {
         return cacheInfo.config().getCacheMode() == CacheMode.PARTITIONED ?

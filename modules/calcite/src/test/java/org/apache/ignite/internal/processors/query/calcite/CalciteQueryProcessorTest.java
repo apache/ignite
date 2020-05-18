@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -40,7 +41,7 @@ import org.junit.Test;
 /**
  *
  */
-//@WithSystemProperty(key = "calcite.debug", value = "true")
+@WithSystemProperty(key = "calcite.debug", value = "false")
 public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     /** */
     private IgniteEx ignite;

@@ -31,10 +31,12 @@ public class SortConverterRule extends RelOptRule {
     /** */
     public static final RelOptRule INSTANCE = new SortConverterRule();
 
+    /** */
     public SortConverterRule() {
         super(operand(LogicalSort.class, any()));
     }
 
+    /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
         LogicalSort rel = call.rel(0);
 

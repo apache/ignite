@@ -220,16 +220,6 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
     @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
         throw new UnsupportedOperationException();
     }
-//
-//
-//    public Iterable<Object[]> scan(
-//        ExecutionContext execCtx,
-//        Predicate<Object[]> filters,
-//        int[] projects,
-//        Object[] lowerIdxConditions,
-//        Object[] upperIdxConditions) {
-//        return new IndexScan(execCtx, this, filters, projects, lowerIdxConditions, upperIdxConditions);
-//    }
 
     /** {@inheritDoc} */
     @Override public <C> C unwrap(Class<C> aClass) {

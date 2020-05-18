@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 
 /**
- * TODO: Add class description.
+ * Ignite scannable index.
  */
 public class IgniteIndex {
     /** */
@@ -65,6 +65,7 @@ public class IgniteIndex {
         return tbl;
     }
 
+    /** */
     public Iterable<Object[]> scan(
         ExecutionContext execCtx,
         Predicate<Object[]> filters,
