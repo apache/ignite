@@ -292,7 +292,35 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskWithMixedModifiers()
         {
-            // TODO: see testComputeWithMixedModificators in Java
+            const long timeoutMs = 200;
+            
+            var cluster = Client.GetCluster();
+
+            var compute = cluster.ForPredicate(n => n.Id == cluster.GetNode().Id)
+                .GetCompute()
+                .WithNoFailover()
+                .WithNoResultCache()
+                .WithKeepBinary()
+                .WithTimeout(TimeSpan.FromMilliseconds(timeoutMs));
+
+            // KeepBinary.
+            var res = compute.ExecuteJavaTask<IBinaryObject>(
+                ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizableJava);
+            
+            Assert.AreEqual(1, res.GetField<int>("field"));
+
+            // Timeout.
+            var ex = Assert.Throws<AggregateException>(() => compute.ExecuteJavaTask<object>(TestTask, timeoutMs * 3));
+            var clientEx = (IgniteClientException) ex.GetInnermostException();
+            
+            StringAssert.StartsWith("Task timed out (check logs for error messages):", clientEx.Message);
+            
+            // Flags.
+            Assert.IsFalse(compute.ExecuteJavaTask<bool>(TestFailoverTask, null));
+            Assert.IsFalse(compute.ExecuteJavaTask<bool>(TestResultCacheTask, null));
+            
+            // Cluster
+            // TODO
         }
 
         /// <summary>
