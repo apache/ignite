@@ -33,19 +33,22 @@ namespace Apache.Ignite.Core.Impl.Client
     /// </summary>
     internal class ClientNotificationHandler
     {
+        /** Handler delegate. */
+        public delegate void Handler(IBinaryStream stream, Exception ex);
+        
         /** Logger. */
         private readonly ILogger _logger;
 
         /** Nested handler. */
-        private Action<IBinaryStream> _handler;
+        private Handler _handler;
 
         /** Queue. */
-        private List<IBinaryStream> _queue;
+        private List<KeyValuePair<IBinaryStream, Exception>> _queue;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ClientNotificationHandler"/>.
         /// </summary>
-        public ClientNotificationHandler(ILogger logger, Action<IBinaryStream> handler = null)
+        public ClientNotificationHandler(ILogger logger, Handler handler = null)
         {
             Debug.Assert(logger != null);
             
@@ -57,7 +60,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Handles the notification.
         /// </summary>
         /// <param name="stream">Notification data.</param>
-        public void Handle(IBinaryStream stream)
+        /// <param name="exception">Exception. Can be null.</param>
+        public void Handle(IBinaryStream stream, Exception exception)
         {
             // We are in the socket receiver thread here.
             // However, handler is set from another thread, so lock is required.
@@ -68,12 +72,12 @@ namespace Apache.Ignite.Core.Impl.Client
                 
                 if (handler != null)
                 {
-                    ThreadPool.QueueUserWorkItem(_ => Handle(handler, stream));
+                    ThreadPool.QueueUserWorkItem(_ => Handle(handler, stream, exception));
                 }
                 else
                 {
-                    _queue = _queue ?? new List<IBinaryStream>();
-                    _queue.Add(stream);
+                    _queue = _queue ?? new List<KeyValuePair<IBinaryStream, Exception>>();
+                    _queue.Add(new KeyValuePair<IBinaryStream, Exception>(stream, exception));
                 }
             }
         }
@@ -82,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Sets the handler.
         /// </summary>
         /// <param name="handler">Handler.</param>
-        public ClientNotificationHandler SetHandler(Action<IBinaryStream> handler)
+        public ClientNotificationHandler SetHandler(Handler handler)
         {
             Debug.Assert(handler != null);
             
@@ -105,11 +109,11 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Drains the queue.
         /// </summary>
-        private void Drain(Action<IBinaryStream> handler, List<IBinaryStream> queue)
+        private void Drain(Handler handler, List<KeyValuePair<IBinaryStream, Exception>> queue)
         {
             foreach (var stream in queue)
             {
-                Handle(handler, stream);
+                Handle(handler, stream.Key, stream.Value);
             }
         }
 
@@ -118,11 +122,11 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "Thread root must catch all exceptions to avoid crashing the process.")]
-        private void Handle(Action<IBinaryStream> handler, IBinaryStream stream)
+        private void Handle(Handler handler, IBinaryStream stream, Exception exception)
         {
             try
             {
-                handler(stream);
+                handler(stream, exception);
             }
             catch (Exception e)
             {

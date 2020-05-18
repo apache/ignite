@@ -171,8 +171,14 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         {
             var taskId = ctx.Stream.ReadLong();
 
-            ctx.Socket.AddNotificationHandler(taskId, stream =>
+            ctx.Socket.AddNotificationHandler(taskId, (stream, ex) =>
             {
+                if (ex != null)
+                {
+                    tcs.TrySetException(ex);
+                    return;
+                }
+
                 ctx.Socket.RemoveNotificationHandler(taskId);
 
                 var reader = ctx.Marshaller.StartUnmarshal(stream, 

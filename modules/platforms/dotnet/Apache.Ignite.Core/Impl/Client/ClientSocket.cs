@@ -247,7 +247,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         /// <param name="notificationId">Notification id.</param>
         /// <param name="handler">Handler delegate.</param>
-        public void AddNotificationHandler(long notificationId, Action<IBinaryStream> handler)
+        public void AddNotificationHandler(long notificationId, ClientNotificationHandler.Handler handler)
         {
             _notificationListeners.AddOrUpdate(notificationId,
                 _ => new ClientNotificationHandler(_logger, handler),
@@ -421,7 +421,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 throw new IgniteClientException("Unexpected thin client notification: " + requestId); 
             }
             
-            _notificationListeners.GetOrAdd(requestId, _ => new ClientNotificationHandler(_logger)).Handle(stream);
+            _notificationListeners.GetOrAdd(requestId, _ => new ClientNotificationHandler(_logger))
+                .Handle(stream, null);
                     
             return true;
         }
@@ -904,6 +905,18 @@ namespace Apache.Ignite.Core.Impl.Client
                     if (_requests.TryRemove(reqId, out req) && req != null)
                     {
                         req.CompletionSource.TrySetException(ex);
+                    }
+                }
+            }
+
+            while (!_notificationListeners.IsEmpty)
+            {
+                foreach (var id in _notificationListeners.Keys)
+                {
+                    ClientNotificationHandler handler;
+                    if (_notificationListeners.TryRemove(id, out handler))
+                    {
+                        handler.Handle(null, ex);
                     }
                 }
             }
