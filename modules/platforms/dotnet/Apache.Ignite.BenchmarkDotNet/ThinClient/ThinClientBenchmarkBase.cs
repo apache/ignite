@@ -17,24 +17,39 @@
 
 namespace Apache.Ignite.BenchmarkDotNet.ThinClient
 {
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Client;
     using global::BenchmarkDotNet.Attributes;
 
     /// <summary>
-    /// Thin client compute benchmarks.
+    /// Base class for thin client benchmarks.
     /// </summary>
-    [MemoryDiagnoser]
-    public class ThinClientComputeBenchmark : ThinClientBenchmarkBase
+    public abstract class ThinClientBenchmarkBase
     {
         /** */
-        private const string TaskName = "org.apache.ignite.platform.PlatformComputeEchoTask";
+        public IIgnite Ignite { get; set; }
+
+        /** */
+        public IIgniteClient Client { get; set; }
 
         /// <summary>
-        /// Benchmark: simple Java task.
+        /// Sets up the benchmark.
         /// </summary>
-        [Benchmark]
-        public void ExecuteJavaTask()
+        [GlobalSetup]
+        public virtual void GlobalSetup()
         {
-            Client.GetCompute().ExecuteJavaTask<object>(TaskName, 0);
+            Ignite = Ignition.Start(Utils.GetIgniteConfiguration());
+            Client = Ignition.StartClient(Utils.GetIgniteClientConfiguration());
+        }
+
+        /// <summary>
+        /// Cleans up the benchmark.
+        /// </summary>
+        [GlobalCleanup]
+        public virtual void GlobalCleanup()
+        {
+            Client.Dispose();
+            Ignite.Dispose();
         }
     }
 }

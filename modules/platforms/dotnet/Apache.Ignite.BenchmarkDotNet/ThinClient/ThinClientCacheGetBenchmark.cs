@@ -17,24 +17,42 @@
 
 namespace Apache.Ignite.BenchmarkDotNet.ThinClient
 {
+    using Apache.Ignite.Core.Client.Cache;
     using global::BenchmarkDotNet.Attributes;
 
     /// <summary>
-    /// Thin client compute benchmarks.
+    /// Cache get benchmarks.
     /// </summary>
-    [MemoryDiagnoser]
-    public class ThinClientComputeBenchmark : ThinClientBenchmarkBase
+    public class ThinClientCacheGetBenchmark : ThinClientBenchmarkBase
     {
         /** */
-        private const string TaskName = "org.apache.ignite.platform.PlatformComputeEchoTask";
+        private ICacheClient<int, int> _cache;
+        
+        /** <inheritdoc /> */
+        public override void GlobalSetup()
+        {
+            base.GlobalSetup();
+
+            _cache = Client.GetOrCreateCache<int, int>("c");
+            _cache[1] = 1;
+        }
 
         /// <summary>
-        /// Benchmark: simple Java task.
+        /// Get benchmark.
         /// </summary>
         [Benchmark]
-        public void ExecuteJavaTask()
+        public void Get()
         {
-            Client.GetCompute().ExecuteJavaTask<object>(TaskName, 0);
+            _cache.Get(1);
+        }
+
+        /// <summary>
+        /// GetAsync benchmark.
+        /// </summary>
+        [Benchmark]
+        public void GetAsync()
+        {
+            _cache.GetAsync(1).Wait();
         }
     }
 }
