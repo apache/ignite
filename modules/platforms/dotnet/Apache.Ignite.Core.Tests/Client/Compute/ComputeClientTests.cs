@@ -337,7 +337,13 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskAsyncWithLongJobDoesNotBlockOtherOperations()
         {
-            // TODO
+            var task = Client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, (long) 500);
+
+            Client.GetCacheNames();
+            
+            Assert.IsFalse(task.IsCompleted);
+            
+            task.Wait();
         }
 
         /// <summary>
