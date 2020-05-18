@@ -285,7 +285,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskAsyncMultithreaded()
         {
-            var count = 10000;
+            var count = 20000;
             var compute = Client.GetCompute().WithKeepBinary();
             
             TestUtils.RunMultiThreaded(() =>
@@ -303,7 +303,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                         break;
                     }
                 }
-            }, MaxTasks);
+            }, MaxTasks - 1);
         }
 
         /// <summary>
