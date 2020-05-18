@@ -149,7 +149,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
 
         IgniteWriteAheadLogManager wal = node.context().cache().context().wal();
 
-        if (recoverFromWAL){
+        if (recoverFromWAL) {
             //Force checkpoint. See for details: https://issues.apache.org/jira/browse/IGNITE-10187
             node.context().cache().context().database().waitForCheckpoint(null);
 
@@ -168,7 +168,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
 
             flushTask.onTimeout(); // Flush WAL.
 
-            if (!recoverFromWAL){
+            if (!recoverFromWAL) {
                 //Force checkpoint, then disable.
                 node.context().cache().context().database().waitForCheckpoint(null);
 

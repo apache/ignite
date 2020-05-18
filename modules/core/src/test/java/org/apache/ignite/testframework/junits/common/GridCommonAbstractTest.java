@@ -138,6 +138,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -709,7 +710,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 GridDhtLocalPartition loc = top.localPartition(p, readyVer, false);
 
                                 boolean notPrimary = !affNodes.isEmpty() &&
-                                    !exchMgr.rebalanceTopologyVersion().equals(AffinityTopologyVersion.NONE) &&
                                     !affNodes.get(0).equals(dht.context().affinity().primaryByPartition(p, readyVer));
 
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
@@ -843,7 +843,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param c Cache proxy.
      */
-    protected void printPartitionState(IgniteCache<?, ?> c) {
+    protected static void printPartitionState(IgniteCache<?, ?> c) {
         printPartitionState(c.getConfiguration(CacheConfiguration.class).getName(), 0);
     }
 
@@ -853,7 +853,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      * Print partitionState for cache.
      */
-    protected void printPartitionState(String cacheName, int firstParts) {
+    protected static void printPartitionState(String cacheName, int firstParts) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("----preload sync futures----\n");
@@ -1207,7 +1207,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         List<Integer> keys = new ArrayList<>(cnt);
 
-        while(c < cnt) {
+        while (c < cnt) {
             if (cctx.affinity().partition(k) == part) {
                 if (skip0 < skipCnt) {
                     k++;
@@ -1245,7 +1245,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
 
             private void advance() {
-                while(cctx.affinity().partition(cur = next++) != part);
+                while (cctx.affinity().partition(cur = next++) != part);
             }
 
             @Override public boolean hasNext() {
@@ -1420,7 +1420,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         BitSet before = m1.get(ign.cluster().localNode());
         BitSet after = m2.get(ign.cluster().localNode());
 
-        for (int p = before.nextSetBit(0); p >= 0; p = before.nextSetBit(p+1)) {
+        for (int p = before.nextSetBit(0); p >= 0; p = before.nextSetBit(p + 1)) {
             if (!after.get(p)) {
                 partsToRet.add(p);
 
@@ -1863,7 +1863,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), BINARY_META_FOLDER, false));
     }
 
     /**
@@ -2198,7 +2198,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 break;
 
             default:
-                try(IgniteDataStreamer<Integer, Integer> ds = grid(gridName).dataStreamer(cacheName)) {
+                try (IgniteDataStreamer<Integer, Integer> ds = grid(gridName).dataStreamer(cacheName)) {
                     ds.allowOverwrite(mode == 2);
 
                     ds.addData(map);

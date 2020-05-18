@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryDetailMet
 import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsDistributedSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheSqlQueryValueCopySelfTest;
+import org.apache.ignite.internal.processors.cache.CheckIndexesInlineSizeOnNodeJoinMultiJvmTest;
 import org.apache.ignite.internal.processors.cache.DdlTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheCrossCacheQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientPersistentTest;
@@ -126,6 +127,8 @@ import org.apache.ignite.internal.processors.cache.encryption.EncryptedSqlTableT
 import org.apache.ignite.internal.processors.cache.index.ArrayIndexTest;
 import org.apache.ignite.internal.processors.cache.index.BasicIndexMultinodeTest;
 import org.apache.ignite.internal.processors.cache.index.BasicIndexTest;
+import org.apache.ignite.internal.processors.cache.index.BasicJavaTypesIndexTest;
+import org.apache.ignite.internal.processors.cache.index.BasicSqlTypesIndexTest;
 import org.apache.ignite.internal.processors.cache.index.ComplexPrimaryKeyUnwrapSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DuplicateKeyValueClassesSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexClientBasicSelfTest;
@@ -530,6 +533,7 @@ import org.junit.runners.Suite;
 
     GridIndexRebuildSelfTest.class,
     GridIndexFullRebuildTest.class,
+    CheckIndexesInlineSizeOnNodeJoinMultiJvmTest.class,
 
     SqlTransactionCommandsWithMvccDisabledSelfTest.class,
 
@@ -596,6 +600,9 @@ import org.junit.runners.Suite;
     SqlQueryHistoryFromClientSelfTest.class,
 
     SqlIncompatibleDataTypeExceptionTest.class,
+
+    BasicSqlTypesIndexTest.class,
+    BasicJavaTypesIndexTest.class,
 
     //Cancellation of queries.
     KillQueryTest.class,

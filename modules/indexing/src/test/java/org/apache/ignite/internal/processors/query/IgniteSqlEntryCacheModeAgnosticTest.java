@@ -114,8 +114,8 @@ public class IgniteSqlEntryCacheModeAgnosticTest extends AbstractIndexingCommonT
 
         final List<String> cacheNamesList = F.asList(LOCAL_CACHE_NAME, REPLICATED_CACHE_NAME, PARTITIONED_CACHE_NAME);
 
-        for(String entryCacheName: cacheNamesList) {
-            for(String qryCacheName: cacheNamesList) {
+        for (String entryCacheName: cacheNamesList) {
+            for (String qryCacheName: cacheNamesList) {
                 if (entryCacheName.equals(qryCacheName))
                     continue;
 

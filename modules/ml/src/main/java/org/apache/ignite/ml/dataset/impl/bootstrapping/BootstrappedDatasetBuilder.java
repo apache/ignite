@@ -81,7 +81,7 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
             PoissonDistribution.DEFAULT_EPSILON,
             PoissonDistribution.DEFAULT_MAX_ITERATIONS);
 
-        while(upstreamData.hasNext()) {
+        while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> nextRow = upstreamData.next();
             LabeledVector<Double> vecAndLb = preprocessor.apply(nextRow.getKey(), nextRow.getValue());
             Vector features = vecAndLb.features();

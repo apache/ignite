@@ -241,7 +241,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
                     else
                         desc.write(this, obj);
                 }
-                catch (IOException e){
+                catch (IOException e) {
                     throw new IOException("Failed to serialize object [typeName=" +
                         desc.describedClass().getName() + ']', e);
                 }

@@ -28,6 +28,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -46,7 +47,7 @@ public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(ccfg)
-            .setDefaultQueryTimeout(100);
+            .setSqlConfiguration(new SqlConfiguration().setDefaultQueryTimeout(100));
     }
 
     /** {@inheritDoc} */

@@ -48,7 +48,8 @@ public class CachePartitionLossDetectionOnNodeLeftTest extends GridCommonAbstrac
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME).
             setAtomicityMode(TRANSACTIONAL).
             setCacheMode(PARTITIONED).
-            setPartitionLossPolicy(IGNORE). // If default will ever change...
+            // If default will ever change...
+            setPartitionLossPolicy(IGNORE).
             setBackups(0));
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);

@@ -32,6 +32,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Light-weight interop job. Comparing to regular job, this guy has simpler logic because we should not
  * bother with delayed serialization and cancellation.
+ *
+ * NOTE: Legacy. New implementations should use {@link PlatformAbstractFunc} and derivatives instead.
  */
 public class PlatformClosureJob extends PlatformAbstractJob {
     /** */

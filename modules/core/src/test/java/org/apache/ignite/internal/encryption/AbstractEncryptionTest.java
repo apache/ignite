@@ -160,7 +160,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         assertNotNull(cache);
 
-        for (long i=0; i<100; i++)
+        for (long i = 0; i < 100; i++)
             assertEquals("" + i, cache.get(i));
     }
 

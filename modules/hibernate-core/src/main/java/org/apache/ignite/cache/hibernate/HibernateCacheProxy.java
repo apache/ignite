@@ -84,7 +84,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     /**
      * @return HibernateKeyTransformer
      */
-    public HibernateKeyTransformer keyTransformer(){
+    public HibernateKeyTransformer keyTransformer() {
         return keyTransformer;
     }
 

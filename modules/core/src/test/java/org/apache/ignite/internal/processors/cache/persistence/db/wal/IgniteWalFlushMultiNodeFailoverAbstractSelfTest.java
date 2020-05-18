@@ -275,7 +275,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
             return new FileIODecorator(delegate) {
                 /** {@inheritDoc} */
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    System.out.println(">>>!!!! W "+file.getName());
+                    System.out.println(">>>!!!! W " + file.getName());
 
                     if (fail != null && file.getName().endsWith(".wal") && fail.get())
                         throw new IOException("No space left on device");
@@ -285,7 +285,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                 /** {@inheritDoc} */
                 @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
-                    System.out.println(">>>!!!! M "+file.getName());
+                    System.out.println(">>>!!!! M " + file.getName());
 
                     if (fail != null && file.getName().endsWith(".wal") && fail.get())
                         throw new IOException("No space left on deive");

@@ -241,29 +241,28 @@ public class ExchangeLatchManager {
     }
 
     /**
-     * Drops the latch created by {@link #getOrCreate(String, AffinityTopologyVersion)}. The corresponding
-     * latch should be created before this method is invoked.
+     * Drops client latches created by {@link #getOrCreate(String, AffinityTopologyVersion)}. The corresponding
+     * latches should be created before this method is invoked.
      * <p>
-     * This method must be called when it is guaranteed that all nodes have processed the latch messages. In
+     * This method must be called when it is guaranteed that all nodes have processed the latches messages. In
      * the context of partitions map exchange this can be done when exchange future is completed.
      *
-     * @param id Latch id.
      * @param topVer Latch topology version.
      */
-    public void dropLatch(String id, AffinityTopologyVersion topVer) {
+    public void dropClientLatches(AffinityTopologyVersion topVer) {
         lock.lock();
 
         try {
-            final CompletableLatchUid latchUid = new CompletableLatchUid(id, topVer);
+            for (CompletableLatchUid latchUid : clientLatches.keySet()) {
+                if (latchUid.topVer.equals(topVer)) {
+                    ClientLatch latch = clientLatches.remove(latchUid);
 
-            ClientLatch clientLatch = clientLatches.remove(latchUid);
-            ServerLatch srvLatch = serverLatches.remove(latchUid);
+                    if (log.isDebugEnabled())
+                        log.debug("Dropping client latch [id=" + latchUid + ", latch=" + latch + ']');
 
-            if (log.isDebugEnabled())
-                log.debug("Dropping latch [id=" + id + ", topVer=" + topVer + ", srvLatch=" + srvLatch +
-                    ", clientLatch=" + clientLatch + ']');
-
-            pendingAcks.remove(latchUid);
+                    pendingAcks.remove(latchUid);
+                }
+            }
         }
         finally {
             lock.unlock();
@@ -377,7 +376,7 @@ public class ExchangeLatchManager {
         try {
             CompletableLatchUid latchUid = new CompletableLatchUid(message.latchId(), message.topVer());
 
-            if(discovery.topologyVersionEx().compareTo(message.topVer()) < 0) {
+            if (discovery.topologyVersionEx().compareTo(message.topVer()) < 0) {
                 // It means that this node doesn't receive changed topology version message yet
                 // but received ack message from client latch.
                 // It can happen when we don't have guarantees of received message order for example in ZookeeperSpi.
@@ -634,8 +633,14 @@ public class ExchangeLatchManager {
             if (log.isDebugEnabled())
                 log.debug("Count down [latch=" + latchId() + ", remaining=" + remaining + "]");
 
-            if (remaining == 0)
+            if (remaining == 0) {
                 complete();
+
+                serverLatches.remove(id);
+
+                if (log.isDebugEnabled())
+                    log.debug("Dropping server latch [id=" + id + ", latch=" + this + ']');
+            }
         }
 
         /** {@inheritDoc} */

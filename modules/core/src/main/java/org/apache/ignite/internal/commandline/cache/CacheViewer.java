@@ -145,7 +145,7 @@ public class CacheViewer implements Command<CacheViewer.Arguments> {
         /**
          * @return Full config flag.
          */
-        public boolean fullConfig(){ return fullConfig; }
+        public boolean fullConfig() { return fullConfig; }
     }
 
     /** Command parsed arguments */

@@ -363,7 +363,7 @@ public class ValidationOnNodeJoinUtils {
 
         // This method can be called when memory recovery is in progress,
         // which means that the GridDiscovery manager is not started, and therefore localNode is also not initialized.
-        ClusterNode locNode = ctx.discovery().localNode() != null ? ctx.discovery().localNode():
+        ClusterNode locNode = ctx.discovery().localNode() != null ? ctx.discovery().localNode() :
             new DetachedClusterNode(ctx.pdsFolderResolver().resolveFolders().consistentId(), ctx.nodeAttributes());
 
         if (cc.isWriteBehindEnabled() && ctx.discovery().cacheAffinityNode(locNode, cc.getName())) {

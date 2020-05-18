@@ -29,7 +29,8 @@ import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareReq
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.plugin.security.SecurityException;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_4_0;
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.BITMAP_FEATURES;
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.PARTITION_AWARENESS;
 
 /**
  * Thin client request handler.
@@ -41,8 +42,8 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     /** Auth context. */
     private final AuthorizationContext authCtx;
 
-    /** Protocol version. */
-    private final ClientListenerProtocolVersion ver;
+    /** Protocol context. */
+    private ClientProtocolContext protocolCtx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -52,14 +53,14 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
      *
      * @param ctx Kernal context.
      * @param authCtx Authentication context.
-     * @param ver Protocol version.
+     * @param protocolCtx Protocol context.
      */
-    ClientRequestHandler(ClientConnectionContext ctx, AuthorizationContext authCtx, ClientListenerProtocolVersion ver) {
+    ClientRequestHandler(ClientConnectionContext ctx, AuthorizationContext authCtx, ClientProtocolContext protocolCtx) {
         assert ctx != null;
 
         this.ctx = ctx;
         this.authCtx = authCtx;
-        this.ver = ver;
+        this.protocolCtx = protocolCtx;
         log = ctx.kernalContext().log(getClass());
     }
 
@@ -121,9 +122,11 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     @Override public void writeHandshake(BinaryWriterExImpl writer) {
         writer.writeBoolean(true);
 
-        if (ver.compareTo(VER_1_4_0) >= 0) {
+        if (protocolCtx.isFeatureSupported(BITMAP_FEATURES))
+            writer.writeByteArray(protocolCtx.featureBytes());
+
+        if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS))
             writer.writeUuid(ctx.kernalContext().localNodeId());
-        }
     }
 
     /** {@inheritDoc} */
@@ -148,6 +151,6 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
     /** {@inheritDoc} */
     @Override public ClientListenerProtocolVersion protocolVersion() {
-        return ver;
+        return protocolCtx.version();
     }
 }

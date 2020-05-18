@@ -590,7 +590,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                     sem2.acquire();
                 }
-                catch (Exception ignored){
+                catch (Exception ignored) {
                     failed = false;
                 }
                 finally {
@@ -605,7 +605,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         assertTrue("Failed to wait for semaphore creation",
             createLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
-        while(!sem1.hasQueuedThreads()) {
+        while (!sem1.hasQueuedThreads()) {
             try {
                 Thread.sleep(1);
             }
@@ -885,7 +885,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                     GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
-                            try{
+                            try {
                                 l.lock();
                             }
                             finally {
@@ -897,7 +897,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                     }, "lock-thread");
 
                     // Wait until l.lock() has been called.
-                    while(!l.hasQueuedThreads() && !done.get()){
+                    while (!l.hasQueuedThreads() && !done.get()){
                         // No-op.
                     }
 
@@ -921,7 +921,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                 }
                 finally {
                     // Broken lock cannot be used in non-failoversafe mode.
-                    if(!lock.isBroken() || failoverSafe) {
+                    if (!lock.isBroken() || failoverSafe) {
                         assertTrue(lock.isHeldByCurrentThread());
 
                         lock.unlock();
@@ -936,7 +936,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             fut.get();
 
-            for (Ignite g : G.allGrids()){
+            for (Ignite g : G.allGrids()) {
                 IgniteLock l = g.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false);
 
                 assertTrue(g.name(), !l.isHeldByCurrentThread() || lock.isBroken());
