@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.logical.LogicalFilter;
-import org.apache.calcite.rel.logical.LogicalProject;
-import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
 import org.apache.calcite.rel.rules.SortRemoveRule;
 import org.apache.calcite.rel.rules.SubQueryRemoveRule;
@@ -92,8 +88,6 @@ public enum PlannerPhase {
                 FilterTraitsPropagationRule.INSTANCE,
                 TableModifyConverterRule.INSTANCE,
                 PushFilterIntoScanRule.FILTER_INTO_SCAN,
-                new FilterProjectTransposeRule(LogicalFilter.class, LogicalProject.class, true, true,
-                    RelFactories.LOGICAL_BUILDER), // TODO replace with logical nodes.
                 ProjectFilterTransposeRule.INSTANCE,
                 UnionMergeRule.INSTANCE,
                 UnionConverterRule.INSTANCE,

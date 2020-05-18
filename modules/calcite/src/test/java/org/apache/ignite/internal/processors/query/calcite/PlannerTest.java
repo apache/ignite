@@ -2355,6 +2355,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("ID", f.createJavaType(Integer.class))
                 .add("VAL", f.createJavaType(String.class))
                 .build()) {
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.single();
+            }
         };
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
@@ -2372,7 +2375,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             "WHERE VAL = 10";
 
         RelTraitDef<?>[] traitDefs = {
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            DistributionTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2440,7 +2444,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             //  IgniteProject(ID=[$0], VAL=[$1])
             //    IgniteFilter(condition=[=(CAST($1):INTEGER, 10)])
             //      IgniteTableScan(table=[[PUBLIC, TEST]])
-            assertEquals(1, filterCnt.get());
+            assertEquals(0, filterCnt.get());
         }
     }
 
@@ -2528,8 +2532,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             assertEquals("LogicalProject(DEPTNO=[$0], DEPTNO0=[$4])\n" +
                     "  LogicalFilter(condition=[=(+($0, 10), *($4, 2))])\n" +
                     "    LogicalJoin(condition=[true], joinType=[inner])\n" +
-                    "      IgniteTableScan(table=[[PUBLIC, DEPT]])\n" +
-                    "      IgniteTableScan(table=[[PUBLIC, EMP]])\n",
+                    "      IgniteTableScan(table=[[PUBLIC, DEPT]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n" +
+                    "      IgniteTableScan(table=[[PUBLIC, EMP]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n",
                 RelOptUtil.toString(rel));
 
             // Transformation chain
@@ -2543,8 +2547,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             assertNotNull(phys);
             assertEquals("IgniteProject(DEPTNO=[$0], DEPTNO0=[$4])\n" +
                     "  IgniteJoin(condition=[=(+($0, 10), *($4, 2))], joinType=[inner])\n" +
-                    "    IgniteTableScan(table=[[PUBLIC, DEPT]])\n" +
-                    "    IgniteTableScan(table=[[PUBLIC, EMP]])\n",
+                    "    IgniteTableScan(table=[[PUBLIC, DEPT]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n" +
+                    "    IgniteTableScan(table=[[PUBLIC, EMP]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n",
                 RelOptUtil.toString(phys));
         }
     }
