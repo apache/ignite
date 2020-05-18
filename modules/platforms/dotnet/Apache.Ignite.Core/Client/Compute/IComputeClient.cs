@@ -22,7 +22,8 @@ namespace Apache.Ignite.Core.Client.Compute
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Client Compute API. See <see cref="IIgniteClient.GetCompute"/>.
+    /// Client Compute API. See <see cref="IIgniteClient.GetCompute"/>
+    /// and <see cref="IClientClusterGroup.GetCompute"/>.
     /// </summary>
     public interface IComputeClient
     {
