@@ -108,11 +108,21 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with binary flag.
         /// </summary>
         [Test]
-        public void TestExecuteJavaTaskWithKeepBinary()
+        public void TestExecuteJavaTaskWithKeepBinaryJavaOnlyResultClass()
         {
-            // TODO: Binary mode on server and client.
-            // 1. Pass unknown class from client to server, handle binary object there
-            // 2. Pass unknown class back, handle in .NET
+            var res = Client.GetCompute().WithKeepBinary().ExecuteJavaTask<IBinaryObject>(
+                ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizableJava);
+            
+            Console.WriteLine(res);
+        }
+
+        /// <summary>
+        /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with binary flag.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskWithKeepBinaryDotnetOnlyArgClass()
+        {
+            // TODO
         }
 
         /// <summary>
@@ -271,11 +281,12 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         public void TestExecuteJavaTaskWithFailedResultDeserializationProducesBinaryObjectException()
         {
             var ex = Assert.Throws<AggregateException>(
-                () => Client.GetCompute().ExecuteJavaTask<object>(TestTask, null));
+                () => Client.GetCompute().ExecuteJavaTask<object>(
+                    ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizableJava));
             
-            var clientEx = (BinaryObjectException) ex.GetInnermostException();
+            var clientEx = (IgniteClientException) ex.GetInnermostException();
             
-            Assert.AreEqual("No matching type found for object [typeId=62, userType=False].", clientEx.Message);
+            Assert.AreEqual("Unknown pair [platformId=1, typeId=-422570294]", clientEx.Message);
         }
 
         /** <inheritdoc /> */

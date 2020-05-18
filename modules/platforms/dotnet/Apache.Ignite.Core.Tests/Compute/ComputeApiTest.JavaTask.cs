@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         public const int EchoTypeBinarizable = 12;
 
         /** Echo type: binary (Java only). */
-        private const int EchoTypeBinarizableJava = 13;
+        public const int EchoTypeBinarizableJava = 13;
 
         /** Type: object array. */
         private const int EchoTypeObjArray = 14;
