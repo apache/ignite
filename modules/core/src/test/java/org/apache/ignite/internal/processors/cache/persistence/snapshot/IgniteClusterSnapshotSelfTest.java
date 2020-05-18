@@ -889,7 +889,12 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         for (Ignite grid : G.allGrids()) {
             TestRecordingCommunicationSpi.spi(grid)
-                .blockMessages((node, msg) -> msg instanceof GridDhtPartitionsSingleMessage);
+                .blockMessages((node, msg) -> {
+                    if (msg instanceof GridDhtPartitionsSingleMessage)
+                        return ((GridDhtPartitionsSingleMessage)msg).exchangeId() != null;
+
+                    return false;
+                });
         }
 
         IgniteFuture<Void> fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME);

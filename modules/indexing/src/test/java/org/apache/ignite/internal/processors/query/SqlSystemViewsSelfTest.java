@@ -56,6 +56,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
@@ -195,10 +196,17 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testSchemasView() throws Exception {
-        IgniteEx srv = startGrid(getConfiguration().setSqlSchemas("PREDIFINED_SCHEMA_1"));
+        IgniteEx srv = startGrid(getConfiguration()
+            .setSqlConfiguration(new SqlConfiguration()
+                .setSqlSchemas("PREDIFINED_SCHEMA_1")
+            )
+        );
 
-        IgniteEx client =
-            startClientGrid(getConfiguration().setIgniteInstanceName("CLIENT").setSqlSchemas("PREDIFINED_SCHEMA_2"));
+        IgniteEx client = startClientGrid(getConfiguration().setIgniteInstanceName("CLIENT")
+            .setSqlConfiguration(new SqlConfiguration()
+                .setSqlSchemas("PREDIFINED_SCHEMA_2")
+            )
+        );
 
         srv.createCache(cacheConfiguration("TST1"));
 

@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCompute;
@@ -93,6 +94,7 @@ import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedExceptio
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
+import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -105,6 +107,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.systemview.view.TransactionView;
@@ -825,10 +828,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * </ul>
      *
      * @param topVer Topology version.
-     * @param node Cluster node.
      * @return Future that will be completed when all ongoing transactions are finished.
      */
-    public IgniteInternalFuture<Boolean> finishLocalTxs(AffinityTopologyVersion topVer, ClusterNode node) {
+    public IgniteInternalFuture<Boolean> finishLocalTxs(AffinityTopologyVersion topVer) {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
             new CacheObjectsReleaseFuture<>(
                 "LocalTx",
@@ -844,15 +846,47 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (node != null) {
-                if (tx.originatingNodeId().equals(node.id())) {
-                    assert needWaitTransaction(tx, topVer);
-
-                    res.add(tx.finishFuture());
-                }
-            }
-            else if (needWaitTransaction(tx, topVer))
+            if (needWaitTransaction(tx, topVer))
                 res.add(tx.finishFuture());
+        }
+
+        res.markInitialized();
+
+        return res;
+    }
+
+    /**
+     * Creates a future that will wait for all transactions with failed primary recovery.
+     *
+     * @param topVer Topology version.
+     * @param node Failed node.
+     * @param filter Recovery filter.
+     * @return Future that will be completed when all affected transactions are recovered.
+     */
+    public IgniteInternalFuture<Boolean> recoverLocalTxs(AffinityTopologyVersion topVer, ClusterNode node,
+        IgnitePredicate<IgniteInternalTx> filter) {
+
+        GridCompoundFuture<IgniteInternalTx, Boolean> res =
+            new CacheObjectsReleaseFuture<>(
+                "TxRecovery",
+                topVer,
+                new IgniteReducer<IgniteInternalTx, Boolean>() {
+                    @Override public boolean collect(IgniteInternalTx e) {
+                        return true;
+                    }
+
+                    @Override public Boolean reduce() {
+                        return true;
+                    }
+                });
+
+        for (IgniteInternalTx tx : activeTransactions()) {
+            if (tx.dht() && !tx.local() && tx.originatingNodeId().equals(node.id())) {
+                assert needWaitTransaction(tx, topVer);
+
+                if (filter == null || filter.apply(tx))
+                    res.add(tx.finishFuture());
+            }
         }
 
         res.markInitialized();
@@ -2354,14 +2388,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Transaction.
      * @param failedNodeIds Failed nodes IDs.
      */
-    public void commitIfPrepared(IgniteInternalTx tx, Set<UUID> failedNodeIds) {
+    public IgniteInternalFuture<Boolean> commitIfPrepared(IgniteInternalTx tx, Set<UUID> failedNodeIds) {
         assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote : tx;
         assert !F.isEmpty(tx.transactionNodes()) : tx;
         assert tx.nearXidVersion() != null : tx;
 
         // Transaction will be completed by finish message.
         if (!tx.markFinalizing(RECOVERY_FINISH))
-            return;
+            return null;
 
         GridCacheTxRecoveryFuture fut = new GridCacheTxRecoveryFuture(
             cctx,
@@ -2375,6 +2409,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             log.info("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
 
         fut.prepare();
+
+        return fut;
     }
 
     /**
@@ -2943,6 +2979,15 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         /** */
         private final MvccCoordinator mvccCrd;
 
+        /** Time bag to measure and store tx recovery stages times. */
+        private final TimeBag timeBag = new TimeBag(log.isInfoEnabled());
+
+        /** Prepared tx to be recovered count. */
+        private final AtomicLong preparedTxCnt = new AtomicLong();
+
+        /** Recovery finished future. */
+        private final GridCompoundFuture<Boolean, ?> doneFut = new GridCompoundFuture<>();
+
         /**
          * @param node Failed node.
          * @param mvccCrd Mvcc coordinator at time of node failure.
@@ -2954,6 +2999,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public void run() {
+            timeBag.finishGlobalStage("Started");
+
             try {
                 cctx.kernalContext().gateway().readLock();
             }
@@ -2985,14 +3032,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         // Check prepare only if originating node ID failed. Otherwise parent node will finish this tx.
                         if (tx.originatingNodeId().equals(evtNodeId)) {
                             if (tx.state() == PREPARED)
-                                commitIfPrepared(tx, Collections.singleton(evtNodeId));
+                                processPrepared(tx, evtNodeId);
                             else {
                                 IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
 
                                 if (prepFut != null) {
                                     prepFut.listen(fut -> {
                                         if (tx.state() == PREPARED)
-                                            commitIfPrepared(tx, Collections.singleton(evtNodeId));
+                                            processPrepared(tx, evtNodeId);
                                             // If we could not mark tx as rollback, it means that transaction is being committed.
                                         else if (tx.setRollbackOnly())
                                             tx.rollbackAsync();
@@ -3010,6 +3057,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             allTxFinFut.add(tx.finishFuture());
                     }
                 }
+
+                timeBag.finishGlobalStage("Initialized");
+
+                doneFut.markInitialized();
+
+                if (log.isInfoEnabled() && preparedTxCnt.get() > 0)
+                    doneFut.listen(fut -> finishAndRecordTimings());
 
                 if (allTxFinFut == null)
                     return;
@@ -3045,6 +3099,37 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             finally {
                 cctx.kernalContext().gateway().readUnlock();
             }
+        }
+
+        /**
+         * @param tx Tx.
+         * @param failedNode Failed node.
+         */
+        private void processPrepared(IgniteInternalTx tx, UUID failedNode) {
+            IgniteInternalFuture<Boolean> fut = commitIfPrepared(tx, Collections.singleton(failedNode));
+
+            if (fut != null)
+                doneFut.add(fut);
+
+            preparedTxCnt.incrementAndGet();
+        }
+
+        /**
+         *
+         */
+        private void finishAndRecordTimings() {
+            timeBag.finishGlobalStage("Finished");
+
+            StringBuilder timingsToLog = new StringBuilder();
+
+            timingsToLog.append("TxRecovery Status and Timings [txs=").append(preparedTxCnt.get());
+
+            for (String stageTiming : timeBag.stagesTimings())
+                timingsToLog.append(", ").append(stageTiming);
+
+            timingsToLog.append("]");
+
+            log.info(timingsToLog.toString());
         }
     }
 
