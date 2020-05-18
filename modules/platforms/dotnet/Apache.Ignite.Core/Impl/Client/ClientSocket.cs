@@ -903,7 +903,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (ex != null)
             {
-                throw ex;
+                throw new IgniteClientException("Client connection has failed. Examine InnerException for details", ex);
             }
         }
 
