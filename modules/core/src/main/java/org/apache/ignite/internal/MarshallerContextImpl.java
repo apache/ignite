@@ -377,6 +377,24 @@ public class MarshallerContextImpl implements MarshallerContext {
             byte platformId,
             int typeId
     ) throws ClassNotFoundException, IgniteCheckedException {
+        return getClassName(platformId, typeId, false);
+    }
+
+    /**
+     * Gets class name for provided (platformId, typeId) pair.
+     *
+     * @param platformId id of a platform the class was registered for.
+     * @param typeId Type ID.
+     * @param skipOtherPlatforms Whether to skip other platforms check (recursion guard).
+     * @return Class name
+     * @throws ClassNotFoundException If class was not found.
+     * @throws IgniteCheckedException In case of any other error.
+     */
+    private String getClassName(
+            byte platformId,
+            int typeId,
+            boolean skipOtherPlatforms
+    ) throws ClassNotFoundException, IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
         MappedName mappedName = cache.get(typeId);
@@ -391,37 +409,37 @@ public class MarshallerContextImpl implements MarshallerContext {
             if (clsName != null)
                 cache.putIfAbsent(typeId, new MappedName(clsName, true));
             else
-                if (clientNode) {
-                    mappedName = cache.get(typeId);
+            if (clientNode) {
+                mappedName = cache.get(typeId);
 
-                    if (mappedName == null) {
-                        GridFutureAdapter<MappingExchangeResult> fut = transport.requestMapping(
-                                new MarshallerMappingItem(platformId, typeId, null),
-                                cache);
+                if (mappedName == null) {
+                    GridFutureAdapter<MappingExchangeResult> fut = transport.requestMapping(
+                            new MarshallerMappingItem(platformId, typeId, null),
+                            cache);
 
-                        clsName = fut.get().className();
-                    }
-                    else
-                        clsName = mappedName.className();
-
-                    if (clsName == null)
-                        throw new ClassNotFoundException(
-                                "Requesting mapping from grid failed for [platformId="
-                                        + platformId
-                                        + ", typeId="
-                                        + typeId + "]");
-
-                    return clsName;
+                    clsName = fut.get().className();
                 }
-                else {
-                    String platformName = platformName(platformId);
+                else
+                    clsName = mappedName.className();
 
+                if (clsName == null)
+                    throw new ClassNotFoundException(
+                            "Requesting mapping from grid failed for [platformId="
+                                    + platformId
+                                    + ", typeId="
+                                    + typeId + "]");
+
+                return clsName;
+            }
+            else {
+                String platformName = platformName(platformId);
+
+                if (!skipOtherPlatforms) {
                     // Look for this class in other platforms to provide a better error message.
                     for (byte otherPlatformId : otherPlatforms(platformId)) {
                         try {
-                            clsName = getClassName(otherPlatformId, typeId);
-                        }
-                        catch (ClassNotFoundException ignored) {
+                            clsName = getClassName(otherPlatformId, typeId, true);
+                        } catch (ClassNotFoundException ignored) {
                             continue;
                         }
 
@@ -433,13 +451,14 @@ public class MarshallerContextImpl implements MarshallerContext {
                                         + " [platformId=" + platformId
                                         + ", typeId=" + typeId + "].");
                     }
-
-                    throw new ClassNotFoundException(
-                            "Failed to resolve class name [" +
-                                    "platformId=" + platformId
-                                    + ", platform=" + platformName
-                                    + ", typeId=" + typeId + "]");
                 }
+
+                throw new ClassNotFoundException(
+                        "Failed to resolve class name [" +
+                                "platformId=" + platformId
+                                + ", platform=" + platformName
+                                + ", typeId=" + typeId + "]");
+            }
         }
 
         return clsName;
