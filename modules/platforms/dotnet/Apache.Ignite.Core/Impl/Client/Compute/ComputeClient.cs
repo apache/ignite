@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -174,7 +175,8 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
             {
                 ctx.Socket.RemoveNotificationHandler(taskId);
 
-                var reader = ctx.Marshaller.StartUnmarshal(stream, keepBinary);
+                var reader = ctx.Marshaller.StartUnmarshal(stream, 
+                    keepBinary ? BinaryMode.ForceBinary : BinaryMode.Deserialize);
 
                 try
                 {

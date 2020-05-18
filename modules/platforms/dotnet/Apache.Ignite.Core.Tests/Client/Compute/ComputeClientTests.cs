@@ -113,7 +113,9 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             var res = Client.GetCompute().WithKeepBinary().ExecuteJavaTask<IBinaryObject>(
                 ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizableJava);
             
-            Console.WriteLine(res);
+            Assert.AreEqual(1, res.GetField<int>("field"));
+            Assert.AreEqual("field", res.GetBinaryType().Fields.Single());
+            Assert.AreEqual("org.apache.ignite.platform.PlatformComputeJavaBinarizable", res.GetBinaryType().TypeName);
         }
 
         /// <summary>
