@@ -357,6 +357,9 @@ namespace Apache.Ignite.Core.Impl.Client
                         _stream.ReadTimeout = Timeout.Infinite;
                     }
 
+                    // TODO: There is a race with sync operation somehow.
+                    // We could simply add a lock inside ReceiveMessage - it should be always uncontended.
+                    // TODO: Maybe get rid of sync mode? So much complexity.
                     var msg = ReceiveMessage();
                     
                     HandleResponse(msg);
