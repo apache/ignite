@@ -331,6 +331,15 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             Assert.AreEqual("Unknown pair [platformId=1, typeId=-422570294]", clientEx.Message);
         }
 
+        /// <summary>
+        /// Tests that client timeout can be shorter than task duration.
+        /// </summary>
+        [Test]
+        public void TestClientTimeoutShorterThanTaskDuration()
+        {
+            // TODO
+        }
+
         /** <inheritdoc /> */
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
