@@ -33,6 +33,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -96,6 +97,9 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      */
     protected static ByteArrayOutputStream testOut;
 
+    /** Ignite test logger to check messages. */
+    protected IgniteLogger logger;
+
     /** Atomic configuration. */
     protected AtomicConfiguration atomicConfiguration;
 
@@ -145,6 +149,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         testOut.reset();
 
         encriptionEnabled = false;
+        logger = null;
     }
 
     /** {@inheritDoc} */
@@ -177,6 +182,9 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (logger != null)
+            cfg.setGridLogger(logger);
 
         if (atomicConfiguration != null)
             cfg.setAtomicConfiguration(atomicConfiguration);

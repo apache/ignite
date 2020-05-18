@@ -30,17 +30,17 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * @see IgniteSnapshot#createSnapshot(String)
  */
 @GridInternal
-public class VisorSnapshotCreateTask extends VisorOneNodeTask<String, Void> {
+public class VisorSnapshotCreateTask extends VisorOneNodeTask<String, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<String, Void> job(String arg) {
+    @Override protected VisorJob<String, String> job(String arg) {
         return new VisorSnapshotCreateJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCreateJob extends VisorJob<String, Void> {
+    private static class VisorSnapshotCreateJob extends VisorJob<String, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -53,10 +53,10 @@ public class VisorSnapshotCreateTask extends VisorOneNodeTask<String, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String name) throws IgniteException {
+        @Override protected String run(String name) throws IgniteException {
             new SnapshotMXBeanImpl(ignite.context()).createSnapshot(name);
 
-            return null;
+            return "Snapshot operation started: " + name;
         }
     }
 }

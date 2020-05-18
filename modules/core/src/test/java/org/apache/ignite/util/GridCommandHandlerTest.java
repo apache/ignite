@@ -51,11 +51,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -94,6 +96,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -110,6 +114,7 @@ import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
@@ -118,6 +123,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -158,6 +164,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         super.cleanPersistenceDir();
 
         cleanDiagnosticDir();
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
     }
 
     /**
@@ -2093,14 +2100,51 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** @throws Exception If failed. */
     @Test
     public void testClusterSnapshotCreate() throws Exception {
-        Ignite ignite = startGrids(2);
+        int grids = 2;
+        int keys = 100;
+        String snpName = "snapshot_02052020";
+
+        ListeningTestLogger srv0Logger = new ListeningTestLogger(log);
+        LogListener snpEndLsnr = LogListener.matches("Cluster-wide snapshot operation finished successfully").build();
+        srv0Logger.registerListener(snpEndLsnr);
+
+        logger = srv0Logger;
+
+        injectTestSystemOut();
+
+        Ignite ignite = startGrids(grids);
         ignite.cluster().state(ACTIVE);
 
-        createCacheAndPreload(ignite, 10);
+        createCacheAndPreload(ignite, keys);
 
         CommandHandler h = new CommandHandler();
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", "snapshot_02052020"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", snpName));
+
+        assertTrue("Snapshot operation hasn't been completed successfully.",
+            waitForCondition(snpEndLsnr::check, 5_000L));
+
+        assertContains(log, (String)h.getLastOperationResult(), snpName);
+
+        logger = null;
+
+        stopAllGrids();
+
+        for (int i = 0; i < grids; i++) {
+            IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(i)));
+
+            cfg.setWorkDirectory(Paths.get(resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), snpName).toString());
+
+            startGrid(cfg);
+        }
+
+        grid(0).cluster().state(ACTIVE);
+
+        List<Integer> range = IntStream.range(0, keys).boxed().collect(Collectors.toList());
+
+        grid(0).cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>(null))
+            .forEach(e -> range.remove((Integer)e.getKey()));
+        assertTrue("Snapshot must contains cache data [left=" + range + ']', range.isEmpty());
     }
 
     /** @throws Exception If failed. */
@@ -2110,7 +2154,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         startGrids(1);
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(new CommandHandler(), "--snapshot", "create", "testSnapshotName"));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(new CommandHandler(), "--snapshot", "create",
+            "testSnapshotName"));
+
         assertContains(log, testOut.toString(), "Snapshot operation has been rejected. The cluster is inactive.");
     }
 }
