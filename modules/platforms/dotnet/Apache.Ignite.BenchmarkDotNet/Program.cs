@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.BenchmarkDotNet
 {
+    using Apache.Ignite.BenchmarkDotNet.ThinClient;
+    using global::BenchmarkDotNet.Running;
+
     /// <summary>
     /// Benchmark runner.
     /// </summary>
@@ -27,7 +30,7 @@ namespace Apache.Ignite.BenchmarkDotNet
         /// </summary>
         static void Main(string[] args)
         {
-            // TODO
+            BenchmarkRunner.Run<ThinClientComputeBenchmark>();
         }
     }
 }

@@ -20,6 +20,7 @@ namespace Apache.Ignite.BenchmarkDotNet
     using System;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
 
@@ -52,6 +53,13 @@ namespace Apache.Ignite.BenchmarkDotNet
                     "-Xms1g",
                     "-Xmx4g",
                     "-DIGNITE_QUIET=true",
+                },
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientConfiguration = new ThinClientConfiguration
+                    {
+                        MaxActiveComputeTasksPerConnection = 100
+                    }
                 }
             };
         }
