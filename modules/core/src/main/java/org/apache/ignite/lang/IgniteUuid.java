@@ -64,7 +64,7 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
     }
 
     /**
-     * Constructs {@code GridUuid} from a global and local identifiers.
+     * Constructs {@code IgniteUuid} from a global and local identifiers.
      *
      * @param gid UUID.
      * @param locId Counter.
@@ -104,7 +104,7 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
     }
 
     /**
-     * Constructs new {@code GridUuid} based on global and local ID portions.
+     * Constructs new {@code IgniteUuid} based on global and local ID portions.
      *
      * @param id UUID instance.
      * @return Newly created pseudo-random ID.
@@ -116,11 +116,11 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
     }
 
     /**
-     * Converts string into {@code GridUuid}. The String must be in the format generated
-     * by {@link #toString() GridUuid.toString()} method.
+     * Converts string into {@code IgniteUuid}. The String must be in the format generated
+     * by {@link IgniteUuid#toString()} method.
      *
-     * @param s String to convert to {@code GridUuid}.
-     * @return {@code GridUuid} instance representing given string.
+     * @param s String to convert to {@code IgniteUuid}.
+     * @return {@code IgniteUuid} instance representing given string.
      */
     public static IgniteUuid fromString(String s) {
         int firstDash = s.indexOf('-');
@@ -142,18 +142,18 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
     }
 
     /**
-     * Gets global ID portion of this {@code GridUuid}.
+     * Gets global ID portion of this {@code IgniteUuid}.
      *
-     * @return Global ID portion of this {@code GridUuid}.
+     * @return Global ID portion of this {@code IgniteUuid}.
      */
     public UUID globalId() {
         return gid;
     }
 
     /**
-     * Gets local ID portion of this {@code GridUuid}.
+     * Gets local ID portion of this {@code IgniteUuid}.
      *
-     * @return Local ID portion of this {@code GridUuid}.
+     * @return Local ID portion of this {@code IgniteUuid}.
      */
     public long localId() {
         return locId;

@@ -1074,7 +1074,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         int maxMsgId, long guessedMaxDuration) {
         DurationAccumulator overall = new DurationAccumulator();
 
-        DurationAccumulator[] msgRange =collectStatistics(deliveryDurations, overall, maxMsgId);
+        DurationAccumulator[] msgRange = collectStatistics(deliveryDurations, overall, maxMsgId);
 
         int[] durationRange = new int[STATISTICS_SEGMENTS_CNT];
 

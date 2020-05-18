@@ -82,14 +82,14 @@ class GridCacheQueueItemKey implements Externalizable, QueueItemKey {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, queueId);
+        U.writeIgniteUuid(out, queueId);
         U.writeString(out, queueName);
         out.writeLong(idx);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        queueId = U.readGridUuid(in);
+        queueId = U.readIgniteUuid(in);
         queueName = U.readString(in);
         idx = in.readLong();
     }

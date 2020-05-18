@@ -1926,10 +1926,10 @@ public class JdbcThinResultSet implements ResultSet {
      * @return Column order map.
      */
     private Map<String, Integer> columnOrder() throws SQLException {
-        if(colOrder != null)
+        if (colOrder != null)
             return colOrder;
 
-        if(!metaInit)
+        if (!metaInit)
             meta();
 
         initColumnOrder();
@@ -1946,7 +1946,7 @@ public class JdbcThinResultSet implements ResultSet {
         for (int i = 0; i < meta.size(); ++i) {
             String colName = meta.get(i).columnName().toUpperCase();
 
-            if(!colOrder.containsKey(colName))
+            if (!colOrder.containsKey(colName))
                 colOrder.put(colName, i);
         }
     }

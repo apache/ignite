@@ -344,7 +344,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
      * @return True if nodes equal by consistent id.
      */
     private boolean equalsTopologies(Collection<ClusterNode> nodes1, Collection<ClusterNode> nodes2) {
-        if(nodes1.size() != nodes2.size())
+        if (nodes1.size() != nodes2.size())
             return false;
 
         Set<Object> consistentIds1 = nodes1.stream()

@@ -1,8 +1,9 @@
 # Apache Ignite
 
-<a href="https://ignite.apache.org/"><img src="https://github.com/apache/ignite-website/blob/master/images/Ignite_tm_Logo_black_RGB.svg" hspace="20"/></a>
+<a href="https://ignite.apache.org/"><img src="https://github.com/apache/ignite-website/blob/master/images/ignite_logo_full.svg" hspace="20"/></a>
 
 <a href="https://ci.ignite.apache.org/viewType.html?buildTypeId=IgniteTests24Java8_RunAll&branch_IgniteTests24Java8=%3Cdefault%3E"><img src="https://ci.ignite.apache.org/app/rest/builds/buildType:(id:IgniteTests24Java8_RunAll)/statusIcon.svg"/></a>
+[![Build Status](https://travis-ci.org/apache/ignite.svg?branch=master)](https://travis-ci.org/apache/ignite)
 
 
 ## What is Apache Ignite?

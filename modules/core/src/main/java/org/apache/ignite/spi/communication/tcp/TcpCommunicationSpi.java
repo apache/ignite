@@ -3514,6 +3514,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         for (InetSocketAddress addr : addrs) {
+            if (addr.isUnresolved())
+                continue;
+
             TimeoutStrategy connTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
                 totalTimeout,
                 failureDetectionTimeoutEnabled() ? DFLT_INITIAL_TIMEOUT : connTimeout,
@@ -3750,7 +3753,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         String msg = "Failed to connect to node due to unrecoverable exception (is node still alive?). " +
                                 "Make sure that each ComputeTask and cache Transaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
-                                "[nodeId=" + node.id() + ", addrs=" + addrs + ", err= "+ e + ']';
+                                "[nodeId=" + node.id() + ", addrs=" + addrs + ", err= " + e + ']';
 
                         if (errs == null)
                             errs = new IgniteCheckedException(msg, e);

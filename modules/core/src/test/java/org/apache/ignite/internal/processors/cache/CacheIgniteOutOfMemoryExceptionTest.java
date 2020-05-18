@@ -147,7 +147,7 @@ public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest 
                 cache.clear();
             }
             catch (Exception e) {
-                fail("Clearing the cache should not trigger any exception [exc=" + e +']');
+                fail("Clearing the cache should not trigger any exception [exc=" + e + ']');
             }
 
             assertFalse("Failure handler should not be called during clearing the cache.", failure.get());

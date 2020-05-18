@@ -588,7 +588,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
             StringBuilder sb = new StringBuilder();
 
-            if(ctx instanceof JdbcConnectionContext)
+            if (ctx instanceof JdbcConnectionContext)
                 sb.append("JdbcClient [");
             else if (ctx instanceof OdbcConnectionContext)
                 sb.append("OdbcClient [");

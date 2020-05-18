@@ -105,7 +105,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
         nodeDatas = new NodeFsData[numIgfsNodes];
 
-        for (int i = 0; i<numIgfsNodes; i++) {
+        for (int i = 0; i < numIgfsNodes; i++) {
             NodeFsData data = new NodeFsData();
 
             data.idx = i;
@@ -215,14 +215,14 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
         IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
 
         // Create files through the 0th node:
-        for (int f=0; f<files; f++) {
+        for (int f = 0; f < files; f++) {
             final byte[] data = createChunk(fileSize, f);
 
             createFile(igfs0, filePath(f), true, -1/*block size unused*/, data);
         }
 
         // Check files:
-        for (int f=0; f<files; f++) {
+        for (int f = 0; f < files; f++) {
             IgfsPath path = filePath(f);
             byte[] data = createChunk(fileSize, f);
 
@@ -232,7 +232,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
             checkFileContent(igfs0, path, data);
 
             // Check the same file through other nodes:
-            for (int n=1; n<numIgfsNodes; n++) {
+            for (int n = 1; n < numIgfsNodes; n++) {
                 checkExist(nodeDatas[n].igfsImpl, path);
 
                 checkFileContent(nodeDatas[n].igfsImpl, path, data);
@@ -240,11 +240,11 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
         }
 
         // Now stop all the nodes but the 1st:
-        for (int n=1; n<numIgfsNodes; n++)
+        for (int n = 1; n < numIgfsNodes; n++)
             stopGrid(n);
 
         // Check files again:
-        for (int f=0; f<files; f++) {
+        for (int f = 0; f < files; f++) {
             IgfsPath path = filePath(f);
 
             byte[] data = createChunk(fileSize, f);

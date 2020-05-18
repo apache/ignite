@@ -332,7 +332,7 @@ public class SchemaManager {
 
         H2Schema schema = schema(schemaName);
 
-        try(H2PooledConnection conn = connMgr.connection(schema.schemaName())) {
+        try (H2PooledConnection conn = connMgr.connection(schema.schemaName())) {
             GridH2Table h2tbl = createTable(schema.schemaName(), schema, tblDesc, conn);
 
             schema.add(tblDesc);
@@ -512,7 +512,7 @@ public class SchemaManager {
      *
      * @return Schemas names.
      */
-    public Set<String> schemaNames(){
+    public Set<String> schemaNames() {
         return new HashSet<>(schemas.keySet());
     }
 
@@ -697,7 +697,7 @@ public class SchemaManager {
      * @throws IgniteCheckedException If failed.
      */
     public void dropIndex(final String schemaName, String idxName, boolean ifExists)
-        throws IgniteCheckedException{
+        throws IgniteCheckedException {
         String sql = H2Utils.indexDropSql(schemaName, idxName, ifExists);
 
         GridH2Table tbl = dataTableForIndex(schemaName, idxName);

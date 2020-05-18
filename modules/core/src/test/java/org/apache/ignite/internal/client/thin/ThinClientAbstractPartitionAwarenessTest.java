@@ -316,14 +316,14 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
             T res = super.service(op, payloadWriter, payloadReader);
 
             // Store all operations except binary type registration in queue to check later.
-            if (op != ClientOperation.REGISTER_BINARY_TYPE_NAME &&  op != ClientOperation.PUT_BINARY_TYPE)
+            if (op != ClientOperation.REGISTER_BINARY_TYPE_NAME && op != ClientOperation.PUT_BINARY_TYPE)
                 opsQueue.offer(new T2<>(this, op));
 
             return res;
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override public void close() {
             super.close();
 
             closed = true;

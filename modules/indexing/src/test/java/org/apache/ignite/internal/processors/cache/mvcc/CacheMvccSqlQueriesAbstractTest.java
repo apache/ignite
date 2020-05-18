@@ -1301,7 +1301,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     private void sqlSimple(int inlineSize) throws Exception {
         Ignite srv0 = ignite(0);
 
-        IgniteCache<Integer, MvccTestSqlIndexValue> cache =  (IgniteCache)srv0.createCache(
+        IgniteCache<Integer, MvccTestSqlIndexValue> cache = (IgniteCache)srv0.createCache(
             cacheConfiguration(cacheMode(), FULL_SYNC, 0, DFLT_PARTITION_COUNT).
                 setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class).
                 setSqlIndexMaxInlineSize(inlineSize));

@@ -144,16 +144,16 @@ public final class IgfsBlockKey implements IgfsBaseBlockKey, Message, Externaliz
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, fileId);
-        U.writeGridUuid(out, affKey);
+        U.writeIgniteUuid(out, fileId);
+        U.writeIgniteUuid(out, affKey);
         out.writeBoolean(evictExclude);
         out.writeLong(blockId);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
-        fileId = U.readGridUuid(in);
-        affKey = U.readGridUuid(in);
+        fileId = U.readIgniteUuid(in);
+        affKey = U.readIgniteUuid(in);
         evictExclude = in.readBoolean();
         blockId = in.readLong();
     }

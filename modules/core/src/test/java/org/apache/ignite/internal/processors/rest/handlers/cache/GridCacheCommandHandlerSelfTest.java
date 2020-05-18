@@ -94,7 +94,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      *
      * @return CacheAtomicityMode for the cache.
      */
-    protected CacheAtomicityMode atomicityMode(){
+    protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL;
     }
 

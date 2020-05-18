@@ -31,7 +31,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  *
  */
-public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractTest{
+public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractTest {
     /**
      *
      */

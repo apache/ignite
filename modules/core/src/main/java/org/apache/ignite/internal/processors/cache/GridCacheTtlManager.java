@@ -234,7 +234,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 }
             }
 
-            if(!cctx.affinityNode())
+            if (!cctx.affinityNode())
                 return false;  /* Pending tree never contains entries for that cache */
 
             if (!hasPendingEntries || nextCleanTime > U.currentTimeMillis())

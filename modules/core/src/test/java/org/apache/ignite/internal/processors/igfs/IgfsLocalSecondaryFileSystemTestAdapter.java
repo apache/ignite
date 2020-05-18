@@ -103,7 +103,7 @@ public class IgfsLocalSecondaryFileSystemTestAdapter implements IgfsSecondaryFil
             throw new UnsupportedOperationException("Posix file attributes not available");
 
         int perm = 0;
-        for(PosixFilePermission pfp : attrView.readAttributes().permissions())
+        for (PosixFilePermission pfp : attrView.readAttributes().permissions())
             perm |= (1 << 8 - pfp.ordinal());
 
         return '0' + Integer.toOctalString(perm);
