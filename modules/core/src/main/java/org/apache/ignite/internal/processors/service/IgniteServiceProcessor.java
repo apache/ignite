@@ -823,19 +823,26 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         long startTime = U.currentTimeMillis();
 
-        Map<UUID, Integer> top;
+        ServiceInfo desc;
 
         while (true) {
-            top = serviceTopology(name);
-
-            if (timeout == 0 || (top != null && !top.isEmpty()))
-                return top;
-
             synchronized (servicesTopsUpdateMux) {
-                long wait = timeout - (U.currentTimeMillis() - startTime);
+                desc = lookupInRegisteredServices(name);
 
-                if (wait <= 0)
-                    return top;
+                if (timeout == 0 && desc == null)
+                    return null;
+
+                if (desc != null && desc.topologyInitialized())
+                    return desc.topologySnapshot();
+
+                long wait = 0;
+
+                if (timeout != 0) {
+                    wait = timeout - (U.currentTimeMillis() - startTime);
+
+                    if (wait <= 0)
+                        return desc == null ? null : desc.topologySnapshot();
+                }
 
                 try {
                     servicesTopsUpdateMux.wait(wait);
@@ -845,19 +852,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 }
             }
         }
-    }
-
-    /**
-     * @param name Service name.
-     * @return Service topology.
-     */
-    private Map<UUID, Integer> serviceTopology(String name) {
-        for (ServiceInfo desc : registeredServices.values()) {
-            if (desc.name().equals(name))
-                return desc.topologySnapshot();
-        }
-
-        return null;
     }
 
     /** {@inheritDoc} */
