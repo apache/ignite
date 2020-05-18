@@ -88,6 +88,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
                 ctx => WriteJavaTaskRequest(taskName, taskArg, ctx),
                 ctx => ReadJavaTaskResponse(ctx, tcs, keepBinary));
 
+            // ReSharper disable once AssignNullToNotNullAttribute (t.Exception won't be null).
             task.ContinueWith(t => tcs.TrySetException(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
             task.ContinueWith(t => tcs.TrySetCanceled(), TaskContinuationOptions.OnlyOnCanceled);
 
