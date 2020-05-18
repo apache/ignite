@@ -110,9 +110,37 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         /// when client disconnects during task execution.
         /// </summary>
         [Test]
-        public void TestExecuteJavaTaskThrowsExceptionOnDisconnect([Values(true, false)] bool async)
+        public void TestExecuteJavaTaskThrowsExceptionOnDisconnect()
         {
-            // TODO
+            var cfg = new IgniteConfiguration(GetIgniteConfiguration())
+            {
+                AutoGenerateIgniteInstanceName = true
+            };
+            
+            var ignite = Ignition.Start(cfg);
+
+            var port = ignite.GetCluster().GetLocalNode().GetAttribute<int>("clientListenerPort");
+            
+            var clientCfg = new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                Endpoints = new[] {"127.0.0.1:" + port}
+            };
+            
+            var client = Ignition.StartClient(clientCfg);
+
+            try
+            {
+                var task = client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, (long) 10000);
+                ignite.Dispose();
+
+                var ex = Assert.Throws<AggregateException>(() => task.Wait()).GetInnermostException();
+                StringAssert.StartsWith("Task cancelled due to stopping of the grid", ex.Message);
+            }
+            finally
+            {
+                ignite.Dispose();
+                client.Dispose();
+            }
         }
 
         /// <summary>
@@ -411,7 +439,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             return new IgniteClientConfiguration(base.GetClientConfiguration())
             {
-                SocketTimeout = TimeSpan.FromSeconds(3)
+                SocketTimeout = TimeSpan.FromSeconds(3),
+                EnablePartitionAwareness = false
             };
         }
     }
