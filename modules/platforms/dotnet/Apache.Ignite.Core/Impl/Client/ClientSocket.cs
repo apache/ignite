@@ -428,8 +428,6 @@ namespace Apache.Ignite.Core.Impl.Client
                 return false;
             }
 
-            // TODO: This won't work for features like Events and Continuous Queries.
-            // We should have some way to handle multiple notifications without causing timeout exceptions.
             var count = Interlocked.Decrement(ref _expectedNotifications);
             if (count < 0)
             {
