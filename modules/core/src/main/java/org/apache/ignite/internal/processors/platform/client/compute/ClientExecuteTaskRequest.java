@@ -83,9 +83,8 @@ public class ClientExecuteTaskRequest extends ClientRequest {
 
             // Deserialize as part of process() call - not in constructor - for proper error handling.
             // Failure to deserialize binary object should not be treated as a failure to decode request.
-            if ((flags & ClientComputeTask.KEEP_BINARY_FLAG_MASK) == 0 && arg instanceof BinaryObject) {
-                arg0 = ((BinaryObject)arg).deserialize();
-            }
+            if ((flags & ClientComputeTask.KEEP_BINARY_FLAG_MASK) == 0 && arg instanceof BinaryObject)
+                arg0 = ((BinaryObject) arg).deserialize();
 
             task.execute(taskId, taskName, arg0, nodeIds, flags, timeout);
         }

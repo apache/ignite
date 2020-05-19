@@ -410,8 +410,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
             if (clsName != null)
                 cache.putIfAbsent(typeId, new MappedName(clsName, true));
-            else
-            if (clientNode) {
+            else if (clientNode) {
                 mappedName = cache.get(typeId);
 
                 if (mappedName == null) {
