@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
         public void Commit()
         {
-            throw new System.NotImplementedException();
+            Close(true);
         }
 
         public Task CommitAsync()
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
         public void Rollback()
         {
-            throw new System.NotImplementedException();
+            Close(false);
         }
 
         public Task RollbackAsync()
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             get { return _id; }
         }
 
-        private void Close(bool committed)
+        private void Close(bool commit)
         {
             if (!_closed)
             {
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                         ctx =>
                         {
                             ctx.Writer.WriteInt(THREAD_TX._id);
-                            ctx.Writer.WriteBoolean(committed);
+                            ctx.Writer.WriteBoolean(commit);
                         },
                         null);
                 }
