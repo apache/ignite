@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Tests.Client
         }
         
         /// <summary>
-        /// Tests that cluster operations throw proper exception on older server versions.
+        /// Tests that cluster group operations throw proper exception on older server versions.
         /// </summary>
         [Test]
         public void TestClusterGroupOperationsThrowCorrectExceptionWhenFeatureIsMissing()
@@ -130,6 +130,22 @@ namespace Apache.Ignite.Core.Tests.Client
                     () => client.GetCluster().ForServers().GetNodes(), 
                     ClientBitmaskFeature.ClusterGroups, 
                     ClientOp.ClusterGroupGetNodeIds);
+            }
+        }
+        
+        /// <summary>
+        /// Tests that compute operations throw proper exception on older server versions.
+        /// </summary>
+        [Test]
+        public void TestComputeOperationsThrowCorrectExceptionWhenFeatureIsMissing()
+        {
+            using (var client = StartClient())
+            {
+                // ReSharper disable once AccessToDisposedClosure
+                ClientProtocolCompatibilityTest.AssertNotSupportedFeatureOperation(
+                    () => client.GetCompute().ExecuteJavaTask<int>("t", null), 
+                    ClientBitmaskFeature.ExecuteTaskByName, 
+                    ClientOp.ComputeTaskExecute);
             }
         }
         
