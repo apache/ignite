@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -53,8 +54,10 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.join;
 import static java.lang.System.lineSeparator;
@@ -113,6 +116,27 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
     /** Last operation result. */
     protected Object lastOperationResult;
+
+    /** Persistence flag. */
+    private boolean persistent = true;
+
+    /**
+     * Persistence setter.
+     *
+     * @param pr {@code True} If persistence enable.
+     **/
+    protected void persistenceEnable(boolean pr) {
+        persistent = pr;
+    }
+
+    /**
+     * Persistence getter.
+     *
+     * @return Persistence enable flag.
+     */
+    protected boolean persistenceEnable() {
+        return persistent;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -192,7 +216,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointFrequency(checkpointFreq)
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024).setPersistenceEnabled(true)
+                new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024).setPersistenceEnabled(persistent)
             );
 
         if (dataRegionConfiguration != null)
@@ -376,17 +400,38 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      *
      * @param ignite Ignite.
      * @param countEntries Count of entries.
+     * @param partitions Partitions count.
+     * @param filter Node filter.
      */
-    protected void createCacheAndPreload(Ignite ignite, int countEntries) {
+    protected void createCacheAndPreload(
+        Ignite ignite,
+        int countEntries,
+        int partitions,
+        @Nullable IgnitePredicate<ClusterNode> filter
+    ) {
         assert nonNull(ignite);
 
-        ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1)
-            .setEncryptionEnabled(encriptionEnabled));
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, partitions))
+            .setBackups(1);
+
+        if (filter != null)
+            ccfg.setNodeFilter(filter);
+
+        ignite.createCache(ccfg);
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
         for (int i = 0; i < countEntries; i++)
             cache.put(i, i);
+    }
+
+    /**
+     * Creates default cache and preload some data entries.
+     *
+     * @param ignite Ignite.
+     * @param countEntries Count of entries.
+     */
+    protected void createCacheAndPreload(Ignite ignite, int countEntries) {
+        createCacheAndPreload(ignite, countEntries, 32, null);
     }
 }
