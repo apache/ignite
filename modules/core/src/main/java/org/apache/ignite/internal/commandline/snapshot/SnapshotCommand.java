@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
+import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CREATE;
@@ -88,7 +89,8 @@ public class SnapshotCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Command.usage(log, "Create cluster snapshot:", SNAPSHOT, CREATE.toString(), "snapshotName");
+        Command.usage(log, "Create cluster snapshot:", SNAPSHOT, singletonMap("snapshot_name", "Snapshot name."),
+            CREATE.toString(), "snapshot_name");
     }
 
     /** {@inheritDoc} */
