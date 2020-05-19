@@ -24,7 +24,8 @@ namespace Apache.Ignite.Core.Impl.Client
     {
         // UserAttributes = 0,
         ExecuteTaskByName = 1,
-        // ClusterApi = 2,
-        ClusterGroupGetNodesEndpoints = 3
+        // ClusterApi = 2, // This flag is not correct - cluster API ops (wal and state) were introduces in 1.5.0.
+        ClusterGroupGetNodesEndpoints = 3,
+        ClusterGroups = 4
     }
 }
