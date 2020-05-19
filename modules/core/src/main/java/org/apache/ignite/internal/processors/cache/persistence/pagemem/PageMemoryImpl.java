@@ -1119,7 +1119,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         IgniteInternalFuture allowToReplace
     ) throws IgniteException {
         if (segments == null)
-            return new GridMultiCollectionWrapper<>(Collections.<FullPageId>emptyList());
+            return new GridMultiCollectionWrapper<>(Collections.emptyList());
 
         Collection[] collections = new Collection[segments.length];
 
@@ -1669,7 +1669,6 @@ public class PageMemoryImpl implements PageMemoryEx {
     /**
      * @param page Page pointer.
      * @param fullId full page ID.
-     * @param walPlc WAL policy
      * @param walPlc Full page WAL record policy
      * @param markDirty set dirty flag to page
      * @param restore restore flag
