@@ -38,8 +38,6 @@ namespace Apache.Ignite.Core.Tests.Client
     [TestFixture(JavaServer.GroupIdIgnite, "2.4.0", 0)]
     [TestFixture(JavaServer.GroupIdIgnite, "2.5.0", 1)]
     [TestFixture(JavaServer.GroupIdIgnite, "2.6.0", 1)]
-    [TestFixture(JavaServer.GroupIdIgnite, "2.7.0", 2)]
-    [TestFixture(JavaServer.GroupIdIgnite, "2.7.5", 2)]
     [TestFixture(JavaServer.GroupIdIgnite, "2.7.6", 2)]
     [TestFixture(JavaServer.GroupIdIgnite, "2.8.0", 6)]
     [Category(TestUtils.CategoryIntensive)]
