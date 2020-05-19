@@ -32,9 +32,9 @@ public enum ProtocolBitmaskFeature {
     EXECUTE_TASK_BY_NAME(1),
 
     /**
-     * Adds other cluster states besides ACTIVE and INACTIVE.
+     * Adds cluster states besides ACTIVE and INACTIVE.
      */
-    CLUSTER_ADDITIONAL_STATES(2),
+    CLUSTER_STATES(2),
 
     /** Cluster groups. */
     CLUSTER_GROUPS(4);

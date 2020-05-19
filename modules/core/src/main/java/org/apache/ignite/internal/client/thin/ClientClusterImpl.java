@@ -57,7 +57,7 @@ class ClientClusterImpl extends ClientClusterGroupImpl implements ClientCluster 
 
                     checkClusterApiSupported(protocolCtx);
 
-                    if (newState.ordinal() > 1 && !protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.CLUSTER_ADDITIONAL_STATES)) {
+                    if (newState.ordinal() > 1 && !protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.CLUSTER_STATES)) {
                         throw new ClientFeatureNotSupportedByServerException("State " + newState.name() + " is not " +
                             "supported by the server");
                     }
@@ -132,7 +132,7 @@ class ClientClusterImpl extends ClientClusterGroupImpl implements ClientCluster 
     private void checkClusterApiSupported(ProtocolContext protocolCtx)
         throws ClientFeatureNotSupportedByServerException {
         if (!protocolCtx.isFeatureSupported(ProtocolVersionFeature.CLUSTER_API) &&
-            !protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.CLUSTER_ADDITIONAL_STATES))
-            throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.CLUSTER_ADDITIONAL_STATES);
+            !protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.CLUSTER_STATES))
+            throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.CLUSTER_STATES);
     }
 }
