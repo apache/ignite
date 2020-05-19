@@ -430,10 +430,12 @@ namespace Apache.Ignite.Core.Tests.Services
             
             var prx = Services.GetServiceProxy<ITestIgniteServiceArray>(SvcName);
             
-            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArrayOfObjects(enumerable.ToArray<object>())
+            /*Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArrayOfObjects(enumerable.ToArray<object>())
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
             Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray(enumerable.ToArray())
-                  .Select(x => x.Field).ToArray());
+                  .Select(x => x.Field).ToArray());*/
+            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray2(new[] {10, 11, 12}
+                    .Select(x => new PlatformComputeBinarizable2 {Field = x}).ToArray()).Select(x => x.Field).ToArray());
         }
 
         /// <summary>
@@ -1155,6 +1157,9 @@ namespace Apache.Ignite.Core.Tests.Services
             
             /** */
             PlatformComputeBinarizable[] TestBinarizableArray(PlatformComputeBinarizable[] x);
+            
+            /** */
+            PlatformComputeBinarizable2[] TestBinarizableArray2(PlatformComputeBinarizable2[] x);
         }
 
         /// <summary>
@@ -1179,6 +1184,20 @@ namespace Apache.Ignite.Core.Tests.Services
             public PlatformComputeBinarizable[] TestBinarizableArray(PlatformComputeBinarizable[] arg)
             {
                 return (PlatformComputeBinarizable[])TestBinarizableArrayOfObjects(arg);
+            }
+            
+            
+            public PlatformComputeBinarizable2[] TestBinarizableArray2(PlatformComputeBinarizable2[] arg)
+            {
+                if (arg == null)
+                    return null;
+
+                for (var i = 0; i < arg.Length; i++)
+                    arg[i] = arg[i] == null
+                        ? null
+                        : new PlatformComputeBinarizable2() { Field = ((PlatformComputeBinarizable2)arg[i]).Field + 1 };
+
+                return arg;
             }
         }
 
@@ -1567,6 +1586,15 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Interop class.
         /// </summary>
         public class PlatformComputeBinarizable
+        {
+            /** */
+            public int Field { get; set; }
+        }
+        
+        /// <summary>
+        /// Interop class.
+        /// </summary>
+        public class PlatformComputeBinarizable2
         {
             /** */
             public int Field { get; set; }
