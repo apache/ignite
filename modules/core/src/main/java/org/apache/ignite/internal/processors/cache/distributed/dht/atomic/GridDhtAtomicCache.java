@@ -1523,6 +1523,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!forcePrimary && ctx.config().isReadFromBackup() && ctx.affinityNode() &&
             ctx.group().topology().lostPartitions().isEmpty()) {
+            ctx.shared().database().checkpointReadLock();
+
             try {
                 Map<K, V> locVals = U.newHashMap(keys.size());
 

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -330,9 +331,21 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
 
         load(grid(idx0), DEFAULT_CACHE_NAME, keys.subList(keysCnt - 10, keysCnt));
 
+        TestRecordingCommunicationSpi.spi(grid(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode clusterNode, Message msg) {
+                if (msg instanceof GridDhtPartitionSupplyMessage) {
+                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage) msg;
+
+                    return msg0.groupId() == CU.cacheId(DEFAULT_CACHE_NAME);
+                }
+
+                return false;
+            }
+        });
+
         IgniteEx g1 = startGrid(idx1);
 
-        stopGrid(idx0); // Stop supplier in the middle of clearing.
+        stopGrid(idx0); // Stop supplier in the middle of rebalancing.
 
         final GridDhtLocalPartition part = g1.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(partId);
 
