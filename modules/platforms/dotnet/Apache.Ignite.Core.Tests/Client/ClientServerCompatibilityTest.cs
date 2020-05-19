@@ -41,6 +41,7 @@ namespace Apache.Ignite.Core.Tests.Client
     [TestFixture(JavaServer.GroupIdIgnite, "2.7.0", 2)]
     [TestFixture(JavaServer.GroupIdIgnite, "2.7.5", 2)]
     [TestFixture(JavaServer.GroupIdIgnite, "2.7.6", 2)]
+    [TestFixture(JavaServer.GroupIdIgnite, "2.8.0", 6)]
     [Category(TestUtils.CategoryIntensive)]
     public class ClientServerCompatibilityTest
     {
@@ -104,10 +105,31 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestClusterOperationsThrowCorrectExceptionOnVersionsOlderThan150()
         {
+            if (_clientProtocolVersion >= ClientSocket.Ver150)
+            {
+                return;
+            }
+            
             using (var client = StartClient())
             {
                 ClientProtocolCompatibilityTest.TestClusterOperationsThrowCorrectExceptionOnVersionsOlderThan150(
                     client, _clientProtocolVersion.ToString());
+            }
+        }
+        
+        /// <summary>
+        /// Tests that cluster operations throw proper exception on older server versions.
+        /// </summary>
+        [Test]
+        public void TestClusterGroupOperationsThrowCorrectExceptionWhenFeatureIsMissing()
+        {
+            using (var client = StartClient())
+            {
+                // ReSharper disable once AccessToDisposedClosure
+                ClientProtocolCompatibilityTest.AssertNotSupportedFeatureOperation(
+                    () => client.GetCluster().ForServers().GetNodes(), 
+                    ClientBitmaskFeature.ClusterGroups, 
+                    ClientOp.ClusterGroupGetNodeIds);
             }
         }
         

@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Asserts proper exception for non-supported operation.
         /// </summary>
-        private static void AssertNotSupportedFeatureOperation(Action action, ClientBitmaskFeature feature, ClientOp op)
+        internal static void AssertNotSupportedFeatureOperation(Action action, ClientBitmaskFeature feature, ClientOp op)
         {
             var ex = Assert.Throws<IgniteClientException>(() => action());
             
