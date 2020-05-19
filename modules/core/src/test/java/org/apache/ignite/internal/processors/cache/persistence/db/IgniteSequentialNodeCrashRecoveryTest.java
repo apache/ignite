@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -37,23 +38,27 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -114,7 +119,6 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
      * @throws Exception if failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12780")
     public void testCrashOnCheckpointAfterLogicalRecovery() throws Exception {
         IgniteEx g = startGrid(0);
 
@@ -129,7 +133,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         {
             IgniteCache<Object, Object> cache = g.cache("cache");
 
-                // Now that checkpoints are disabled, put some data to the cache.
+            // Now that checkpoints are disabled, put some data to the cache.
             GridTestUtils.runMultiThreaded(() -> {
                 for (int i = 0; i < 400; i++)
                     cache.put(i % 100, Thread.currentThread().getName());
@@ -205,6 +209,46 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
     private Collection<FullPageId> captureDirtyPages(IgniteEx g) throws IgniteCheckedException {
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)g.context()
             .cache().context().database();
+
+        dbMgr.checkpointReadLock();
+        try {
+            g.context().cache().cacheGroups().forEach(group -> {
+                DbCheckpointListener.Context ctx = new DbCheckpointListener.Context() {
+                    @Override public boolean nextSnapshot() {
+                        return false;
+                    }
+
+                    @Override public IgniteInternalFuture<?> finishedStateFut() {
+                        return null;
+                    }
+
+                    @Override public PartitionAllocationMap partitionStatMap() {
+                        return null;
+                    }
+
+                    @Override public boolean needToSnapshot(String cacheOrGrpName) {
+                        return false;
+                    }
+
+                    @Override public @Nullable Executor executor() {
+                        return null;
+                    }
+
+                    @Override public boolean hasPages() {
+                        return false;
+                    }
+                };
+                try {
+                    ((GridCacheOffheapManager)group.offheap()).onMarkCheckpointBegin(ctx);
+                }
+                catch (IgniteCheckedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+        finally {
+            dbMgr.checkpointReadUnlock();
+        }
 
         // Capture a set of dirty pages.
         PageMemoryImpl pageMem = (PageMemoryImpl)dbMgr.dataRegion("default").pageMemory();
