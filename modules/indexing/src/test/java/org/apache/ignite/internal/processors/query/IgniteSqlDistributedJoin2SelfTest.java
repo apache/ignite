@@ -38,16 +38,16 @@ public class IgniteSqlDistributedJoin2SelfTest extends AbstractIndexingCommonTes
     private static final int NODES_COUNT = 3;
 
     /** */
-    private static String PERSON_CACHE = "person";
+    private static final String PERSON_CACHE = "person";
 
     /** */
-    private static String MED_INFO_CACHE = "medical_info";
+    private static final String MED_INFO_CACHE = "medical_info";
 
     /** */
-    private static String BLOOD_INFO_PJ_CACHE = "blood_group_info_PJ";
+    private static final String BLOOD_INFO_PJ_CACHE = "blood_group_info_PJ";
 
     /** */
-    private static String BLOOD_INFO_P_CACHE = "blood_group_info_P";
+    private static final String BLOOD_INFO_P_CACHE = "blood_group_info_P";
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
