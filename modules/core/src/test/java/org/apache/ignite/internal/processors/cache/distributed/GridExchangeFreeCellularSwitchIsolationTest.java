@@ -37,10 +37,14 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.testframework.LogListener.matches;
 
 /**
  *
@@ -70,6 +74,14 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
     @Test
     public void testOnlyAffectedNodesWaitForRecovery() throws Exception {
         int nodes = 6;
+
+        String recoveryStatusMsg = "TxRecovery Status and Timings [txs=";
+
+        LogListener lsnrAny = matches(recoveryStatusMsg).build(); // Any.
+        LogListener lsnrBackup = matches(recoveryStatusMsg).times((nodes / 2) - 1).build(); // Cell 1 (backups).
+        LogListener lsnrNear = matches(recoveryStatusMsg).times((nodes / 2)).build(); // Cell 2 (near).
+
+        listeningLog.registerListener(lsnrAny);
 
         startGridsMultiThreaded(nodes);
 
@@ -240,6 +252,10 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
             nearNodes, 1,
             vers);
 
+        assertFalse(lsnrAny.check());
+
+        listeningLog.registerListener(lsnrNear);
+
         failed.close(); // Stopping node.
 
         awaitForSwitchOnNodeLeft(failed);
@@ -375,6 +391,10 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
             nearNodes, 0,
             vers);
 
+        assertTrue(waitForCondition(lsnrNear::check, 5000));
+
+        listeningLog.registerListener(lsnrBackup);
+
         // Partitioned recovery.
         for (Ignite ignite : G.allGrids()) {
             TestRecordingCommunicationSpi spi =
@@ -410,6 +430,8 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
             backupNodes, 0,
             nearNodes, 0,
             vers);
+
+        assertTrue(waitForCondition(lsnrBackup::check, 5000));
 
         for (IgniteInternalFuture<?> fut : futs)
             fut.get();
