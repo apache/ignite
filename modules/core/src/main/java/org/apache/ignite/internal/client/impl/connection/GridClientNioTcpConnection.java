@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
@@ -263,6 +264,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             handshakeFut.get(connTimeoutRest, MILLISECONDS);
 
             ses.addMeta(SES_META_CONN, this);
+
+            if (cred != null || !F.isEmpty(userAttrs)) {
+                GridClientFuture<?> authFut = makeAuthRequest();
+
+                authFut.get(connTimeoutRest, MILLISECONDS);
+            }
 
             if (log.isLoggable(Level.INFO))
                 log.info("Client TCP connection established: " + serverAddress());
@@ -638,6 +645,18 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             closedLatch.countDown();
     }
 
+    /** */
+    private <R> GridClientFutureAdapter<R> makeAuthRequest() throws GridClientConnectionResetException,
+        GridClientClosedException {
+        TcpClientFuture<R> fut = new TcpClientFuture<>();
+
+        fut.retryState(TcpClientFuture.STATE_REQUEST_RETRY);
+
+        GridClientAuthenticationRequest req = buildAuthRequest();
+
+        return makeRequest(req, fut, false);
+    }
+
     /**
      * Builds authentication request message with credentials taken from credentials object.
      *
@@ -649,6 +668,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         req.clientId(clientId);
 
         req.credentials(credentials());
+
+        req.userAttributes(userAttrs);
 
         return req;
     }
@@ -891,12 +912,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         msg.includeAttributes(inclAttrs);
         msg.includeMetrics(inclMetrics);
         msg.destinationId(destNodeId);
-        msg.userAttributes(userAttrs);
-
-        if (credentials() != null) {
-            msg.login((String) credentials().getLogin());
-            msg.password((String) credentials().getPassword());
-        }
     }
 
     /** {@inheritDoc} */

@@ -83,6 +83,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -2604,6 +2605,36 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         return nodes;
+    }
+
+    /**
+     * @return Primary nodes for local backups.
+     */
+    public Set<ClusterNode> idealPrimaryNodesForLocalBackups() {
+        Set<ClusterNode> res = new GridConcurrentHashSet<>();
+
+        ClusterNode loc = cctx.localNode();
+
+        forAllCacheGroups(new IgniteInClosureX<GridAffinityAssignmentCache>() {
+            @Override public void applyx(GridAffinityAssignmentCache aff) {
+                CacheGroupDescriptor desc = cachesRegistry.group(aff.groupId());
+
+                if (desc.config().getCacheMode() == PARTITIONED) {
+                    List<List<ClusterNode>> assignment = aff.idealAssignmentRaw();
+
+                    HashSet<ClusterNode> primaries = new HashSet<>();
+
+                    for (List<ClusterNode> nodes : assignment) {
+                        if (nodes.indexOf(loc) > 0)
+                            primaries.add(nodes.get(0));
+                    }
+
+                    res.addAll(primaries);
+                }
+            }
+        });
+
+        return res;
     }
 
     /**

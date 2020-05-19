@@ -143,4 +143,9 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
      * @return Cache group context.
      */
     public CacheGroupContext context();
+
+    /**
+     * @return A deep copy of current instance.
+     */
+    public PartitionUpdateCounter copy();
 }

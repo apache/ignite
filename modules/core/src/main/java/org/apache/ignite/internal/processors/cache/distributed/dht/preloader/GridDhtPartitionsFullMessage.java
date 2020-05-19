@@ -926,7 +926,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 ClusterNode newMapSentBy = discovery.node(updMap.nodeId());
 
                 if (newMapSentBy == null)
-                    return;
+                    continue;
 
                 if (currentMapSentBy == null || newMapSentBy.order() > currentMapSentBy.order() || updMap.compareTo(currMap) >= 0)
                     partitions().put(grpId, updMap);

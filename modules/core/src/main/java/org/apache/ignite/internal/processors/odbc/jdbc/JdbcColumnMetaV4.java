@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -69,18 +68,22 @@ public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer,
-        ClientListenerProtocolVersion ver) {
-        super.writeBinary(writer, ver);
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) {
+        super.writeBinary(writer, protoCtx);
 
         writer.writeInt(precision);
         writer.writeInt(scale);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) {
-        super.readBinary(reader, ver);
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) {
+        super.readBinary(reader, protoCtx);
 
         precision = reader.readInt();
         scale = reader.readInt();

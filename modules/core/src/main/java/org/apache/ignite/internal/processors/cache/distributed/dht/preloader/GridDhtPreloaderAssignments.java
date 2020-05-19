@@ -39,16 +39,31 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     /** */
     private boolean cancelled;
 
+    /** Some of owned by affinity partitions were changed state to moving. */
+    private final boolean affinityReassign;
+
     /**
      * @param exchangeId Exchange ID.
      * @param topVer Last join order.
      */
-    public GridDhtPreloaderAssignments(GridDhtPartitionExchangeId exchangeId, AffinityTopologyVersion topVer) {
+    public GridDhtPreloaderAssignments(
+        GridDhtPartitionExchangeId exchangeId,
+        AffinityTopologyVersion topVer,
+        boolean affinityReassign
+    ) {
         assert exchangeId != null;
         assert topVer.topologyVersion() > 0 : topVer;
 
         this.exchangeId = exchangeId;
         this.topVer = topVer;
+        this.affinityReassign = affinityReassign;
+    }
+
+    /**
+     * @return True if partitions were reassigned.
+     */
+    public boolean affinityReassign() {
+        return affinityReassign;
     }
 
     /**
