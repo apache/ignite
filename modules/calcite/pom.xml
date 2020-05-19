@@ -28,6 +28,8 @@
         <calcite.version>1.22.0</calcite.version>
         <guava.version>19.0</guava.version>
         <janino.version>3.0.11</janino.version>
+        <avatica.version>1.16.0</avatica.version>
+        <jsonpath.version>2.4.0</jsonpath.version>
     </properties>
 
     <parent>
@@ -65,6 +67,18 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-linq4j</artifactId>
+            <version>${calcite.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-linq4j</artifactId>
+            <version>${calcite.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
@@ -80,6 +94,36 @@
             <groupId>org.codehaus.janino</groupId>
             <artifactId>janino</artifactId>
             <version>${janino.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.calcite.avatica</groupId>
+            <artifactId>avatica-core</artifactId>
+            <version>${avatica.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.jayway.jsonpath</groupId>
+            <artifactId>json-path</artifactId>
+            <version>${jsonpath.version}</version>
         </dependency>
 
         <dependency>

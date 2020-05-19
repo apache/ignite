@@ -16,10 +16,10 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.externalize;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import java.io.IOException;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -83,7 +83,7 @@ public class RelJsonReader {
             readRels(rels);
             return lastRel;
         }
-        catch (JsonProcessingException e) {
+        catch (IOException e) {
             throw new IgniteException(e);
         }
     }
