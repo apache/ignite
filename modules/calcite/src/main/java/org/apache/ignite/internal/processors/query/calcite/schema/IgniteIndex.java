@@ -21,11 +21,12 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 
 /**
  * Ignite scannable index.
  */
-public class IgniteIndex {
+public class IgniteIndex<Row> {
     /** */
     private final RelCollation collation;
 
@@ -33,15 +34,15 @@ public class IgniteIndex {
     private final String idxName;
 
     /** */
-    private final GridIndex idx;
+    private final GridIndex<H2Row> idx;
 
     /** */
-    private final IgniteTable tbl;
+    private final IgniteTable<Row> tbl;
 
     /** */
-    public IgniteIndex(RelCollation collation, String name, GridIndex idx, IgniteTable tbl) {
+    public IgniteIndex(RelCollation collation, String name, GridIndex<H2Row> idx, IgniteTable<Row> tbl) {
         this.collation = collation;
-        this.idxName = name;
+        idxName = name;
         this.idx = idx;
         this.tbl = tbl;
     }
@@ -57,21 +58,21 @@ public class IgniteIndex {
     }
 
     /** */
-    public GridIndex index() {
+    public GridIndex<H2Row> index() {
         return idx;
     }
 
     /** */
-    public IgniteTable table() {
+    public IgniteTable<Row> table() {
         return tbl;
     }
 
     /** */
-    public Iterable<Object[]> scan(
-        ExecutionContext execCtx,
-        Predicate<Object[]> filters,
+    public Iterable<Row> scan(
+        ExecutionContext<Row> execCtx,
+        Predicate<Row> filters,
         Object[] lowerIdxConditions,
         Object[] upperIdxConditions) {
-        return new IndexScan(execCtx, this, filters, lowerIdxConditions, upperIdxConditions);
+        return new IndexScan<>(execCtx, this, filters, lowerIdxConditions, upperIdxConditions);
     }
 }

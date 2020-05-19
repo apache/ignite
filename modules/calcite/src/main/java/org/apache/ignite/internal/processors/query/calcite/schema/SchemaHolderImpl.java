@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +42,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Holds actual schema and mutates it on schema change, requested by Ignite.
  */
-public class SchemaHolderImpl extends AbstractService implements SchemaHolder, SchemaChangeListener {
+public class SchemaHolderImpl<Row> extends AbstractService implements SchemaHolder, SchemaChangeListener {
 
     /** */
     private final Map<String, IgniteSchema> igniteSchemas = new HashMap<>();
@@ -102,25 +103,28 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo,
-        GridIndex pk) {
+        GridIndex<?> pk) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
         String tblName = typeDesc.tableName();
 
-        TableDescriptorImpl desc =
-            new TableDescriptorImpl(cacheInfo.cacheContext(), typeDesc, affinityIdentity(cacheInfo));
+        TableDescriptorImpl<?, ?, Row> desc =
+            new TableDescriptorImpl<>(cacheInfo.cacheContext(), typeDesc, affinityIdentity(cacheInfo));
 
         RelCollation pkCollation = RelCollations.of(new RelFieldCollation(QueryUtils.KEY_COL));
 
-        IgniteTable tbl = new IgniteTable(tblName, desc, pkCollation);
+        IgniteTable<Row> tbl = new IgniteTable<>(tblName, desc, pkCollation);
         schema.addTable(tblName, tbl);
 
-        IgniteIndex pkIdx = new IgniteIndex(pkCollation, IgniteTable.PK_INDEX_NAME, pk, tbl);
+        IgniteIndex<Row> pkIdx = new IgniteIndex<>(pkCollation, IgniteTable.PK_INDEX_NAME, (GridIndex<H2Row>)pk, tbl);
         tbl.addIndex(pkIdx);
 
         if (desc.keyField() != QueryUtils.KEY_COL) {
             RelCollation pkAliasCollation = RelCollations.of(new RelFieldCollation(desc.keyField()));
-            IgniteIndex pkAliasIdx = new IgniteIndex(pkAliasCollation, IgniteTable.PK_ALIAS_INDEX_NAME, pk, tbl);
+
+            IgniteIndex<Row> pkAliasIdx =
+                new IgniteIndex<>(pkAliasCollation, IgniteTable.PK_ALIAS_INDEX_NAME,(GridIndex<H2Row>) pk, tbl);
+
             tbl.addIndex(pkAliasIdx);
         }
 
@@ -136,8 +140,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     /** {@inheritDoc} */
     @Override public synchronized void onSqlTypeDrop(
         String schemaName,
-        GridQueryTypeDescriptor typeDesc,
-        GridCacheContextInfo<?,?> cacheInfo
+        GridQueryTypeDescriptor typeDesc
     ) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
@@ -148,23 +151,26 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** {@inheritDoc} */
     @Override public synchronized void onIndexCreate(String schemaName, String tblName, String idxName,
-        GridQueryIndexDescriptor idxDesc, GridIndex gridIdx) {
+        GridQueryIndexDescriptor idxDesc, GridIndex<?> gridIdx) {
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
 
-        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
+        IgniteTable<Row> tbl = (IgniteTable<Row>)schema.getTable(tblName);
         assert tbl != null;
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
-        IgniteIndex idx = new IgniteIndex(idxCollation, idxName, gridIdx, tbl);
+        IgniteIndex<Row> idx = new IgniteIndex<>(idxCollation, idxName, (GridIndex<H2Row>)gridIdx, tbl);
         tbl.addIndex(idx);
     }
 
     /**
      * @return Index collation.
      */
-    @NotNull private static RelCollation deriveSecondaryIndexCollation(GridQueryIndexDescriptor idxDesc, IgniteTable tbl) {
+    @NotNull private static RelCollation deriveSecondaryIndexCollation(
+        GridQueryIndexDescriptor idxDesc,
+        IgniteTable<?> tbl
+    ) {
         Map<String, ColumnDescriptor> tblFields = tbl.columnDescriptorsMap();
 
         List<RelFieldCollation> collations = new ArrayList<>(idxDesc.fields().size());
@@ -189,7 +195,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
 
-        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
+        IgniteTable<?> tbl = (IgniteTable<?>)schema.getTable(tblName);
         assert tbl != null;
 
         tbl.removeIndex(idxName);
@@ -202,6 +208,6 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         SchemaPlus newCalciteSchema = Frameworks.createRootSchema(false);
         newCalciteSchema.add("PUBLIC", new IgniteSchema("PUBLIC"));
         igniteSchemas.forEach(newCalciteSchema::add);
-        this.calciteSchema = newCalciteSchema;
+        calciteSchema = newCalciteSchema;
     }
 }

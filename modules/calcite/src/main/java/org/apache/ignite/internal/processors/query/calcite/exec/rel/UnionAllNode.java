@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  *
  */
-public class UnionAllNode<T> extends AbstractNode<T> implements Downstream<T> {
+public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<Row> {
     /** */
     private int curSrc;
 
@@ -33,12 +33,12 @@ public class UnionAllNode<T> extends AbstractNode<T> implements Downstream<T> {
     /**
      * @param ctx Execution context.
      */
-    public UnionAllNode(ExecutionContext ctx) {
+    public UnionAllNode(ExecutionContext<Row> ctx) {
         super(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<T> requestDownstream(int idx) {
+    @Override protected Downstream<Row> requestDownstream(int idx) {
         assert sources != null;
         assert idx >= 0 && idx < sources.size();
 
@@ -46,17 +46,17 @@ public class UnionAllNode<T> extends AbstractNode<T> implements Downstream<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCount) {
+    @Override public void request(int rowsCnt) {
         checkThread();
 
         assert !F.isEmpty(sources);
-        assert rowsCount > 0 && waiting == 0;
+        assert rowsCnt > 0 && waiting == 0;
 
-        source().request(waiting = rowsCount);
+        source().request(waiting = rowsCnt);
     }
 
     /** {@inheritDoc} */
-    @Override public void push(T row) {
+    @Override public void push(Row row) {
         checkThread();
 
         assert downstream != null;
@@ -92,7 +92,7 @@ public class UnionAllNode<T> extends AbstractNode<T> implements Downstream<T> {
     }
 
     /** */
-    private Node<T> source() {
+    private Node<Row> source() {
         return sources.get(curSrc);
     }
 }

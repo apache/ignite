@@ -35,16 +35,18 @@ import org.junit.runners.Parameterized.Parameter;
 /**
  *
  */
+@SuppressWarnings("TypeMayBeWeakened")
 @RunWith(Parameterized.class)
 public class ContinuousExecutionTest extends AbstractExecutionTest {
     /** */
-    @Parameter(0)
-    public int rowsCount;
+    @Parameter()
+    public int rowsCnt;
 
     /** */
     @Parameter(1)
-    public int remoteFragmentsCount;
+    public int remoteFragmentsCnt;
 
+    /** */
     @Parameterized.Parameters(name = "rowsCount={0}, remoteFragmentsCount={1}")
     public static List<Object[]> parameters() {
         return ImmutableList.of(
@@ -65,21 +67,19 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
      */
     @Before
     @Override public void setup() throws Exception {
-        nodesCount = remoteFragmentsCount + 1;
+        nodesCnt = remoteFragmentsCnt + 1;
         super.setup();
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testContinuousExecution() throws Exception {
-        UUID queryId = UUID.randomUUID();
+    public void testContinuousExecution() {
+        UUID qryId = UUID.randomUUID();
 
         List<UUID> nodes = nodes();
 
         for (int i = 1; i < nodes.size(); i++) {
-            UUID localNodeId = nodes.get(i);
+            UUID locNodeId = nodes.get(i);
 
             Iterable<Object[]> iterable = () -> new Iterator<Object[]>() {
                 /** */
@@ -90,12 +90,12 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
 
                 /** {@inheritDoc} */
                 @Override public boolean hasNext() {
-                    return cntr < rowsCount;
+                    return cntr < rowsCnt;
                 }
 
                 /** {@inheritDoc} */
                 @Override public Object[] next() {
-                    if (cntr >= rowsCount)
+                    if (cntr >= rowsCnt)
                         throw new NoSuchElementException();
 
                     Object[] row = new Object[6];
@@ -109,19 +109,19 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
                 }
             };
 
-            ExecutionContext ectx = executionContext(localNodeId, queryId, 0);
+            ExecutionContext<Object[]> ectx = executionContext(locNodeId, qryId, 0);
 
-            ScanNode scan = new ScanNode(ectx, iterable);
+            ScanNode<Object[]> scan = new ScanNode<>(ectx, iterable);
 
-            ProjectNode project = new ProjectNode(ectx, r -> new Object[]{r[0], r[1], r[5]});
+            ProjectNode<Object[]> project = new ProjectNode<>(ectx, r -> new Object[]{r[0], r[1], r[5]});
             project.register(scan);
 
-            FilterNode filter = new FilterNode(ectx, r -> (Integer) r[0] >= 2);
+            FilterNode<Object[]> filter = new FilterNode<>(ectx, r -> (Integer) r[0] >= 2);
             filter.register(project);
 
-            MailboxRegistry registry = mailboxRegistry(localNodeId);
+            MailboxRegistry<Object[]> registry = mailboxRegistry(locNodeId);
 
-            Outbox outbox = new Outbox(ectx, exchangeService(localNodeId), registry,
+            Outbox<Object[]> outbox = new Outbox<>(ectx, exchangeService(locNodeId), registry,
                 0, 1, new AllNodes(nodes.subList(0, 1)));
 
             outbox.register(filter);
@@ -130,18 +130,18 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
             outbox.context().execute(outbox::init);
         }
 
-        UUID localNodeId = nodes.get(0);
+        UUID locNodeId = nodes.get(0);
 
-        ExecutionContext ectx = executionContext(localNodeId, queryId, 1);
+        ExecutionContext<Object[]> ectx = executionContext(locNodeId, qryId, 1);
 
-        MailboxRegistry registry = mailboxRegistry(localNodeId);
+        MailboxRegistry<Object[]> registry = mailboxRegistry(locNodeId);
 
-        Inbox inbox =  registry.register(
-            new Inbox(ectx, exchangeService(localNodeId), registry, 0, 0));
+        Inbox<Object[]> inbox =  registry.register(
+            new Inbox<>(ectx, exchangeService(locNodeId), registry, 0, 0));
 
-        inbox.init(ectx, nodes.subList(1, nodes.size()), null);
+        inbox.init(nodes.subList(1, nodes.size()), null);
 
-        RootNode node = new RootNode(ectx, r -> {});
+        RootNode<Object[]> node = new RootNode<>(ectx, r -> {});
 
         node.register(inbox);
 

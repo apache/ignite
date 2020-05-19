@@ -46,7 +46,6 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -112,7 +111,7 @@ import static org.apache.ignite.internal.processors.query.calcite.metadata.Nodes
  *
  */
 //@WithSystemProperty(key = "calcite.debug", value = "true")
-@SuppressWarnings({"TooBroadScope", "FieldCanBeLocal"})
+@SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class PlannerTest extends GridCommonAbstractTest {
     /** */
     private List<UUID> nodes;
@@ -121,24 +120,25 @@ public class PlannerTest extends GridCommonAbstractTest {
     private List<QueryTaskExecutorImpl> executors;
 
     /** */
-    private volatile Throwable lastException;
+    private volatile Throwable lastE;
 
     /** */
     @Before
-    public void setup() throws IgniteCheckedException {
+    public void setup() {
         nodes = new ArrayList<>(4);
 
         for (int i = 0; i < 4; i++)
             nodes.add(UUID.randomUUID());
     }
 
+    /** */
     @After
     public void tearDown() throws Throwable {
         if (!F.isEmpty(executors))
             executors.forEach(QueryTaskExecutorImpl::tearDown);
 
-        if (lastException != null)
-            throw lastException;
+        if (lastE != null)
+            throw lastE;
     }
 
     /**
@@ -183,7 +183,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -193,8 +193,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -202,12 +203,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
-            assertNotNull(query);
+            assertNotNull(qry);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -261,7 +262,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -271,8 +272,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -280,12 +282,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
-            assertNotNull(query);
+            assertNotNull(qry);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -335,7 +337,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -345,8 +347,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -354,12 +357,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
-            assertNotNull(query);
+            assertNotNull(qry);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -378,7 +381,7 @@ public class PlannerTest extends GridCommonAbstractTest {
     public void testUnion() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
-        TestTable table1 = new TestTable(
+        TestTable tbl1 = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
@@ -400,7 +403,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             }
         };
 
-        TestTable table2 = new TestTable(
+        TestTable tbl2 = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
@@ -422,7 +425,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             }
         };
 
-        TestTable table3 = new TestTable(
+        TestTable tbl3 = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
@@ -446,9 +449,9 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
-        publicSchema.addTable("TABLE1", table1);
-        publicSchema.addTable("TABLE2", table2);
-        publicSchema.addTable("TABLE3", table3);
+        publicSchema.addTable("TABLE1", tbl1);
+        publicSchema.addTable("TABLE2", tbl2);
+        publicSchema.addTable("TABLE3", tbl3);
 
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
@@ -465,7 +468,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -475,8 +478,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelNode root;
@@ -484,12 +488,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
-            assertNotNull(query);
+            assertNotNull(qry);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -519,7 +523,7 @@ public class PlannerTest extends GridCommonAbstractTest {
     public void testUnionAll() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
-        TestTable table1 = new TestTable(
+        TestTable tbl1 = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
@@ -541,7 +545,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             }
         };
 
-        TestTable table2 = new TestTable(
+        TestTable tbl2 = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
@@ -563,7 +567,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             }
         };
 
-        TestTable table3 = new TestTable(
+        TestTable tbl3 = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
@@ -587,9 +591,9 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
-        publicSchema.addTable("TABLE1", table1);
-        publicSchema.addTable("TABLE2", table2);
-        publicSchema.addTable("TABLE3", table3);
+        publicSchema.addTable("TABLE1", tbl1);
+        publicSchema.addTable("TABLE2", tbl2);
+        publicSchema.addTable("TABLE3", tbl3);
 
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
@@ -606,7 +610,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -616,8 +620,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelNode root;
@@ -625,12 +630,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
-            assertNotNull(query);
+            assertNotNull(qry);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -696,7 +701,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -706,8 +711,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelNode root;
@@ -715,12 +721,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
-            assertNotNull(query);
+            assertNotNull(qry);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -825,7 +831,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -835,8 +841,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -844,12 +851,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
-            assertNotNull(query);
+            assertNotNull(qry);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -917,7 +924,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -927,8 +934,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -936,12 +944,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
-            assertNotNull(query);
+            assertNotNull(qry);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -1047,7 +1055,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -1058,12 +1066,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -1114,9 +1122,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public IgniteIndex getIndex(String idxName) {
-                return new IgniteIndex(null, null, null, null) {
-                    @Override public Iterable<Object[]> scan(ExecutionContext execCtx, Predicate<Object[]> filters,
+            @Override public IgniteIndex<Object[]> getIndex(String idxName) {
+                return new IgniteIndex<Object[]>(null, null, null, null) {
+                    @Override public Iterable<Object[]> scan(ExecutionContext<Object[]> execCtx, Predicate<Object[]> filters,
                         Object[] lowerIdxConditions, Object[] upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
                             new Object[]{0, "Igor", 0},
@@ -1141,9 +1149,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public IgniteIndex getIndex(String idxName) {
-                return new IgniteIndex(null, null, null, null) {
-                    @Override public Iterable<Object[]> scan(ExecutionContext execCtx, Predicate<Object[]> filters,
+            @Override public IgniteIndex<Object[]> getIndex(String idxName) {
+                return new IgniteIndex<Object[]>(null, null, null, null) {
+                    @Override public Iterable<Object[]> scan(ExecutionContext<Object[]> execCtx, Predicate<Object[]> filters,
                         Object[] lowerIdxConditions, Object[] upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
                             new Object[]{0, "Calcite", 1},
@@ -1182,7 +1190,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1192,19 +1200,20 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{-10})
+            .parameters(-10)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -1234,15 +1243,15 @@ public class PlannerTest extends GridCommonAbstractTest {
             List<Fragment> fragments = plan.fragments();
             assertEquals(2, fragments.size());
 
-            UUID queryId = UUID.randomUUID();
+            UUID qryId = UUID.randomUUID();
 
             TestIoManager mgr = new TestIoManager();
             GridTestKernalContext kernal;
             QueryTaskExecutorImpl taskExecutor;
-            MessageServiceImpl messageService;
-            MailboxRegistryImpl mailboxRegistry;
-            ExchangeServiceImpl exchangeService;
-            ExecutionContext ectx;
+            MessageServiceImpl msgSvc;
+            MailboxRegistryImpl<Object[]> mailboxRegistry;
+            ExchangeServiceImpl<Object[]> exchangeSvc;
+            ExecutionContext<Object[]> ectx;
             Node<Object[]> exec;
 
             //// Local part
@@ -1259,30 +1268,31 @@ public class PlannerTest extends GridCommonAbstractTest {
                 "calciteQry",
                 (t,ex) -> {
                     log().error(ex.getMessage(), ex);
-                    lastException = ex;
+                    lastE = ex;
                 },
                 true,
                 DFLT_THREAD_KEEP_ALIVE_TIME
             ));
             executors.add(taskExecutor);
 
-            messageService = new TestMessageServiceImpl(kernal, mgr);
+            msgSvc = new TestMessageServiceImpl(kernal, mgr);
 
-            messageService.localNodeId(nodes.get(0));
-            messageService.taskExecutor(taskExecutor);
-            mgr.register(messageService);
+            msgSvc.localNodeId(nodes.get(0));
+            msgSvc.taskExecutor(taskExecutor);
+            mgr.register(msgSvc);
 
-            mailboxRegistry = new MailboxRegistryImpl(kernal);
+            mailboxRegistry = new MailboxRegistryImpl<>(kernal);
 
-            exchangeService = new ExchangeServiceImpl(kernal);
-            exchangeService.taskExecutor(taskExecutor);
-            exchangeService.messageService(messageService);
-            exchangeService.mailboxRegistry(mailboxRegistry);
-            exchangeService.init();
+            exchangeSvc = new ExchangeServiceImpl<>(kernal);
+            exchangeSvc.taskExecutor(taskExecutor);
+            exchangeSvc.messageService(msgSvc);
+            exchangeSvc.mailboxRegistry(mailboxRegistry);
+            exchangeSvc.rowEngineFactory(new ArrayRowEngineFactory());
+            exchangeSvc.init();
 
-            ectx = new ExecutionContext(taskExecutor,
+            ectx = new ExecutionContext<>(taskExecutor,
                 ctx,
-                queryId,
+                qryId,
                 new FragmentDescription(
                     fragment.fragmentId(),
                     null,
@@ -1291,10 +1301,10 @@ public class PlannerTest extends GridCommonAbstractTest {
                     plan.remoteSources(fragment)),
                 Commons.parametersMap(ctx.parameters()));
 
-            exec = new LogicalRelImplementor(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeService,
+            exec = new LogicalRelImplementor<>(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeSvc,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
-            RootNode consumer = new RootNode(ectx, r -> {});
+            RootNode<Object[]> consumer = new RootNode<>(ectx, r -> {});
             consumer.register(exec);
 
             //// Remote part
@@ -1312,29 +1322,30 @@ public class PlannerTest extends GridCommonAbstractTest {
                 "calciteQry",
                 (t,ex) -> {
                     log().error(ex.getMessage(), ex);
-                    lastException = ex;
+                    lastE = ex;
                 },
                 true,
                 DFLT_THREAD_KEEP_ALIVE_TIME
             ));
             executors.add(taskExecutor);
 
-            messageService = new TestMessageServiceImpl(kernal, mgr);
-            messageService.localNodeId(nodes.get(1));
-            messageService.taskExecutor(taskExecutor);
-            mgr.register(messageService);
+            msgSvc = new TestMessageServiceImpl(kernal, mgr);
+            msgSvc.localNodeId(nodes.get(1));
+            msgSvc.taskExecutor(taskExecutor);
+            mgr.register(msgSvc);
 
-            mailboxRegistry = new MailboxRegistryImpl(kernal);
+            mailboxRegistry = new MailboxRegistryImpl<>(kernal);
 
-            exchangeService = new ExchangeServiceImpl(kernal);
-            exchangeService.taskExecutor(taskExecutor);
-            exchangeService.messageService(messageService);
-            exchangeService.mailboxRegistry(mailboxRegistry);
-            exchangeService.init();
+            exchangeSvc = new ExchangeServiceImpl<>(kernal);
+            exchangeSvc.taskExecutor(taskExecutor);
+            exchangeSvc.messageService(msgSvc);
+            exchangeSvc.mailboxRegistry(mailboxRegistry);
+            exchangeSvc.rowEngineFactory(new ArrayRowEngineFactory());
+            exchangeSvc.init();
 
-            ectx = new ExecutionContext(
+            ectx = new ExecutionContext<>(
                 taskExecutor,
-                PlanningContext.builder()
+                PlanningContext.<Object[]>builder()
                     .localNodeId(nodes.get(1))
                     .originatingNodeId(nodes.get(0))
                     .parentContext(Contexts.empty())
@@ -1343,8 +1354,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                         .traitDefs(traitDefs)
                         .build())
                     .logger(log)
+                    .rowEngineFactory(new ArrayRowEngineFactory())
                     .build(),
-                queryId,
+                qryId,
                 new FragmentDescription(
                     fragment.fragmentId(),
                     null,
@@ -1353,14 +1365,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                     plan.remoteSources(fragment)),
                 Commons.parametersMap(ctx.parameters()));
 
-            exec = new LogicalRelImplementor(ectx, c -> r -> 0, mailboxRegistry, exchangeService,
+            exec = new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
             //// Start execution
 
             assert exec instanceof Outbox;
 
-            exec.context().execute(((Outbox) exec)::init);
+            exec.context().execute(((Outbox<Object[]>) exec)::init);
 
             ArrayList<Object[]> res = new ArrayList<>();
 
@@ -1383,15 +1395,15 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
-        TestTable testTable = new TestTable(
+        TestTable testTbl = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("ID0", f.createJavaType(Integer.class))
                 .add("ID1", f.createJavaType(Integer.class))
                 .build()) {
 
-            @Override public IgniteIndex getIndex(String idxName) {
-                return new IgniteIndex(null, null, null, null) {
-                    @Override public Iterable<Object[]> scan(ExecutionContext execCtx, Predicate<Object[]> filters,
+            @Override public IgniteIndex<Object[]> getIndex(String idxName) {
+                return new IgniteIndex<Object[]>(null, null, null, null) {
+                    @Override public Iterable<Object[]> scan(ExecutionContext<Object[]> execCtx, Predicate<Object[]> filters,
                         Object[] lowerIdxConditions, Object[] upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
                             new Object[]{0, 1},
@@ -1412,7 +1424,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
-        publicSchema.addTable("TEST_TABLE", testTable);
+        publicSchema.addTable("TEST_TABLE", testTbl);
 
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
@@ -1424,7 +1436,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1434,19 +1446,20 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{-10})
+            .parameters(-10)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -1476,15 +1489,15 @@ public class PlannerTest extends GridCommonAbstractTest {
             List<Fragment> fragments = plan.fragments();
             assertEquals(2, fragments.size());
 
-            UUID queryId = UUID.randomUUID();
+            UUID qryId = UUID.randomUUID();
 
             TestIoManager mgr = new TestIoManager();
             GridTestKernalContext kernal;
             QueryTaskExecutorImpl taskExecutor;
-            MessageServiceImpl messageService;
-            MailboxRegistryImpl mailboxRegistry;
-            ExchangeServiceImpl exchangeService;
-            ExecutionContext ectx;
+            MessageServiceImpl msgSvc;
+            MailboxRegistryImpl<Object[]> mailboxRegistry;
+            ExchangeServiceImpl<Object[]> exchangeSvc;
+            ExecutionContext<Object[]> ectx;
             Node<Object[]> exec;
 
             //// Local part
@@ -1501,30 +1514,31 @@ public class PlannerTest extends GridCommonAbstractTest {
                 "calciteQry",
                 (t,ex) -> {
                     log().error(ex.getMessage(), ex);
-                    lastException = ex;
+                    lastE = ex;
                 },
                 true,
                 DFLT_THREAD_KEEP_ALIVE_TIME
             ));
             executors.add(taskExecutor);
 
-            messageService = new TestMessageServiceImpl(kernal, mgr);
+            msgSvc = new TestMessageServiceImpl(kernal, mgr);
 
-            messageService.localNodeId(nodes.get(0));
-            messageService.taskExecutor(taskExecutor);
-            mgr.register(messageService);
+            msgSvc.localNodeId(nodes.get(0));
+            msgSvc.taskExecutor(taskExecutor);
+            mgr.register(msgSvc);
 
-            mailboxRegistry = new MailboxRegistryImpl(kernal);
+            mailboxRegistry = new MailboxRegistryImpl<>(kernal);
 
-            exchangeService = new ExchangeServiceImpl(kernal);
-            exchangeService.taskExecutor(taskExecutor);
-            exchangeService.messageService(messageService);
-            exchangeService.mailboxRegistry(mailboxRegistry);
-            exchangeService.init();
+            exchangeSvc = new ExchangeServiceImpl<>(kernal);
+            exchangeSvc.taskExecutor(taskExecutor);
+            exchangeSvc.messageService(msgSvc);
+            exchangeSvc.mailboxRegistry(mailboxRegistry);
+            exchangeSvc.rowEngineFactory(new ArrayRowEngineFactory());
+            exchangeSvc.init();
 
-            ectx = new ExecutionContext(taskExecutor,
+            ectx = new ExecutionContext<>(taskExecutor,
                 ctx,
-                queryId,
+                qryId,
                 new FragmentDescription(
                     fragment.fragmentId(),
                     null,
@@ -1533,10 +1547,10 @@ public class PlannerTest extends GridCommonAbstractTest {
                     plan.remoteSources(fragment)),
                 Commons.parametersMap(ctx.parameters()));
 
-            exec = new LogicalRelImplementor(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeService,
+            exec = new LogicalRelImplementor<>(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeSvc,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
-            RootNode consumer = new RootNode(ectx, r -> {});
+            RootNode<Object[]> consumer = new RootNode<>(ectx, r -> {});
             consumer.register(exec);
 
             //// Remote part
@@ -1554,29 +1568,30 @@ public class PlannerTest extends GridCommonAbstractTest {
                 "calciteQry",
                 (t,ex) -> {
                     log().error(ex.getMessage(), ex);
-                    lastException = ex;
+                    lastE = ex;
                 },
                 true,
                 DFLT_THREAD_KEEP_ALIVE_TIME
             ));
             executors.add(taskExecutor);
 
-            messageService = new TestMessageServiceImpl(kernal, mgr);
-            messageService.localNodeId(nodes.get(1));
-            messageService.taskExecutor(taskExecutor);
-            mgr.register(messageService);
+            msgSvc = new TestMessageServiceImpl(kernal, mgr);
+            msgSvc.localNodeId(nodes.get(1));
+            msgSvc.taskExecutor(taskExecutor);
+            mgr.register(msgSvc);
 
-            mailboxRegistry = new MailboxRegistryImpl(kernal);
+            mailboxRegistry = new MailboxRegistryImpl<>(kernal);
 
-            exchangeService = new ExchangeServiceImpl(kernal);
-            exchangeService.taskExecutor(taskExecutor);
-            exchangeService.messageService(messageService);
-            exchangeService.mailboxRegistry(mailboxRegistry);
-            exchangeService.init();
+            exchangeSvc = new ExchangeServiceImpl<>(kernal);
+            exchangeSvc.taskExecutor(taskExecutor);
+            exchangeSvc.messageService(msgSvc);
+            exchangeSvc.mailboxRegistry(mailboxRegistry);
+            exchangeSvc.rowEngineFactory(new ArrayRowEngineFactory());
+            exchangeSvc.init();
 
-            ectx = new ExecutionContext(
+            ectx = new ExecutionContext<>(
                 taskExecutor,
-                PlanningContext.builder()
+                PlanningContext.<Object[]>builder()
                     .localNodeId(nodes.get(1))
                     .originatingNodeId(nodes.get(0))
                     .parentContext(Contexts.empty())
@@ -1585,8 +1600,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                         .traitDefs(traitDefs)
                         .build())
                     .logger(log)
+                    .rowEngineFactory(new ArrayRowEngineFactory())
                     .build(),
-                queryId,
+                qryId,
                 new FragmentDescription(
                     fragment.fragmentId(),
                     null,
@@ -1595,14 +1611,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                     plan.remoteSources(fragment)),
                 Commons.parametersMap(ctx.parameters()));
 
-            exec = new LogicalRelImplementor(ectx, c -> r -> 0, mailboxRegistry, exchangeService,
+            exec = new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
             //// Start execution
 
             assert exec instanceof Outbox;
 
-            exec.context().execute(((Outbox) exec)::init);
+            exec.context().execute(((Outbox<Object[]>) exec)::init);
 
             ArrayList<Object[]> res = new ArrayList<>();
 
@@ -1673,7 +1689,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1683,8 +1699,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -1692,12 +1709,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -1795,7 +1812,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1805,8 +1822,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -1814,12 +1832,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -1916,7 +1934,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1926,8 +1944,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -1935,12 +1954,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -2037,7 +2056,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -2047,8 +2066,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -2056,12 +2076,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -2155,7 +2175,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -2165,8 +2185,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -2174,12 +2195,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -2215,6 +2236,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         assertEquals(2, plan.fragments().size());
     }
 
+    /** */
     @Test
     public void testSerializationDeserialization() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
@@ -2261,7 +2283,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -2271,8 +2293,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelNode rel;
@@ -2280,12 +2303,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
-            assertNotNull(query);
+            assertNotNull(qry);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -2317,7 +2340,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(serialized);
 
-        ctx = PlanningContext.builder()
+        ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -2327,8 +2350,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         List<RelNode> nodes = new ArrayList<>();
@@ -2379,7 +2403,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             DistributionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -2389,8 +2413,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build())
             .logger(log)
             .query(sql)
-            .parameters(new Object[]{2})
+            .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -2398,12 +2423,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
-            assertNotNull(query);
+            assertNotNull(qry);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -2495,7 +2520,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -2506,6 +2531,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             .logger(log)
             .query(sql)
             .topologyVersion(AffinityTopologyVersion.NONE)
+            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -2513,12 +2539,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
-            String query = ctx.query();
+            String qry = ctx.query();
 
-            assertNotNull(query);
+            assertNotNull(qry);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query);
+            SqlNode sqlNode = planner.parse(qry);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -2554,8 +2580,8 @@ public class PlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private NodesMapping intermediateMapping(@NotNull AffinityTopologyVersion topVer, int desiredCount, @Nullable Predicate<ClusterNode> filter) {
-        List<UUID> nodes = desiredCount == 1 ? select(this.nodes, 0) : select(this.nodes, 0, 1, 2, 3);
+    private NodesMapping intermediateMapping(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> filter) {
+        List<UUID> nodes = desiredCnt == 1 ? select(this.nodes, 0) : select(this.nodes, 0, 1, 2, 3);
         return new NodesMapping(nodes, null, DEDUPLICATED);
     }
 
@@ -2571,7 +2597,7 @@ public class PlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private abstract static class TestTable extends IgniteTable {
+    private abstract static class TestTable extends IgniteTable<Object[]> {
         /** */
         private final RelProtoDataType protoType;
 
@@ -2579,17 +2605,17 @@ public class PlannerTest extends GridCommonAbstractTest {
         private TestTable(RelDataType type) {
             super(null, null, null);
             protoType = RelDataTypeImpl.proto(type);
-            addIndex(new IgniteIndex(null, "PK", null, this));
+            addIndex(new IgniteIndex<>(null, "PK", null, this));
         }
 
         /** {@inheritDoc} */
-        @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-            RelOptCluster cluster = context.getCluster();
+        @Override public RelNode toRel(RelOptTable.ToRelContext ctx, RelOptTable relOptTbl) {
+            RelOptCluster cluster = ctx.getCluster();
             RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
                 .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-            return new IgniteTableScan(cluster, traitSet, relOptTable, "PK", null);
+            return new IgniteTableScan(cluster, traitSet, relOptTbl, "PK", null);
         }
 
         /** {@inheritDoc} */
@@ -2662,7 +2688,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             Throwable ex = failureContext().error();
             log().error(ex.getMessage(), ex);
 
-            lastException = ex;
+            lastE = ex;
 
             return true;
         }

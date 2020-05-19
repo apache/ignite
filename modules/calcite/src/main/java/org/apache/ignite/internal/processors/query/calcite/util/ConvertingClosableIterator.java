@@ -17,23 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.function.Function;
+import java.util.List;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 
 /**
  *
  */
-class ConvertingClosableIterator<T, R> implements Iterator<R>, AutoCloseable {
+class ConvertingClosableIterator<Row> implements Iterator<List<?>>, AutoCloseable {
     /** */
-    private final Iterator<T> it;
+    private final Iterator<Row> it;
+
+    /** Row handler. */
+    private final RowHandler<Row> rowHnd;
 
     /** */
-    private final Function<T, R> converter;
-
-    /** */
-    public ConvertingClosableIterator(Iterator<T> it, Function<T, R> converter) {
+    public ConvertingClosableIterator(Iterator<Row> it, ExecutionContext<Row> ectx) {
         this.it = it;
-        this.converter = converter;
+        this.rowHnd = ectx.planningContext().rowHandler();
     }
 
     /**
@@ -46,8 +49,17 @@ class ConvertingClosableIterator<T, R> implements Iterator<R>, AutoCloseable {
     /**
      * {@inheritDoc}
      */
-    @Override public R next() {
-        return converter.apply(it.next());
+    @Override public List<Object> next() {
+        Row next = it.next();
+
+        int rowSize = rowHnd.fieldsCount(next);
+
+        List<Object> res = new ArrayList<>(rowSize);
+
+        for (int i = 0; i < rowSize; i++)
+            res.add(rowHnd.get(i, next));
+
+        return res;
     }
 
     /**

@@ -64,7 +64,7 @@ import static java.util.Collections.singletonList;
 /**
  * Table or index
  */
-public class IgniteTable extends AbstractTable implements TranslatableTable, ProjectableFilterableTable {
+public class IgniteTable<Row> extends AbstractTable implements TranslatableTable, ProjectableFilterableTable {
     /** */
     public static final String PK_INDEX_NAME = "PK";
 
@@ -75,7 +75,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
     private final String tblName;
 
     /** */
-    private final TableDescriptor desc;
+    private final TableDescriptor<?, ?, Row> desc;
 
     /** */
     private final Statistic statistic;
@@ -84,7 +84,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
     private final List<RelCollation> collations;
 
     /** */
-    private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
+    private final Map<String, IgniteIndex<Row>> indexes = new ConcurrentHashMap<>();
 
     /**
      *
@@ -92,10 +92,10 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
      * @param desc Table descriptor.
      * @param collation Table collation.
      */
-    public IgniteTable(String tblName, TableDescriptor desc, RelCollation collation) {
+    public IgniteTable(String tblName, TableDescriptor<?, ?, Row> desc, RelCollation collation) {
         this.tblName = tblName;
         this.desc = desc;
-        this.collations = collation == null ? emptyList() : singletonList(collation);
+        collations = collation == null ? emptyList() : singletonList(collation);
         statistic = new StatisticsImpl();
     }
 
@@ -117,42 +117,43 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
     }
 
     /** */
-    public TableDescriptor descriptor() {
+    public TableDescriptor<?, ?, Row> descriptor() {
         return desc;
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        RelOptCluster cluster = context.getCluster();
+    @Override public RelNode toRel(RelOptTable.ToRelContext ctx, RelOptTable relOptTbl) {
+        RelOptCluster cluster = ctx.getCluster();
 
-        return toRel(cluster, relOptTable, PK_INDEX_NAME);
+        return toRel(cluster, relOptTbl, PK_INDEX_NAME);
     }
 
     /**
      * Converts table into relational expression.
      *
      * @param cluster Custer.
-     * @param relOptTable Table.
+     * @param relOptTbl Table.
      * @return Table relational expression.
      */
-    public IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTable, String idxName) {
+    public IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
         RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-        IgniteIndex idx = indexes.get(idxName);
+        IgniteIndex<Row> idx = indexes.get(idxName);
 
         if (idx == null)
             return null;
 
         traitSet = traitSet.replaceIf(RelCollationTraitDef.INSTANCE, idx::collation);
 
-        return new IgniteTableScan(cluster, traitSet, relOptTable, idxName,  null);
+        return new IgniteTableScan(cluster, traitSet, relOptTbl, idxName,  null);
     }
 
     /**
      * @return Indexes for the current table.
      */
-    public Map<String, IgniteIndex> indexes() {
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public Map<String, IgniteIndex<Row>> indexes() {
         return indexes;
     }
 
@@ -160,7 +161,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
      * Adds index to table.
      * @param idxTbl Index table.
      */
-    public void addIndex(IgniteIndex idxTbl) {
+    public void addIndex(IgniteIndex<Row> idxTbl) {
         indexes.put(idxTbl.name(), idxTbl);
     }
 
@@ -168,7 +169,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
      * @param idxName Index name.
      * @return Index.
      */
-    public IgniteIndex getIndex(String idxName) {
+    public IgniteIndex<Row> getIndex(String idxName) {
         return indexes.get(idxName);
     }
 
@@ -222,11 +223,11 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
     }
 
     /** {@inheritDoc} */
-    @Override public <C> C unwrap(Class<C> aClass) {
-        if (aClass.isInstance(desc))
-            return aClass.cast(desc);
+    @Override public <C> C unwrap(Class<C> aCls) {
+        if (aCls.isInstance(desc))
+            return aCls.cast(desc);
 
-        return super.unwrap(aClass);
+        return super.unwrap(aCls);
     }
 
     /** */
@@ -272,20 +273,20 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
         if (cctx.config().getNodeFilter() != null)
             flags |= NodesMapping.PARTIALLY_REPLICATED;
 
-        GridDhtPartitionTopology topology = cctx.topology();
+        GridDhtPartitionTopology top = cctx.topology();
 
         List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.cacheId());
         List<UUID> res;
 
-        if (!topology.rebalanceFinished(topVer)) {
+        if (!top.rebalanceFinished(topVer)) {
             flags |= NodesMapping.PARTIALLY_REPLICATED;
 
             res = new ArrayList<>(nodes.size());
 
-            int parts = topology.partitions();
+            int parts = top.partitions();
 
             for (ClusterNode node : nodes) {
-                if (isOwner(node.id(), topology, parts))
+                if (isOwner(node.id(), top, parts))
                     res.add(node.id());
             }
         }
@@ -296,9 +297,9 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
     }
 
     /** */
-    private boolean isOwner(UUID nodeId, GridDhtPartitionTopology topology, int parts) {
+    private boolean isOwner(UUID nodeId, GridDhtPartitionTopology top, int parts) {
         for (int p = 0; p < parts; p++) {
-            if (topology.partitionState(nodeId, p) != GridDhtPartitionState.OWNING)
+            if (top.partitionState(nodeId, p) != GridDhtPartitionState.OWNING)
                 return false;
         }
         return true;
@@ -317,7 +318,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isKey(ImmutableBitSet columns) {
+        @Override public boolean isKey(ImmutableBitSet cols) {
             return false; // TODO
         }
 

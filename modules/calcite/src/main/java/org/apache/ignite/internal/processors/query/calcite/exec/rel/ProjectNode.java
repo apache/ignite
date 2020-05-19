@@ -24,38 +24,38 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  *
  */
-public class ProjectNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Downstream<Object[]> {
+public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
-    private final Function<Object[], Object[]> projection;
+    private final Function<Row, Row> prj;
 
     /**
      * @param ctx Execution context.
-     * @param projection Projection.
+     * @param prj Projection.
      */
-    public ProjectNode(ExecutionContext ctx, Function<Object[], Object[]> projection) {
+    public ProjectNode(ExecutionContext<Row> ctx, Function<Row, Row> prj) {
         super(ctx);
 
-        this.projection = projection;
+        this.prj = prj;
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCount) {
+    @Override public void request(int rowsCnt) {
         checkThread();
 
         assert !F.isEmpty(sources) && sources.size() == 1;
-        assert rowsCount > 0;
+        assert rowsCnt > 0;
 
-        F.first(sources).request(rowsCount);
+        F.first(sources).request(rowsCnt);
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Object[] row) {
+    @Override public void push(Row row) {
         checkThread();
 
         assert downstream != null;
 
         try {
-            downstream.push(projection.apply(row));
+            downstream.push(prj.apply(row));
         }
         catch (Throwable e) {
             downstream.onError(e);
@@ -81,7 +81,7 @@ public class ProjectNode extends AbstractNode<Object[]> implements SingleNode<Ob
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Object[]> requestDownstream(int idx) {
+    @Override protected Downstream<Row> requestDownstream(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
 

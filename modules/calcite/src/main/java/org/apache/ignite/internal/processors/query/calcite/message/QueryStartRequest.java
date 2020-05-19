@@ -35,13 +35,13 @@ public class QueryStartRequest implements MarshalableMessage {
     private String schema;
 
     /** */
-    private UUID queryId;
+    private UUID qryId;
 
     /** */
-    private AffinityTopologyVersion version;
+    private AffinityTopologyVersion ver;
 
     /** */
-    private FragmentDescription fragmentDescription;
+    private FragmentDescription fragmentDesc;
 
     /** */
     private String root;
@@ -54,12 +54,13 @@ public class QueryStartRequest implements MarshalableMessage {
     private byte[] paramsBytes;
 
     /** */
-    public QueryStartRequest(UUID queryId, String schema, String root, AffinityTopologyVersion version,
-        FragmentDescription fragmentDescription, Object[] params) {
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public QueryStartRequest(UUID qryId, String schema, String root, AffinityTopologyVersion ver,
+        FragmentDescription fragmentDesc, Object[] params) {
         this.schema = schema;
-        this.queryId = queryId;
-        this.fragmentDescription = fragmentDescription;
-        this.version = version;
+        this.qryId = qryId;
+        this.fragmentDesc = fragmentDesc;
+        this.ver = ver;
         this.root = root;
         this.params = params;
     }
@@ -78,21 +79,21 @@ public class QueryStartRequest implements MarshalableMessage {
      * @return Query ID.
      */
     public UUID queryId() {
-        return queryId;
+        return qryId;
     }
 
     /**
      * @return Fragment description.
      */
     public FragmentDescription fragmentDescription() {
-        return fragmentDescription;
+        return fragmentDesc;
     }
 
     /**
      * @return Topology version.
      */
     public AffinityTopologyVersion topologyVersion() {
-        return version;
+        return ver;
     }
 
     /**
@@ -105,6 +106,7 @@ public class QueryStartRequest implements MarshalableMessage {
     /**
      * @return Query parameters.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public Object[] parameters() {
         return params;
     }
@@ -114,15 +116,15 @@ public class QueryStartRequest implements MarshalableMessage {
         if (paramsBytes == null && params != null)
             paramsBytes = marshaller.marshal(params);
 
-        fragmentDescription.prepareMarshal(marshaller);
+        fragmentDesc.prepareMarshal(marshaller);
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
+    @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader ldr) throws IgniteCheckedException {
         if (params == null && paramsBytes != null)
-            params = marshaller.unmarshal(paramsBytes, loader);
+            params = marshaller.unmarshal(paramsBytes, ldr);
 
-        fragmentDescription.prepareUnmarshal(marshaller, loader);
+        fragmentDesc.prepareUnmarshal(marshaller, ldr);
     }
 
     /** {@inheritDoc} */
@@ -138,7 +140,7 @@ public class QueryStartRequest implements MarshalableMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("fragmentDescription", fragmentDescription))
+                if (!writer.writeMessage("fragmentDescription", fragmentDesc))
                     return false;
 
                 writer.incrementState();
@@ -150,7 +152,7 @@ public class QueryStartRequest implements MarshalableMessage {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeUuid("queryId", queryId))
+                if (!writer.writeUuid("queryId", qryId))
                     return false;
 
                 writer.incrementState();
@@ -168,7 +170,7 @@ public class QueryStartRequest implements MarshalableMessage {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeAffinityTopologyVersion("version", version))
+                if (!writer.writeAffinityTopologyVersion("version", ver))
                     return false;
 
                 writer.incrementState();
@@ -187,7 +189,7 @@ public class QueryStartRequest implements MarshalableMessage {
 
         switch (reader.state()) {
             case 0:
-                fragmentDescription = reader.readMessage("fragmentDescription");
+                fragmentDesc = reader.readMessage("fragmentDescription");
 
                 if (!reader.isLastRead())
                     return false;
@@ -203,7 +205,7 @@ public class QueryStartRequest implements MarshalableMessage {
                 reader.incrementState();
 
             case 2:
-                queryId = reader.readUuid("queryId");
+                qryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -227,7 +229,7 @@ public class QueryStartRequest implements MarshalableMessage {
                 reader.incrementState();
 
             case 5:
-                version = reader.readAffinityTopologyVersion("version");
+                ver = reader.readAffinityTopologyVersion("version");
 
                 if (!reader.isLastRead())
                     return false;

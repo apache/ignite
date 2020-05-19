@@ -21,13 +21,12 @@ import java.util.Comparator;
 import java.util.List;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Sort node.
  */
-public class SortNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Downstream<Object[]> {
+public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** How many rows are requested by downstream. */
     private int requested;
 
@@ -38,10 +37,10 @@ public class SortNode extends AbstractNode<Object[]> implements SingleNode<Objec
     private boolean inLoop;
 
     /** Rows comparator. */
-    private final Comparator<Object[]> comparator;
+    private final Comparator<Row> comp;
 
     /** Rows buffer. */
-    private final List<Object[]> rows = new ArrayList<>();
+    private final List<Row> rows = new ArrayList<>();
 
     /** Index of next row which buffer will return. {@code -1} means buffer is not sorted yet. */
     private int curIdx = -1;
@@ -50,13 +49,13 @@ public class SortNode extends AbstractNode<Object[]> implements SingleNode<Objec
      * @param ctx Execution context.
      * @param collation Sort collation.
      */
-    public SortNode(ExecutionContext ctx, RelCollation collation) {
+    public SortNode(ExecutionContext<Row> ctx, RelCollation collation) {
         super(ctx);
-        this.comparator = Commons.comparator(collation);
+        comp = ctx.planningContext().expressionFactory().comparator(collation);
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Object[]> requestDownstream(int idx) {
+    @Override protected Downstream<Row> requestDownstream(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
 
@@ -64,13 +63,13 @@ public class SortNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCount) {
+    @Override public void request(int rowsCnt) {
         checkThread();
 
         assert !F.isEmpty(sources) && sources.size() == 1;
-        assert rowsCount > 0 && requested == 0;
+        assert rowsCnt > 0 && requested == 0;
 
-        requested = rowsCount;
+        requested = rowsCnt;
 
         if (waiting == -1 && !inLoop)
             context().execute(this::flushFromBuffer);
@@ -81,7 +80,7 @@ public class SortNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Object[] row) {
+    @Override public void push(Row row) {
         checkThread();
 
         assert downstream != null;
@@ -117,6 +116,7 @@ public class SortNode extends AbstractNode<Object[]> implements SingleNode<Objec
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void onError(Throwable e) {
         checkThread();
 
@@ -129,8 +129,8 @@ public class SortNode extends AbstractNode<Object[]> implements SingleNode<Objec
     private void flushFromBuffer() {
         assert waiting == -1;
 
-        if (curIdx == -1 && comparator != null)
-            rows.sort(comparator);
+        if (curIdx == -1 && comp != null)
+            rows.sort(comp);
 
         inLoop = true;
 
@@ -138,16 +138,16 @@ public class SortNode extends AbstractNode<Object[]> implements SingleNode<Objec
             int processed = 0;
 
             while (requested > 0 && curIdx != rows.size()) {
-                int toSend = Math.min(requested, IN_BUFFER_SIZE - processed);
+                int toSnd = Math.min(requested, IN_BUFFER_SIZE - processed);
 
-                for (int i = 0; i < toSend; i++) {
+                for (int i = 0; i < toSnd; i++) {
                     requested--;
                     curIdx++;
 
                     if (curIdx == rows.size())
                         break;
 
-                    Object[] row = rows.get(curIdx);
+                    Row row = rows.get(curIdx);
                     rows.set(curIdx, null);
 
                     downstream.push(row);

@@ -22,13 +22,14 @@ import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Abstract node of execution tree.
  */
-public abstract class AbstractNode<T> implements Node<T> {
+public abstract class AbstractNode<Row> implements Node<Row> {
     /** */
     protected static final int IN_BUFFER_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE", 512);
 
@@ -47,30 +48,35 @@ public abstract class AbstractNode<T> implements Node<T> {
     /**
      * {@link Inbox} node may not have proper context at creation time in case it
      * creates on first message received from a remote source. This case the context
-     * sets in scope of {@link Inbox#init(ExecutionContext, Collection, Comparator)} method call.
+     * sets in scope of {@link Inbox#init(Collection, Comparator)} method call.
      */
-    protected ExecutionContext ctx;
+    protected final ExecutionContext<Row> ctx;
+
+    /** Row access object. */
+    protected final RowHandler<Row> hnd;
 
     /** */
-    protected Downstream<T> downstream;
+    protected Downstream<Row> downstream;
 
     /** */
-    protected List<Node<T>> sources;
+    protected List<Node<Row>> sources;
 
     /**
      * @param ctx Execution context.
      */
-    protected AbstractNode(ExecutionContext ctx) {
+    protected AbstractNode(ExecutionContext<Row> ctx) {
         this.ctx = ctx;
+        hnd = ctx.planningContext().rowHandler();
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutionContext context() {
+    @Override public ExecutionContext<Row> context() {
         return ctx;
     }
 
     /** {@inheritDoc} */
-    @Override public void register(List<Node<T>> sources) {
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Override public void register(List<Node<Row>> sources) {
         this.sources = sources;
 
         for (int i = 0; i < sources.size(); i++)
@@ -78,7 +84,7 @@ public abstract class AbstractNode<T> implements Node<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onRegister(Downstream<T> downstream) {
+    @Override public void onRegister(Downstream<Row> downstream) {
         this.downstream = downstream;
     }
 
@@ -93,7 +99,7 @@ public abstract class AbstractNode<T> implements Node<T> {
     }
 
     /** */
-    protected abstract Downstream<T> requestDownstream(int idx);
+    protected abstract Downstream<Row> requestDownstream(int idx);
 
     /** */
     protected void checkThread() {

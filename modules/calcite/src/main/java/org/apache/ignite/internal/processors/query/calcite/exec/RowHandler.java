@@ -18,15 +18,27 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 /**
- *
+ * Universal accessor and mutator for rows. It also has factory methods.
  */
-public interface RowHandler<R> {
+public interface RowHandler<Row> {
     /** */
-    R create(Object... fields);
+    Row create(Object... fields);
 
     /** */
-    <T> T get(int field, R row);
+    Object get(int field, Row row);
 
     /** */
-    void set(int field, R row, Object value);
+    void set(int field, Row row, Object val);
+
+    /** */
+    Row concat(Row left, Row right);
+
+    /** */
+    Row endMarker();
+
+    /** */
+    boolean isEndMarker(Row row);
+
+    /** */
+    int fieldsCount(Row row);
 }

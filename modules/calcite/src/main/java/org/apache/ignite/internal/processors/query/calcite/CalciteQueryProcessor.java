@@ -35,23 +35,14 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionService;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
-import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
-import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
-import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
@@ -60,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
+public abstract class CalciteQueryProcessor<Row> extends GridProcessorAdapter implements QueryEngine {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
             .sqlToRelConverterConfig(SqlToRelConverter.configBuilder()
@@ -86,7 +77,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .build();
 
     /** */
-    private final QueryPlanCache queryPlanCache;
+    private final QueryPlanCache qryPlanCache;
 
     /** */
     private final QueryTaskExecutor taskExecutor;
@@ -95,83 +86,91 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final FailureProcessor failureProcessor;
 
     /** */
-    private final PartitionService partitionService;
+    private final PartitionService partSvc;
 
     /** */
     private final SchemaHolder schemaHolder;
 
     /** */
-    private final MessageService messageService;
+    private final MessageService msgSvc;
 
     /** */
-    private final ExchangeService exchangeService;
+    private final ExchangeService<Row> exchangeSvc;
 
     /** */
-    private final MappingService mappingService;
+    private final MappingService mappingSvc;
     
     /** */
-    private final MailboxRegistry mailboxRegistry;
+    private final MailboxRegistry<Row> mailboxRegistry;
     
     /** */
-    private final ExecutionService executionService;
+    private final ExecutionService executionSvc;
 
-    /**
-     * @param ctx Kernal context.
-     */
-    public CalciteQueryProcessor(GridKernalContext ctx) {
-        this(
-            ctx,
-            ctx.failure(),
-            new SchemaHolderImpl(ctx),
-            new QueryPlanCacheImpl(ctx),
-            new MailboxRegistryImpl(ctx),
-            new QueryTaskExecutorImpl(ctx),
-            new ExecutionServiceImpl(ctx),
-            new PartitionServiceImpl(ctx),
-            new MessageServiceImpl(ctx),
-            new MappingServiceImpl(ctx),
-            new ExchangeServiceImpl(ctx));
-    }
+    /** */
+    private final RowEngineFactory<Row> rowEngineFactory;
 
     /**
      * For tests purpose.
      * @param ctx Kernal context.
      * @param failureProcessor Failure processor.
      * @param schemaHolder Schema holder.
-     * @param queryPlanCache Query cache;
+     * @param qryPlanCache Query cache;
      * @param mailboxRegistry Mailbox registry.
      * @param taskExecutor Task executor.
-     * @param executionService Execution service.
-     * @param partitionService Affinity service.
-     * @param messageService Message service.
-     * @param mappingService Mapping service.
-     * @param exchangeService Exchange service.
+     * @param executionSvc Execution service.
+     * @param partSvc Affinity service.
+     * @param msgSvc Message service.
+     * @param mappingSvc Mapping service.
+     * @param exchangeSvc Exchange service.
      */
-    CalciteQueryProcessor(GridKernalContext ctx, FailureProcessor failureProcessor, SchemaHolder schemaHolder, QueryPlanCache queryPlanCache, MailboxRegistry mailboxRegistry, QueryTaskExecutor taskExecutor, ExecutionService executionService, PartitionService partitionService, MessageService messageService,
-        MappingService mappingService, ExchangeService exchangeService) {
+    CalciteQueryProcessor(
+        GridKernalContext ctx,
+        FailureProcessor failureProcessor,
+        SchemaHolder schemaHolder,
+        QueryPlanCache qryPlanCache,
+        MailboxRegistry<Row> mailboxRegistry,
+        QueryTaskExecutor taskExecutor,
+        ExecutionService executionSvc,
+        PartitionService partSvc,
+        MessageService msgSvc,
+        MappingService mappingSvc,
+        ExchangeService<Row> exchangeSvc,
+        RowEngineFactory<Row> rowEngineFactory
+    ) {
         super(ctx);
 
         this.failureProcessor = failureProcessor;
         this.schemaHolder = schemaHolder;
-        this.queryPlanCache = queryPlanCache;
+        this.qryPlanCache = qryPlanCache;
         this.mailboxRegistry = mailboxRegistry;
         this.taskExecutor = taskExecutor;
-        this.executionService = executionService;
-        this.partitionService = partitionService;
-        this.messageService = messageService;
-        this.mappingService = mappingService;
-        this.exchangeService = exchangeService;
+        this.executionSvc = executionSvc;
+        this.partSvc = partSvc;
+        this.msgSvc = msgSvc;
+        this.mappingSvc = mappingSvc;
+        this.exchangeSvc = exchangeSvc;
+        this.rowEngineFactory = rowEngineFactory;
     }
 
+    /**
+     * @return Affinity service.
+     */
     public PartitionService affinityService() {
-        return partitionService;
+        return partSvc;
+    }
+
+    /**
+     * @return Row engine factory.
+     */
+    public RowEngineFactory<Row> rowEngineFactory() {
+        return rowEngineFactory;
     }
 
     /**
      * @return Query cache.
      */
     public QueryPlanCache queryPlanCache() {
-        return queryPlanCache;
+        return qryPlanCache;
     }
 
     /**
@@ -192,27 +191,27 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
      * @return Message service.
      */
     public MessageService messageService() {
-        return messageService;
+        return msgSvc;
     }
 
     /**
      * @return Mapping service.
      */
     public MappingService mappingService() {
-        return mappingService;
+        return mappingSvc;
     }
 
     /**
      * @return Exchange service.
      */
-    public ExchangeService exchangeService() {
-        return exchangeService;
+    public ExchangeService<Row> exchangeService() {
+        return exchangeSvc;
     }
 
     /**
      * @return Mailbox registry.
      */
-    public MailboxRegistry mailboxRegistry() {
+    public MailboxRegistry<Row> mailboxRegistry() {
         return mailboxRegistry;
     }
 
@@ -226,38 +225,38 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** {@inheritDoc} */
     @Override public void start() {
         onStart(ctx,
-            executionService,
+            executionSvc,
             mailboxRegistry,
-            partitionService,
+            partSvc,
             schemaHolder,
-            messageService,
+            msgSvc,
             taskExecutor,
-            mappingService,
-            queryPlanCache,
-            exchangeService
+            mappingSvc,
+            qryPlanCache,
+            exchangeSvc
         );
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         onStop(
-            executionService,
+            executionSvc,
             mailboxRegistry,
-            partitionService,
+            partSvc,
             schemaHolder,
-            messageService,
+            msgSvc,
             taskExecutor,
-            mappingService,
-            queryPlanCache,
-            exchangeService
+            mappingSvc,
+            qryPlanCache,
+            exchangeSvc
         );
     }
 
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext qryCtx, @Nullable String schemaName,
-        String query, Object... params) throws IgniteSQLException {
+        String qry, Object... params) throws IgniteSQLException {
         
-        return executionService.executeQuery(qryCtx, schemaName, query, params);
+        return executionSvc.executeQuery(qryCtx, schemaName, qry, params);
     }
 
     /** */

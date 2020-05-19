@@ -32,7 +32,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.ArrayExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.Scalar;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -61,11 +61,11 @@ public class WrappersFactoryImpl implements Supplier<List<AccumulatorWrapper>> {
     private final List<WrapperPrototype> prototypes;
 
     /** */
-    public WrappersFactoryImpl(ExecutionContext ctx, AggregateType type, RowHandler handler,
+    public WrappersFactoryImpl(ExecutionContext ctx, AggregateType type,
         List<AggregateCall> aggCalls, RelDataType inputRowType) {
         this.ctx = ctx;
         this.type = type;
-        this.handler = handler;
+        this.handler = ctx.planningContext().rowHandler();
         this.inputRowType = inputRowType;
 
         ArrayList<WrapperPrototype> prototypes = new ArrayList<>(aggCalls.size());
@@ -295,7 +295,7 @@ public class WrappersFactoryImpl implements Supplier<List<AccumulatorWrapper>> {
             IgniteTypeFactory typeFactory = ctx.planningContext().typeFactory();
             SqlConformance conformance = ctx.planningContext().conformance();
 
-            ExpressionFactory factory = new ExpressionFactory(typeFactory, conformance);
+            ArrayExpressionFactory factory = new ArrayExpressionFactory(typeFactory, conformance);
 
             if (type != AggregateType.REDUCE && !F.isEmpty(call.getArgList()))
                 inAdapter = createInAdapter(accumulator, factory);
@@ -307,7 +307,7 @@ public class WrappersFactoryImpl implements Supplier<List<AccumulatorWrapper>> {
         }
 
         /** */
-        public Function<Object[], Object[]> createInAdapter(Accumulator accumulator, ExpressionFactory factory) {
+        public Function<Object[], Object[]> createInAdapter(Accumulator accumulator, ArrayExpressionFactory factory) {
             IgniteTypeFactory typeFactory = factory.typeFactory();
 
             List<Integer> argList = call.getArgList();
@@ -354,7 +354,7 @@ public class WrappersFactoryImpl implements Supplier<List<AccumulatorWrapper>> {
         }
 
         /** */
-        public Function<Object, Object> createOutAdapter(Accumulator accumulator, ExpressionFactory factory) {
+        public Function<Object, Object> createOutAdapter(Accumulator accumulator, ArrayExpressionFactory factory) {
             IgniteTypeFactory typeFactory = factory.typeFactory();
 
             RelDataType inType = accumulator.returnType(typeFactory);

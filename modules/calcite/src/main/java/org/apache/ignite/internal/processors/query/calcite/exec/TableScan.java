@@ -42,21 +42,21 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class TableScan implements Iterable<Object[]> {
+public class TableScan<Row> implements Iterable<Row> {
     /** */
-    private final ExecutionContext ectx;
+    private final ExecutionContext<Row> ectx;
 
     /** */
-    private final TableDescriptor desc;
+    private final TableDescriptor<?, ?, Row> desc;
 
     /** */
-    public TableScan(ExecutionContext ectx, TableDescriptor desc) {
+    public TableScan(ExecutionContext<Row> ectx, TableDescriptor<?, ?, Row> desc) {
         this.ectx = ectx;
         this.desc = desc;
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Object[]> iterator() {
+    @Override public Iterator<Row> iterator() {
         try {
             return new IteratorImpl().init();
         }
@@ -68,7 +68,7 @@ public class TableScan implements Iterable<Object[]> {
     /**
      * Table scan iterator.
      */
-    public class IteratorImpl extends GridCloseableIteratorAdapter<Object[]> {
+    private class IteratorImpl extends GridCloseableIteratorAdapter<Row> {
         /** */
         private int cacheId;
 
@@ -82,14 +82,14 @@ public class TableScan implements Iterable<Object[]> {
         private GridCursor<? extends CacheDataRow> cur;
 
         /** */
-        private Object[] next;
+        private Row next;
 
         /** {@inheritDoc} */
-        @Override protected Object[] onNext() {
+        @Override protected Row onNext() {
             if (next == null)
                 throw new NoSuchElementException();
 
-            Object[] next = this.next;
+            Row next = this.next;
 
             this.next = null;
 
@@ -145,7 +145,7 @@ public class TableScan implements Iterable<Object[]> {
         }
 
         /** */
-        public Iterator<Object[]> init() throws IgniteCheckedException {
+        public Iterator<Row> init() throws IgniteCheckedException {
             if (isClosed())
                 return Collections.emptyIterator();
 
@@ -193,11 +193,11 @@ public class TableScan implements Iterable<Object[]> {
 
         /** */
         private void reserveReplicated(GridDhtPartitionTopology top) {
-            List<GridDhtLocalPartition> localParts = top.localPartitions();
+            List<GridDhtLocalPartition> locParts = top.localPartitions();
 
-            parts = new ArrayDeque<>(localParts.size());
+            parts = new ArrayDeque<>(locParts.size());
 
-            for (GridDhtLocalPartition local : localParts) {
+            for (GridDhtLocalPartition local : locParts) {
                 if (!local.reserve())
                     throw reservationException();
                 else if (local.state() != GridDhtPartitionState.OWNING) {
@@ -220,17 +220,17 @@ public class TableScan implements Iterable<Object[]> {
             parts = new ArrayDeque<>(partitions.length);
 
             for (int p : partitions) {
-                GridDhtLocalPartition local = top.localPartition(p, topVer, false);
+                GridDhtLocalPartition loc = top.localPartition(p, topVer, false);
 
-                if (local == null || !local.reserve())
+                if (loc == null || !loc.reserve())
                     throw reservationException();
-                else if (local.state() != GridDhtPartitionState.OWNING) {
-                    local.release();
+                else if (loc.state() != GridDhtPartitionState.OWNING) {
+                    loc.release();
 
                     throw reservationException();
                 }
 
-                parts.offer(local);
+                parts.offer(loc);
             }
         }
 

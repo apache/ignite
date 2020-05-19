@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 /**
  * Index interface.
  */
-public interface GridIndex<T> {
-
-    GridCursor<T> find(T lower, T upper, BPlusTree.TreeRowClosure<T, T> filterClosure);
+public interface GridIndex<R> {
+    /** */
+    GridCursor<R> find(R lower, R upper, BPlusTree.TreeRowClosure<R, R> filterC);
 }

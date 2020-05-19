@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
@@ -368,7 +369,7 @@ public class SchemaManager {
                     tbl.table().setRemoveIndexOnDestroy(rmvIdx);
 
                     dropTable(tbl);
-                    lsnr.onSqlTypeDrop(schemaName, tbl.type(), tbl.cacheInfo());
+                    lsnr.onSqlTypeDrop(schemaName, tbl.type());
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to drop table on cache stop (will ignore): " + tbl.fullTableName(), e);
@@ -550,7 +551,7 @@ public class SchemaManager {
 
         GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl);
 
-        GridH2IndexBase pk = (GridH2IndexBase)h2Tbl.getUniqueIndex();
+        GridIndex<H2Row> pk = (GridIndex<H2Row>)h2Tbl.getUniqueIndex();
 
         lsnr.onSqlTypeCreate(schemaName, tbl.type(), tbl.cacheInfo(), pk);
 
@@ -881,7 +882,7 @@ public class SchemaManager {
             GridCacheContextInfo cacheInfo, GridIndex pk) {}
 
         /** {@inheritDoc} */
-        @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {}
+        @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor) {}
     }
 
     /** */
@@ -910,8 +911,8 @@ public class SchemaManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
-            lsnrs.forEach(lsnr -> lsnr.onSqlTypeDrop(schemaName, typeDescriptor, cacheInfo));
+        @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor) {
+            lsnrs.forEach(lsnr -> lsnr.onSqlTypeDrop(schemaName, typeDescriptor));
         }
 
         /** {@inheritDoc} */

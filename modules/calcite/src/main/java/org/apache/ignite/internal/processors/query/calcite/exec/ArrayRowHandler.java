@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import org.apache.ignite.internal.util.typedef.F;
+
 /**
- *
+ * Handler for rows that implemented as a simple objects array.
  */
 public class ArrayRowHandler implements RowHandler<Object[]> {
     /** */
@@ -33,12 +35,32 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T get(int field, Object[] row) {
-        return (T) row[field];
+    @Override public Object get(int field, Object[] row) {
+        return row[field];
     }
 
     /** {@inheritDoc} */
-    @Override public void set(int field, Object[] row, Object value) {
-        row[field] = value;
+    @Override public void set(int field, Object[] row, Object val) {
+        row[field] = val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object[] concat(Object[] left, Object[] right) {
+        return F.concat(left, right);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object[] endMarker() {
+        return new Object[] {EndMarker.INSTANCE};
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEndMarker(Object[] row) {
+        return row[0] == EndMarker.INSTANCE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int fieldsCount(Object[] row) {
+        return row.length;
     }
 }

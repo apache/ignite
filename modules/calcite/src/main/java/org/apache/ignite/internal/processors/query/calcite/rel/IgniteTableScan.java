@@ -62,7 +62,6 @@ import static org.apache.calcite.sql.SqlKind.OR;
 /**
  * Relational operator that returns the contents of a table.
  */
-@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class IgniteTableScan extends TableScan implements IgniteRel {
     /** Supported index operations. */
     public static final Set<SqlKind> TREE_INDEX_COMPARISON =
@@ -75,19 +74,19 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
     private final String idxName;
 
     /** */
-    private final RexNode condition;
+    private final RexNode cond;
 
     /** */
-    private final IgniteTable igniteTable;
+    private final IgniteTable<?> igniteTbl;
 
     /** */
     private final RelCollation collation;
 
     /** */
-    private List<RexNode> lowerIdxCond;
+    private final List<RexNode> lowerIdxCond;
 
     /** */
-    private List<RexNode> upperIdxCond;
+    private final List<RexNode> upperIdxCond;
 
     /** */
     private double idxSelectivity = 1.0;
@@ -100,11 +99,11 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
     public IgniteTableScan(RelInput input) {
         super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
         idxName = input.getString("index");
-        condition = input.getExpression("filters");
+        cond = input.getExpression("filters");
         lowerIdxCond = input.getExpressionList("lower");
         upperIdxCond = input.getExpressionList("upper");
-        igniteTable = getTable().unwrap(IgniteTable.class);
-        collation = igniteTable.getIndex(idxName).collation();
+        igniteTbl = getTable().unwrap(IgniteTable.class);
+        collation = igniteTbl.getIndex(idxName).collation();
     }
 
     /**
@@ -113,24 +112,24 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
      * @param idxName Index name.
-     * @param condition Filters for scan.
+     * @param cond Filters for scan.
      */
     public IgniteTableScan(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
         String idxName,
-        @Nullable RexNode condition
+        @Nullable RexNode cond
     ) {
         super(cluster, traits, ImmutableList.of(), tbl);
 
         this.idxName = idxName;
-        this.condition = condition;
-        this.igniteTable = tbl.unwrap(IgniteTable.class);
+        this.cond = cond;
+        igniteTbl = tbl.unwrap(IgniteTable.class);
         RelCollation coll = traits.getTrait(RelCollationTraitDef.INSTANCE);
-        this.collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
-        this.lowerIdxCond = new ArrayList<>(igniteTable.columnDescriptors().length);
-        this.upperIdxCond = new ArrayList<>(igniteTable.columnDescriptors().length);
+        collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
+        lowerIdxCond = new ArrayList<>(igniteTbl.columnDescriptors().length);
+        upperIdxCond = new ArrayList<>(igniteTbl.columnDescriptors().length);
         buildIndexConditions();
     }
 
@@ -141,7 +140,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         if (!boundsArePossible())
             return;
 
-        assert condition != null;
+        assert cond != null;
 
         Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields();
 
@@ -228,7 +227,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     /** */
     private Map<Integer, List<RexCall>> mapPredicatesToFields() {
-        List<RexNode> predicatesConjunction = RelOptUtil.conjunctions(condition);
+        List<RexNode> predicatesConjunction = RelOptUtil.conjunctions(cond);
 
         Map<Integer, List<RexCall>> fieldsToPredicates = new HashMap<>(predicatesConjunction.size());
 
@@ -258,20 +257,20 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     /** */
     private boolean boundsArePossible() {
-        if (condition == null)
+        if (cond == null)
             return false;
 
-        RexCall dnf = ((RexCall)RexUtil.toDnf(getCluster().getRexBuilder(), condition));
+        RexCall dnf = ((RexCall)RexUtil.toDnf(getCluster().getRexBuilder(), cond));
 
-        if (dnf.isA(OR) && dnf.getOperands().size() > 1)
+        if (dnf.isA(OR) && dnf.getOperands().size() > 1) // OR conditions are not supported yet.
             return false;
 
-        if (igniteTable.collations().isEmpty())
+        if (igniteTbl.collations().isEmpty())
             return false;
 
-        if (igniteTable.collations().size() > 1) {
+        if (igniteTbl.collations().size() > 1) {
             throw new UnsupportedOperationException("At most one table collation is currently supported: " +
-                "[collations=" + igniteTable.collations() + ", table=" + igniteTable + ']');
+                "[collations=" + igniteTbl.collations() + ", table=" + igniteTbl + ']');
         }
         return true;
     }
@@ -325,8 +324,8 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
     }
 
     /** */
-    public List<RexNode> buildIndexCondition(List<RexNode> idxCond) {
-        List<RexNode> lowerIdxCondition = makeListOfNullLiterals(igniteTable.columnDescriptors().length);
+    public List<RexNode> buildIndexCondition(Iterable<RexNode> idxCond) {
+        List<RexNode> lowerIdxCond = makeListOfNullLiterals(igniteTbl.columnDescriptors().length);
 
         for (RexNode pred : idxCond) {
             assert pred instanceof RexCall;
@@ -337,10 +336,10 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
             assert cond instanceof RexLiteral || cond instanceof RexDynamicParam : cond;
 
-            lowerIdxCondition.set(ref.getIndex(), cond);
+            lowerIdxCond.set(ref.getIndex(), cond);
         }
 
-        return lowerIdxCondition;
+        return lowerIdxCond;
     }
 
     /** */
@@ -360,7 +359,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         return pw.item("index", idxName )
             .itemIf("lower", lowerIdxCond, lowerIdxCond != null)
             .itemIf("upper", upperIdxCond, upperIdxCond != null)
-            .itemIf("filters", condition, condition != null)
+            .itemIf("filters", cond, cond != null)
             .item("collation", collation);
     }
 
@@ -378,7 +377,12 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     /** */
     public RexNode condition() {
-        return condition;
+        return cond;
+    }
+
+    /** */
+    public IgniteTable<?> igniteTable() {
+        return igniteTbl;
     }
 
     /** */
@@ -392,9 +396,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rows = estimateRowCount(mq);
 
-        RelOptCost cost = planner.getCostFactory().makeCost(rows, 0, 0);
-
-        return cost;
+        return planner.getCostFactory().makeCost(rows, 0, 0);
     }
 
     /** {@inheritDoc} */
@@ -404,8 +406,8 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         double rowsIn = rows * idxSelectivity;
         double rowsOut = rowsIn;
 
-        if (condition != null) {
-            Double sel = mq.getSelectivity(this, condition);
+        if (cond != null) {
+            Double sel = mq.getSelectivity(this, cond);
             rowsOut *= sel;
         }
 

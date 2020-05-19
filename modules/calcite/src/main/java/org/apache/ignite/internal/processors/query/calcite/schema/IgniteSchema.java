@@ -31,7 +31,7 @@ public class IgniteSchema extends AbstractSchema {
     private final String schemaName;
 
     /** */
-    private final Map<String, Table> tableMap = new ConcurrentHashMap<>();
+    private final Map<String, Table> tblMap = new ConcurrentHashMap<>();
 
     /**
      * Creates a Schema.
@@ -51,21 +51,21 @@ public class IgniteSchema extends AbstractSchema {
 
     /** {@inheritDoc} */
     @Override protected Map<String, Table> getTableMap() {
-        return Collections.unmodifiableMap(tableMap);
+        return Collections.unmodifiableMap(tblMap);
     }
 
     /**
-     * @param table Table.
+     * @param tbl Table.
      */
-    public void addTable(String tableName, Table table) {
-        tableMap.put(tableName, table);
+    public void addTable(String tblName, Table tbl) {
+        tblMap.put(tblName, tbl);
     }
 
     /**
-     * @param tableName Table name.
+     * @param tblName Table name.
      */
-    public void removeTable(String tableName) {
-        tableMap.remove(tableName);
+    public void removeTable(String tblName) {
+        tblMap.remove(tblName);
     }
 
     /**
@@ -73,13 +73,13 @@ public class IgniteSchema extends AbstractSchema {
      * @param idxName Index name.
      * @return Index.
      */
-    public IgniteIndex getIndex(String tblName, String idxName) {
-        Table tbl = tableMap.get(tblName);
+    public IgniteIndex<?> getIndex(String tblName, String idxName) {
+        Table tbl = tblMap.get(tblName);
 
         if (!(tbl instanceof IgniteTable))
             return null;
 
-        IgniteTable igniteTbl = (IgniteTable)tbl;
+        IgniteTable<?> igniteTbl = (IgniteTable<?>)tbl;
 
         return igniteTbl == null ? null : igniteTbl.getIndex(idxName);
     }

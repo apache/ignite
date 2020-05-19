@@ -32,15 +32,15 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 /**
  * Runtime context allowing access to the tables in a database.
  */
-public class ExecutionContext implements DataContext {
+public class ExecutionContext<Row> implements DataContext {
     /** */
-    private final UUID queryId;
+    private final UUID qryId;
 
     /** */
-    private final PlanningContext ctx;
+    private final PlanningContext<Row> ctx;
 
     /** */
-    private final FragmentDescription fragmentDescription;
+    private final FragmentDescription fragmentDesc;
 
     /** */
     private final Map<String, Object> params;
@@ -53,23 +53,29 @@ public class ExecutionContext implements DataContext {
 
     /**
      * @param ctx Parent context.
-     * @param queryId Query ID.
-     * @param fragmentDescription Partitions information.
+     * @param qryId Query ID.
+     * @param fragmentDesc Partitions information.
      * @param params Parameters.
      */
-    public ExecutionContext(QueryTaskExecutor executor, PlanningContext ctx, UUID queryId,
-        FragmentDescription fragmentDescription, Map<String, Object> params) {
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public ExecutionContext(
+        QueryTaskExecutor executor,
+        PlanningContext<Row> ctx,
+        UUID qryId,
+        FragmentDescription fragmentDesc,
+        Map<String, Object> params
+    ) {
         this.executor = executor;
         this.ctx = ctx;
-        this.queryId = queryId;
-        this.fragmentDescription = fragmentDescription;
+        this.qryId = qryId;
+        this.fragmentDesc = fragmentDesc;
         this.params = params;
     }
 
     /**
      * @return Parent context.
      */
-    public PlanningContext planningContext() {
+    public PlanningContext<Row> planningContext() {
         return ctx;
     }
 
@@ -77,43 +83,43 @@ public class ExecutionContext implements DataContext {
      * @return Query ID.
      */
     public UUID queryId() {
-        return queryId;
+        return qryId;
     }
 
     /**
      * @return Fragment ID.
      */
     public long fragmentId() {
-        return fragmentDescription.fragmentId();
+        return fragmentDesc.fragmentId();
     }
 
     /**
      * @return Interested partitions.
      */
     public int[] partitions() {
-        return fragmentDescription.partitions();
+        return fragmentDesc.partitions();
     }
 
     /** */
     public int partitionsCount () {
-        return fragmentDescription.partitionsCount();
+        return fragmentDesc.partitionsCount();
     }
 
     /**
      * @return Target mapping.
      */
     public NodesMapping targetMapping() {
-        return fragmentDescription.targetMapping();
+        return fragmentDesc.targetMapping();
     }
 
     /** */
     public List<UUID> remoteSources(long exchangeId) {
-        return fragmentDescription.remoteSources().get(exchangeId);
+        return fragmentDesc.remoteSources().get(exchangeId);
     }
 
     /** */
     public FragmentDescription fragmentDescription() {
-        return fragmentDescription;
+        return fragmentDesc;
     }
 
     /**
@@ -178,6 +184,6 @@ public class ExecutionContext implements DataContext {
      * @param task Query task.
      */
     public void execute(Runnable task) {
-        executor.execute(queryId, fragmentId(), task);
+        executor.execute(qryId, fragmentId(), task);
     }
 }

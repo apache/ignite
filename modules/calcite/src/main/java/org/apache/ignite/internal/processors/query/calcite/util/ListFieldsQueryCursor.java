@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,7 +33,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  *
  */
-public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>>, QueryCursorEx<List<?>> {
+public class ListFieldsQueryCursor<Row> implements FieldsQueryCursor<List<?>>, QueryCursorEx<List<?>> {
     /** */
     private final Iterator<List<?>> it;
 
@@ -41,18 +41,18 @@ public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>>, Que
     private final List<GridQueryFieldMetadata> fieldsMeta;
 
     /** */
-    private final boolean isQuery;
+    private final boolean isQry;
 
     /**
      * @param plan Query plan.
      * @param it Iterator.
-     * @param converter Row converter.
+     * @param ectx Row converter.
      */
-    public ListFieldsQueryCursor(MultiStepPlan plan, Iterator<T> it, Function<T, List<?>> converter) {
+    public ListFieldsQueryCursor(MultiStepPlan plan, Iterator<Row> it, ExecutionContext<Row> ectx) {
         fieldsMeta = plan.fieldsMetadata();
-        isQuery = plan.type() == QueryPlan.Type.QUERY;
+        isQry = plan.type() == QueryPlan.Type.QUERY;
 
-        this.it = new ConvertingClosableIterator<>(it, converter);
+        this.it = new ConvertingClosableIterator<>(it, ectx);
     }
 
     /** {@inheritDoc} */
@@ -102,7 +102,7 @@ public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>>, Que
 
     /** {@inheritDoc} */
     @Override public boolean isQuery() {
-        return isQuery;
+        return isQry;
     }
 
     /** {@inheritDoc} */

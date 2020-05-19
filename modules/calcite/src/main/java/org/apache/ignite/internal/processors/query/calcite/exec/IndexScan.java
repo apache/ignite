@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -51,10 +52,9 @@ import org.h2.value.Value;
 /**
  * Scan on index.
  */
-@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-public class IndexScan implements Iterable<Object[]> {
+public class IndexScan<Row> implements Iterable<Row> {
     /** */
-    private final ExecutionContext ectx;
+    private final ExecutionContext<Row> ectx;
 
     /** */
     private final CacheObjectContext coCtx;
@@ -63,10 +63,10 @@ public class IndexScan implements Iterable<Object[]> {
     private final GridKernalContext ctx;
 
     /** */
-    private final GridCacheContext cacheCtx;
+    private final GridCacheContext<?, ?> cacheCtx;
 
     /** */
-    private final TableDescriptor desc;
+    private final TableDescriptor<?, ?, Row> desc;
 
     /** */
     private final GridIndex<H2Row> idx;
@@ -75,7 +75,7 @@ public class IndexScan implements Iterable<Object[]> {
     private final AffinityTopologyVersion topVer;
 
     /** Additional filters. */
-    private final Predicate<Object[]> filters;
+    private final Predicate<Row> filters;
 
     /** Lower index scan bound. */
     private final Object[] lowerBound;
@@ -99,30 +99,31 @@ public class IndexScan implements Iterable<Object[]> {
      * @param lowerBound Lower index scan bound.
      * @param upperBound Upper index scan bound.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public IndexScan(
-        ExecutionContext ctx,
-        IgniteIndex igniteIdx,
-        Predicate<Object[]> filters,
+        ExecutionContext<Row> ctx,
+        IgniteIndex<Row> igniteIdx,
+        Predicate<Row> filters,
         Object[] lowerBound,
         Object[] upperBound
     ) {
-        this.ectx = ctx;
-        this.desc = igniteIdx.table().descriptor();
-        this.idx = igniteIdx.index();
+        ectx = ctx;
+        desc = igniteIdx.table().descriptor();
+        idx = igniteIdx.index();
         this.filters = filters;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
-        this.cacheCtx = igniteIdx.table().descriptor().cacheContext();
-        this.coCtx = cacheCtx.cacheObjectContext();
+        cacheCtx = igniteIdx.table().descriptor().cacheContext();
+        coCtx = cacheCtx.cacheObjectContext();
         this.ctx = coCtx.kernalContext();
-        this.topVer = ctx.planningContext().topologyVersion();
-        this.partsArr = ctx.partitions();
-        this.mvccSnapshot = ctx.mvccSnapshot();
+        topVer = ctx.planningContext().topologyVersion();
+        partsArr = ctx.partitions();
+        mvccSnapshot = ctx.mvccSnapshot();
 
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Object[]> iterator() {
+    @Override public Iterator<Row> iterator() {
         H2TreeFilterClosure filterC = filterClosure();
 
         H2Row lower = lowerBound == null ? null : new CalciteH2Row(coCtx, lowerBound);
@@ -165,7 +166,7 @@ public class IndexScan implements Iterable<Object[]> {
     }
 
     /** */
-    private List<GridDhtLocalPartition> gatherPartitions(GridCacheContext ctx, int[] arr ) {
+    private List<GridDhtLocalPartition> gatherPartitions(GridCacheContext<?, ?> ctx, int[] arr ) {
         if (ctx.isReplicated()) {
             int partsCnt = ctx.affinity().partitions();
             GridDhtPartitionTopology top = ctx.topology();
@@ -207,12 +208,12 @@ public class IndexScan implements Iterable<Object[]> {
     }
 
     /** */
-    private class CursorIteratorWrapper extends GridCloseableIteratorAdapter<Object[]> {
+    private class CursorIteratorWrapper extends GridCloseableIteratorAdapter<Row> {
         /** */
         private final GridCursor<H2Row> cursor;
 
         /** Next element. */
-        private Object[] next;
+        private Row next;
 
         /**
          * @param cursor Cursor.
@@ -223,11 +224,11 @@ public class IndexScan implements Iterable<Object[]> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Object[] onNext() {
+        @Override protected Row onNext() {
             if (next == null)
                 throw new NoSuchElementException();
 
-            Object[] res = next;
+            Row res = next;
 
             next = null;
 
@@ -242,7 +243,7 @@ public class IndexScan implements Iterable<Object[]> {
             while (next == null && cursor.next()) {
                 H2Row h2Row = cursor.get();
 
-                Object[] r = desc.toRow(ectx, (CacheDataRow)h2Row);
+                Row r = desc.toRow(ectx, (CacheDataRow)h2Row);
 
                 if (filters == null || filters.test(r))
                     next = r;
@@ -262,7 +263,7 @@ public class IndexScan implements Iterable<Object[]> {
         private final Value[] values;
 
         /** */
-        CalciteH2Row(CacheObjectContext coCtx, Object[] row) {
+        CalciteH2Row(CacheObjectValueContext coCtx, Object[] row) {
             try {
                 values = new Value[row.length];
                 for (int i = 0; i < row.length; i++) {

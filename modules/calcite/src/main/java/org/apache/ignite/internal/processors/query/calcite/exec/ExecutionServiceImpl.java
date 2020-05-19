@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -68,6 +67,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.RowEngineFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
@@ -115,21 +115,22 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
 /**
  *
  */
-public class ExecutionServiceImpl extends AbstractService implements ExecutionService {
+@SuppressWarnings("TypeMayBeWeakened")
+public class ExecutionServiceImpl<Row> extends AbstractService implements ExecutionService {
     /** */
     private final DiscoveryEventListener discoLsnr;
 
     /** */
-    private UUID localNodeId;
+    private UUID locNodeId;
 
     /** */
-    private GridEventStorageManager eventManager;
+    private GridEventStorageManager evtMgr;
 
     /** */
-    private GridCachePartitionExchangeManager<?,?> exchangeManager;
+    private GridCachePartitionExchangeManager<?,?> exchangeMgr;
 
     /** */
-    private QueryPlanCache queryPlanCache;
+    private QueryPlanCache qryPlanCache;
 
     /** */
     private SchemaHolder schemaHolder;
@@ -141,22 +142,25 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     private FailureProcessor failureProcessor;
 
     /** */
-    private PartitionService partitionService;
+    private PartitionService partSvc;
 
     /** */
-    private MailboxRegistry mailboxRegistry;
+    private MailboxRegistry<Row> mailboxRegistry;
 
     /** */
-    private MappingService mappingService;
+    private MappingService mappingSvc;
 
     /** */
-    private MessageService messageService;
+    private MessageService msgSvc;
 
     /** */
-    private ExchangeService exchangeService;
+    private ExchangeService<Row> exchangeSvc;
 
     /** */
     private ClosableIteratorsHolder iteratorsHolder;
+
+    /** */
+    private RowEngineFactory<Row> rowEngineFactory;
 
     /** */
     private final Map<UUID, QueryInfo> running;
@@ -172,31 +176,31 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /**
-     * @param localNodeId Local node ID.
+     * @param locNodeId Local node ID.
      */
-    public void localNodeId(UUID localNodeId) {
-        this.localNodeId = localNodeId;
+    public void localNodeId(UUID locNodeId) {
+        this.locNodeId = locNodeId;
     }
 
     /**
      * @return Local node ID.
      */
     public UUID localNodeId() {
-        return localNodeId;
+        return locNodeId;
     }
 
     /**
-     * @param queryPlanCache Query cache.
+     * @param qryPlanCache Query cache.
      */
-    public void queryPlanCache(QueryPlanCache queryPlanCache) {
-        this.queryPlanCache = queryPlanCache;
+    public void queryPlanCache(QueryPlanCache qryPlanCache) {
+        this.qryPlanCache = qryPlanCache;
     }
 
     /**
      * @return Query cache.
      */
     public QueryPlanCache queryPlanCache() {
-        return queryPlanCache;
+        return qryPlanCache;
     }
 
     /**
@@ -242,101 +246,101 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /**
-     * @param partitionService Partition service.
+     * @param partSvc Partition service.
      */
-    public void partitionService(PartitionService partitionService) {
-        this.partitionService = partitionService;
+    public void partitionService(PartitionService partSvc) {
+        this.partSvc = partSvc;
     }
 
     /**
      * @return Partition service.
      */
     public PartitionService partitionService() {
-        return partitionService;
+        return partSvc;
     }
 
     /**
      * @param mailboxRegistry Mailbox registry.
      */
-    public void mailboxRegistry(MailboxRegistry mailboxRegistry) {
+    public void mailboxRegistry(MailboxRegistry<Row> mailboxRegistry) {
         this.mailboxRegistry = mailboxRegistry;
     }
 
     /**
      * @return Mailbox registry.
      */
-    public MailboxRegistry mailboxRegistry() {
+    public MailboxRegistry<Row> mailboxRegistry() {
         return mailboxRegistry;
     }
 
     /**
-     * @param mappingService Mapping service.
+     * @param mappingSvc Mapping service.
      */
-    public void mappingService(MappingService mappingService) {
-        this.mappingService = mappingService;
+    public void mappingService(MappingService mappingSvc) {
+        this.mappingSvc = mappingSvc;
     }
 
     /**
      * @return Mapping service.
      */
     public MappingService mappingService() {
-        return mappingService;
+        return mappingSvc;
     }
 
     /**
-     * @param messageService Message service.
+     * @param msgSvc Message service.
      */
-    public void messageService(MessageService messageService) {
-        this.messageService = messageService;
+    public void messageService(MessageService msgSvc) {
+        this.msgSvc = msgSvc;
     }
 
     /**
      * @return Message service.
      */
     public MessageService messageService() {
-        return messageService;
+        return msgSvc;
     }
 
     /**
-     * @param exchangeService Exchange service.
+     * @param exchangeSvc Exchange service.
      */
-    public void exchangeService(ExchangeService exchangeService) {
-        this.exchangeService = exchangeService;
+    public void exchangeService(ExchangeService<Row> exchangeSvc) {
+        this.exchangeSvc = exchangeSvc;
     }
 
     /**
      * @return Exchange service.
      */
-    public ExchangeService exchangeService() {
-        return exchangeService;
+    public ExchangeService<Row> exchangeService() {
+        return exchangeSvc;
     }
 
     /**
-     * @param eventManager Event manager.
+     * @param evtMgr Event manager.
      */
-    public void eventManager(GridEventStorageManager eventManager) {
-        this.eventManager = eventManager;
+    public void eventManager(GridEventStorageManager evtMgr) {
+        this.evtMgr = evtMgr;
     }
 
     /**
      * @return Event manager.
      */
     public GridEventStorageManager eventManager() {
-        return eventManager;
+        return evtMgr;
     }
 
     /**
-     * @param exchangeManager Exchange manager.
+     * @param exchangeMgr Exchange manager.
      */
-    public void exchangeManager(GridCachePartitionExchangeManager<?,?> exchangeManager) {
-        this.exchangeManager = exchangeManager;
+    public void exchangeManager(GridCachePartitionExchangeManager<?,?> exchangeMgr) {
+        this.exchangeMgr = exchangeMgr;
     }
 
     /**
      * @return Exchange manager.
      */
     public GridCachePartitionExchangeManager<?, ?> exchangeManager() {
-        return exchangeManager;
+        return exchangeMgr;
     }
 
     /**
@@ -353,10 +357,28 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         return iteratorsHolder;
     }
 
+    /**
+     * @return Row engine factory.
+     */
+    public RowEngineFactory<Row> rowEngineFactory() {
+        return rowEngineFactory;
+    }
+
+    /**
+     * @param rowEngineFactory  Row engine factory.
+     */
+    public void rowEngineFactory(RowEngineFactory<Row> rowEngineFactory) {
+        this.rowEngineFactory = rowEngineFactory;
+    }
+
     /** {@inheritDoc} */
-    @SuppressWarnings("TypeMayBeWeakened")
-    @Override public List<FieldsQueryCursor<List<?>>> executeQuery(@Nullable QueryContext ctx, String schema, String query, Object[] params) {
-        PlanningContext pctx = createContext(ctx, schema, query, params);
+    @Override public List<FieldsQueryCursor<List<?>>> executeQuery(
+        @Nullable QueryContext ctx,
+        String schema,
+        String qry,
+        Object[] params
+    ) {
+        PlanningContext<Row> pctx = createContext(ctx, schema, qry, params);
 
         List<QueryPlan> qryPlans = prepareQueryPlan(pctx);
 
@@ -369,7 +391,10 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
      * @param pctx Query context.
      * @return List of query result cursors.
      */
-    @NotNull public List<FieldsQueryCursor<List<?>>> executePlans(Collection<QueryPlan> qryPlans, PlanningContext pctx) {
+    @NotNull public List<FieldsQueryCursor<List<?>>> executePlans(
+        Collection<QueryPlan> qryPlans,
+        PlanningContext<Row> pctx
+    ) {
         List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(qryPlans.size());
 
         for (QueryPlan plan : qryPlans) {
@@ -383,11 +408,11 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelQuery(UUID queryId) {
-        mailboxRegistry().outboxes(queryId).forEach(this::executeCancel);
-        mailboxRegistry().inboxes(queryId).forEach(this::executeCancel);
+    @Override public void cancelQuery(UUID qryId) {
+        mailboxRegistry().outboxes(qryId).forEach(this::executeCancel);
+        mailboxRegistry().inboxes(qryId).forEach(this::executeCancel);
 
-        QueryInfo info = running.get(queryId);
+        QueryInfo info = running.get(qryId);
 
         if (info != null)
             info.cancel();
@@ -400,7 +425,8 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         eventManager(ctx.event());
         iteratorsHolder(new ClosableIteratorsHolder(log));
 
-        CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+        CalciteQueryProcessor<Row> proc = (CalciteQueryProcessor<Row>)Objects.requireNonNull(
+            Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
 
         queryPlanCache(proc.queryPlanCache());
         schemaHolder(proc.schemaHolder());
@@ -411,6 +437,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         mappingService(proc.mappingService());
         messageService(proc.messageService());
         exchangeService(proc.exchangeService());
+        rowEngineFactory( proc.rowEngineFactory());
 
         init();
      }
@@ -441,14 +468,19 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private PlanningContext createContext(@Nullable QueryContext qryCtx, @Nullable String schemaName, String query, Object[] params) {
+    private PlanningContext<Row> createContext(
+        @Nullable QueryContext qryCtx,
+        @Nullable String schemaName,
+        String qry,
+        Object[] params
+    ) {
         RelTraitDef<?>[] traitDefs = {
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
             DistributionTraitDef.INSTANCE
         };
 
-        return PlanningContext.builder()
+        return PlanningContext.<Row>builder()
             .localNodeId(localNodeId())
             .parentContext(Commons.convert(qryCtx))
             .frameworkConfig(Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
@@ -457,15 +489,20 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                     : schemaHolder().schema())
                 .traitDefs(traitDefs)
                 .build())
-            .query(query)
+            .query(qry)
             .parameters(params)
             .topologyVersion(topologyVersion())
             .logger(log)
+            .rowEngineFactory(rowEngineFactory)
             .build();
     }
 
     /** */
-    private PlanningContext createContext(@Nullable String schemaName, UUID originatingNodeId, AffinityTopologyVersion topVer) {
+    private PlanningContext<Row> createContext(
+        @Nullable String schemaName,
+        UUID originatingNodeId,
+        AffinityTopologyVersion topVer
+    ) {
         // TODO pass to context user locale and timezone.
 
         RelTraitDef<?>[] traitDefs = {
@@ -474,7 +511,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             DistributionTraitDef.INSTANCE
         };
 
-        return PlanningContext.builder()
+        return PlanningContext.<Row>builder()
             .localNodeId(localNodeId())
             .originatingNodeId(originatingNodeId)
             .frameworkConfig(Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
@@ -485,23 +522,24 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                 .build())
             .topologyVersion(topVer)
             .logger(log)
+            .rowEngineFactory(rowEngineFactory)
             .build();
     }
 
     /** */
-    private List<QueryPlan> prepareQueryPlan(PlanningContext ctx) {
+    private List<QueryPlan> prepareQueryPlan(PlanningContext<Row> ctx) {
         return queryPlanCache().queryPlan(ctx, new CacheKey(ctx.schemaName(), ctx.query()), this::prepare0);
     }
 
     /** */
-    private List<QueryPlan> prepare0(PlanningContext ctx) {
+    private List<QueryPlan> prepare0(PlanningContext<Row> ctx) {
         try {
-            String query = ctx.query();
+            String qry = ctx.query();
 
-            assert query != null;
+            assert qry != null;
 
             // Parse query.
-            SqlNode sqlNode = ctx.planner().parse(query);
+            SqlNode sqlNode = ctx.planner().parse(qry);
 
             if (single(sqlNode))
                 return singletonList(prepareSingle(sqlNode, ctx));
@@ -529,7 +567,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx) throws ValidationException {
+    private QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext<Row> ctx) throws ValidationException {
         assert single(sqlNode);
 
         ctx.planner().reset();
@@ -556,7 +594,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private QueryPlan prepareQuery(SqlNode sqlNode, PlanningContext ctx) throws ValidationException {
+    private QueryPlan prepareQuery(SqlNode sqlNode, PlanningContext<Row> ctx) {
         IgnitePlanner planner = ctx.planner();
 
         // Validate
@@ -573,7 +611,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private QueryPlan prepareDml(SqlNode sqlNode, PlanningContext ctx) throws ValidationException {
+    private QueryPlan prepareDml(SqlNode sqlNode, PlanningContext<Row> ctx) throws ValidationException {
         IgnitePlanner planner = ctx.planner();
 
         // Validate
@@ -608,7 +646,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private QueryPlan prepareExplain(SqlNode explain, PlanningContext ctx) throws ValidationException {
+    private QueryPlan prepareExplain(SqlNode explain, PlanningContext<Row> ctx) throws ValidationException {
         IgnitePlanner planner = ctx.planner();
 
         SqlNode sql = ((SqlExplain)explain).getExplicandum();
@@ -627,7 +665,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private List<GridQueryFieldMetadata> buildExplainColumnMeta(PlanningContext ctx) {
+    private List<GridQueryFieldMetadata> buildExplainColumnMeta(PlanningContext<Row> ctx) {
         IgniteTypeFactory factory = ctx.typeFactory();
         RelDataType planStrDataType =
             factory.createSqlType(SqlTypeName.VARCHAR, RelDataType.PRECISION_NOT_SPECIFIED);
@@ -638,7 +676,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executePlan(UUID qryId, PlanningContext pctx, QueryPlan plan) {
+    private FieldsQueryCursor<List<?>> executePlan(UUID qryId, PlanningContext<Row> pctx, QueryPlan plan) {
         switch (plan.type()) {
             case DML:
                 // TODO a barrier between previous operation and this one
@@ -654,7 +692,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeQuery(UUID queryId, MultiStepPlan plan, PlanningContext pctx) {
+    private FieldsQueryCursor<List<?>> executeQuery(UUID qryId, MultiStepPlan plan, PlanningContext<Row> pctx) {
         plan.init(mappingService(), pctx);
 
         List<Fragment> fragments = plan.fragments();
@@ -672,7 +710,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(pctx.localNodeId());
         }
 
-        FragmentDescription fragmentDescription = new FragmentDescription(
+        FragmentDescription fragmentDesc = new FragmentDescription(
             fragment.fragmentId(),
             mapping.partitions(pctx.localNodeId()),
             mapping.assignments().size(),
@@ -680,14 +718,15 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             plan.remoteSources(fragment)
         );
 
-        ExecutionContext ectx = new ExecutionContext(
+        ExecutionContext<Row> ectx = new ExecutionContext<>(
             taskExecutor(),
             pctx,
-            queryId,
-            fragmentDescription,
+            qryId,
+            fragmentDesc,
             Commons.parametersMap(pctx.parameters()));
 
-        Node<Object[]> node = new LogicalRelImplementor(ectx, partitionService(), mailboxRegistry(), exchangeService(), failureProcessor()).go(fragment.root());
+        Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
+            exchangeService(), failureProcessor()).go(fragment.root());
 
         QueryInfo info = new QueryInfo(ectx, plan, node);
 
@@ -707,7 +746,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                         info.onResponse(nodeId, fragment0.fragmentId(), new QueryCancelledException());
                     else {
                         try {
-                            FragmentDescription fragmentDescription0 = new FragmentDescription(
+                            FragmentDescription fragmentDesc0 = new FragmentDescription(
                                 fragment0.fragmentId(),
                                 mapping0.partitions(nodeId),
                                 mapping0.assignments().size(),
@@ -716,11 +755,11 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                             );
 
                             QueryStartRequest req = new QueryStartRequest(
-                                queryId,
+                                qryId,
                                 pctx.schemaName(),
                                 Commons.toJson(fragment0.root()),
                                 pctx.topologyVersion(),
-                                fragmentDescription0,
+                                fragmentDesc0,
                                 pctx.parameters());
 
                             messageService().send(nodeId, req);
@@ -740,7 +779,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             }
         }
 
-        return new ListFieldsQueryCursor<>(plan, info.iterator(), Arrays::asList);
+        return new ListFieldsQueryCursor<>(plan, info.iterator(), ectx);
     }
 
     /** */
@@ -757,28 +796,32 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
     /** */
     private void register(QueryInfo info) {
-        UUID queryId = info.ctx.queryId();
-        PlanningContext pctx = info.ctx.planningContext();
+        UUID qryId = info.ctx.queryId();
+        PlanningContext<Row> pctx = info.ctx.planningContext();
 
-        running.put(queryId, info);
+        running.put(qryId, info);
 
-        GridQueryCancel queryCancel = pctx.queryCancel();
+        GridQueryCancel qryCancel = pctx.queryCancel();
 
-        if (queryCancel == null)
+        if (qryCancel == null)
             return;
 
         try {
-            queryCancel.add(info);
+            qryCancel.add(info);
         }
         catch (QueryCancelledException e) {
-            running.remove(queryId);
+            running.remove(qryId);
 
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED);
         }
     }
 
     /** */
-    private List<GridQueryFieldMetadata> fieldsMetadata(PlanningContext ctx, RelDataType type, @Nullable List<List<String>> origins) {
+    private List<GridQueryFieldMetadata> fieldsMetadata(
+        PlanningContext<Row> ctx,
+        RelDataType type,
+        @Nullable List<List<String>> origins
+    ) {
         List<RelDataTypeField> fields = type.getFieldList();
 
         assert origins == null || fields.size() == origins.size();
@@ -813,10 +856,10 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     private void onMessage(UUID nodeId, QueryStartRequest msg) {
         assert nodeId != null && msg != null;
 
-        PlanningContext ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());
+        PlanningContext<Row> ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());
 
         try {
-            ExecutionContext execCtx = new ExecutionContext(
+            ExecutionContext<Row> execCtx = new ExecutionContext<>(
                 taskExecutor(),
                 ctx,
                 msg.queryId(),
@@ -824,12 +867,17 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                 Commons.parametersMap(msg.parameters())
             );
 
-            Node<Object[]> node = new LogicalRelImplementor(execCtx, partitionService(),
-                mailboxRegistry(), exchangeService(), failureProcessor()).go(Commons.fromJson(ctx.createCluster(), msg.root()));
+            Node<Row> node = new LogicalRelImplementor<>(
+                execCtx,
+                partitionService(),
+                mailboxRegistry(),
+                exchangeService(),
+                failureProcessor())
+                .go(Commons.fromJson(ctx.createCluster(), msg.root()));
 
             assert node instanceof Outbox : node;
 
-            node.context().execute(((Outbox) node)::init);
+            node.context().execute(((Outbox<Row>) node)::init);
 
             messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentDescription().fragmentId()));
         }
@@ -873,7 +921,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private void onCursorClose(RootNode rootNode) {
+    private void onCursorClose(RootNode<Row> rootNode) {
         switch (rootNode.state()) {
             case CANCELLED:
                 cancelQuery(rootNode.queryId());
@@ -892,7 +940,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     private void onNodeLeft(UUID nodeId) {
         running.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(nodeId));
 
-        final Predicate<Node<Object[]>> p = new OriginatingFilter(nodeId);
+        final Predicate<Node<Row>> p = new OriginatingFilter<>(nodeId);
 
         mailboxRegistry().outboxes(null).stream()
             .filter(p).forEach(this::executeCancel);
@@ -908,7 +956,14 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
     /** */
     private enum QueryState {
-        RUNNING, CANCELLING, CANCELLED
+        /** */
+        RUNNING,
+
+        /** */
+        CANCELLING,
+
+        /** */
+        CANCELLED
     }
 
     /** */
@@ -941,19 +996,20 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = nodeId.hashCode();
-            result = 31 * result + (int) (fragmentId ^ (fragmentId >>> 32));
-            return result;
+            int res = nodeId.hashCode();
+            res = 31 * res + (int) (fragmentId ^ (fragmentId >>> 32));
+            return res;
         }
     }
 
     /** */
+    @SuppressWarnings("TypeMayBeWeakened")
     private final class QueryInfo implements QueryCancellable {
         /** */
-        private final ExecutionContext ctx;
+        private final ExecutionContext<Row> ctx;
 
         /** */
-        private final RootNode root;
+        private final RootNode<Row> root;
 
         /** remote nodes */
         private final Set<UUID> remotes;
@@ -968,10 +1024,10 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         private Throwable error;
 
         /** */
-        private QueryInfo(ExecutionContext ctx, MultiStepPlan plan, Node<Object[]> root) {
+        private QueryInfo(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
             this.ctx = ctx;
 
-            RootNode rootNode = new RootNode(ctx, ExecutionServiceImpl.this::onCursorClose);
+            RootNode<Row> rootNode = new RootNode<>(ctx, ExecutionServiceImpl.this::onCursorClose);
             rootNode.register(root);
 
             this.root = rootNode;
@@ -993,7 +1049,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         }
 
         /** */
-        public Iterator<Object[]> iterator() {
+        public Iterator<Row> iterator() {
             return iteratorsHolder().iterator(root);
         }
 
@@ -1024,7 +1080,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
         /** */
         private void cancel() {
-            boolean cancelLocal = false;
+            boolean cancelLoc = false;
             boolean cancelRemote = false;
             QueryState state0 = null;
 
@@ -1033,7 +1089,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                     return;
 
                 if (state == QueryState.RUNNING) {
-                    cancelLocal = true;
+                    cancelLoc = true;
                     state0 = state = QueryState.CANCELLING;
                 }
 
@@ -1043,7 +1099,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                 }
             }
 
-            if (cancelLocal)
+            if (cancelLoc)
                 root.cancel();
 
             if (cancelRemote) {
@@ -1124,7 +1180,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private static class OriginatingFilter implements Predicate<Node<Object[]>> {
+    private static class OriginatingFilter<Row> implements Predicate<Node<Row>> {
         /** */
         private final UUID nodeId;
 
@@ -1134,7 +1190,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean test(Node<Object[]> node) {
+        @Override public boolean test(Node<Row> node) {
             // Uninitialized inbox doesn't know originating node ID.
             return Objects.equals(node.context().originatingNodeId(), nodeId);
         }

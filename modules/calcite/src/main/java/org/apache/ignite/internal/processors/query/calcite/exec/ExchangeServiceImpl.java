@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.RowEngineFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCancelMessage;
@@ -39,15 +40,18 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /**
  *
  */
-public class ExchangeServiceImpl extends AbstractService implements ExchangeService {
+public class ExchangeServiceImpl<Row> extends AbstractService implements ExchangeService<Row> {
     /** */
     private QueryTaskExecutor taskExecutor;
 
     /** */
-    private MailboxRegistry mailboxRegistry;
+    private MailboxRegistry<Row> mailboxRegistry;
 
     /** */
-    private MessageService messageService;
+    private MessageService msgSvc;
+
+    /** */
+    private RowEngineFactory<Row> rowEngineFactory;
 
     /**
      * @param ctx Kernal context.
@@ -73,50 +77,63 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     /**
      * @param mailboxRegistry Mailbox registry.
      */
-    public void mailboxRegistry(MailboxRegistry mailboxRegistry) {
+    public void mailboxRegistry(MailboxRegistry<Row> mailboxRegistry) {
         this.mailboxRegistry = mailboxRegistry;
     }
 
     /**
      * @return  Mailbox registry.
      */
-    public MailboxRegistry mailboxRegistry() {
+    public MailboxRegistry<Row> mailboxRegistry() {
         return mailboxRegistry;
     }
 
     /**
-     * @param messageService Message service.
+     * @param msgSvc Message service.
      */
-    public void messageService(MessageService messageService) {
-        this.messageService = messageService;
+    public void messageService(MessageService msgSvc) {
+        this.msgSvc = msgSvc;
+    }
+
+
+    /** */
+    public RowEngineFactory<Row> rowEngineFactory() {
+        return rowEngineFactory;
+    }
+
+    /** */
+    public void rowEngineFactory(RowEngineFactory<Row> rowEngineFactory) {
+        this.rowEngineFactory = rowEngineFactory;
     }
 
     /**
      * @return  Message service.
      */
     public MessageService messageService() {
-        return messageService;
+        return msgSvc;
     }
 
     /** {@inheritDoc} */
-    @Override public void sendBatch(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) throws IgniteCheckedException {
-        messageService().send(nodeId, new QueryBatchMessage(queryId, fragmentId, exchangeId, batchId, rows));
+    @Override public void sendBatch(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId, List<Row> rows) throws IgniteCheckedException {
+        messageService().send(nodeId, new QueryBatchMessage<>(qryId, fragmentId, exchangeId, batchId, rows));
     }
 
     /** {@inheritDoc} */
-    @Override public void acknowledge(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
-        messageService().send(nodeId, new QueryBatchAcknowledgeMessage(queryId, fragmentId, exchangeId, batchId));
+    @Override public void acknowledge(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
+        messageService().send(nodeId, new QueryBatchAcknowledgeMessage(qryId, fragmentId, exchangeId, batchId));
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
-        messageService().send(nodeId, new InboxCancelMessage(queryId, fragmentId, exchangeId, batchId));
+    @Override public void cancel(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
+        messageService().send(nodeId, new InboxCancelMessage(qryId, fragmentId, exchangeId, batchId));
     }
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+        CalciteQueryProcessor<Row> proc =
+            Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
 
+        rowEngineFactory(proc.rowEngineFactory());
         taskExecutor(proc.taskExecutor());
         mailboxRegistry(proc.mailboxRegistry());
         messageService(proc.messageService());
@@ -128,12 +145,12 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     @Override public void init() {
         messageService().register((n, m) -> onMessage(n, (InboxCancelMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage) m), MessageType.QUERY_ACKNOWLEDGE_MESSAGE);
-        messageService().register((n, m) -> onMessage(n, (QueryBatchMessage) m), MessageType.QUERY_BATCH_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (QueryBatchMessage<Row>) m), MessageType.QUERY_BATCH_MESSAGE);
     }
 
     /** */
     protected void onMessage(UUID nodeId, InboxCancelMessage msg) {
-        Inbox inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
+        Inbox<Row> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
 
         if (inbox != null)
             inbox.cancel();
@@ -149,7 +166,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** */
     protected void onMessage(UUID nodeId, QueryBatchAcknowledgeMessage msg) {
-        Outbox outbox = mailboxRegistry().outbox(msg.queryId(), msg.exchangeId());
+        Outbox<Row> outbox = mailboxRegistry().outbox(msg.queryId(), msg.exchangeId());
 
         if (outbox != null)
             outbox.onAcknowledge(nodeId, msg.batchId());
@@ -164,13 +181,17 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** */
-    protected void onMessage(UUID nodeId, QueryBatchMessage msg) {
-        Inbox inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
+    protected void onMessage(UUID nodeId, QueryBatchMessage<Row> msg) {
+        Inbox<Row> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
 
-        if (inbox == null && msg.batchId() == 0)
+        if (inbox == null && msg.batchId() == 0) {
             // first message sent before a fragment is built
             // note that an inbox source fragment id is also used as an exchange id
-            inbox = mailboxRegistry().register(new Inbox(baseInboxContext(msg.queryId(), msg.fragmentId()), this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId()));
+            Inbox<Row> newInbox = new Inbox<>(baseInboxContext(msg.queryId(), msg.fragmentId()),
+                this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId());
+
+            inbox = mailboxRegistry().register(newInbox);
+        }
 
         if (inbox != null)
             inbox.onBatchReceived(nodeId, msg.batchId(), msg.rows());
@@ -187,9 +208,15 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     /**
      * @return Minimal execution context to meet Inbox needs.
      */
-    private ExecutionContext baseInboxContext(UUID queryId, long fragmentId) {
-        PlanningContext ctx = PlanningContext.builder().logger(log).build();
-        FragmentDescription fragmentDescription = new FragmentDescription(fragmentId, null, -1, null, null);
-        return new ExecutionContext(taskExecutor(), ctx, queryId, fragmentDescription, ImmutableMap.of());
+    private ExecutionContext<Row> baseInboxContext(UUID qryId, long fragmentId) {
+        PlanningContext<Row> ctx = PlanningContext.<Row>builder()
+            .logger(log)
+            .rowEngineFactory(rowEngineFactory)
+            .build();
+
+        FragmentDescription fragmentDesc =
+            new FragmentDescription(fragmentId, null, -1, null, null);
+
+        return new ExecutionContext<>(taskExecutor(), ctx, qryId, fragmentDesc, ImmutableMap.of());
     }
 }

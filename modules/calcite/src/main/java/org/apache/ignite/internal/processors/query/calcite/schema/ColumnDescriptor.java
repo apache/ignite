@@ -47,7 +47,8 @@ public interface ColumnDescriptor {
     Class<?> javaType();
 
     /** */
-    Object value(ExecutionContext ectx, GridCacheContext<?, ?> cctx, CacheDataRow src) throws IgniteCheckedException;
+    Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src)
+        throws IgniteCheckedException;
 
     /** */
     Object defaultValue();

@@ -27,69 +27,69 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public interface MailboxRegistry extends Service {
+public interface MailboxRegistry<Row> extends Service {
     /**
      * Tries to register and inbox node and returns it if success or returns previously registered inbox otherwise.
      *
      * @param inbox Inbox.
      * @return Registered inbox.
      */
-    Inbox register(Inbox inbox);
+    Inbox<Row> register(Inbox<Row> inbox);
 
     /**
      * Unregisters an inbox.
      *
      * @param inbox Inbox to unregister.
      */
-    void unregister(Inbox inbox);
+    void unregister(Inbox<Row> inbox);
 
     /**
      * Registers an outbox.
      *
      * @param outbox Outbox to register.
      */
-    void register(Outbox outbox);
+    void register(Outbox<Row> outbox);
 
     /**
      * Unregisters an outbox.
      *
      * @param outbox Outbox to unregister.
      */
-    void unregister(Outbox outbox);
+    void unregister(Outbox<Row> outbox);
 
     /**
      * Returns a registered outbox by provided query ID, exchange ID pair.
      *
-     * @param queryId Query ID.
+     * @param qryId Query ID.
      * @param exchangeId Exchange ID.
      *
      * @return Registered outbox. May be {@code null} if execution was cancelled.
      */
-    Outbox outbox(UUID queryId, long exchangeId);
+    Outbox<Row> outbox(UUID qryId, long exchangeId);
 
     /**
      * Returns a registered inbox by provided query ID, exchange ID pair.
      *
-     * @param queryId Query ID.
+     * @param qryId Query ID.
      * @param exchangeId Exchange ID.
      *
      * @return Registered inbox. May be {@code null} if execution was cancelled.
      */
-    Inbox inbox(UUID queryId, long exchangeId);
+    Inbox<Row> inbox(UUID qryId, long exchangeId);
 
     /**
      * Returns all registered inboxes for provided query ID.
      *
-     * @param queryId Query ID. {@code null} means return all registered inboxes.
+     * @param qryId Query ID. {@code null} means return all registered inboxes.
      * @return Registered inboxes.
      */
-    Collection<Inbox> inboxes(@Nullable UUID queryId);
+    Collection<Inbox<Row>> inboxes(@Nullable UUID qryId);
 
     /**
      * Returns all registered outboxes for provided query ID.
      *
-     * @param queryId Query ID. {@code null} means return all registered outboxes.
+     * @param qryId Query ID. {@code null} means return all registered outboxes.
      * @return Registered outboxes.
      */
-    Collection<Outbox> outboxes(@Nullable UUID queryId);
+    Collection<Outbox<Row>> outboxes(@Nullable UUID qryId);
 }

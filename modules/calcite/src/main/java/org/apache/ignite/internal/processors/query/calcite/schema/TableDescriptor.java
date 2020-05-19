@@ -35,11 +35,11 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public interface TableDescriptor extends RelProtoDataType, InitializerExpressionFactory {
+public interface TableDescriptor<K, V, Row> extends RelProtoDataType, InitializerExpressionFactory {
     /**
      * @return Underlying cache context.
      */
-    GridCacheContext<?,?> cacheContext();
+    GridCacheContext<K, V> cacheContext();
 
     /**
      * @return Distribution.
@@ -70,11 +70,11 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
     /**
      * Checks whether is possible to update a column with a given index.
      *
-     * @param table Parent table.
-     * @param iColumn Column index.
+     * @param tbl Parent table.
+     * @param colIdx Column index.
      * @return {@code True} if update operation is allowed for a column with a given index.
      */
-    boolean isUpdateAllowed(RelOptTable table, int iColumn);
+    boolean isUpdateAllowed(RelOptTable tbl, int colIdx);
 
     /**
      * Checks whether a provided cache row belongs to described table.
@@ -92,7 +92,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @return Relational node row.
      * @throws IgniteCheckedException If failed.
      */
-    <T> T toRow(ExecutionContext ectx, CacheDataRow row) throws IgniteCheckedException;
+    Row toRow(ExecutionContext<Row> ectx, CacheDataRow row) throws IgniteCheckedException;
 
     /**
      * Converts a relational node row to cache key-value tuple;
@@ -104,7 +104,8 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @return Cache key-value tuple;
      * @throws IgniteCheckedException If failed.
      */
-    <T> IgniteBiTuple<?,?> toTuple(ExecutionContext ectx, T row, TableModify.Operation op, @Nullable Object arg) throws IgniteCheckedException;
+    IgniteBiTuple<K, V> toTuple(ExecutionContext<Row> ectx, Row row, TableModify.Operation op, @Nullable Object arg)
+        throws IgniteCheckedException;
 
     /**
      * Returns column descriptors.

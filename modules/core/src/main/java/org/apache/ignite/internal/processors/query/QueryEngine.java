@@ -29,10 +29,11 @@ public interface QueryEngine extends GridProcessor {
     /**
      * @param ctx Query context, may be null.
      * @param schemaName Schema name.
-     * @param query Query.
+     * @param qry Query.
      * @param params Optional query parameters.
      * @return Query cursor.
      * @throws IgniteSQLException If failed.
      */
-    List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String schemaName, String query, Object... params) throws IgniteSQLException;
+    List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String schemaName, String qry, Object... params)
+        throws IgniteSQLException;
 }

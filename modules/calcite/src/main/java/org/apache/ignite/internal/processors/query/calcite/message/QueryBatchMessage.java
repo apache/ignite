@@ -34,9 +34,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAware {
+public class QueryBatchMessage<Row> implements MarshalableMessage, ExecutionContextAware {
     /** */
-    private UUID queryId;
+    private UUID qryId;
 
     /** */
     private long fragmentId;
@@ -49,7 +49,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
 
     /** */
     @GridDirectTransient
-    private List<Object> rows;
+    private List<Row> rows;
 
     /** */
     @GridDirectCollection(Message.class)
@@ -61,8 +61,8 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /** */
-    public QueryBatchMessage(UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
-        this.queryId = queryId;
+    public QueryBatchMessage(UUID qryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
+        this.qryId = qryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
@@ -71,7 +71,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
 
     /** {@inheritDoc} */
     @Override public UUID queryId() {
-        return queryId;
+        return qryId;
     }
 
     /** {@inheritDoc} */
@@ -96,7 +96,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     /**
      * @return Rows.
      */
-    public List<Object> rows() {
+    public List<Row> rows() {
         return rows;
     }
 
@@ -107,7 +107,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
 
         mRows = new ArrayList<>(rows.size());
 
-        for (Object row : rows) {
+        for (Row row : rows) {
             Message mRow = CalciteMessageFactory.asMessage(row);
 
             if (mRow instanceof MarshalableMessage)
@@ -128,7 +128,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
             if (mRow instanceof MarshalableMessage)
                 ((MarshalableMessage) mRow).prepareUnmarshal(marshaller, loader);
 
-            Object row = CalciteMessageFactory.asRow(mRow);
+            Row row = (Row)CalciteMessageFactory.asRow(mRow);
 
             rows.add(row);
         }
@@ -171,7 +171,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeUuid("queryId", queryId))
+                if (!writer.writeUuid("queryId", qryId))
                     return false;
 
                 writer.incrementState();
@@ -222,7 +222,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 4:
-                queryId = reader.readUuid("queryId");
+                qryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
                     return false;

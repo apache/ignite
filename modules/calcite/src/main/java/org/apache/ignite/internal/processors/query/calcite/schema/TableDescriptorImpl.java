@@ -55,9 +55,13 @@ import org.apache.ignite.lang.IgniteBiTuple;
 /**
  *
  */
-public class TableDescriptorImpl extends NullInitializerExpressionFactory implements TableDescriptor {
+public class TableDescriptorImpl<K, V, Row> extends NullInitializerExpressionFactory
+    implements TableDescriptor<K, V, Row> {
     /** */
-    private final GridCacheContext<?, ?> cctx;
+    private static final ColumnDescriptor[] DUMMY = new ColumnDescriptor[0];
+
+    /** */
+    private final GridCacheContext<K, V> cctx;
 
     /** */
     private final GridQueryTypeDescriptor typeDesc;
@@ -85,17 +89,13 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
 
     /** */
     public TableDescriptorImpl(GridCacheContext<?,?> cctx, GridQueryTypeDescriptor typeDesc, Object affinityIdentity) {
-        this.cctx = cctx;
+        this.cctx = (GridCacheContext<K, V>)cctx;
         this.typeDesc = typeDesc;
         this.affinityIdentity = affinityIdentity;
 
         Set<String> fields = this.typeDesc.fields().keySet();
 
         List<ColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 2);
-
-        int keyField = QueryUtils.KEY_COL;
-        int valField = QueryUtils.VAL_COL;
-        int affField = QueryUtils.KEY_COL;
 
         // A _key/_val fields is virtual in case there is an alias or a property(es) mapped to _key/_val object fields.
         BitSet virtualFlags = new BitSet();
@@ -106,6 +106,10 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
             new KeyValDescriptor(QueryUtils.VAL_FIELD_NAME, typeDesc.valueClass(), false, QueryUtils.VAL_COL));
 
         int fldIdx = QueryUtils.VAL_COL + 1;
+
+        int keyField = QueryUtils.KEY_COL;
+        int valField = QueryUtils.VAL_COL;
+        int affField = QueryUtils.KEY_COL;
 
         for (String field : fields) {
             if (Objects.equals(field, typeDesc.affinityKey()))
@@ -146,7 +150,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         this.valField = valField;
         this.affField = affField;
         this.virtualFlags = virtualFlags;
-        this.descriptors = descriptors.toArray(new ColumnDescriptor[0]);
+        this.descriptors = descriptors.toArray(DUMMY);
         this.descriptorsMap = descriptorsMap;
     }
 
@@ -161,7 +165,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheContext<?, ?> cacheContext() {
+    @Override public GridCacheContext<K, V> cacheContext() {
         return cctx;
     }
 
@@ -179,52 +183,53 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T toRow(ExecutionContext ectx, CacheDataRow row) throws IgniteCheckedException {
+    @Override public Row toRow(ExecutionContext<Row> ectx, CacheDataRow row) throws IgniteCheckedException {
         Object[] res = new Object[descriptors.length];
 
         for (int i = 0; i < descriptors.length; i++)
             res[i] = descriptors[i].value(ectx, cctx, row);
 
-        return (T) res;
+        return ectx.planningContext().rowHandler().create(res);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isUpdateAllowed(RelOptTable table, int iColumn) {
-        final ColumnDescriptor descriptor = descriptors[iColumn];
+    @Override public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
+        final ColumnDescriptor desc = descriptors[colIdx];
 
-        return !descriptor.key() && (descriptor.field() || QueryUtils.isSqlType(descriptor.javaType()));
+        return !desc.key() && (desc.field() || QueryUtils.isSqlType(desc.javaType()));
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnStrategy generationStrategy(RelOptTable table, int iColumn) {
-        if (descriptors[iColumn].hasDefaultValue())
+    @Override public ColumnStrategy generationStrategy(RelOptTable tbl, int colIdx) {
+        if (descriptors[colIdx].hasDefaultValue())
             return ColumnStrategy.DEFAULT;
 
-        return super.generationStrategy(table, iColumn);
+        return super.generationStrategy(tbl, colIdx);
     }
 
     /** {@inheritDoc} */
-    @Override public RexNode newColumnDefaultValue(RelOptTable table, int iColumn, InitializerContext context) {
-        final ColumnDescriptor descriptor = descriptors[iColumn];
+    @Override public RexNode newColumnDefaultValue(RelOptTable tbl, int colIdx, InitializerContext ctx) {
+        final ColumnDescriptor desc = descriptors[colIdx];
 
-        if (!descriptor.hasDefaultValue())
-            return super.newColumnDefaultValue(table, iColumn, context);
+        if (!desc.hasDefaultValue())
+            return super.newColumnDefaultValue(tbl, colIdx, ctx);
 
-        final RexBuilder rexBuilder = context.getRexBuilder();
+        final RexBuilder rexBuilder = ctx.getRexBuilder();
         final IgniteTypeFactory typeFactory = (IgniteTypeFactory) rexBuilder.getTypeFactory();
 
-        return rexBuilder.makeLiteral(descriptor.defaultValue(), descriptor.logicalType(typeFactory), false);
+        return rexBuilder.makeLiteral(desc.defaultValue(), desc.logicalType(typeFactory), false);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteBiTuple<?, ?> toTuple(ExecutionContext ectx, T row, TableModify.Operation op, Object arg) throws IgniteCheckedException {
+    @Override public IgniteBiTuple<K, V> toTuple(ExecutionContext<Row> ectx, Row row,
+        TableModify.Operation op, Object arg) throws IgniteCheckedException {
         switch (op) {
             case INSERT:
-                return insertTuple((Object[]) row);
+                return insertTuple(row, ectx);
             case DELETE:
-                return deleteTuple((Object[]) row);
+                return deleteTuple(row, ectx);
             case UPDATE:
-                return updateTuple((Object[]) row, (List<String>) arg);
+                return updateTuple(row, (List<String>) arg, ectx);
             case MERGE:
                 throw new UnsupportedOperationException();
             default:
@@ -233,16 +238,16 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** */
-    private IgniteBiTuple<?, ?> insertTuple(Object[] row) throws IgniteCheckedException {
-        Object key = insertKey(row);
-        Object val = insertVal(row);
+    private IgniteBiTuple<K, V> insertTuple(Row row, ExecutionContext<Row> ectx) throws IgniteCheckedException {
+        K key = insertKey(row, ectx);
+        V val = insertVal(row, ectx);
 
         if (cctx.binaryMarshaller()) {
             if (key instanceof BinaryObjectBuilder)
-                key = ((BinaryObjectBuilder) key).build();
+                key = (K)((BinaryObjectBuilder) key).build();
 
             if (val instanceof BinaryObjectBuilder)
-                val = ((BinaryObjectBuilder) val).build();
+                val = (V)((BinaryObjectBuilder) val).build();
         }
 
         typeDesc.validateKeyAndValue(key, val);
@@ -251,18 +256,20 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** */
-    private Object insertKey(Object[] row) throws IgniteCheckedException {
-        Object key = row[keyField];
+    private K insertKey(Row row, ExecutionContext<Row> ectx) throws IgniteCheckedException {
+        K key = (K)ectx.planningContext().rowHandler().get(keyField, row);
 
         if (key == null) {
-            key = newVal(typeDesc.keyTypeName(), typeDesc.keyClass());
+            key = (K)newVal(typeDesc.keyTypeName(), typeDesc.keyClass());
 
             // skip _key and _val
             for (int i = 2; i < descriptors.length; i++) {
-                final ColumnDescriptor descriptor = descriptors[i];
+                final ColumnDescriptor desc = descriptors[i];
 
-                if (descriptor.field() && descriptor.key() && row[i] != null)
-                    descriptor.set(key, row[i]);
+                Object fieldVal = ectx.planningContext().rowHandler().get(i, row);
+
+                if (desc.field() && desc.key() && fieldVal != null)
+                    desc.set(key, fieldVal);
             }
         }
 
@@ -270,18 +277,20 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** */
-    private Object insertVal(Object[] row) throws IgniteCheckedException {
-        Object val = row[valField];
+    private V insertVal(Row row, ExecutionContext<Row> ectx) throws IgniteCheckedException {
+        V val = (V)ectx.planningContext().rowHandler().get(valField, row);
 
         if (val == null) {
-            val = newVal(typeDesc.valueTypeName(), typeDesc.valueClass());
+            val = (V)newVal(typeDesc.valueTypeName(), typeDesc.valueClass());
 
             // skip _key and _val
             for (int i = 2; i < descriptors.length; i++) {
-                final ColumnDescriptor descriptor = descriptors[i];
+                final ColumnDescriptor desc = descriptors[i];
 
-                if (descriptor.field() && !descriptor.key() && row[i] != null)
-                    descriptor.set(val, row[i]);
+                Object fieldVal = ectx.planningContext().rowHandler().get(i, row);
+
+                if (desc.field() && !desc.key() && fieldVal != null)
+                    desc.set(val, fieldVal);
             }
         }
 
@@ -289,7 +298,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** */
-    private Object newVal(String typeName, Class<?> typeClass) throws IgniteCheckedException {
+    private Object newVal(String typeName, Class<?> typeCls) throws IgniteCheckedException {
         if (cctx.binaryMarshaller()) {
             BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
             cctx.prepareAffinityField(builder);
@@ -297,7 +306,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
             return builder;
         }
 
-        Class<?> cls = U.classForName(typeName, typeClass);
+        Class<?> cls = U.classForName(typeName, typeCls);
 
         try {
             Constructor<?> ctor = cls.getDeclaredConstructor();
@@ -328,23 +337,26 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** */
-    private IgniteBiTuple<?, ?> updateTuple(Object[] row, List<String> updateColumnList) throws IgniteCheckedException {
-        Object key = Objects.requireNonNull(row[0]);
-        Object val = clone(Objects.requireNonNull(row[1]));
+    private IgniteBiTuple<K, V> updateTuple(Row row, List<String> updateColList, ExecutionContext<Row> ectx)
+        throws IgniteCheckedException {
+        K key = (K)Objects.requireNonNull(ectx.planningContext().rowHandler().get(QueryUtils.KEY_COL, row));
+        V val = (V)clone(Objects.requireNonNull(ectx.planningContext().rowHandler().get(QueryUtils.VAL_COL, row)));
 
-        for (int i = 0; i < updateColumnList.size(); i++) {
-            final ColumnDescriptor descriptor = Objects.requireNonNull(descriptorsMap.get(updateColumnList.get(i)));
+        for (int i = 0; i < updateColList.size(); i++) {
+            final ColumnDescriptor desc = Objects.requireNonNull(descriptorsMap.get(updateColList.get(i)));
 
-            assert !descriptor.key();
+            assert !desc.key();
 
-            if (descriptor.field())
-                descriptor.set(val, row[i + 2]);
+            Object fieldVal = ectx.planningContext().rowHandler().get(i + 2, row);
+
+            if (desc.field())
+                desc.set(val, fieldVal);
             else
-                val = row[i + 2];
+                val = (V)fieldVal;
         }
 
         if (cctx.binaryMarshaller() && val instanceof BinaryObjectBuilder)
-            val = ((BinaryObjectBuilder) val).build();
+            val = (V)((BinaryObjectBuilder) val).build();
 
         typeDesc.validateKeyAndValue(key, val);
 
@@ -368,8 +380,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** */
-    private IgniteBiTuple<?, ?> deleteTuple(Object[] row) throws IgniteCheckedException {
-        return F.t(Objects.requireNonNull(row[0]), null);
+    private IgniteBiTuple<K, V> deleteTuple(Row row, ExecutionContext<Row> ectx) {
+        K key = (K)ectx.planningContext().rowHandler().get(QueryUtils.KEY_COL, row);
+        return F.t(Objects.requireNonNull(key), null);
     }
 
     /** */
@@ -387,11 +400,13 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override public ColumnDescriptor[] columnDescriptors() {
         return descriptors;
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override public Map<String, ColumnDescriptor> columnDescriptorsMap() {
         return descriptorsMap;
     }
@@ -464,12 +479,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         }
 
         /** {@inheritDoc} */
-        @Override public Object value(ExecutionContext ectx, GridCacheContext<?,?> cctx, CacheDataRow src) throws IgniteCheckedException {
+        @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src) {
             return cctx.unwrapBinaryIfNeeded(isKey ? src.key() : src.value(), ectx.keepBinary());
         }
 
         /** {@inheritDoc} */
-        @Override public void set(Object dst, Object val) throws IgniteCheckedException {
+        @Override public void set(Object dst, Object val) {
             throw new AssertionError();
         }
     }
@@ -480,7 +495,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         private final GridQueryProperty desc;
 
         /** */
-        private final Object defaultValue;
+        private final Object dfltVal;
 
         /** */
         private final int fieldIdx;
@@ -488,7 +503,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         /** */
         private FieldDescriptor(GridQueryProperty desc, int fieldIdx) {
             this.desc = desc;
-            defaultValue = desc.defaultValue();
+            dfltVal = desc.defaultValue();
             this.fieldIdx = fieldIdx;
         }
 
@@ -504,12 +519,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
 
         /** {@inheritDoc} */
         @Override public boolean hasDefaultValue() {
-            return defaultValue != null;
+            return dfltVal != null;
         }
 
         /** {@inheritDoc} */
         @Override public Object defaultValue() {
-            return defaultValue;
+            return dfltVal;
         }
 
         /** {@inheritDoc} */
@@ -533,7 +548,8 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         }
 
         /** {@inheritDoc} */
-        @Override public Object value(ExecutionContext ectx, GridCacheContext<?,?> cctx, CacheDataRow src) throws IgniteCheckedException {
+        @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src)
+            throws IgniteCheckedException {
             return cctx.unwrapBinaryIfNeeded(desc.value(src.key(), src.value()), ectx.keepBinary());
         }
 

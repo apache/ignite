@@ -42,33 +42,30 @@ public interface SchemaChangeListener {
 
     /**
      * Callback method.
-     *  @param schemaName Schema name.
-     * @param typeDescriptor type descriptor.
+     * @param schemaName Schema name.
+     * @param typeDesc type descriptor.
      * @param cacheInfo Cache info.
      * @param pk Primary key index
      */
-    void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor,
-        GridCacheContextInfo<?, ?> cacheInfo, GridIndex pk);
+    void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?, ?> cacheInfo, GridIndex<?> pk);
 
     /**
      * Callback method.
      *
      * @param schemaName Schema name.
-     * @param typeDescriptor type descriptor.
-     * @param cacheInfo Cache info.
+     * @param typeDesc type descriptor.
      */
-    void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo);
+    void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDesc);
 
     /**
      * Callback on index creation.
      */
     void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc,
-        GridIndex idx);
+        GridIndex<?> idx);
 
     /**
      * Callback on index drop.
      */
     void onIndexDrop(String schemaName, String tblName, String idxName);
-
-
 }

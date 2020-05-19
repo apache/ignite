@@ -25,35 +25,35 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
 /**
  *
  */
-public interface ExchangeService extends Service {
+public interface ExchangeService<Row> extends Service {
     /**
      * Sends a batch of data to remote node.
      * @param nodeId Target node ID.
-     * @param queryId Query ID.
+     * @param qryId Query ID.
      * @param fragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
      * @param batchId Batch ID.
      * @param rows Data rows.
      */
-    void sendBatch(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) throws IgniteCheckedException;
+    void sendBatch(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId, List<Row> rows) throws IgniteCheckedException;
 
     /**
      * Acknowledges a batch with given ID is processed.
      * @param nodeId Node ID to notify.
-     * @param queryId Query ID.
+     * @param qryId Query ID.
      * @param fragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
      * @param batchId Batch ID.
      */
-    void acknowledge(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
+    void acknowledge(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
 
     /**
      * Sends cancel request.
      * @param nodeId Target node ID.
-     * @param queryId Query ID.
+     * @param qryId Query ID.
      * @param fragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
      * @param batchId Batch ID.
      */
-    void cancel(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
+    void cancel(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
 }

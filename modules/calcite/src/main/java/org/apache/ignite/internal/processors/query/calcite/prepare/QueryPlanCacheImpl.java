@@ -103,7 +103,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     }
 
     /** {@inheritDoc} */
-    @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo) {
+    @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor) {
         clear();
     }
 
@@ -125,7 +125,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
 
     /** {@inheritDoc} */
     @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor,
-        GridCacheContextInfo<?, ?> cacheInfo, GridIndex pk) {
+        GridCacheContextInfo<?, ?> cacheInfo, GridIndex<?> pk) {
         // No-op
     }
 }

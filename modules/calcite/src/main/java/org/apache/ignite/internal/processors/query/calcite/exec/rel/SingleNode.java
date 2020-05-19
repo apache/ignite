@@ -22,9 +22,9 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * A node with a single input
  */
-public interface SingleNode<T> extends Node<T> {
+public interface SingleNode<Row> extends Node<Row> {
     /** */
-    default void register(Node<T> source) {
-        register(F.asList(source));
+    default void register(Node<Row> src) {
+        register(F.asList(src));
     }
 }
