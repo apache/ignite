@@ -45,8 +45,9 @@ public class TestTask extends ComputeTaskAdapter<Long, T2<UUID, Set<UUID>>> {
     Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-                                                                         @Nullable Long arg) throws IgniteException {
+    @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
+            List<ClusterNode> subgrid,
+            @Nullable Long arg) throws IgniteException {
         return subgrid.stream().collect(Collectors.toMap(node -> new TestJob(arg), node -> node));
     }
 
