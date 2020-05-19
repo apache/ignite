@@ -119,4 +119,21 @@ public interface IgniteClient extends AutoCloseable {
      * @return Client cluster facade.
      */
     public ClientCluster cluster();
+
+    /**
+     * Gets {@code services} facade over all cluster nodes started in server mode.
+     *
+     * @return Services facade over all cluster nodes started in server mode.
+     */
+    public ClientServices services();
+
+    /**
+     * Gets {@code services} facade over nodes within the cluster group. All operations
+     * on the returned {@link ClientServices} instance will only include nodes from
+     * the specified cluster group.
+     *
+     * @param grp Cluster group.
+     * @return {@code Services} functionality over given cluster group.
+     */
+    public ClientServices services(ClientClusterGroup grp);
 }
