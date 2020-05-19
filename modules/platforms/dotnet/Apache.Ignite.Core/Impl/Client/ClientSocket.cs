@@ -826,7 +826,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 Blocking = true,
                 SendTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
             };
-            
+
             if (cfg.SocketSendBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
             {
                 socket.SendBufferSize = cfg.SocketSendBufferSize;
@@ -853,9 +853,9 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             var stream = new NetworkStream(socket)
             {
-                WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
+                WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
             };
-            
+
             if (cfg.SslStreamFactory == null)
             {
                 return stream;
