@@ -30,8 +30,8 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     /** Compute tasks (execute by task name). */
     EXECUTE_TASK_BY_NAME(1),
 
-    /** Cluster operations (state and WAL). */
-    CLUSTER_API(2),
+    /** Adds other cluster states besides ACTIVE and INACTIVE. */
+    CLUSTER_ADDITIONAL_STATES(2),
 
     /** Client discovery. */
     CLUSTER_GROUP_GET_NODES_ENDPOINTS(3),
