@@ -45,7 +45,6 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryObjectArray;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -649,9 +648,7 @@ public class H2Utils {
             case Value.JAVA_OBJECT:
                 return ValueJavaObject.getNoCopy(obj, null, null);
             case Value.ARRAY:
-                boolean isBinary = obj instanceof BinaryObjectArray;
-
-                Object[] arr = isBinary ? ((BinaryObjectArray)obj).items() : (Object[])obj;
+                Object[] arr = (Object[])obj;
 
                 Value[] valArr = new Value[arr.length];
 
