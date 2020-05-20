@@ -45,6 +45,7 @@ import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -570,12 +571,33 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid future for collection of closure results.
      */
     public <R> IgniteInternalFuture<R> callAsyncNoFailover(
+            GridClosureCallMode mode,
+            @Nullable Callable<R> job,
+            @Nullable Collection<ClusterNode> nodes,
+            boolean sys,
+            long timeout,
+            boolean skipAuth) {
+        return callAsyncNoFailover(mode, job, nodes, sys, timeout, skipAuth, false);
+    }
+
+    /**
+     * @param <R> Type.
+     * @param mode Distribution mode.
+     * @param job Closure to execute.
+     * @param nodes Grid nodes.
+     * @param sys If {@code true}, then system pool will be used.
+     * @param timeout Timeout.
+     * @param skipAuth Skip authorization check.
+     * @return Grid future for collection of closure results.
+     */
+    public <R> IgniteInternalFuture<R> callAsyncNoFailover(
         GridClosureCallMode mode,
         @Nullable Callable<R> job,
         @Nullable Collection<ClusterNode> nodes,
         boolean sys,
         long timeout,
-        boolean skipAuth) {
+        boolean skipAuth,
+        boolean keepBinary) {
         assert mode != null;
         assert timeout >= 0 : timeout;
 
@@ -597,7 +619,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             if (timeout > 0)
                 ctx.task().setThreadContext(TC_TIMEOUT, timeout);
 
-            return ctx.task().execute(new T7<>(mode, job), null, sys);
+            return ctx.task().execute(new T7<>(mode, job), null, sys, null, keepBinary);
         }
         finally {
             busyLock.readUnlock();

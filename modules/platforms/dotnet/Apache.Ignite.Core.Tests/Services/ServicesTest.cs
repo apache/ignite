@@ -430,12 +430,16 @@ namespace Apache.Ignite.Core.Tests.Services
             
             var prx = Services.GetServiceProxy<ITestIgniteServiceArray>(SvcName);
             
-            /*Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArrayOfObjects(enumerable.ToArray<object>())
+            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArrayOfObjects(enumerable.ToArray<object>())
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+
             Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray(enumerable.ToArray())
-                  .Select(x => x.Field).ToArray());*/
+                  .Select(x => x.Field).ToArray());
+            
+            // class TestBinarizableArray2 dont has an equals class in Java
             Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray2(new[] {10, 11, 12}
                     .Select(x => new PlatformComputeBinarizable2 {Field = x}).ToArray()).Select(x => x.Field).ToArray());
+
         }
 
         /// <summary>

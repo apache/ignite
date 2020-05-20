@@ -1719,7 +1719,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         String oldName = IgniteUtils.setCurrentIgniteName(newName);
 
         try {
-            return deserialize0();
+            return deserialize0(!GridBinaryMarshaller.KEEP_BINARIES_FOR_PLATFORMS.get());
         }
         finally {
             IgniteUtils.restoreOldIgniteName(oldName, newName);
@@ -1730,7 +1730,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return Deserialized object.
      * @throws BinaryObjectException If failed.
      */
-    @Nullable private Object deserialize0() throws BinaryObjectException {
+    @Nullable private Object deserialize0(boolean deserialiaze) throws BinaryObjectException {
         Object obj;
 
         byte flag = in.readByte();
@@ -1914,17 +1914,17 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ_ARR:
-                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, !GridBinaryMarshaller.KEEP_BINARIES.get());
+                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, deserialiaze);
 
                 break;
 
             case COL:
-                obj = BinaryUtils.doReadCollection(in, ctx, ldr, this, false, true, null);
+                obj = BinaryUtils.doReadCollection(in, ctx, ldr, this, false, deserialiaze, null);
 
                 break;
 
             case MAP:
-                obj = BinaryUtils.doReadMap(in, ctx, ldr, this, false, true, null);
+                obj = BinaryUtils.doReadMap(in, ctx, ldr, this, false, deserialiaze, null);
 
                 break;
 
@@ -1933,7 +1933,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 ((BinaryObjectImpl)obj).context(ctx);
 
-                if (!GridBinaryMarshaller.KEEP_BINARIES.get())
+                if (!GridBinaryMarshaller.KEEP_BINARIES.get() && deserialiaze)
                     obj = ((BinaryObject)obj).deserialize();
 
                 break;
@@ -1951,7 +1951,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             case BINARY_ENUM:
                 obj = BinaryUtils.doReadBinaryEnum(in, ctx);
 
-                if (!GridBinaryMarshaller.KEEP_BINARIES.get())
+                if (!GridBinaryMarshaller.KEEP_BINARIES.get() && deserialiaze)
                     obj = ((BinaryObject)obj).deserialize();
 
                 break;

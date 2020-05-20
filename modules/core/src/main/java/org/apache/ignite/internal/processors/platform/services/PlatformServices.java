@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
@@ -276,12 +277,13 @@ public class PlatformServices extends PlatformAbstractTarget {
                 Object[] args;
                 ServiceProxyHolder svcProxy = (ServiceProxyHolder)arg;
 
+                GridBinaryMarshaller.KEEP_BINARIES_FOR_PLATFORMS.set(svcProxy.isPlatformService());
+
                 if (reader.readBoolean()) {
                     args = new Object[reader.readInt()];
-                    boolean keepBinary = srvKeepBinary || svcProxy.isPlatformService();
 
                     for (int i = 0; i < args.length; i++)
-                        args[i] = reader.readObjectDetached(!keepBinary);
+                        args[i] = reader.readObjectDetached(!srvKeepBinary);
                 }
                 else
                     args = null;

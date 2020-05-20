@@ -63,6 +63,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
@@ -117,6 +118,9 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
     /** Retry delay factor (ms). Retry delay = retryAttempt * RETRY_DELAY_MS */
     private static final long RETRY_DELAY_MS = 10;
+
+    /** */
+    private final boolean keepBinary;
 
     /** {@code True} for internal tasks. */
     private boolean internal;
@@ -293,7 +297,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         GridDeployment dep,
         GridTaskEventListener evtLsnr,
         @Nullable Map<GridTaskThreadContextKey, Object> thCtx,
-        UUID subjId) {
+        UUID subjId,
+        boolean keepBinary) {
         super(ctx.config().getIgniteInstanceName(), "grid-task-worker", ctx.log(GridTaskWorker.class));
 
         assert ses != null;
@@ -311,6 +316,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         this.evtLsnr = evtLsnr;
         this.thCtx = thCtx;
         this.subjId = subjId;
+        this.keepBinary = keepBinary;
 
         log = U.logger(ctx, logRef, this);
 
@@ -825,6 +831,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
                     try {
                         boolean loc = ctx.localNodeId().equals(res.getNodeId()) && !ctx.config().isMarshalLocalJobs();
+
+                        GridBinaryMarshaller.KEEP_BINARIES_FOR_PLATFORMS.set(keepBinary);
 
                         Object res0 = loc ? res.getJobResult() : U.unmarshal(marsh, res.getJobResultBytes(),
                             U.resolveClassLoader(clsLdr, ctx.config()));

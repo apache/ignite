@@ -43,6 +43,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -182,14 +183,17 @@ public class GridServiceProxy<T> implements Serializable {
                     else {
                         ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
 
+                        boolean keepBinary = GridBinaryMarshaller.KEEP_BINARIES_FOR_PLATFORMS.get();
+
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BROADCAST,
-                            new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
+                            new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args, keepBinary),
                             Collections.singleton(node),
                             false,
                             waitTimeout,
-                            true).get();
+                            true,
+                            keepBinary).get();
                     }
                 }
                 catch (RuntimeException | Error e) {
@@ -372,6 +376,9 @@ public class GridServiceProxy<T> implements Serializable {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private boolean keepBinary;
+
         /** Method name. */
         private String mtdName;
 
@@ -401,16 +408,19 @@ public class GridServiceProxy<T> implements Serializable {
          * @param argTypes Argument types.
          * @param args Arguments for invocation.
          */
-        private ServiceProxyCallable(String mtdName, String svcName, Class[] argTypes, Object[] args) {
+        private ServiceProxyCallable(String mtdName, String svcName, Class[] argTypes, Object[] args, boolean keepBinary) {
             this.mtdName = mtdName;
             this.svcName = svcName;
             this.argTypes = argTypes;
             this.args = args;
+            this.keepBinary = keepBinary;
         }
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
             ServiceContextImpl svcCtx = ((IgniteEx)ignite).context().service().serviceContext(svcName);
+
+            GridBinaryMarshaller.KEEP_BINARIES_FOR_PLATFORMS.set(keepBinary);
 
             if (svcCtx == null || svcCtx.service() == null)
                 throw new GridServiceNotFoundException(svcName);

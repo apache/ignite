@@ -488,7 +488,21 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys,
-        @Nullable String execName) {
+                                                       @Nullable String execName) {
+        return execute(task, arg, sys, execName, false);
+    }
+
+    /**
+     * @param task Actual task.
+     * @param arg Optional task argument.
+     * @param sys If {@code true}, then system pool will be used.
+     * @param execName Name of the custom executor.
+     * @return Task future.
+     * @param <T> Task argument type.
+     * @param <R> Task return value type.
+     */
+    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys,
+        @Nullable String execName, boolean keepBinary) {
         lock.readLock();
 
         try {
@@ -496,7 +510,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + task);
 
             return startTask(null, null, task, IgniteUuid.fromUuid(ctx.localNodeId()), arg,
-                sys, execName);
+                sys, execName, keepBinary);
         }
         finally {
             lock.readUnlock();
@@ -570,6 +584,21 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param execName Name of the custom executor.
      * @return Task future.
      */
+    private <T, R> ComputeTaskInternalFuture<R> startTask(@Nullable String taskName, @Nullable Class<?> taskCls,
+            @Nullable ComputeTask<T, R> task, IgniteUuid sesId, @Nullable T arg, boolean sys, @Nullable String execName) {
+        return startTask(taskName, taskCls, task, sesId, arg, sys, execName, false);
+    }
+
+    /**
+     * @param taskName Task name.
+     * @param taskCls Task class.
+     * @param task Task.
+     * @param sesId Task session ID.
+     * @param arg Optional task argument.
+     * @param sys If {@code true}, then system pool will be used.
+     * @param execName Name of the custom executor.
+     * @return Task future.
+     */
     private <T, R> ComputeTaskInternalFuture<R> startTask(
         @Nullable String taskName,
         @Nullable Class<?> taskCls,
@@ -577,7 +606,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         IgniteUuid sesId,
         @Nullable T arg,
         boolean sys,
-        @Nullable String execName) {
+        @Nullable String execName,
+        boolean keepBinary) {
         assert sesId != null;
 
         String taskClsName;
@@ -784,7 +814,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     dep,
                     new TaskEventListener(),
                     map,
-                    subjId);
+                    subjId,
+                    keepBinary);
 
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
 

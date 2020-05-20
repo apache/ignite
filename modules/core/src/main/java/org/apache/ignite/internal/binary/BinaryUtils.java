@@ -1851,6 +1851,9 @@ public class BinaryUtils {
      */
     @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
+
+        deserialize = deserialize && !GridBinaryMarshaller.KEEP_BINARIES_FOR_PLATFORMS.get();
+
         int start = in.position();
 
         byte flag = in.readByte();
@@ -2055,7 +2058,7 @@ public class BinaryUtils {
         for (int i = 0; i < len; i++)
             arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
-        boolean keepCompTypeId = !deserialize
+        boolean keepCompTypeId = GridBinaryMarshaller.KEEP_BINARIES_FOR_PLATFORMS.get()
             && compTypeId != GridBinaryMarshaller.OBJECT
             && compTypeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 

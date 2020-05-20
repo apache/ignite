@@ -35,6 +35,9 @@ public class GridBinaryMarshaller {
     /** */
     public static final ThreadLocal<Boolean> KEEP_BINARIES = ThreadLocal.withInitial(() -> true);
 
+    /** */
+    public static final ThreadLocal<Boolean> KEEP_BINARIES_FOR_PLATFORMS = ThreadLocal.withInitial(() -> false);
+
     /** Binary context in TLS store. */
     private static final ThreadLocal<BinaryContextHolder> BINARY_CTX =
         ThreadLocal.withInitial(BinaryContextHolder::new);
