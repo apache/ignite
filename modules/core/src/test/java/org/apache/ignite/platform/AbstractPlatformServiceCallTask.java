@@ -141,23 +141,23 @@ public abstract class AbstractPlatformServiceCallTask extends ComputeTaskAdapter
     public interface TestPlatformService
     {
         /** */
-        @PlatformServiceGetter("NodeId")
+        @PlatformServiceMethod("get_NodeId")
         UUID getNodeId();
 
         /** */
-        @PlatformServiceGetter("GuidProp")
+        @PlatformServiceMethod("get_GuidProp")
         UUID getGuidProp();
 
         /** */
-        @PlatformServiceSetter("GuidProp")
+        @PlatformServiceMethod("set_GuidProp")
         void setGuidProp(UUID val);
 
         /** */
-        @PlatformServiceGetter("ValueProp")
+        @PlatformServiceMethod("get_ValueProp")
         TestValue getValueProp();
 
         /** */
-        @PlatformServiceSetter("ValueProp")
+        @PlatformServiceMethod("set_ValueProp")
         void setValueProp(TestValue val);
 
         /** */

@@ -1033,9 +1033,10 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                 if (svc != null) {
                     if (srvcCls.isAssignableFrom(svc.getClass()))
                         return (T)svc;
-                    else if (!PlatformService.class.isAssignableFrom(svc.getClass()))
+                    else if (!PlatformService.class.isAssignableFrom(svc.getClass())) {
                         throw new IgniteException("Service does not implement specified interface [svcItf=" +
-                            srvcCls.getName() + ", svcCls=" + svc.getClass().getName() + ']');
+                                srvcCls.getName() + ", svcCls=" + svc.getClass().getName() + ']');
+                    }
                 }
             }
         }

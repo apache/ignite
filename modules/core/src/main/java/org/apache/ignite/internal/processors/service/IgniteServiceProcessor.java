@@ -954,9 +954,10 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 if (srvc != null) {
                     if (srvcCls.isAssignableFrom(srvc.getClass()))
                         return (T)srvc;
-                    else if (!PlatformService.class.isAssignableFrom(srvc.getClass()))
+                    else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
                         throw new IgniteException("Service does not implement specified interface [srvcCls="
                                 + srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
+                    }
                 }
             }
         }

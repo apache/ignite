@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -30,7 +29,6 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,9 +52,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.platform.PlatformServiceGetter;
 import org.apache.ignite.platform.PlatformServiceMethod;
-import org.apache.ignite.platform.PlatformServiceSetter;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 
@@ -111,9 +107,6 @@ public class GridServiceProxy<T> implements Serializable {
     /** Service availability wait timeout. */
     private final long waitTimeout;
 
-    /** Mappings methods to method names (mostly for calling platform services). */
-    private final Map<GridServiceMethodReflectKey, String> srvMtds;
-
     /**
      * @param prj Grid projection.
      * @param name Service name.
@@ -140,8 +133,6 @@ public class GridServiceProxy<T> implements Serializable {
         hasLocNode = hasLocalNode(prj);
 
         log = ctx.log(getClass());
-
-        srvMtds = Collections.unmodifiableMap(processServiceAnnotations(svc));
 
         proxy = (T)Proxy.newProxyInstance(
             svc.getClassLoader(),
@@ -396,43 +387,9 @@ public class GridServiceProxy<T> implements Serializable {
      * @param mtd Method to invoke.
      */
     String methodName(Method mtd) {
-        GridServiceMethodReflectKey mtdKey = new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes());
+        PlatformServiceMethod ann = mtd.getDeclaredAnnotation(PlatformServiceMethod.class);
 
-        return srvMtds.getOrDefault(mtdKey, mtd.getName());
-    }
-
-    /**
-     * @param svc Service interface.
-     */
-    private Map<GridServiceMethodReflectKey, String> processServiceAnnotations(Class<? super T> svc) {
-        Map<GridServiceMethodReflectKey, String> map = new HashMap<>();
-
-        for (Method mtd: svc.getDeclaredMethods()) {
-            GridServiceMethodReflectKey mtdKey = new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes());
-
-            for (Annotation ann: mtd.getDeclaredAnnotations()) {
-                String rawMtdName;
-
-                if (ann instanceof PlatformServiceGetter) {
-                    PlatformServiceGetter getter = (PlatformServiceGetter)ann;
-
-                    rawMtdName = getter.prefix() + getter.value();
-                }
-                else if (ann instanceof PlatformServiceSetter) {
-                    PlatformServiceSetter setter = (PlatformServiceSetter)ann;
-
-                    rawMtdName = setter.prefix() + setter.value();
-                }
-                else if (ann instanceof PlatformServiceMethod)
-                    rawMtdName = ((PlatformServiceMethod)ann).value();
-                else
-                    rawMtdName = mtd.getName();
-
-                map.putIfAbsent(mtdKey, rawMtdName);
-            }
-        }
-
-        return map;
+        return ann == null ? mtd.getName() : ann.value();
     }
 
     /**
