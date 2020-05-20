@@ -21,6 +21,9 @@ import javax.cache.Cache;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.mxbean.TransactionsMXBean;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Cache metrics used to obtain statistics on cache itself.
@@ -702,4 +705,13 @@ public interface CacheMetrics {
      * @return {@code true} when cache topology is valid for writing.
      */
     public boolean isValidForWriting();
+
+    /**
+     * Checks if there were any tx key collisions last time.
+     * Interval for check specified throught: {@link IgniteSystemProperties#IGNITE_DUMP_TX_COLLISIONS_INTERVAL} or
+     * {@link TransactionsMXBean#setTxKeyCollisionsInterval(int)}.
+     *
+     * @return Key collisions and appropriate queue size string representation.
+     */
+    @NotNull public String getTxKeyCollisions();
 }
