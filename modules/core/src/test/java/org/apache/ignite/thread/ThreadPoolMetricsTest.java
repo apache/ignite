@@ -68,6 +68,12 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         "GridDataStreamExecutor"
     );
 
+    /** Latch that indicates whether {@link GridMetricManager#onKernalStart} was invoked. */
+    public static final CountDownLatch START_INVOKED_LATCH = new CountDownLatch(1);
+
+    /** Latch that indicates whether {@link GridMetricManager#onKernalStart} execution was unblocked. */
+    public static final CountDownLatch START_UNBLOCKED_LATCH = new CountDownLatch(1);
+
     /** Test instance of the {@link MetricExporterSpi}. */
     private final TestMetricExporterSpi metricExporter = new TestMetricExporterSpi(getTestTimeout());
 
@@ -89,26 +95,25 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
     @Test
     @SuppressWarnings({"Convert2MethodRef", "deprecation"})
     public void testThreadPoolMetrics() throws Exception {
-        assertEquals(1, metricExporter.startInitLatch.getCount());
+        try {
+            runAsync(() -> startGrid());
 
-        runAsync(() -> startGrid());
+            assertTrue(START_INVOKED_LATCH.await(getTestTimeout(), MILLISECONDS));
 
-        assertTrue(metricExporter.startInitLatch.await(getTestTimeout(), MILLISECONDS));
+            metricExporter.checkMetricsRegistered();
 
-        metricExporter.checkMetricsRegistered();
+            THREAD_POOL_NAMES.forEach(name -> getMxBean(
+                getTestIgniteInstanceName(),
+                "Thread Pools",
+                name,
+                ThreadPoolMXBean.class
+            ));
 
-        THREAD_POOL_NAMES.forEach(name -> getMxBean(
-            getTestIgniteInstanceName(),
-            "Thread Pools",
-            name,
-            ThreadPoolMXBean.class
-        ));
-
-        sysViewExporter.checkSystemViewsRegistered();
-
-        assertEquals(1, metricExporter.unblockInitLatch.getCount());
-
-        metricExporter.unblockInitLatch.countDown();
+            sysViewExporter.checkSystemViewsRegistered();
+        }
+        finally {
+            START_UNBLOCKED_LATCH.countDown();
+        }
     }
 
     /** */
@@ -150,12 +155,6 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
 
     /** */
     private static class TestMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
-        /** Latch that indicates whether {@link IgniteSpiAdapter#onContextInitialized0} was invoked. */
-        public final CountDownLatch startInitLatch = new CountDownLatch(1);
-
-        /** Latch that indicates whether {@link IgniteSpiAdapter#onContextInitialized0} execution was unblocked. */
-        public final CountDownLatch unblockInitLatch = new CountDownLatch(1);
-
         /** Timeout of {@link IgniteSpiAdapter#onContextInitialized0} execution blocked state. */
         public final long timeout;
 
@@ -174,10 +173,10 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
-            startInitLatch.countDown();
+            START_INVOKED_LATCH.countDown();
 
             try {
-                unblockInitLatch.await(timeout, MILLISECONDS);
+                START_UNBLOCKED_LATCH.await(timeout, MILLISECONDS);
             }
             catch (InterruptedException e) {
                 throw new RuntimeException(e);
