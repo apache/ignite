@@ -171,7 +171,7 @@ public class SchemaHolderImpl<Row> extends AbstractService implements SchemaHold
         GridQueryIndexDescriptor idxDesc,
         IgniteTable<?> tbl
     ) {
-        Map<String, ColumnDescriptor> tblFields = tbl.columnDescriptorsMap();
+        Map<String, ColumnDescriptor> tblFields = tbl.descriptor().columnDescriptorsMap();
 
         List<RelFieldCollation> collations = new ArrayList<>(idxDesc.fields().size());
 

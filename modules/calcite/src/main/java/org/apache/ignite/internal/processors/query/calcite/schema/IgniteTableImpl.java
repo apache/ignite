@@ -132,18 +132,6 @@ public class IgniteTableImpl<Row> extends AbstractTable
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnDescriptor[] columnDescriptors() {
-        return desc.columnDescriptors();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override public Map<String, ColumnDescriptor> columnDescriptorsMap() {
-        return desc.columnDescriptorsMap();
-    }
-
-
-    /** {@inheritDoc} */
     @Override public NodesMapping mapping(PlanningContext ctx) {
         GridCacheContext<?, ?> cctx = desc.cacheContext();
 

@@ -47,16 +47,6 @@ public interface IgniteTable<Row> extends TranslatableTable, ProjectableFilterab
     IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName);
 
     /**
-     * @return Column descriptors.
-     */
-    ColumnDescriptor[] columnDescriptors();
-
-    /**
-     * @return Map of column descriptors.
-     */
-    Map<String, ColumnDescriptor> columnDescriptorsMap();
-
-    /**
      * Returns nodes mapping.
      *
      * @param ctx Planning context.

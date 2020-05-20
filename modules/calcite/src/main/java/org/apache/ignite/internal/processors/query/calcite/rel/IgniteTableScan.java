@@ -325,7 +325,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     /** */
     public List<RexNode> buildIndexCondition(Iterable<RexNode> idxCond) {
-        List<RexNode> lowerIdxCond = makeListOfNullLiterals(igniteTbl.columnDescriptors().length);
+        List<RexNode> lowerIdxCond = makeListOfNullLiterals(rowType.getFieldCount());
 
         for (RexNode pred : idxCond) {
             assert pred instanceof RexCall;

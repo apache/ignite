@@ -32,6 +32,7 @@ import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -47,7 +48,7 @@ import static org.apache.calcite.plan.RelOptRule.some;
 public class RuleUtils {
     /** */
     public static RelOptRuleOperand traitPropagationOperand(Class<? extends RelNode> clazz) {
-        return operand(clazz, null, some(operand(RelSubset.class, any())));
+        return operand(clazz, IgniteDistributions.any(), some(operand(RelSubset.class, any())));
     }
 
     /** */

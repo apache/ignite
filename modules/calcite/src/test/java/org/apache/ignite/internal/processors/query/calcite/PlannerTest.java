@@ -85,7 +85,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -2728,17 +2727,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ColumnDescriptor[] columnDescriptors() {
-            return new ColumnDescriptor[0];
-        }
-
-        /** {@inheritDoc} */
         @Override public TableDescriptor<?, ?, Object[]> descriptor() {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, ColumnDescriptor> columnDescriptorsMap() {
             throw new AssertionError();
         }
 

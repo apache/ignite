@@ -133,15 +133,6 @@ public class ArrayExpressionFactory implements ExpressionFactory<Object[]> {
     }
 
     /** {@inheritDoc} */
-    @Override public  Predicate<Object[]> predicate(
-        ExecutionContext<Object[]> ctx,
-        List<RexNode> filters,
-        RelDataType rowType
-    ) {
-        return new PredicateImpl(ctx, scalar(filters, rowType));
-    }
-
-    /** {@inheritDoc} */
     @Override public  Function<Object[], Object[]> project(
         ExecutionContext<Object[]> ctx,
         List<RexNode> projects,

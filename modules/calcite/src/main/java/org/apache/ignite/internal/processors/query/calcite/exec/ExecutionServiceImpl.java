@@ -632,7 +632,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         // Convert to Relational operators graph
         RelRoot root = planner.rel(sqlNode);
 
-        RelNode rel = root.rel;
+        RelNode rel = root.project();
 
         // Transformation chain
         rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);

@@ -64,16 +64,6 @@ public interface ExpressionFactory<Row> {
     Predicate<Row> predicate(ExecutionContext<Row> ctx, RexNode filter, RelDataType rowType);
 
     /**
-     * Creates a Filter predicate.
-     * @param ctx Execution context, holds a planner context, query and its parameters,
-     *             execution specific variables (like queryId, current user, session, etc).
-     * @param filters Filters expression.
-     * @param rowType Input row type.
-     * @return Filter predicate.
-     */
-    Predicate<Row> predicate(ExecutionContext<Row> ctx, List<RexNode> filters, RelDataType rowType);
-
-    /**
      * Creates a Project function. Resulting function returns a row with different fields,
      * fields order, fields types, etc.
      * @param ctx Execution context, holds a planner context, query and its parameters,
