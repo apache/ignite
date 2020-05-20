@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Reflection;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
@@ -46,6 +47,9 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         public const int DfltBusywaitSleepInterval = 200;
+
+        /** System cache name. */
+        public const string UtilityCacheName = "ignite-sys-cache";
 
         /** Work dir. */
         private static readonly string WorkDir =
@@ -242,6 +246,45 @@ namespace Apache.Ignite.Core.Tests
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Waits for particular topology on specific cache (system cache by default).
+        /// </summary>
+        /// <param name="grid">Grid.</param>
+        /// <param name="waitingTop">Topology version.</param>
+        /// <param name="cacheName">Cache name.</param>
+        /// <param name="timeout">Timeout.</param>
+        /// <returns>
+        ///   <c>True</c> if topology took required size.
+        /// </returns>
+        public static bool WaitTopology(this IIgnite grid, AffinityTopologyVersion waitingTop,
+            string cacheName = UtilityCacheName, int timeout = 30000)
+        {
+            int checkPeriod = 200;
+
+            // Wait for late affinity.
+            for (var iter = 0;; iter++)
+            {
+                var result = grid.GetCompute().ExecuteJavaTask<long[]>(
+                    "org.apache.ignite.platform.PlatformCacheAffinityVersionTask", cacheName);
+                var top = new AffinityTopologyVersion(result[0], (int) result[1]);
+                if (top.CompareTo(waitingTop) >= 0)
+                {
+                    Console.Out.WriteLine("Current topology: " + top);
+                    break;
+                }
+
+                if (iter % 10 == 0)
+                    Console.Out.WriteLine("Waiting topology cur=" + top + " wait=" + waitingTop);
+
+                if (iter * checkPeriod > timeout)
+                    return false;
+
+                Thread.Sleep(checkPeriod);
+            }
+
+            return true;
         }
 
         /// <summary>

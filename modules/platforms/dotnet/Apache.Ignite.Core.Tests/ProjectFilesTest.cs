@@ -35,8 +35,10 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCsprojToolsVersion()
         {
-            var projFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
-                .Where(x => !x.FullName.ToLower().Contains("dotnetcore")).ToArray();
+            var projFiles = TestUtils.GetDotNetSourceDir()
+                .GetFiles("*.csproj", SearchOption.AllDirectories)
+                .Where(x => !x.FullName.ToLower().Contains("dotnetcore") && !x.FullName.Contains("Benchmark"))
+                .ToArray();
             
             Assert.GreaterOrEqual(projFiles.Length, 7);
             CheckFiles(projFiles, x => !x.Contains("ToolsVersion=\"4.0\""), "Invalid csproj files: ");

@@ -40,6 +40,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -95,7 +96,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
         ccfgs.add(buildCacheConfiguration(CACHE_POSITION));
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
-        c.setLongQueryWarningTimeout(10000);
+        c.setSqlConfiguration(new SqlConfiguration().setLongQueryWarningTimeout(10000));
         c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
