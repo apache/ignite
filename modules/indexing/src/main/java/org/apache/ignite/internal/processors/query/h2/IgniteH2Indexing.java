@@ -1996,27 +1996,34 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
 
+        GridFutureAdapter<Void> resFut = new GridFutureAdapter<>();
+
+        cctx.group().metrics().addIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
+
         rebuildCacheIdxFut.listen(fut -> {
             Throwable err = fut.error();
 
             if (isNull(err)) {
                 try {
                     markIndexRebuild(cacheName, false);
+
+                    resFut.onDone();
                 }
                 catch (Throwable t) {
                     err = t;
-
-                    rebuildCacheIdxFut.onDone(t);
                 }
             }
 
-            if (nonNull(err))
+            if (nonNull(err)) {
                 U.error(log, "Failed to rebuild indexes for cache: " + cacheName, err);
+
+                resFut.onDone(err);
+            }
         });
 
         rebuildIndexesFromHash0(cctx, clo, rebuildCacheIdxFut);
 
-        return rebuildCacheIdxFut;
+        return resFut;
     }
 
     /**
