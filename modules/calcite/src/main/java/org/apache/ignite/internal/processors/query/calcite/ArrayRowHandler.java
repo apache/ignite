@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
+package org.apache.ignite.internal.processors.query.calcite;
 
+import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**

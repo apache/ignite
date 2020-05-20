@@ -36,9 +36,9 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.RowEngine;
-import org.apache.ignite.internal.processors.query.calcite.RowEngineFactory;
+import org.apache.ignite.internal.processors.query.calcite.AbstractCalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowEngine;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowEngineFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -53,7 +53,7 @@ public final class PlanningContext<Row> implements Context {
 
     /** */
     private static final FrameworkConfig EMPTY_CONFIG =
-        Frameworks.newConfigBuilder(CalciteQueryProcessor.FRAMEWORK_CONFIG)
+        Frameworks.newConfigBuilder(AbstractCalciteQueryProcessor.FRAMEWORK_CONFIG)
         .defaultSchema(Frameworks.createRootSchema(false))
         .traitDefs()
         .build();

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionService;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowEngineFactory;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
@@ -51,7 +52,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public abstract class CalciteQueryProcessor<Row> extends GridProcessorAdapter implements QueryEngine {
+public abstract class AbstractCalciteQueryProcessor<Row> extends GridProcessorAdapter implements QueryEngine {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
             .sqlToRelConverterConfig(SqlToRelConverter.configBuilder()
@@ -123,7 +124,7 @@ public abstract class CalciteQueryProcessor<Row> extends GridProcessorAdapter im
      * @param mappingSvc Mapping service.
      * @param exchangeSvc Exchange service.
      */
-    CalciteQueryProcessor(
+    AbstractCalciteQueryProcessor(
         GridKernalContext ctx,
         FailureProcessor failureProcessor,
         SchemaHolder schemaHolder,

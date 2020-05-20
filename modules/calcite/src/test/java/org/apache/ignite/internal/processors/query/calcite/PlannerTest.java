@@ -111,7 +111,7 @@ import org.junit.Test;
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
+import static org.apache.ignite.internal.processors.query.calcite.AbstractCalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.DEDUPLICATED;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.HAS_REPLICATED_CACHES;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.PARTIALLY_REPLICATED;

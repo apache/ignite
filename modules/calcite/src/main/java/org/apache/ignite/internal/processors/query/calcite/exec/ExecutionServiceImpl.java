@@ -66,8 +66,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.RowEngineFactory;
+import org.apache.ignite.internal.processors.query.calcite.AbstractCalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
@@ -110,7 +109,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
+import static org.apache.ignite.internal.processors.query.calcite.AbstractCalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
  *
@@ -426,8 +425,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         eventManager(ctx.event());
         iteratorsHolder(new ClosableIteratorsHolder(log));
 
-        CalciteQueryProcessor<Row> proc = (CalciteQueryProcessor<Row>)Objects.requireNonNull(
-            Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+        AbstractCalciteQueryProcessor<Row> proc = (AbstractCalciteQueryProcessor<Row>)Objects.requireNonNull(
+            Commons.lookupComponent(ctx, AbstractCalciteQueryProcessor.class));
 
         queryPlanCache(proc.queryPlanCache());
         schemaHolder(proc.schemaHolder());

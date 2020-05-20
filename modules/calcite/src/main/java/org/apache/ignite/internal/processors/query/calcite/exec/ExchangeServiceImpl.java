@@ -23,8 +23,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.RowEngineFactory;
+import org.apache.ignite.internal.processors.query.calcite.AbstractCalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCancelMessage;
@@ -130,8 +129,8 @@ public class ExchangeServiceImpl<Row> extends AbstractService implements Exchang
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        CalciteQueryProcessor<Row> proc =
-            Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+        AbstractCalciteQueryProcessor<Row> proc =
+            Objects.requireNonNull(Commons.lookupComponent(ctx, AbstractCalciteQueryProcessor.class));
 
         rowEngineFactory(proc.rowEngineFactory());
         taskExecutor(proc.taskExecutor());

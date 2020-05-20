@@ -23,7 +23,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.AbstractCalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -80,7 +80,7 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
     @Override public void onStart(GridKernalContext ctx) {
         exceptionHandler(ctx.uncaughtExceptionHandler());
 
-        CalciteQueryProcessor<?> proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+        AbstractCalciteQueryProcessor<?> proc = Objects.requireNonNull(Commons.lookupComponent(ctx, AbstractCalciteQueryProcessor.class));
 
         failureProcessor(proc.failureProcessor());
 

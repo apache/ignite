@@ -30,7 +30,7 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.AbstractCalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -167,7 +167,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
         marshaller(marsh0);
 
-        CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+        AbstractCalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, AbstractCalciteQueryProcessor.class));
 
         taskExecutor(proc.taskExecutor());
         failureProcessor(proc.failureProcessor());

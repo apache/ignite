@@ -13,21 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
-
-import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
 /**
- * Row engine.
+ * Row engine factory.
  */
-public interface RowEngine<Row> {
-
-    RowHandler<Row> rowHandler();
-
-    ExpressionFactory<Row> expressionFactory(IgniteTypeFactory typeFactory,
-        SqlConformance conformance);
-
+public interface RowEngineFactory<Row>  {
+   /**
+    * @return Row engine.
+    */
+   RowEngine<Row> rowEngine();
 }

@@ -16,7 +16,8 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowEngine;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowEngineFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ArrayExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;

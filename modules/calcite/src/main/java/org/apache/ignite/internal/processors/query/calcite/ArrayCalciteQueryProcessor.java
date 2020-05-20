@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderIm
 /**
  * Array-based query processor.
  */
-public class ArrayCalciteQueryProcessor extends CalciteQueryProcessor<Object[]> {
+public class ArrayCalciteQueryProcessor extends AbstractCalciteQueryProcessor<Object[]> {
     /**
      * @param ctx Kernal context.
      */
