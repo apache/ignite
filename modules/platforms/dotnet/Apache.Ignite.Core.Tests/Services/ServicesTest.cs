@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
     /// <summary>
     /// Services tests.
-    /// </summary>
+    /// </summarTestIgniteServiceArraySerializabley>
     public class ServicesTest
     {
         /** */
@@ -1172,6 +1172,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Serializable]
         private class TestIgniteServiceArraySerializable : TestIgniteServiceSerializable, ITestIgniteServiceArray
         {
+            /** */
             public object[] TestBinarizableArrayOfObjects(object[] arg)
             {
                 if (arg == null)
@@ -1185,12 +1186,13 @@ namespace Apache.Ignite.Core.Tests.Services
                 return arg;
             }
 
+            /** */
             public PlatformComputeBinarizable[] TestBinarizableArray(PlatformComputeBinarizable[] arg)
             {
                 return (PlatformComputeBinarizable[])TestBinarizableArrayOfObjects(arg);
             }
             
-            
+            /** */
             public PlatformComputeBinarizable2[] TestBinarizableArray2(PlatformComputeBinarizable2[] arg)
             {
                 if (arg == null)
