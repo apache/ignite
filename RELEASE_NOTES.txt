@@ -2,7 +2,7 @@ Apache Ignite Release Notes
 ===========================
 
 
-Apache Ignite In-Memory Database and Caching Platform 2.8.1
+Apache Ignite In-Memory Computing Platform 2.8.1
 -----------------------------------------------------------
 
 Security:
