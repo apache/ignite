@@ -1323,7 +1323,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             // Error is logged.
             Func<ListLogger.Entry> getEntry = () => 
-                _logger.Entries.FirstOrDefault(e => e.Message == "Failure in Java callback");
+                _logger.Entries.FirstOrDefault(e => e.Message.StartsWith("Failure in Java callback"));
 
             var message = string.Join(" | ", _logger.Entries.Select(e => e.Message));
             TestUtils.WaitForTrueCondition(() => getEntry() != null, 3000, message);
