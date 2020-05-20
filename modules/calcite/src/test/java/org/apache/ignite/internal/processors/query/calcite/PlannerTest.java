@@ -20,11 +20,14 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.calcite.DataContext;
+import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.Contexts;
@@ -36,7 +39,9 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.type.RelDataType;
@@ -44,8 +49,12 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.schema.Statistic;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -80,6 +89,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescript
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -762,11 +772,16 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
-                return Linq4j.asEnumerable(Arrays.asList(
-                    new Object[]{0, "Igor", 0},
-                    new Object[]{1, "Roman", 0}
-                ));
+            @Override public IgniteIndex<Object[]> getIndex(String idxName) {
+                return new IgniteIndex<Object[]>(null, null, null, null) {
+                    @Override public Iterable<Object[]> scan(ExecutionContext<Object[]> execCtx, Predicate<Object[]> filters,
+                        Object[] lowerIdxConditions, Object[] upperIdxConditions) {
+                        return Linq4j.asEnumerable(Arrays.asList(
+                            new Object[]{0, "Igor", 0},
+                            new Object[]{1, "Roman", 0}
+                        ));
+                    }
+                };
             }
 
             @Override public NodesMapping mapping(PlanningContext ctx) {
@@ -790,11 +805,16 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
-                return Linq4j.asEnumerable(Arrays.asList(
-                    new Object[]{0, "Calcite", 1},
-                    new Object[]{1, "Ignite", 1}
-                ));
+            @Override public IgniteIndex<Object[]> getIndex(String idxName) {
+                return new IgniteIndex<Object[]>(null, null, null, null) {
+                    @Override public Iterable<Object[]> scan(ExecutionContext<Object[]> execCtx, Predicate<Object[]> filters,
+                        Object[] lowerIdxConditions, Object[] upperIdxConditions) {
+                        return Linq4j.asEnumerable(Arrays.asList(
+                            new Object[]{0, "Calcite", 1},
+                            new Object[]{1, "Ignite", 1}
+                        ));
+                    }
+                };
             }
 
             @Override public NodesMapping mapping(PlanningContext ctx) {
@@ -2597,15 +2617,18 @@ public class PlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private abstract static class TestTable extends IgniteTable<Object[]> {
+    private abstract static class TestTable implements IgniteTable<Object[]> {
         /** */
         private final RelProtoDataType protoType;
 
         /** */
+        private final Map<String, IgniteIndex<Object[]>> indexes = new HashMap<>();
+
+        /** */
         private TestTable(RelDataType type) {
-            super(null, null, null);
             protoType = RelDataTypeImpl.proto(type);
-            addIndex(new IgniteIndex<>(null, "PK", null, this));
+
+            addIndex(new IgniteIndex(null, "PK", null, this));
         }
 
         /** {@inheritDoc} */
@@ -2619,12 +2642,73 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
+            RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
+                .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
+                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
+
+            return new IgniteTableScan(cluster, traitSet, relOptTbl, "PK", null);
+        }
+
+        /** {@inheritDoc} */
         @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
             return protoType.apply(typeFactory);
         }
 
         /** {@inheritDoc} */
-        @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
+        @Override public Statistic getStatistic() {
+            return new Statistic() {
+                /** {@inheritDoc */
+                @Override public Double getRowCount() {
+                    return 100.0;
+                }
+
+                /** {@inheritDoc */
+                @Override public boolean isKey(ImmutableBitSet cols) {
+                    return false;
+                }
+
+                /** {@inheritDoc */
+                @Override public List<ImmutableBitSet> getKeys() {
+                    throw new AssertionError();
+                }
+
+                /** {@inheritDoc */
+                @Override public List<RelReferentialConstraint> getReferentialConstraints() {
+                    throw new AssertionError();
+                }
+
+                /** {@inheritDoc */
+                @Override public List<RelCollation> getCollations() {
+                    return Collections.emptyList();
+                }
+
+                /** {@inheritDoc */
+                @Override public RelDistribution getDistribution() {
+                    throw new AssertionError();
+                }
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
+            throw new AssertionError();
+        }
+
+
+        /** {@inheritDoc} */
+        @Override public Schema.TableType getJdbcTableType() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRolledUp(String col) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean rolledUpColumnValidInsideAgg(String column, SqlCall call, SqlNode parent,
+            CalciteConnectionConfig config) {
             throw new AssertionError();
         }
 
@@ -2646,6 +2730,36 @@ public class PlannerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public ColumnDescriptor[] columnDescriptors() {
             return new ColumnDescriptor[0];
+        }
+
+        /** {@inheritDoc} */
+        @Override public TableDescriptor<?, ?, Object[]> descriptor() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, ColumnDescriptor> columnDescriptorsMap() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, IgniteIndex<Object[]>> indexes() {
+            return indexes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addIndex(IgniteIndex<Object[]> idxTbl) {
+            indexes.put(idxTbl.name(), idxTbl);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteIndex<Object[]> getIndex(String idxName) {
+            return indexes.get(idxName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeIndex(String idxName) {
+            throw new AssertionError();
         }
     }
 

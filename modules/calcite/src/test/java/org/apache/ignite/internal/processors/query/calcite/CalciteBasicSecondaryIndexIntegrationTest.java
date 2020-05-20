@@ -31,7 +31,7 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -47,10 +47,10 @@ import static java.util.Collections.singletonList;
  */
 public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstractTest {
     /** */
-    private static final String PK = IgniteTable.PK_INDEX_NAME;
+    private static final String PK = IgniteTableImpl.PK_INDEX_NAME;
 
     /** */
-    private static final String PK_ALIAS = IgniteTable.PK_ALIAS_INDEX_NAME;
+    private static final String PK_ALIAS = IgniteTableImpl.PK_ALIAS_INDEX_NAME;
 
     /** */
     private static final String DEPID_IDX = "DEPID_IDX";

@@ -65,8 +65,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable.PK_INDEX_NAME;
+import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl.PK_INDEX_NAME;
 
 /**
  * Query planer.
@@ -317,7 +318,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             for (IgniteIndex<?> idx : igniteTbl.indexes().values()) {
                 ImmutableList<String> names = ImmutableList.<String>builder()
                     .addAll(Util.skipLast(tbl.getQualifiedName()))
-                    .add(igniteTbl.name() + "[" + idx.name() + "]")
+                    .add(F.last(tbl.getQualifiedName()) + "[" + idx.name() + "]")
                     .build();
 
                 IgniteTableScan idxTblScan = igniteTbl.toRel(cluster, tbl, idx.name());

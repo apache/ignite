@@ -404,6 +404,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             cursors.add(cur);
         }
+
         return cursors;
     }
 

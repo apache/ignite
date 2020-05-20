@@ -60,12 +60,22 @@ public interface SchemaChangeListener {
 
     /**
      * Callback on index creation.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @param idxDesc Index descriptor.
+     * @param idx Index.
      */
     void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc,
         GridIndex<?> idx);
 
     /**
      * Callback on index drop.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param idxName Index name.
      */
     void onIndexDrop(String schemaName, String tblName, String idxName);
 }

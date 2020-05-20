@@ -109,7 +109,7 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
 /**
  * H2 Index over {@link BPlusTree}.
  */
-@SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public class H2TreeIndex extends H2TreeIndexBase {
     /** */
     private final H2Tree[] segments;
@@ -380,17 +380,18 @@ public class H2TreeIndex extends H2TreeIndexBase {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public GridCursor<H2Row> find(
         H2Row lower,
         H2Row upper,
-        BPlusTree.TreeRowClosure<H2Row, H2Row> filterClosure
+        BPlusTree.TreeRowClosure<H2Row, H2Row> filterC
     ) {
         try {
             int seg = 0; // TODO segments support
 
             H2Tree tree = treeForRead(seg);
 
-            return tree.find(lower, upper, filterClosure, null);
+            return tree.find(lower, upper, filterC, null);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

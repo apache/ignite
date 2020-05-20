@@ -55,6 +55,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 /**
  *
  */
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class TableDescriptorImpl<K, V, Row> extends NullInitializerExpressionFactory
     implements TableDescriptor<K, V, Row> {
     /** */
@@ -400,13 +401,11 @@ public class TableDescriptorImpl<K, V, Row> extends NullInitializerExpressionFac
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override public ColumnDescriptor[] columnDescriptors() {
         return descriptors;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override public Map<String, ColumnDescriptor> columnDescriptorsMap() {
         return descriptorsMap;
     }

@@ -21,8 +21,17 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 
 /**
  * Index interface.
+ *
+ * @param <R> Indexing row type.
  */
 public interface GridIndex<R> {
-    /** */
+    /**
+     * Index lookup method.
+     *
+     * @param lower Lower bound.
+     * @param upper Upper bound.
+     * @param filterC Filtering closure.
+     * @return Cursor over the rows within bounds.
+     */
     GridCursor<R> find(R lower, R upper, BPlusTree.TreeRowClosure<R, R> filterC);
 }

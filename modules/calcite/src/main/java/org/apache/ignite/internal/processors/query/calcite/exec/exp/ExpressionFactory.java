@@ -105,7 +105,21 @@ public interface ExpressionFactory<Row> {
      */
     Object[] convertToObjects(ExecutionContext<Row> ctx, List<RexNode> values, RelDataType rowType);
 
+    /**
+     * Creates {@link Scalar}, a code-generated expressions evaluator.
+     *
+     * @param node Expression.
+     * @param type Row type.
+     * @return Scalar.
+     */
     Scalar scalar(RexNode node, RelDataType type);
 
+    /**
+     * Creates {@link Scalar}, a code-generated expressions evaluator.
+     *
+     * @param nodes Expressions.
+     * @param type Row type.
+     * @return Scalar.
+     */
     Scalar scalar(List<RexNode> nodes, RelDataType type);
 }

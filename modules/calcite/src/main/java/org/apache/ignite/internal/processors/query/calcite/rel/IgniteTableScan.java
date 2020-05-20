@@ -128,8 +128,8 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         igniteTbl = tbl.unwrap(IgniteTable.class);
         RelCollation coll = traits.getTrait(RelCollationTraitDef.INSTANCE);
         collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
-        lowerIdxCond = new ArrayList<>(igniteTbl.columnDescriptors().length);
-        upperIdxCond = new ArrayList<>(igniteTbl.columnDescriptors().length);
+        lowerIdxCond = new ArrayList<>(getRowType().getFieldCount());
+        upperIdxCond = new ArrayList<>(getRowType().getFieldCount());
         buildIndexConditions();
     }
 

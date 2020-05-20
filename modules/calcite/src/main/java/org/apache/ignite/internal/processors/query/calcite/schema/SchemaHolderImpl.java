@@ -113,17 +113,17 @@ public class SchemaHolderImpl<Row> extends AbstractService implements SchemaHold
 
         RelCollation pkCollation = RelCollations.of(new RelFieldCollation(QueryUtils.KEY_COL));
 
-        IgniteTable<Row> tbl = new IgniteTable<>(tblName, desc, pkCollation);
+        IgniteTable<Row> tbl = new IgniteTableImpl<>(desc, pkCollation);
         schema.addTable(tblName, tbl);
 
-        IgniteIndex<Row> pkIdx = new IgniteIndex<>(pkCollation, IgniteTable.PK_INDEX_NAME, (GridIndex<H2Row>)pk, tbl);
+        IgniteIndex<Row> pkIdx = new IgniteIndex<>(pkCollation, IgniteTableImpl.PK_INDEX_NAME, (GridIndex<H2Row>)pk, tbl);
         tbl.addIndex(pkIdx);
 
         if (desc.keyField() != QueryUtils.KEY_COL) {
             RelCollation pkAliasCollation = RelCollations.of(new RelFieldCollation(desc.keyField()));
 
             IgniteIndex<Row> pkAliasIdx =
-                new IgniteIndex<>(pkAliasCollation, IgniteTable.PK_ALIAS_INDEX_NAME,(GridIndex<H2Row>) pk, tbl);
+                new IgniteIndex<>(pkAliasCollation, IgniteTableImpl.PK_ALIAS_INDEX_NAME,(GridIndex<H2Row>) pk, tbl);
 
             tbl.addIndex(pkAliasIdx);
         }
