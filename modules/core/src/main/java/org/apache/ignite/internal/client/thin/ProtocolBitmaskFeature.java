@@ -32,10 +32,9 @@ public enum ProtocolBitmaskFeature {
     EXECUTE_TASK_BY_NAME(1),
 
     /**
-     * Cluster operations (state and WAL). In addition to {@link ProtocolVersionFeature#CLUSTER_API} this feature
-     * also allows to use other cluster states beside ACTIVE and INACTIVE.
+     * Adds cluster states besides ACTIVE and INACTIVE.
      */
-    CLUSTER_API(2),
+    CLUSTER_STATES(2),
 
     /** Cluster groups. */
     CLUSTER_GROUPS(4);

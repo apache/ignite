@@ -801,6 +801,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(0, r => new AssemblyRequestResult(r));
             AddSystemType<PeerLoadingObjectHolder>(0, null, serializer: new PeerLoadingObjectHolderSerializer());
             AddSystemType<MultidimensionalArrayHolder>(0, null, serializer: new MultidimensionalArraySerializer());
+            AddSystemType(BinaryTypeId.IgniteBiTuple, r => new IgniteBiTuple(r));
         }
 
         /// <summary>

@@ -15,17 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
+namespace Apache.Ignite.BenchmarkDotNet.ThinClient
 {
+    using global::BenchmarkDotNet.Attributes;
+
     /// <summary>
-    /// Client feature ids. Values represent the index in the bit array.
+    /// Thin client compute benchmarks.
     /// </summary>
-    internal enum ClientBitmaskFeature
+    [MemoryDiagnoser]
+    public class ThinClientComputeBenchmark : ThinClientBenchmarkBase
     {
-        // UserAttributes = 0,
-        ExecuteTaskByName = 1,
-        // ClusterStates = 2,
-        ClusterGroupGetNodesEndpoints = 3,
-        ClusterGroups = 4
+        /** */
+        private const string TaskName = "org.apache.ignite.platform.PlatformComputeEchoTask";
+
+        /// <summary>
+        /// Benchmark: simple Java task.
+        /// </summary>
+        [Benchmark]
+        public void ExecuteJavaTask()
+        {
+            Client.GetCompute().ExecuteJavaTask<object>(TaskName, 0);
+        }
     }
 }

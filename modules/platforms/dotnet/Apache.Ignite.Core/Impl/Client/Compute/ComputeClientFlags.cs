@@ -15,17 +15,22 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
+namespace Apache.Ignite.Core.Impl.Client.Compute
 {
+    using System;
+    using System.Diagnostics.CodeAnalysis;
+
     /// <summary>
-    /// Client feature ids. Values represent the index in the bit array.
+    /// Client compute flags.
     /// </summary>
-    internal enum ClientBitmaskFeature
+    [Flags]
+    [SuppressMessage("Design", "CA1028:Enum Storage should be Int32", 
+        Justification = "Dictated by thin client protocol.")]
+    internal enum ComputeClientFlags : byte
     {
-        // UserAttributes = 0,
-        ExecuteTaskByName = 1,
-        // ClusterStates = 2,
-        ClusterGroupGetNodesEndpoints = 3,
-        ClusterGroups = 4
+        None = 0,
+        NoFailover = 1,
+        NoResultCache = 2,
+        KeepBinary = 4
     }
 }
