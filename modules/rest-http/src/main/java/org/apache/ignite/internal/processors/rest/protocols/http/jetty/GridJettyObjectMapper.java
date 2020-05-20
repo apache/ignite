@@ -46,7 +46,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectArray;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
@@ -285,8 +284,6 @@ public class GridJettyObjectMapper extends ObjectMapper {
 
                         if (val instanceof BinaryEnumObjectImpl)
                             gen.writeObjectField(name, ((BinaryObject)val).enumName());
-                        else if (val instanceof BinaryObjectArray)
-                            gen.writeObjectField(name, ((BinaryObjectArray)val).items());
                         else
                             gen.writeObjectField(name, val);
                     }

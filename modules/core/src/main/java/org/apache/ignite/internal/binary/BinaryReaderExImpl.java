@@ -1914,7 +1914,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ_ARR:
-                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
+                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, !GridBinaryMarshaller.KEEP_BINARIES.get());
 
                 break;
 
