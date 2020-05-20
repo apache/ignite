@@ -33,7 +33,6 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -53,9 +52,10 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -99,9 +99,6 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * Will be as well passed as a handler output for an anonymous logger in the test.
      */
     protected static ByteArrayOutputStream testOut;
-
-    /** Ignite test logger to check messages. */
-    protected IgniteLogger logger;
 
     /** Atomic configuration. */
     protected AtomicConfiguration atomicConfiguration;
@@ -173,7 +170,6 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         testOut.reset();
 
         encriptionEnabled = false;
-        logger = null;
     }
 
     /** {@inheritDoc} */
@@ -205,10 +201,8 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (logger != null)
-            cfg.setGridLogger(logger);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+            .setMetricExporterSpi(new JmxMetricExporterSpi());
 
         if (atomicConfiguration != null)
             cfg.setAtomicConfiguration(atomicConfiguration);

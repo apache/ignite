@@ -44,6 +44,7 @@ import java.util.stream.IntStream;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+import javax.management.DynamicMBean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -96,8 +97,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -123,6 +122,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
@@ -2107,12 +2107,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         int keys = 100;
         String snpName = "snapshot_02052020";
 
-        ListeningTestLogger srv0Logger = new ListeningTestLogger(log);
-        LogListener snpEndLsnr = LogListener.matches("Cluster-wide snapshot operation finished successfully").build();
-        srv0Logger.registerListener(snpEndLsnr);
-
-        logger = srv0Logger;
-
         injectTestSystemOut();
 
         Ignite ignite = startGrids(grids);
@@ -2124,12 +2118,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", snpName));
 
-        assertTrue("Snapshot operation hasn't been completed successfully.",
-            waitForCondition(snpEndLsnr::check, 5_000L));
+        DynamicMBean snpMBean = metricRegistry(ignite.name(), null, SNAPSHOT_METRICS);
+
+        assertTrue("Waiting for snapshot operation end failed.",
+            waitForCondition(() -> {
+                try {
+                    return (long)snpMBean.getAttribute("LastSnapshotEndTime") > 0;
+                }
+                catch (Exception e) {
+                    error("Exception during waiting snapshot operation ends", e);
+
+                    throw new RuntimeException(e);
+                }
+            }, 10_000));
 
         assertContains(log, (String)h.getLastOperationResult(), snpName);
-
-        logger = null;
 
         stopAllGrids();
 
