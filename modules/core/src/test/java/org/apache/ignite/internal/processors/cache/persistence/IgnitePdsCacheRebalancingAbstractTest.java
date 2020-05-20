@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import com.google.common.collect.Lists;
+import javax.cache.Cache;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,7 +34,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.cache.Cache;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -159,10 +159,10 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")
                 .setPersistenceEnabled(true)
-                .setMaxSize(512 * 1024 * 1024)
+                .setMaxSize(256 * 1024 * 1024)
             ).setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName(IN_MEMORY_REGION)
-                .setMaxSize(512 * 1024 * 1024)
+                .setMaxSize(256 * 1024 * 1024)
             );
 
         cfg.setDataStorageConfiguration(dsCfg);
