@@ -2126,11 +2126,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     return (long)snpMBean.getAttribute("LastSnapshotEndTime") > 0;
                 }
                 catch (Exception e) {
-                    error("Exception during waiting snapshot operation ends", e);
+                    error("Error getting snapshot JMX attribute", e);
 
-                    throw new RuntimeException(e);
+                    fail("Exception during waiting snapshot operation ends: " + e.getMessage());
+
+                    return false;
                 }
-            }, 10_000));
+            }, 15_000));
 
         assertContains(log, (String)h.getLastOperationResult(), snpName);
 
