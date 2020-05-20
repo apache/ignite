@@ -57,6 +57,7 @@ public final class BinaryObjectArray implements Serializable {
         return items;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -69,6 +70,7 @@ public final class BinaryObjectArray implements Serializable {
         return itemTypeId == array.itemTypeId && Arrays.equals(items, array.items);
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = Objects.hash(itemTypeId);
 
@@ -77,6 +79,7 @@ public final class BinaryObjectArray implements Serializable {
         return result;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return Arrays.toString(items);
     }

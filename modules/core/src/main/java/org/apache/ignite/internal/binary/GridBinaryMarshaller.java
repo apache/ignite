@@ -32,11 +32,11 @@ import org.jetbrains.annotations.Nullable;
  * Binary objects marshaller.
  */
 public class GridBinaryMarshaller {
-    /** */
-    public static final ThreadLocal<Boolean> KEEP_BINARIES = ThreadLocal.withInitial(() -> true);
+    /** Do not deserialize BINARY_OBJ and BINARY_ENUM (only read). */
+    public static final ThreadLocal<Boolean> KEEP_BINARY_OBJECTS = ThreadLocal.withInitial(() -> true);
 
-    /** */
-    public static final ThreadLocal<Boolean> KEEP_BINARIES_FOR_PLATFORMS = ThreadLocal.withInitial(() -> false);
+    /** Do not deserialize anything. */
+    public static final ThreadLocal<Boolean> FULL_KEEP_BINARY = ThreadLocal.withInitial(() -> false);
 
     /** Binary context in TLS store. */
     private static final ThreadLocal<BinaryContextHolder> BINARY_CTX =

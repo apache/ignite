@@ -419,7 +419,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallServiceProxyWithMethodsHavingArrays()
         {
-            // Deploy to the remote node
+            // Deploy to the remote node.
             var nodeId = Grid2.GetCluster().GetLocalNode().Id;
 
             var cluster = Grid1.GetCluster().ForNodeIds(nodeId);
@@ -436,7 +436,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray(enumerable.ToArray())
                   .Select(x => x.Field).ToArray());
             
-            // class TestBinarizableArray2 dont has an equals class in Java
+            // class TestBinarizableArray2 has no an equals class in Java.
             Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray2(new[] {10, 11, 12}
                     .Select(x => new PlatformComputeBinarizable2 {Field = x}).ToArray()).Select(x => x.Field).ToArray());
 
@@ -1162,7 +1162,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             PlatformComputeBinarizable[] TestBinarizableArray(PlatformComputeBinarizable[] x);
             
-            /** */
+            /** Class TestBinarizableArray2 has no an equals class in Java. */
             PlatformComputeBinarizable2[] TestBinarizableArray2(PlatformComputeBinarizable2[] x);
         }
 
@@ -1179,9 +1179,13 @@ namespace Apache.Ignite.Core.Tests.Services
                     return null;
 
                 for (var i = 0; i < arg.Length; i++)
-                    arg[i] = arg[i] == null
-                        ? null
-                        : new PlatformComputeBinarizable() { Field = ((PlatformComputeBinarizable)arg[i]).Field + 1 };
+                    if (arg[i] != null)
+                        if (arg[i].GetType() == typeof(PlatformComputeBinarizable))
+                            arg[i] = new PlatformComputeBinarizable()
+                                {Field = ((PlatformComputeBinarizable) arg[i]).Field + 1};
+                        else
+                            arg[i] = new PlatformComputeBinarizable2()
+                                {Field = ((PlatformComputeBinarizable2) arg[i]).Field + 1};
 
                 return arg;
             }
@@ -1195,15 +1199,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             public PlatformComputeBinarizable2[] TestBinarizableArray2(PlatformComputeBinarizable2[] arg)
             {
-                if (arg == null)
-                    return null;
-
-                for (var i = 0; i < arg.Length; i++)
-                    arg[i] = arg[i] == null
-                        ? null
-                        : new PlatformComputeBinarizable2() { Field = ((PlatformComputeBinarizable2)arg[i]).Field + 1 };
-
-                return arg;
+                return (PlatformComputeBinarizable2[])TestBinarizableArrayOfObjects(arg);
             }
         }
 
@@ -1598,7 +1594,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
         
         /// <summary>
-        /// Interop class.
+        /// Class has no an equals class in Java.
         /// </summary>
         public class PlatformComputeBinarizable2
         {

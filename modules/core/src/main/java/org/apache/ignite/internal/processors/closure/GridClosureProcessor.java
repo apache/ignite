@@ -587,6 +587,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param sys If {@code true}, then system pool will be used.
      * @param timeout Timeout.
      * @param skipAuth Skip authorization check.
+     * @param keepBinary Keep binary return value.
      * @return Grid future for collection of closure results.
      */
     public <R> IgniteInternalFuture<R> callAsyncNoFailover(

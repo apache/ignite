@@ -497,6 +497,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
      * @param execName Name of the custom executor.
+     * @param keepBinary Keep binary return value.
      * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
@@ -597,6 +598,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
      * @param execName Name of the custom executor.
+     * @param keepBinary Keep binary return value.
      * @return Task future.
      */
     private <T, R> ComputeTaskInternalFuture<R> startTask(

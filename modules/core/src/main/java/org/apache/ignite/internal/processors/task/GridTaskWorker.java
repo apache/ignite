@@ -119,7 +119,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
     /** Retry delay factor (ms). Retry delay = retryAttempt * RETRY_DELAY_MS */
     private static final long RETRY_DELAY_MS = 10;
 
-    /** */
+    /** Keep binary return value. */
     private final boolean keepBinary;
 
     /** {@code True} for internal tasks. */
@@ -285,6 +285,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
      * @param dep Deployed task.
      * @param evtLsnr Event listener.
      * @param thCtx Thread-local context from task processor.
+     * @param keepBinary Keep binary return value.
      * @param subjId Subject ID.
      */
     GridTaskWorker(
@@ -832,7 +833,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                     try {
                         boolean loc = ctx.localNodeId().equals(res.getNodeId()) && !ctx.config().isMarshalLocalJobs();
 
-                        GridBinaryMarshaller.KEEP_BINARIES_FOR_PLATFORMS.set(keepBinary);
+                        GridBinaryMarshaller.FULL_KEEP_BINARY.set(keepBinary);
 
                         Object res0 = loc ? res.getJobResult() : U.unmarshal(marsh, res.getJobResultBytes(),
                             U.resolveClassLoader(clsLdr, ctx.config()));

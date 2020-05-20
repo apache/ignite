@@ -183,7 +183,7 @@ public class GridServiceProxy<T> implements Serializable {
                     else {
                         ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
 
-                        boolean keepBinary = GridBinaryMarshaller.KEEP_BINARIES_FOR_PLATFORMS.get();
+                        boolean keepBinary = GridBinaryMarshaller.FULL_KEEP_BINARY.get();
 
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(
@@ -420,7 +420,7 @@ public class GridServiceProxy<T> implements Serializable {
         @Override public Object call() throws Exception {
             ServiceContextImpl svcCtx = ((IgniteEx)ignite).context().service().serviceContext(svcName);
 
-            GridBinaryMarshaller.KEEP_BINARIES_FOR_PLATFORMS.set(keepBinary);
+            GridBinaryMarshaller.FULL_KEEP_BINARY.set(keepBinary);
 
             if (svcCtx == null || svcCtx.service() == null)
                 throw new GridServiceNotFoundException(svcName);

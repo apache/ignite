@@ -277,13 +277,15 @@ public class PlatformServices extends PlatformAbstractTarget {
                 Object[] args;
                 ServiceProxyHolder svcProxy = (ServiceProxyHolder)arg;
 
-                GridBinaryMarshaller.KEEP_BINARIES_FOR_PLATFORMS.set(svcProxy.isPlatformService());
+                GridBinaryMarshaller.FULL_KEEP_BINARY.set(svcProxy.isPlatformService());
+
+                boolean keepBinary = srvKeepBinary || svcProxy.isPlatformService();
 
                 if (reader.readBoolean()) {
                     args = new Object[reader.readInt()];
 
                     for (int i = 0; i < args.length; i++)
-                        args[i] = reader.readObjectDetached(!srvKeepBinary);
+                        args[i] = reader.readObjectDetached(!keepBinary);
                 }
                 else
                     args = null;
