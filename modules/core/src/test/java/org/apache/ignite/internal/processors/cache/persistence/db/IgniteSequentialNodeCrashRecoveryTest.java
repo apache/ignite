@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -37,22 +38,37 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -66,6 +82,9 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
 
     /** */
     private FailureHandler failureHnd;
+
+    /** */
+    private DiscoverySpi discoverySpi;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -81,6 +100,9 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
 
         if (fileIoFactory != null)
             dsCfg.setFileIOFactory(fileIoFactory);
+
+        if (discoverySpi != null)
+            cfg.setDiscoverySpi(discoverySpi);
 
         cfg
             .setDataStorageConfiguration(dsCfg)
@@ -143,7 +165,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         {
             IgniteCache<Object, Object> cache = g.cache("cache");
 
-                // Now that checkpoints are disabled, put some data to the cache.
+            // Now that checkpoints are disabled, put some data to the cache.
             GridTestUtils.runMultiThreaded(() -> {
                 for (int i = 0; i < 400; i++)
                     cache.put(i % 100, Thread.currentThread().getName());
@@ -154,8 +176,14 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
 
         stopGrid(0);
 
-        CheckpointFailingIoFactory f = (CheckpointFailingIoFactory)(fileIoFactory = new CheckpointFailingIoFactory(false));
+        CheckpointFailingIoFactory f = (CheckpointFailingIoFactory)
+            (fileIoFactory = new CheckpointFailingIoFactory(false));
+
         StopLatchFailureHandler fh = (StopLatchFailureHandler)(failureHnd = new StopLatchFailureHandler());
+
+        //Blocking first exchange to prevent checkpoint on node start(reason = 'node started').
+        BlockingDiscoverySpi ds = (BlockingDiscoverySpi)
+            (discoverySpi = new BlockingDiscoverySpi((m) -> m instanceof ChangeGlobalStateMessage));
 
         // Now start the node. Since the checkpoint was disabled, logical recovery will be performed.
         g = startGrid(0);
@@ -168,6 +196,8 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
 
         f.startFailing();
 
+        ds.clearBlock();
+
         triggerCheckpoint(g);
 
         assertTrue("Failed to wait for checkpoint failure", fh.waitFailed());
@@ -178,6 +208,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         assertFalse(dirtyAfterLoad.isEmpty());
 
         fileIoFactory = new CheckingIoFactory(dirtyAfterLoad);
+        discoverySpi = null;
 
         g = startGrid(0);
 
@@ -222,6 +253,17 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)g.context()
             .cache().context().database();
 
+        dbMgr.checkpointReadLock();
+        try {
+            //Moving free list pages to offheap.
+            for (CacheGroupContext group : g.context().cache().cacheGroups()) {
+                ((GridCacheOffheapManager)group.offheap()).onMarkCheckpointBegin(new DummyCheckpointContext());
+            }
+        }
+        finally {
+            dbMgr.checkpointReadUnlock();
+        }
+
         // Capture a set of dirty pages.
         PageMemoryImpl pageMem = (PageMemoryImpl)dbMgr.dataRegion("default").pageMemory();
 
@@ -264,6 +306,85 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(StopNodeFailureHandler.class, this, "super", super.toString());
+        }
+    }
+
+    /** */
+    private static class DummyCheckpointContext implements DbCheckpointListener.Context {
+        /** {@inheritDoc} */
+        @Override public boolean nextSnapshot() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public PartitionAllocationMap partitionStatMap() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean needToSnapshot(String cacheOrGrpName) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable Executor executor() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasPages() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasUserPages() {
+            return false;
+        }
+    }
+
+    /** */
+    protected static class BlockingDiscoverySpi extends TcpDiscoverySpi {
+        /** Discovery custom message filter. */
+        private volatile IgnitePredicate<DiscoveryCustomMessage> blockPred;
+
+        /** **/
+        public BlockingDiscoverySpi(IgnitePredicate<DiscoveryCustomMessage> blockPred) {
+            this.blockPred = blockPred;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+            if (msg instanceof TcpDiscoveryCustomEventMessage) {
+                IgnitePredicate<DiscoveryCustomMessage> pred = blockPred;
+
+                if (pred != null && pred.apply(extractCustomMessage((TcpDiscoveryCustomEventMessage)msg))) {
+                    try {
+                        GridTestUtils.waitForCondition(() -> blockPred == null, 20_000);
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        log.error("Fail to await release", e);
+                    }
+                }
+            }
+        }
+
+        /** */
+        private DiscoveryCustomMessage extractCustomMessage(TcpDiscoveryCustomEventMessage msg) {
+            DiscoverySpiCustomMessage msgObj = null;
+
+            try {
+                msgObj = msg.message(marshaller(), U.resolveClassLoader(ignite().configuration()));
+            }
+            catch (Throwable e) {
+                U.error(log, "Failed to unmarshal discovery custom message.", e);
+            }
+
+            return ((CustomMessageWrapper)msgObj).delegate();
+        }
+
+        /** Unblock discovery custom messages. */
+        public void clearBlock() {
+            blockPred = null;
         }
     }
 
