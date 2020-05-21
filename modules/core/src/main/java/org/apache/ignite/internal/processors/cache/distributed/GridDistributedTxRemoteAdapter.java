@@ -81,6 +81,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
@@ -498,6 +501,12 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                     WALPointer ptr = null;
 
+                    boolean needTaskName = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ) ||
+                        cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_PUT) ||
+                        cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
+
+                    String taskName = needTaskName ? resolveTaskName() : null;
+
                     cctx.database().checkpointReadLock();
 
                     // Reserved partitions (necessary to prevent race due to updates in RENTING state).
@@ -656,7 +665,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     replicate ? DR_BACKUP : DR_NONE,
                                                     near() ? null : explicitVer,
                                                     CU.subjectId(this, cctx),
-                                                    resolveTaskName(),
+                                                    taskName,
                                                     dhtVer,
                                                     txEntry.updateCounter());
                                             else {
@@ -680,7 +689,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     txEntry.conflictExpireTime(),
                                                     near() ? null : explicitVer,
                                                     CU.subjectId(this, cctx),
-                                                    resolveTaskName(),
+                                                    taskName,
                                                     dhtVer,
                                                     txEntry.updateCounter());
 
@@ -717,7 +726,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 replicate ? DR_BACKUP : DR_NONE,
                                                 near() ? null : explicitVer,
                                                 CU.subjectId(this, cctx),
-                                                resolveTaskName(),
+                                                taskName,
                                                 dhtVer,
                                                 txEntry.updateCounter());
 
