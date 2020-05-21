@@ -15,31 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot;
+package org.apache.ignite.internal.commandline.snapshot;
 
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.mxbean.SnapshotMXBean;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Snapshot MBean features.
+ * Set of snapshot sub-commands.
+ *
+ * @see SnapshotCommand
  */
-public class SnapshotMXBeanImpl implements SnapshotMXBean {
-    /** Instance of snapshot cache shared manager. */
-    private final IgniteSnapshotManager mgr;
+public enum SnapshotSubcommand {
+    /** Sub-command to create a cluster snapshot. */
+    CREATE("create");
+
+    /** Sub-command name. */
+    private final String name;
+
+    /** @param name Snapshot sub-command name. */
+    SnapshotSubcommand(String name) {
+        this.name = name;
+    }
 
     /**
-     * @param ctx Kernal context.
+     * @param text Command text (case insensitive).
+     * @return Command for the text. {@code Null} if there is no such command.
      */
-    public SnapshotMXBeanImpl(GridKernalContext ctx) {
-        mgr = ctx.cache().context().snapshotMgr();
+     @Nullable public static SnapshotSubcommand of(String text) {
+        for (SnapshotSubcommand cmd : values()) {
+            if (cmd.name.equalsIgnoreCase(text))
+                return cmd;
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void createSnapshot(String snpName) {
-        IgniteFuture<Void> fut = mgr.createSnapshot(snpName);
-
-        if (fut.isDone())
-            fut.get();
+    @Override public String toString() {
+        return name;
     }
 }
