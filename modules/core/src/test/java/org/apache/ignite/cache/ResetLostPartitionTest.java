@@ -140,7 +140,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         grid(0).cluster().active(true);
 
         for (String cacheName : CACHE_NAMES) {
-            try(IgniteDataStreamer<Object, Object> st = grid(0).dataStreamer(cacheName)) {
+            try (IgniteDataStreamer<Object, Object> st = grid(0).dataStreamer(cacheName)) {
                 for (int j = 0; j < CACHE_SIZE; j++)
                     st.addData(j, "Value" + j);
             }

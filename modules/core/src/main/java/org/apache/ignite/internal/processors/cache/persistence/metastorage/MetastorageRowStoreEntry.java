@@ -27,7 +27,7 @@ public class MetastorageRowStoreEntry extends SimpleDataRow {
     /** */
     public MetastorageRowStoreEntry(byte[] val) {
         super(0L, MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID ?
-            PageIdAllocator.OLD_METASTORE_PARTITION: PageIdAllocator.METASTORE_PARTITION, val);
+            PageIdAllocator.OLD_METASTORE_PARTITION : PageIdAllocator.METASTORE_PARTITION, val);
     }
 
     /** {@inheritDoc} */

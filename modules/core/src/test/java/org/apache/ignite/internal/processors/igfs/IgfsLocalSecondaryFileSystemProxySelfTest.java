@@ -238,7 +238,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
         IgfsPath filePath = new IgfsPath("/file");
 
         try (OutputStream os = igfs.create(filePath, true)) {
-            for(int i = 0; i < fileSize / chunk.length; ++i)
+            for (int i = 0; i < fileSize / chunk.length; ++i)
                 os.write(chunk);
         }
 
@@ -284,13 +284,13 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
                     + ", maxLen=" + maxLen + ']';
 
                 assert block.length() + block.start() <= start + len : "block.length() + block.start() < start + len. [block.length=" + block.length()
-                    + ", block.start()=" + block.start() + ", start=" + start +", len=" + len + ']';
+                    + ", block.start()=" + block.start() + ", start=" + start + ", len=" + len + ']';
 
                 for (IgfsBlockLocation block0 : blocks)
                     if (!block0.equals(block))
                         assert block.start() < block0.start() && block.start() + block.length() <= block0.start() ||
                             block.start() > block0.start() && block0.start() + block0.length() <= block.start()
-                            : "Blocks cross each other: block0=" +  block + ", block1= " + block0;
+                            : "Blocks cross each other: block0=" + block + ", block1= " + block0;
             }
 
             assert totalLen == len : "Summary length of blocks must be: " + len + " actual: " + totalLen;
@@ -317,7 +317,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
     /**
      * @param dir Directory to clean.
      */
-    private static void cleanDirectory(File dir){
+    private static void cleanDirectory(File dir) {
         File[] entries = dir.listFiles();
 
         if (entries != null) {

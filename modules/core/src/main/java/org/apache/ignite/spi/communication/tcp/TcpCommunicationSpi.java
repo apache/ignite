@@ -3753,7 +3753,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         String msg = "Failed to connect to node due to unrecoverable exception (is node still alive?). " +
                                 "Make sure that each ComputeTask and cache Transaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
-                                "[nodeId=" + node.id() + ", addrs=" + addrs + ", err= "+ e + ']';
+                                "[nodeId=" + node.id() + ", addrs=" + addrs + ", err= " + e + ']';
 
                         if (errs == null)
                             errs = new IgniteCheckedException(msg, e);
@@ -3802,16 +3802,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     void closeConnections(UUID nodeId) throws IgniteCheckedException {
         GridCommunicationClient[] clients = this.clients.remove(nodeId);
+
         if (nonNull(clients)) {
             for (GridCommunicationClient client : clients)
                 client.forceClose();
         }
 
         for (ConnectionKey connKey : clientFuts.keySet()) {
-            if (!nodeId.equals(connKey))
+            if (!nodeId.equals(connKey.nodeId()))
                 continue;
 
             GridFutureAdapter<GridCommunicationClient> fut = clientFuts.remove(connKey);
+
             if (nonNull(fut))
                 fut.get().forceClose();
         }

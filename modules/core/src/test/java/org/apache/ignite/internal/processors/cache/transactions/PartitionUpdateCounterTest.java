@@ -158,7 +158,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         LongAdder reserveCntr = new LongAdder();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
-            while(!stop.get() || !reservations.isEmpty()) {
+            while (!stop.get() || !reservations.isEmpty()) {
                 if (!stop.get() && ThreadLocalRandom.current().nextBoolean()) {
                     int size = ThreadLocalRandom.current().nextInt(9) + 1;
 
@@ -314,7 +314,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
             @Override public void run() {
                 int val;
 
-                while((val = id.incrementAndGet()) <= max) {
+                while ((val = id.incrementAndGet()) <= max) {
                     try {
                         cntr.update(val);
                     }
@@ -404,7 +404,10 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
             PartitionUpdateCounter cntr = counter(0, grid0.name());
 
-            assertTrue(cntr instanceof PartitionUpdateCounterTrackingImpl);
+            if (mode == CacheAtomicityMode.TRANSACTIONAL)
+                assertTrue(cntr instanceof PartitionUpdateCounterTrackingImpl);
+            else if (mode == CacheAtomicityMode.ATOMIC)
+                assertTrue(cntr instanceof PartitionUpdateCounterVolatileImpl);
 
             assertEquals(cntr.initial(), cntr.get());
         }

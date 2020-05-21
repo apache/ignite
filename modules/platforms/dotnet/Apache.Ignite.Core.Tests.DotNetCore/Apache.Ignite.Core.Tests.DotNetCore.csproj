@@ -92,6 +92,27 @@
       <Link>Binary\TypeNameParserTest.cs</Link>
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\AddArgCacheEntryProcessor.cs" Link="Cache\AddArgCacheEntryProcessor.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Affinity\AffinityAttributeTest.cs">
+      <Link>Cache\Affinity\AffinityAttributeTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Affinity\AffinityFieldTest.cs">
+      <Link>Cache\Affinity\AffinityFieldTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Affinity\AffinityFunctionSpringTest.cs">
+      <Link>Cache\Affinity\AffinityFunctionSpringTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Affinity\AffinityFunctionTest.cs">
+      <Link>Cache\Affinity\AffinityFunctionTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Affinity\AffinityKeyTest.cs">
+      <Link>Cache\Affinity\AffinityKeyTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Affinity\AffinityTest.cs">
+      <Link>Cache\Affinity\AffinityTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Affinity\AffinityTopologyVersionTest.cs">
+      <Link>Cache\Affinity\AffinityTopologyVersionTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\BinarizableAddArgCacheEntryProcessor.cs" Link="Cache\BinarizableAddArgCacheEntryProcessor.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\BinarizableTestException.cs" Link="Cache\BinarizableTestException.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheAbstractTest.cs" Link="Cache\CacheAbstractTest.cs" />
@@ -200,13 +221,13 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\TestKeyWithAffinity.cs">
       <Link>ThinClient\Cache\TestKeyWithAffinity.cs</Link>
     </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientFeaturesTest.cs">
+      <Link>ThinClient\ClientFeaturesTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientProtocolCompatibilityTest.cs">
       <Link>ThinClient\ClientProtocolCompatibilityTest.cs</Link>
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientConnectionTest.cs" Link="ThinClient\ClientConnectionTest.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientOpExtensionsTest.cs">
-      <Link>ThinClient\ClientOpExtensionsTest.cs</Link>
-    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientProtocolVersionTest.cs">
       <Link>ThinClient\ClientProtocolVersionTest.cs</Link>
     </Compile>
@@ -217,8 +238,29 @@
       <Link>ThinClient\ClientServerCacheAdapterExtensions.cs</Link>
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientTestBase.cs" Link="ThinClient\ClientTestBase.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterDiscoveryTests.cs">
+      <Link>ThinClient\Cluster\ClientClusterDiscoveryTests.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterDiscoveryTestsBase.cs">
+      <Link>ThinClient\Cluster\ClientClusterDiscoveryTestsBase.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterDiscoveryTestsBaselineTopology.cs">
+      <Link>ThinClient\Cluster\ClientClusterDiscoveryTestsBaselineTopology.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterDiscoveryTestsNoLocalhost.cs">
+      <Link>ThinClient\Cluster\ClientClusterDiscoveryTestsNoLocalhost.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterDiscoveryTestsSsl.cs">
+      <Link>ThinClient\Cluster\ClientClusterDiscoveryTestsSsl.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterGroupTests.cs" Link="ThinClient\Cluster\ClientClusterGroupTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterTests.cs" Link="ThinClient\Cluster\ClientClusterTests.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Compute\ComputeClientDisabledTests.cs">
+      <Link>ThinClient\Compute\ComputeClientDisabledTests.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Compute\ComputeClientTests.cs">
+      <Link>ThinClient\Compute\ComputeClientTests.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\EndpointTest.cs" Link="ThinClient\EndpointTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\IgniteClientConfigurationTest.cs" Link="ThinClient\IgniteClientConfigurationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\RawSecureSocketTest.cs" Link="ThinClient\RawSecureSocketTest.cs" />
@@ -298,6 +340,22 @@
     <Content Include="..\Apache.Ignite.Core.Tests\Config\cache-query.xml" Link="Config\cache-query.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Cache\Affinity\affinity-function.xml">
+      <Link>Config\Cache\Affinity\affinity-function.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Cache\Affinity\affinity-function2.xml">
+      <Link>Config\Cache\Affinity\affinity-function2.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Cache\Store\cache-store-session-shared-factory.xml">
+      <Link>Config\Cache\Store\cache-store-session-shared-factory.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Cache\Store\cache-store-session.xml">
+      <Link>Config\Cache\Store\cache-store-session.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\Client\IgniteClientConfiguration.xml" Link="Config\Client\IgniteClientConfiguration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -314,6 +372,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid-custom-executor.xml" Link="Config\Compute\compute-grid-custom-executor.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\native-client-test-cache-affinity.xml">
+      <Link>Config\native-client-test-cache-affinity.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\native-client-test-cache-store.xml">
@@ -339,9 +401,9 @@
 
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.5" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="NUnit" Version="3.12.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.9.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
 
 	<ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />

@@ -733,4 +733,9 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of {@link IgniteEncryption} interface.
      */
     public IgniteEncryption encryption();
+
+    /**
+     * @return Snapshot manager.
+     */
+    public IgniteSnapshot snapshot();
 }

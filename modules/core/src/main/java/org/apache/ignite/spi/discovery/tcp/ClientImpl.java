@@ -1788,7 +1788,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             U.quietAndWarn(log, "Local node will try to reconnect to cluster with new id due " +
                                 "to network problems [newId=" + newId +
                                 ", prevId=" + locNode.id() +
-                                ", locNode=" + locNode+ ']');
+                                ", locNode=" + locNode + ']');
 
                             locNode.onClientDisconnected(newId);
 
@@ -2234,7 +2234,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (log.isInfoEnabled()) {
                 for (ClusterNode node : getRemoteNodes()) {
                     if (node.id().equals(locNode.clientRouterNodeId())) {
-                        log.info("Router node: " + node);
+                        if (log.isInfoEnabled())
+                            log.info("Router node: " + node);
 
                         break;
                     }

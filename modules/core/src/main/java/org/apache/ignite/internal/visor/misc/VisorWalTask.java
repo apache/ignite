@@ -108,17 +108,17 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
         Map<String, Collection<String>> res = U.newHashMap(results.size());
         Map<String, VisorClusterNode> nodesInfo = U.newHashMap(results.size());
 
-        for (ComputeJobResult result: results){
+        for (ComputeJobResult result: results) {
             ClusterNode node = result.getNode();
 
             String nodeId = node.consistentId().toString();
 
-            if(result.getException() != null)
+            if (result.getException() != null)
                 exRes.put(nodeId, result.getException());
             else if (result.getData() != null) {
                 Collection<String> data = result.getData();
 
-                if(data != null)
+                if (data != null)
                     res.put(nodeId, data);
             }
 
@@ -168,7 +168,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
 
                 }
             }
-            catch (IgniteCheckedException e){
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to perform WAL task", e);
 
                 throw new IgniteException("Failed to perform WAL task", e);
@@ -185,7 +185,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
         Collection<String> getUnusedWalSegments(
             GridCacheDatabaseSharedManager dbMgr,
             FileWriteAheadLogManager wal
-        ) throws IgniteCheckedException{
+        ) throws IgniteCheckedException {
             WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
 
             if (lowBoundForTruncate == null)
@@ -197,7 +197,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
 
             Collection<String> res = new ArrayList<>(walFiles != null && walFiles.length > 0 ? walFiles.length - 1 : 0);
 
-            if(walFiles != null && walFiles.length > 0) {
+            if (walFiles != null && walFiles.length > 0) {
                 sortWalFiles(walFiles);
 
                 // Obtain index of last archived WAL segment, it will not be deleted.

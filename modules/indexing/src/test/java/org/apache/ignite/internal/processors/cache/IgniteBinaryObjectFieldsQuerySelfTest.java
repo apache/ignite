@@ -53,7 +53,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
      * Gets Person class name.
      * @return class name.
      */
-    protected String getPersonClassName(){
+    protected String getPersonClassName() {
         return "org.apache.ignite.tests.p2p.cache.Person";
     }
 
@@ -174,7 +174,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void checkFieldsQuery(CacheMode cacheMode, CacheAtomicityMode atomicity) throws Exception {
-        IgniteCache<Object, Object>cache = grid(GRID_CNT - 1).getOrCreateCache(cache(cacheMode, atomicity));
+        IgniteCache<Object, Object> cache = grid(GRID_CNT - 1).getOrCreateCache(cache(cacheMode, atomicity));
 
         try {
             populate(cache);

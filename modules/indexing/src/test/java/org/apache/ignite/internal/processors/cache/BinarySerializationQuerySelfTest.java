@@ -407,7 +407,7 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
         }
 
         /** */
-        private void writeObject(ObjectOutputStream s) throws IOException{
+        private void writeObject(ObjectOutputStream s) throws IOException {
             s.writeInt(val);
         }
 

@@ -34,7 +34,7 @@ public class ReduceH2QueryInfo extends H2QueryInfo {
     public ReduceH2QueryInfo(PreparedStatement stmt, String sql, long reqId) {
         super(QueryType.REDUCE, stmt, sql);
 
-        this.reqId= reqId;
+        this.reqId = reqId;
     }
 
     /** {@inheritDoc} */

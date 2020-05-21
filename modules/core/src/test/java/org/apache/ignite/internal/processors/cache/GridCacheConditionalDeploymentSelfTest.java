@@ -169,7 +169,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * Test message class.
      */
-    public static class TestMessage  extends GridCacheMessage implements GridCacheDeployable {
+    public static class TestMessage extends GridCacheMessage implements GridCacheDeployable {
         /** */
         public static final short DIRECT_TYPE = 302;
 

@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.security.cache.closure.ContinuousQu
 import org.apache.ignite.internal.processors.security.cache.closure.ContinuousQueryWithTransformerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.client.AttributeSecurityCheckTest;
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckTest;
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckWithGlobalAuthTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
@@ -50,6 +51,8 @@ import org.apache.ignite.internal.processors.security.sandbox.ComputeSandboxTest
 import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DoPrivilegedOnRemoteNodeTest;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteOperationsInsideSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.MessagingSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.IgnitionComponentProxyTest;
 import org.apache.ignite.internal.processors.security.sandbox.SecuritySubjectPermissionsTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
 import org.junit.runner.RunWith;
@@ -86,6 +89,7 @@ import org.junit.runners.Suite;
 
     InvalidServerTest.class,
     AdditionalSecurityCheckTest.class,
+    AttributeSecurityCheckTest.class,
     AdditionalSecurityCheckWithGlobalAuthTest.class,
 
     CacheSandboxTest.class,
@@ -93,8 +97,11 @@ import org.junit.runners.Suite;
     ComputeSandboxTest.class,
     DoPrivilegedOnRemoteNodeTest.class,
     IgniteOperationsInsideSandboxTest.class,
-    SecuritySubjectPermissionsTest.class,
     AccessToClassesInsideInternalPackageTest.class,
+    SecuritySubjectPermissionsTest.class,
+    IgnitionComponentProxyTest.class,
+    MessagingSandboxTest.class,
+
     IgniteSecurityProcessorTest.class,
     GridCommandHandlerSslWithSecurityTest.class,
     MultipleSSLContextsTest.class

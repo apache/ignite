@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimi
 import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsSqlTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
+import org.apache.ignite.internal.processors.cache.WrongIndexedTypesTest;
 import org.apache.ignite.internal.processors.cache.index.H2TreeCorruptedTreeExceptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.RebuildIndexLogMessageTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicLocalSelfTest;
@@ -48,7 +49,7 @@ import org.apache.ignite.internal.processors.cache.ttl.CacheTtlReadOnlyModeSelfT
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPartitionedSelfTest;
 import org.apache.ignite.internal.processors.client.IgniteDataStreamerTest;
-import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelperTest;
+import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.InlineIndexColumnTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -57,7 +58,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    InlineIndexHelperTest.class,
+    InlineIndexColumnTest.class,
 
     GridIndexingWithNoopSwapSelfTest.class,
     GridCacheOffHeapSelfTest.class,
@@ -105,7 +106,9 @@ import org.junit.runners.Suite;
 
     RebuildIndexLogMessageTest.class,
 
-    H2TreeCorruptedTreeExceptionTest.class
+    H2TreeCorruptedTreeExceptionTest.class,
+
+    WrongIndexedTypesTest.class
 })
 public class IgniteCacheWithIndexingTestSuite {
 }

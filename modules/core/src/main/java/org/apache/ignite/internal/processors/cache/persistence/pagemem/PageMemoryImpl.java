@@ -802,7 +802,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (readPageFromStore) {
                     boolean locked = rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
 
-                    assert locked: "Page ID " + fullId + " expected to be locked";
+                    assert locked : "Page ID " + fullId + " expected to be locked";
 
                     lockedPageAbsPtr = absPtr;
                 }
@@ -833,7 +833,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             seg.acquirePage(absPtr);
 
-            if(!readPageFromStore)
+            if (!readPageFromStore)
                 statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
 
             return absPtr;
@@ -1119,7 +1119,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         IgniteInternalFuture allowToReplace
     ) throws IgniteException {
         if (segments == null)
-            return new GridMultiCollectionWrapper<>(Collections.<FullPageId>emptyList());
+            return new GridMultiCollectionWrapper<>(Collections.emptyList());
 
         Collection[] collections = new Collection[segments.length];
 
@@ -1552,7 +1552,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override  public long readLock(long absPtr, long pageId, boolean force, boolean touch) {
+    @Override public long readLock(long absPtr, long pageId, boolean force, boolean touch) {
         assert started;
 
         int tag = force ? -1 : PageIdUtils.tag(pageId);
@@ -1669,7 +1669,6 @@ public class PageMemoryImpl implements PageMemoryEx {
     /**
      * @param page Page pointer.
      * @param fullId full page ID.
-     * @param walPlc WAL policy
      * @param walPlc Full page WAL record policy
      * @param markDirty set dirty flag to page
      * @param restore restore flag

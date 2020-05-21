@@ -207,7 +207,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      *
      * @return Init latch.
      */
-    public CountDownLatch getInitLatch(){
+    public CountDownLatch getInitLatch() {
         return initLatch;
     }
 
@@ -2289,7 +2289,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /**
      * @param fut Finish restart future.
      */
-    public void registrateFutureRestart(GridFutureAdapter<?> fut){
+    public void registrateFutureRestart(GridFutureAdapter<?> fut) {
         RestartFuture currentFut = restartFut.get();
 
         if (currentFut != null)

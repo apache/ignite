@@ -274,7 +274,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                     if (secCtx0 == null || ses.isTokenExpired(sesTokTtl))
                         ses.secCtx = secCtx0 = authenticate(req, ses);
 
-                    try(OperationSecurityContext s = ctx.security().withContext(secCtx0)) {
+                    try (OperationSecurityContext s = ctx.security().withContext(secCtx0)) {
                         authorize(req);
                     }
                 }

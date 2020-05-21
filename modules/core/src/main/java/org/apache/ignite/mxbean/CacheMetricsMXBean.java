@@ -276,6 +276,34 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     public boolean isStoreByValue();
 
     /** {@inheritDoc} */
+    @Override @MXBeanDescription("Estimated number of keys to be rebalanced on current node.")
+    public long getKeysToRebalanceLeft();
+
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Estimated rebalancing speed in bytes.")
+    public long getRebalancingBytesRate();
+
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Estimated rebalancing speed in keys.")
+    public long getRebalancingKeysRate();
+
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Number of currently rebalancing partitions on current node.")
+    public int getRebalancingPartitionsCount();
+
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Rebalancing start time.")
+    public long getRebalancingStartTime();
+
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Total number of partitions on current node.")
+    public int getTotalPartitionsCount();
+
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Estimated rebalancing finish time.")
+    public long getEstimatedRebalancingFinishTime();
+
+    /** {@inheritDoc} */
     @Override @MXBeanDescription("True if statistics collection is enabled.")
     public boolean isStatisticsEnabled();
 

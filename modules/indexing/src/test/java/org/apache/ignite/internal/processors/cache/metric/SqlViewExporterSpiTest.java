@@ -46,6 +46,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
@@ -156,11 +157,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         for (List<?> row : res) {
             names.add((String)row.get(0));
 
-            assertNotNull(row.get(1));
+            assertNotNull("Metric value must be not null [name=" + row.get(0) + ']', row.get(1));
         }
 
         for (String attr : EXPECTED_ATTRIBUTES)
-            assertTrue(attr + " should be exporterd via SQL view", names.contains(attr));
+            assertTrue(attr + " should be exported via SQL view", names.contains(attr));
     }
 
     /** */
@@ -375,7 +376,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testSchemas() throws Exception {
-        try (IgniteEx g = startGrid(new IgniteConfiguration().setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA"))) {
+        try (IgniteEx g = startGrid(new IgniteConfiguration().setSqlConfiguration(new SqlConfiguration()
+                .setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA")))) {
             SystemView<SqlSchemaView> schemasSysView = g.context().systemView().view(SQL_SCHEMA_VIEW);
 
             Set<String> schemaFromSysView = new HashSet<>();
@@ -560,7 +562,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }
 
         assertTrue(execute(ignite0, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
-        assertTrue(execute(ignite1, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
+        assertTrue(waitForCondition(() ->
+            execute(ignite1, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty(), getTestTimeout()));
     }
 
     /** */
@@ -678,7 +681,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testScanQuery() throws Exception {
-        try(IgniteEx client1 = startClientGrid("client-1");
+        try (IgniteEx client1 = startClientGrid("client-1");
             IgniteEx client2 = startClientGrid("client-2")) {
 
             IgniteCache<Integer, Integer> cache1 = client1.createCache(

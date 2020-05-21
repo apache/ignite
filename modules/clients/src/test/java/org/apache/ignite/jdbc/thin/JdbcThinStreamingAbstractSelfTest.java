@@ -108,7 +108,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
 
             try (PreparedStatement stmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?), " +
                 "(?, ?)")) {
-                for (int i = 1; i <= 100; i+= 2) {
+                for (int i = 1; i <= 100; i += 2) {
                     stmt.setInt(1, i);
                     stmt.setString(2, nameForId(i));
                     stmt.setInt(3, i + 1);

@@ -34,6 +34,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     public class CacheTest : ClientTestBase
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="CacheTest"/> class.
+        /// </summary>
+        public CacheTest()
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheTest"/> class.
+        /// </summary>
+        public CacheTest(int gridCount, bool enableSsl = false) : base(gridCount, enableSsl)
+        {
+            // No-op.
+        }
+
+        /// <summary>
         /// Tests the cache put / get with primitive data types.
         /// </summary>
         [Test]

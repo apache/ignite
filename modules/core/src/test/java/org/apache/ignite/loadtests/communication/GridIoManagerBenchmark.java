@@ -112,7 +112,7 @@ public class GridIoManagerBenchmark {
      */
     public static void main(String[] args) {
         int threads = args.length > 0 ? Integer.parseInt(args[0]) : DFLT_THREADS;
-        int duration =  args.length > 1 ? Integer.parseInt(args[1]) : 0;
+        int duration = args.length > 1 ? Integer.parseInt(args[1]) : 0;
         String outputFilename = args.length > 2 ? args[2] : null;
         String path = args.length > 3 ? args[3] : DFLT_CONFIG;
         testHeavyMsgs = args.length > 4 && "true".equalsIgnoreCase(args[4]);
@@ -194,8 +194,8 @@ public class GridIoManagerBenchmark {
                     try {
                         X.println("Saving results to output file: " + outputFilename);
 
-                        appendLineToFile(outputFilename, "%s,%d", GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date
-                            ()), qpsAvg.get());
+                        appendLineToFile(outputFilename, "%s,%d", GridLoadTestUtils.DATE_TIME_FORMAT.format(
+                            new Date()), qpsAvg.get());
                     }
                     catch (IOException e) {
                         X.println("Failed to record results to a file: " + e.getMessage());
