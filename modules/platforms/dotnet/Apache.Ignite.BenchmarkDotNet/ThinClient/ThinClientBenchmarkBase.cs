@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,48 +15,41 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
+namespace Apache.Ignite.BenchmarkDotNet.ThinClient
 {
-    using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Client;
+    using global::BenchmarkDotNet.Attributes;
 
     /// <summary>
-    /// Request context.
+    /// Base class for thin client benchmarks.
     /// </summary>
-    internal sealed class ClientRequestContext : ClientContextBase
+    public abstract class ThinClientBenchmarkBase
     {
         /** */
-        private BinaryWriter _writer;
+        public IIgnite Ignite { get; set; }
+
+        /** */
+        public IIgniteClient Client { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="ClientRequestContext"/> class.
+        /// Sets up the benchmark.
         /// </summary>
-        /// <param name="stream">Stream.</param>
-        /// <param name="socket">Socket.</param>
-        public ClientRequestContext(IBinaryStream stream, ClientSocket socket)
-            : base(stream, socket)
-
+        [GlobalSetup]
+        public virtual void GlobalSetup()
         {
-            // No-op.
+            Ignite = Ignition.Start(Utils.GetIgniteConfiguration());
+            Client = Ignition.StartClient(Utils.GetIgniteClientConfiguration());
         }
 
         /// <summary>
-        /// Writer.
+        /// Cleans up the benchmark.
         /// </summary>
-        public BinaryWriter Writer
+        [GlobalCleanup]
+        public virtual void GlobalCleanup()
         {
-            get { return _writer ?? (_writer = Marshaller.StartMarshal(Stream)); }
-        }
-
-        /// <summary>
-        /// Finishes marshal session for this request (if any).
-        /// </summary>
-        public void FinishMarshal()
-        {
-            if (_writer != null)
-            {
-                Marshaller.FinishMarshal(_writer);
-            }
+            Client.Dispose();
+            Ignite.Dispose();
         }
     }
 }
