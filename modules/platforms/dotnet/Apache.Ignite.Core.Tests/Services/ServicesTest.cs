@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
     /// <summary>
     /// Services tests.
-    /// </summarTestIgniteServiceArraySerializabley>
+    /// </summary>
     public class ServicesTest
     {
         /** */

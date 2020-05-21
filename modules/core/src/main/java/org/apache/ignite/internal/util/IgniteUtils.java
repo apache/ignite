@@ -10398,18 +10398,7 @@ public abstract class IgniteUtils {
      */
     public static <T> T unmarshal(Marshaller marsh, byte[] arr, @Nullable ClassLoader clsLdr)
             throws IgniteCheckedException {
-        assert marsh != null;
-        assert arr != null;
-
-        try {
-            return marsh.unmarshal(arr, clsLdr);
-        }
-        catch (IgniteCheckedException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException(e);
-        }
+        return unmarshal(marsh, arr, clsLdr, true);
     }
 
     /**

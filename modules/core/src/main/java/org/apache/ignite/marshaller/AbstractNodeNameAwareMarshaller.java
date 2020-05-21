@@ -75,14 +75,7 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
 
     /** {@inheritDoc} */
     @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
-        String oldNodeName = IgniteUtils.setCurrentIgniteName(nodeName);
-
-        try {
-            return unmarshal0(arr, clsLdr);
-        }
-        finally {
-            IgniteUtils.restoreOldIgniteName(oldNodeName, nodeName);
-        }
+        return unmarshal(arr, clsLdr, true);
     }
 
     /** {@inheritDoc} */
