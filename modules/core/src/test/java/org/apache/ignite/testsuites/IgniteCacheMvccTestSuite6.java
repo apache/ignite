@@ -103,6 +103,9 @@ public class IgniteCacheMvccTestSuite6 {
         // Read-through is not allowed with MVCC and transactional cache.
         ignoredTests.add(TxOptimisticReadThroughTest.class);
 
+        // TODO https://issues.apache.org/jira/browse/IGNITE-13051
+        ignoredTests.add(CachePartitionLossWithRestartsTest.class);
+
         List<Class<?>> suite = new ArrayList<>((IgniteCacheTestSuite6.suite(ignoredTests)));
 
         // Add mvcc versions for skipped tests.
@@ -111,9 +114,6 @@ public class IgniteCacheMvccTestSuite6 {
 
         // This exchange test is irrelevant to MVCC.
         suite.add(PartitionsExchangeAwareTest.class);
-
-        // TODO https://issues.apache.org/jira/browse/IGNITE-13051
-        suite.add(CachePartitionLossWithRestartsTest.class);
 
         return suite;
     }
