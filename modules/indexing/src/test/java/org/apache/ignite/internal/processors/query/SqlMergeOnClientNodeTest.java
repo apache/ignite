@@ -15,42 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.metastorage;
+package org.apache.ignite.internal.processors.query;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 
 /**
- *
+ * Tests for SQL MERGE on client node.
  */
-public class MetsatorageSearchRowImpl implements MetastorageSearchRow {
-    /** */
-    private final String key;
+public class SqlMergeOnClientNodeTest extends SqlMergeTest {
+    /** Node. */
+    protected static IgniteEx cli;
 
     /** */
-    private final long link;
+    private boolean clientMode;
 
-    /**
-     * @param key Key.
-     * @param link Link.
-     */
-    public MetsatorageSearchRowImpl(String key, long link) {
-        this.key = key;
-        this.link = link;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setClientMode(clientMode);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public String key() {
-        return key;
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        clientMode = true;
+
+        cli = startGrid(2);
+
+        clientMode = false;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public long link() {
-        return link;
-    }
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
-    /** {@inheritDoc} */
-    @Override
-    public int hash() {
-        return key.hashCode();
+        node = cli;
     }
 }

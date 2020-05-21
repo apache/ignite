@@ -15,18 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.resources;
+package org.apache.ignite.testframework.wal.record;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-/** */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.FIELD})
-public @interface MetricManagerResource {
-    // No-op.
+/**
+ * The wrapper of record type which isn't supported anymore.
+ */
+public class UnsupportedWalRecord extends WALRecord {
+    /** **/
+    private final RecordType recordType;
+
+    /**
+     * @param type Record type.
+     */
+    public UnsupportedWalRecord(RecordType type) {
+        recordType = type;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RecordType type() {
+        return recordType;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(UnsupportedWalRecord.class, this, "super", super.toString());
+    }
 }

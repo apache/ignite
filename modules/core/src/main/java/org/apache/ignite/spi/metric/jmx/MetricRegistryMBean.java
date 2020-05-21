@@ -18,15 +18,11 @@
 package org.apache.ignite.spi.metric.jmx;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
@@ -39,6 +35,7 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 import static java.util.Arrays.binarySearch;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.HISTOGRAM_NAME_DIVIDER;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.INF;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 
@@ -52,9 +49,6 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.hist
 public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
     /** Metric registry. */
     ReadOnlyMetricRegistry mreg;
-
-    /** Cached histogram metrics intervals names. */
-    private final Map<String, T2<long[], String[]>> histogramNames = new HashMap<>();
 
     /**
      * @param mreg Metric registry.
@@ -95,7 +89,7 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
 
         iter.forEachRemaining(metric -> {
             if (metric instanceof HistogramMetric) {
-                String[] names = histogramBucketNames((HistogramMetric)metric, histogramNames);
+                String[] names = histogramBucketNames((HistogramMetric)metric);
 
                 assert names.length == ((HistogramMetric)metric).value().length;
 
@@ -157,15 +151,28 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
      * @param name Attribute name.
      * @param mreg Metric registry to search histogram in.
      * @return Specific bucket value or {@code null} if not found.
-     * @see MetricUtils#histogramBucketNames(HistogramMetric, Map)
+     * @see MetricUtils#histogramBucketNames(HistogramMetric)
      */
     public static Long searchHistogram(String name, ReadOnlyMetricRegistry mreg) {
-        Scanner sc = new Scanner(name).useDelimiter("_");
+        int highBoundIdx;
 
-        if (!sc.hasNext())
+        boolean isInf = name.endsWith(INF);
+
+        if (isInf)
+            highBoundIdx = name.length() - 4;
+        else {
+            highBoundIdx = name.lastIndexOf(HISTOGRAM_NAME_DIVIDER);
+
+            if (highBoundIdx == -1)
+                return null;
+        }
+
+        int lowBoundIdx = name.lastIndexOf(HISTOGRAM_NAME_DIVIDER, highBoundIdx - 1);
+
+        if (lowBoundIdx == -1)
             return null;
 
-        Metric m = mreg.findMetric(sc.next());
+        Metric m = mreg.findMetric(name.substring(0, lowBoundIdx));
 
         if (!(m instanceof HistogramMetric))
             return null;
@@ -175,20 +182,30 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
         long[] bounds = h.bounds();
         long[] values = h.value();
 
-        if (!sc.hasNextLong())
+        long lowBound;
+
+        try {
+            lowBound = Long.parseLong(name.substring(lowBoundIdx + 1, highBoundIdx));
+        }
+        catch (NumberFormatException e) {
             return null;
+        }
 
-        long lowBound = sc.nextLong();
-
-        //If `highBound` not presented this can be last interval `[max]_inf`.
-        if (!sc.hasNextLong()) {
-            if (sc.hasNext() && INF.equals(sc.next()) && bounds[bounds.length - 1] == lowBound)
+        if (isInf) {
+            if (bounds[bounds.length - 1] == lowBound)
                 return values[values.length - 1];
 
             return null;
         }
 
-        long highBound = sc.nextLong();
+        long highBound;
+
+        try {
+            highBound = Long.parseLong(name.substring(highBoundIdx + 1));
+        }
+        catch (NumberFormatException e) {
+            return null;
+        }
 
         int idx = binarySearch(bounds, highBound);
 

@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -168,6 +173,55 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * @throws Exception On failed.
+     */
+    @Test
+    public void testSingleRowInsertWithNotConstantValues() throws Exception {
+        startGridAndPopulateCache(1);
+
+        sql(grid(0), "CREATE TABLE TEST_F(ID INT PRIMARY KEY, TS TIMESTAMP)");
+
+        sql(grid(0),"INSERT INTO TEST_F VALUES (?, CURRENT_TIMESTAMP())", 0);
+
+        checkThereAreNotDetachedConnections();
+
+        // Check leaks after error on insert single row.
+        GridTestUtils.assertThrows(log, () ->
+                sql(grid(0), "INSERT INTO TEST_F VALUES (1/?, CURRENT_TIMESTAMP())", 0),
+            IgniteException.class, "Division by zero");
+
+        checkThereAreNotDetachedConnections();
+    }
+
+    /**
+     * @throws Exception On failed.
+     */
+    @Test
+    public void testMultipleRowsInsertWithNotConstantValues() throws Exception {
+        startGridAndPopulateCache(1);
+
+        sql(grid(0), "CREATE TABLE TEST_F(ID INT PRIMARY KEY, TS TIMESTAMP)");
+
+        sql(grid(0), "INSERT INTO TEST_F VALUES " +
+                "(?, CURRENT_TIMESTAMP()), " +
+                "(?, CURRENT_TIMESTAMP()), " +
+                "(?, CURRENT_TIMESTAMP())",
+            0, 1, 2);
+
+        checkThereAreNotDetachedConnections();
+
+        // Check leaks after error on insert multiple rows.
+        GridTestUtils.assertThrows(log, () -> sql(grid(0), "INSERT INTO TEST_F VALUES " +
+                "(?, CURRENT_TIMESTAMP()), " +
+                "(?, CURRENT_TIMESTAMP()), " +
+                "(?, CURRENT_TIMESTAMP())",
+            3, 0, 4),
+            IgniteSQLException.class, "Failed to INSERT some keys because they are already in cache [keys=[0]]");
+
+        checkThereAreNotDetachedConnections();
+    }
+
+    /**
      * @throws Exception On error.
      */
     private void checkConnectionLeaks() throws Exception {
@@ -199,11 +253,48 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * @throws Exception On error.
+     */
+    private void checkThereAreNotDetachedConnections() throws Exception {
+        boolean notLeak = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (int i = 0; i < NODE_CNT; i++) {
+                    Map<H2ConnectionWrapper, Boolean> conns = detachedConnections(i);
+
+                    if (!conns.isEmpty())
+                        return false;
+                }
+
+                return true;
+            }
+        }, 5000);
+
+        if (!notLeak) {
+            for (int i = 0; i < NODE_CNT; i++) {
+                Map<H2ConnectionWrapper, Boolean> conns = detachedConnections(i);
+
+                for(H2ConnectionWrapper c : conns.keySet())
+                    log.error("Connection is detached: " + c);
+            }
+
+            fail("H2 JDBC connections leak detected. See the log above.");
+        }
+    }
+
+    /**
      * @param nodeIdx Node index.
      * @return Per-thread connections.
      */
     private Map<Thread, ?> perThreadConnections(int nodeIdx) {
         return ((IgniteH2Indexing)grid(nodeIdx).context().query().getIndexing()).connections().connectionsForThread();
+    }
+
+    /**
+     * @param nodeIdx Node index.
+     * @return Per-thread connections.
+     */
+    private Map<H2ConnectionWrapper, Boolean> detachedConnections(int nodeIdx) {
+        return GridTestUtils.getFieldValue(((IgniteH2Indexing)grid(nodeIdx).context().query().getIndexing()).connections(), "detachedConns");
     }
 
     /**
@@ -217,6 +308,11 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.put((long)i, String.valueOf(i));
+    }
 
+    /**
+     */
+    private List<List<?>> sql(IgniteEx ign, String sql, Object... params) {
+        return ign.context().query().querySqlFields(new SqlFieldsQuery(sql).setLazy(true).setArgs(params), false).getAll();
     }
 }

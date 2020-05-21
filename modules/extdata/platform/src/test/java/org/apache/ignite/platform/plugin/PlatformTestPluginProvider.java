@@ -17,16 +17,21 @@
 
 package org.apache.ignite.platform.plugin;
 
+import java.io.Serializable;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.platform.PlatformPluginExtension;
 import org.apache.ignite.platform.plugin.cache.PlatformTestCachePluginProvider;
-import org.apache.ignite.plugin.*;
+import org.apache.ignite.plugin.CachePluginContext;
+import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.IgnitePlugin;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Serializable;
-import java.util.UUID;
 
 /**
  * Plugin provider for platform tests.

@@ -26,12 +26,18 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -266,6 +272,37 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNodeRestartWith3rdPartyCacheStoreAndPersistenceEnabled() throws Exception {
+        IgniteEx crd = startGrid(0);
+
+        crd.cluster().active(true);
+
+        String cacheName = "test-cache-3rd-party-write-behind-and-ignite-persistence";
+        CacheConfiguration  ccfg = new CacheConfiguration(cacheName)
+            .setWriteBehindEnabled(true)
+            .setWriteThrough(true)
+            .setReadThrough(true)
+            .setCacheStoreFactory(new StoreFactory());
+
+        IgniteCache cache = crd.getOrCreateCache(ccfg);
+
+        cache.put(12, 42);
+
+        stopGrid(0);
+
+        crd = startGrid(0);
+
+        crd.cluster().active(true);
+
+        cache = crd.cache(cacheName);
+
+        assertEquals("Cache was not properly restored or required key is lost.", 42, cache.get(12));
+    }
+
+    /**
      * @param doFindAndRemove Do find and remove.
      */
     private void testFindAndDeleteGarbage(
@@ -398,6 +435,34 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(Account.class, this);
+        }
+    }
+
+    /**
+     * Test store factory.
+     */
+    private static class StoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
+        @Override public CacheStore create() {
+            return new TestStore();
+        }
+    }
+
+    /**
+     * Test store.
+     */
+    private static class TestStore extends CacheStoreAdapter {
+        /** {@inheritDoc} */
+        @Override public Object load(Object key) throws CacheLoaderException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry entry) throws CacheWriterException {
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
         }
     }
 }

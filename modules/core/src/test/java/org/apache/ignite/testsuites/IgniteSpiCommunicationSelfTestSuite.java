@@ -44,8 +44,10 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientSs
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFreezingClientTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiHalfOpenedConnectionTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMultiJvmTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiSkipMessageSendTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationStatisticsTest;
+import org.apache.ignite.spi.communication.tcp.TooManyOpenFilesTcpCommunicationSpiTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -97,6 +99,9 @@ import org.junit.runners.Suite;
     IgniteTcpCommunicationHandshakeWaitSslTest.class,
     IgniteTcpCommunicationConnectOnInitTest.class,
 
+    TcpCommunicationSpiMultiJvmTest.class,
+
+    TooManyOpenFilesTcpCommunicationSpiTest.class
     //GridCacheDhtLockBackupSelfTest.class,
 })
 public class IgniteSpiCommunicationSelfTestSuite {
