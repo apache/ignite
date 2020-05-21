@@ -1681,7 +1681,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         try {
             if (context().exchangeFreeSwitch()) {
-                // Update local partitions, see CachePartitionLossWithRestartsTest.
+                // Update local maps, see CachePartitionLossWithRestartsTest.
                 doInParallel(
                     U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2),
                     cctx.kernalContext().getSystemExecutorService(),
