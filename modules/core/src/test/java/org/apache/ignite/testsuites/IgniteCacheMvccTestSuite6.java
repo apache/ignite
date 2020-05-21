@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchange
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerDiscoHistoryTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStaleServerNodesTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
@@ -110,6 +111,9 @@ public class IgniteCacheMvccTestSuite6 {
 
         // This exchange test is irrelevant to MVCC.
         suite.add(PartitionsExchangeAwareTest.class);
+
+        // TODO https://issues.apache.org/jira/browse/IGNITE-13051
+        suite.add(CachePartitionLossWithRestartsTest.class);
 
         return suite;
     }
