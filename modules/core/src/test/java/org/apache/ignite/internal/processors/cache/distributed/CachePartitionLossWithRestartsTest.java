@@ -30,8 +30,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.AttributeNodeFilter;
 import org.junit.Test;
@@ -51,7 +56,7 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
 
     /** Possible values: -1, 0, 2 */
     @Parameterized.Parameter(value = 0)
-    public int nonAffinityIdx;
+    public int nonAffIdx;
 
     /** Possible values: true, false */
     @Parameterized.Parameter(value = 1)
@@ -70,23 +75,23 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
     public static List<Object[]> parameters() {
         ArrayList<Object[]> params = new ArrayList<>();
 
-        boolean persistent = false;
+        for (boolean persistent : new boolean[]{false, true}) {
+            params.add(new Object[]{-1, false, persistent, 3});
+            params.add(new Object[]{0, false, persistent, 3});
+            params.add(new Object[]{2, false, persistent, 3});
 
-        params.add(new Object[]{-1, false, persistent, 3});
-        params.add(new Object[]{0, false, persistent, 3});
-        params.add(new Object[]{2, false, persistent, 3});
+            params.add(new Object[]{-1, false, persistent, -1});
+            params.add(new Object[]{0, false, persistent, -1});
+            params.add(new Object[]{2, false, persistent, -1});
 
-        params.add(new Object[]{-1, false, persistent, -1});
-        params.add(new Object[]{0, false, persistent, -1});
-        params.add(new Object[]{2, false, persistent, -1});
+            params.add(new Object[]{-1, true, persistent, 3});
+            params.add(new Object[]{0, true, persistent, 3});
+            params.add(new Object[]{2, true, persistent, 3});
 
-        params.add(new Object[]{-1, true, persistent, 3});
-        params.add(new Object[]{0, true, persistent, 3});
-        params.add(new Object[]{2, true, persistent, 3});
-
-        params.add(new Object[]{-1, true, persistent, -1});
-        params.add(new Object[]{0, true, persistent, -1});
-        params.add(new Object[]{2, true, persistent, -1});
+            params.add(new Object[]{-1, true, persistent, -1});
+            params.add(new Object[]{0, true, persistent, -1});
+            params.add(new Object[]{2, true, persistent, -1});
+        }
 
         return params;
     }
@@ -126,7 +131,7 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
         if (startClientCache)
             cfg.setCacheConfiguration(ccfg);
 
-        if (getTestIgniteInstanceIndex(igniteInstanceName) != nonAffinityIdx) {
+        if (getTestIgniteInstanceIndex(igniteInstanceName) != nonAffIdx) {
             cfg.setUserAttributes(F.asMap(START_CACHE_ATTR, Boolean.TRUE));
 
             if (!startClientCache)
@@ -170,9 +175,17 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        final Set<Integer> lost1 = new HashSet<>(crd.cache(DEFAULT_CACHE_NAME).lostPartitions());
-        final Set<Integer> lost2 = new HashSet<>(grid(2).cache(DEFAULT_CACHE_NAME).lostPartitions());
-        final Set<Integer> lost3 = new HashSet<>(g3.cache(DEFAULT_CACHE_NAME).lostPartitions());
+        // Loss detection is done just before exchange future completion.
+        // Will wait for it's finishing.
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(5, 0);
+
+        GridDhtPartitionTopology top0 = waitForDetection(crd, topVer);
+        GridDhtPartitionTopology top1 = waitForDetection(grid(2), topVer);
+        GridDhtPartitionTopology top2 = waitForDetection(g3, topVer);
+
+        final Set<Integer> lost1 = new HashSet<>(top0.lostPartitions());
+        final Set<Integer> lost2 = new HashSet<>(top1.lostPartitions());
+        final Set<Integer> lost3 = new HashSet<>(top2.lostPartitions());
 
         assertFalse(lost1.isEmpty());
 
@@ -182,8 +195,29 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
         GridDhtPartitionTopology top = startGrid(1).cachex(DEFAULT_CACHE_NAME).context().topology();
         assertEquals(lost1, top.lostPartitions());
 
-        crd.resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
+        // TODO https://issues.apache.org/jira/browse/IGNITE-13053
+        grid(1).resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
 
         awaitPartitionMapExchange();
+    }
+
+    /**
+     * @param node Node.
+     * @param topVer Topology version.
+     */
+    private GridDhtPartitionTopology waitForDetection(IgniteEx node, AffinityTopologyVersion topVer) throws Exception {
+        GridCacheSharedContext<Object, Object> cctx = node.context().cache().context();
+
+        CacheGroupDescriptor desc = cctx.affinity().cacheGroups().get(CU.cacheId(DEFAULT_CACHE_NAME));
+
+        CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
+
+        GridDhtPartitionTopology top = grp != null ? grp.topology() :
+            cctx.exchange().clientTopology(desc.groupId(), null);
+
+        cctx.exchange().affinityReadyFuture(topVer).get();
+        cctx.exchange().lastTopologyFuture().get();
+
+        return top;
     }
 }
