@@ -2344,6 +2344,20 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
 
+                if (lostParts != null) {
+                    for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+                        if (e.getKey().equals(ctx.localNodeId()))
+                            continue;
+
+                        for (Integer part : lostParts) {
+                            GridDhtPartitionState state = e.getValue().get(part);
+
+                            if (state != null && state.active())
+                                e.getValue().put(part, LOST);
+                        }
+                    }
+                }
+
                 node2part = new GridDhtPartitionFullMap(node2part, updateSeq.incrementAndGet());
             }
             finally {
