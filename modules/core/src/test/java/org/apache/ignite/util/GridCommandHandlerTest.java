@@ -51,7 +51,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -2116,19 +2115,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", snpName));
 
         assertTrue("Waiting for snapshot operation end failed.",
-            waitForCondition(() -> {
-                try {
-                    return ig.context().metric().registry(SNAPSHOT_METRICS)
-                        .<LongMetric>findMetric("LastSnapshotEndTime").value() > 0;
-                }
-                catch (Exception e) {
-                    error("Error getting snapshot JMX attribute", e);
-
-                    fail("Exception during waiting snapshot operation ends: " + e.getMessage());
-
-                    return false;
-                }
-            }, getTestTimeout()));
+            waitForCondition(() ->
+                    ig.context().metric().registry(SNAPSHOT_METRICS)
+                        .<LongMetric>findMetric("LastSnapshotEndTime").value() > 0,
+                getTestTimeout()));
 
         assertContains(log, (String)h.getLastOperationResult(), snpName);
 
@@ -2142,8 +2132,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         List<Integer> range = IntStream.range(0, keysCnt).boxed().collect(Collectors.toList());
 
-        snpIg.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>(null))
-            .forEach(e -> range.remove((Integer)e.getKey()));
+        snpIg.cache(DEFAULT_CACHE_NAME).forEach(e -> range.remove((Integer)e.getKey()));
         assertTrue("Snapshot must contains cache data [left=" + range + ']', range.isEmpty());
     }
 
