@@ -376,7 +376,7 @@ public class GridServiceProxy<T> implements Serializable {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
-        /** */
+        /** Keep binary return value. */
         private boolean keepBinary;
 
         /** Method name. */
@@ -407,8 +407,10 @@ public class GridServiceProxy<T> implements Serializable {
          * @param svcName Service name.
          * @param argTypes Argument types.
          * @param args Arguments for invocation.
+         * @param keepBinary Keep binary return value.
          */
-        private ServiceProxyCallable(String mtdName, String svcName, Class[] argTypes, Object[] args, boolean keepBinary) {
+        private ServiceProxyCallable(String mtdName, String svcName, Class[] argTypes, Object[] args,
+                                     boolean keepBinary) {
             this.mtdName = mtdName;
             this.svcName = svcName;
             this.argTypes = argTypes;

@@ -122,7 +122,7 @@ public interface Marshaller {
      * @param <T> Type of unmarshalled object.
      * @param arr Byte array.
      * @param clsLdr If not {@code null} then given class loader will be used for unmarshal object.
-     * @param deserialize Deserialize.
+     * @param deserialize {@code true} if object should be unmarshelled and then deserialized.
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If unmarshalling failed.
      */

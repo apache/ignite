@@ -10363,7 +10363,7 @@ public abstract class IgniteUtils {
      * @param marsh Marshaller.
      * @param arr Byte array.
      * @param clsLdr Class loader to use.
-     * @param deserialize Deserialize.
+     * @param deserialize {@code true} if object should be unmarshelled and then deserialized.
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If unmarshalling failed.
      */

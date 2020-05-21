@@ -1833,6 +1833,11 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param handles Holder for handles.
+     * @param detach Detach flag.
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
@@ -1846,6 +1851,12 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param handles Holder for handles.
+     * @param detach Detach flag.
+     * @param deserialize {@code true} if object should be unmarshelled and then deserialized.
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
