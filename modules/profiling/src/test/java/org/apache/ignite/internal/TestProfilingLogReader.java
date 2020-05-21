@@ -160,8 +160,7 @@ public class TestProfilingLogReader implements IgniteProfiling {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime) {
+    @Override public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime) {
         log("profilingStart", "nodeId", nodeId, "igniteInstanceName", igniteInstanceName,
             "igniteVersion", igniteVersion, "startTime", startTime);
     }

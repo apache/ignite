@@ -423,7 +423,7 @@ public class LogFileProfiling implements IgniteProfiling {
     public static File profilingFile(GridKernalContext ctx) throws IgniteCheckedException {
         String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
 
-        File profilingDir =  U.resolveWorkDirectory(igniteWorkDir, "profiling", false);
+        File profilingDir = U.resolveWorkDirectory(igniteWorkDir, "profiling", false);
 
         return new File(profilingDir, "node-" + ctx.localNodeId() + ".prf");
     }
