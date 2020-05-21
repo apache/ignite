@@ -325,11 +325,13 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                 }
             });
 
-        // TODO bean/control.sh management.
-        boolean profilingEnabled = IgniteSystemProperties.getBoolean("IGNITE_PROFILING_ENABLED", true);
+        // TODO Ignite system vars.
+        boolean profilingEnabled = IgniteSystemProperties.getBoolean("IGNITE_PROFILING_ENABLED_ON_START", false);
 
-        if (profilingEnabled)
-            profiling.startProfiling(ctx);
+        if (profilingEnabled) {
+            startProfiling(LogFileProfiling.DFLT_FILE_MAX_SIZE, LogFileProfiling.DFLT_BUFFER_SIZE,
+                LogFileProfiling.DFLT_FLUSH_SIZE);
+        }
     }
 
     /** {@inheritDoc} */
@@ -339,9 +341,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         // Stop discovery worker and metrics updater.
         U.closeQuiet(metricsUpdateTask);
 
-        // TODO bean/control.sh management.
         if (profilingEnabled())
-            profiling.stopProfiling();
+            stopProfiling();
     }
 
     /**
@@ -762,6 +763,27 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         }
         catch (IllegalArgumentException ignored) {
             return new MemoryUsage(0, 0, 0, 0);
+        }
+    }
+
+    /**
+     * Starts profiling.
+     *
+     * @param maxFileSize Maximum file size in bytes.
+     * @param bufferSize Off heap buffer size in bytes.
+     * @param flushBatchSize Minimal batch size to flush in bytes.
+     */
+    public void startProfiling(long maxFileSize, int bufferSize, int flushBatchSize) {
+        profiling.startProfiling(maxFileSize, bufferSize, flushBatchSize);
+    }
+
+    /** Stops profiling. */
+    public void stopProfiling() {
+        try {
+            profiling.stopProfiling().get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
     }
 

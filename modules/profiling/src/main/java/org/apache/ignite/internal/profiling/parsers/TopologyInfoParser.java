@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  * }
  * </pre>
  */
-public class TopologyChangesParser implements IgniteLogParser {
+public class TopologyInfoParser implements IgniteLogParser {
     /** Result JSON. */
     private final ObjectNode res = MAPPER.createObjectNode();
 
@@ -46,7 +46,7 @@ public class TopologyChangesParser implements IgniteLogParser {
     private final ObjectNode nodesInfo = MAPPER.createObjectNode();
 
     /** */
-    public TopologyChangesParser() {
+    public TopologyInfoParser() {
         res.put("profilingStartTime", 0);
         res.put("profilingFinishTime", 0);
         res.set("nodesInfo", nodesInfo);

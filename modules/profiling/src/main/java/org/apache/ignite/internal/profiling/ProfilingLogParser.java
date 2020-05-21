@@ -48,12 +48,12 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.profiling.parsers.CacheNamesParser;
+import org.apache.ignite.internal.profiling.parsers.StartedCachesParser;
 import org.apache.ignite.internal.profiling.parsers.CacheOperationsParser;
 import org.apache.ignite.internal.profiling.parsers.ComputeParser;
 import org.apache.ignite.internal.profiling.parsers.IgniteLogParser;
 import org.apache.ignite.internal.profiling.parsers.QueryParser;
-import org.apache.ignite.internal.profiling.parsers.TopologyChangesParser;
+import org.apache.ignite.internal.profiling.parsers.TopologyInfoParser;
 import org.apache.ignite.internal.profiling.parsers.TransactionsParser;
 import org.apache.ignite.internal.profiling.util.OperationDeserializer;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -200,11 +200,11 @@ public class ProfilingLogParser {
     private static void parseLogs(HashMap<UUID, File> logs, String resDir) throws Exception {
         IgniteLogParser[] parsers = new IgniteLogParser[] {
             new QueryParser(),
-            new CacheNamesParser(),
+            new StartedCachesParser(),
             new CacheOperationsParser(),
             new TransactionsParser(),
             new ComputeParser(),
-            new TopologyChangesParser()
+            new TopologyInfoParser()
         };
 
         int currLog = 1;
@@ -356,9 +356,9 @@ public class ProfilingLogParser {
     private static void copyReportSources(String resDir) throws Exception {
         try (InputStream in = ProfilingLogParser.class.getClassLoader().getResourceAsStream(REPORT_RESOURCE_NAME)) {
             if (in == null) {
-                // TODO Run from IDE require custom maven assembly (try to package module).
+                // Run from IDE require custom maven assembly (try to package module).
                 System.err.println("Run from IDE require custom maven assembly (try to package " +
-                    "'ignite-profiling' module). Report sources will not be copied to the result dir.");
+                    "'ignite-profiling' module). The report sources will not be copied to the result directory.");
 
                 return;
             }

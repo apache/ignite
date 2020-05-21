@@ -30,8 +30,8 @@ import org.apache.ignite.internal.ClusterMetricsMXBeanImpl;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.QueryMXBeanImpl;
+import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.StripedExecutorMXBeanAdapter;
 import org.apache.ignite.internal.ThreadPoolMXBeanAdapter;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
@@ -41,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBean
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
+import org.apache.ignite.internal.profiling.IgniteProfilingMBean;
+import org.apache.ignite.internal.profiling.IgniteProfilingMbeanImpl;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
@@ -54,8 +56,8 @@ import org.apache.ignite.mxbean.EncryptionMXBean;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.MetricsMxBean;
-import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.mxbean.QueryMXBean;
+import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
@@ -237,6 +239,10 @@ public class IgniteMBeansManager {
 
         if (ctx.query().moduleEnabled())
             ctx.query().getIndexing().registerMxBeans(this);
+
+        IgniteProfilingMbeanImpl profilingMbean = new IgniteProfilingMbeanImpl(ctx);
+        registerMBean("Profiling", profilingMbean.getClass().getSimpleName(), profilingMbean,
+            IgniteProfilingMBean.class);
     }
 
     /**

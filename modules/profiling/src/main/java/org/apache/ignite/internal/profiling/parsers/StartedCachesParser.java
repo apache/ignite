@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  * }
  * </pre>
  */
-public class CacheNamesParser implements IgniteLogParser {
+public class StartedCachesParser implements IgniteLogParser {
     /** Result JSON. */
     private final ObjectNode res = MAPPER.createObjectNode();
 

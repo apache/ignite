@@ -20,9 +20,9 @@ package org.apache.ignite.internal.profiling.util;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.profiling.IgniteProfiling;
 import org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType;
 import org.apache.ignite.internal.profiling.LogFileProfiling.OperationType;
-import org.apache.ignite.internal.profiling.parsers.IgniteLogParser;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -33,33 +33,31 @@ import static org.apache.ignite.internal.profiling.LogFileProfiling.readUuid;
 public class OperationDeserializer {
     /**
      * @param buf Buffer.
-     * @return {@code False} if not enough bytes.
+     * @param parsers Parsers to notify.
+     * @return {@code True} if operation parsed. {@code False} if not enough bytes.
      */
-    public static boolean deserialize(ByteBuffer buf, IgniteLogParser... parsers) {
+    public static boolean deserialize(ByteBuffer buf, IgniteProfiling... parsers) {
         int pos = buf.position();
 
         if (buf.remaining() < 1)
             return false;
 
-        byte typeByte = buf.get();
+        byte opTypeByte = buf.get();
 
-        OperationType type = OperationType.fromOrdinal(typeByte);
+        OperationType opType = OperationType.fromOrdinal(opTypeByte);
 
-        if (type == null)
-            throw new RuntimeException("Unknown operation type id [typeId=" + typeByte + ']');
-
-        switch (type) {
+        switch (opType) {
             case CACHE_OPERATION: {
                 if (buf.remaining() < 1 + 4 + 8 + 8)
                     break;
 
-                CacheOperationType opType = CacheOperationType.fromOrdinal(buf.get());
+                CacheOperationType cacheOp = CacheOperationType.fromOrdinal(buf.get());
                 int cacheId = buf.getInt();
                 long startTime = buf.getLong();
                 long duration = buf.getLong();
 
-                for (IgniteLogParser parser : parsers)
-                    parser.cacheOperation(opType, cacheId, startTime, duration);
+                for (IgniteProfiling parser : parsers)
+                    parser.cacheOperation(cacheOp, cacheId, startTime, duration);
 
                 return true;
             }
@@ -82,7 +80,7 @@ public class OperationDeserializer {
                 long duration = buf.getLong();
                 boolean commit = buf.get() != 0;
 
-                for (IgniteLogParser parser : parsers)
+                for (IgniteProfiling parser : parsers)
                     parser.transaction(cacheIds, startTime, duration, commit);
 
                 return true;
@@ -106,7 +104,7 @@ public class OperationDeserializer {
                 long duration = buf.getLong();
                 boolean success = buf.get() != 0;
 
-                for (IgniteLogParser parser : parsers)
+                for (IgniteProfiling parser : parsers)
                     parser.query(queryType, text, uuid, id, startTime, duration, success);
 
                 return true;
@@ -123,7 +121,7 @@ public class OperationDeserializer {
                 long logicalReads = buf.getLong();
                 long physicalReads = buf.getLong();
 
-                for (IgniteLogParser parser : parsers)
+                for (IgniteProfiling parser : parsers)
                     parser.queryReads(queryType, uuid, id, logicalReads, physicalReads);
 
                 return true;
@@ -145,7 +143,7 @@ public class OperationDeserializer {
                 long duration = buf.getLong();
                 int affPartId = buf.getInt();
 
-                for (IgniteLogParser parser : parsers)
+                for (IgniteProfiling parser : parsers)
                     parser.task(sesId, taskName, startTime, duration, affPartId);
 
                 return true;
@@ -162,7 +160,7 @@ public class OperationDeserializer {
                 long duration = buf.getLong();
                 boolean timedOut = buf.get() != 0;
 
-                for (IgniteLogParser parser : parsers)
+                for (IgniteProfiling parser : parsers)
                     parser.job(sesId, queuedTime, startTime, duration, timedOut);
 
                 return true;
@@ -191,7 +189,7 @@ public class OperationDeserializer {
 
                 boolean userCache = buf.get() != 0;
 
-                for (IgniteLogParser parser : parsers)
+                for (IgniteProfiling parser : parsers)
                     parser.cacheStart(cacheId, startTime, cacheName, groupName, userCache);
 
                 return true;
@@ -219,11 +217,14 @@ public class OperationDeserializer {
 
                 long startTime = buf.getLong();
 
-                for (IgniteLogParser parser : parsers)
+                for (IgniteProfiling parser : parsers)
                     parser.profilingStart(nodeId, instanceName, version, startTime);
 
                 return true;
             }
+
+            default:
+                throw new RuntimeException("Unknown operation type id [typeId=" + opTypeByte + ']');
         }
 
         buf.position(pos);
@@ -231,8 +232,8 @@ public class OperationDeserializer {
         return false;
     }
 
-    /** */
-    public static String readString(ByteBuffer buf, int size) {
+    /** Reads string from byte buffer. */
+    private static String readString(ByteBuffer buf, int size) {
         byte[] bytes = new byte[size];
 
         buf.get(bytes);

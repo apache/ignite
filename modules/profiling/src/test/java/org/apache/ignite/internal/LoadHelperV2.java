@@ -37,10 +37,11 @@ public class LoadHelperV2 extends GridCommonAbstractTest {
     /** */
     @Test
     public void startServer() throws Exception {
-        IgniteEx grid = startGrid(0);
+        startGrids(2);
+        IgniteEx client = startClientGrid(3);
 
-        IgniteCache<Object, Object> cache = grid.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC)
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setBackups(0));
 
@@ -48,25 +49,21 @@ public class LoadHelperV2 extends GridCommonAbstractTest {
 
         int keyRange = 100;
 
-        for (int i = 0; i < keyRange; i++) {
+        for (int i = 0; i < keyRange; i++)
             cache.put(i, random.nextInt());
-        }
 
-        int batch = 1000;
         AtomicBoolean stop = new AtomicBoolean();
         AtomicLong cnt = new AtomicLong();
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             while (!stop.get()) {
-                for (int i = 0; i < batch; i++) {
-                    cache.get(random.nextInt(keyRange));
+                cache.get(random.nextInt(keyRange));
 
-                    cnt.incrementAndGet();
-                }
+                cnt.incrementAndGet();
             }
-        });
+        }, 4, "load");
 
-        long duration = 60;
+        long duration = 20;
 
         for (int i = 0; i < duration; i++) {
             long old = cnt.get();
@@ -103,26 +100,23 @@ public class LoadHelperV2 extends GridCommonAbstractTest {
             cache.put(i, random.nextInt());
         }
 
-        int batch = 1000;
         AtomicBoolean stop = new AtomicBoolean();
         AtomicLong cnt = new AtomicLong();
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
             while (!stop.get()) {
-                for (int i = 0; i < batch; i++) {
-                    SqlFieldsQuery qry1 = new SqlFieldsQuery(
-                        "SELECT _key FROM " + cache.getName() + " WHERE _key <= " +
-                            new Random().nextInt(100) + " LIMIT 1")
-                        .setSchema(cache.getName());
+                SqlFieldsQuery qry1 = new SqlFieldsQuery(
+                    "SELECT _key FROM " + cache.getName() + " WHERE _key <= " +
+                        new Random().nextInt(100) + " LIMIT 1")
+                    .setSchema(cache.getName());
 
-                    cache.query(qry1).getAll();
+                cache.query(qry1).getAll();
 
-                    cnt.incrementAndGet();
-                }
+                cnt.incrementAndGet();
             }
         });
 
-        long duration = 1 * 60;
+        long duration = 20;
 
         for (int i = 0; i < duration; i++) {
             long old = cnt.get();

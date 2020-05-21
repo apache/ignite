@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -38,8 +39,6 @@ import org.junit.Test;
 import static java.util.regex.Pattern.compile;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.internal.ProfilingLogTest.QUERY_PATTERN;
-import static org.apache.ignite.internal.ProfilingLogTest.QUERY_READS_PATTERN;
 
 /** Tests profile of query reads. */
 public class ProfilingQueryTest extends GridCommonAbstractTest {
@@ -111,6 +110,10 @@ public class ProfilingQueryTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < ENTRY_COUNT; i++)
             cache.put(i, i);
+
+        new TestProfilingLogReader(grid(0), log0);
+        new TestProfilingLogReader(grid(1), log1);
+        new TestProfilingLogReader(client, clientLog);
     }
 
     /** {@inheritDoc} */
@@ -118,6 +121,8 @@ public class ProfilingQueryTest extends GridCommonAbstractTest {
         stopAllGrids(true);
 
         cleanPersistenceDir();
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "profiling", false));
     }
 
     /** {@inheritDoc} */
@@ -160,7 +165,7 @@ public class ProfilingQueryTest extends GridCommonAbstractTest {
 
         LogListener lsnr0 = readsListener(true, true);
         LogListener lsnr1 = readsListener(true, true);
-        LogListener clientLsnr = LogListener.matches(QUERY_PATTERN).times(1).build();
+        LogListener clientLsnr = LogListener.matches("query ").times(1).build();
 
         log0.registerListener(lsnr0);
         log1.registerListener(lsnr1);
@@ -197,7 +202,7 @@ public class ProfilingQueryTest extends GridCommonAbstractTest {
         String physical = hasPhysicalReads ? "[1-9]\\d*" : "0";
 
         return LogListener
-            .matches(QUERY_READS_PATTERN)
+            .matches("queryReads ")
             .andMatches(compile("logicalReads=" + logical + ", physicalReads=" + physical))
             .times(1)
             .build();
