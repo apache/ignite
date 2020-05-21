@@ -634,6 +634,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    /**
+     * @param name Snapshot name to cancel operation on local node.
+     */
+    public void cancelSnapshot(String name) {
+        A.notNullOrEmpty(name, "Snapshot name must be not null or empty");
+
+        busyLock.enterBusy();
+
+        try {
+            for (SnapshotFutureTask sctx : locSnpTasks.values()) {
+                if (sctx.snapshotName().equals(name))
+                    sctx.cancel();
+            }
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
@@ -898,9 +917,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param cfg Ignite configuration.
      * @return Snapshot directory resolved through given configuration.
      */
-    static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
+    public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
         try {
-            return U.resolveWorkDirectory(cfg.getWorkDirectory(), cfg.getSnapshotPath(), false);
+            return U.resolveWorkDirectory(cfg.getWorkDirectory() == null ? U.defaultWorkDirectory() : cfg.getWorkDirectory(),
+                cfg.getSnapshotPath(), false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

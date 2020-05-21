@@ -27,9 +27,17 @@ public interface SnapshotMXBean {
     /**
      * Create the cluster-wide snapshot with given name asynchronously.
      *
-     * @param snpName Snapshot name to created.
+     * @param snpName Snapshot name to be created.
      * @see IgniteSnapshot#createSnapshot(String) (String)
      */
     @MXBeanDescription("Create cluster-wide snapshot.")
     public void createSnapshot(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
+
+    /**
+     * Cancel previously started snapshot operation on the node initiator.
+     *
+     * @param snpName Snapshot name to cancel.
+     */
+    @MXBeanDescription("Cancel started cluster-wide snapshot on the node initiator.")
+    public void cancel(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
 }

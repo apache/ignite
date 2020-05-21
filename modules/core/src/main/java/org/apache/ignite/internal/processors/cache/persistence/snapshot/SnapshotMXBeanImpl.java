@@ -17,8 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import org.apache.ignite.internal.GridKernalContextImpl;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Snapshot MBean features.
@@ -27,15 +34,52 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     /** Instance of snapshot cache shared manager. */
     private final IgniteSnapshotManager mgr;
 
+    /** Ignite instance. */
+    private final IgniteEx ig;
+
     /**
      * @param ctx Kernal context.
      */
-    public SnapshotMXBeanImpl(GridKernalContextImpl ctx) {
+    public SnapshotMXBeanImpl(GridKernalContext ctx) {
+        ig = ctx.grid();
         mgr = ctx.cache().context().snapshotMgr();
     }
 
     /** {@inheritDoc} */
     @Override public void createSnapshot(String snpName) {
-        mgr.createSnapshot(snpName);
+        IgniteFuture<Void> fut = mgr.createSnapshot(snpName);
+
+        if (fut.isDone())
+            fut.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancel(String snpName) {
+        A.notNullOrEmpty(snpName, "Snapshot name must be not empty or null");
+
+        try {
+            ig.compute(ig.cluster()).broadcast(new SnapshotCancelClosure(), snpName);
+        }
+        catch (IgniteException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** Cancel snapshot operation closure. */
+    @GridInternal
+    private static class SnapshotCancelClosure implements IgniteClosure<String, Void> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /** {@inheritDoc} */
+        @Override public Void apply(String snpName) {
+            ignite.context().cache().context().snapshotMgr().cancelSnapshot(snpName);
+
+            return null;
+        }
     }
 }
