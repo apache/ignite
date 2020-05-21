@@ -44,7 +44,6 @@ import java.util.stream.IntStream;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import javax.management.DynamicMBean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -97,7 +96,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -2104,32 +2103,23 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** @throws Exception If failed. */
     @Test
     public void testClusterSnapshotCreate() throws Exception {
-        int grids = 2;
-        int keys = 100;
+        int keysCnt = 100;
         String snpName = "snapshot_02052020";
 
-        injectTestSystemOut();
-
-        for (int i = 0; i < grids; i++) {
-            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)))
-                .setMetricExporterSpi(new JmxMetricExporterSpi()));
-        }
-
-        IgniteEx ig = grid(0);
+        IgniteEx ig = startGrid(0);
         ig.cluster().state(ACTIVE);
 
-        createCacheAndPreload(ig, keys);
+        createCacheAndPreload(ig, keysCnt);
 
         CommandHandler h = new CommandHandler();
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", snpName));
 
-        DynamicMBean snpMBean = metricRegistry(ig.name(), null, SNAPSHOT_METRICS);
-
         assertTrue("Waiting for snapshot operation end failed.",
             waitForCondition(() -> {
                 try {
-                    return (long)snpMBean.getAttribute("LastSnapshotEndTime") > 0;
+                    return ig.context().metric().registry(SNAPSHOT_METRICS)
+                        .<LongMetric>findMetric("LastSnapshotEndTime").value() > 0;
                 }
                 catch (Exception e) {
                     error("Error getting snapshot JMX attribute", e);
@@ -2144,19 +2134,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         stopAllGrids();
 
-        for (int i = 0; i < grids; i++) {
-            IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(i)));
+        IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(0)));
+        cfg.setWorkDirectory(Paths.get(resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), snpName).toString());
 
-            cfg.setWorkDirectory(Paths.get(resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), snpName).toString());
+        Ignite snpIg = startGrid(cfg);
+        snpIg.cluster().state(ACTIVE);
 
-            startGrid(cfg);
-        }
+        List<Integer> range = IntStream.range(0, keysCnt).boxed().collect(Collectors.toList());
 
-        grid(0).cluster().state(ACTIVE);
-
-        List<Integer> range = IntStream.range(0, keys).boxed().collect(Collectors.toList());
-
-        grid(0).cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>(null))
+        snpIg.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>(null))
             .forEach(e -> range.remove((Integer)e.getKey()));
         assertTrue("Snapshot must contains cache data [left=" + range + ']', range.isEmpty());
     }
