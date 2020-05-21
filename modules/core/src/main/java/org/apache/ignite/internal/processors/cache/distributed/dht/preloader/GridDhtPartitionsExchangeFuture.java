@@ -1681,7 +1681,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         try {
             if (context().exchangeFreeSwitch()) {
-                // Independently called on all nodes.
+                // Update local partitions, see CachePartitionLossWithRestartsTest.
                 doInParallel(
                     U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2),
                     cctx.kernalContext().getSystemExecutorService(),
@@ -1695,7 +1695,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         GridDhtPartitionTopology top = grp != null ? grp.topology() :
                             cctx.exchange().clientTopology(desc.groupId(), events().discoveryCache());
 
-                        top.beforeExchange(this, true, false);
+                        top.beforeExchange(this, true, false); // Not expecting new moving partitions.
 
                         return null;
                     });
@@ -3661,7 +3661,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 else
                     cctx.affinity().onServerJoinWithExchangeMergeProtocol(this, true);
 
-                // Update local topologies, see CachePartitionLostAfterSupplierHasLeftTest.
                 doInParallel(
                     parallelismLvl,
                     cctx.kernalContext().getSystemExecutorService(),
@@ -3675,7 +3674,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         GridDhtPartitionTopology top = grp != null ? grp.topology() :
                             cctx.exchange().clientTopology(desc.groupId(), events().discoveryCache());
 
-                        top.beforeExchange(this, true, false); // Not expecting new moving partitions.
+                        top.beforeExchange(this, true, true);
 
                         return null;
                     });
