@@ -52,7 +52,7 @@ public interface IgniteTable<Row> extends TranslatableTable, ProjectableFilterab
      * @param ctx Planning context.
      * @return Nodes mapping.
      */
-    NodesMapping mapping(PlanningContext ctx);
+    NodesMapping mapping(PlanningContext<Row> ctx);
 
     /**
      * @return Table distribution.
@@ -63,8 +63,6 @@ public interface IgniteTable<Row> extends TranslatableTable, ProjectableFilterab
      * @return Table collations.
      */
     List<RelCollation> collations();
-
-
 
     /**
      * Returns all table indexes.

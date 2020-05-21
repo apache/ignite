@@ -52,7 +52,7 @@ class ConvertingClosableIterator<Row> implements Iterator<List<?>>, AutoCloseabl
     @Override public List<Object> next() {
         Row next = it.next();
 
-        int rowSize = rowHnd.fieldsCount(next);
+        int rowSize = rowHnd.columnCount(next);
 
         List<Object> res = new ArrayList<>(rowSize);
 

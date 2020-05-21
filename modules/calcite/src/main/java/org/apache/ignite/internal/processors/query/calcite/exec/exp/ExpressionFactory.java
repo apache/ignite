@@ -86,14 +86,14 @@ public interface ExpressionFactory<Row> {
     Iterable<Row> values(ExecutionContext<Row> ctx, List<RexLiteral> values, int rowLen);
 
     /**
-     * Creates objects row from RexNodes.
+     * Creates row from RexNodes.
      *
      * @param ctx Execution context, holds a planner context, query and its parameters,
      *             execution specific variables (like queryId, current user, session, etc).
      * @param values Values.
-     * @return Values relational node rows source.
+     * @return Row.
      */
-    Object[] convertToObjects(ExecutionContext<Row> ctx, List<RexNode> values, RelDataType rowType);
+    Row asRow(ExecutionContext<Row> ctx, List<RexNode> values, RelDataType rowType);
 
     /**
      * Creates {@link Scalar}, a code-generated expressions evaluator.

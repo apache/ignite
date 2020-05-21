@@ -191,12 +191,12 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             expressionFactory.predicate(ctx, scan.condition(), scan.getRowType());
 
         List<RexNode> lowerCond = scan.lowerIndexCondition();
-        Object[] lowerBound = lowerCond == null ? null :
-            expressionFactory.convertToObjects(ctx, lowerCond, scan.getRowType());
+        Row lowerBound = lowerCond == null ? null :
+            expressionFactory.asRow(ctx, lowerCond, scan.getRowType());
 
         List<RexNode> upperCond = scan.upperIndexCondition();
-        Object[] upperBound = upperCond == null ? null :
-            expressionFactory.convertToObjects(ctx, upperCond, scan.getRowType());
+        Row upperBound = upperCond == null ? null :
+            expressionFactory.asRow(ctx, upperCond, scan.getRowType());
 
         IgniteTable<Row> tbl = (IgniteTable<Row>)scan.igniteTable();
 

@@ -40,5 +40,5 @@ public interface RowHandler<Row> {
     boolean isEndMarker(Row row);
 
     /** */
-    int fieldsCount(Row row);
+    int columnCount(Row row);
 }

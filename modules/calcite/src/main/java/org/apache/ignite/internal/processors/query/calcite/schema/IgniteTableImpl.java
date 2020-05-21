@@ -29,7 +29,6 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -119,20 +117,20 @@ public class IgniteTableImpl<Row> extends AbstractTable
     /** {@inheritDoc} */
     @Override public IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
         RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
+            .replace(distribution());
 
         IgniteIndex<Row> idx = getIndex(idxName);
 
         if (idx == null)
             return null;
 
-        traitSet = traitSet.replaceIf(RelCollationTraitDef.INSTANCE, idx::collation);
+        traitSet = traitSet.replace(idx.collation());
 
         return new IgniteTableScan(cluster, traitSet, relOptTbl, idxName,  null);
     }
 
     /** {@inheritDoc} */
-    @Override public NodesMapping mapping(PlanningContext ctx) {
+    @Override public NodesMapping mapping(PlanningContext<Row> ctx) {
         GridCacheContext<?, ?> cctx = desc.cacheContext();
 
         assert cctx != null;

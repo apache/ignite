@@ -71,8 +71,8 @@ public class IgniteIndex<Row> {
     public Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         Predicate<Row> filters,
-        Object[] lowerIdxConditions,
-        Object[] upperIdxConditions) {
+        Row lowerIdxConditions,
+        Row upperIdxConditions) {
         return new IndexScan<>(execCtx, this, filters, lowerIdxConditions, upperIdxConditions);
     }
 }

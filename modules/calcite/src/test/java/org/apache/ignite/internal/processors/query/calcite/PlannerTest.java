@@ -474,7 +474,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -616,7 +617,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -707,7 +709,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -940,7 +943,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -1206,7 +1210,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -1452,7 +1457,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -1705,7 +1711,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -1828,7 +1835,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -1950,7 +1958,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -2072,7 +2081,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -2191,7 +2201,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -2299,7 +2310,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -2419,7 +2431,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             ConventionTraitDef.INSTANCE,
-            DistributionTraitDef.INSTANCE
+            DistributionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
@@ -2536,7 +2549,9 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
+
         };
 
         PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()

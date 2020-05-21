@@ -62,7 +62,7 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
     }
 
     /** {@inheritDoc} */
-    @Override public int fieldsCount(Object[] row) {
+    @Override public int columnCount(Object[] row) {
         return row.length;
     }
 }

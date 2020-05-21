@@ -153,7 +153,7 @@ public class ArrayExpressionFactory implements ExpressionFactory<Object[]> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object[] convertToObjects(
+    @Override public Object[] asRow(
         ExecutionContext<Object[]> ctx,
         List<RexNode> values,
         RelDataType rowType

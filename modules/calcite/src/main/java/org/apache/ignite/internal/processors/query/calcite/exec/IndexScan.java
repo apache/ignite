@@ -78,10 +78,10 @@ public class IndexScan<Row> implements Iterable<Row> {
     private final Predicate<Row> filters;
 
     /** Lower index scan bound. */
-    private final Object[] lowerBound;
+    private final Row lowerBound;
 
     /** Upper index scan bound. */
-    private final Object[] upperBound;
+    private final Row upperBound;
 
     /** */
     private final int[] partsArr;
@@ -99,13 +99,12 @@ public class IndexScan<Row> implements Iterable<Row> {
      * @param lowerBound Lower index scan bound.
      * @param upperBound Upper index scan bound.
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public IndexScan(
         ExecutionContext<Row> ctx,
         IgniteIndex<Row> igniteIdx,
         Predicate<Row> filters,
-        Object[] lowerBound,
-        Object[] upperBound
+        Row lowerBound,
+        Row upperBound
     ) {
         ectx = ctx;
         desc = igniteIdx.table().descriptor();
@@ -126,8 +125,8 @@ public class IndexScan<Row> implements Iterable<Row> {
     @Override public Iterator<Row> iterator() {
         H2TreeFilterClosure filterC = filterClosure();
 
-        H2Row lower = lowerBound == null ? null : new CalciteH2Row(coCtx, lowerBound);
-        H2Row upper = upperBound == null ? null : new CalciteH2Row(coCtx, upperBound);
+        H2Row lower = lowerBound == null ? null : new CalciteH2Row<>(coCtx, ectx, lowerBound);
+        H2Row upper = upperBound == null ? null : new CalciteH2Row<>(coCtx, ectx, upperBound);
 
         reservePartitions();
 
@@ -258,18 +257,25 @@ public class IndexScan<Row> implements Iterable<Row> {
     }
 
     /** */
-    private static class CalciteH2Row extends H2Row {
+    private static class CalciteH2Row<Row> extends H2Row {
         /** */
         private final Value[] values;
 
         /** */
-        CalciteH2Row(CacheObjectValueContext coCtx, Object[] row) {
+        CalciteH2Row(CacheObjectValueContext coCtx, ExecutionContext<Row> ctx, Row row) {
             try {
-                values = new Value[row.length];
-                for (int i = 0; i < row.length; i++) {
-                    Object o = row[i];
+                RowHandler<Row> rowHnd = ctx.planningContext().rowHandler();
+
+                int colCnt = rowHnd.columnCount(row);
+
+                values = new Value[colCnt];
+
+                for (int i = 0; i < colCnt; i++) {
+                    Object o = rowHnd.get(i, row);
+
                     if (o != null) {
                         Value v = H2Utils.wrap(coCtx, o, DataType.getTypeFromClass(o.getClass()));
+
                         values[i] = v;
                     }
                 }

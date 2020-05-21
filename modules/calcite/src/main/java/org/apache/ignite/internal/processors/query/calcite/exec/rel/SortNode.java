@@ -16,9 +16,8 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
+import java.util.PriorityQueue;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -36,14 +35,8 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     /**  */
     private boolean inLoop;
 
-    /** Rows comparator. */
-    private final Comparator<Row> comp;
-
     /** Rows buffer. */
-    private final List<Row> rows = new ArrayList<>();
-
-    /** Index of next row which buffer will return. {@code -1} means buffer is not sorted yet. */
-    private int curIdx = -1;
+    private final PriorityQueue<Row> rows;
 
     /**
      * @param ctx Execution context.
@@ -51,7 +44,10 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
      */
     public SortNode(ExecutionContext<Row> ctx, RelCollation collation) {
         super(ctx);
-        comp = ctx.planningContext().expressionFactory().comparator(collation);
+
+        Comparator<Row> comp = ctx.planningContext().expressionFactory().comparator(collation);
+
+        rows = comp == null ? new PriorityQueue<>() : new PriorityQueue<>(comp);
     }
 
     /** {@inheritDoc} */
@@ -129,26 +125,21 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     private void flushFromBuffer() {
         assert waiting == -1;
 
-        if (curIdx == -1 && comp != null)
-            rows.sort(comp);
-
         inLoop = true;
 
         try {
             int processed = 0;
 
-            while (requested > 0 && curIdx != rows.size()) {
+            while (requested > 0) {
                 int toSnd = Math.min(requested, IN_BUFFER_SIZE - processed);
 
                 for (int i = 0; i < toSnd; i++) {
                     requested--;
-                    curIdx++;
 
-                    if (curIdx == rows.size())
+                    if (rows.isEmpty())
                         break;
 
-                    Row row = rows.get(curIdx);
-                    rows.set(curIdx, null);
+                    Row row = rows.poll();
 
                     downstream.push(row);
 
