@@ -805,8 +805,10 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     private static class ClusterGroupState {
         /** Calculated nodes. */
         public final Collection<ClusterNode> nodes;
+
         /** Last topology version. */
         public final long lastTopVer;
+
         /**
          * Start time of first node in grid. Required for cases like in
          * {@code GridServiceProxyClientReconnectSelfTest#testClientReconnect()} test. In that scenario we have one
