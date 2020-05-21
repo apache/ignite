@@ -15,37 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cluster;
+package org.apache.ignite.internal.commandline.snapshot;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Change cache WAL state response.
+ * Set of snapshot sub-commands.
+ *
+ * @see SnapshotCommand
  */
-public class ClientClusterWalChangeStateResponse extends ClientResponse {
-    /**
-     * Operation result.
-     */
-    private final boolean res;
+public enum SnapshotSubcommand {
+    /** Sub-command to create a cluster snapshot. */
+    CREATE("create");
+
+    /** Sub-command name. */
+    private final String name;
+
+    /** @param name Snapshot sub-command name. */
+    SnapshotSubcommand(String name) {
+        this.name = name;
+    }
 
     /**
-     * Ctor.
-     *
-     * @param reqId Request id.
-     * @param res   Operation result.
+     * @param text Command text (case insensitive).
+     * @return Command for the text. {@code Null} if there is no such command.
      */
-    ClientClusterWalChangeStateResponse(long reqId, boolean res) {
-        super(reqId);
+     @Nullable public static SnapshotSubcommand of(String text) {
+        for (SnapshotSubcommand cmd : values()) {
+            if (cmd.name.equalsIgnoreCase(text))
+                return cmd;
+        }
 
-        this.res = res;
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
-        super.encode(ctx, writer);
-
-        writer.writeBoolean(res);
+    @Override public String toString() {
+        return name;
     }
 }

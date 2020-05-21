@@ -17,29 +17,34 @@
 
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Cluster status request.
+ * Cluster group get nodes endpoints request.
  */
-public class ClientClusterIsActiveRequest extends ClientRequest {
+public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
+    /** Start topology version. -1 for earliest. */
+    private final long startTopVer;
+
+    /** End topology version. -1 for latest. */
+    private final long endTopVer;
+
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientClusterIsActiveRequest(BinaryRawReader reader) {
+    public ClientClusterGroupGetNodesEndpointsRequest(BinaryRawReader reader) {
         super(reader);
+        startTopVer = reader.readLong();
+        endTopVer = reader.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteCluster cluster = ctx.kernalContext().grid().cluster();
-        return new ClientBooleanResponse(requestId(), cluster.active());
+        return new ClientClusterGroupGetNodesEndpointsResponse(requestId(), startTopVer, endTopVer);
     }
 }

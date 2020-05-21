@@ -32,6 +32,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -54,6 +55,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -83,6 +86,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
@@ -97,7 +101,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
@@ -634,10 +640,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
         try {
-            if (cctx.kernalContext().clientNode())
-                throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
-
-            if (!IgniteFeatures.allNodesSupports(cctx.discovery().allNodes(), PERSISTENCE_CACHE_SNAPSHOT))
+            if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
                 throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
 
             if (!active(cctx.kernalContext().state().clusterState().state()))
@@ -647,6 +650,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (!clusterState.hasBaselineTopology())
                 throw new IgniteException("Snapshot operation has been rejected. The baseline topology is not configured for cluster.");
+
+            if (cctx.kernalContext().clientNode()) {
+                ClusterNode crd = U.oldest(cctx.kernalContext().discovery().aliveServerNodes(), null);
+
+                if (crd == null)
+                    throw new IgniteException("There is no alive server nodes in the cluster");
+
+                return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
+                    .callAsync(new CreateSnapshotClosure(),
+                        name,
+                        Collections.singletonList(crd),
+                        null));
+            }
 
             ClusterSnapshotFuture snpFut0;
 
@@ -882,9 +898,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param cfg Ignite configuration.
      * @return Snapshot directory resolved through given configuration.
      */
-    static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
+    public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
         try {
-            return U.resolveWorkDirectory(cfg.getWorkDirectory(), cfg.getSnapshotPath(), false);
+            return U.resolveWorkDirectory(cfg.getWorkDirectory() == null ? U.defaultWorkDirectory() : cfg.getWorkDirectory(),
+                cfg.getSnapshotPath(), false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1171,7 +1188,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(SnapshotStartDiscoveryMessage.class, this);
+            return S.toString(SnapshotStartDiscoveryMessage.class, this, super.toString());
         }
     }
 
@@ -1228,6 +1245,40 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             endTime = U.currentTimeMillis();
 
             return super.onDone(res, err, cancel);
+        }
+    }
+
+    /** Start creation of cluster snapshot closure. */
+    @GridInternal
+    private static class CreateSnapshotClosure implements IgniteClosure<String, Void> {
+        /** Serial version UID. */
+        private static final long serialVersionUID = 0L;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /** {@inheritDoc} */
+        @Override public Void apply(String name) {
+            ignite.snapshot().createSnapshot(name).get();
+
+            return null;
+        }
+    }
+
+    /** Wrapper of internal checked exceptions. */
+    private static class IgniteSnapshotFutureImpl extends IgniteFutureImpl<Void> {
+        /** @param fut Internal future. */
+        public IgniteSnapshotFutureImpl(IgniteInternalFuture<Void> fut) {
+            super(fut);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteException convertException(IgniteCheckedException e) {
+            if (e instanceof IgniteClientDisconnectedCheckedException)
+                return new IgniteException("Client disconnected. Snapshot result is unknown", U.convertException(e));
+            else
+                return new IgniteException("Snapshot has not been created", U.convertException(e));
         }
     }
 }

@@ -26,6 +26,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
     using System.Linq;
+    using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Impl.Client.Compute;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -41,9 +43,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
 
         /** Ignite. */
         private readonly IgniteClient _ignite;
-
-        /** Marshaller. */
-        private readonly Marshaller _marsh;
 
         /** Topology version. */
         private long _topVer;
@@ -64,9 +63,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         /// Constructor.
         /// </summary>
         /// <param name="ignite">Ignite.</param>
-        /// <param name="marsh">Marshaller.</param>
-        internal ClientClusterGroup(IgniteClient ignite, Marshaller marsh)
-            : this(ignite, marsh, ClientClusterGroupProjection.Empty)
+        internal ClientClusterGroup(IgniteClient ignite)
+            : this(ignite, ClientClusterGroupProjection.Empty)
         {
             // No-op.
         }
@@ -75,17 +73,14 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         /// Constructor.
         /// </summary>
         /// <param name="ignite">Ignite.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="projection">Projection.</param>
         /// <param name="predicate">Predicate.</param>
-        private ClientClusterGroup(IgniteClient ignite, Marshaller marsh,
+        private ClientClusterGroup(IgniteClient ignite, 
             ClientClusterGroupProjection projection, Func<IClientClusterNode, bool> predicate = null)
         {
             Debug.Assert(ignite != null);
-            Debug.Assert(marsh != null);
 
             _ignite = ignite;
-            _marsh = marsh;
             _projection = projection;
             _predicate = predicate;
         }
@@ -95,7 +90,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            return new ClientClusterGroup(_ignite, _marsh, _projection.ForAttribute(name, val));
+            return new ClientClusterGroup(_ignite, _projection.ForAttribute(name, val));
         }
 
         /** <inheritDoc /> */
@@ -107,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         /** <inheritDoc /> */
         public IClientClusterGroup ForServers()
         {
-            return new ClientClusterGroup(_ignite, _marsh, _projection.ForServerNodes(true));
+            return new ClientClusterGroup(_ignite, _projection.ForServerNodes(true));
         }
 
         /** <inheritDoc /> */
@@ -116,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
             IgniteArgumentCheck.NotNull(p, "p");
 
             var newPredicate = _predicate == null ? p : node => _predicate(node) && p(node);
-            return new ClientClusterGroup(_ignite, _marsh, _projection, newPredicate);
+            return new ClientClusterGroup(_ignite, _projection, newPredicate);
         }
 
         /** <inheritDoc /> */
@@ -140,6 +135,12 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         public IClientClusterNode GetNode()
         {
             return GetNodes().FirstOrDefault();
+        }
+
+        /** <inheritDoc /> */
+        public IComputeClient GetCompute()
+        {
+            return new ComputeClient(_ignite, ComputeClientFlags.None, TimeSpan.Zero, this);
         }
 
         /// <summary>
