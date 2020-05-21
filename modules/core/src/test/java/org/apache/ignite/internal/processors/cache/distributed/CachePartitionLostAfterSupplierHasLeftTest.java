@@ -214,7 +214,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-28521")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13054")
     public void testPartitionLostWhileClearing_Restart_2() throws Exception {
         lossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
         persistence = true;
