@@ -115,4 +115,16 @@ public interface Marshaller {
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException;
+
+    /**
+     * Unmarshals object from byte array using given class loader.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param arr Byte array.
+     * @param clsLdr If not {@code null} then given class loader will be used for unmarshal object.
+     * @param deserialize Deserialize.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr, boolean deserialize) throws IgniteCheckedException;
 }

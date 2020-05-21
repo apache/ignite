@@ -10363,11 +10363,41 @@ public abstract class IgniteUtils {
      * @param marsh Marshaller.
      * @param arr Byte array.
      * @param clsLdr Class loader to use.
+     * @param deserialize Deserialize.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public static <T> T unmarshal(Marshaller marsh, byte[] arr, @Nullable ClassLoader clsLdr, boolean deserialize)
+        throws IgniteCheckedException {
+        assert marsh != null;
+        assert arr != null;
+
+        try {
+            return marsh.unmarshal(arr, clsLdr, deserialize);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Unmarshals object from the input stream using given class loader.
+     * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param marsh Marshaller.
+     * @param arr Byte array.
+     * @param clsLdr Class loader to use.
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public static <T> T unmarshal(Marshaller marsh, byte[] arr, @Nullable ClassLoader clsLdr)
-        throws IgniteCheckedException {
+            throws IgniteCheckedException {
         assert marsh != null;
         assert arr != null;
 

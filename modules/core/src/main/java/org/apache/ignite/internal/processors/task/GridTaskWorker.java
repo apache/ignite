@@ -836,7 +836,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         GridBinaryMarshaller.FULL_KEEP_BINARY.set(keepBinary);
 
                         Object res0 = loc ? res.getJobResult() : U.unmarshal(marsh, res.getJobResultBytes(),
-                            U.resolveClassLoader(clsLdr, ctx.config()));
+                            U.resolveClassLoader(clsLdr, ctx.config()), !keepBinary);
 
                         IgniteException ex = loc ? res.getException() :
                             U.<IgniteException>unmarshal(marsh, res.getExceptionBytes(),

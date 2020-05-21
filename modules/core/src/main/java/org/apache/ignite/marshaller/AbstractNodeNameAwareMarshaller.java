@@ -86,6 +86,18 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr, boolean deserialize) throws IgniteCheckedException {
+        String oldNodeName = IgniteUtils.setCurrentIgniteName(nodeName);
+
+        try {
+            return unmarshal0(arr, clsLdr, deserialize);
+        }
+        finally {
+            IgniteUtils.restoreOldIgniteName(oldNodeName, nodeName);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         String oldNodeName = IgniteUtils.setCurrentIgniteName(nodeName);
 
@@ -138,4 +150,18 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     protected abstract <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException;
+
+    /**
+     * Unmarshals object from byte array using given class loader.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param arr Byte array.
+     * @param clsLdr If not {@code null} then given class loader will be used for unmarshal object.
+     * @param deserialize Deserialize.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    protected <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr, boolean deserialize) throws IgniteCheckedException {
+        return unmarshal0(arr, clsLdr);
+    }
 }
