@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.Spliterator;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -30,6 +34,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -39,7 +44,9 @@ import org.junit.Test;
  * query was cancelled.")
  */
 public class QueryCursorSpliteratorCallsTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -47,9 +54,16 @@ public class QueryCursorSpliteratorCallsTest extends GridCommonAbstractTest {
                 .setIndexedTypes(Integer.class, String.class));
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(1);
+        IgniteEx ignite = startGrids(1);
+        IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        cache.put(1, "11");
+        cache.put(2, "12");
+        cache.put(3, "13");
     }
 
     /**
@@ -68,7 +82,8 @@ public class QueryCursorSpliteratorCallsTest extends GridCommonAbstractTest {
         doQueryCursorSpliteratorCalls(new ContinuousQuery<>()
             .setInitialQuery(new ScanQuery<>((key, val) -> key != null))
             .setAutoUnsubscribe(true)
-            .setLocalListener(iterable -> {}));
+            .setLocalListener(iterable -> {
+            }));
     }
 
     /**
@@ -92,7 +107,7 @@ public class QueryCursorSpliteratorCallsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTextQueryCursorSpliteratorCalls() throws IgniteException {
-        doQueryCursorSpliteratorCalls(new TextQuery<>("String", "1"));
+        doQueryCursorSpliteratorCalls(new TextQuery<>("String", "1?"));
     }
 
     /**
@@ -106,12 +121,30 @@ public class QueryCursorSpliteratorCallsTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, String> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
+        Set<Object> iterData = new HashSet<>();
+        Set<Object> spliterData = new HashSet<>();
         try (QueryCursor<?> cur = cache.query(qry)) {
-            cur.iterator();
-            cur.spliterator();
+            Iterator<Object> iter = (Iterator<Object>)cur.iterator();
+            while (iter.hasNext())
+                iterData.add(iter.next());
+            assertEquals(iterData.size(), 3);
+            Spliterator<Object> spliter = (Spliterator<Object>)cur.spliterator();
+            assertEquals(spliter.getExactSizeIfKnown(), -1);
 
             GridTestUtils.assertThrows(log, IgniteException.class, "Iterator is already fetched or query was cancelled.",
                 cur, "iterator");
         }
+        try (QueryCursor<?> cur = cache.query(qry)) {
+            Spliterator<Object> spliter = (Spliterator<Object>)cur.spliterator();
+            assertEquals(spliter.getExactSizeIfKnown(), -1);
+            spliter.forEachRemaining(spliterData::add);
+            assertEquals(spliterData.size(), 3);
+            Iterator<Object> iter = (Iterator<Object>)cur.iterator();
+            assertFalse((qry instanceof ScanQuery) && iter.hasNext());
+
+            GridTestUtils.assertThrows(log, IgniteException.class, "Iterator is already fetched or query was cancelled.",
+                cur, "iterator");
+        }
+        assertEquals(iterData.size(), spliterData.size());
     }
 }
