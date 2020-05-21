@@ -2132,7 +2132,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
                     return false;
                 }
-            }, 15_000));
+            }, getTestTimeout()));
 
         assertContains(log, (String)h.getLastOperationResult(), snpName);
 
