@@ -3216,7 +3216,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
 
-        String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
+        boolean needTaskName = ctx.events().isRecordable(EVT_CACHE_OBJECT_READ) ||
+            ctx.events().isRecordable(EVT_CACHE_OBJECT_PUT) ||
+            ctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED);
+
+        String taskName = needTaskName ? ctx.kernalContext().task().resolveTaskName(req.taskNameHash()) : null;
 
         ctx.shared().database().checkpointReadLock();
 
