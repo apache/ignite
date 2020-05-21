@@ -77,7 +77,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
             .setCheckpointFrequency(10 * 60 * 1000)
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(512 * 1024 * 1024)
+                    .setMaxSize(256 * 1024 * 1024)
                     .setPersistenceEnabled(true)
             );
 
