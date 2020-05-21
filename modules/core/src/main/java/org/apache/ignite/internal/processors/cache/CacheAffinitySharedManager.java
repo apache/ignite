@@ -82,6 +82,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -966,7 +967,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 );
             }
             else
-                cctx.kernalContext().cache().initQueryStructuresForNotStartedCache(cacheDesc);
+                cctx.kernalContext().query().initQueryStructuresForNotStartedCache(cacheDesc);
         }
 
         Map<StartCacheInfo, IgniteCheckedException> failedCaches = cctx.cache().prepareStartCachesIfPossible(startCacheInfos.keySet());
@@ -2598,6 +2599,36 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @return Primary nodes for local backups.
+     */
+    public Set<ClusterNode> idealPrimaryNodesForLocalBackups() {
+        Set<ClusterNode> res = new GridConcurrentHashSet<>();
+
+        ClusterNode loc = cctx.localNode();
+
+        forAllCacheGroups(new IgniteInClosureX<GridAffinityAssignmentCache>() {
+            @Override public void applyx(GridAffinityAssignmentCache aff) {
+                CacheGroupDescriptor desc = cachesRegistry.group(aff.groupId());
+
+                if (desc.config().getCacheMode() == PARTITIONED) {
+                    List<List<ClusterNode>> assignment = aff.idealAssignmentRaw();
+
+                    HashSet<ClusterNode> primaries = new HashSet<>();
+
+                    for (List<ClusterNode> nodes : assignment) {
+                        if (nodes.indexOf(loc) > 0)
+                            primaries.add(nodes.get(0));
+                    }
+
+                    res.addAll(primaries);
+                }
+            }
+        });
+
+        return res;
+    }
+
+    /**
      *
      */
     abstract class CacheGroupHolder {
@@ -2944,7 +2975,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             int partsNum
             ) {
             String res = "Cache group '%s'" +
-                " brings high overhead for its metainformation in data region '%s'."  +
+                " brings high overhead for its metainformation in data region '%s'." +
                 " Metainformation required for its partitions (%d partitions, %d bytes per partition, %d MBs total)" +
                 " will consume more than 15%% of data region memory (%d MBs)." +
                 " It may lead to critical errors on the node and cluster instability." +

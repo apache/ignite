@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -83,6 +84,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 
 /**
  * Logic related to cache discovery data processing.
@@ -157,6 +159,9 @@ public class ClusterCachesInfo {
     /** {@code True} if joined cluster while cluster state change was in progress. */
     private boolean joinOnTransition;
 
+    /** Flag that caches were already filtered out. */
+    private final AtomicBoolean alreadyFiltered = new AtomicBoolean();
+
     /**
      * @param ctx Context.
      */
@@ -186,6 +191,9 @@ public class ClusterCachesInfo {
         if (ctx.isDaemon())
             return;
 
+        if (!alreadyFiltered.compareAndSet(false, true))
+            return;
+
         filterRegisteredCachesAndCacheGroups(localCachesOnStart);
 
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = locJoinCachesCtx.caches();
@@ -200,7 +208,8 @@ public class ClusterCachesInfo {
             locJoinStartCaches,
             initCaches,
             registeredCacheGrps,
-            registeredCaches);
+            registeredCaches
+        );
     }
 
     /**
@@ -698,7 +707,7 @@ public class ClusterCachesInfo {
 
             if (restartingCaches.containsKey(cacheName) &&
                 ((req.restartId() == null && restartingCaches.get(cacheName) != NULL_OBJECT)
-                    || (req.restartId() != null &&!req.restartId().equals(restartingCaches.get(cacheName))))) {
+                    || (req.restartId() != null && !req.restartId().equals(restartingCaches.get(cacheName))))) {
 
                 if (req.failIfExists()) {
                     ctx.cache().completeCacheStartFuture(req, false,
@@ -754,7 +763,8 @@ public class ClusterCachesInfo {
                     return;
                 }
 
-                processStopCacheRequest(exchangeActions, req, cacheName, desc);
+                if (!processStopCacheRequest(exchangeActions, req, res, cacheName, desc))
+                    return;
 
                 needExchange = true;
             }
@@ -775,13 +785,27 @@ public class ClusterCachesInfo {
      * @param exchangeActions Exchange actions to update.
      * @param cacheName Cache name.
      * @param desc Dynamic cache descriptor.
+     * @return {@code true} if stop request can be proceed.
      */
-    private void processStopCacheRequest(
+    private boolean processStopCacheRequest(
         ExchangeActions exchangeActions,
         DynamicCacheChangeRequest req,
+        CacheChangeProcessResult res,
         String cacheName,
         DynamicCacheDescriptor desc
     ) {
+        if (ctx.cache().context().snapshotMgr().isSnapshotCreating()) {
+            IgniteCheckedException err = new IgniteCheckedException(SNP_IN_PROGRESS_ERR_MSG);
+
+            U.warn(log, err);
+
+            res.errs.add(err);
+
+            ctx.cache().completeCacheStartFuture(req, false, err);
+
+            return false;
+        }
+
         DynamicCacheDescriptor old = registeredCaches.get(cacheName);
 
         assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
@@ -826,6 +850,8 @@ public class ClusterCachesInfo {
                 }
             }
         }
+
+        return true;
     }
 
     /**
@@ -1884,7 +1910,7 @@ public class ClusterCachesInfo {
             }
         }
 
-        return  null;
+        return null;
     }
 
     /**
@@ -2575,8 +2601,7 @@ public class ClusterCachesInfo {
          * REVERSE comparator for cache descriptors (first user caches).
          */
         static Comparator<DynamicCacheDescriptor> REVERSE = new Comparator<DynamicCacheDescriptor>() {
-            @Override
-            public int compare(DynamicCacheDescriptor o1, DynamicCacheDescriptor o2) {
+            @Override public int compare(DynamicCacheDescriptor o1, DynamicCacheDescriptor o2) {
                 return -DIRECT.compare(o1, o2);
             }
         };

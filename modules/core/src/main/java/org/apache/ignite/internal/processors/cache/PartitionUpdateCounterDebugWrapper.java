@@ -223,6 +223,11 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
+    @Override public void resetInitialCounter() {
+        delegate.resetInitialCounter();
+    }
+
+    /** {@inheritDoc} */
     @Override public long initial() {
         return delegate.initial();
     }
@@ -260,5 +265,15 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
     /** {@inheritDoc} */
     @Override public CacheGroupContext context() {
         return delegate.context();
+    }
+
+    /** {@inheritDoc} */
+    @Override public PartitionUpdateCounter copy() {
+        return new PartitionUpdateCounterDebugWrapper(partId, delegate.copy());
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return delegate.toString();
     }
 }

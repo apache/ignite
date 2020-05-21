@@ -518,7 +518,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         if (discoProtoVer == 2) {
-            if (data.hasJoiningNodeData())    {
+            if (data.hasJoiningNodeData()) {
                 ContinuousRoutinesJoiningNodeDiscoveryData nodeData = (ContinuousRoutinesJoiningNodeDiscoveryData)
                     data.joiningNodeData();
 
@@ -1013,7 +1013,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             assert discoProtoVer == 2 : discoProtoVer;
 
             byte[] nodeFilterBytes = nodeFilter != null ? U.marshal(marsh, nodeFilter) : null;
-            byte[] hndBytes =  U.marshal(marsh, hnd);
+            byte[] hndBytes = U.marshal(marsh, hnd);
 
             StartRequestDataV2 reqData = new StartRequestDataV2(nodeFilterBytes,
                 hndBytes,
@@ -1472,7 +1472,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         // Load partition counters.
-        if (hnd.isQuery()) {
+        if (err == null && hnd.isQuery()) {
             GridCacheProcessor proc = ctx.cache();
 
             if (proc != null) {

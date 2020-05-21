@@ -229,9 +229,13 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
             unlockEntry();
         }
 
-        checkOwnerChanged(prev, owner, val, true);
+        boolean lockedByThreadChainVer = owner != null && owner.hasCandidate(ver);
 
-        return owner == null || !owner.hasCandidate(ver); // Will return false if locked by thread chain version.
+        // If locked by the thread chain version no need to do recursive thread chain scans for the same chain.
+        // This call must be made outside of synchronization.
+        checkOwnerChanged(prev, owner, val, lockedByThreadChainVer);
+
+        return !lockedByThreadChainVer;
     }
 
     /** {@inheritDoc} */

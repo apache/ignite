@@ -22,9 +22,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
  * Throttles threads that generate dirty pages during ongoing checkpoint.
@@ -41,7 +42,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     private final PageMemoryImpl pageMemory;
 
     /** Database manager. */
-    private final CheckpointWriteProgressSupplier cpProgress;
+    private final IgniteOutClosure<CheckpointProgress> cpProgress;
 
     /** Starting throttle time. Limits write speed to 1000 MB/s. */
     private static final long STARTING_THROTTLE_NANOS = 4000;
@@ -118,7 +119,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      */
     public PagesWriteSpeedBasedThrottle(
             PageMemoryImpl pageMemory,
-            CheckpointWriteProgressSupplier cpProgress,
+            IgniteOutClosure<CheckpointProgress> cpProgress,
             CheckpointLockStateChecker stateChecker,
             IgniteLogger log
     ) {
@@ -133,7 +134,9 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     @Override public void onMarkDirty(boolean isPageInCheckpoint) {
         assert cpLockStateChecker.checkpointLockIsHeldByThread();
 
-        AtomicInteger writtenPagesCntr = cpProgress.writtenPagesCounter();
+        CheckpointProgress progress = cpProgress.apply();
+
+        AtomicInteger writtenPagesCntr = progress == null ? null : cpProgress.apply().writtenPagesCounter();
 
         if (writtenPagesCntr == null) {
             speedForMarkAll = 0;
@@ -248,7 +251,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @return number of written pages.
      */
     private int cpWrittenPages() {
-        AtomicInteger writtenPagesCntr = cpProgress.writtenPagesCounter();
+        AtomicInteger writtenPagesCntr = cpProgress.apply().writtenPagesCounter();
 
         return writtenPagesCntr == null ? 0 : writtenPagesCntr.get();
     }
@@ -257,14 +260,14 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @return Number of pages in current checkpoint.
      */
     private int cpTotalPages() {
-        return cpProgress.currentCheckpointPagesCount();
+        return cpProgress.apply().currentCheckpointPagesCount();
     }
 
     /**
      * @return  Counter for fsynced checkpoint pages.
      */
     private int cpSyncedPages() {
-        AtomicInteger syncedPagesCntr = cpProgress.syncedPagesCounter();
+        AtomicInteger syncedPagesCntr = cpProgress.apply().syncedPagesCounter();
 
         return syncedPagesCntr == null ? 0 : syncedPagesCntr.get();
     }
@@ -273,7 +276,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @return number of evicted pages.
      */
     private int cpEvictedPages() {
-        AtomicInteger evictedPagesCntr = cpProgress.evictedPagesCntr();
+        AtomicInteger evictedPagesCntr = cpProgress.apply().evictedPagesCounter();
 
         return evictedPagesCntr == null ? 0 : evictedPagesCntr.get();
     }
@@ -292,7 +295,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         if (weight <= WARN_THRESHOLD)
             return;
 
-        if (prevWarnTime.compareAndSet(prevWarningNs, curNs)) {
+        if (prevWarnTime.compareAndSet(prevWarningNs, curNs) && log.isInfoEnabled()) {
             String msg = String.format("Throttling is applied to page modifications " +
                     "[percentOfPartTime=%.2f, markDirty=%d pages/sec, checkpointWrite=%d pages/sec, " +
                     "estIdealMarkDirty=%d pages/sec, curDirty=%.2f, maxDirty=%.2f, avgParkTime=%d ns, " +

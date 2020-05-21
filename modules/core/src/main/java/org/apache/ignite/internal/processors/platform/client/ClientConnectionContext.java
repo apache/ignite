@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,6 +37,11 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+
+import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.USER_ATTRIBUTES;
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.AUTHORIZATION;
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.BITMAP_FEATURES;
 
 /**
  * Thin Client connection context.
@@ -62,11 +68,23 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.6.0. Added: Expiration Policy configuration. */
     public static final ClientListenerProtocolVersion VER_1_6_0 = ClientListenerProtocolVersion.create(1, 6, 0);
 
+    /**
+     * Version 1.7.0. Added: protocol features.
+     * ATTENTION! Do not add any new protocol versions unless totally necessary. Use {@link ClientBitmaskFeature}
+     * instead.
+     */
+    public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 7, 0);
+
     /** Default version. */
-    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_6_0;
+    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_7_0;
+
+    /** Default protocol context. */
+    public static final ClientProtocolContext DEFAULT_PROTOCOL_CONTEXT =
+        new ClientProtocolContext(DEFAULT_VER, ClientBitmaskFeature.allFeaturesAsEnumSet());
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
+        VER_1_7_0,
         VER_1_6_0,
         VER_1_5_0,
         VER_1_4_0,
@@ -88,11 +106,14 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Max cursors. */
     private final int maxCursors;
 
-    /** Current protocol version. */
-    private ClientListenerProtocolVersion currentVer;
+    /** Current protocol context. */
+    private ClientProtocolContext currentProtocolContext;
 
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion = new AtomicReference<>();
+
+    /** Client session. */
+    private GridNioSession ses;
 
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
@@ -109,6 +130,12 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Active transactions count. */
     private final AtomicInteger txsCnt = new AtomicInteger();
 
+    /** Active compute tasks limit. */
+    private final int maxActiveComputeTasks;
+
+    /** Active compute tasks count. */
+    private final AtomicInteger activeTasksCnt = new AtomicInteger();
+
     /**
      * Ctor.
      *
@@ -122,6 +149,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         this.maxCursors = maxCursors;
         maxActiveTxCnt = thinCfg.getMaxActiveTxPerConnection();
+        maxActiveComputeTasks = thinCfg.getMaxActiveComputeTasksPerConnection();
     }
 
     /**
@@ -144,21 +172,35 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     }
 
     /**
-     * @return Currently used protocol version.
+     * @return Currently used protocol context.
      */
-    public ClientListenerProtocolVersion currentVersion() {
-        return currentVer;
+    public ClientProtocolContext currentProtocolContext() {
+        return currentProtocolContext;
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+    @Override public void initializeFromHandshake(GridNioSession ses,
+        ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
-        boolean hasMore;
+
+        EnumSet<ClientBitmaskFeature> features = null;
+
+        if (ClientProtocolContext.isFeatureSupported(ver, BITMAP_FEATURES)) {
+            byte[] cliFeatures = reader.readByteArray();
+
+            features = ClientBitmaskFeature.enumSet(cliFeatures);
+        }
+
+        currentProtocolContext = new ClientProtocolContext(ver, features);
 
         String user = null;
         String pwd = null;
 
-        if (ver.compareTo(VER_1_1_0) >= 0) {
+        if (currentProtocolContext.isFeatureSupported(USER_ATTRIBUTES))
+            userAttrs = reader.readMap();
+
+        if (currentProtocolContext.isFeatureSupported(AUTHORIZATION)) {
+            boolean hasMore;
             try {
                 hasMore = reader.available() > 0;
             }
@@ -172,13 +214,12 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
             }
         }
 
-        AuthorizationContext authCtx = authenticate(user, pwd);
+        AuthorizationContext authCtx = authenticate(ses.certificates(), user, pwd);
 
-        currentVer = ver;
+        handler = new ClientRequestHandler(this, authCtx, currentProtocolContext);
+        parser = new ClientMessageParser(this, currentProtocolContext);
 
-        handler = new ClientRequestHandler(this, authCtx, ver);
-
-        parser = new ClientMessageParser(this, ver);
+        this.ses = ses;
     }
 
     /** {@inheritDoc} */
@@ -300,5 +341,43 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
             txCtx.close();
 
         txs.clear();
+    }
+
+    /**
+     * Send notification to the client.
+     *
+     * @param notification Notification.
+     */
+    public void notifyClient(ClientNotification notification) {
+        ses.send(parser.encode(notification));
+    }
+
+    /**
+     * Increments the active compute tasks count.
+     */
+    public void incrementActiveTasksCount() {
+        if (maxActiveComputeTasks == 0) {
+            throw new IgniteClientException(ClientStatus.FUNCTIONALITY_DISABLED,
+                "Compute grid functionality is disabled for thin clients on server node. " +
+                    "To enable it set up the ThinClientConfiguration.MaxActiveComputeTasksPerConnection property.");
+        }
+
+        if (activeTasksCnt.incrementAndGet() > maxActiveComputeTasks) {
+            activeTasksCnt.decrementAndGet();
+
+            throw new IgniteClientException(ClientStatus.TOO_MANY_COMPUTE_TASKS, "Active compute tasks per connection " +
+                "limit (" + maxActiveComputeTasks + ") exceeded. To start a new task you need to wait for some of " +
+                "currently active tasks complete. To change the limit set up the " +
+                "ThinClientConfiguration.MaxActiveComputeTasksPerConnection property.");
+        }
+    }
+
+    /**
+     * Decrements the active compute tasks count.
+     */
+    public void decrementActiveTasksCount() {
+        int cnt = activeTasksCnt.decrementAndGet();
+
+        assert cnt >= 0 : "Unexpected active tasks count: " + cnt;
     }
 }

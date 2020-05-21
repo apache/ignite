@@ -50,7 +50,6 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
@@ -60,7 +59,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.lang.GridPlainClosure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -120,9 +118,6 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *     </ul>
  *     </li>
  * </ul>
- *
- * @see GridCacheProcessor#generateEncryptionKeysAndStartCacheAfter(int, GridPlainClosure)
- *
  * <p>Master key change process:</p>
  * <ol>
  *     <li>The initiator starts the process.</li>
@@ -715,7 +710,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         String newMasterKeyName = IgniteSystemProperties.getString(IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP);
 
         if (newMasterKeyName != null) {
-            if (newMasterKeyName.equals(getSpi().getMasterKeyName())){
+            if (newMasterKeyName.equals(getSpi().getMasterKeyName())) {
                 log.info("Restored master key name equals to name from system property " +
                     IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP + ". This system property will be ignored and " +
                     "recommended to remove [masterKeyName=" + newMasterKeyName + ']');

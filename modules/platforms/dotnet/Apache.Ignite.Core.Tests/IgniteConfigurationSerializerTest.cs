@@ -175,6 +175,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(af);
             Assert.AreEqual(99, af.Partitions);
             Assert.IsTrue(af.ExcludeNeighbors);
+            
+            var platformCacheConfiguration = cacheCfg.PlatformCacheConfiguration;
+            Assert.AreEqual("int", platformCacheConfiguration.KeyTypeName);
+            Assert.AreEqual("string", platformCacheConfiguration.ValueTypeName);
+            Assert.IsTrue(platformCacheConfiguration.KeepBinary);
 
             Assert.AreEqual(new Dictionary<string, object>
             {
@@ -266,6 +271,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(15, client.ThreadPoolSize);
             Assert.AreEqual(19, client.IdleTimeout.TotalSeconds);
             Assert.AreEqual(20, client.ThinClientConfiguration.MaxActiveTxPerConnection);
+            Assert.AreEqual(21, client.ThinClientConfiguration.MaxActiveComputeTasksPerConnection);
 
             var pers = cfg.PersistentStoreConfiguration;
 
@@ -755,6 +761,12 @@ namespace Apache.Ignite.Core.Tests
                                 MaxSize = 555
                             }
                         },
+                        PlatformCacheConfiguration = new PlatformCacheConfiguration
+                        {
+                            KeyTypeName = typeof(int).FullName,
+                            ValueTypeName = typeof(string).FullName,
+                            KeepBinary = true
+                        },
                         EvictionPolicy = new LruEvictionPolicy
                         {
                             BatchSize = 18,
@@ -933,8 +945,10 @@ namespace Apache.Ignite.Core.Tests
                     JdbcEnabled = false,
                     ThreadPoolSize = 7,
                     IdleTimeout = TimeSpan.FromMinutes(5),
-                    ThinClientConfiguration = new ThinClientConfiguration {
-                        MaxActiveTxPerConnection = 8
+                    ThinClientConfiguration = new ThinClientConfiguration
+                    {
+                        MaxActiveTxPerConnection = 8,
+                        MaxActiveComputeTasksPerConnection = 9
                     }
                 },
                 PersistentStoreConfiguration = new PersistentStoreConfiguration

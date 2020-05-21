@@ -271,7 +271,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
     private static void readFully(InputStream in, byte[] data) throws IOException {
         int read = 0;
 
-        while(read < data.length)
+        while (read < data.length)
             read += in.read(data, read, data.length - read);
     }
 }

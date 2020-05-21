@@ -86,6 +86,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                 null,
                 null,
                 null,
+                null,
                 cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
                     Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders(),
                 null,
@@ -147,7 +148,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      *
      * @param execSvc Executor service
      */
-    public void setExecutorService(ExecutorService execSvc){
+    public void setExecutorService(ExecutorService execSvc) {
         this.execSvc = execSvc;
     }
 

@@ -663,6 +663,9 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Changes Ignite grid state to active or inactive.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
@@ -730,4 +733,9 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of {@link IgniteEncryption} interface.
      */
     public IgniteEncryption encryption();
+
+    /**
+     * @return Snapshot manager.
+     */
+    public IgniteSnapshot snapshot();
 }

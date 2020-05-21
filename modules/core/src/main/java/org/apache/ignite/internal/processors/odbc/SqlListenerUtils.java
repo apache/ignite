@@ -43,6 +43,18 @@ public abstract class SqlListenerUtils {
         throws BinaryObjectException {
         byte type = reader.readByte();
 
+        return readObject(type, reader, binObjAllow);
+    }
+
+    /**
+     * @param type Object type.
+     * @param reader Reader.
+     * @param binObjAllow Allow to read non plaint objects.
+     * @return Read object.
+     * @throws BinaryObjectException On error.
+     */
+    @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow)
+        throws BinaryObjectException {
         switch (type) {
             case GridBinaryMarshaller.NULL:
                 return null;
@@ -255,8 +267,18 @@ public abstract class SqlListenerUtils {
     }
 
     /**
-     * Converts sql pattern wildcards into java regex wildcards.
-     * Translates "_" to "." and "%" to ".*" if those are not escaped with "\" ("\_" or "\%").
+     * <p>Converts sql pattern wildcards into java regex wildcards.</p>
+     * <p>Translates "_" to "." and "%" to ".*" if those are not escaped with "\" ("\_" or "\%").</p>
+     * <p>All other characters are considered normal and will be escaped if necessary.</p>
+     * <pre>
+     * Example:
+     *      som_    -->     som.
+     *      so%     -->     so.*
+     *      s[om]e  -->     so\[om\]e
+     *      so\_me  -->     so_me
+     *      some?   -->     some\?
+     *      som\e   -->     som\\e
+     * </pre>
      */
     public static String translateSqlWildcardsToRegex(String sqlPtrn) {
         if (F.isEmpty(sqlPtrn))
@@ -264,9 +286,10 @@ public abstract class SqlListenerUtils {
 
         String toRegex = ' ' + sqlPtrn;
 
-        toRegex = toRegex.replaceAll("([^\\\\])%", "$1.*");
-        toRegex = toRegex.replaceAll("([^\\\\])_", "$1.");
-        toRegex = toRegex.replaceAll("\\\\(.)", "$1");
+        toRegex = toRegex.replaceAll("([\\[\\]{}()*+?.\\\\\\\\^$|])", "\\\\$1");
+        toRegex = toRegex.replaceAll("([^\\\\\\\\])((?:\\\\\\\\\\\\\\\\)*)%", "$1$2.*");
+        toRegex = toRegex.replaceAll("([^\\\\\\\\])((?:\\\\\\\\\\\\\\\\)*)_", "$1$2.");
+        toRegex = toRegex.replaceAll("([^\\\\\\\\])(\\\\\\\\(?>\\\\\\\\\\\\\\\\)*\\\\\\\\)*\\\\\\\\([_|%])", "$1$2$3");
 
         return toRegex.substring(1);
     }

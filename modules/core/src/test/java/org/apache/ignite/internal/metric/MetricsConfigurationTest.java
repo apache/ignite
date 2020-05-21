@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.lang.management.ManagementFactory;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,7 +25,6 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -340,19 +333,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
     /** */
     public static MetricsMxBean metricsBean(IgniteEx g) {
-        try {
-            ObjectName mbeanName = U.makeMBeanName(g.name(), "Metrics", MetricsMxBeanImpl.class.getSimpleName());
-
-            MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-            if (!mbeanSrv.isRegistered(mbeanName))
-                throw new IgniteException("MBean not registered.");
-
-            return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, MetricsMxBean.class, false);
-        }
-        catch (MalformedObjectNameException e) {
-            throw new IgniteException(e);
-        }
+        return getMxBean(g.name(), "Metrics", MetricsMxBeanImpl.class, MetricsMxBean.class);
     }
 
     /** */

@@ -114,7 +114,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         final String template = " WITH \"template=TPL\"";
 
-        createSql =  CREATE_SQL + template;
+        createSql = CREATE_SQL + template;
         createSql4Cols = CREATE_SQL_4_COLS + template;
     }
 

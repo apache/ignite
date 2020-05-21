@@ -25,8 +25,8 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
@@ -36,11 +36,17 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CO
  * Command to change cluster state.
  */
 public class ClusterStateChangeCommand implements Command<ClusterState> {
+    /** Flag of forced cluster deactivation. */
+    static final String FORCE_COMMAND = "--force";
+
     /** New cluster state */
     private ClusterState state;
 
     /** Cluster name. */
     private String clusterName;
+
+    /** If {@code true}, cluster deactivation will be forced. */
+    private boolean forceDeactivation;
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
@@ -50,7 +56,8 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
         params.put(INACTIVE.toString(), "Deactivate cluster.");
         params.put(ACTIVE_READ_ONLY.toString(), "Activate cluster. Cache updates are denied.");
 
-        Command.usage(log, "Change cluster state:", SET_STATE, params, or((Object[])ClusterState.values()), optional(CMD_AUTO_CONFIRMATION));
+        Command.usage(log, "Change cluster state:", SET_STATE, params, or((Object[])ClusterState.values()),
+            optional(FORCE_COMMAND), optional(CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */
@@ -68,14 +75,14 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            client.state().state(state);
+            client.state().state(state, forceDeactivation);
 
             log.info("Cluster state changed to " + state);
 
             return null;
         }
         catch (Throwable e) {
-            log.info("Failed to change cluster state to " +  state);
+            log.info("Failed to change cluster state to " + state);
 
             throw e;
         }
@@ -90,6 +97,18 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
         }
         catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Can't parse new cluster state. State: " + s, e);
+        }
+
+        forceDeactivation = false;
+
+        if (argIter.hasNextArg()) {
+            String arg = argIter.peekNextArg();
+
+            if (FORCE_COMMAND.equalsIgnoreCase(arg)) {
+                forceDeactivation = true;
+
+                argIter.nextArg("");
+            }
         }
     }
 

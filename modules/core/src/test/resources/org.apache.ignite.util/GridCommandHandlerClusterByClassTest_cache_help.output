@@ -1,0 +1,58 @@
+Control utility [ver. <!any!>
+2020 Copyright(C) Apache Software Foundation
+User: <!any!>
+Time: <!any!>
+Command [CACHE] started
+Arguments: --cache help --yes
+--------------------------------------------------------------------------------
+  The '--cache subcommand' is used to get information about and perform actions with caches. The command has the following syntax:
+
+  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] --cache [subcommand] <subcommand_parameters>
+
+  The subcommands that take [nodeId] as an argument ('list', 'find_garbage', 'contention' and 'validate_indexes') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node.
+
+
+  Subcommands:
+
+  --cache idle_verify [--dump] [--skip-zeros] [--check-crc] [--exclude-caches cacheName1,...,cacheNameN] [--cache-filter DEFAULT|SYSTEM|PERSISTENT|NOT_PERSISTENT|USER|ALL] [cacheName1,...,cacheNameN]
+    Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. Cache filtering options configure the set of caches that will be processed by idle_verify command. Default value for the set of cache names (or cache group names) is all cache groups. Default value for --exclude-caches is empty set. Default value for --cache-filter is no filtering. Therefore, the set of all caches is sequently filtered by cache name regexps, by cache type and after all by exclude regexps.
+
+    Parameters:
+      --check-crc  - check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.
+
+  --cache list regexPattern [--groups|--seq] [nodeId] [--config] [--output-format multi-line]
+    Show information about caches, groups or sequences that match a regular expression. When executed without parameters, this subcommand prints the list of caches.
+
+    Parameters:
+      --config                    - print all configuration parameters for each cache.
+      --output-format multi-line  - print configuration parameters per line. This option has effect only when used with --config and without [--groups|--seq].
+      --groups                    - print information about groups.
+      --seq                       - print information about sequences.
+
+  --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N|--check-through K|--check-crc|--check-sizes]
+    Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. Cache filtering options configure the set of caches that will be processed by idle_verify command. Default value for the set of cache names (or cache group names) is all cache groups. Default value for --exclude-caches is empty set. Default value for --cache-filter is no filtering. Therefore, the set of all caches is sequently filtered by cache name regexps, by cache type and after all by exclude regexps.
+
+    Parameters:
+      --check-first N    - validate only the first N keys
+      --check-through K  - validate every Kth key
+      --check-crc        - check the CRC-sum of pages stored on disk
+      --check-sizes      - check that index size and cache size are the same
+
+  --cache check_index_inline_sizes
+    Checks that secondary indexes inline size are same on the cluster nodes.
+
+  --cache contention minQueueSize [nodeId] [maxPrint]
+    Show the keys that are point of contention for multiple transactions.
+
+  --cache distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attrName1,...,attrNameN]
+    Prints the information about partition distribution.
+
+  --cache reset_lost_partitions cacheName1,...,cacheNameN
+    Reset the state of lost partitions for the specified caches.
+
+  --cache find_garbage [groupName1,...,groupNameN] [nodeId] [--delete]
+    Find and optionally delete garbage from shared cache groups which could be left after cache destroy.
+
+Command [CACHE] finished with code: 0
+Control utility has completed execution at: <!any!>
+Execution time: <!any!>

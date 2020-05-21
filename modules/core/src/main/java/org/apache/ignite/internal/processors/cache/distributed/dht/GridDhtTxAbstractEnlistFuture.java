@@ -280,7 +280,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         else if (timeout > 0)
             timeoutObj = new LockTimeoutObject();
 
-        while(true) {
+        while (true) {
             IgniteInternalFuture<?> fut = tx.lockFut;
 
             if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT) {
@@ -337,7 +337,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 return;
             }
 
-            if(!tx.implicitSingle())
+            if (!tx.implicitSingle())
                 tx.addActiveCache(cctx, false);
             else // Nothing to do for single update.
                 assert tx.txState().cacheIds().contains(cctx.cacheId()) && tx.txState().cacheIds().size() == 1;
@@ -416,7 +416,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                     EntryProcessor entryProc = null;
                     Object[] invokeArgs = null;
 
-                    if(op.isInvoke()) {
+                    if (op.isInvoke()) {
                         assert needResult();
 
                         invokeVal = (GridInvokeValue)((IgniteBiTuple)cur).getValue();

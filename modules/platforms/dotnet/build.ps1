@@ -100,7 +100,7 @@ param (
 # 0) Functions
 function Make-Dir([string]$dirPath) {
     New-Item -Path $dirPath -ItemType "directory" -Force
-    Remove-Item -Force $dirPath\*.*
+    Remove-Item -Force -Recurse $dirPath\*.*
 }
 
 function Exec([string]$command) {
@@ -161,7 +161,8 @@ Make-Dir($libsDir)
 
 Get-ChildItem $jarDirs.Split(',') *.jar -recurse `
    -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" `
-   -exclude "*-sources*","*-javadoc*","*-tests*","*optional*" `
+   -exclude "*-sources*","*-javadoc*","*-tests*" `
+   | ? { $_.FullName -inotmatch '[\\/]optional[\\/]' } `
    | % { Copy-Item -Force $_ $libsDir }
    
 # Restore directory
@@ -178,7 +179,7 @@ if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) {
 
 	if (-not (Test-Path $ng)) {
 		echo "Downloading NuGet..."
-		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", "$PSScriptRoot/nuget.exe")    
+		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v5.3.1/nuget.exe", "$PSScriptRoot/nuget.exe")    
 	}
 }
 
@@ -247,9 +248,11 @@ if ($asmDirs) {
         }
 
         if ($projName.StartsWith("Apache.Ignite")) {
-            $target = "$projName\bin\Release"
-            Make-Dir($target)
-            Copy-Item -Force $_ $target
+            $target = [IO.Path]::Combine($projName, "bin", $configuration)
+            New-Item -Path $target -ItemType "directory" -Force
+
+            echo "Copying '$_' to '$target'"
+            Copy-Item -Force $_.FullName $target
         }
     }    
 }
@@ -260,7 +263,7 @@ Make-Dir("bin")
 Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
                      | where Name -NotLike "*DotNetCore*" `
-                     | where Name -NotLike "*Benchmarks*" | % {
+                     | where Name -NotLike "*Benchmark*" | % {
     $projDir = split-path -parent $_.FullName 
     $dir = [IO.Path]::Combine($projDir, "bin", $configuration, "*")
     echo "Copying files to bin from '$dir'"

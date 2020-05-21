@@ -192,7 +192,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
 
-                    if (--writeAttempts <= 0 && fail!= null && fail.get())
+                    if (--writeAttempts <= 0 && fail != null && fail.get())
                         throw new IOException("No space left on device");
 
                     return super.write(srcBuf);

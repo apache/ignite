@@ -55,12 +55,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.lineSeparator;
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
@@ -218,12 +221,17 @@ public class CommandHandler {
 
         String commandName = "";
 
+        Throwable err = null;
+        boolean verbose = false;
+
         try {
             if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
                 printHelp();
 
                 return EXIT_CODE_OK;
             }
+
+            verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
             ConnectionAndSslParameters args = new CommonArgParser(logger).parseAndValidate(rawArgs.iterator());
 
@@ -281,7 +289,7 @@ public class CommandHandler {
 
                     String pwd = new String(requestPasswordFromConsole("password: "));
 
-                    clientCfg = getClientConfiguration(user, pwd,  args);
+                    clientCfg = getClientConfiguration(user, pwd, args);
 
                     credentialsRequested = true;
                 }
@@ -292,17 +300,21 @@ public class CommandHandler {
             return EXIT_CODE_OK;
         }
         catch (IllegalArgumentException e) {
-            logger.severe("Check arguments. " + CommandLogger.errorMessage(e));
-
+            logger.severe("Check arguments. " + errorMessage(e));
             logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+
+            if (verbose)
+                err = e;
 
             return EXIT_CODE_INVALID_ARGUMENTS;
         }
         catch (Throwable e) {
             if (isAuthError(e)) {
-                logger.severe("Authentication error. " + CommandLogger.errorMessage(e));
-
+                logger.severe("Authentication error. " + errorMessage(e));
                 logger.info("Command [" + commandName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
+
+                if (verbose)
+                    err = e;
 
                 return ERR_AUTHENTICATION_FAILED;
             }
@@ -317,11 +329,14 @@ public class CommandHandler {
                     if (isSSLMisconfigurationError(cause))
                         e = cause;
 
-                    logger.severe("Connection to cluster failed. " + CommandLogger.errorMessage(e));
+                    logger.severe("Connection to cluster failed. " + errorMessage(e));
 
                 }
 
                 logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
+
+                if (verbose)
+                    err = e;
 
                 return EXIT_CODE_CONNECTION_FAILED;
             }
@@ -329,14 +344,19 @@ public class CommandHandler {
             if (X.hasCause(e, IllegalArgumentException.class)) {
                 IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
-                logger.severe("Check arguments. " + CommandLogger.errorMessage(iae));
+                logger.severe("Check arguments. " + errorMessage(iae));
                 logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+
+                if (verbose)
+                    err = e;
 
                 return EXIT_CODE_INVALID_ARGUMENTS;
             }
 
-            logger.severe(CommandLogger.errorMessage(e));
+            logger.severe(errorMessage(e));
             logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
+
+            err = e;
 
             return EXIT_CODE_UNEXPECTED_ERROR;
         }
@@ -344,6 +364,9 @@ public class CommandHandler {
             LocalDateTime endTime = LocalDateTime.now();
 
             Duration diff = Duration.between(startTime, endTime);
+
+            if (nonNull(err))
+                logger.info("Error stack trace:" + System.lineSeparator() + X.getFullStackTrace(err));
 
             logger.info("Control utility has completed execution at: " + endTime);
             logger.info("Execution time: " + diff.toMillis() + " ms");
@@ -512,8 +535,12 @@ public class CommandHandler {
 
         if (args.sslKeyStorePassword() != null)
             factory.setKeyStorePassword(args.sslKeyStorePassword());
-        else
-            factory.setKeyStorePassword(requestPasswordFromConsole("SSL keystore password: "));
+        else {
+            char[] keyStorePwd = requestPasswordFromConsole("SSL keystore password: ");
+
+            args.sslKeyStorePassword(keyStorePwd);
+            factory.setKeyStorePassword(keyStorePwd);
+        }
 
         factory.setKeyStoreType(args.sslKeyStoreType());
 
@@ -524,8 +551,12 @@ public class CommandHandler {
 
             if (args.sslTrustStorePassword() != null)
                 factory.setTrustStorePassword(args.sslTrustStorePassword());
-            else
-                factory.setTrustStorePassword(requestPasswordFromConsole("SSL truststore password: "));
+            else {
+                char[] trustStorePwd = requestPasswordFromConsole("SSL truststore password: ");
+
+                args.sslTrustStorePassword(trustStorePwd);
+                factory.setTrustStorePassword(trustStorePwd);
+            }
 
             factory.setTrustStoreType(args.sslTrustStoreType());
         }

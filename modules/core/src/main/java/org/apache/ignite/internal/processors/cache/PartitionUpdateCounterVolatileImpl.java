@@ -38,7 +38,7 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
     /**
      * Initial counter is set to update with max sequence number after WAL recovery.
      */
-    private long initCntr;
+    private volatile long initCntr;
 
     /** */
     private final CacheGroupContext grp;
@@ -77,7 +77,7 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
     @Override public void update(long val) {
         long cur;
 
-        while(val > (cur = cntr.get()) && !cntr.compareAndSet(cur, val));
+        while (val > (cur = cntr.get()) && !cntr.compareAndSet(cur, val));
     }
 
     /** {@inheritDoc} */
@@ -127,6 +127,11 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
+    @Override public void resetInitialCounter() {
+        initCntr = 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -161,5 +166,15 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
     /** {@inheritDoc} */
     @Override public CacheGroupContext context() {
         return grp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PartitionUpdateCounter copy() {
+        PartitionUpdateCounterVolatileImpl copy = new PartitionUpdateCounterVolatileImpl(grp);
+
+        copy.cntr.set(cntr.get());
+        copy.initCntr = this.initCntr;
+
+        return copy;
     }
 }

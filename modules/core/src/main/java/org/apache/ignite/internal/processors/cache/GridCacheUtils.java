@@ -67,6 +67,7 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.LocalAffinityFunction;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
@@ -603,7 +604,7 @@ public class GridCacheUtils {
             private final LongAdder res = new LongAdder();
 
             @Override public boolean collect(Long l) {
-                if(l != null)
+                if (l != null)
                     res.add(l);
 
                 return true;
@@ -1177,7 +1178,7 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static <K, V> void inTx(IgniteInternalCache<K, V> cache, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K ,V>> clo) throws IgniteCheckedException {
+        TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K, V>> clo) throws IgniteCheckedException {
 
         try (GridNearTxLocal tx = cache.txStartEx(concurrency, isolation)) {
             clo.applyx(cache);
@@ -1196,7 +1197,7 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static <K, V> void inTx(Ignite ignite, IgniteCache<K, V> cache, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, IgniteInClosureX<IgniteCache<K ,V>> clo) throws IgniteCheckedException {
+        TransactionIsolation isolation, IgniteInClosureX<IgniteCache<K, V>> clo) throws IgniteCheckedException {
 
         try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
             clo.applyx(cache);
@@ -1774,11 +1775,11 @@ public class GridCacheUtils {
                 cfg.setBackups(Integer.MAX_VALUE);
             }
             else
-                cfg.setAffinity(new GridCacheProcessor.LocalAffinityFunction());
+                cfg.setAffinity(new LocalAffinityFunction());
         }
         else {
-            if (cfg.getCacheMode() == LOCAL && !(cfg.getAffinity() instanceof GridCacheProcessor.LocalAffinityFunction)) {
-                cfg.setAffinity(new GridCacheProcessor.LocalAffinityFunction());
+            if (cfg.getCacheMode() == LOCAL && !(cfg.getAffinity() instanceof LocalAffinityFunction)) {
+                cfg.setAffinity(new LocalAffinityFunction());
 
                 U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache" +
                     " [cacheName=" + U.maskName(cfg.getName()) + ']');
@@ -2124,6 +2125,6 @@ public class GridCacheUtils {
      *
      */
     public interface BackupPostProcessingClosure extends IgniteInClosure<Collection<GridCacheEntryInfo>>,
-        IgniteBiInClosure<CacheObject, GridCacheVersion>{
+        IgniteBiInClosure<CacheObject, GridCacheVersion> {
     }
 }

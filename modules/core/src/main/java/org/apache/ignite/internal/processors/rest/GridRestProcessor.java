@@ -24,7 +24,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -53,9 +52,9 @@ import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineC
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeClusterStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridClusterNameCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
@@ -275,7 +274,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                     if (secCtx0 == null || ses.isTokenExpired(sesTokTtl))
                         ses.secCtx = secCtx0 = authenticate(req, ses);
 
-                    try(OperationSecurityContext s = ctx.security().withContext(secCtx0)) {
+                    try (OperationSecurityContext s = ctx.security().withContext(secCtx0)) {
                         authorize(req);
                     }
                 }
@@ -804,8 +803,9 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
-        authCtx.nodeAttributes(Collections.<String, Object>emptyMap());
+        authCtx.nodeAttributes(req.userAttributes());
         authCtx.address(req.address());
+        authCtx.certificates(req.certificates());
 
         SecurityCredentials creds = credentials(req);
 

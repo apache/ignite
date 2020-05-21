@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -332,7 +334,7 @@ public interface GridQueryIndexing {
      * @param cctx Cache context.
      * @return Future completed when index rebuild finished.
      */
-    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
+    IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
 
     /**
      * Mark as rebuild needed for the given cache.
@@ -463,4 +465,26 @@ public interface GridQueryIndexing {
      * @return Column information filtered by given patterns.
      */
     Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn, String colNamePtrn);
+
+    /**
+     * Return index size by schema, table and index name.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @return Index size (Number of elements) or {@code 0} if index not found.
+     */
+    default long indexSize(String schemaName, String tblName, String idxName) throws IgniteCheckedException {
+        return 0;
+    }
+
+    /**
+     * Information about secondary indexes efficient (actual) inline size.
+     *
+     * @return Map with inline sizes. The key of entry is a full index name (with schema and table name), the value of
+     * entry is a inline size.
+     */
+    default Map<String, Integer> secondaryIndexesInlineSize() {
+        return Collections.emptyMap();
+    }
 }

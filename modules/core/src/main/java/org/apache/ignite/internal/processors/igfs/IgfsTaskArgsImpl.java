@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * IGFS task arguments implementation.
  */
-public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>,  Externalizable {
+public class IgfsTaskArgsImpl<T> implements IgfsTaskArgs<T>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

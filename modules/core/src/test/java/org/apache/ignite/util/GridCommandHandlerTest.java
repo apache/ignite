@@ -44,6 +44,7 @@ import java.util.stream.IntStream;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -81,6 +82,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -117,6 +119,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
+import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -251,6 +254,63 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(INACTIVE, ignite.cluster().state());
 
         assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
+    }
+
+    /**
+     * Test "deactivate" via control.sh when a non-persistent cache involved.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeactivateNonPersistent() throws Exception {
+        checkDeactivateNonPersistent("--deactivate");
+    }
+
+    /**
+     * Test "set-state inactive" via control.sh when a non-persistent cache involved.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetInactiveNonPersistent() throws Exception {
+        checkDeactivateNonPersistent("--set-state", "inactive");
+    }
+
+    /**
+     * Launches cluster deactivation. Works via control.sh when a non-persistent cache involved.
+     *
+     *  @param cmd Certain command to deactivate cluster.
+     */
+    private void checkDeactivateNonPersistent(String... cmd) throws Exception {
+        dataRegionConfiguration = new DataRegionConfiguration()
+            .setName("non-persistent-dataRegion")
+            .setPersistenceEnabled(false);
+
+        Ignite ignite = startGrids(1);
+
+        ignite.cluster().state(ACTIVE);
+
+        assertTrue(ignite.cluster().active());
+        assertEquals(ACTIVE, ignite.cluster().state());
+
+        ignite.createCache(new CacheConfiguration<>("non-persistent-cache")
+            .setDataRegionName("non-persistent-dataRegion"));
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(cmd));
+
+        assertTrue(ignite.cluster().active());
+        assertEquals(ACTIVE, ignite.cluster().state());
+        assertContains(log, testOut.toString(), GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING);
+
+        List<String> forceCmd = new ArrayList<>(Arrays.asList(cmd));
+        forceCmd.add("--force");
+
+        assertEquals(EXIT_CODE_OK, execute(forceCmd));
+
+        assertFalse(ignite.cluster().active());
+        assertEquals(INACTIVE, ignite.cluster().state());
     }
 
     /**
@@ -1182,7 +1242,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     @Test
     public void testIdleVerifyCheckCrcFailsOnNotIdleCluster() throws Exception {
-        checkpointFreq = 100L;
+        checkpointFreq = 1000L;
 
         IgniteEx node = startGrids(2);
 
@@ -1200,7 +1260,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
             while (!stopFlag.get()) {
-                cache.put(rnd.nextInt(), rnd.nextInt());
+                cache.put(rnd.nextInt(1000), rnd.nextInt(1000));
 
                 if (Thread.interrupted())
                     break;
@@ -1217,6 +1277,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--check-crc"));
         }
         finally {
+            doSleep(checkpointFreq);
+
             stopFlag.set(true);
 
             loadThread.join();
@@ -1231,7 +1293,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String logFile = new String(Files.readAllBytes(new File(logFileName + ".txt").toPath()));
 
-        assertContains(log, logFile, "Checkpoint with dirty pages started! Cluster not idle!");
+        assertContains(log, logFile, GRID_NOT_IDLE_MSG);
     }
 
     /**

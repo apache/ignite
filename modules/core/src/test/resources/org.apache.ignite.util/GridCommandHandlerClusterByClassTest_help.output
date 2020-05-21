@@ -1,0 +1,130 @@
+Control utility [ver. <!any!>
+2020 Copyright(C) Apache Software Foundation
+User: <!any!>
+Time: <!any!>
+Control utility script is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:
+
+  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [command] <command_parameters>
+
+
+This utility can do the following commands:
+
+  Activate cluster (deprecated. Use --set-state instead):
+    control.(sh|bat) --activate
+
+  Deactivate cluster (deprecated. Use --set-state instead):
+    control.(sh|bat) --deactivate [--force] [--yes]
+
+  Print current cluster state:
+    control.(sh|bat) --state
+
+  Change cluster state:
+    control.(sh|bat) --set-state INACTIVE|ACTIVE|ACTIVE_READ_ONLY [--force] [--yes]
+
+    Parameters:
+      ACTIVE            - Activate cluster. Cache updates are allowed.
+      INACTIVE          - Deactivate cluster.
+      ACTIVE_READ_ONLY  - Activate cluster. Cache updates are denied.
+
+  Print cluster baseline topology:
+    control.(sh|bat) --baseline
+
+  Add nodes into baseline topology:
+    control.(sh|bat) --baseline add consistentId1[,consistentId2,....,consistentIdN] [--yes]
+
+  Remove nodes from baseline topology:
+    control.(sh|bat) --baseline remove consistentId1[,consistentId2,....,consistentIdN] [--yes]
+
+  Set baseline topology:
+    control.(sh|bat) --baseline set consistentId1[,consistentId2,....,consistentIdN] [--yes]
+
+  Set baseline topology based on version:
+    control.(sh|bat) --baseline version topologyVersion [--yes]
+
+  Set baseline autoadjustment settings:
+    control.(sh|bat) --baseline auto_adjust [disable|enable] [timeout <timeoutMillis>] [--yes]
+
+  List or kill transactions:
+    control.(sh|bat) --tx [--xid XID] [--min-duration SECONDS] [--min-size SIZE] [--label PATTERN_REGEX] [--servers|--clients] [--nodes consistentId1[,consistentId2,....,consistentIdN]] [--limit NUMBER] [--order DURATION|SIZE|START_TIME] [--kill] [--info] [--yes]
+
+  Print detailed information (topology and key lock ownership) about specific transaction:
+    control.(sh|bat) --tx --info <TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>|<TX identifier as UUID (can be retrieved via --tx command)>
+
+  View caches information in a cluster. For more details type:
+    control.(sh|bat) --cache help
+
+  Print absolute paths of unused archived wal segments on each node:
+    control.(sh|bat) --wal print [consistentId1,consistentId2,....,consistentIdN]
+
+  Delete unused archived wal segments on each node:
+    control.(sh|bat) --wal delete [consistentId1,consistentId2,....,consistentIdN] [--yes]
+
+  View diagnostic information in a cluster. For more details type:
+    control.(sh|bat) --diagnostic
+
+  Print the current master key name:
+    control.(sh|bat) --encryption get_master_key_name
+
+  Change the master key:
+    control.(sh|bat) --encryption change_master_key newMasterKeyName
+
+  Kill compute task by session id:
+    control.(sh|bat) --kill COMPUTE session_id
+
+    Parameters:
+      session_id  - Session identifier.
+
+  Kill service by name:
+    control.(sh|bat) --kill SERVICE name
+
+    Parameters:
+      name  - Service name.
+
+  Kill transaction by xid:
+    control.(sh|bat) --kill TRANSACTION xid
+
+    Parameters:
+      xid  - Transaction identifier.
+
+  Kill sql query by query id:
+    control.(sh|bat) --kill SQL query_id
+
+    Parameters:
+      query_id  - Query identifier.
+
+  Kill scan query by node id, cache name and query id:
+    control.(sh|bat) --kill SCAN origin_node_id cache_name query_id
+
+    Parameters:
+      cache_name      - Cache name.
+      query_id        - Query identifier.
+      origin_node_id  - Originating node id.
+
+  Kill continuous query by routine id:
+    control.(sh|bat) --kill CONTINUOUS origin_node_id routine_id
+
+    Parameters:
+      routine_id      - Routine identifier.
+      origin_node_id  - Originating node id.
+
+By default commands affecting the cluster require interactive confirmation.
+Use --yes option to disable it.
+
+Default values:
+    HOST_OR_IP=127.0.0.1
+    PORT=11211
+    PING_INTERVAL=5000
+    PING_TIMEOUT=30000
+    SSL_PROTOCOL=TLS
+    SSL_KEY_ALGORITHM=SunX509
+    KEYSTORE_TYPE=JKS
+    TRUSTSTORE_TYPE=JKS
+
+Exit codes:
+    0 - successful execution.
+    1 - invalid arguments.
+    2 - connection failed.
+    3 - authentication failed.
+    4 - unexpected error.
+Control utility has completed execution at: <!any!>
+Execution time: <!any!>

@@ -519,9 +519,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         // Await fully exchange complete.
         awaitExchange(newIgnite);
 
-        for (Ignite g : G.allGrids())
-            g.cache(DEFAULT_CACHE_NAME).rebalance();
-
         assertFalse(grpCtx.walEnabled());
 
         // TODO : test with client node as well
@@ -581,7 +578,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         cache = newIgnite.cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < keysCnt; k++)
-            assertFalse("k=" + k +", v="  + cache.get(k), cache.containsKey(k));
+            assertFalse("k=" + k + ", v=" + cache.get(k), cache.containsKey(k));
 
         Set<Integer> keys = new TreeSet<>();
 

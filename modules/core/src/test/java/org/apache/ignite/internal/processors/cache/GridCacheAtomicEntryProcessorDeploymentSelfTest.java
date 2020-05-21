@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.HashSet;
 import java.util.Map;
+import java.util.TreeSet;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -80,14 +80,14 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @return Cache.
      */
-    protected IgniteCache getCache(){
+    protected IgniteCache getCache() {
         return grid(1).cache(DEFAULT_CACHE_NAME);
     }
 
     /**
      * @return Entry Processor.
      */
-    protected String getEntryProcessor(){
+    protected String getEntryProcessor() {
        return GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) != null ?
             GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) :
             "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessor";
@@ -183,7 +183,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
 
             IgniteCache cache = getCache();
 
-            HashSet keys = new HashSet();
+            TreeSet keys = new TreeSet();
 
             for (int i = 0; i < 3; i++) {
                 String key = "key" + i;

@@ -44,6 +44,7 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
@@ -77,7 +78,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2")
+            .setSqlConfiguration(new SqlConfiguration()
+                .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2")
+            )
             .setMetricExporterSpi(new SqlViewMetricExporterSpi());
     }
 
@@ -337,6 +340,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHE_GROUPS",
                 "SYS.CACHES",
                 "SYS.TASKS",
+                "SYS.JOBS",
                 "SYS.SQL_QUERIES_HISTORY",
                 "SYS.NODES",
                 "SYS.SCHEMAS",
@@ -533,7 +537,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             Set<String> actualSystemCols = new HashSet<>();
 
-            while(rs.next()) {
+            while (rs.next()) {
                 int precision = rs.getInt("COLUMN_SIZE");
 
                 int scale = rs.getInt("DECIMAL_DIGITS");
@@ -783,9 +787,26 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TASKS.TASK_NAME.null.2147483647",
                 "SYS.TASKS.TASK_NODE_ID.null.2147483647",
                 "SYS.TASKS.JOB_ID.null.2147483647",
+                "SYS.TASKS.ID.null.2147483647",
+                "SYS.TASKS.SESSION_ID.null.2147483647",
                 "SYS.TASKS.AFFINITY_PARTITION_ID.null.10",
                 "SYS.TASKS.TASK_CLASS_NAME.null.2147483647",
-                "SYS.TASKS.EXEC_NAME.null.2147483647",
+                "SYS.JOBS.IS_STARTED.null.1",
+                "SYS.JOBS.EXECUTOR_NAME.null.2147483647",
+                "SYS.JOBS.IS_TIMED_OUT.null.1",
+                "SYS.JOBS.ID.null.2147483647",
+                "SYS.JOBS.FINISH_TIME.null.19",
+                "SYS.JOBS.IS_INTERNAL.null.1",
+                "SYS.JOBS.CREATE_TIME.null.19",
+                "SYS.JOBS.AFFINITY_PARTITION_ID.null.10",
+                "SYS.JOBS.ORIGIN_NODE_ID.null.2147483647",
+                "SYS.JOBS.TASK_NAME.null.2147483647",
+                "SYS.JOBS.TASK_CLASS_NAME.null.2147483647",
+                "SYS.JOBS.SESSION_ID.null.2147483647",
+                "SYS.JOBS.IS_FINISHING.null.1",
+                "SYS.JOBS.START_TIME.null.19",
+                "SYS.JOBS.AFFINITY_CACHE_IDS.null.2147483647",
+                "SYS.JOBS.STATE.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.CONNECTION_ID.null.19",
                 "SYS.CLIENT_CONNECTIONS.LOCAL_ADDRESS.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.REMOTE_ADDRESS.null.2147483647",
@@ -974,7 +995,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             Set<String> actualIdxs = new HashSet<>(expectedIdxs.size());
 
-            while(rs.next()) {
+            while (rs.next()) {
                 actualIdxs.add(rs.getString("TABLE_SCHEM") +
                     '.' + rs.getString("TABLE_NAME") +
                     '.' + rs.getString("INDEX_NAME"));
@@ -1026,7 +1047,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
-            while(rs.next()) {
+            while (rs.next()) {
                 actualPks.add(rs.getString("TABLE_SCHEM") +
                     '.' + rs.getString("TABLE_NAME") +
                     '.' + rs.getString("PK_NAME") +
@@ -1045,7 +1066,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         // Perform checks few times due to query/plan caching.
         for (int i = 0; i < 3; i++) {
             // No parameters statement.
-            try(Connection conn = DriverManager.getConnection(URL)) {
+            try (Connection conn = DriverManager.getConnection(URL)) {
                 conn.setSchema("\"pers\"");
 
                 PreparedStatement noParams = conn.prepareStatement("select * from Person;");

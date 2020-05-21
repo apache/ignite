@@ -25,9 +25,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -35,6 +37,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.client.ClientAuthenticationException;
+import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -47,7 +51,13 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Communication channel with failover and partition awareness.
  */
-final class ReliableChannel implements AutoCloseable {
+final class ReliableChannel implements AutoCloseable, NotificationListener {
+    /** Timeout to wait for executor service to shutdown (in milliseconds). */
+    private static final long EXECUTOR_SHUTDOWN_TIMEOUT = 10_000L;
+
+    /** Async runner thread name. */
+    static final String ASYNC_RUNNER_THREAD_NAME = "thin-client-channel-async-init";
+
     /** Channel factory. */
     private final Function<ClientChannelConfiguration, ClientChannel> chFactory;
 
@@ -66,11 +76,21 @@ final class ReliableChannel implements AutoCloseable {
     /** Node channels. */
     private final Map<UUID, ClientChannelHolder> nodeChannels = new ConcurrentHashMap<>();
 
+    /** Notification listeners. */
+    private final Collection<NotificationListener> notificationLsnrs = new CopyOnWriteArrayList<>();
+
+    /** Listeners of channel close events. */
+    private final Collection<Consumer<ClientChannel>> channelCloseLsnrs = new CopyOnWriteArrayList<>();
+
     /** Async tasks thread pool. */
     private final ExecutorService asyncRunner = Executors.newSingleThreadExecutor(
         new ThreadFactory() {
             @Override public Thread newThread(@NotNull Runnable r) {
-                return new Thread(r, "thin-client-channel-async-runner");
+                Thread thread = new Thread(r, ASYNC_RUNNER_THREAD_NAME);
+
+                thread.setDaemon(true);
+
+                return thread;
             }
         }
     );
@@ -82,7 +102,7 @@ final class ReliableChannel implements AutoCloseable {
     private final AtomicBoolean affinityUpdateInProgress = new AtomicBoolean();
 
     /** Channel is closed. */
-    private boolean closed;
+    private volatile boolean closed;
 
     /**
      * Constructor.
@@ -137,18 +157,33 @@ final class ReliableChannel implements AutoCloseable {
     @Override public synchronized void close() {
         closed = true;
 
+        asyncRunner.shutdown();
+
+        try {
+            asyncRunner.awaitTermination(EXECUTOR_SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException ignore) {
+            // No-op.
+        }
+
         for (ClientChannelHolder hld : channels)
             hld.closeChannel();
     }
 
     /**
      * Send request and handle response.
+     *
+     * @throws ClientException Thrown by {@code payloadWriter} or {@code payloadReader}.
+     * @throws ClientAuthenticationException When user name or password is invalid.
+     * @throws ClientAuthorizationException When user has no permission to perform operation.
+     * @throws ClientProtocolError When failed to handshake with server.
+     * @throws ClientServerError When failed to process request on server.
      */
     public <T> T service(
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
-    ) throws ClientException {
+    ) throws ClientException, ClientError {
         ClientConnectionException failure = null;
 
         for (int i = 0; i < channels.length; i++) {
@@ -176,14 +211,15 @@ final class ReliableChannel implements AutoCloseable {
      * Send request without payload and handle response.
      */
     public <T> T service(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
-        throws ClientException {
+        throws ClientException, ClientError {
         return service(op, null, payloadReader);
     }
 
     /**
      * Send request and handle response without payload.
      */
-    public void request(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter) throws ClientException {
+    public void request(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
+        throws ClientException, ClientError {
         service(op, payloadWriter, null);
     }
 
@@ -196,7 +232,7 @@ final class ReliableChannel implements AutoCloseable {
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
-    ) throws ClientException {
+    ) throws ClientException, ClientError {
         if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
             UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
 
@@ -220,6 +256,42 @@ final class ReliableChannel implements AutoCloseable {
 
         // Can't determine affinity node or request to affinity node failed - proceed with standart failover service.
         return service(op, payloadWriter, payloadReader);
+    }
+
+    /**
+     * Add notification listener.
+     *
+     * @param lsnr Listener.
+     */
+    public void addNotificationListener(NotificationListener lsnr) {
+        notificationLsnrs.add(lsnr);
+    }
+
+    /**
+     * Add listener of channel close event.
+     *
+     * @param lsnr Listener.
+     */
+    public void addChannelCloseListener(Consumer<ClientChannel> lsnr) {
+        channelCloseLsnrs.add(lsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void acceptNotification(
+        ClientChannel ch,
+        ClientOperation op,
+        long rsrcId,
+        byte[] payload,
+        Exception err
+    ) {
+        for (NotificationListener lsnr : notificationLsnrs) {
+            try {
+                lsnr.acceptNotification(ch, op, rsrcId, payload, err);
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+        }
     }
 
     /**
@@ -363,8 +435,8 @@ final class ReliableChannel implements AutoCloseable {
                     scheduledChannelsReinit.set(false);
 
                     for (ClientChannelHolder hld : channels) {
-                        if (scheduledChannelsReinit.get())
-                            return; // New reinit task scheduled.
+                        if (scheduledChannelsReinit.get() || closed)
+                            return; // New reinit task scheduled or channel is closed.
 
                         try {
                             hld.getOrCreateChannel(true);
@@ -435,14 +507,16 @@ final class ReliableChannel implements AutoCloseable {
         /**
          * Get or create channel.
          */
-        private synchronized ClientChannel getOrCreateChannel() {
+        private synchronized ClientChannel getOrCreateChannel()
+            throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
             return getOrCreateChannel(false);
         }
 
         /**
          * Get or create channel.
          */
-        private synchronized ClientChannel getOrCreateChannel(boolean ignoreThrottling) {
+        private synchronized ClientChannel getOrCreateChannel(boolean ignoreThrottling)
+            throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
             if (ch == null) {
                 if (!ignoreThrottling && applyReconnectionThrottling())
                     throw new ClientConnectionException("Reconnect is not allowed due to applied throttling");
@@ -451,6 +525,7 @@ final class ReliableChannel implements AutoCloseable {
 
                 if (ch.serverNodeId() != null) {
                     ch.addTopologyChangeListener(ReliableChannel.this::onTopologyChanged);
+                    ch.addNotificationListener(ReliableChannel.this);
 
                     nodeChannels.values().remove(this);
 
@@ -465,9 +540,14 @@ final class ReliableChannel implements AutoCloseable {
          * Close channel.
          */
         private synchronized void closeChannel() {
-            U.closeQuiet(ch);
+            if (ch != null) {
+                U.closeQuiet(ch);
 
-            ch = null;
+                for (Consumer<ClientChannel> lsnr : channelCloseLsnrs)
+                    lsnr.accept(ch);
+
+                ch = null;
+            }
         }
     }
 }

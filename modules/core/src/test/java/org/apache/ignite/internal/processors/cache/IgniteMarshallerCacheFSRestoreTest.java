@@ -176,7 +176,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
 
         File marshStoreDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false);
 
-        try(FileOutputStream out = new FileOutputStream(new File(marshStoreDir, fileName))) {
+        try (FileOutputStream out = new FileOutputStream(new File(marshStoreDir, fileName))) {
             try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
                 writer.write(typeName);
 

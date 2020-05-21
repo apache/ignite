@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -85,6 +86,8 @@ import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
 /**
@@ -153,7 +156,7 @@ public class IgniteConfiguration {
     public static final int AVAILABLE_PROC_CNT = Runtime.getRuntime().availableProcessors();
 
     /** Default core size of public thread pool. */
-    public static final int DFLT_PUBLIC_THREAD_CNT = Math.max(8, AVAILABLE_PROC_CNT);
+    public static final int DFLT_PUBLIC_THREAD_CNT = max(8, AVAILABLE_PROC_CNT);
 
     /** Default size of data streamer thread pool. */
     public static final int DFLT_DATA_STREAMER_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
@@ -178,6 +181,9 @@ public class IgniteConfiguration {
 
     /** Default size of query thread pool. */
     public static final int DFLT_QUERY_THREAD_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
+
+    /** Default size of index create/rebuild thread pool. */
+    public static final int DFLT_BUILD_IDX_THREAD_POOL_SIZE = min(4, max(1, AVAILABLE_PROC_CNT / 4));
 
     /** Default Ignite thread keep alive time. */
     public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
@@ -215,6 +221,9 @@ public class IgniteConfiguration {
     /** Default value for cache sanity check enabled flag. */
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
+    /** Default relative working directory path for snapshot operation result. */
+    public static final String DFLT_SNAPSHOT_DIRECTORY = "snapshots";
+
     /** Default value for late affinity assignment flag. */
     @Deprecated
     public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
@@ -238,8 +247,13 @@ public class IgniteConfiguration {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT = new Long(30_000);
 
-    /** Default timeout after which long query warning will be printed. */
-    public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
+    /**
+     *  Default timeout after which long query warning will be printed.
+     *
+     * @deprecated Please use {@link SqlConfiguration#DFLT_LONG_QRY_WARN_TIMEOUT}.
+     */
+    @Deprecated
+    public static final long DFLT_LONG_QRY_WARN_TIMEOUT = SqlConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
 
     /** Default number of MVCC vacuum threads.. */
     public static final int DFLT_MVCC_VACUUM_THREAD_CNT = 2;
@@ -247,11 +261,13 @@ public class IgniteConfiguration {
     /** Default time interval between MVCC vacuum runs in milliseconds. */
     public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
 
-    /** Default SQL query history size. */
-    public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
-
-    /** Default query timeout. */
-    public static final long DFLT_QRY_TIMEOUT = 0;
+    /**
+     * Default SQL query history size.
+     *
+     * @deprecated Please use {@link SqlConfiguration#DFLT_SQL_QUERY_HISTORY_SIZE}.
+     */
+    @Deprecated
+    public static final int DFLT_SQL_QUERY_HISTORY_SIZE = SqlConfiguration.DFLT_SQL_QUERY_HISTORY_SIZE;
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
@@ -301,11 +317,8 @@ public class IgniteConfiguration {
     /** Query pool size. */
     private int qryPoolSize = DFLT_QUERY_THREAD_POOL_SIZE;
 
-    /** SQL query history size. */
-    private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
-
-    /** Default query timeout. */
-    private long dfltQryTimeout = DFLT_QRY_TIMEOUT;
+    /** Index create/rebuild pool size. */
+    private int buildIdxPoolSize = DFLT_BUILD_IDX_THREAD_POOL_SIZE;
 
     /** Ignite installation folder. */
     private String igniteHome;
@@ -543,6 +556,13 @@ public class IgniteConfiguration {
     /** Page memory configuration. */
     private DataStorageConfiguration dsCfg;
 
+    /**
+     * Directory where will be stored all results of snapshot operations. The internal
+     * {@link U#resolveWorkDirectory(String, String, boolean)} is used to configure
+     * snapshot working directory.
+     */
+    private String snapshotPath = DFLT_SNAPSHOT_DIRECTORY;
+
     /** Active on start flag. */
     @Deprecated
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -559,9 +579,6 @@ public class IgniteConfiguration {
 
     /** Cluster state on start. */
     private ClusterState clusterStateOnStart;
-
-    /** */
-    private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
     /** SQL connector configuration. */
     @Deprecated
@@ -585,11 +602,11 @@ public class IgniteConfiguration {
     /** Communication failure resolver */
     private CommunicationFailureResolver commFailureRslvr;
 
-    /** SQL schemas to be created on node start. */
-    private String[] sqlSchemas;
-
     /** Plugin providers. */
     private PluginProvider[] pluginProvs;
+
+    /** SQL configuration. */
+    private SqlConfiguration sqlCfg = new SqlConfiguration();
 
     /**
      * Creates valid grid configuration with all default values.
@@ -651,7 +668,6 @@ public class IgniteConfiguration {
         consistentId = cfg.getConsistentId();
         daemon = cfg.isDaemon();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
-        dfltQryTimeout = cfg.getDefaultQueryTimeout();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execCfgs = cfg.getExecutorConfiguration();
@@ -668,7 +684,6 @@ public class IgniteConfiguration {
         lifecycleBeans = cfg.getLifecycleBeans();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
-        longQryWarnTimeout = cfg.getLongQueryWarningTimeout();
         lsnrs = cfg.getLocalEventListeners();
         marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
@@ -692,6 +707,7 @@ public class IgniteConfiguration {
         pluginProvs = cfg.getPluginProviders();
         pubPoolSize = cfg.getPublicThreadPoolSize();
         qryPoolSize = cfg.getQueryThreadPoolSize();
+        buildIdxPoolSize = cfg.getBuildIndexThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
         rebalanceTimeout = cfg.getRebalanceTimeout();
         rebalanceBatchesPrefetchCnt = cfg.getRebalanceBatchesPrefetchCount();
@@ -701,11 +717,10 @@ public class IgniteConfiguration {
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
         segResolvers = cfg.getSegmentationResolvers();
+        snapshotPath = cfg.getSnapshotPath();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
-        sqlQryHistSize = cfg.getSqlQueryHistorySize();
-        sqlSchemas = cfg.getSqlSchemas();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
@@ -721,6 +736,7 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+        sqlCfg = cfg.getSqlConfiguration();
     }
 
     /**
@@ -1081,25 +1097,56 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Size of thread pool for create/rebuild index.
+     * <p>
+     * If not provided, executor service will have size
+     * {@link #DFLT_BUILD_IDX_THREAD_POOL_SIZE}.
+     *
+     * @return Thread pool size for create/rebuild index.
+     */
+    public int getBuildIndexThreadPoolSize() {
+        return buildIdxPoolSize;
+    }
+
+    /**
+     * Sets index create/rebuild thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @return {@code this} for chaining.
+     * @see IgniteConfiguration#getBuildIndexThreadPoolSize()
+     */
+    public IgniteConfiguration setBuildIndexThreadPoolSize(int poolSize) {
+        buildIdxPoolSize = poolSize;
+
+        return this;
+    }
+
+    /**
      * Number of SQL query history elements to keep in memory. If not provided, then default value {@link
-     * #DFLT_SQL_QUERY_HISTORY_SIZE} is used. If provided value is less or equals 0, then gathering SQL query history
+     * SqlConfiguration#DFLT_SQL_QUERY_HISTORY_SIZE} is used. If provided value is less or equals 0, then gathering SQL query history
      * will be switched off.
      *
      * @return SQL query history size.
+     *
+     * @deprecated Use {@link SqlConfiguration#setSqlQueryHistorySize(int)} instead.
      */
+    @Deprecated
     public int getSqlQueryHistorySize() {
-        return sqlQryHistSize;
+        return sqlCfg.getSqlQueryHistorySize();
     }
 
     /**
      * Sets number of SQL query history elements kept in memory. If not explicitly set, then default value is {@link
-     * #DFLT_SQL_QUERY_HISTORY_SIZE}.
+     * SqlConfiguration#DFLT_SQL_QUERY_HISTORY_SIZE}.
      *
      * @param size Number of SQL query history elements kept in memory.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link SqlConfiguration#getSqlQueryHistorySize()} instead.
      */
+    @Deprecated
     public IgniteConfiguration setSqlQueryHistorySize(int size) {
-        sqlQryHistSize = size;
+        sqlCfg.setSqlQueryHistorySize(size);
 
         return this;
     }
@@ -1107,14 +1154,17 @@ public class IgniteConfiguration {
     /**
      * Defines the default query timeout.
      *
-     * Defaults to {@link #DFLT_QRY_TIMEOUT}.
+     * Defaults to {@link SqlConfiguration#DFLT_QRY_TIMEOUT}.
      * {@code 0} means there is no timeout (this
      * is a default value)
      *
      * @return Default query timeout.
+     *
+     * @deprecated Use {@link SqlConfiguration#getDefaultQueryTimeout()} instead.
      */
+    @Deprecated
     public long getDefaultQueryTimeout() {
-        return dfltQryTimeout;
+        return sqlCfg.getDefaultQueryTimeout();
     }
 
     /**
@@ -1124,10 +1174,12 @@ public class IgniteConfiguration {
      *
      * @param dfltQryTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link SqlConfiguration#setDefaultQueryTimeout(long)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setDefaultQueryTimeout(long dfltQryTimeout) {
-        A.ensure(dfltQryTimeout >= 0 && dfltQryTimeout <= Integer.MAX_VALUE, "default query timeout value should be valid Integer.");
-        this.dfltQryTimeout = dfltQryTimeout;
+        sqlCfg.setDefaultQueryTimeout(dfltQryTimeout);
 
         return this;
     }
@@ -3118,6 +3170,26 @@ public class IgniteConfiguration {
     }
 
     /**
+     * @return By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used. The value can be
+     * configured as relative path starting from the Ignites {@link #getWorkDirectory()} or
+     * the value can be represented as an absolute snapshot working path.
+     */
+    public String getSnapshotPath() {
+        return snapshotPath;
+    }
+
+    /**
+     * @param snapshotPath By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used.
+     * The value can be configured as relative path starting from the Ignites {@link #getWorkDirectory()}
+     * or the value can be represented as an absolute snapshot working path instead.
+     */
+    public IgniteConfiguration setSnapshotPath(String snapshotPath) {
+        this.snapshotPath = snapshotPath;
+
+        return this;
+    }
+
+    /**
      * Gets grid warmup closure. This closure will be executed before actual grid instance start. Configuration of
      * a starting instance will be passed to the closure so it can decide what operations to warm up.
      *
@@ -3346,9 +3418,12 @@ public class IgniteConfiguration {
      * Gets timeout in milliseconds after which long query warning will be printed.
      *
      * @return Timeout in milliseconds.
+     *
+     * @deprecated Use {@link SqlConfiguration#getLongQueryWarningTimeout()} instead.
      */
+    @Deprecated
     public long getLongQueryWarningTimeout() {
-        return longQryWarnTimeout;
+        return sqlCfg.getLongQueryWarningTimeout();
     }
 
     /**
@@ -3356,9 +3431,12 @@ public class IgniteConfiguration {
      *
      * @param longQryWarnTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link SqlConfiguration#setLongQueryWarningTimeout(long)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setLongQueryWarningTimeout(long longQryWarnTimeout) {
-        this.longQryWarnTimeout = longQryWarnTimeout;
+        sqlCfg.setLongQueryWarningTimeout(longQryWarnTimeout);
 
         return this;
     }
@@ -3431,20 +3509,26 @@ public class IgniteConfiguration {
     }
 
     /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
      * Returns number of MVCC vacuum threads.
      *
      * @return Number of MVCC vacuum threads.
      */
+    @IgniteExperimental
     public int getMvccVacuumThreadCount() {
         return mvccVacuumThreadCnt;
     }
 
     /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
      * Sets number of MVCC vacuum threads.
      *
      * @param mvccVacuumThreadCnt Number of MVCC vacuum threads.
      * @return {@code this} for chaining.
      */
+    @IgniteExperimental
     public IgniteConfiguration setMvccVacuumThreadCount(int mvccVacuumThreadCnt) {
         this.mvccVacuumThreadCnt = mvccVacuumThreadCnt;
 
@@ -3452,20 +3536,26 @@ public class IgniteConfiguration {
     }
 
     /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
      * Returns time interval between MVCC vacuum runs in milliseconds.
      *
      * @return Time interval between MVCC vacuum runs in milliseconds.
      */
+    @IgniteExperimental
     public long getMvccVacuumFrequency() {
         return mvccVacuumFreq;
     }
 
     /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
      * Sets time interval between MVCC vacuum runs in milliseconds.
      *
      * @param mvccVacuumFreq Time interval between MVCC vacuum runs in milliseconds.
      * @return {@code this} for chaining.
      */
+    @IgniteExperimental
     public IgniteConfiguration setMvccVacuumFrequency(long mvccVacuumFreq) {
         this.mvccVacuumFreq = mvccVacuumFreq;
 
@@ -3500,9 +3590,12 @@ public class IgniteConfiguration {
      * See {@link #setSqlSchemas(String...)} for more information.
      *
      * @return SQL schemas to be created on node startup.
+     *
+     * @deprecated Use {@link SqlConfiguration#getSqlSchemas()} instead.
      */
+    @Deprecated
     public String[] getSqlSchemas() {
-        return sqlSchemas;
+        return sqlCfg.getSqlSchemas();
     }
 
     /**
@@ -3516,9 +3609,12 @@ public class IgniteConfiguration {
      *
      * @param sqlSchemas SQL schemas to be created on node startup.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link SqlConfiguration#setSqlSchemas(String...)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setSqlSchemas(String... sqlSchemas) {
-        this.sqlSchemas = sqlSchemas;
+        sqlCfg.setSqlSchemas(sqlSchemas);
 
         return this;
     }
@@ -3540,6 +3636,28 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setPluginProviders(PluginProvider... pluginProvs) {
         this.pluginProvs = pluginProvs;
+
+        return this;
+    }
+
+    /**
+     * Gets Configuration of the SQL subsystem.
+     *
+     * @return SQL configuration.
+     */
+    public SqlConfiguration getSqlConfiguration() {
+        return sqlCfg;
+    }
+
+    /**
+     * @param sqlCfg Configuration of the SQL subsystem.
+     *
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSqlConfiguration(SqlConfiguration sqlCfg) {
+        A.ensure(sqlCfg != null, "SQL configuration cannot be null");
+
+        this.sqlCfg = sqlCfg;
 
         return this;
     }

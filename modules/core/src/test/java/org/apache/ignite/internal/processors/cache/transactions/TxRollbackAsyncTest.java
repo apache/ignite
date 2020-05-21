@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -498,7 +498,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         TransactionConcurrency conc) throws Exception {
         final Ignite client = startClient();
 
-        Map<Integer, Integer> entries = new HashMap<>();
+        Map<Integer, Integer> entries = new TreeMap<>();
 
         for (int i = 0; i < 1000000; i++)
             entries.put(i, i);
@@ -678,7 +678,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
 
                 TransactionConcurrency conc = mvcc ? PESSIMISTIC : TC_VALS[r.nextInt(TC_VALS.length)];
-                TransactionIsolation isolation = mvcc ? REPEATABLE_READ :TI_VALS[r.nextInt(TI_VALS.length)];
+                TransactionIsolation isolation = mvcc ? REPEATABLE_READ : TI_VALS[r.nextInt(TI_VALS.length)];
 
                 // Timeout is necessary otherwise deadlock is possible due to randomness of lock acquisition.
                 long timeout = r.nextInt(50) + 50;

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.lang.management.ManagementFactory;
 import java.sql.Connection;
 import java.text.DateFormat;
 import java.time.LocalTime;
@@ -41,10 +40,6 @@ import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularDataSupport;
 import org.apache.ignite.IgniteCache;
@@ -125,6 +120,9 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     private static IgniteEx ignite;
+
+    /** */
+    private static final String REGISTRY_NAME = "test_registry";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -221,13 +219,13 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         IgniteCache c = ignite.createCache(n);
 
-        DynamicMBean cacheBean = mbean(ignite, CACHE_METRICS, n);
+        DynamicMBean cacheBean = metricRegistry(ignite.name(), CACHE_METRICS, n);
 
         assertNotNull(cacheBean);
 
         ignite.destroyCache(n);
 
-        assertThrowsWithCause(() -> mbean(ignite, CACHE_METRICS, n), IgniteException.class);
+        assertThrowsWithCause(() -> metricRegistry(ignite.name(), CACHE_METRICS, n), IgniteException.class);
     }
 
     /** */
@@ -368,7 +366,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 Consumer<CompositeData> checkThin = c -> {
                     assertEquals("THIN", c.get("type"));
                     assertTrue(c.get("localAddress").toString().endsWith(Integer.toString(port)));
-                    assertEquals(c.get("version"), ProtocolVersion.CURRENT_VER.toString());
+                    assertEquals(c.get("version"), ProtocolVersion.LATEST_VER.toString());
                 };
 
                 Consumer<CompositeData> checkJdbc = c -> {
@@ -424,7 +422,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             }
 
             assertEquals(0, systemView(CQ_SYS_VIEW).size());
-            assertEquals(0, systemView(remoteNode, CQ_SYS_VIEW).size());
+            assertTrue(waitForCondition(() -> systemView(remoteNode, CQ_SYS_VIEW).isEmpty(), getTestTimeout()));
         }
     }
 
@@ -461,7 +459,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     public TabularDataSupport systemView(IgniteEx g, String name) {
         try {
-            DynamicMBean caches = mbean(g, VIEWS, name);
+            DynamicMBean caches = metricRegistry(g.name(), VIEWS, name);
 
             MBeanAttributeInfo[] attrs = caches.getMBeanInfo().getAttributes();
 
@@ -477,7 +475,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     public TabularDataSupport filteredSystemView(IgniteEx g, String name, Map<String, Object> filter) {
         try {
-            DynamicMBean mbean = mbean(g, VIEWS, name);
+            DynamicMBean mbean = metricRegistry(g.name(), VIEWS, name);
 
             MBeanOperationInfo[] opers = mbean.getMBeanInfo().getOperations();
 
@@ -503,18 +501,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    public static DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeMBeanName(g.name(), grp, name);
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            throw new IgniteException("MBean not registered.");
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, DynamicMBean.class, false);
-    }
-
-    /** */
     @Test
     public void testHistogramSearchByName() throws Exception {
         MetricRegistry mreg = new MetricRegistry("test", name -> null, name -> null, null);
@@ -524,6 +510,10 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(Long.valueOf(1), searchHistogram("histogram_0_50", mreg));
         assertEquals(Long.valueOf(2), searchHistogram("histogram_50_500", mreg));
         assertEquals(Long.valueOf(3), searchHistogram("histogram_500_inf", mreg));
+
+        assertEquals(Long.valueOf(1), searchHistogram("histogram_with_underscore_0_50", mreg));
+        assertEquals(Long.valueOf(2), searchHistogram("histogram_with_underscore_50_500", mreg));
+        assertEquals(Long.valueOf(3), searchHistogram("histogram_with_underscore_500_inf", mreg));
 
         assertNull(searchHistogram("unknown", mreg));
         assertNull(searchHistogram("unknown_0", mreg));
@@ -537,6 +527,12 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertNull(searchHistogram("histogram_0_100", mreg));
         assertNull(searchHistogram("histogram_0_inf", mreg));
         assertNull(searchHistogram("histogram_0_500", mreg));
+
+        assertNull(searchHistogram("histogram_with_underscore", mreg));
+        assertNull(searchHistogram("histogram_with_underscore_0", mreg));
+        assertNull(searchHistogram("histogram_with_underscore_0_100", mreg));
+        assertNull(searchHistogram("histogram_with_underscore_0_inf", mreg));
+        assertNull(searchHistogram("histogram_with_underscore_0_500", mreg));
     }
 
     /** */
@@ -550,11 +546,38 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         MBeanAttributeInfo[] attrs = bean.getMBeanInfo().getAttributes();
 
-        assertEquals(3, attrs.length);
+        assertEquals(6, attrs.length);
 
         assertEquals(1L, bean.getAttribute("histogram_0_50"));
         assertEquals(2L, bean.getAttribute("histogram_50_500"));
         assertEquals(3L, bean.getAttribute("histogram_500_inf"));
+
+        assertEquals(1L, bean.getAttribute("histogram_with_underscore_0_50"));
+        assertEquals(2L, bean.getAttribute("histogram_with_underscore_50_500"));
+        assertEquals(3L, bean.getAttribute("histogram_with_underscore_500_inf"));
+    }
+
+    /** */
+    @Test
+    public void testJmxHistogramNamesExport() throws Exception {
+        MetricRegistry reg = ignite.context().metric().registry(REGISTRY_NAME);
+
+        String simpleName = "testhist";
+        String nameWithUnderscore = "test_hist";
+
+        reg.histogram(simpleName, new long[] {10, 100}, null);
+        reg.histogram(nameWithUnderscore, new long[] {10, 100}, null);
+
+        DynamicMBean mbn = metricRegistry(ignite.name(), null, REGISTRY_NAME);
+
+        assertNotNull(mbn.getAttribute(simpleName + '_' + 0 + '_' + 10));
+        assertEquals(0L, mbn.getAttribute(simpleName + '_' + 0 + '_' + 10));
+        assertNotNull(mbn.getAttribute(simpleName + '_' + 10 + '_' + 100));
+        assertEquals(0L, mbn.getAttribute(simpleName + '_' + 10 + '_' + 100));
+        assertNotNull(mbn.getAttribute(nameWithUnderscore + '_' + 10 + '_' + 100));
+        assertEquals(0L, mbn.getAttribute(nameWithUnderscore + '_' + 10 + '_' + 100));
+        assertNotNull(mbn.getAttribute(simpleName + '_' + 100 + "_inf"));
+        assertEquals(0L, mbn.getAttribute(simpleName + '_' + 100 + "_inf"));
     }
 
     /** */
@@ -607,7 +630,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             assertTrue(((long)txv.get("startTime")) <= System.currentTimeMillis());
 
             //Only pessimistic transactions are supported when MVCC is enabled.
-            if(Objects.equals(System.getProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS), "true"))
+            if (Objects.equals(System.getProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS), "true"))
                 return;
 
             GridTestUtils.runMultiThreadedAsync(() -> {
@@ -626,7 +649,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
             assertTrue(res);
 
-            for (int i=0; i<9; i++) {
+            for (int i = 0; i < 9; i++) {
                 txv = systemView(TXS_MON_LIST).get(new Object[] {i});
 
                 if (PESSIMISTIC.name().equals(txv.get("concurrency")))
@@ -724,7 +747,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testScanQuery() throws Exception {
-        try(IgniteEx client1 = startClientGrid("client-1");
+        try (IgniteEx client1 = startClientGrid("client-1");
             IgniteEx client2 = startClientGrid("client-2")) {
 
             IgniteCache<Integer, Integer> cache1 = client1.createCache(
@@ -778,7 +801,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         assertEquals(36, mbn.getMBeanInfo().getAttributes().length);
 
-        assertFalse(stream(mbn.getMBeanInfo().getAttributes()).anyMatch(a-> F.isEmpty(a.getDescription())));
+        assertFalse(stream(mbn.getMBeanInfo().getAttributes()).anyMatch(a -> F.isEmpty(a.getDescription())));
 
         assertFalse(F.isEmpty((String)mbn.getAttribute("fullVersion")));
         assertFalse(F.isEmpty((String)mbn.getAttribute("copyright")));
@@ -894,7 +917,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         TabularDataSupport qrySysView = systemView(server, SCAN_QRY_SYS_VIEW);
 
-        for (int i=0; i < qrySysView.size(); i++) {
+        for (int i = 0; i < qrySysView.size(); i++) {
             CompositeData view = systemView(SCAN_QRY_SYS_VIEW).get(new Object[] {i});
 
             if ("cache2".equals(view.get("cacheName"))) {
@@ -1000,6 +1023,15 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         long[] bounds = new long[] {50, 500};
 
         HistogramMetricImpl histogram = mreg.histogram("histogram", bounds, null);
+
+        histogram.value(10);
+        histogram.value(51);
+        histogram.value(60);
+        histogram.value(600);
+        histogram.value(600);
+        histogram.value(600);
+
+        histogram = mreg.histogram("histogram_with_underscore", bounds, null);
 
         histogram.value(10);
         histogram.value(51);

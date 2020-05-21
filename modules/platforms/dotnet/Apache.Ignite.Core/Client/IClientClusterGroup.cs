@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Client
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Client.Compute;
 
     /// <summary>
     /// Defines grid projection which represents a common functionality over a group of nodes.
@@ -92,5 +93,13 @@ namespace Apache.Ignite.Core.Client
         /// <returns>Node.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IClientClusterNode GetNode();
+
+        /// <summary>
+        /// Gets compute functionality over this grid projection. All operations
+        /// on the returned compute instance will only include nodes from this projection.
+        /// </summary>
+        /// <returns>Compute instance over this grid projection.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        IComputeClient GetCompute();
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.sql.SQLException;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.jetbrains.annotations.Nullable;
 
@@ -503,4 +504,42 @@ public interface ConnectionProperties {
      * @param connTimeout Connection timeout in milliseconds.
      */
     public void setConnectionTimeout(@Nullable Integer connTimeout) throws SQLException;
+
+    /**
+     * Gets the class name of the custom implementation of the Factory&lt;Map&lt;String, String&gt;&gt;.
+     *
+     * This factory should return user attributes which can be used on server node.
+     *
+     * @return Custom class name that implements Factory&lt;Map&lt;String, String&gt;&gt;.
+     */
+    public String getUserAttributesFactory();
+
+    /**
+     * Sets the class name of the custom implementation of the Factory&lt;Map&lt;String, String&gt;&gt;.
+     *
+     * This factory should return user attributes which can be used on server node.
+     *
+     * Sent attributes can be accessed on server nodes from
+     * {@link org.apache.ignite.internal.processors.rest.request.GridRestRequest GridRestRequest} or
+     * {@link org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext
+     * ClientListenerAbstractConnectionContext} (depends on client type).
+     *
+     * @param sslFactory Custom class name that implements Factory&lt;Map&lt;String, String&gt;&gt;.
+     */
+    public void setUserAttributesFactory(String sslFactory);
+
+    /**
+     * Any JDBC features could be force disabled.
+     * See {@link JdbcThinFeature}.
+     * The string should contain enumeration of feature names, separated by the comma.
+     *
+     * @return disabled features.
+     */
+    public String disabledFeatures();
+
+    /**
+     * @param features Disabled features. See {@link JdbcThinFeature}.
+     *      The string should contain enumeration of feature names, separated by the comma.
+     */
+    public void disabledFeatures(String features);
 }

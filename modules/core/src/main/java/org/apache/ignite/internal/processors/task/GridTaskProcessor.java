@@ -166,8 +166,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         ctx.systemView().registerView(TASKS_VIEW, TASKS_VIEW_DESC,
             new ComputeTaskViewWalker(),
-            tasks.values(),
-            ComputeTaskView::new);
+            tasks.entrySet(),
+            e -> new ComputeTaskView(e.getKey(), e.getValue()));
     }
 
     /** {@inheritDoc} */
@@ -366,7 +366,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      *      if value with given {@code key} doesn't exist.
      */
     @Nullable public <T> T getThreadContext(GridTaskThreadContextKey key) {
-        assert(key != null);
+        assert (key != null);
 
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();
 
@@ -1080,7 +1080,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                             false);
                     }
                     catch (IgniteCheckedException e) {
-                        node = e instanceof  ClusterTopologyCheckedException ? null : ctx.discovery().node(nodeId);
+                        node = e instanceof ClusterTopologyCheckedException ? null : ctx.discovery().node(nodeId);
 
                         if (node != null) {
                             try {

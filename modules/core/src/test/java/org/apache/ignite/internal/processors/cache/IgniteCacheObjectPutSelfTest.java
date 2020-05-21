@@ -38,9 +38,9 @@ public class IgniteCacheObjectPutSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
-        ccfg.setName(CACHE_NAME);
+        ccfg.setOnheapCacheEnabled(true);
 
         cfg.setCacheConfiguration(ccfg);
 

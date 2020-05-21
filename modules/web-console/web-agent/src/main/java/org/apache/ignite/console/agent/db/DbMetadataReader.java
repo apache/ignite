@@ -80,7 +80,7 @@ public class DbMetadataReader {
      * @return List of schema names.
      * @throws SQLException If schemas loading failed.
      */
-    public Collection<String> schemas(Connection conn) throws SQLException  {
+    public Collection<String> schemas(Connection conn) throws SQLException {
         return dialect(conn).schemas(conn);
     }
 

@@ -41,11 +41,11 @@ import static org.apache.ignite.internal.util.IgniteUtils.THREAD_DUMP_MSG;
 @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, value = "true")
 public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstractTest {
     /** Test logger. */
-    private final ListeningTestLogger testLog = new ListeningTestLogger(true, log);
+    private final ListeningTestLogger testLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TestFailureHandler hnd = new TestFailureHandler(false);
 
@@ -90,7 +90,7 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
         FailureContext failureCtx =
                 new FailureContext(SYSTEM_WORKER_BLOCKED, new Throwable("Failure context error"));
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 2; i++)
             ignite.context().failure().process(failureCtx);
 
         assertTrue(lsnr.check());
@@ -103,7 +103,7 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, value = "true")
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT, value = "0")
     public void testNoThrottling() throws Exception {
-        LogListener lsnr = LogListener.matches(THREAD_DUMP_MSG).times(3).build();
+        LogListener lsnr = LogListener.matches(THREAD_DUMP_MSG).times(2).build();
 
         testLog.registerListener(lsnr);
 
@@ -112,7 +112,7 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
         FailureContext failureCtx =
                 new FailureContext(SYSTEM_WORKER_BLOCKED, new Throwable("Failure context error"));
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 2; i++)
             ignite.context().failure().process(failureCtx);
 
         assertTrue(lsnr.check());
@@ -123,10 +123,10 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
      */
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, value = "true")
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT, value = "1000")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT, value = "3000")
     public void testThrottling() throws Exception {
         LogListener dumpLsnr = LogListener.matches(THREAD_DUMP_MSG).times(2).build();
-        LogListener throttledLsnr = LogListener.matches("Thread dump is hidden").times(4).build();
+        LogListener throttledLsnr = LogListener.matches("Thread dump is hidden").times(2).build();
 
         testLog.registerListener(dumpLsnr);
         testLog.registerListener(throttledLsnr);
@@ -136,12 +136,12 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
         FailureContext failureCtx =
                 new FailureContext(SYSTEM_WORKER_BLOCKED, new Throwable("Failure context error"));
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 2; i++)
             ignite.context().failure().process(failureCtx);
 
-        U.sleep(1000);
+        U.sleep(3000);
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 2; i++)
             ignite.context().failure().process(failureCtx);
 
         assertTrue(dumpLsnr.check());
@@ -153,10 +153,10 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
      */
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, value = "true")
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT, value = "1000")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT, value = "3000")
     public void testThrottlingPerFailureType() throws Exception {
         LogListener dumpLsnr = LogListener.matches(THREAD_DUMP_MSG).times(4).build();
-        LogListener throttledLsnr = LogListener.matches("Thread dump is hidden").times(8).build();
+        LogListener throttledLsnr = LogListener.matches("Thread dump is hidden").times(4).build();
 
         testLog.registerListener(dumpLsnr);
         testLog.registerListener(throttledLsnr);
@@ -169,15 +169,15 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
         FailureContext opTimeoutFailureCtx =
                 new FailureContext(SYSTEM_CRITICAL_OPERATION_TIMEOUT, new Throwable("Failure context error"));
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             ignite.context().failure().process(workerBlockedFailureCtx);
 
             ignite.context().failure().process(opTimeoutFailureCtx);
         }
 
-        U.sleep(1000);
+        U.sleep(3000);
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             ignite.context().failure().process(workerBlockedFailureCtx);
 
             ignite.context().failure().process(opTimeoutFailureCtx);

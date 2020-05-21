@@ -22,13 +22,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -37,6 +41,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
@@ -191,7 +196,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             if (authCtx != null)
                 AuthorizationContext.context(authCtx);
 
-            try(OperationSecurityContext s = ctx.security().withContext(connCtx.securityContext())) {
+            try (OperationSecurityContext s = ctx.security().withContext(connCtx.securityContext())) {
                 resp = handler.handle(req);
             }
             finally {
@@ -209,7 +214,12 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
                 byte[] outMsg = parser.encode(resp);
 
-                ses.send(outMsg);
+                GridNioFuture<?> fut = ses.send(outMsg);
+
+                fut.listen(f -> {
+                    if (f.error() == null)
+                        resp.onSent();
+                });
             }
         }
         catch (Exception e) {
@@ -269,9 +279,15 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
      * @param msg Message bytes.
      */
     private void onHandshake(GridNioSession ses, byte[] msg) {
-        BinaryInputStream stream = new BinaryHeapInputStream(msg);
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null, true);
+        BinaryMarshaller marsh = new BinaryMarshaller();
+
+        marsh.setContext(new MarshallerContextImpl(null, null));
+
+        ctx.configure(marsh, new IgniteConfiguration());
+
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, new BinaryHeapInputStream(msg), null, true);
 
         byte cmd = reader.readByte();
 
@@ -296,17 +312,17 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         ClientListenerConnectionContext connCtx = null;
 
         try {
-            connCtx = prepareContext(ses, clientType);
+            connCtx = prepareContext(clientType);
 
             ensureClientPermissions(clientType);
 
             if (connCtx.isVersionSupported(ver)) {
-                connCtx.initializeFromHandshake(ver, reader);
+                connCtx.initializeFromHandshake(ses, ver, reader);
 
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
             }
             else
-                throw new IgniteCheckedException("Unsupported version.");
+                throw new IgniteCheckedException("Unsupported version: " + ver.asString());
 
             cancelHandshakeTimeout(ses);
 
@@ -352,20 +368,19 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /**
      * Prepare context.
      *
-     * @param ses Session.
      * @param clientType Client type.
      * @return Context.
      * @throws IgniteCheckedException If failed.
      */
-    private ClientListenerConnectionContext prepareContext(GridNioSession ses, byte clientType) throws IgniteCheckedException {
+    private ClientListenerConnectionContext prepareContext(byte clientType) throws IgniteCheckedException {
         long connId = nextConnectionId();
 
         switch (clientType) {
             case ODBC_CLIENT:
-                return new OdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
+                return new OdbcConnectionContext(ctx, busyLock, connId, maxCursors);
 
             case JDBC_CLIENT:
-                return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
+                return new JdbcConnectionContext(ctx, busyLock, connId, maxCursors);
 
             case THIN_CLIENT:
                 return new ClientConnectionContext(ctx, connId, maxCursors, thinCfg);

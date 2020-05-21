@@ -55,7 +55,6 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
 
         return cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalSegmentSize(4 * 1024 * 1024)
-            .setPageSize(1024)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setMaxSize(200 * 1024 * 1024)
                 .setPersistenceEnabled(true)));
@@ -128,7 +127,7 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
 
         assertEquals("Check that caches don't survived", CACHES - 2, ignite.cacheNames().size());
 
-        for(Ignite ig: G.allGrids()) {
+        for (Ignite ig: G.allGrids()) {
             IgniteCache cache = ig.cache(cacheName(2));
 
             for (int j = 0; j < NUM_OF_KEYS; j++)
@@ -161,7 +160,7 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
 
         log.warning("Grid started");
 
-        for(Ignite ig: G.allGrids()) {
+        for (Ignite ig: G.allGrids()) {
             assertTrue(ig.cacheNames().contains(cacheName(2)));
 
             IgniteCache cache = ig.cache(cacheName(2));

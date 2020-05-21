@@ -45,7 +45,6 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Ssl;
     using Apache.Ignite.Core.Lifecycle;
@@ -282,13 +281,13 @@ namespace Apache.Ignite.Core
             {
                 var marsh = BinaryUtils.Marshaller;
 
-                configuration.Write(marsh.StartMarshal(stream), ClientSocket.CurrentProtocolVersion);
+                configuration.Write(marsh.StartMarshal(stream));
 
                 stream.SynchronizeOutput();
 
                 stream.Seek(0, SeekOrigin.Begin);
 
-                ReadCore(marsh.StartUnmarshal(stream), ClientSocket.CurrentProtocolVersion);
+                ReadCore(marsh.StartUnmarshal(stream));
             }
 
             CopyLocalProperties(configuration);
@@ -299,14 +298,12 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
         /// <param name="baseConfig">The base configuration.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal IgniteConfiguration(BinaryReader binaryReader, IgniteConfiguration baseConfig,
-            ClientProtocolVersion srvVer)
+        internal IgniteConfiguration(BinaryReader binaryReader, IgniteConfiguration baseConfig)
         {
             Debug.Assert(binaryReader != null);
             Debug.Assert(baseConfig != null);
 
-            Read(binaryReader, srvVer);
+            Read(binaryReader);
             CopyLocalProperties(baseConfig);
         }
 
@@ -314,8 +311,7 @@ namespace Apache.Ignite.Core
         /// Writes this instance to a writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal void Write(BinaryWriter writer, ClientProtocolVersion srvVer)
+        internal void Write(BinaryWriter writer)
         {
             Debug.Assert(writer != null);
 
@@ -369,7 +365,7 @@ namespace Apache.Ignite.Core
             writer.WriteIntNullable(_queryThreadPoolSize);
 
             // Cache config
-            writer.WriteCollectionRaw(CacheConfiguration, srvVer);
+            writer.WriteCollectionRaw(CacheConfiguration);
 
             // Discovery config
             var disco = DiscoverySpi;
@@ -574,7 +570,7 @@ namespace Apache.Ignite.Core
             if (DataStorageConfiguration != null)
             {
                 writer.WriteBoolean(true);
-                DataStorageConfiguration.Write(writer, srvVer);
+                DataStorageConfiguration.Write(writer);
             }
             else
             {
@@ -722,8 +718,7 @@ namespace Apache.Ignite.Core
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="r">The binary reader.</param>
-        /// <param name="srvVer">Server version.</param>
-        private void ReadCore(BinaryReader r, ClientProtocolVersion srvVer)
+        private void ReadCore(BinaryReader r)
         {
             // Simple properties
             _clientMode = r.ReadBooleanNullable();
@@ -772,13 +767,13 @@ namespace Apache.Ignite.Core
             _queryThreadPoolSize = r.ReadIntNullable();
 
             // Cache config
-            CacheConfiguration = r.ReadCollectionRaw(x => new CacheConfiguration(x, srvVer));
+            CacheConfiguration = r.ReadCollectionRaw(x => new CacheConfiguration(x));
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
 
-            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ?
-                new KeystoreEncryptionSpi(r) : null;
+            // Encryption config
+            EncryptionSpi = r.ReadBoolean() ? new KeystoreEncryptionSpi(r) : null;
 
             // Communication config
             CommunicationSpi = r.ReadBoolean() ? new TcpCommunicationSpi(r) : null;
@@ -875,7 +870,7 @@ namespace Apache.Ignite.Core
             // Data storage.
             if (r.ReadBoolean())
             {
-                DataStorageConfiguration = new DataStorageConfiguration(r, srvVer);
+                DataStorageConfiguration = new DataStorageConfiguration(r);
             }
 
             // SSL context factory.
@@ -933,10 +928,9 @@ namespace Apache.Ignite.Core
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        /// <param name="srvVer">Server version.</param>
-        private void Read(BinaryReader binaryReader, ClientProtocolVersion srvVer)
+        private void Read(BinaryReader binaryReader)
         {
-            ReadCore(binaryReader, srvVer);
+            ReadCore(binaryReader);
 
             // Misc
             IgniteHome = binaryReader.ReadString();
@@ -1655,9 +1649,12 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// This is an experimental feature. Transactional SQL is currently in a beta status.
+        /// <para/>
         /// Time interval between MVCC vacuum runs in milliseconds.
         /// </summary>
         [DefaultValue(DefaultMvccVacuumFrequency)]
+        [IgniteExperimentalAttribute]
         public long MvccVacuumFrequency
         {
             get { return _mvccVacuumFreq ?? DefaultMvccVacuumFrequency; }
@@ -1665,9 +1662,12 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// This is an experimental feature. Transactional SQL is currently in a beta status.
+        /// <para/>
         /// Number of MVCC vacuum threads.
         /// </summary>
         [DefaultValue(DefaultMvccVacuumThreadCount)]
+        [IgniteExperimentalAttribute]
         public int MvccVacuumThreadCount
         {
             get { return _mvccVacuumThreadCnt ?? DefaultMvccVacuumThreadCount; }

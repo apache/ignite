@@ -296,7 +296,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
             apiEvtCnt++;
         }
 
-        for (Map.Entry<String ,SortedMap<Integer,Long>> task : tasks.entrySet()) {
+        for (Map.Entry<String, SortedMap<Integer,Long>> task : tasks.entrySet()) {
             Map<Integer, Long> order = task.getValue();
 
             long prev = 0;

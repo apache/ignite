@@ -127,5 +127,5 @@ public class OdbcTypes {
     static final String SQL_INTERVAL_DAY_TO_MINUTE = "SQL_INTERVAL_DAY_TO_MINUTE";
 
     /** Type name for INTERVAL_DAY_TO_SECOND */
-    static final String SQL_INTERVAL_DAY_TO_SECOND  = "SQL_INTERVAL_DAY_TO_SECOND";
+    static final String SQL_INTERVAL_DAY_TO_SECOND = "SQL_INTERVAL_DAY_TO_SECOND";
 }

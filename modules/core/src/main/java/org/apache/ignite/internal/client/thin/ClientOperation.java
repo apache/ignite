@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.HashMap;
+import java.util.Map;
+import org.jetbrains.annotations.Nullable;
+
 /** Operation codes. */
 enum ClientOperation {
     /** Resource close. */RESOURCE_CLOSE(0),
+
     /** Cache get or create with name. */CACHE_GET_OR_CREATE_WITH_NAME(1052),
     /** Cache put. */CACHE_PUT(1001),
     /** Cache get. */CACHE_GET(1000),
@@ -45,25 +50,47 @@ enum ClientOperation {
     /** Cache put if absent. */CACHE_PUT_IF_ABSENT(1002),
     /** Cache clear. */CACHE_CLEAR(1013),
     /** Cache partitions. */CACHE_PARTITIONS(1101),
+
     /** Query scan. */QUERY_SCAN(2000),
     /** Query scan cursor get page. */QUERY_SCAN_CURSOR_GET_PAGE(2001),
     /** Query sql. */QUERY_SQL(2002),
     /** Query sql cursor get page. */QUERY_SQL_CURSOR_GET_PAGE(2003),
     /** Query sql fields. */QUERY_SQL_FIELDS(2004),
     /** Query sql fields cursor get page. */QUERY_SQL_FIELDS_CURSOR_GET_PAGE(2005),
+
     /** Get binary type. */GET_BINARY_TYPE(3002),
     /** Register binary type name. */REGISTER_BINARY_TYPE_NAME(3001),
     /** Put binary type. */PUT_BINARY_TYPE(3003),
     /** Get binary type name. */GET_BINARY_TYPE_NAME(3000),
+
     /** Start new transaction. */TX_START(4000),
-    /** End the transaction (commit or rollback). */TX_END(4001);
+    /** End the transaction (commit or rollback). */TX_END(4001),
+
+    /** Get cluster state. */CLUSTER_GET_STATE(5000),
+    /** Change cluster state. */CLUSTER_CHANGE_STATE(5001),
+    /** Get WAL state. */CLUSTER_GET_WAL_STATE(5003),
+    /** Change WAL state. */CLUSTER_CHANGE_WAL_STATE(5002),
+    /** Get nodes IDs by filter. */CLUSTER_GROUP_GET_NODE_IDS(5100),
+    /** Get nodes info by IDs. */CLUSTER_GROUP_GET_NODE_INFO(5101),
+
+    /** Execute compute task. */COMPUTE_TASK_EXECUTE(6000),
+    /** Finished compute task notification. */COMPUTE_TASK_FINISHED(6001, true);
 
     /** Code. */
     private final int code;
 
+    /** Is notification. */
+    private final boolean notification;
+
     /** Constructor. */
     ClientOperation(int code) {
+        this(code, false);
+    }
+
+    /** Constructor. */
+    ClientOperation(int code, boolean notification) {
         this.code = code;
+        this.notification = notification;
     }
 
     /**
@@ -71,5 +98,30 @@ enum ClientOperation {
      */
     public short code() {
         return (short)code;
+    }
+
+    /**
+     * @return {@code True} if operation is notification.
+     */
+    public boolean isNotification() {
+        return notification;
+    }
+
+    /** Enum mapping from code to values. */
+    private static final Map<Short, ClientOperation> map;
+
+    static {
+        map = new HashMap<>();
+
+        for (ClientOperation op : values())
+            map.put(op.code(), op);
+    }
+
+    /**
+     * @param code Code to convert to enum.
+     * @return Enum.
+     */
+    @Nullable public static ClientOperation fromCode(short code) {
+        return map.get(code);
     }
 }

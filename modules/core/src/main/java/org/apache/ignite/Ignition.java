@@ -19,18 +19,25 @@ package org.apache.ignite;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
+import org.apache.ignite.internal.processors.security.sandbox.SandboxIgniteComponentProxy;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.SecurityUtils.isInsideSandbox;
 
 /**
  * This class defines a factory for the main Ignite API. It controls Grid life cycle
@@ -300,7 +307,7 @@ public class Ignition {
      */
     public static Ignite start() throws IgniteException {
         try {
-            return IgnitionEx.start();
+            return wrapToProxyIfNeeded(IgnitionEx.start());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -318,7 +325,7 @@ public class Ignition {
      */
     public static Ignite start(IgniteConfiguration cfg) throws IgniteException {
         try {
-            return IgnitionEx.start(cfg);
+            return wrapToProxyIfNeeded(IgnitionEx.start(cfg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -343,7 +350,7 @@ public class Ignition {
      */
     public static Ignite start(String springCfgPath) throws IgniteException {
         try {
-            return IgnitionEx.start(springCfgPath);
+            return wrapToProxyIfNeeded(IgnitionEx.start(springCfgPath));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -368,7 +375,7 @@ public class Ignition {
      */
     public static Ignite start(URL springCfgUrl) throws IgniteException {
         try {
-            return IgnitionEx.start(springCfgUrl);
+            return wrapToProxyIfNeeded(IgnitionEx.start(springCfgUrl));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -393,7 +400,7 @@ public class Ignition {
      */
     public static Ignite start(InputStream springCfgStream) throws IgniteException {
         try {
-            return IgnitionEx.start(springCfgStream);
+            return wrapToProxyIfNeeded(IgnitionEx.start(springCfgStream));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -409,7 +416,7 @@ public class Ignition {
      */
     public static Ignite getOrStart(IgniteConfiguration cfg) throws IgniteException {
         try {
-            return IgnitionEx.start(cfg, false);
+            return wrapToProxyIfNeeded(IgnitionEx.start(cfg, false));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -474,8 +481,6 @@ public class Ignition {
      * Gets an instance of default no-name grid. Note that
      * caller of this method should not assume that it will return the same
      * instance every time.
-     * <p>
-     * This method is identical to {@code G.grid(null)} apply.
      *
      * @return An instance of default no-name grid. This method never returns
      *      {@code null}.
@@ -483,7 +488,7 @@ public class Ignition {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite ignite() throws IgniteIllegalStateException {
-        return IgnitionEx.grid();
+        return wrapToProxyIfNeeded(IgnitionEx.grid());
     }
 
     /**
@@ -492,7 +497,15 @@ public class Ignition {
      * @return List of all grids started so far.
      */
     public static List<Ignite> allGrids() {
-        return IgnitionEx.allGrids();
+        List<Ignite> res = IgnitionEx.allGrids();
+
+        if (F.isEmpty(res))
+            return res;
+
+        if (isInsideSandbox())
+            return res.stream().map(Ignition::wrapToProxy).collect(Collectors.toList());
+
+        return res;
     }
 
     /**
@@ -508,7 +521,7 @@ public class Ignition {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite ignite(UUID locNodeId) throws IgniteIllegalStateException {
-        return IgnitionEx.grid(locNodeId);
+        return wrapToProxyIfNeeded(IgnitionEx.grid(locNodeId));
     }
 
     /**
@@ -525,7 +538,7 @@ public class Ignition {
      *      initialized or Ignite instance was stopped or was not started.
      */
     public static Ignite ignite(@Nullable String name) throws IgniteIllegalStateException {
-        return IgnitionEx.grid(name);
+        return wrapToProxyIfNeeded(IgnitionEx.grid(name));
     }
 
     /**
@@ -540,7 +553,25 @@ public class Ignition {
      * @throws IllegalArgumentException Thrown if current thread is not an {@link IgniteThread}.
      */
     public static Ignite localIgnite() throws IgniteIllegalStateException, IllegalArgumentException {
-        return IgnitionEx.localIgnite();
+        return wrapToProxyIfNeeded(IgnitionEx.localIgnite());
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @return Ignite component proxy.
+     */
+    private static Ignite wrapToProxy(Ignite ignite) {
+        return AccessController.doPrivileged((PrivilegedAction<Ignite>)
+            () -> SandboxIgniteComponentProxy.proxy(Ignite.class, ignite)
+        );
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @return Ignite component proxy if the Ignite Sandbox is enabled.
+     */
+    private static Ignite wrapToProxyIfNeeded(Ignite ignite) {
+        return isInsideSandbox() ? wrapToProxy(ignite) : ignite;
     }
 
     /**

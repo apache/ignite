@@ -18,9 +18,12 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
+import org.apache.ignite.internal.processors.cache.index.IoStatisticsBasicIndexSelfTest;
+import org.apache.ignite.util.GridCommandHandlerBrokenIndexTest;
+import org.apache.ignite.util.GridCommandHandlerCheckIndexesInlineSizeTest;
+import org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassWithSSLTest;
-import org.apache.ignite.internal.processors.cache.index.IoStatisticsBasicIndexSelfTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingWithSSLTest;
 import org.junit.runner.RunWith;
@@ -31,10 +34,13 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    GridCommandHandlerBrokenIndexTest.class,
     GridCommandHandlerIndexingTest.class,
     GridCommandHandlerIndexingWithSSLTest.class,
     GridCommandHandlerIndexingClusterByClassTest.class,
     GridCommandHandlerIndexingClusterByClassWithSSLTest.class,
+    GridCommandHandlerIndexingCheckSizeTest.class,
+    GridCommandHandlerCheckIndexesInlineSizeTest.class,
     StartCachesInParallelTest.class,
     IoStatisticsBasicIndexSelfTest.class
 })

@@ -65,6 +65,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MergeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageAddRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineFlagsCreatedVersionRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastAllocatedIndex;
@@ -110,6 +111,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
@@ -371,7 +373,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 18 + cacheStatesSize + (walPtr == null ? 0 : 16);
 
             case META_PAGE_INIT:
-                return /*cache ID*/4 + /*page ID*/8 + /*ioType*/2  + /*ioVer*/2 +  /*tree root*/8 + /*reuse root*/8;
+                return /*cache ID*/4 + /*page ID*/8 + /*ioType*/2 + /*ioVer*/2 +  /*tree root*/8 + /*reuse root*/8;
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
                 return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
@@ -395,7 +397,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case METASTORE_DATA_RECORD:
                 MetastoreDataRecord metastoreDataRec = (MetastoreDataRecord)record;
 
-                return  4 + metastoreDataRec.key().getBytes().length + 4 +
+                return 4 + metastoreDataRec.key().getBytes().length + 4 +
                     (metastoreDataRec.value() != null ? metastoreDataRec.value().length : 0);
 
             case HEADER_RECORD:
@@ -440,6 +442,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case BTREE_META_PAGE_INIT_ROOT2:
                 return 4 + 8 + 8 + 2;
+
+            case BTREE_META_PAGE_INIT_ROOT_V3:
+                return 4 + 8 + 8 + 2 + 8 + IgniteProductVersion.SIZE_IN_BYTES;
 
             case BTREE_META_PAGE_ADD_ROOT:
                 return 4 + 8 + 8;
@@ -830,6 +835,34 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 int inlineSize = in.readShort();
 
                 res = new MetaPageInitRootInlineRecord(cacheId, pageId, rootId2, inlineSize);
+
+                break;
+
+            case BTREE_META_PAGE_INIT_ROOT_V3:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                long rootId3 = in.readLong();
+                int inlineSize3 = in.readShort();
+
+                long flags = in.readLong();
+
+                byte[] revHash = new byte[IgniteProductVersion.REV_HASH_SIZE];
+                byte maj = in.readByte();
+                byte min = in.readByte();
+                byte maint = in.readByte();
+                long verTs = in.readLong();
+                in.readFully(revHash);
+
+                IgniteProductVersion createdVer = new IgniteProductVersion(
+                    maj,
+                    min,
+                    maint,
+                    verTs,
+                    revHash);
+
+                res = new MetaPageInitRootInlineFlagsCreatedVersionRecord(cacheId, pageId, rootId3,
+                    inlineSize3, flags, createdVer);
 
                 break;
 
@@ -1431,6 +1464,29 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putShort((short)imRec2.inlineSize());
                 break;
 
+            case BTREE_META_PAGE_INIT_ROOT_V3:
+                MetaPageInitRootInlineFlagsCreatedVersionRecord imRec3 =
+                    (MetaPageInitRootInlineFlagsCreatedVersionRecord)rec;
+
+                buf.putInt(imRec3.groupId());
+                buf.putLong(imRec3.pageId());
+
+                buf.putLong(imRec3.rootId());
+
+                buf.putShort((short)imRec3.inlineSize());
+
+                buf.putLong(imRec3.flags());
+
+                // Write created version.
+                IgniteProductVersion createdVer = imRec3.createdVersion();
+                buf.put(createdVer.major());
+                buf.put(createdVer.minor());
+                buf.put(createdVer.maintenance());
+                buf.putLong(createdVer.revisionTimestamp());
+                buf.put(createdVer.revisionHash());
+
+                break;
+
             case BTREE_META_PAGE_ADD_ROOT:
                 MetaPageAddRootRecord arRec = (MetaPageAddRootRecord)rec;
 
@@ -1658,8 +1714,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putLong(tpDelta.pageId());
 
                 buf.putLong(tpDelta.pageIdToMark());
-                buf.putLong(tpDelta.nextSnapshotId());
-                buf.putLong(tpDelta.lastSuccessfulSnapshotId());
+                buf.putLong(tpDelta.nextSnapshotTag());
+                buf.putLong(tpDelta.lastSuccessfulSnapshotTag());
 
                 break;
 

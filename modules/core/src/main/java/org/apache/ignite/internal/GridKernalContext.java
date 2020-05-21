@@ -776,4 +776,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Local continuous tasks processor.
      */
     public DurableBackgroundTasksProcessor durableBackgroundTasksProcessor();
+
+    /**
+     * Return Thread pool for create/rebuild indexes.
+     *
+     * @return Thread pool for create/rebuild indexes.
+     */
+    public ExecutorService buildIndexExecutorService();
 }

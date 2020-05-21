@@ -926,40 +926,46 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     return true;
 
                 while (true) {
-                    if (cur == null) {
-                        if (dataIt.hasNext()) {
-                            CacheDataStore ds = dataIt.next();
+                    try {
+                        if (cur == null) {
+                            if (dataIt.hasNext()) {
+                                CacheDataStore ds = dataIt.next();
 
-                            curPart = ds.partId();
+                                curPart = ds.partId();
 
-                            // Data page scan is disabled by default for scan queries.
-                            // TODO https://issues.apache.org/jira/browse/IGNITE-11998
-                            CacheDataTree.setDataPageScanEnabled(false);
+                                // Data page scan is disabled by default for scan queries.
+                                // TODO https://issues.apache.org/jira/browse/IGNITE-11998
+                                CacheDataTree.setDataPageScanEnabled(false);
 
-                            try {
-                                if (mvccSnapshot == null)
-                                    cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
-                                else {
-                                    cur = cacheId == CU.UNDEFINED_CACHE_ID ?
-                                        ds.cursor(mvccSnapshot) : ds.cursor(cacheId, mvccSnapshot);
+                                try {
+                                    if (mvccSnapshot == null)
+                                        cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
+                                    else {
+                                        cur = cacheId == CU.UNDEFINED_CACHE_ID ?
+                                            ds.cursor(mvccSnapshot) : ds.cursor(cacheId, mvccSnapshot);
+                                    }
+                                }
+                                finally {
+                                    CacheDataTree.setDataPageScanEnabled(false);
                                 }
                             }
-                            finally {
-                                CacheDataTree.setDataPageScanEnabled(false);
-                            }
+                            else
+                                break;
+                        }
+
+                        if (cur.next()) {
+                            next = cur.get();
+                            next.key().partition(curPart);
+
+                            break;
                         }
                         else
-                            break;
+                            cur = null;
                     }
-
-                    if (cur.next()) {
-                        next = cur.get();
-                        next.key().partition(curPart);
-
-                        break;
+                    catch (IgniteCheckedException ex) {
+                        throw new IgniteCheckedException("Failed to get next data row due to underlying cursor " +
+                            "invalidation", ex);
                     }
-                    else
-                        cur = null;
                 }
 
                 return next != null;
@@ -1477,8 +1483,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.dataTree = dataTree;
 
             PartitionUpdateCounter delegate = grp.mvccEnabled() ? new PartitionUpdateCounterMvccImpl(grp) :
-                grp.persistenceEnabled() ? new PartitionUpdateCounterTrackingImpl(grp) :
-                    new PartitionUpdateCounterVolatileImpl(grp);
+                !grp.persistenceEnabled() || grp.hasAtomicCaches() ? new PartitionUpdateCounterVolatileImpl(grp) :
+                    new PartitionUpdateCounterTrackingImpl(grp);
 
             pCntr = ctx.logger(PartitionUpdateCounterDebugWrapper.class).isDebugEnabled() ?
                 new PartitionUpdateCounterDebugWrapper(partId, delegate) : delegate;
@@ -1624,7 +1630,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 U.error(log, "Failed to update partition counter. " +
                     "Most probably a node with most actual data is out of topology or data streamer is used " +
                     "in preload mode (allowOverride=false) concurrently with cache transactions [grpName=" +
-                    grp.name() + ", partId=" + partId + ']', e);
+                    grp.cacheOrGroupName() + ", partId=" + partId + ']', e);
 
                 if (failNodeOnPartitionInconsistency)
                     ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -2015,7 +2021,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 // Make sure value bytes initialized.
                 key.valueBytes(coCtx);
 
-                if(val != null)
+                if (val != null)
                     val.valueBytes(coCtx);
 
                  MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
@@ -2177,7 +2183,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             try {
                 procRes = entryProc.process(invokeEntry, invokeArgs);
 
-                if(invokeEntry.modified() && invokeEntry.op() != CacheInvokeEntry.Operation.REMOVE) {
+                if (invokeEntry.modified() && invokeEntry.op() != CacheInvokeEntry.Operation.REMOVE) {
                     Object val = invokeEntry.getValue(true);
 
                     CacheObject val0 = cctx.toCacheObject(val);
@@ -2946,6 +2952,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public void markDestroyed() {
+            dataTree.markDestroyed();
+        }
+
+        /** {@inheritDoc} */
         @Override public void clear(int cacheId) throws IgniteCheckedException {
             assert cacheId != CU.UNDEFINED_CACHE_ID;
 
@@ -3040,6 +3051,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void resetUpdateCounter() {
             pCntr.reset();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resetInitialUpdateCounter() {
+            pCntr.resetInitialCounter();
         }
 
         /** {@inheritDoc} */
@@ -3396,7 +3412,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 newRow.newMvccCounter(),
                 newRow.newMvccOperationCounter()) != 0) {
 
-                assert newRow.newMvccTxState() == TxState.NA ||  newRow.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA;
+                assert newRow.newMvccTxState() == TxState.NA || newRow.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA;
 
                 iox.updateNewVersion(pageAddr, off, newRow.newMvccCoordinatorVersion(), newRow.newMvccCounter(),
                     newRow.newMvccOperationCounter(), newRow.newMvccTxState());

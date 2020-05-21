@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -106,6 +107,10 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         super.afterTest();
 
         opsQueue.clear();
+
+        U.closeQuiet(client);
+
+        client = null;
     }
 
     /**
@@ -286,6 +291,9 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         /** Channel configuration. */
         private final ClientChannelConfiguration cfg;
 
+        /** Channel is closed. */
+        private volatile boolean closed;
+
         /**
          * @param cfg Config.
          */
@@ -308,10 +316,24 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
             T res = super.service(op, payloadWriter, payloadReader);
 
             // Store all operations except binary type registration in queue to check later.
-            if (op != ClientOperation.REGISTER_BINARY_TYPE_NAME &&  op != ClientOperation.PUT_BINARY_TYPE)
+            if (op != ClientOperation.REGISTER_BINARY_TYPE_NAME && op != ClientOperation.PUT_BINARY_TYPE)
                 opsQueue.offer(new T2<>(this, op));
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            super.close();
+
+            closed = true;
+        }
+
+        /**
+         * Channel is closed.
+         */
+        public boolean isClosed() {
+            return closed;
         }
 
         /** {@inheritDoc} */
