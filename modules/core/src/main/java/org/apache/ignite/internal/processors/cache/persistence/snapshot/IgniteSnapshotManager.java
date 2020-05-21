@@ -96,6 +96,7 @@ import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -634,11 +635,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> cancelSnapshot(String name) {
+        A.notNullOrEmpty(name, "Snapshot name must be not empty or null");
+
+        IgniteInternalFuture<Void> fut0 = cctx.kernalContext().closure()
+            .broadcast(new CancelSnapshotClosure(),
+                name,
+                cctx.discovery().aliveServerNodes(),
+                null)
+            .chain(new CX1<IgniteInternalFuture<Collection<Void>>, Void>() {
+                @Override public Void applyx(IgniteInternalFuture<Collection<Void>> f) throws IgniteCheckedException {
+                    f.get();
+
+                    return null;
+                }
+            });
+
+        return new IgniteFutureImpl<>(fut0);
+    }
+
     /**
      * @param name Snapshot name to cancel operation on local node.
      */
-    public void cancelSnapshot(String name) {
+    public void cancelLocalSnapshotTask(String name) {
         A.notNullOrEmpty(name, "Snapshot name must be not null or empty");
+
+        ClusterSnapshotFuture fut0 = null;
 
         busyLock.enterBusy();
 
@@ -647,9 +670,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (sctx.snapshotName().equals(name))
                     sctx.cancel();
             }
+
+            synchronized (snpOpMux) {
+                if (clusterSnpFut != null)
+                    fut0 = clusterSnpFut;
+            }
         }
         finally {
             busyLock.leaveBusy();
+        }
+
+        // Future may be completed with cancelled exception, which is expected.
+        try {
+            if (fut0 != null)
+                fut0.get();
+        }
+        catch (IgniteCheckedException e) {
+            if (log.isInfoEnabled())
+                log.info("Expected cancelled exception: " + e.getMessage());
         }
     }
 
@@ -1280,6 +1318,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override public Void apply(String name) {
             ignite.snapshot().createSnapshot(name).get();
+
+            return null;
+        }
+    }
+
+    /** Cancel snapshot operation closure. */
+    @GridInternal
+    private static class CancelSnapshotClosure implements IgniteClosure<String, Void> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /** {@inheritDoc} */
+        @Override public Void apply(String snpName) {
+            ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName);
 
             return null;
         }

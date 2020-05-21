@@ -39,4 +39,11 @@ public interface IgniteSnapshot {
      * @return Future which will be completed when a process ends.
      */
     public IgniteFuture<Void> createSnapshot(String name);
+
+    /**
+     *
+     * @param name Snapshot name to cancel.
+     * @return Future which will be completed when cancel operation finished.
+     */
+    public IgniteFuture<Void> cancelSnapshot(String name);
 }

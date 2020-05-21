@@ -39,5 +39,5 @@ public interface SnapshotMXBean {
      * @param snpName Snapshot name to cancel.
      */
     @MXBeanDescription("Cancel started cluster-wide snapshot on the node initiator.")
-    public void cancel(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
+    public void cancelSnapshot(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
 }

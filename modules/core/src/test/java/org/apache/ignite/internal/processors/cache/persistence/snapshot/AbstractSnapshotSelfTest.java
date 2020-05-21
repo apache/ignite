@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -355,6 +356,27 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         assertTrue("Snapshot must contains pre-created cache data " +
             "[cache=" + cache.getName() + ", keysLeft=" + keys + ']', keys.isEmpty());
+    }
+
+    /**
+     * @param grids Grids to block snapshot executors.
+     * @return Wrapped snapshot executor list.
+     */
+    protected List<BlockingExecutor> wrapSnapshotExecutors(List<Ignite> grids) {
+        List<BlockingExecutor> execs = new ArrayList<>();
+
+        for (Ignite grid : grids) {
+            IgniteSnapshotManager mgr = snp((IgniteEx)grid);
+            Function<String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
+
+            BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
+            execs.add(block);
+
+            mgr.localSnapshotSenderFactory((snpName) ->
+                new DelegateSnapshotSender(log, block, old.apply(snpName)));
+        }
+
+        return execs;
     }
 
     /**

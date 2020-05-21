@@ -1101,6 +1101,23 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             "Client disconnected. Snapshot result is unknown");
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCancelled() throws Exception {
+        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        List<BlockingExecutor> execs = wrapSnapshotExecutors(G.allGrids());
+
+        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        ignite.snapshot().cancelSnapshot(SNAPSHOT_NAME).get();
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            IgniteException.class,
+            "gg");
+    }
+
     /**
      * @param ignite Ignite instance.
      * @param started Latch will be released when delta partition processing starts.
