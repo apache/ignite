@@ -19,11 +19,11 @@ package org.apache.ignite.platform;
 
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *  Basic task to calling {@link PlatformService} from Java.
@@ -69,15 +69,10 @@ public class PlatformServiceCallTask extends AbstractPlatformServiceCallTask {
                 assertEquals(exp, srv.getValueProp());
             }
 
-            try {
-                srv.errorMethod();
-
-                throw new RuntimeException("Expected exception, but invocation was success");
-            }
-            catch (IgniteException e) {
-                assertTrue(PlatformNativeException.class.isAssignableFrom(e.getCause().getClass()));
-
-                PlatformNativeException nativeEx = (PlatformNativeException)e.getCause();
+            {
+                PlatformNativeException nativeEx = (PlatformNativeException)GridTestUtils
+                        .assertThrowsWithCause(srv::errorMethod, PlatformNativeException.class)
+                        .getCause();
 
                 assertTrue(nativeEx.toString().contains("Failed method"));
             }
