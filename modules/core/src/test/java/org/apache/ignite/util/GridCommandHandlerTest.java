@@ -97,6 +97,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -2109,16 +2110,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        Ignite ignite = startGrids(grids);
-        ignite.cluster().state(ACTIVE);
+        for (int i = 0; i < grids; i++) {
+            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)))
+                .setMetricExporterSpi(new JmxMetricExporterSpi()));
+        }
 
-        createCacheAndPreload(ignite, keys);
+        IgniteEx ig = grid(0);
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, keys);
 
         CommandHandler h = new CommandHandler();
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", snpName));
 
-        DynamicMBean snpMBean = metricRegistry(ignite.name(), null, SNAPSHOT_METRICS);
+        DynamicMBean snpMBean = metricRegistry(ig.name(), null, SNAPSHOT_METRICS);
 
         assertTrue("Waiting for snapshot operation end failed.",
             waitForCondition(() -> {
