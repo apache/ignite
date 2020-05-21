@@ -2307,8 +2307,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 return false;
             }
 
-            @Override
-            public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
+            @Override public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
                 return null;
             }
 
