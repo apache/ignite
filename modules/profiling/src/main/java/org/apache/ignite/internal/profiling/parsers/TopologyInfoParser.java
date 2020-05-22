@@ -33,7 +33,6 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  * <pre>
  * {
  *      "profilingStartTime" : $startTime,
- *      "profilingFinishTime" : $finishTime,
  *      "nodesInfo" : { $nodeId : {"name": $name, "verson": verson, "startTime" : $startTime} }
  * }
  * </pre>
@@ -48,14 +47,12 @@ public class TopologyInfoParser implements IgniteLogParser {
     /** */
     public TopologyInfoParser() {
         res.put("profilingStartTime", 0);
-        res.put("profilingFinishTime", 0);
         res.set("nodesInfo", nodesInfo);
     }
 
     /** {@inheritDoc} */
     @Override public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime) {
         res.put("profilingStartTime", Math.min(startTime, res.get("profilingStartTime").longValue()));
-        res.put("profilingFinishTime", Math.max(startTime, res.get("profilingFinishTime").longValue()));
 
         if (!currentNodeId().equals(nodeId))
             throw new RuntimeException("Unknown node id found [nodeId=" + nodeId + ']');

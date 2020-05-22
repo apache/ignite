@@ -16,10 +16,8 @@
  */
 
 const reportStartTime = report_topology["profilingStartTime"];
-const reportFinishTime = report_topology["profilingFinishTime"];
 
-$("#reportTiming").html("Collected from " + moment(reportStartTime).format() + " to "
-    + moment(reportFinishTime).format());
+$("#reportTiming").html("Collected from " + moment(reportStartTime).format());
 
 Chart.plugins.register({
     afterDraw: function (chart) {
