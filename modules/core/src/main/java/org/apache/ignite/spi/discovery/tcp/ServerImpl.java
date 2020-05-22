@@ -202,6 +202,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** When this interval pass connection check will be performed. */
     private static final int CON_CHECK_INTERVAL = 500;
 
+    /** Minimal timeout on checking of connection aliveness. */
+    private static final int MIN_CONN_CHECK_TIMEOUT = 50;
+
     /** */
     private IgniteThreadPoolExecutor utilityPool;
 
@@ -1914,6 +1917,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         threads.removeAll(Collections.<IgniteSpiThread>singleton(null));
 
         return threads;
+    }
+
+    /** @return Total timeout of single complete exchange operation in network on established connection. */
+    protected long effectiveExchangeTimeout() {
+        return spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
+            spi.getSocketTimeout() + spi.getAckTimeout();
     }
 
     /**
@@ -6589,7 +6598,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         long now = U.currentTimeMillis();
 
                         // We got message from previous in less than double connection check interval.
-                        boolean ok = rcvdTime + CON_CHECK_INTERVAL * 2 >= now;
+                        boolean ok = rcvdTime + effectiveExchangeTimeout() >= now;
                         TcpDiscoveryNode previous = null;
 
                         if (ok) {
@@ -6610,10 +6619,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 Collection<InetSocketAddress> nodeAddrs =
                                     spi.getNodeAddresses(previous, false);
 
+                                // Peer node is waiting for the handshake response for the configured timeout.
+                                // Duration of connection checking should be considerably shorter that timeout.
+                                // We provide half of the time for the other operations.
+                                int addrCheckTimeout = (int)Math.max(MIN_CONN_CHECK_TIMEOUT,
+                                    (effectiveExchangeTimeout() / 2) / nodeAddrs.size());
+
                                 for (InetSocketAddress addr : nodeAddrs) {
-                                    // Connection refused may be got if node doesn't listen
-                                    // (or blocked by firewall, but anyway assume it is dead).
-                                    if (!isConnectionRefused(addr)) {
+                                    if (isConnectionAlive(addr, addrCheckTimeout)) {
                                         liveAddr = addr;
 
                                         break;
@@ -7083,20 +7096,18 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * @param addr Address to check.
-         * @return {@code True} if got connection refused on connect try.
+         * @param timeout Timeout to check connection.
+         * @return {@code True} if connection is avive. {@code False} otherwise.
          */
-        private boolean isConnectionRefused(SocketAddress addr) {
+        private boolean isConnectionAlive(SocketAddress addr, int timeout) {
             try (Socket sock = new Socket()) {
-                sock.connect(addr, 100);
+                sock.connect(addr, timeout);
             }
-            catch (ConnectException e) {
-                return true;
-            }
-            catch (IOException e) {
+            catch (Exception e) {
                 return false;
             }
 
-            return false;
+            return true;
         }
 
         /**
