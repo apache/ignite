@@ -374,8 +374,7 @@ public class IgnitionEx {
 
         // Schedule delayed node killing if graceful stopping will be not finished within timeout.
         executor.schedule(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (state(name) == IgniteState.STARTED) {
                     U.error(null, "Unable to gracefully stop node within timeout " + timeoutMs +
                             " milliseconds. Killing node...");
@@ -1376,7 +1375,7 @@ public class IgnitionEx {
      * @param name Grid name.
      * @return Grid instance.
      */
-    public  static IgniteKernal gridx(@Nullable String name) {
+    public static IgniteKernal gridx(@Nullable String name) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         IgniteKernal res;
@@ -1455,7 +1454,7 @@ public class IgnitionEx {
          * @param springCtx Optional Spring application context.
          */
         GridStartContext(IgniteConfiguration cfg, @Nullable URL cfgUrl, @Nullable GridSpringResourceContext springCtx) {
-            assert(cfg != null);
+            assert (cfg != null);
 
             this.cfg = cfg;
             this.cfgUrl = cfgUrl;
@@ -1699,12 +1698,13 @@ public class IgnitionEx {
                         startCtx.config() != null ? startCtx.config() : new IgniteConfiguration()
                     );
 
-                    TimeBag startNodeTimer = new TimeBag(TimeUnit.MILLISECONDS);
+                    TimeBag startNodeTimer = new TimeBag(TimeUnit.MILLISECONDS, log.isInfoEnabled());
 
                     start0(startCtx, myCfg, startNodeTimer);
 
-                    log.info("Node started : "
-                        + startNodeTimer.stagesTimings().stream().collect(joining(",", "[", "]")));
+                    if (log.isInfoEnabled())
+                        log.info("Node started : "
+                            + startNodeTimer.stagesTimings().stream().collect(joining(",", "[", "]")));
                 }
                 catch (Exception e) {
                     if (log != null)
@@ -1749,6 +1749,13 @@ public class IgnitionEx {
             UncaughtExceptionHandler oomeHnd = new UncaughtExceptionHandler() {
                 @Override public void uncaughtException(Thread t, Throwable e) {
                     if (grid != null && X.hasCause(e, OutOfMemoryError.class))
+                        grid.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                }
+            };
+
+            UncaughtExceptionHandler excHnd = new UncaughtExceptionHandler() {
+                @Override public void uncaughtException(Thread t, Throwable e) {
+                    if (grid != null)
                         grid.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
                 }
             };
@@ -2008,7 +2015,7 @@ public class IgnitionEx {
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<>(),
                 GridIoPolicy.UNDEFINED,
-                oomeHnd);
+                excHnd);
 
             rebalanceExecSvc.allowCoreThreadTimeOut(true);
 
@@ -2016,7 +2023,7 @@ public class IgnitionEx {
                 cfg.getRebalanceThreadPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "rebalance-striped",
-                oomeHnd,
+                excHnd,
                 true,
                 DFLT_THREAD_KEEP_ALIVE_TIME);
 
@@ -2025,7 +2032,7 @@ public class IgnitionEx {
 
                 customExecSvcs = new HashMap<>();
 
-                for(ExecutorConfiguration execCfg : cfg.getExecutorConfiguration()) {
+                for (ExecutorConfiguration execCfg : cfg.getExecutorConfiguration()) {
                     ThreadPoolExecutor exec = new IgniteThreadPoolExecutor(
                         execCfg.getName(),
                         cfg.getIgniteInstanceName(),
@@ -2226,7 +2233,7 @@ public class IgnitionEx {
 
             myCfg.setGridLogger(cfgLog);
 
-            if(F.isEmpty(userProvidedWorkDir) && F.isEmpty(U.IGNITE_WORK_DIR))
+            if (F.isEmpty(userProvidedWorkDir) && F.isEmpty(U.IGNITE_WORK_DIR))
                 log.warning("Ignite work directory is not provided, automatically resolved to: " + workDir);
 
             // Check Ignite home folder (after log is available).
@@ -2406,7 +2413,7 @@ public class IgnitionEx {
 
                     if (IgfsUtils.matchIgfsCacheName(ccfg.getName()))
                         throw new IgniteCheckedException(
-                            "Cache name cannot start with \""+ IgfsUtils.IGFS_CACHE_PREFIX
+                            "Cache name cannot start with \"" + IgfsUtils.IGFS_CACHE_PREFIX
                                 + "\" because it is reserved for IGFS internal purposes.");
 
                     if (DataStructuresProcessor.isDataStructureCache(ccfg.getName()))
@@ -2489,7 +2496,7 @@ public class IgnitionEx {
                 cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
             if (F.isEmpty(cfg.getSystemViewExporterSpi())) {
-                if (IgniteUtils.inClassPath(SYSTEM_VIEW_SQL_SPI)) {
+                if (IgniteComponentType.INDEXING.inClassPath()) {
                     try {
                         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi(),
                             U.newInstance(SYSTEM_VIEW_SQL_SPI));
@@ -2800,7 +2807,7 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If registration failed.
          */
         private void registerFactoryMbean(MBeanServer srv) throws IgniteCheckedException {
-            if(U.IGNITE_MBEANS_DISABLED)
+            if (U.IGNITE_MBEANS_DISABLED)
                 return;
 
             assert srv != null;
@@ -2855,7 +2862,7 @@ public class IgnitionEx {
          * Unregister delegate Mbean instance for {@link Ignition}.
          */
         private void unregisterFactoryMBean() {
-            if(U.IGNITE_MBEANS_DISABLED)
+            if (U.IGNITE_MBEANS_DISABLED)
                 return;
 
             synchronized (mbeans) {

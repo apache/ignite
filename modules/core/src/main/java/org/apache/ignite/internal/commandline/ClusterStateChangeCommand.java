@@ -82,7 +82,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
             return null;
         }
         catch (Throwable e) {
-            log.info("Failed to change cluster state to " +  state);
+            log.info("Failed to change cluster state to " + state);
 
             throw e;
         }

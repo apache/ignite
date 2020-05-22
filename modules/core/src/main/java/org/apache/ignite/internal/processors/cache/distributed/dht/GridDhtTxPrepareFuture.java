@@ -1062,14 +1062,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         if (validateCache) {
             GridDhtTopologyFuture topFut = cctx.exchange().lastFinishedFuture();
 
-            if (topFut != null && !writesEmpty) {
-                // All caches either read only or not. So validation of one cache context is enough.
-                GridCacheContext ctx = F.first(req.writes()).context();
-
-                Throwable err = topFut.validateCache(ctx, req.recovery(), writesEmpty, null, null);
+            if (topFut != null) {
+                err = tx.txState().validateTopology(cctx, writesEmpty, topFut);
 
                 if (err != null)
-                    onDone(null, new IgniteCheckedException(err));
+                    onDone(null, err);
             }
         }
 
@@ -1311,7 +1308,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             TxCounters counters = tx.txCounters(true);
 
             // Assign keys to primary nodes.
-            if (req.writes() != null) {
+            if (!F.isEmpty(req.writes())) {
                 for (IgniteTxEntry write : req.writes()) {
                     IgniteTxEntry entry = tx.entry(write.txKey());
 
@@ -1328,7 +1325,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
-            if (req.reads() != null) {
+            if (!F.isEmpty(req.reads())) {
                 for (IgniteTxEntry read : req.reads())
                     map(tx.entry(read.txKey()));
             }
@@ -1913,7 +1910,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     Map<Integer, int[]> invalidPartsMap = res.invalidPartitionsByCacheId();
 
                     for (Iterator<IgniteTxEntry> it = dhtMapping.entries().iterator(); it.hasNext();) {
-                        IgniteTxEntry entry  = it.next();
+                        IgniteTxEntry entry = it.next();
 
                         int[] invalidParts = invalidPartsMap.get(entry.cacheId());
 

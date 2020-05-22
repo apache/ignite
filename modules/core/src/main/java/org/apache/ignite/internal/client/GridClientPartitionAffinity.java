@@ -85,7 +85,7 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
     private GridClientPredicate<UUID> backupFilter;
 
     /** Optional backup filter. */
-    private final GridClientPredicate<NodeInfo> backupIdFilter =new GridClientPredicate<NodeInfo>() {
+    private final GridClientPredicate<NodeInfo> backupIdFilter = new GridClientPredicate<NodeInfo>() {
         @Override public boolean apply(NodeInfo info) {
             return backupFilter == null || backupFilter.apply(info.nodeId());
         }

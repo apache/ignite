@@ -50,9 +50,9 @@ Getting started:
   ./build.sh
 * Run tests:
   cd Apache.Ignite.Core.Tests.DotNetCore
-  dotnet test --logger "console;verbosity=normal"
+  dotnet test --logger "console;verbosity=detailed"
 * Run specific test:
-  dotnet test --filter CacheTest --logger "console;verbosity=normal"
+  dotnet test --filter CacheTest --logger "console;verbosity=detailed"
 * IDE: Open Apache.Ignite.DotNetCore.sln
 
 
@@ -62,7 +62,7 @@ Cross-Platform Development with Mono (Linux, macOS)
 Full Ignite.NET solution can be built, developed, and tested with Mono.
 
 Requirements:
-* Mono: http://www.mono-project.com/download/
+* Mono: http://www.mono-project.com/download/ (6.x may not work due to https://github.com/mono/mono/issues/18418)
 * NuGet: sudo apt-get install nuget
 * JDK: sudo apt-get install default-jdk
 * Maven: sudo apt-get install maven

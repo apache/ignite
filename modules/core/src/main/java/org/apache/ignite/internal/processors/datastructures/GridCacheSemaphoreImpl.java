@@ -215,7 +215,7 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
         /** {@inheritDoc} */
         @Override protected final boolean tryReleaseShared(int releases) {
             // Fail-fast path.
-            if(broken)
+            if (broken)
                 return true;
 
             // Check if some other node updated the state.
@@ -361,7 +361,7 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
                                     name);
 
                             // Quit early if semaphore is already broken.
-                            if( val.isBroken()) {
+                            if (val.isBroken()) {
                                 tx.rollback();
 
                                 return false;

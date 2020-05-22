@@ -419,7 +419,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (cctx == null)
                     return;
 
-                if (!needNotify(false, cctx, -1, -1,  evt))
+                if (!needNotify(false, cctx, -1, -1, evt))
                     return;
 
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.
@@ -907,21 +907,21 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
             ClassLoader ldr = depMgr.globalLoader();
 
-            if (ctx.config().isPeerClassLoadingEnabled()) {
-                GridDeploymentInfo depInfo = e.deployInfo();
-
-                if (depInfo != null) {
-                    depMgr.p2pContext(
-                        nodeId,
-                        depInfo.classLoaderId(),
-                        depInfo.userVersion(),
-                        depInfo.deployMode(),
-                        depInfo.participants()
-                    );
-                }
-            }
-
             try {
+                if (ctx.config().isPeerClassLoadingEnabled()) {
+                    GridDeploymentInfo depInfo = e.deployInfo();
+
+                    if (depInfo != null) {
+                        depMgr.p2pContext(
+                            nodeId,
+                            depInfo.classLoaderId(),
+                            depInfo.userVersion(),
+                            depInfo.deployMode(),
+                            depInfo.participants()
+                        );
+                    }
+                }
+
                 e.unmarshal(cctx, ldr);
 
                 Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, e);

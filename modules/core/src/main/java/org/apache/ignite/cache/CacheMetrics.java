@@ -691,6 +691,9 @@ public interface CacheMetrics {
 
     /**
      * Checks whether cache topology is valid for read operations.
+     * <p>
+     * Note: the method will return {@code false} if any partition was lost despite the fact others can be awailable
+     * for reading.
      *
      * @return {@code true} when cache topology is valid for reading.
      */
@@ -698,6 +701,9 @@ public interface CacheMetrics {
 
     /**
      * Checks whether cache topology is valid for write operations.
+     * <p>
+     * Note: the method will return {@code false} if any partition was lost despite the fact others can be awailable
+     * for writing according to configured partition loss policy.
      *
      * @return {@code true} when cache topology is valid for writing.
      */

@@ -103,8 +103,7 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
         final AtomicBoolean stop = new AtomicBoolean();
 
         IgniteInternalFuture<?> restartFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 while (!stop.get()) {
                     stopGrid(1);
 

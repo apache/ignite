@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal;
 
 import java.io.BufferedReader;
@@ -45,6 +46,9 @@ import org.apache.ignite.marshaller.MarshallerContext;
  * when a classname is requested but is not presented in local cache of {@link MarshallerContextImpl}.
  */
 final class MarshallerMappingFileStore {
+    /** */
+    private static final String FILE_EXTENSION = ".classname";
+
     /** File lock timeout in milliseconds. */
     private static final int FILE_LOCK_TIMEOUT_MS = 5000;
 
@@ -57,26 +61,15 @@ final class MarshallerMappingFileStore {
     /** Marshaller mapping directory */
     private final File workDir;
 
-    /** */
-    private final String FILE_EXTENSION = ".classname";
-
     /**
-     * @param igniteWorkDir Ignite work directory
-     * @param log Logger.
+     * Creates marshaller mapping file store with custom predefined work directory.
+     *
+     * @param workDir custom marshaller work directory.
+     * @param kctx Grid kernal context.
      */
-    MarshallerMappingFileStore(String igniteWorkDir, IgniteLogger log) throws IgniteCheckedException {
-        workDir = U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
-        this.log = log;
-    }
-
-    /**
-     * Creates marshaller mapping file store with custom predefined work directory
-     * @param log logger.
-     * @param marshallerMappingFileStoreDir custom marshaller work directory
-     */
-    MarshallerMappingFileStore(final IgniteLogger log, final File marshallerMappingFileStoreDir) {
-        this.workDir = marshallerMappingFileStoreDir;
-        this.log = log;
+    MarshallerMappingFileStore(GridKernalContext kctx, final File workDir) {
+        this.workDir = workDir;
+        log = kctx.log(MarshallerMappingFileStore.class);
     }
 
     /**
@@ -107,7 +100,7 @@ final class MarshallerMappingFileStore {
                 U.error(log, "Failed to write class name to file [platformId=" + platformId + "id=" + typeId +
                         ", clsName=" + typeName + ", file=" + file.getAbsolutePath() + ']', e);
             }
-            catch(OverlappingFileLockException ignored) {
+            catch (OverlappingFileLockException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("File already locked (will ignore): " + file.getAbsolutePath());
             }

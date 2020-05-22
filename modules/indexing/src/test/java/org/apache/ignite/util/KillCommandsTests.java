@@ -297,7 +297,7 @@ class KillCommandsTests {
 
         qryCanceler.accept(qryId);
 
-        for (int i=0; i < PAGE_SZ - 2; i++)
+        for (int i = 0; i < PAGE_SZ - 2; i++)
             assertNotNull(iter.next());
 
         assertThrowsWithCause(iter::next, CacheException.class);

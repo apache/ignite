@@ -182,7 +182,7 @@ public abstract class JdbcAbstractBenchmark extends IgniteAbstractBenchmark {
     /**
      * @return List of queries.
      */
-    public List<String> getDbqueries(){
+    public List<String> getDbqueries() {
         return dbqueries;
     }
 

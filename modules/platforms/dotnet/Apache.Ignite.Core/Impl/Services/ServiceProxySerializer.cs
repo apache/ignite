@@ -40,9 +40,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="methodName">Name of the method.</param>
         /// <param name="method">Method (optional, can be null).</param>
         /// <param name="arguments">Arguments.</param>
-        /// <param name="platform">The platform.</param>
+        /// <param name="platformType">The platform.</param>
         public static void WriteProxyMethod(BinaryWriter writer, string methodName, MethodBase method,
-            object[] arguments, Platform platform)
+            object[] arguments, PlatformType platformType)
         {
             Debug.Assert(writer != null);
 
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 writer.WriteBoolean(true);
                 writer.WriteInt(arguments.Length);
 
-                if (platform == Platform.DotNet)
+                if (platformType == PlatformType.DotNet)
                 {
                     // Write as is for .NET.
                     foreach (var arg in arguments)

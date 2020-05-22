@@ -210,6 +210,6 @@ public class Person8NotIndexed implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "Person8NotIndexed [val1=" + val1 + ", val2=" + val2 + ", val3=" + val3 + ", val4=" + val4 + ", val5=" +
-            val5 + ", val6=" + val6 + ", val7=" + val7 + ", val8=" + val8 +']';
+            val5 + ", val6=" + val6 + ", val7=" + val7 + ", val8=" + val8 + ']';
     }
 }

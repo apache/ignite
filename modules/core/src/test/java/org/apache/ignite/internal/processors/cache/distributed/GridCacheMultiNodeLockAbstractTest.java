@@ -178,7 +178,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         assert !cache.isLocalLocked(key, true);
 
         if (partitioned()) {
-            for(int i = 0; i < 200; i++)
+            for (int i = 0; i < 200; i++)
                 if (cache.isLocalLocked(key, false)) {
                     try {
                         Thread.sleep(10);

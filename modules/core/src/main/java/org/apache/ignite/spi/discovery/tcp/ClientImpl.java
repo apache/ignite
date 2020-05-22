@@ -973,6 +973,34 @@ class ClientImpl extends TcpDiscoveryImpl {
         return res;
     }
 
+    /** {@inheritDoc} */
+    @Override public void updateMetrics(UUID nodeId,
+        ClusterMetrics metrics,
+        Map<Integer, CacheMetrics> cacheMetrics,
+        long tsNanos)
+    {
+        boolean isLocDaemon = spi.locNode.isDaemon();
+
+        assert nodeId != null;
+        assert metrics != null;
+        assert isLocDaemon || cacheMetrics != null;
+
+        TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
+
+        if (node != null && node.visible()) {
+            node.setMetrics(metrics);
+
+            if (!isLocDaemon)
+                node.setCacheMetrics(cacheMetrics);
+
+            node.lastUpdateTimeNanos(tsNanos);
+
+            msgWorker.notifyDiscovery(EVT_NODE_METRICS_UPDATED, topVer, node, allVisibleNodes(), null);
+        }
+        else if (log.isDebugEnabled())
+            log.debug("Received metrics from unknown node: " + nodeId);
+    }
+
     /**
      * FOR TEST PURPOSE ONLY!
      */
@@ -1760,7 +1788,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             U.quietAndWarn(log, "Local node will try to reconnect to cluster with new id due " +
                                 "to network problems [newId=" + newId +
                                 ", prevId=" + locNode.id() +
-                                ", locNode=" + locNode+ ']');
+                                ", locNode=" + locNode + ']');
 
                             locNode.onClientDisconnected(newId);
 
@@ -2206,7 +2234,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (log.isInfoEnabled()) {
                 for (ClusterNode node : getRemoteNodes()) {
                     if (node.id().equals(locNode.clientRouterNodeId())) {
-                        log.info("Router node: " + node);
+                        if (log.isInfoEnabled())
+                            log.info("Router node: " + node);
 
                         break;
                     }
@@ -2447,23 +2476,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     log.debug("Received metrics response: " + msg);
             }
             else {
-                long tsNanos = System.nanoTime();
-
-                if (msg.hasMetrics()) {
-                    for (Map.Entry<UUID, TcpDiscoveryMetricsUpdateMessage.MetricsSet> e : msg.metrics().entrySet()) {
-                        UUID nodeId = e.getKey();
-
-                        TcpDiscoveryMetricsUpdateMessage.MetricsSet metricsSet = e.getValue();
-
-                        Map<Integer, CacheMetrics> cacheMetrics = msg.hasCacheMetrics(nodeId) ?
-                            msg.cacheMetrics().get(nodeId) : Collections.<Integer, CacheMetrics>emptyMap();
-
-                        updateMetrics(nodeId, metricsSet.metrics(), cacheMetrics, tsNanos);
-
-                        for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
-                            updateMetrics(t.get1(), t.get2(), cacheMetrics, tsNanos);
-                    }
-                }
+                if (msg.hasMetrics())
+                    processMsgCacheMetrics(msg, System.nanoTime());
             }
         }
 
@@ -2561,39 +2575,6 @@ class ClientImpl extends TcpDiscoveryImpl {
             res.client(true);
 
             sockWriter.sendMessage(res);
-        }
-
-        /**
-         * @param nodeId Node ID.
-         * @param metrics Metrics.
-         * @param cacheMetrics Cache metrics.
-         * @param tsNanos Timestamp as returned by {@link System#nanoTime()}.
-         */
-        private void updateMetrics(UUID nodeId,
-            ClusterMetrics metrics,
-            Map<Integer, CacheMetrics> cacheMetrics,
-            long tsNanos)
-        {
-            boolean isLocDaemon = spi.locNode.isDaemon();
-
-            assert nodeId != null;
-            assert metrics != null;
-            assert isLocDaemon || cacheMetrics != null;
-
-            TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
-
-            if (node != null && node.visible()) {
-                node.setMetrics(metrics);
-
-                if (!isLocDaemon)
-                    node.setCacheMetrics(cacheMetrics);
-
-                node.lastUpdateTimeNanos(tsNanos);
-
-                notifyDiscovery(EVT_NODE_METRICS_UPDATED, topVer, node, allVisibleNodes());
-            }
-            else if (log.isDebugEnabled())
-                log.debug("Received metrics from unknown node: " + nodeId);
         }
 
         /**

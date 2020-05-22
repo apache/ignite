@@ -266,7 +266,7 @@ public abstract class IgfsEntryInfo implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, id);
+        U.writeIgniteUuid(out, id);
 
         IgfsUtils.writeProperties(out, props);
 
@@ -276,7 +276,7 @@ public abstract class IgfsEntryInfo implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = U.readGridUuid(in);
+        id = U.readIgniteUuid(in);
 
         props = IgfsUtils.readProperties(in);
 
