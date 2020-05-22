@@ -25,6 +25,8 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -75,10 +77,12 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
@@ -245,6 +249,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -252,6 +258,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -796,6 +804,11 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = cacheGrid.cache(CACHE_NAME);
 
+        // Expecting lost partitions.
+        assertFalse(cache.lostPartitions().isEmpty());
+
+        cacheGrid.resetLostPartitions(Collections.singleton(CACHE_NAME));
+
         for (int i = 0; i < ENTRY_COUNT; i++)
             assertEquals(new IndexedObject(i), cache.get(i));
 
@@ -844,6 +857,12 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         cacheGrid = startGrid(1);
 
         IgniteCache<Object, Object> cache = cacheGrid.cache(CACHE_NAME);
+
+        // Expecting lost partitions.
+        assertFalse(cache.lostPartitions().isEmpty());
+
+        cacheGrid.resetLostPartitions(Collections.singleton(CACHE_NAME));
+
         IgniteCache<Object, Object> locCache = cacheGrid.cache(LOC_CACHE_NAME);
 
         for (int i = 0; i < LARGE_ENTRY_COUNT; i++) {
@@ -892,9 +911,15 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        Boolean res = rmt.call(new VerifyCallable());
+        final GridDhtPartitionTopology top = ctrlGrid.cachex(CACHE_NAME).context().topology();
 
-        assertTrue(res);
+        waitForReadyTopology(top, new AffinityTopologyVersion(3, 0));
+
+        assertFalse(top.lostPartitions().isEmpty());
+
+        int res = rmt.call(new VerifyCallable());
+
+        assertEquals(0, res);
     }
 
     /**
@@ -928,9 +953,15 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        Boolean res = rmt.call(new VerifyLargeCallable());
+        final GridDhtPartitionTopology top = ctrlGrid.cachex(CACHE_NAME).context().topology();
 
-        assertTrue(res);
+        waitForReadyTopology(top, new AffinityTopologyVersion(3, 0));
+
+        assertFalse(top.lostPartitions().isEmpty());
+
+        int res = rmt.call(new VerifyLargeCallable());
+
+        assertEquals(0, res);
     }
 
     /**
@@ -1847,13 +1878,13 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class VerifyCallable implements IgniteCallable<Boolean> {
+    private static class VerifyCallable implements IgniteCallable<Integer> {
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Boolean call() throws Exception {
+        @Override public Integer call() throws Exception {
             try {
                 boolean successfulWaiting = GridTestUtils.waitForCondition(new PAX() {
                     @Override public boolean applyx() {
@@ -1868,6 +1899,15 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
 
             IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
+
+            // Partitions are expected to be lost on killed node.
+            final Collection<Integer> lost = cache.lostPartitions();
+
+            if (cache.getConfiguration(CacheConfiguration.class).getAffinity().partitions() != lost.size())
+                return 1;
+
+            ignite.resetLostPartitions(Collections.singleton(CACHE_NAME));
+
             IgniteCache<Object, Object> locCache = ignite.cache(LOC_CACHE_NAME);
 
             for (int i = 0; i < ENTRY_COUNT; i++) {
@@ -1877,7 +1917,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     if (val == null) {
                         ignite.log().warning("Failed to find a value for PARTITIONED cache key: " + i);
 
-                        return false;
+                        return 2;
                     }
                 }
 
@@ -1887,12 +1927,12 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     if (val == null) {
                         ignite.log().warning("Failed to find a value for LOCAL cache key: " + i);
 
-                        return false;
+                        return 2;
                     }
                 }
             }
 
-            return true;
+            return 0;
         }
     }
 
@@ -2013,13 +2053,13 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class VerifyLargeCallable implements IgniteCallable<Boolean> {
+    private static class VerifyLargeCallable implements IgniteCallable<Integer> {
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Boolean call() throws Exception {
+        @Override public Integer call() throws Exception {
             try {
                 boolean successfulWaiting = GridTestUtils.waitForCondition(new PAX() {
                     @Override public boolean applyx() {
@@ -2035,6 +2075,14 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
+            // Partitions are expected to be lost on killed node.
+            final Collection<Integer> lost = cache.lostPartitions();
+
+            if (cache.getConfiguration(CacheConfiguration.class).getAffinity().partitions() != lost.size())
+                return 1;
+
+            ignite.resetLostPartitions(Collections.singleton(CACHE_NAME));
+
             for (int i = 0; i < LARGE_ENTRY_COUNT; i++) {
                 final long[] data = new long[LARGE_ARR_SIZE];
 
@@ -2045,13 +2093,13 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 if (val == null) {
                     ignite.log().warning("Failed to find a value for key: " + i);
 
-                    return false;
+                    return 2;
                 }
 
                 assertTrue(Arrays.equals(data, (long[])val));
             }
 
-            return true;
+            return 0;
         }
     }
 

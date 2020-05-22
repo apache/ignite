@@ -43,6 +43,9 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        // Set small value for the test.
+        cfg.setSystemWorkerBlockedTimeout(1_000);
+
         AbstractFailureHandler failureHnd = new AbstractFailureHandler() {
             @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
                 if (failureCtx.type() == FailureType.SYSTEM_WORKER_BLOCKED)
