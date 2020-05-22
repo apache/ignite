@@ -474,7 +474,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         fileWriteLatch.countDown();
 
-        assertTrue(GridTestUtils.waitForCondition(() -> map.isEmpty(), 5_000));
+        assertTrue(GridTestUtils.waitForCondition(map::isEmpty, 15_000));
     }
 
     /**
