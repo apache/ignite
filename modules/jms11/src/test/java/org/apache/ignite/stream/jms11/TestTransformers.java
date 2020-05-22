@@ -41,8 +41,7 @@ public class TestTransformers {
      */
     public static MessageTransformer<TextMessage, String, String> forTextMessage() {
         return new MessageTransformer<TextMessage, String, String>() {
-            @Override
-            public Map<String, String> apply(TextMessage message) {
+            @Override public Map<String, String> apply(TextMessage message) {
                 final Map<String, String> answer = new HashMap<>();
                 String text;
                 try {
@@ -69,8 +68,8 @@ public class TestTransformers {
      */
     public static MessageTransformer<ObjectMessage, String, String> forObjectMessage() {
         return new MessageTransformer<ObjectMessage, String, String>() {
-            @Override @SuppressWarnings("unchecked")
-            public Map<String, String> apply(ObjectMessage message) {
+            @SuppressWarnings("unchecked")
+            @Override public Map<String, String> apply(ObjectMessage message) {
                 Object object;
                 try {
                     object = message.getObject();
@@ -97,8 +96,7 @@ public class TestTransformers {
 
     public static MessageTransformer<TextMessage, String, String> generateNoEntries() {
         return new MessageTransformer<TextMessage, String, String>() {
-            @Override
-            public Map<String, String> apply(TextMessage message) {
+            @Override public Map<String, String> apply(TextMessage message) {
                 return null;
             }
         };

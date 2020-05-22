@@ -348,7 +348,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
 
                 if (in == null)
                     throw new IgniteException("Failed to replace class [originalName=" + originalName +
-                        ", replaceName=" +  replaceName + ']');
+                        ", replaceName=" + replaceName + ']');
 
                 bytes = helper.loadReplace(in, originalName, replaceName);
 

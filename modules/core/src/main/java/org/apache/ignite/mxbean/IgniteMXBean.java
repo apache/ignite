@@ -63,7 +63,7 @@ public interface IgniteMXBean {
     public String USER_ATTRS_FORMATTED_DESC = "Collection of formatted user-defined attributes added to this node.";
 
     /** */
-    public String GRID_LOG_FORMATTED_DESC ="Formatted instance of logger that is in grid.";
+    public String GRID_LOG_FORMATTED_DESC = "Formatted instance of logger that is in grid.";
 
     /** */
     public String EXECUTOR_SRVC_FORMATTED_DESC = "Formatted instance of fully configured thread pool" +

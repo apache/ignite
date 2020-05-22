@@ -24,19 +24,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -45,9 +39,6 @@ import org.junit.Test;
  * discovery messages and peer class loading enabled. See IGNITE-10238, IGNITE-6668 for details.
  */
 public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 30 * 1000;
@@ -57,11 +48,18 @@ public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TestDiscoverySpi discoSpi = new TestDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
+        ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).discoveryHook(new DiscoveryHook() {
+            @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
+                if (customMsg instanceof MetadataUpdateAcceptedMessage) {
+                    try {
+                        U.sleep(50);
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        fail("Unexpected error:" + e);
+                    }
+                }
+            }
+        });
 
         cfg.setPeerClassLoadingEnabled(true);
 
@@ -98,29 +96,5 @@ public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractT
 
         fut1.get();
         fut2.get();
-    }
-
-    /**
-     * Test discovery SPI.
-     */
-    private static class TestDiscoverySpi extends TestTcpDiscoverySpi {
-        /** {@inheritDoc} */
-        @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-            super.setListener(GridTestUtils.DiscoverySpiListenerWrapper.wrap(lsnr, new DiscoveryHook() {
-                @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
-                    DiscoveryCustomMessage customMsg = msg == null ? null
-                        : (DiscoveryCustomMessage)IgniteUtils.field(msg, "delegate");
-
-                    if (customMsg instanceof MetadataUpdateAcceptedMessage) {
-                        try {
-                            U.sleep(50);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            fail("Unexpected error:" + e);
-                        }
-                    }
-                }
-            }));
-        }
     }
 }

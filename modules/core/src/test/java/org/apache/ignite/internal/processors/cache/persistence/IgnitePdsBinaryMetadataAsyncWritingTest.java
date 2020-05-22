@@ -58,6 +58,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.suppressException;
 
 /**
@@ -104,6 +105,8 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -117,6 +120,8 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        super.afterTest();
     }
 
     /**
@@ -239,6 +244,8 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         specialFileIOFactory = new FailingFileIOFactory(new RandomAccessFileIOFactory());
 
+        setRootLoggerDebugLevel();
+
         IgniteEx ig1 = startGrid(1);
 
         ig0.cluster().active(true);
@@ -323,13 +330,14 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
             (topVer, snd, msg) -> suppressException(fileWriteLatch::await)
         );
 
-        ListeningTestLogger listeningLog = new ListeningTestLogger(true, log);
+        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+        setRootLoggerDebugLevel();
+
         LogListener waitingForWriteLsnr = LogListener.matches("Waiting for write completion of").build();
         listeningLog.registerListener(waitingForWriteLsnr);
 
         startGrid(2);
-
-        listeningLog = null;
 
         ig0.cluster().active(true);
         IgniteCache cache0 = cl0.createCache(testCacheCfg);
@@ -459,7 +467,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         //internal map in BinaryMetadataFileStore with futures awaiting write operations
         Map map = GridTestUtils.getFieldValue(
-            (CacheObjectBinaryProcessorImpl)ig1.context().cacheObjects(),  "metadataFileStore", "writer", "preparedWriteTasks");
+            (CacheObjectBinaryProcessorImpl)ig1.context().cacheObjects(), "metadataFileStore", "writer", "preparedWriteTasks");
 
         assertTrue(!map.isEmpty());
 
@@ -546,7 +554,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
      */
     private void cleanBinaryMetaFolderForNode(String consId) throws IgniteCheckedException {
         String dfltWorkDir = U.defaultWorkDirectory();
-        File metaDir = U.resolveWorkDirectory(dfltWorkDir, "binary_meta", false);
+        File metaDir = U.resolveWorkDirectory(dfltWorkDir, BINARY_META_FOLDER, false);
 
         for (File subDir : metaDir.listFiles()) {
             if (subDir.getName().contains(consId)) {
@@ -661,7 +669,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
     /** */
     private static boolean isBinaryMetaFile(File file) {
-        return file.getPath().contains("binary_meta");
+        return file.getPath().contains(BINARY_META_FOLDER);
     }
 
     /** */

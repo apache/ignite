@@ -74,8 +74,8 @@ public class DeploymentResourceAdapter implements DeploymentResource {
 
         DeploymentResourceAdapter rsrc = (DeploymentResourceAdapter)obj;
 
-        return clsLdr.equals(rsrc.clsLdr) == true && name.equals(rsrc.name) == true &&
-            rsrcCls.equals(rsrc.rsrcCls) == true;
+        return clsLdr.equals(rsrc.clsLdr) && name.equals(rsrc.name) &&
+            rsrcCls.equals(rsrc.rsrcCls);
     }
 
     /** {@inheritDoc} */

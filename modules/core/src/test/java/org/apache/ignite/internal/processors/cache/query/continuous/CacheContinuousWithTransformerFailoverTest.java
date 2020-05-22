@@ -156,7 +156,8 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
 
                 @Override public void onUpdated(Iterable<? extends Integer> evts) throws CacheEntryListenerException {
                     for (Integer evt : evts) {
-                        log.debug("" + evt);
+                        if (log.isDebugEnabled())
+                            log.debug("" + evt);
                     }
                 }
             });

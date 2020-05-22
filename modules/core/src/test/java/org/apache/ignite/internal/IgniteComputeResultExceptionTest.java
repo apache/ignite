@@ -187,8 +187,8 @@ public class IgniteComputeResultExceptionTest extends GridCommonAbstractTest {
         }
 
         /** */
-        @Override
-        public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
+            throws IgniteException {
             throw resE;
         }
 

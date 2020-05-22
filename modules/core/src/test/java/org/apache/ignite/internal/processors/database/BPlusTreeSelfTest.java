@@ -65,8 +65,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridStripedLock;
@@ -815,7 +815,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         int loops = reuseList == null ? 20_000 : 60_000;
 
-        for (int i = 0 ; i < loops; i++) {
+        for (int i = 0; i < loops; i++) {
             final Long x = (long)BPlusTree.randomInt(CNT);
             final int rnd = BPlusTree.randomInt(11);
 
@@ -1016,7 +1016,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 @Override public Object call() throws Exception {
                     Random rnd = new GridRandom();
 
-                    for(;;) {
+                    for (;;) {
                         int idx = 0;
                         boolean found = false;
 
@@ -1177,7 +1177,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         int loops = reuseList == null ? 100_000 : 300_000;
 
-        for (int i = 0 ; i < loops; i++) {
+        for (int i = 0; i < loops; i++) {
             Long x = (long)BPlusTree.randomInt(CNT);
 
             boolean put = BPlusTree.randomInt(2) == 0;
@@ -1682,7 +1682,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                             + "]; contents=" + treeContents);
 
                     if (treeSize < minBound || treeSize > maxBound) {
-                        fail("Tree size is not in bounds ["  + minBound + ".." + maxBound + "]: " + treeSize
+                        fail("Tree size is not in bounds [" + minBound + ".." + maxBound + "]: " + treeSize
                             + "; Tree contents: " + treeContents);
                     }
                 }
@@ -1912,7 +1912,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> rmvFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int iter = 0;
-                while(!stop.get()) {
+                while (!stop.get()) {
                     Long rmvVal = rowsToRemove.poll(200, TimeUnit.MILLISECONDS);
                     if (rmvVal != null)
                         assertEquals(rmvVal, tree.remove(rmvVal));
@@ -2035,7 +2035,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> rmvFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int iter = 0;
-                while(!stop.get()) {
+                while (!stop.get()) {
                     Long rmvVal = rowsToRemove.poll(200, TimeUnit.MILLISECONDS);
                     if (rmvVal != null)
                         assertEquals(rmvVal, tree.remove(rmvVal));
@@ -2051,7 +2051,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> findFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int iter = 0;
-                while(!stop.get()) {
+                while (!stop.get()) {
                     Long findVal = curPutKey.get()
                         + SLIDING_WINDOW_SIZE / 2
                         - rnd.nextInt(SLIDING_WINDOW_SIZE * 2);
@@ -2698,7 +2698,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static int size(GridCursor<?> c) throws IgniteCheckedException {
         int cnt = 0;
 
-        while(c.next())
+        while (c.next())
             cnt++;
 
         return cnt;
@@ -2859,8 +2859,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override
-        protected int getLockRetries() {
+        @Override protected int getLockRetries() {
             return numRetries;
         }
     }

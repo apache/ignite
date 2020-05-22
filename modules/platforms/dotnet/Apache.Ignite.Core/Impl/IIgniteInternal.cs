@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Cache.Near;
+    using Apache.Ignite.Core.Impl.Cache.Platform;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Plugin;
@@ -66,9 +66,9 @@ namespace Apache.Ignite.Core.Impl
         PluginProcessor PluginProcessor { get; }
 
         /// <summary>
-        /// Gets the near cache manager.
+        /// Gets the platform cache manager.
         /// </summary>
-        NearCacheManager NearCacheManager { get; }
+        PlatformCacheManager PlatformCacheManager { get; }
 
         /// <summary>
         /// Gets the data streamer.

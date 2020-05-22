@@ -534,8 +534,8 @@ public class H2Utils {
      */
     @SuppressWarnings("unchecked")
     public static QueryCursorImpl<List<?>> zeroCursor() {
-        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-            (Collections.singletonList(0L)), null, false, false);
+        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList(
+            Collections.singletonList(0L)), null, false, false);
 
         resCur.fieldsMeta(UPDATE_RESULT_META);
 
@@ -763,7 +763,7 @@ public class H2Utils {
                 (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
                     " " : " WHERE ");
 
-        if(tableAlias != null)
+        if (tableAlias != null)
             t = tableAlias;
 
         qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
@@ -998,14 +998,14 @@ public class H2Utils {
 
         boolean isSql = tbl.rowDescriptor().tableDescriptor().sql();
 
-        if(!isSql)
+        if (!isSql)
             return idxCols;
 
         GridQueryTypeDescriptor type = tbl.rowDescriptor().type();
 
         for (IndexColumn idxCol : idxCols) {
-            if(idxCol.column.getColumnId() == KEY_COL){
-                if(QueryUtils.isSqlType(type.keyClass())) {
+            if (idxCol.column.getColumnId() == KEY_COL) {
+                if (QueryUtils.isSqlType(type.keyClass())) {
                     int altKeyColId = tbl.rowDescriptor().getAlternativeColumnId(QueryUtils.KEY_COL);
 
                     //Remap simple key to alternative column.

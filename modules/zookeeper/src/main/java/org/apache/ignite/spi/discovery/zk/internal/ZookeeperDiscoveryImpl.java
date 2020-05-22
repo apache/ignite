@@ -1068,7 +1068,7 @@ public class ZookeeperDiscoveryImpl {
      * @param locCred Local security credentials for authentication.
      * @throws IgniteSpiException If any error occurs.
      */
-    private void localAuthentication(DiscoverySpiNodeAuthenticator nodeAuth, SecurityCredentials locCred){
+    private void localAuthentication(DiscoverySpiNodeAuthenticator nodeAuth, SecurityCredentials locCred) {
         assert nodeAuth != null;
         assert locCred != null;
 
@@ -1353,7 +1353,7 @@ public class ZookeeperDiscoveryImpl {
                 log.info("Discovery coordinator already exists, watch for previous server node [" +
                     "locId=" + locNode.id() +
                     ", watchPath=" + prevE.getValue() + ']');
-             }
+            }
 
             PreviousNodeWatcher watcher = new ServerPreviousNodeWatcher(rtState);
 
@@ -1391,7 +1391,7 @@ public class ZookeeperDiscoveryImpl {
         }
 
         // This situation may appear while reconnection and this callback can be skipped.
-        if(!aliveClients.containsKey(locInternalOrder))
+        if (!aliveClients.containsKey(locInternalOrder))
             return;
 
         Map.Entry<Long, String> oldest = aliveClients.firstEntry();

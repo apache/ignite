@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
+    using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
@@ -37,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             {
                 var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    SpringConfigUrl = "config\\native-client-test-cache-affinity.xml",
+                    SpringConfigUrl = Path.Combine("Config", "native-client-test-cache-affinity.xml"),
                     IgniteInstanceName = "grid-" + i
                 };
 

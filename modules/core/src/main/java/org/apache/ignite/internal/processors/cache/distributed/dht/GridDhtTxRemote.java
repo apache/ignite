@@ -246,7 +246,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override  public boolean storeWriteThrough() {
+    @Override public boolean storeWriteThrough() {
         return storeWriteThrough;
     }
 

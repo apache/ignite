@@ -247,7 +247,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
                             log.info("Thread is going to wait on semaphore: " + Thread.currentThread().getName() + ", node = " + ignite.cluster().localNode() + ", sem = " + semaphore);
 
-                            assert  semaphore.tryAcquire(1, 1, MINUTES);
+                            assert semaphore.tryAcquire(1, 1, MINUTES);
 
                             log.info("Thread is again runnable: " + Thread.currentThread().getName() + ", node = " + ignite.cluster().localNode() + ", sem = " + semaphore);
 

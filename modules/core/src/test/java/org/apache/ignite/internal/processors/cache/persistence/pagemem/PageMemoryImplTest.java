@@ -35,6 +35,7 @@ import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -43,7 +44,8 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -59,10 +61,12 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -405,8 +409,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 assertTrue("Should oom before check replaced page.", oom);
 
                 assertTrue("Missing page: " + fullPageId, memory.hasLoadedPage(fullPageId));
-            }
-            , null);
+            }, null);
     }
 
     /**
@@ -584,6 +587,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         igniteCfg.setEncryptionSpi(new NoopEncryptionSpi());
         igniteCfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         igniteCfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
+        igniteCfg.setEventStorageSpi(new NoopEventStorageSpi());
 
         GridTestKernalContext kernalCtx = new GridTestKernalContext(new GridTestLog4jLogger(), igniteCfg);
 
@@ -592,6 +596,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         kernalCtx.add(new GridEncryptionManager(kernalCtx));
         kernalCtx.add(new GridMetricManager(kernalCtx));
         kernalCtx.add(new GridSystemViewManager(kernalCtx));
+        kernalCtx.add(new GridEventStorageManager(kernalCtx));
 
         FailureProcessor failureProc = new FailureProcessor(kernalCtx);
 
@@ -619,15 +624,19 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null,
             null,
             null,
+            null,
             null
         );
 
-        CheckpointWriteProgressSupplier noThrottle = Mockito.mock(CheckpointWriteProgressSupplier.class);
+        CheckpointProgressImpl cl0 = Mockito.mock(CheckpointProgressImpl.class);
 
-        Mockito.when(noThrottle.currentCheckpointPagesCount()).thenReturn(1_000_000);
-        Mockito.when(noThrottle.evictedPagesCntr()).thenReturn(new AtomicInteger(0));
-        Mockito.when(noThrottle.syncedPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
-        Mockito.when(noThrottle.writtenPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
+        IgniteOutClosure<CheckpointProgress> noThrottle = Mockito.mock(IgniteOutClosure.class);
+        Mockito.when(noThrottle.apply()).thenReturn(cl0);
+
+        Mockito.when(cl0.currentCheckpointPagesCount()).thenReturn(1_000_000);
+        Mockito.when(cl0.evictedPagesCounter()).thenReturn(new AtomicInteger(0));
+        Mockito.when(cl0.syncedPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
+        Mockito.when(cl0.writtenPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
 
         PageMemoryImpl mem = cpBufChecker == null ? new PageMemoryImpl(
             provider,
@@ -648,7 +657,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 NO_OP_METRICS),
             throttlingPlc,
             noThrottle
-        ): new PageMemoryImpl(
+        ) : new PageMemoryImpl(
             provider,
             sizes,
             sharedCtx,
