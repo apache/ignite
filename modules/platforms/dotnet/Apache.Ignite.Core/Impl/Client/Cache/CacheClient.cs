@@ -560,7 +560,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public CacheClientConfiguration GetConfiguration()
         {
             return DoOutInOp(ClientOp.CacheGetConfiguration, null,
-                ctx => new CacheClientConfiguration(ctx.Stream, ctx.ProtocolVersion));
+                ctx => new CacheClientConfiguration(ctx.Stream, ctx.Features));
         }
 
         /** <inheritDoc /> */
@@ -756,11 +756,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             if (_expiryPolicy != null)
             {
-                // Check whether WithExpiryPolicy is supported by the protocol here - 
-                // ctx.ProtocolVersion refers to exact connection for this request. 
-                ClientUtils.ValidateOp(
-                    ClientCacheRequestFlag.WithExpiryPolicy, ctx.ProtocolVersion, ClientSocket.Ver150);
-                
+                ctx.Features.ValidateWithExpiryPolicyFlag();
                 ctx.Stream.WriteByte((byte) ClientCacheRequestFlag.WithExpiryPolicy);
                 ExpiryPolicySerializer.WritePolicy(ctx.Writer, _expiryPolicy);
             }
@@ -872,7 +868,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             QueryBase.WriteQueryArgs(writer, qry.Arguments);
 
             // .NET client does not discern between different statements for now.
-            // We cound have ExecuteNonQuery method, which uses StatementType.Update, for example.
+            // We could have ExecuteNonQuery method, which uses StatementType.Update, for example.
             writer.WriteByte((byte)StatementType.Any);
 
             writer.WriteBoolean(qry.EnableDistributedJoins);

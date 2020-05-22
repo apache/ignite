@@ -189,7 +189,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
     @Override public String property(String name) throws IllegalArgumentException {
         String val = props.get(name);
 
-        if (val ==  null)
+        if (val == null)
             throw new IllegalArgumentException("File property not found [path=" + path + ", name=" + name + ']');
 
         return val;

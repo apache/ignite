@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -28,9 +30,6 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesTrainer;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
-
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * Trainer for the compound Naive Bayes classifier model. It uses a model composition of {@code
@@ -148,7 +147,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
             double[] newFeaturesValues = new double[newSize];
             int index = 0;
             for (int j = 0; j < size; j++) {
-                if(featureIdsToSkip.contains(j)) continue;
+                if (featureIdsToSkip.contains(j)) continue;
 
                 newFeaturesValues[index] = featureValues.get(j);
                 ++index;

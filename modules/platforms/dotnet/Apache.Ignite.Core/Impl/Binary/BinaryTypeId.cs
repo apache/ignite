@@ -170,6 +170,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: Ignite UUID. */
         public const int IgniteUuid = 63;
 
+        /** Type: T2 = IgniteBiTuple */
+        public const int IgniteBiTuple = 62;
+
         /** Type ids. */
         private static readonly Dictionary<Type, byte> TypeIds = new Dictionary<Type, byte>
         {

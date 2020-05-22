@@ -183,7 +183,8 @@ public abstract class AbstractReducer implements Reducer {
      */
     protected void checkBounds(Row lastEvictedRow, SearchRow first, SearchRow last) {
         if (lastEvictedRow != null)
-            throw new IgniteException("Fetched result set was too large.");
+            throw new IgniteException("Fetched result set was too large. " +
+                    IGNITE_SQL_MERGE_TABLE_MAX_SIZE + "(" + MAX_FETCH_SIZE + ") should be increased.");
     }
 
     /**
@@ -287,11 +288,11 @@ public abstract class AbstractReducer implements Reducer {
         if (lp == null && !LAST_PAGES_UPDATER.compareAndSet(this, null, lp = new ConcurrentHashMap<>()))
             lp = lastPages;
 
-        assert pageSize > 0: pageSize;
+        assert pageSize > 0 : pageSize;
 
         int lastPage = allRows == 0 ? 0 : (allRows - 1) / pageSize;
 
-        assert lastPage >= 0: lastPage;
+        assert lastPage >= 0 : lastPage;
 
         if (lp.put(new ReduceSourceKey(nodeId, res.segmentId()), lastPage) != null)
             throw new IllegalStateException();

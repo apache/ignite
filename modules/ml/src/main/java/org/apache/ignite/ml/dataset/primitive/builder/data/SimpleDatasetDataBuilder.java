@@ -64,7 +64,7 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends S
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
             Vector row = preprocessor.apply(entry.getKey(), entry.getValue()).features();
-            if(row.isNumeric()) {
+            if (row.isNumeric()) {
                 if (cols < 0) {
                     cols = row.size();
                     features = new double[Math.toIntExact(upstreamDataSize * cols)];

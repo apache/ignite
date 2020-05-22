@@ -56,7 +56,7 @@ public abstract class AbstractBaseIntMapTest {
 
         for (int i = 99_999; i > 0; i--) {
             map.remove(i);
-            assertEquals(i-1, map.size());
+            assertEquals(i - 1, map.size());
         }
 
         assertTrue(map.isEmpty());

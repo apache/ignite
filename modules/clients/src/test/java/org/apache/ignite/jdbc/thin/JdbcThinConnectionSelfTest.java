@@ -789,10 +789,10 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testCreateStatement2() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            int [] rsTypes = new int[]
+            int[] rsTypes = new int[]
                 {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
-            int [] rsConcurs = new int[]
+            int[] rsConcurs = new int[]
                 {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
             DatabaseMetaData meta = conn.getMetaData();
@@ -843,13 +843,13 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testCreateStatement3() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            int [] rsTypes = new int[]
+            int[] rsTypes = new int[]
                 {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
-            int [] rsConcurs = new int[]
+            int[] rsConcurs = new int[]
                 {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
-            int [] rsHoldabilities = new int[]
+            int[] rsHoldabilities = new int[]
                 {HOLD_CURSORS_OVER_COMMIT, CLOSE_CURSORS_AT_COMMIT};
 
             DatabaseMetaData meta = conn.getMetaData();
@@ -939,10 +939,10 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             final String sqlText = "select * from test where param = ?";
 
-            int [] rsTypes = new int[]
+            int[] rsTypes = new int[]
                 {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
-            int [] rsConcurs = new int[]
+            int[] rsConcurs = new int[]
                 {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
             DatabaseMetaData meta = conn.getMetaData();
@@ -1000,13 +1000,13 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             final String sqlText = "select * from test where param = ?";
 
-            int [] rsTypes = new int[]
+            int[] rsTypes = new int[]
                 {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
-            int [] rsConcurs = new int[]
+            int[] rsConcurs = new int[]
                 {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
-            int [] rsHoldabilities = new int[]
+            int[] rsHoldabilities = new int[]
                 {HOLD_CURSORS_OVER_COMMIT, CLOSE_CURSORS_AT_COMMIT};
 
             DatabaseMetaData meta = conn.getMetaData();
@@ -1724,6 +1724,19 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testDisabledFeatures() throws Exception {
+        assertInvalid(url + "?disabledFeatures=unknownFeature",
+            "Unknown feature: unknownFeature");
+
+        try (Connection conn = DriverManager.getConnection(url + "?disabledFeatures=reserved")) {
+            // No-op.
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testReleaseSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             assert !conn.getMetaData().supportsSavepoints();
@@ -2185,7 +2198,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      */
     @Test
-    public void testSslClientAndPlainServer()  {
+    public void testSslClientAndPlainServer() {
         Throwable e = assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 DriverManager.getConnection(urlWithPartitionAwarenessProp + "&sslMode=require" +
@@ -2215,7 +2228,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         final boolean end[] = new boolean[] {false};
 
-        final SQLException exs [] = new SQLException[threadCnt];
+        final SQLException exs[] = new SQLException[threadCnt];
 
         final AtomicInteger exCnt = new AtomicInteger(0);
 

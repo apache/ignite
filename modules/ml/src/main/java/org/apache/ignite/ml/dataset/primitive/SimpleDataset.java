@@ -140,7 +140,7 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
 
         for (int i = 0; i < cov.length; i++)
             for (int j = 0; j < cov[0].length; j++)
-                cov[i][j] /= (std[i]*std[j]);
+                cov[i][j] /= (std[i] * std[j]);
 
         return cov;
     }

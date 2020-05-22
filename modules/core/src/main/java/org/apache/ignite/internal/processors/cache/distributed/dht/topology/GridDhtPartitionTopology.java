@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -291,9 +288,11 @@ public interface GridDhtPartitionTopology {
      * @param partMap Update partition map.
      * @param cntrMap Partition update counters.
      * @param partsToReload Set of partitions that need to be reloaded.
+     * @param partSizes Global partition sizes.
      * @param msgTopVer Topology version from incoming message. This value is not null only for case message is not
      *      related to exchange. Value should be not less than previous 'Topology version from exchange'.
      * @param exchFut Future which is not null for initial partition update on exchange.
+     * @param lostParts Lost partitions.
      * @return {@code True} if local state was changed.
      */
     public boolean update(
@@ -303,8 +302,8 @@ public interface GridDhtPartitionTopology {
         Set<Integer> partsToReload,
         @Nullable Map<Integer, Long> partSizes,
         @Nullable AffinityTopologyVersion msgTopVer,
-        @Nullable GridDhtPartitionsExchangeFuture exchFut
-    );
+        @Nullable GridDhtPartitionsExchangeFuture exchFut,
+        @Nullable Set<Integer> lostParts);
 
     /**
      * @param exchId Exchange ID.
@@ -329,16 +328,15 @@ public interface GridDhtPartitionTopology {
     public void applyUpdateCounters();
 
     /**
-     * Checks if there is at least one owner for each partition in the cache topology.
-     * If not, marks such a partition as LOST.
-     * <p>
-     * This method should be called on topology coordinator after all partition messages are received.
+     * Checks if there is at least one owner for each partition in the cache topology for a local node.
+     * If not marks such a partition as LOST or OWNING depending on a policy.
      *
      * @param resTopVer Exchange result version.
-     * @param discoEvt Discovery event for which we detect lost partitions if {@link EventType#EVT_CACHE_REBALANCE_PART_DATA_LOST} event should be fired.
+     * @param fut Exchange futute for topology events to detect.
+     *
      * @return {@code True} if partitions state got updated.
      */
-    public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, @Nullable DiscoveryEvent discoEvt);
+    public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, GridDhtPartitionsExchangeFuture fut);
 
     /**
      * Resets the state of all LOST partitions to OWNING.
@@ -350,7 +348,7 @@ public interface GridDhtPartitionTopology {
     /**
      * @return Collection of lost partitions, if any.
      */
-    public Collection<Integer> lostPartitions();
+    public Set<Integer> lostPartitions();
 
     /**
      * Pre-processes partition update counters before exchange.

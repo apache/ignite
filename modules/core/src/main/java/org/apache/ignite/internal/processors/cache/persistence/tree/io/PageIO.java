@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageBPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastoreDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
@@ -791,10 +791,10 @@ public abstract class PageIO {
                 return (Q)CacheIdAwarePendingEntryLeafIO.VERSIONS.forVersion(ver);
 
             case T_DATA_REF_METASTORAGE_INNER:
-                return (Q)MetastorageTree.MetastorageInnerIO.VERSIONS.forVersion(ver);
+                return (Q)MetastorageBPlusIO.INNER_IO_VERSIONS.forVersion(ver);
 
             case T_DATA_REF_METASTORAGE_LEAF:
-                return (Q)MetastorageTree.MetastoreLeafIO.VERSIONS.forVersion(ver);
+                return (Q)MetastorageBPlusIO.LEAF_IO_VERSIONS.forVersion(ver);
 
             default:
                 // For tests.

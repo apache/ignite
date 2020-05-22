@@ -31,13 +31,9 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.DiscoverySpiListener;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -60,23 +56,12 @@ public abstract class AbstractBinaryMetadataRegistrationTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        GridTestUtils.DiscoveryHook discoveryHook = new GridTestUtils.DiscoveryHook() {
-            @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
-                DiscoveryCustomMessage customMsg = msg == null ? null
-                    : (DiscoveryCustomMessage)IgniteUtils.field(msg, "delegate");
-
+        ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).discoveryHook(new DiscoveryHook() {
+            @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof MetadataUpdateProposedMessage)
                     proposeMsgNum.incrementAndGet();
             }
-        };
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
-            @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-                super.setListener(GridTestUtils.DiscoverySpiListenerWrapper.wrap(lsnr, discoveryHook));
-            }
-        };
-
-        cfg.setDiscoverySpi(discoSpi);
+        });
 
         cfg.setCacheConfiguration(cacheConfiguration());
 

@@ -153,7 +153,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
         Set<String> sysSchemas = systemSchemas();
 
-        while(rs.next()) {
+        while (rs.next()) {
             String schema = rs.getString(1);
 
             if (!sysSchemas.contains(schema) && !schema.startsWith("FLOWS_"))
@@ -259,7 +259,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         Set<String> pkCols = new LinkedHashSet<>();
 
         try (ResultSet pkRs = stmt.executeQuery()) {
-            while(pkRs.next())
+            while (pkRs.next())
                 pkCols.add(pkRs.getString(1));
         }
 

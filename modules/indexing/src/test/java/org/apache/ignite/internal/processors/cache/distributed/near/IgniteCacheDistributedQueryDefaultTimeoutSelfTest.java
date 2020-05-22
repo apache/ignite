@@ -31,6 +31,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -80,7 +81,7 @@ public class IgniteCacheDistributedQueryDefaultTimeoutSelfTest extends GridCommo
         ccfg.setIndexedTypes(Integer.class, String.class);
 
         cfg.setCacheConfiguration(ccfg);
-        cfg.setDefaultQueryTimeout(DEFAULT_QUERY_TIMEOUT);
+        cfg.setSqlConfiguration(new SqlConfiguration().setDefaultQueryTimeout(DEFAULT_QUERY_TIMEOUT));
 
         return cfg;
     }
@@ -124,7 +125,7 @@ public class IgniteCacheDistributedQueryDefaultTimeoutSelfTest extends GridCommo
                 Arrays.fill(tmp, ' ');
                 cache.put(i, new String(tmp));
 
-                if (i/(float)keyCnt >= p/10f) {
+                if (i / (float)keyCnt >= p / 10f) {
                     log().info("Loaded " + i + " of " + keyCnt);
 
                     p++;

@@ -141,7 +141,7 @@ public class AgentClusterDemo {
 
         int discoPort = basePort + 20;
 
-        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:" + discoPort  + ".." + (discoPort + NODE_CNT - 1)));
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:" + discoPort + ".." + (discoPort + NODE_CNT - 1)));
 
         // Configure discovery SPI.
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();

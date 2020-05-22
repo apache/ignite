@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistResponse;
@@ -107,6 +108,9 @@ public final class NearTxResultHandler implements CI1<IgniteInternalFuture<GridC
 
         try {
             cctx.io().send(nearNodeId, res, cctx.ioPolicy());
+        }
+        catch (ClusterTopologyCheckedException e) {
+            fut.onNodeLeft(nearNodeId);
         }
         catch (IgniteCheckedException e) {
             U.error(fut.log, "Failed to send near enlist response (will rollback transaction) [" +

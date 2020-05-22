@@ -179,7 +179,7 @@ if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) {
 
 	if (-not (Test-Path $ng)) {
 		echo "Downloading NuGet..."
-		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", "$PSScriptRoot/nuget.exe")    
+		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v5.3.1/nuget.exe", "$PSScriptRoot/nuget.exe")    
 	}
 }
 
@@ -263,7 +263,7 @@ Make-Dir("bin")
 Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
                      | where Name -NotLike "*DotNetCore*" `
-                     | where Name -NotLike "*Benchmarks*" | % {
+                     | where Name -NotLike "*Benchmark*" | % {
     $projDir = split-path -parent $_.FullName 
     $dir = [IO.Path]::Combine($projDir, "bin", $configuration, "*")
     echo "Copying files to bin from '$dir'"

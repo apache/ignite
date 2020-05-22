@@ -467,7 +467,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 {
                     w.WriteBoolean(enabled);
 
-                    WriteStrings(w, cacheNames);
+                    w.WriteStrings(cacheNames);
                 });
         }
 
@@ -476,7 +476,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
 
-            DoOutOp(OpClearStatistics, w => WriteStrings(w, cacheNames));
+            DoOutOp(OpClearStatistics, w => w.WriteStrings(cacheNames));
         }
 
         /// <summary>
@@ -599,7 +599,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
 
-            DoOutOp(OpResetLostPartitions, w => WriteStrings(w, cacheNames));
+            DoOutOp(OpResetLostPartitions, w => w.WriteStrings(cacheNames));
         }
 
         /// <summary>
@@ -766,27 +766,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
             Debug.Assert(_nodes != null, "At least one topology update should have occurred.");
 
             return _nodes;
-        }
-
-        /// <summary>
-        /// Writes strings
-        /// </summary>
-        /// <param name="writer">Writer</param>
-        /// <param name="strings">Strings</param>
-        private static void WriteStrings(BinaryWriter writer, IEnumerable<string> strings)
-        {
-            var pos = writer.Stream.Position;
-
-            var count = 0;
-            writer.WriteInt(count);  // Reserve space.
-
-            foreach (var cacheName in strings)
-            {
-                writer.WriteString(cacheName);
-                count++;
-            }
-
-            writer.Stream.WriteInt(pos, count);
         }
     }
 }

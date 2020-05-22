@@ -126,7 +126,7 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
 
             GridCheckpointTestState state = GridTestIoUtils.deserializeJdk(serState);
 
-            assertNotNull("Can't load checkpoint state for key: " + key,  state);
+            assertNotNull("Can't load checkpoint state for key: " + key, state);
             assertEquals("Invalid state loaded [expected='" + dataPrefix + i + "', received='" + state.getData() + "']",
                 dataPrefix + i, state.getData());
         }
