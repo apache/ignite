@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-public class OptimizedObjectPooledStreamRegistry extends OptimizedObjectStreamRegistry{
+public class OptimizedObjectPooledStreamRegistry extends OptimizedObjectStreamRegistry {
     /** Output streams pool. */
     private final BlockingQueue<OptimizedObjectOutputStream> outPool;
 
