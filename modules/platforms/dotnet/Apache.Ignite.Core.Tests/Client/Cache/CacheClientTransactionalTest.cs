@@ -37,50 +37,60 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cache = TransactionalCache();
 
-            using (var tx = Client.Transactions.TxStart(TransactionConcurrency.Pessimistic,
-                TransactionIsolation.ReadCommitted,
-                TimeSpan.MaxValue))
+            cache.Put(1, 1);
+
+            using (var tx = Client.Transactions.TxStart())
             {
-                cache.Put(1, 1);
-                cache.Put(2, 2);
+                cache.Put(1, 10);
 
                 tx.Commit();
             }
 
-            Assert.AreEqual(1, cache.Get(1));
-            Assert.AreEqual(2, cache.Get(2));
+            Assert.AreEqual(10, cache.Get(1));
         }
 
         /// <summary>
         /// Tests that rollback reverts cache changes.
         /// </summary>
         [Test]
-        public void TestTxRollback([Values(true /*, false*/)]
-            bool async)
+        public void TestTxRollback([Values(true /*, false*/)] bool async)
         {
             var cache = TransactionalCache();
 
             cache.Put(1, 1);
-            cache.Put(2, 2);
 
-            using (var tx = Client.Transactions.TxStart(TransactionConcurrency.Pessimistic,
-                TransactionIsolation.ReadCommitted,
-                TimeSpan.MaxValue))
+            using (var tx = Client.Transactions.TxStart())
             {
-                cache.Put(1, 10);
-                cache.Put(2, 20);
+                cache.Put(1, 20);
 
                 tx.Rollback();
             }
 
             Assert.AreEqual(1, cache.Get(1));
-            Assert.AreEqual(2, cache.Get(2));
+        }
+
+        /// <summary>
+        /// Tests that rollback reverts cache changes.
+        /// </summary>
+        [Test]
+        public void TestTxClose()
+        {
+            var cache = TransactionalCache();
+
+            cache.Put(1, 1);
+
+            using (var tx = Client.Transactions.TxStart())
+            {
+                cache.Put(1, 30);
+            }
+
+            Assert.AreEqual(1, cache.Get(1));
         }
 
         /// <summary>
         /// Gets or creates transactional cache
         /// </summary>
-        private ICacheClient<int, int> TransactionalCache(string name = "clienttransactioanl")
+        private ICacheClient<int, int> TransactionalCache(string name = "client_transactional")
         {
             return Client.GetOrCreateCache<int, int>(new CacheClientConfiguration
             {

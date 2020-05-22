@@ -30,25 +30,39 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** Ignite. */
         private readonly IgniteClient _ignite;
 
+        /** Label. */
+        private readonly string _label;
+
+        /** Default transaction concurrency. */
+        private const TransactionConcurrency _dfltConcurrency = TransactionConcurrency.Pessimistic;
+
+        /** Default transaction isolation. */
+        private const TransactionIsolation _dfltIsolation = TransactionIsolation.RepeatableRead;
+
+        /** Default transaction timeout. */
+        private readonly TimeSpan _dfltTimeout = TimeSpan.Zero;
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="ignite">Ignite.</param>
-        public ClientTransactions(IgniteClient ignite)
+        /// <param name="label">Label.</param>
+        public ClientTransactions(IgniteClient ignite, string label = null)
         {
             _ignite = ignite;
+            _label = label;
         }
 
         /** <inheritDoc /> */
         public IClientTransaction TxStart()
         {
-            throw new NotImplementedException();
+            return TxStart(_dfltConcurrency, _dfltIsolation);
         }
 
         /** <inheritDoc /> */
         public IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation)
         {
-            throw new NotImplementedException();
+            return TxStart(concurrency, isolation, _dfltTimeout);
         }
 
         /** <inheritDoc /> */
@@ -62,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                     ctx.Writer.WriteByte((byte) concurrency);
                     ctx.Writer.WriteByte((byte) isolation);
                     ctx.Writer.WriteTimeSpanAsLong(timeout);
-                    ctx.Writer.WriteString(null);
+                    ctx.Writer.WriteString(_label);
                 },
                 ctx => ctx.Reader.ReadInt()
             );
@@ -73,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** <inheritDoc /> */
         public IClientTransactions WithLabel(string label)
         {
-            throw new NotImplementedException();
+            return new ClientTransactions(_ignite, _label); 
         }
     }
 }
