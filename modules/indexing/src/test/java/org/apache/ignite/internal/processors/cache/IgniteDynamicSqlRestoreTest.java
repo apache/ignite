@@ -357,6 +357,8 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             IgniteEx ig = startGrid(1);
 
             ig.cluster().active(true);
+            resetBaselineTopology();
+            ig.resetLostPartitions(Collections.singleton(TEST_CACHE_NAME));
 
             IgniteCache<Object, Object> cache = ig.cache(TEST_CACHE_NAME);
 
@@ -486,6 +488,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             ig.cluster().active(true);
 
             ig = startGrid(1);
+            ig.resetLostPartitions(Collections.singleton(TEST_CACHE_NAME));
 
             //then: config should be merged
             try (IgniteDataStreamer<Object, Object> s = ig.dataStreamer(TEST_CACHE_NAME)) {

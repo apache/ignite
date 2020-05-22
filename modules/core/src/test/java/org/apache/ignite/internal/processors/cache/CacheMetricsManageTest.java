@@ -408,6 +408,9 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         // Start node 1 again.
         startGrid(1);
 
+        if (persistence)
+            ig2.resetLostPartitions(Arrays.asList(CACHE1, CACHE2));
+
         assertCachesStatisticsMode(true, true);
 
         int gridIdx = 0;

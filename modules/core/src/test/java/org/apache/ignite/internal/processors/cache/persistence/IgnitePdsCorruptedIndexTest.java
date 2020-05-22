@@ -179,7 +179,13 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
 
         corruptedNode.cluster().active(true);
 
+        // Not all owners have been returned, data loss is expected.
+        assertFalse(grid(0).cache(CACHE).lostPartitions().isEmpty());
+        assertFalse(grid(corruptedNodeName).cache(CACHE).lostPartitions().isEmpty());
+
         resetBaselineTopology();
+
+        grid(0).resetLostPartitions(Collections.singleton(CACHE));
 
         // If index was corrupted, rebalance or one of the following queries should be failed.
         awaitPartitionMapExchange();

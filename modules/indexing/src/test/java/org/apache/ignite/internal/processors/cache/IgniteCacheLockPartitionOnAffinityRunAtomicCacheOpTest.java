@@ -76,6 +76,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                     for (int i = GRID_CNT - RESTARTED_NODE_CNT; i < GRID_CNT; ++i)
                         startGrid(i);
 
+                    // Wait for rebalancing to prevent data loss.
+                    awaitPartitionMapExchange();
+
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
                         @Override public boolean apply() {
                             return !stopRestartThread.get();
@@ -85,14 +88,6 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                 return null;
             }
         }, "restart-node");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
-        ccfg.setBackups(0);
-
-        return ccfg;
     }
 
     /**
