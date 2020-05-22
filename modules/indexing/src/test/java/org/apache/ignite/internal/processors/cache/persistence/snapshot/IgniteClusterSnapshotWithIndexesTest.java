@@ -135,7 +135,7 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
             executeSql(ignite, "INSERT INTO " + tblName + " (id, name, age, city) VALUES(?, 'name', 3, 'city')", i);
 
         // Blocking configuration local snapshot sender.
-        List<BlockingExecutor> execs = wrapSnapshotExecutors(G.allGrids());
+        List<BlockingExecutor> execs = setBlockingSnapshotExecutor(G.allGrids());
 
         IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 

@@ -23,20 +23,26 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.QueryMXBeanImpl;
+import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
-import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.mxbean.ServiceMXBean;
+import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
@@ -71,8 +77,22 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** */
     private static ServiceMXBean svcMxBean;
 
+    /** Snapshot control JMX bean. */
+    private static SnapshotMXBean snpMxBean;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setMaxSize(100L * 1024 * 1024)
+                    .setPersistenceEnabled(true)));
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         startGridsMultiThreaded(NODES_CNT);
 
         srvs = new ArrayList<>();
@@ -103,6 +123,9 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
         svcMxBean = getMxBean(killCli.name(), "Service",
             ServiceMXBeanImpl.class.getSimpleName(), ServiceMXBean.class);
+
+        snpMxBean = getMxBean(killCli.name(), "Snapshot",
+            SnapshotMXBeanImpl.class.getSimpleName(), SnapshotMXBean.class);
     }
 
     /** */
@@ -141,6 +164,19 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     public void testCancelContinuousQuery() throws Exception {
         doTestCancelContinuousQuery(startCli, srvs,
             (nodeId, routineId) -> qryMBean.cancelContinuous(nodeId.toString(), routineId.toString()));
+    }
+
+    /** */
+    @Test
+    public void testCancelSnapshot() {
+        doSnapshotCancellationTest(startCli, srvs, startCli.cache(DEFAULT_CACHE_NAME),
+            snpName -> snpMxBean.cancelSnapshot(snpName));
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownSnapshot() {
+        snpMxBean.cancelSnapshot("unknown");
     }
 
     /** */

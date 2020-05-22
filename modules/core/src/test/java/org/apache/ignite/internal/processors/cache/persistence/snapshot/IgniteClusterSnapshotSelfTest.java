@@ -1103,19 +1103,28 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
-    public void testClusterSnapshotCancelled() throws Exception {
-        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+    public void testClusterSnapshotInProgressCancelled() throws Exception {
+        IgniteEx srv = startGridsWithCache(1, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx startCli = startClientGrid(1);
+        IgniteEx killCli = startClientGrid(2);
 
-        List<BlockingExecutor> execs = wrapSnapshotExecutors(G.allGrids());
+        doSnapshotCancellationTest(startCli, Collections.singletonList(srv), srv.cache(dfltCacheCfg.getName()),
+            snpName -> killCli.snapshot().cancelSnapshot(snpName).get());
+    }
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotFinishedTryCancel() throws Exception {
+        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
         ignite.snapshot().cancelSnapshot(SNAPSHOT_NAME).get();
 
-        assertThrowsAnyCause(log,
-            fut::get,
-            IgniteException.class,
-            "gg");
+        stopAllGrids();
+
+        IgniteEx snpIg = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+
+        assertSnapshotCacheKeys(snpIg.cache(dfltCacheCfg.getName()));
     }
 
     /**

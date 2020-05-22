@@ -58,6 +58,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -541,10 +542,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             missed.removeAll(res.keySet());
             missed.removeAll(err.keySet());
 
-            snpReq.hasErr = !F.isEmpty(err) || !missed.isEmpty();
+            boolean cancelled = err.values().stream()
+                .anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
 
-            if (snpReq.hasErr) {
-                U.warn(log, "Execution of local snapshot tasks fails or them haven't been executed " +
+            if (cancelled) {
+                snpReq.err = new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
+                    "has been cancelled by external process [err=" + err + ", missed=" + missed + ']');
+            } else if (!F.isEmpty(err) || !missed.isEmpty()) {
+                snpReq.err = new IgniteCheckedException("Execution of local snapshot tasks fails or them haven't been executed " +
                     "due to some of nodes left the cluster. Uncompleted snapshot will be deleted " +
                     "[err=" + err + ", missed=" + missed + ']');
             }
@@ -562,7 +567,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>(new SnapshotOperationResponse());
 
         try {
-            if (req.hasErr)
+            if (req.err != null)
                 deleteSnapshot(snapshotLocalDir(req.snpName), pdsSettings.folderName());
 
             removeLastMetaStorageKey();
@@ -592,17 +597,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         synchronized (snpOpMux) {
             if (clusterSnpFut != null) {
-                if (endFail.isEmpty() && !snpReq.hasErr) {
+                if (endFail.isEmpty() && snpReq.err == null) {
                     clusterSnpFut.onDone();
 
                     if (log.isInfoEnabled())
                         log.info("Cluster-wide snapshot operation finished successfully [req=" + snpReq + ']');
                 }
-                else {
+                else if (snpReq.err == null) {
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
                         "Local snapshot tasks may not finished completely or finalizing results fails " +
-                        "[hasErr=" + snpReq.hasErr + ", fail=" + endFail + ", err=" + err + ']'));
+                        "[fail=" + endFail + ", err=" + err + ']'));
                 }
+                else
+                    clusterSnpFut.onDone(snpReq.err);
 
                 clusterSnpFut = null;
             }
@@ -1162,7 +1169,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             else {
                 deleteSnapshot(snpLocDir, pdsSettings.folderName());
 
-                U.warn(log, "Local snapshot sender closed due to an error occurred", th);
+                if (log.isDebugEnabled())
+                    log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());
             }
         }
     }
@@ -1189,8 +1197,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @GridToStringInclude
         private final Set<UUID> bltNodes;
 
-        /** {@code true} if an execution of local snapshot tasks failed with an error. */
-        private volatile boolean hasErr;
+        /** Exception occurred during snapshot operation processing. */
+        private volatile IgniteCheckedException err;
 
         /**
          * @param snpName Snapshot name.

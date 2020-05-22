@@ -23,17 +23,21 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
-import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
 import static org.apache.ignite.util.KillCommandsTests.doTestScanQueryCancel;
 
 /** Tests cancel of user created entities via control.sh. */
@@ -42,7 +46,18 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     private static List<IgniteEx> srvs;
 
     /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setMaxSize(100L * 1024 * 1024)
+                    .setPersistenceEnabled(true)));
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         super.beforeTestsStarted();
 
         srvs = new ArrayList<>();
@@ -123,6 +138,24 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
             assertEquals(EXIT_CODE_OK, res);
         });
+    }
+
+    /** */
+    @Test
+    public void testCancelSnapshot() {
+        doSnapshotCancellationTest(client, srvs, client.cache(DEFAULT_CACHE_NAME), snpName -> {
+            int res = execute("--kill", "snapshot", snpName);
+
+            assertEquals(EXIT_CODE_OK, res);
+        });
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownSnapshot() {
+        int res = execute("--kill", "snapshot", "unknown");
+
+        assertEquals(EXIT_CODE_OK, res);
     }
 
     /** */

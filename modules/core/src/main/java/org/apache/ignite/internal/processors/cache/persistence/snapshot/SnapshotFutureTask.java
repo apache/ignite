@@ -49,6 +49,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
@@ -262,7 +263,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
         startedFut.onDone(th);
 
-        U.warn(log, "Snapshot task has accepted exception to stop: " + th);
+        if (!(th instanceof IgniteFutureCancelledCheckedException))
+            U.warn(log, "Snapshot task has accepted exception to stop: " + th);
     }
 
     /** {@inheritDoc} */
@@ -627,7 +629,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** {@inheritDoc} */
     @Override public boolean cancel() {
-        acceptException(new IgniteCheckedException("Snapshot operation has been cancelled by external process " +
+        acceptException(new IgniteFutureCancelledCheckedException("Snapshot operation has been cancelled by external process " +
             "[snpName=" + snpName + ']'));
 
         try {
