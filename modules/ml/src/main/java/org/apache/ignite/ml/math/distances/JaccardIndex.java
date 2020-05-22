@@ -31,7 +31,6 @@ public class JaccardIndex implements DistanceMeasure {
         for (int i = 0; i < a.size(); i++) {
             uniqueValues.add(a.get(i));
         }
-
         double intersect = 0;
         for (int i = 0; i < b.size(); i++) {
             if (uniqueValues.contains(b.get(i))) {
