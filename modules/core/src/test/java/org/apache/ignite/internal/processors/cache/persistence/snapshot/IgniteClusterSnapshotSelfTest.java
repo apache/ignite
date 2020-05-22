@@ -578,7 +578,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             fut::get,
             IgniteCheckedException.class,
-            "Snapshot creation has been finished with an error");
+            "Execution of local snapshot tasks fails");
 
         assertTrue("Snapshot directory must be empty for node 0 due to snapshot future fail: " + dirNameIgnite0,
             !searchDirectoryRecursively(locSnpDir.toPath(), dirNameIgnite0).isPresent());
@@ -630,7 +630,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             () -> ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
             IgniteCheckedException.class,
-            "Snapshot creation has been finished with an error");
+            "Execution of local snapshot tasks fails");
 
         assertTrue("Snapshot directory must be empty: " + grid0Dir,
             !searchDirectoryRecursively(locSnpDir.toPath(), grid0Dir).isPresent());

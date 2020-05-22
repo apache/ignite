@@ -693,8 +693,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 fut0.get();
         }
         catch (IgniteCheckedException e) {
-            if (log.isInfoEnabled())
-                log.info("Expected cancelled exception: " + e.getMessage());
+            if (e instanceof IgniteFutureCancelledCheckedException) {
+                if (log.isInfoEnabled())
+                    log.info("Expected cancelled exception: " + e.getMessage());
+            }
+            else
+                throw new IgniteException(e);
         }
     }
 
