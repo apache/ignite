@@ -360,7 +360,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param grids Grids to block snapshot executors.
      * @return Wrapped snapshot executor list.
      */
-    public static List<BlockingExecutor> setBlockingSnapshotExecutor(List<? extends Ignite> grids) {
+    protected static List<BlockingExecutor> setBlockingSnapshotExecutor(List<? extends Ignite> grids) {
         List<BlockingExecutor> execs = new ArrayList<>();
 
         for (Ignite grid : grids) {
