@@ -524,11 +524,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
+        boolean cancelled = err.values().stream()
+            .anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
+
         if (snpReq == null || !snpReq.rqId.equals(id)) {
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null && clusterSnpFut.rqId.equals(id)) {
-                    clusterSnpFut.onDone(new IgniteCheckedException("Snapshot operation has not been fully completed " +
-                        "[err=" + err + ", snpReq=" + snpReq + ']'));
+                    if (cancelled) {
+                        clusterSnpFut.onDone(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
+                            "has been cancelled by external process [err=" + err + ", snpReq=" + snpReq + ']'));
+                    } else {
+                        clusterSnpFut.onDone(new IgniteCheckedException("Snapshot operation has not been fully completed " +
+                            "[err=" + err + ", snpReq=" + snpReq + ']'));
+                    }
 
                     clusterSnpFut = null;
                 }
@@ -541,9 +549,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             Set<UUID> missed = new HashSet<>(snpReq.bltNodes);
             missed.removeAll(res.keySet());
             missed.removeAll(err.keySet());
-
-            boolean cancelled = err.values().stream()
-                .anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
 
             if (cancelled) {
                 snpReq.err = new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +

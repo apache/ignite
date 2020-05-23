@@ -2154,9 +2154,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testCancelSnapshot() throws Exception {
         IgniteEx srv = startGrid(0);
-        IgniteEx startCli = startClientGrid(1);
 
         srv.cluster().state(ACTIVE);
+
+        IgniteEx startCli = startClientGrid(1);
 
         createCacheAndPreload(startCli, 100);
 
