@@ -157,6 +157,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         initDiagnosticDir();
 
+        cleanPersistenceDir();
         cleanDiagnosticDir();
     }
 
@@ -2154,13 +2155,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testCancelSnapshot() throws Exception {
         IgniteEx srv = startGrid(0);
         IgniteEx startCli = startClientGrid(1);
-        IgniteEx killCli = startClientGrid(2);
 
         srv.cluster().state(ACTIVE);
 
-        createCacheAndPreload(srv, 100);
+        createCacheAndPreload(startCli, 100);
 
-        doSnapshotCancellationTest(startCli, Collections.singletonList(srv), srv.cache(DEFAULT_CACHE_NAME),
-            snpName -> killCli.snapshot().cancelSnapshot(snpName).get());
+        CommandHandler h = new CommandHandler();
+
+        doSnapshotCancellationTest(startCli, Collections.singletonList(srv), startCli.cache(DEFAULT_CACHE_NAME),
+            snpName -> assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", snpName)));
     }
 }
