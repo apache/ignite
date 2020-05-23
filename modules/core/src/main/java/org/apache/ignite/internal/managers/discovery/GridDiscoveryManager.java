@@ -2867,9 +2867,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         void addEvent(NotificationEvent notificationEvt) {
             assert notificationEvt.node != null : notificationEvt.data;
 
-            if (type == EVT_CLIENT_NODE_DISCONNECTED)
-                discoWrk.disconnectEvtFut = new GridFutureAdapter();
-
             evts.add(notificationEvt);
         }
 

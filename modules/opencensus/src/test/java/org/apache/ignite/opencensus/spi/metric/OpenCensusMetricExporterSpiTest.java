@@ -31,8 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
-import org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.junit.Test;
 
 import static org.apache.ignite.opencensus.spi.metric.OpenCensusMetricExporterSpi.CONSISTENT_ID_TAG;
