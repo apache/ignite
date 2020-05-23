@@ -220,30 +220,15 @@ public final class GridTestUtils {
             this.delegate = delegate;
         }
 
-//        /** {@inheritDoc} */
-//        @Override public IgniteFuture<?> onDiscovery(
-//            int type,
-//            long topVer,
-//            ClusterNode node,
-//            Collection<ClusterNode> topSnapshot,
-//            @Nullable Map<Long, Collection<ClusterNode>> topHist,
-//            @Nullable DiscoverySpiCustomMessage spiCustomMsg
-//        ) {
-//            hook.beforeDiscovery(spiCustomMsg);
-//
-//            IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
-//
-//            fut.listen(f -> hook.afterDiscovery(spiCustomMsg));
-//
-//            return fut;
-//        }
-
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
+            hook.beforeDiscovery(notification.getCustomMsgData());
 
-//            hook.handleDiscoveryMessage(notification.getCustomMsgData());
+            IgniteFuture<?> fut = delegate.onDiscovery(notification);
 
-            return delegate.onDiscovery(notification);
+            fut.listen(f -> hook.afterDiscovery(notification.getCustomMsgData()));
+
+            return fut;
         }
 
 
