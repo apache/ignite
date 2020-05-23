@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -31,7 +32,6 @@ import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
-import org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm;
 import org.apache.ignite.internal.processors.tracing.Scope;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;

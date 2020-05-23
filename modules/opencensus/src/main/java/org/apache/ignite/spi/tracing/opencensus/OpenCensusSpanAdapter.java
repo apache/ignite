@@ -22,6 +22,7 @@ import io.opencensus.trace.Annotation;
 import io.opencensus.trace.AttributeValue;
 import org.apache.ignite.internal.processors.tracing.SpanStatus;
 import org.apache.ignite.internal.processors.tracing.SpiSpecificSpan;
+import org.apache.ignite.opencensus.spi.tracing.StatusMatchTable;
 
 /**
  * Span implementation based on OpenCensus library.

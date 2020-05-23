@@ -27,9 +27,6 @@ import org.apache.ignite.testframework.junits.SystemPropertiesList;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_BASELINE_AUTO_ADJUST_FEATURE;
-import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE;
-import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_DISTRIBUTED_META_STORAGE_FEATURE;
 import static org.apache.ignite.internal.processors.tracing.Scope.COMMUNICATION;
 import static org.apache.ignite.internal.processors.tracing.Scope.TX;
 
@@ -150,22 +147,5 @@ public class OpenCensusTracingConfigurationGetTest extends AbstractTracingTest {
         assertEquals(
             TracingConfigurationManager.DEFAULT_TX_CONFIGURATION,
             grid(0).tracingConfiguration().get(scopeSpecificCoords));
-    }
-
-    /**
-     * Ensure that default configuration returns
-     * in case of calling {@code tracingConfiguration().get()} if distributed metastorage is not available.
-     */
-    @Test
-    @SystemPropertiesList({
-        @WithSystemProperty(key = IGNITE_DISTRIBUTED_META_STORAGE_FEATURE, value = "false"),
-        @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_FEATURE, value = "false"),
-        @WithSystemProperty(key = IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE, value = "false")
-    })
-    public void testThatDefaultTracingConfigurationIsUsedIfMetastorageIsDisabled() {
-        assertEquals(
-            TracingConfigurationManager.DEFAULT_TX_CONFIGURATION,
-            grid(0).tracingConfiguration().get(TX_SCOPE_SPECIFIC_COORDINATES)
-        );
     }
 }

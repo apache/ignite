@@ -31,9 +31,6 @@ import org.apache.ignite.testframework.junits.SystemPropertiesList;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_BASELINE_AUTO_ADJUST_FEATURE;
-import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE;
-import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_DISTRIBUTED_META_STORAGE_FEATURE;
 import static org.apache.ignite.internal.processors.tracing.Scope.TX;
 
 /**
@@ -101,24 +98,5 @@ public class OpenCensusTracingConfigurationResetAllTest extends AbstractTracingT
         assertEquals(
             DFLT_CONFIG_MAP,
             grid(0).tracingConfiguration().getAll(null));
-    }
-
-    /**
-     * Ensure that IgniteException is thrown with appropriate msg
-     * in case of calling {@code tracingConfiguration().resetAll()} if distributed metastorage is not available.
-     */
-    @SuppressWarnings("ThrowableNotThrown") @Test
-    @SystemPropertiesList({
-        @WithSystemProperty(key = IGNITE_DISTRIBUTED_META_STORAGE_FEATURE, value = "false"),
-        @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_FEATURE, value = "false"),
-        @WithSystemProperty(key = IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE, value = "false")
-    })
-    public void testThatIgniteExceptionIsThrownIfMetastorageIsDisabled() {
-        GridTestUtils.assertThrows(
-            log,
-            () -> grid(0).tracingConfiguration().resetAll(TX),
-            IgniteException.class,
-            "Failed to reset tracing configuration for scope=[TX] to default. Meta storage is not available."
-        );
     }
 }

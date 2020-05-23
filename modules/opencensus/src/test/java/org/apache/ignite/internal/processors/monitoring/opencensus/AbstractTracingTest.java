@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.tracing.configuration.TracingConfig
 import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationCoordinates;
 import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.tracing.opencensus.OpenCensusTraceExporter;
+import org.apache.ignite.opencensus.spi.tracing.OpenCensusTraceExporter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;

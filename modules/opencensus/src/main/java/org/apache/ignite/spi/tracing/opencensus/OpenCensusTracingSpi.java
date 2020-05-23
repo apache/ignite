@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.tracing.SpiSpecificSpan;
 import org.apache.ignite.internal.processors.tracing.TracingSpi;
 import org.apache.ignite.internal.processors.tracing.TracingSpiType;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.opencensus.spi.tracing.OpenCensusSpanAdapter;
 import org.apache.ignite.opencensus.spi.tracing.OpenCensusTraceExporter;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;

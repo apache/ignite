@@ -298,7 +298,6 @@ import org.junit.runners.Suite;
     ClusterActivationStartedEventTest.class,
 
     IgniteThreadGroupNodeRestartTest.class,
-    BaselineEventsRemoteTest.class,
 
     // Tests for tracing configuration
     GridCommandHandlerTracingConfigurationTest.class

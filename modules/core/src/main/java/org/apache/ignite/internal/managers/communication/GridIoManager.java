@@ -2013,7 +2013,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         long timeout,
         boolean skipOnTimeout,
         IgniteInClosure<IgniteException> ackC,
-        boolean async,
+        boolean async
     ) throws IgniteCheckedException {
         assert node != null;
         assert topic != null;
