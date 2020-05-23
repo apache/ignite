@@ -3863,7 +3863,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         if (isTraceable())
                             traceTag(SpanTags.MESSAGE, traceName(mc.message));
 
-                        invokeListener(plc, lsnr, nodeId, mc.message.message(), secSubj(mc.message));
+                        invokeListener(plc, lsnr, nodeId, mc.message.message(), secSubjId(mc.message));
                     }
                     finally {
                         if (mc.closure != null)
