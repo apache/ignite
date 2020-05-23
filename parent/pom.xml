@@ -55,6 +55,7 @@
         <aws.sdk.version>1.11.75</aws.sdk.version>
         <camel.version>2.22.0</camel.version>
         <aws.encryption.sdk.version>1.3.2</aws.encryption.sdk.version>
+        <bouncycastle.version>1.60</bouncycastle.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.codec.version>1.11</commons.codec.version>
