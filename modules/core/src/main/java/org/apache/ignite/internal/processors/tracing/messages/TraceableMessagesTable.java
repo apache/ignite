@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.tracing.Traces;
+import org.apache.ignite.internal.processors.tracing.SpanType;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -38,18 +38,18 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustom
  */
 public class TraceableMessagesTable {
     /** Message trace lookup table. */
-    private static final Map<Class<?>, String> msgTraceLookupTable = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, SpanType> msgTraceLookupTable = new ConcurrentHashMap<>();
 
     static {
-        msgTraceLookupTable.put(TcpDiscoveryJoinRequestMessage.class, Traces.Discovery.NODE_JOIN_REQUEST);
-        msgTraceLookupTable.put(TcpDiscoveryNodeAddedMessage.class, Traces.Discovery.NODE_JOIN_ADD);
-        msgTraceLookupTable.put(TcpDiscoveryNodeAddFinishedMessage.class, Traces.Discovery.NODE_JOIN_FINISH);
-        msgTraceLookupTable.put(TcpDiscoveryNodeFailedMessage.class, Traces.Discovery.NODE_FAILED);
-        msgTraceLookupTable.put(TcpDiscoveryNodeLeftMessage.class, Traces.Discovery.NODE_LEFT);
-        msgTraceLookupTable.put(TcpDiscoveryCustomEventMessage.class, Traces.Discovery.CUSTOM_EVENT);
-        msgTraceLookupTable.put(TcpDiscoveryServerOnlyCustomEventMessage.class, Traces.Discovery.CUSTOM_EVENT);
-        msgTraceLookupTable.put(GridJobExecuteRequest.class, Traces.Communication.JOB_EXECUTE_REQUEST);
-        msgTraceLookupTable.put(GridJobExecuteResponse.class, Traces.Communication.JOB_EXECUTE_RESPONSE);
+        msgTraceLookupTable.put(TcpDiscoveryJoinRequestMessage.class, SpanType.DISCOVERY_NODE_JOIN_REQUEST);
+        msgTraceLookupTable.put(TcpDiscoveryNodeAddedMessage.class, SpanType.DISCOVERY_NODE_JOIN_ADD);
+        msgTraceLookupTable.put(TcpDiscoveryNodeAddFinishedMessage.class, SpanType.DISCOVERY_NODE_JOIN_FINISH);
+        msgTraceLookupTable.put(TcpDiscoveryNodeFailedMessage.class, SpanType.DISCOVERY_NODE_FAILED);
+        msgTraceLookupTable.put(TcpDiscoveryNodeLeftMessage.class, SpanType.DISCOVERY_NODE_LEFT);
+        msgTraceLookupTable.put(TcpDiscoveryCustomEventMessage.class, SpanType.DISCOVERY_CUSTOM_EVENT);
+        msgTraceLookupTable.put(TcpDiscoveryServerOnlyCustomEventMessage.class, SpanType.DISCOVERY_CUSTOM_EVENT);
+        msgTraceLookupTable.put(GridJobExecuteRequest.class, SpanType.COMMUNICATION_JOB_EXECUTE_REQUEST);
+        msgTraceLookupTable.put(GridJobExecuteResponse.class, SpanType.COMMUNICATION_JOB_EXECUTE_RESPONSE);
     }
 
     /** */
@@ -60,13 +60,13 @@ public class TraceableMessagesTable {
      * @param msgCls Traceable message class.
      * @return Trace name associated with message with given class.
      */
-    public static String traceName(Class<? extends TraceableMessage> msgCls) {
-        String traceName = msgTraceLookupTable.get(msgCls);
+    public static SpanType traceName(Class<? extends TraceableMessage> msgCls) {
+        SpanType spanType = msgTraceLookupTable.get(msgCls);
 
-        if (traceName == null)
+        if (spanType == null)
             throw new IgniteException("Trace name is not defined for " + msgCls);
 
-        return traceName;
+        return spanType;
     }
 
     /**
@@ -80,6 +80,8 @@ public class TraceableMessagesTable {
         if (obj instanceof GridIoMessage)
             return traceName(((GridIoMessage)obj).message());
 
-        return msgTraceLookupTable.getOrDefault(obj.getClass(), obj.getClass().getSimpleName());
+        SpanType val = msgTraceLookupTable.get(obj.getClass());
+
+        return val != null ? val.spanName() : obj.getClass().getSimpleName();
     }
 }

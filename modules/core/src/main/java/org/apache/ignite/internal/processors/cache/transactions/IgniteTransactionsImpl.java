@@ -24,6 +24,7 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -35,6 +36,8 @@ import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX;
 
 /**
  * Grid transactions implementation.
@@ -164,6 +167,18 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     ) {
         cctx.kernalContext().gateway().readLock();
 
+        MTC.supportInitial(cctx.kernalContext().tracing().create(
+            TX,
+            null,
+            lb));
+
+        MTC.span().addTag("isolation", isolation.name());
+        MTC.span().addTag("concurrency", concurrency.name());
+        MTC.span().addTag("timeout", timeout);
+
+        if (lb != null)
+            MTC.span().addTag("label", lb);
+
         try {
             GridNearTxLocal tx = cctx.tm().userTx(sysCacheCtx);
 
@@ -186,7 +201,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             );
 
             assert tx != null;
-
             return tx;
         }
         finally {

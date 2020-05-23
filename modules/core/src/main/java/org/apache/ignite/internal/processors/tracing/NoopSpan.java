@@ -16,7 +16,9 @@
 
 package org.apache.ignite.internal.processors.tracing;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Noop and null-safe implementation of Span.
@@ -25,6 +27,9 @@ public class NoopSpan implements Span {
     /** Instance. */
     public static final Span INSTANCE = new NoopSpan();
 
+    /**
+     * Constructor.
+     */
     private NoopSpan(){
 
     }
@@ -45,7 +50,7 @@ public class NoopSpan implements Span {
     }
 
     /** {@inheritDoc} */
-    @Override public Span addLog(String logDesc, Map<String, String> attributes) {
+    @Override public Span addLog(String logDesc, Map<String, String> attrs) {
         return this;
     }
 
@@ -62,5 +67,15 @@ public class NoopSpan implements Span {
     /** {@inheritDoc} */
     @Override public boolean isEnded() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SpanType type() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<Scope> includedScopes() {
+        return Collections.emptySet();
     }
 }

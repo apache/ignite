@@ -22,13 +22,14 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.processors.tracing.messages.SpanTransport;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static org.apache.ignite.internal.processors.tracing.Traces.Communication.SOCKET_READ;
+import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_SOCKET_READ;
 
 /**
  * Filter that inject and extract tracing span from/to process.
@@ -93,11 +94,17 @@ public class GridNioTracerFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
-        byte[] span = msg instanceof SpanTransport ? ((SpanTransport)msg).span() : null;
+        byte[] serializedSpan = msg instanceof SpanTransport ? ((SpanTransport)msg).span() : null;
 
-        try (MTC.TraceSurroundings ignore = tracer.startChild(SOCKET_READ, span)) {
-            proceedMessageReceived(ses, msg);
+        if (serializedSpan != null && serializedSpan.length != 0) {
+            Span span = tracer.create(COMMUNICATION_SOCKET_READ, serializedSpan);
+
+            try (MTC.TraceSurroundings ignore = MTC.support(span)) {
+                proceedMessageReceived(ses, msg);
+            }
         }
+        else
+            proceedMessageReceived(ses, msg);
     }
 
     /** {@inheritDoc} */

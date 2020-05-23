@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.tracing;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.tracing.MTC.startChildSpan;
-
 /**
  * Manager for {@link Span} instances.
  */
@@ -28,60 +26,47 @@ public interface SpanManager {
     /**
      * Creates Span with given name.
      *
-     * @param name Name.
+     * @param spanType Type of span to create.
      */
-    public default Span create(@NotNull String name) {
-        return create(name, (Span)null);
+    default Span create(@NotNull SpanType spanType) {
+        return create(spanType, (Span)null);
     }
 
     /**
      * Creates Span given name and explicit parent.
      *
-     * @param name Name.
+     * @param spanType Type of span to create.
      * @param parentSpan Parent span.
+     * @return Created span.
      */
-    public Span create(@NotNull String name, @Nullable Span parentSpan);
+    Span create(@NotNull SpanType spanType, @Nullable Span parentSpan);
 
     /**
-     * Creates Span with given name and parent from serialized context.
+     * Creates Span given name and explicit parent.
      *
-     * @param name Name.
-     * @param serializedSpanBytes Serialized span bytes.
+     * @param spanType Type of span to create.
+     * @param serializedParentSpan Parent span as serialized bytes.
+     * @return Created span.
      */
-    public Span create(@NotNull String name, @Nullable byte[] serializedSpanBytes);
+    Span create(@NotNull SpanType spanType, @Nullable byte[] serializedParentSpan);
+
+    /**
+     * Creates Span given name and explicit parent.
+     *
+     * @param spanType Type of span to create.
+     * @param parentSpan Parent span.
+     * @param lb Label.
+     * @return Created span.
+     */
+    @NotNull Span create (
+        @NotNull SpanType spanType,
+        @Nullable Span parentSpan,
+        @Nullable String lb);
 
     /**
      * Serializes span to byte array to send context over network.
      *
      * @param span Span.
      */
-    public byte[] serialize(@NotNull Span span);
-
-    /**
-     * Creating child only if parentSpan is correct and setting it to surroundings.
-     *
-     * @param name Name.
-     */
-    public default MTC.TraceSurroundings startChild(@NotNull String name, @Nullable Span parentSpan) {
-        Span child = null;
-
-        if (parentSpan != null && parentSpan != NoopSpan.INSTANCE)
-            child = create(name, parentSpan);
-
-        return startChildSpan(child);
-    }
-
-    /**
-     * Creating child only if parentSpan is correct and setting it to surroundings.
-     *
-     * @param name Name.
-     */
-    public default MTC.TraceSurroundings startChild(@NotNull String name, byte[] serializedSpanBytes) {
-        Span child = null;
-
-        if (serializedSpanBytes != null)
-            child = create(name, serializedSpanBytes);
-
-        return startChildSpan(child);
-    }
+    byte[] serialize(@NotNull Span span);
 }

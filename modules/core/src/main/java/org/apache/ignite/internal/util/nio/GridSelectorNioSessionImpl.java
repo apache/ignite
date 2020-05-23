@@ -30,14 +30,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.tracing.MTC.isTraceable;
-import static org.apache.ignite.internal.processors.tracing.MTC.trace;
 import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 import static org.apache.ignite.internal.util.nio.GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC;
 import static org.apache.ignite.internal.util.nio.GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME;
@@ -310,8 +309,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         boolean res = queue.offerFirst(writeFut);
 
-        if (isTraceable())
-            trace("Added to system queue - " + traceName(writeFut.message()));
+        MTC.span().addLog("Added to system queue - " + traceName(writeFut.message()));
 
         assert res : "Future was not added to queue";
 
@@ -341,8 +339,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         boolean res = queue.offer(writeFut);
 
-        if (isTraceable())
-            trace("Added to queue - " + traceName(writeFut.message()));
+        MTC.span().addLog("Added to queue - " + traceName(writeFut.message()));
 
         assert res : "Future was not added to queue";
 

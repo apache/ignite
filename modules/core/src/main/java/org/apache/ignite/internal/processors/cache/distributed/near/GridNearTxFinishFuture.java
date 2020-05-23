@@ -43,6 +43,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -58,7 +60,10 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.tracing.MTC.support;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
+import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_FINISH;
 
 /**
  *
@@ -67,6 +72,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     implements GridCacheFuture<IgniteInternalTx>, NearTxFinishFuture {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Tracing span. */
+    private Span span;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -288,73 +296,75 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
     /** {@inheritDoc} */
     @Override public boolean onDone(IgniteInternalTx tx0, Throwable err) {
-        if (isDone())
-            return false;
-
-        synchronized (this) {
+        try (MTC.TraceSurroundings ignored = support(span)) {
             if (isDone())
                 return false;
 
-            boolean nodeStop = false;
+            synchronized (this) {
+                if (isDone())
+                    return false;
 
-            if (err != null) {
-                tx.setRollbackOnly();
+                boolean nodeStop = false;
 
-                nodeStop = err instanceof NodeStoppingException || cctx.kernalContext().failure().nodeStopping();
-            }
+                if (err != null) {
+                    tx.setRollbackOnly();
 
-            if (commit) {
-                if (tx.commitError() != null)
-                    err = tx.commitError();
-                else if (err != null)
-                    tx.commitError(err);
-            }
+                    nodeStop = err instanceof NodeStoppingException || cctx.kernalContext().failure().nodeStopping();
+                }
 
-            if (initialized() || err != null) {
-                if (tx.needCheckBackup()) {
-                    assert tx.onePhaseCommit();
+                if (commit) {
+                    if (tx.commitError() != null)
+                        err = tx.commitError();
+                    else if (err != null)
+                        tx.commitError(err);
+                }
 
-                    if (err != null)
-                        err = new TransactionRollbackException("Failed to commit transaction.", err);
+                if (initialized() || err != null) {
+                    if (tx.needCheckBackup()) {
+                        assert tx.onePhaseCommit();
 
-                    try {
-                        tx.localFinish(err == null, true);
-                    }
-                    catch (IgniteCheckedException e) {
                         if (err != null)
-                            err.addSuppressed(e);
-                        else
-                            err = e;
+                            err = new TransactionRollbackException("Failed to commit transaction.", err);
+
+                        try {
+                            tx.localFinish(err == null, true);
+                        }
+                        catch (IgniteCheckedException e) {
+                            if (err != null)
+                                err.addSuppressed(e);
+                            else
+                                err = e;
+                        }
                     }
-                }
 
-                if (tx.onePhaseCommit()) {
-                    boolean commit = this.commit && err == null;
+                    if (tx.onePhaseCommit()) {
+                        boolean commit = this.commit && err == null;
 
-                    if (!nodeStop)
-                        finishOnePhase(commit);
+                        if (!nodeStop)
+                            finishOnePhase(commit);
 
-                    try {
-                        tx.tmFinish(commit, nodeStop, true);
+                        try {
+                            tx.tmFinish(commit, nodeStop, true);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to finish tx: " + tx, e);
+
+                            if (err == null)
+                                err = e;
+                        }
                     }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to finish tx: " + tx, e);
 
-                        if (err == null)
-                            err = e;
+                    if (super.onDone(tx0, err)) {
+                        // Don't forget to clean up.
+                        cctx.mvcc().removeFuture(futId);
+
+                        return true;
                     }
-                }
-
-                if (super.onDone(tx0, err)) {
-                    // Don't forget to clean up.
-                    cctx.mvcc().removeFuture(futId);
-
-                    return true;
                 }
             }
-        }
 
-        return false;
+            return false;
+        }
     }
 
     /**
@@ -369,25 +379,28 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
     /** {@inheritDoc} */
     @Override public void finish(final boolean commit, final boolean clearThreadMap, final boolean onTimeout) {
-        if (!cctx.mvcc().addFuture(this, futureId()))
-            return;
+        try (TraceSurroundings ignored =
+                 MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_NEAR_FINISH, MTC.span()))) {
+            if (!cctx.mvcc().addFuture(this, futureId()))
+                return;
 
-        if (tx.onNeedCheckBackup()) {
-            assert tx.onePhaseCommit();
+            if (tx.onNeedCheckBackup()) {
+                assert tx.onePhaseCommit();
 
-            checkBackup();
+                checkBackup();
 
-            // If checkBackup is set, it means that primary node has crashed and we will not need to send
-            // finish request to it, so we can mark future as initialized.
-            markInitialized();
+                // If checkBackup is set, it means that primary node has crashed and we will not need to send
+                // finish request to it, so we can mark future as initialized.
+                markInitialized();
 
-            return;
+                return;
+            }
+
+            if (!commit && !clearThreadMap)
+                rollbackAsyncSafe(onTimeout);
+            else
+                doFinish(commit, clearThreadMap);
         }
-
-        if (!commit && !clearThreadMap)
-            rollbackAsyncSafe(onTimeout);
-        else
-            doFinish(commit, clearThreadMap);
     }
 
     /**

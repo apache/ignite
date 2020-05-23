@@ -2497,7 +2497,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets fully configured instance of {@link TracingSpi}.
+     * Set fully configured instance of {@link TracingSpi}.
      *
      * @param tracingSpi Fully configured instance of {@link TracingSpi}.
      * @return {@code this} for chaining.

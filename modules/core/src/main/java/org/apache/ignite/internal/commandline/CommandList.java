@@ -61,7 +61,10 @@ public enum CommandList {
     KILL("--kill", new KillCommand()),
 
     /** Snapshot commands. */
-    SNAPSHOT("--snapshot", new SnapshotCommand());
+    SNAPSHOT("--snapshot", new SnapshotCommand()),
+
+    /** */
+    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

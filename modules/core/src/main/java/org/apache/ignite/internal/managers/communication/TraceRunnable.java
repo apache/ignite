@@ -18,7 +18,9 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import org.apache.ignite.internal.processors.tracing.NoopSpan;
 import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.processors.tracing.SpanType;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 
 /**
@@ -28,25 +30,27 @@ public abstract class TraceRunnable implements Runnable {
     /** */
     private final Tracing tracing;
 
-    /** Name of new span. */
-    private final String processName;
+    /** SpanType of the new span. */
+    private final SpanType spanType;
 
     /** Parent span from which new span should be created. */
     private final Span parent;
 
     /**
      * @param tracing Tracing processor.
-     * @param name Name of new span.
+     * @param spanType Span type to create.
      */
-    public TraceRunnable(Tracing tracing, String name) {
+    protected TraceRunnable(Tracing tracing, SpanType spanType) {
         this.tracing = tracing;
-        processName = name;
-        this.parent = MTC.span();
+        this.spanType = spanType;
+        parent = MTC.span();
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
-        try (TraceSurroundings ignore = tracing.startChild(processName, parent)) {
+        Span span = tracing.create(spanType, parent);
+
+        try (TraceSurroundings ignore = MTC.support(span.equals(NoopSpan.INSTANCE) ? parent : span)) {
             execute();
         }
     }

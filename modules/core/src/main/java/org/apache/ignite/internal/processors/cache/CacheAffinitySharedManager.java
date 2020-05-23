@@ -90,6 +90,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.tracing.SpanType.AFFINITY_CALCULATION;
 
 /**
  *
@@ -2139,7 +2140,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (cache.affinity().lastVersion().equals(evts.topologyVersion()))
                     return;
 
-                Span affCalcSpan = cctx.kernalContext().tracing().create("affinity.calculation", fut.span())
+                Span affCalcSpan = cctx.kernalContext().tracing().create(AFFINITY_CALCULATION, fut.span())
                     .addTag("cache.group", desc.cacheOrGroupName());
 
                 boolean latePrimary = cache.rebalanceEnabled;

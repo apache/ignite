@@ -75,6 +75,8 @@ import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -107,6 +109,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
+import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_DHT_PREPARE;
 
 /**
  *
@@ -116,6 +120,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     implements GridCacheVersionedFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Tracing span. */
+    private Span span;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -737,104 +744,106 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
     /** {@inheritDoc} */
     @Override public boolean onDone(GridNearTxPrepareResponse res0, Throwable err) {
-        assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
-            "pending mini futures: " + this;
+        try (TraceSurroundings ignored2 = MTC.support(span)) {
+            assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
+                "pending mini futures: " + this;
 
-        ERR_UPD.compareAndSet(this, null, err);
+            ERR_UPD.compareAndSet(this, null, err);
 
-        // Must clear prepare future before response is sent or listeners are notified.
-        if (tx.optimistic())
-            tx.clearPrepareFuture(this);
+            // Must clear prepare future before response is sent or listeners are notified.
+            if (tx.optimistic())
+                tx.clearPrepareFuture(this);
 
-        // Do not commit one-phase commit transaction if originating node has near cache enabled.
-        if (tx.commitOnPrepare()) {
-            assert last;
+            // Do not commit one-phase commit transaction if originating node has near cache enabled.
+            if (tx.commitOnPrepare()) {
+                assert last;
 
-            Throwable prepErr = this.err;
+                Throwable prepErr = this.err;
 
-            // Must create prepare response before transaction is committed to grab correct return value.
-            final GridNearTxPrepareResponse res = createPrepareResponse(prepErr);
+                // Must create prepare response before transaction is committed to grab correct return value.
+                final GridNearTxPrepareResponse res = createPrepareResponse(prepErr);
 
-            onComplete(res);
+                onComplete(res);
 
-            if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
-                CIX1<IgniteInternalFuture<IgniteInternalTx>> resClo =
-                    new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
-                            if (res.error() == null && fut.error() != null)
-                                res.error(fut.error());
+                if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
+                    CIX1<IgniteInternalFuture<IgniteInternalTx>> resClo =
+                        new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
+                            @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
+                                if (res.error() == null && fut.error() != null)
+                                    res.error(fut.error());
 
-                            if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
-                                sendPrepareResponse(res);
+                                if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
+                                    sendPrepareResponse(res);
+                            }
+                        };
+
+                    try {
+                        if (prepErr == null) {
+                            try {
+                                tx.commitAsync().listen(resClo);
+                            }
+                            catch (Throwable e) {
+                                res.error(e);
+
+                                tx.systemInvalidate(true);
+
+                                try {
+                                    tx.rollbackAsync().listen(resClo);
+                                }
+                                catch (Throwable e1) {
+                                    e.addSuppressed(e1);
+                                }
+
+                                throw e;
+                            }
                         }
-                    };
-
-                try {
-                    if (prepErr == null) {
-                        try {
-                            tx.commitAsync().listen(resClo);
-                        }
-                        catch (Throwable e) {
-                            res.error(e);
-
-                            tx.systemInvalidate(true);
-
+                        else if (!cctx.kernalContext().isStopping()) {
                             try {
                                 tx.rollbackAsync().listen(resClo);
                             }
-                            catch (Throwable e1) {
-                                e.addSuppressed(e1);
+                            catch (Throwable e) {
+                                if (err != null)
+                                    err.addSuppressed(e);
+
+                                throw err;
                             }
-
-                            throw e;
                         }
                     }
-                    else if (!cctx.kernalContext().isStopping()) {
-                        try {
-                            tx.rollbackAsync().listen(resClo);
-                        }
-                        catch (Throwable e) {
-                            if (err != null)
-                                err.addSuppressed(e);
+                    catch (Throwable e) {
+                        tx.logTxFinishErrorSafe(log, true, e);
 
-                            throw err;
-                        }
+                        cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
                     }
                 }
-                catch (Throwable e) {
-                    tx.logTxFinishErrorSafe(log, true, e);
-
-                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-                }
-            }
-
-            return true;
-        }
-        else {
-            if (REPLIED_UPD.compareAndSet(this, 0, 1)) {
-                GridNearTxPrepareResponse res = createPrepareResponse(this.err);
-
-                // Will call super.onDone().
-                onComplete(res);
-
-                sendPrepareResponse(res);
 
                 return true;
             }
             else {
-                // Other thread is completing future. Wait for it to complete.
-                try {
-                    if (err != null)
-                        get();
-                }
-                catch (IgniteInterruptedException e) {
-                    onError(new IgniteCheckedException("Got interrupted while waiting for replies to be sent.", e));
-                }
-                catch (IgniteCheckedException ignored) {
-                    // No-op, get() was just synchronization.
-                }
+                if (REPLIED_UPD.compareAndSet(this, 0, 1)) {
+                    GridNearTxPrepareResponse res = createPrepareResponse(this.err);
 
-                return false;
+                    // Will call super.onDone().
+                    onComplete(res);
+
+                    sendPrepareResponse(res);
+
+                    return true;
+                }
+                else {
+                    // Other thread is completing future. Wait for it to complete.
+                    try {
+                        if (err != null)
+                            get();
+                    }
+                    catch (IgniteInterruptedException e) {
+                        onError(new IgniteCheckedException("Got interrupted while waiting for replies to be sent.", e));
+                    }
+                    catch (IgniteCheckedException ignored) {
+                        // No-op, get() was just synchronization.
+                    }
+
+                    return false;
+                }
             }
         }
     }
@@ -1044,18 +1053,19 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      */
     public void prepare(GridNearTxPrepareRequest req) {
         assert req != null;
+        try (MTC.TraceSurroundings ignored =
+                 MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_DHT_PREPARE, MTC.span()))) {
+            if (tx.empty() && !req.queryUpdate()) {
+                tx.setRollbackOnly();
 
-        if (tx.empty() && !req.queryUpdate()) {
-            tx.setRollbackOnly();
+                onDone((GridNearTxPrepareResponse)null);
+            }
 
-            onDone((GridNearTxPrepareResponse)null);
-        }
+            this.req = req;
 
-        this.req = req;
+            ClusterNode node = cctx.discovery().node(tx.topologyVersion(), tx.nearNodeId());
 
-        ClusterNode node = cctx.discovery().node(tx.topologyVersion(), tx.nearNodeId());
-
-        boolean validateCache = needCacheValidation(node);
+            boolean validateCache = needCacheValidation(node);
 
         boolean writesEmpty = isEmpty(req.writes());
 
@@ -1070,35 +1080,36 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
         }
 
-        boolean ser = tx.serializable() && tx.optimistic();
+            boolean ser = tx.serializable() && tx.optimistic();
 
         if (!writesEmpty || (ser && !F.isEmpty(req.reads()))) {
             Map<Integer, Collection<KeyCacheObject>> forceKeys = null;
 
-            for (IgniteTxEntry entry : req.writes())
-                forceKeys = checkNeedRebalanceKeys(entry, forceKeys);
-
-            if (ser) {
-                for (IgniteTxEntry entry : req.reads())
+                for (IgniteTxEntry entry : req.writes())
                     forceKeys = checkNeedRebalanceKeys(entry, forceKeys);
+
+                if (ser) {
+                    for (IgniteTxEntry entry : req.reads())
+                        forceKeys = checkNeedRebalanceKeys(entry, forceKeys);
+                }
+
+                forceKeysFut = forceRebalanceKeys(forceKeys);
             }
 
-            forceKeysFut = forceRebalanceKeys(forceKeys);
+            readyLocks();
+
+            // Start timeout tracking after 'readyLocks' to avoid race with timeout processing.
+            if (timeoutObj != null) {
+                cctx.time().addTimeoutObject(timeoutObj);
+
+                // Fix race with add/remove timeout object if locks are mapped from another
+                // thread before timeout object is enqueued.
+                if (tx.onePhaseCommit())
+                    timeoutAddedLatch.countDown();
+            }
+
+            mapIfLocked();
         }
-
-        readyLocks();
-
-        // Start timeout tracking after 'readyLocks' to avoid race with timeout processing.
-        if (timeoutObj != null) {
-            cctx.time().addTimeoutObject(timeoutObj);
-
-            // Fix race with add/remove timeout object if locks are mapped from another
-            // thread before timeout object is enqueued.
-            if (tx.onePhaseCommit())
-                timeoutAddedLatch.countDown();
-        }
-
-        mapIfLocked();
     }
 
     /**

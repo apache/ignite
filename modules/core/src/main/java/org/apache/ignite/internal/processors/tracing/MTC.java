@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.tracing;
 
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings.NOOP_CLOSED_SURROUNDINGS;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings.NOOP_UNCLOSED_SURROUNDINGS;
 
 /**
@@ -37,30 +36,7 @@ public class MTC {
      * @return Span which corresponded to current thread or null if it doesn't not set.
      */
     @NotNull public static Span span() {
-        return MTC.span.get();
-    }
-
-    /**
-     * @param log Annotation string to added to tracing.
-     */
-    public static void trace(String log) {
-        MTC.span.get().addLog(log);
-    }
-
-    /**
-     * @param tag Name of tag.
-     * @param value Value of tag.
-     */
-    public static void traceTag(String tag, String value) {
-        MTC.span.get().addTag(tag, value);
-    }
-
-    /**
-     * @return {@code true} If tracing in current thread makes sense.
-     */
-    public static boolean isTraceable() {
-        return MTC.span.get() != NOOP_SPAN;
-
+        return span.get();
     }
 
     /**
@@ -70,43 +46,54 @@ public class MTC {
      * @param startSpan Span which should be added to current thread.
      * @return {@link TraceSurroundings} for manage span life cycle.
      */
-    public static TraceSurroundings startChildSpan(Span startSpan) {
+    public static TraceSurroundings support(Span startSpan) {
         Span oldSpan = span();
 
-        MTC.span.set(startSpan != null ? startSpan : NOOP_SPAN);
+        if (startSpan != null && startSpan != NOOP_SPAN) {
+            span.set(startSpan);
 
-        return oldSpan == NOOP_SPAN ? NOOP_CLOSED_SURROUNDINGS : new TraceSurroundings(oldSpan, true);
+            return new TraceSurroundings(oldSpan, true);
+        }
+        else
+            return oldSpan == NOOP_SPAN ? NOOP_UNCLOSED_SURROUNDINGS : new TraceSurroundings(oldSpan, false);
     }
 
     /**
-     * Attach given span to current thread if it isn't null and do nothing if it is null. Detach given span and return
-     * previous span when {@link TraceSurroundings#close()} would be calleddddd.
+     * Support initial span.
      *
-     * @param supportSpan Span which should be added to current thread.
+     * @param startSpan Span which should be added to current thread.
+     */
+    public static void supportInitial(Span startSpan) {
+        span.set(startSpan);
+    }
+
+    /**
+     * Attach given span to current thread if it isn't null or attach empty span if it is null.
+     *
+     * @param startSpan Span which should be added to current thread.
      * @return {@link TraceSurroundings} for manage span life cycle.
      */
-    public static TraceSurroundings supportSpan(Span supportSpan) {
+    public static TraceSurroundings supportContinual(Span startSpan) {
         Span oldSpan = span();
 
-        if (supportSpan != null)
-            MTC.span.set(supportSpan);
+        if (startSpan != null && startSpan != NOOP_SPAN)
+            span.set(startSpan);
 
-        return oldSpan == NOOP_SPAN ? NOOP_UNCLOSED_SURROUNDINGS : new TraceSurroundings(oldSpan, false);
+        return new TraceSurroundings(oldSpan, false);
     }
 
+
     /**
-     * Helper for managing of span life cycle. It help to end current span and also reatach previous one to thread after
+     * Helper for managing of span life cycle. It help to end current span and also reattach previous one to thread after
      * {@link TraceSurroundings#close()} would be call.
      */
     public static class TraceSurroundings implements AutoCloseable {
-        /** Span which should be atached to thread when {@code #close} would be called. */
+        /** Span which should be attached to thread when {@code #close} would be called. */
         private final Span oldSpan;
 
         /** {@code true} if current span should be ended at close moment. */
         private final boolean endRequired;
 
-        /** Precreated instance of current class for performance target. */
-        static final TraceSurroundings NOOP_CLOSED_SURROUNDINGS = new TraceSurroundings(NOOP_SPAN, true);
         /** Precreated instance of current class for performance target. */
         static final TraceSurroundings NOOP_UNCLOSED_SURROUNDINGS = new TraceSurroundings(NOOP_SPAN, false);
 
@@ -124,10 +111,9 @@ public class MTC {
          */
         @Override public void close() {
             if (endRequired)
-                MTC.span.get().end();
+                span.get().end();
 
-            MTC.span.set(oldSpan);
+            span.set(oldSpan);
         }
     }
-
 }
