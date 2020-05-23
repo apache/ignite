@@ -672,7 +672,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private void beforeFirstTest() throws Exception {
         sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
 
-        info(">>> Starting test class: " + testClassDescription() + " <<<");
+        U.quietAndInfo(log(), ">>> Starting test class: " + testClassDescription() + " <<<");
 
         if (isSafeTopology())
             assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution:" + G.allGrids();
@@ -717,7 +717,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private void cleanUpTestEnviroment() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
-        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+        U.quietAndInfo(log(),">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
 
         try {
             afterTest();
@@ -905,7 +905,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param cnt Grid count
      * @throws Exception If an error occurs.
      */
-    @SuppressWarnings({"BusyWait"})
     protected void checkTopology(int cnt) throws Exception {
         for (int j = 0; j < 10; j++) {
             boolean topOk = true;
@@ -1944,7 +1943,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
     /** */
     private void afterLastTest() throws Exception {
-        info(">>> Stopping test class: " + testClassDescription() + " <<<");
+        U.quietAndInfo(log(), ">>> Stopping test class: " + testClassDescription() + " <<<");
 
         Exception err = null;
 
@@ -2306,7 +2305,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         // Clear log throttle.
         LT.clear();
 
-        info(">>> Starting test: " + testDescription() + " <<<");
+        U.quietAndInfo(log(), ">>> Starting test: " + testDescription() + " <<<");
 
         try {
             beforeTest();
