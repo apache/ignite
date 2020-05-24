@@ -524,8 +524,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        boolean cancelled = err.values().stream()
-            .anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
+        boolean cancelled = err.values().stream().anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
 
         if (snpReq == null || !snpReq.rqId.equals(id)) {
             synchronized (snpOpMux) {
@@ -553,7 +552,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (cancelled) {
                 snpReq.err = new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
                     "has been cancelled by external process [err=" + err + ", missed=" + missed + ']');
-            } else if (!F.isEmpty(err) || !missed.isEmpty()) {
+            }
+            else if (!F.isEmpty(err) || !missed.isEmpty()) {
                 snpReq.err = new IgniteCheckedException("Execution of local snapshot tasks fails or them haven't been executed " +
                     "due to some of nodes left the cluster. Uncompleted snapshot will be deleted " +
                     "[err=" + err + ", missed=" + missed + ']');
