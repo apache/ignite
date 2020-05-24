@@ -104,7 +104,7 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCancelScanQuery() {
+    public void testCancelScanQuery() throws Exception {
         doTestScanQueryCancel(startCli, srvs,
             args -> execute(killCli, KILL_SCAN_QRY + " '" + args.get1() + "' '" + args.get2() + "' " + args.get3()));
     }

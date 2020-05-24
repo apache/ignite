@@ -130,7 +130,7 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCancelScanQuery() {
+    public void testCancelScanQuery() throws Exception {
         doTestScanQueryCancel(startCli, srvs, args ->
             qryMBean.cancelScan(args.get1().toString(), args.get2(), args.get3()));
     }
