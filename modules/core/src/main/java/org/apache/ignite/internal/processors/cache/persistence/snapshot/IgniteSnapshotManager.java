@@ -423,8 +423,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             File db = new File(snpDir, DB_DEFAULT_FOLDER);
 
-            if (!db.exists() || db.list().length == 0)
+            if (!db.exists() || db.list().length == 0) {
+                // Marshaller directory is empty. Using U.delete() may throw NoSuchFileException.
+                marshDir.delete();
+                db.delete();
+
                 U.delete(snpDir);
+            }
         }
         catch (IOException | IgniteCheckedException e) {
             throw new IgniteException(e);
