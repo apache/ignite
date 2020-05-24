@@ -31,6 +31,7 @@ public class SpanContainer implements Serializable {
 
     /** Serialized span bytes. */
     private byte[] serializedSpanBytes;
+
     /** Span. */
     private transient Span span = NoopSpan.INSTANCE;
 

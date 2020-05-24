@@ -82,7 +82,6 @@ public class MTC {
         return new TraceSurroundings(oldSpan, false);
     }
 
-
     /**
      * Helper for managing of span life cycle. It help to end current span and also reattach previous one to thread after
      * {@link TraceSurroundings#close()} would be call.

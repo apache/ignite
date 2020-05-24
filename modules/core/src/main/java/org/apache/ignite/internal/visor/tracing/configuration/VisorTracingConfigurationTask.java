@@ -82,7 +82,7 @@ public class VisorTracingConfigurationTask
 
                 default: {
                     // We should never get here.
-                    assert false: "Unexpected tracing configuration argument [arg= " + arg + ']';
+                    assert false : "Unexpected tracing configuration argument [arg= " + arg + ']';
 
                     return getAll(null); // Just in case.
                 }

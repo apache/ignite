@@ -73,8 +73,8 @@ public class VisorTracingConfigurationTaskResult extends IgniteDataTransferObjec
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked") @Override
-    protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @SuppressWarnings("unchecked") @Override protected void readExternalData(byte protoVer, ObjectInput in)
+        throws IOException, ClassNotFoundException {
         tracingConfigurations = (List)U.readCollection(in);
     }
 

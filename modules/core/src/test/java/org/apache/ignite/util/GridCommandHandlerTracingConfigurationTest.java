@@ -267,7 +267,6 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
                 TracingConfigurationManager.DEFAULT_TX_CONFIGURATION),
             grid(0).tracingConfiguration().getAll(TX));
 
-
         assertEquals(
             Collections.singletonMap(
                 EXCHANGE_SCOPE_SPECIFIC_COORDINATES,

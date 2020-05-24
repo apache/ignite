@@ -32,36 +32,52 @@ public class SpanTags {
 
     /** */
     public static final String NODE = "node";
+
     /** */
     public static final String ID = "id";
+
     /** */
     public static final String ORDER = "id";
+
     /** */
     public static final String EVENT = "event";
+
     /** */
     public static final String NAME = "name";
+
     /** */
     public static final String TYPE = "type";
+
     /** */
     public static final String INITIAL = "initial";
+
     /** */
     public static final String RESULT = "result";
+
     /** */
     public static final String ERROR = "error";
+
     /** */
     public static final String EXCHANGE = "exchange";
+
     /** */
     public static final String CONSISTENT_ID = "consistent.id";
+
     /** */
     public static final String TOPOLOGY_VERSION = "topology.version";
+
     /** */
     public static final String MAJOR = "major";
+
     /** */
     public static final String MINOR = "minor";
+
     /** */
     public static final String EVENT_NODE = tag(EVENT, NODE);
+
     /** */
     public static final String NODE_ID = tag(NODE, ID);
+
     /** */
     public static final String MESSAGE = "message";
 

@@ -59,7 +59,7 @@ public interface SpanManager {
      * @param lb Label.
      * @return Created span.
      */
-    @NotNull Span create (
+    @NotNull Span create(
         @NotNull SpanType spanType,
         @Nullable Span parentSpan,
         @Nullable String lb);

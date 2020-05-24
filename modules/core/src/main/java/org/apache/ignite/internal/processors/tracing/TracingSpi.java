@@ -62,7 +62,7 @@ public interface TracingSpi extends IgniteSpi {
      * 0 and 1 have special meaning here, 0 means never 1 means always. Default value is 0 (never).
      * @return Created span.
      */
-    @NotNull SpiSpecificSpan create (
+    @NotNull SpiSpecificSpan create(
         @NotNull String name,
         @Nullable SpiSpecificSpan parentSpan,
         double samplingRate);

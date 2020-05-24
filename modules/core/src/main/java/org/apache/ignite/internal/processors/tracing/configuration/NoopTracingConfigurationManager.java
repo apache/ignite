@@ -46,8 +46,9 @@ public final class NoopTracingConfigurationManager implements TracingConfigurati
     }
 
     /** {@inheritDoc} */
-    @Override
-    public @NotNull Map<TracingConfigurationCoordinates, TracingConfigurationParameters> getAll(@Nullable Scope scope) {
+    @Override public @NotNull Map<TracingConfigurationCoordinates, TracingConfigurationParameters> getAll(
+        @Nullable Scope scope
+    ) {
         return Collections.emptyMap();
     }
 

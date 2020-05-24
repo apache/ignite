@@ -205,8 +205,10 @@ public class GridTracingConfigurationManager implements TracingConfigurationMana
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType") @Override
-    public @NotNull Map<TracingConfigurationCoordinates, TracingConfigurationParameters> getAll(@Nullable Scope scope) {
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Override public @NotNull Map<TracingConfigurationCoordinates, TracingConfigurationParameters> getAll(
+        @Nullable Scope scope
+    ) {
         DistributedMetaStorage metaStore = distributedMetaStorage(
             true,
             WARNING_FAILED_TO_RETRIEVE_CONFIG_METASTORAGE_NOT_AVAILABLE);

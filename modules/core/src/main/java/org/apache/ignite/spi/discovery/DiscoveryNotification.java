@@ -28,17 +28,22 @@ import org.jetbrains.annotations.Nullable;
 public class DiscoveryNotification {
     /** Event type. */
     private final int eventType;
+
     /** Topology version. */
     private final long topVer;
+
     /** Node. */
     private final ClusterNode node;
+
     /** Topology snapshot. */
     private final Collection<ClusterNode> topSnapshot;
 
     /** Topology history. */
     private @Nullable Map<Long, Collection<ClusterNode>> topHist;
+
     /** Custom message data. */
     private @Nullable DiscoverySpiCustomMessage customMsgData;
+
     /** Span container. */
     private SpanContainer spanContainer;
 

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.tracing.SpanManager;
 public class TraceableMessagesHandler {
     /** Span manager. */
     private final SpanManager spanMgr;
+
     /** Logger. */
     private final IgniteLogger log;
 

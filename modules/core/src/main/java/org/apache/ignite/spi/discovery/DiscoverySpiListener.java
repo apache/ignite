@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteFuture;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener for grid node discovery events. See

@@ -161,7 +161,7 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
 
                 throw e;
             }
-        }else {
+        } else {
             log.warning(String.format("For use experimental command add %s=true to JVM_OPTS in %s",
                 IGNITE_ENABLE_EXPERIMENTAL_COMMAND, UTILITY_NAME));
 
@@ -296,7 +296,7 @@ public class TracingConfigurationCommand implements Command<TracingConfiguration
 
             default: {
                 // We should never get here.
-                assert false : "Unexpected tracing configuration argument [arg= " + cmd +']';
+                assert false : "Unexpected tracing configuration argument [arg= " + cmd + ']';
             }
         }
 

@@ -36,13 +36,13 @@ public enum TracingConfigurationCommandArg implements CommandArg {
     SCOPE("--scope"),
 
     /** Specify the label of a traced operation. It's an optional attribute. */
-    LABEL ("--label"),
+    LABEL("--label"),
 
     /**
      * Number between 0 and 1 that more or less reflects the probability of sampling specific trace. 0 and 1 have
      * special meaning here, 0 means never 1 means always. Default value is 0 (never).
      */
-    SAMPLING_RATE ("--sampling-rate"),
+    SAMPLING_RATE("--sampling-rate"),
 
     /**
      * Set of {@link Scope} that defines which sub-traces will be included in given trace. In other words, if child's
