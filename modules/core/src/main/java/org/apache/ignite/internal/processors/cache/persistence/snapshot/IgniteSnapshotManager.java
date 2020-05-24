@@ -392,7 +392,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpDir Snapshot dir.
      * @param folderName Local node folder name (see {@link U#maskForFileName} with consistent id).
      */
-    public static void deleteSnapshot(File snpDir, String folderName) {
+    public void deleteSnapshot(File snpDir, String folderName) {
         if (!snpDir.exists())
             return;
 
@@ -419,15 +419,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     // Skip files which can be concurrently removed from FileTree.
                     return FileVisitResult.CONTINUE;
                 }
+
+                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    dir.toFile().delete();
+
+                    if (log.isInfoEnabled() && exc != null)
+                        log.info("Marshaller directory cleaned with an exception: " + exc.getMessage());
+
+                    return FileVisitResult.CONTINUE;
+                }
             });
 
             File db = new File(snpDir, DB_DEFAULT_FOLDER);
 
             if (!db.exists() || db.list().length == 0) {
-                // Marshaller directory is empty. Using U.delete() may throw NoSuchFileException.
-                marshDir.delete();
-                db.delete();
+                assert !marshDir.exists() : marshDir;
 
+                db.delete();
                 U.delete(snpDir);
             }
         }
