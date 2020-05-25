@@ -426,20 +426,27 @@ namespace Apache.Ignite.Core.Tests.Services
 
             cluster.GetServices().DeployNodeSingleton(SvcName, new TestIgniteServiceArraySerializable());
 
-            var enumerable  = new[] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x});
+            var typedArray = new[] {10, 11, 12}
+                .Select(x => new PlatformComputeBinarizable {Field = x}).ToArray();
+
+            var objArray = typedArray.ToArray<object>();
 
             var prx = Services.GetServiceProxy<ITestIgniteServiceArray>(SvcName);
 
-            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArrayOfObjects(enumerable.ToArray<object>())
+            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArrayOfObjects(objArray)
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
 
-            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray(enumerable.ToArray())
+            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray(typedArray)
                   .Select(x => x.Field).ToArray());
 
-            // class TestBinarizableArray2 has no an equals class in Java.
-            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray2(new[] {10, 11, 12}
-                    .Select(x => new PlatformComputeBinarizable2 {Field = x}).ToArray()).Select(x => x.Field).ToArray());
+            // TestBinarizableArray2 has no corresponding class in Java.
+            var typedArray2 = new[] {10, 11, 12}
+                .Select(x => new PlatformComputeBinarizable2 {Field = x}).ToArray();
 
+            var actual = prx.TestBinarizableArray2(typedArray2)
+                .Select(x => x.Field).ToArray();
+
+            Assert.AreEqual(new[] {11, 12, 13}, actual);
         }
 
         /// <summary>
@@ -888,9 +895,8 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
 
             // Binary collections
-            var enumerable  = new[] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x});
-            var arrOfObj = enumerable.ToArray<object>();
-            var arr = enumerable.ToArray();
+            var arr  = new[] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x}).ToArray();
+            var arrOfObj = arr.ToArray<object>();
 
             Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
@@ -1193,12 +1199,14 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             public PlatformComputeBinarizable[] TestBinarizableArray(PlatformComputeBinarizable[] arg)
             {
+                // ReSharper disable once CoVariantArrayConversion
                 return (PlatformComputeBinarizable[])TestBinarizableArrayOfObjects(arg);
             }
 
             /** */
             public PlatformComputeBinarizable2[] TestBinarizableArray2(PlatformComputeBinarizable2[] arg)
             {
+                // ReSharper disable once CoVariantArrayConversion
                 return (PlatformComputeBinarizable2[])TestBinarizableArrayOfObjects(arg);
             }
         }
