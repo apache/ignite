@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.persistence.LocalWacModeNoCha
 import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionDuringPartitionClearTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.CorruptedCheckpointReservationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncWithDedicatedWorkerSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncWithMmapBufferSelfTest;
@@ -86,7 +85,8 @@ public class IgnitePdsTestSuite3 extends TestSuite {
 
         suite.addTestSuite(IgniteWalFlushFsyncWithMmapBufferSelfTest.class);
 
-        suite.addTestSuite(CorruptedCheckpointReservationTest.class);
+//        https://ggsystems.atlassian.net/browse/GG-26123
+//        suite.addTestSuite(CorruptedCheckpointReservationTest.class);
 
         suite.addTestSuite(IgnitePdsNodeJoinWithCachesStopping.class);
     }
