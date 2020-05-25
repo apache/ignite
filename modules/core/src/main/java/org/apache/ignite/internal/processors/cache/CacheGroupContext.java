@@ -91,9 +91,6 @@ public class CacheGroupContext {
     /** Node ID cache group was received from. */
     private volatile UUID rcvdFrom;
 
-    /** Flag indicating that this cache group is in a recovery mode due to partitions loss. */
-    private boolean needsRecovery;
-
     /** */
     private volatile AffinityTopologyVersion locStartVer;
 
@@ -685,20 +682,6 @@ public class CacheGroupContext {
      */
     public IgniteCacheOffheapManager offheap() {
         return offheapMgr;
-    }
-
-    /**
-     * @return Current cache state. Must only be modified during exchange.
-     */
-    public boolean needsRecovery() {
-        return needsRecovery;
-    }
-
-    /**
-     * @param needsRecovery Needs recovery flag.
-     */
-    public void needsRecovery(boolean needsRecovery) {
-        this.needsRecovery = needsRecovery;
     }
 
     /**
