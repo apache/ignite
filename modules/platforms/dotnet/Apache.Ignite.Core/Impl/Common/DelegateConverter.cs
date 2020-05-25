@@ -554,10 +554,7 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             var res = new T[arr.Length];
 
-            for (int i = 0; i < arr.Length; i++)
-            {
-                res[i] = (T) arr[i];
-            }
+            Array.Copy(arr, res, arr.Length);
 
             return res;
         }
