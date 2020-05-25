@@ -38,6 +38,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /** */
         private static readonly MethodInfo ReadObjectMethod = typeof (IBinaryRawReader).GetMethod("ReadObject");
 
+        /** */
+        private static readonly MethodInfo ConvertArrayMethod = typeof(DelegateConverter).GetMethod("ConvertArray",
+            BindingFlags.Static | BindingFlags.NonPublic);
+
         /// <summary>
         /// Compiles a function without arguments.
         /// </summary>
@@ -180,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 var arrElem = Expression.ArrayIndex(arrParam, Expression.Constant(i));
                 var paramType = methodParams[i].ParameterType;
 
-                argParams[i] = GetConvertedArg(arrElem, paramType);
+                argParams[i] = Convert(arrElem, paramType);
             }
 
             Expression callExpr = Expression.Call(targetParamConverted, method, argParams);
@@ -199,39 +203,6 @@ namespace Apache.Ignite.Core.Impl.Common
             callExpr = Expression.Convert(callExpr, typeof(object));
 
             return Expression.Lambda<Func<object, object[], object>>(callExpr, targetParam, arrParam).Compile();
-        }
-
-        private static Expression GetConvertedArg(Expression value, Type targetType)
-        {
-            if (targetType.IsArray && targetType.GetElementType() != typeof(object))
-            {
-                // TODO: Cache this.
-                var convertNonGeneric = typeof(DelegateConverter).GetMethod("ConvertArray",
-                    BindingFlags.Static | BindingFlags.NonPublic);
-
-                Debug.Assert(convertNonGeneric != null);
-
-                var convertGeneric = convertNonGeneric.MakeGenericMethod(targetType.GetElementType());
-
-                var objArray = Expression.Convert(value, typeof(object[]));
-
-                return Expression.Call(null, convertGeneric, objArray);
-            }
-
-            return Expression.Convert(value, targetType);
-        }
-
-        // ReSharper disable once UnusedMember.Local (used by reflection).
-        private static T[] ConvertArray<T>(object[] arr)
-        {
-            var res = new T[arr.Length];
-
-            for (int i = 0; i < arr.Length; i++)
-            {
-                res[i] = (T) arr[i];
-            }
-
-            return res;
         }
 
         /// <summary>
@@ -556,6 +527,39 @@ namespace Apache.Ignite.Core.Impl.Common
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Converts expression to a given type.
+        /// </summary>
+        private static Expression Convert(Expression value, Type targetType)
+        {
+            if (targetType.IsArray && targetType.GetElementType() != typeof(object))
+            {
+                var convertMethod = ConvertArrayMethod.MakeGenericMethod(targetType.GetElementType());
+
+                var objArray = Expression.Convert(value, typeof(object[]));
+
+                return Expression.Call(null, convertMethod, objArray);
+            }
+
+            return Expression.Convert(value, targetType);
+        }
+
+        /// <summary>
+        /// Converts object array to typed array.
+        /// </summary>
+        // ReSharper disable once UnusedMember.Local (used by reflection).
+        private static T[] ConvertArray<T>(object[] arr)
+        {
+            var res = new T[arr.Length];
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                res[i] = (T) arr[i];
+            }
+
+            return res;
         }
     }
 }
