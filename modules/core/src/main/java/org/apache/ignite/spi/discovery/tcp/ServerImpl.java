@@ -373,6 +373,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         lastRingMsgSentTime = 0;
 
+        // Node ping interval is a half of actual failure detection timeout. Timeout on this ping is the second half.
         connCheckInterval = effectiveExchangeTimeout() / 2;
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
@@ -3601,15 +3602,21 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been written to socket: " + msg.id());
 
+                                boolean ping = msg instanceof TcpDiscoveryConnectionCheckMessage;
+
+                                // For the ping we take half of actual failure detection. Another half is the interval.
                                 spi.writeToSocket(newNextNode ? newNext : next,
                                     sock,
                                     out,
                                     msg,
-                                    timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                                    ping ? timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()) / 2 :
+                                        timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout())
+                                );
 
                                 long tsNanos0 = System.nanoTime();
 
-                                int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+                                int res = spi.readReceipt(sock, ping ? timeoutHelper.nextTimeoutChunk(ackTimeout0) / 2 :
+                                    timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
                                 updateLastSentMessageTime();
 
