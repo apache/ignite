@@ -258,6 +258,7 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
     static class TraceExporterTestHandler extends SpanExporter.Handler {
         /** Collected spans. */
         private final Map<SpanId, SpanData> collectedSpans = new ConcurrentHashMap<>();
+
         /** */
         private final Map<SpanId, java.util.List<SpanData>> collectedSpansByParents = new ConcurrentHashMap<>();
 

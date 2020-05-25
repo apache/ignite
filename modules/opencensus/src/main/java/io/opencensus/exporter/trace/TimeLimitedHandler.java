@@ -58,13 +58,16 @@ import io.opencensus.trace.samplers.Samplers;
 public abstract class TimeLimitedHandler extends SpanExporter.Handler {
     /** Logger. */
     private static final Logger logger = Logger.getLogger(TimeLimitedHandler.class.getName());
+
     /** Low probability sampler. */
     private static final Sampler lowProbabilitySampler = Samplers.probabilitySampler(0.0001);
 
     /** Tracer. */
     private final Tracer tracer;
+
     /** Deadline. */
     private final Duration deadline;
+
     /** Export span name. */
     private final String exportSpanName;
 
