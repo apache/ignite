@@ -128,6 +128,15 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
             SnapshotMXBeanImpl.class.getSimpleName(), SnapshotMXBean.class);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cleanPersistenceDir();
+
+        stopAllGrids();
+    }
+
     /** */
     @Test
     public void testCancelScanQuery() {
