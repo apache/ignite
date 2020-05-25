@@ -180,15 +180,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 var arrElem = Expression.ArrayIndex(arrParam, Expression.Constant(i));
                 var paramType = methodParams[i].ParameterType;
 
-                // TODO: Cache method.
-                var argParam = paramType.IsArray && paramType.GetElementType() != typeof(object)
-                    ? (Expression) Expression.Call(null,
-                        typeof(DelegateConverter).GetMethod("ConvertArray",
-                            BindingFlags.Static | BindingFlags.NonPublic).MakeGenericMethod(paramType.GetElementType()),
-                        Expression.Convert(arrElem, typeof(object[])))
-                    : Expression.Convert(arrElem, paramType);
-
-                argParams[i] = argParam;
+                argParams[i] = GetConvertedArg(arrElem, paramType);
             }
 
             Expression callExpr = Expression.Call(targetParamConverted, method, argParams);
@@ -209,6 +201,27 @@ namespace Apache.Ignite.Core.Impl.Common
             return Expression.Lambda<Func<object, object[], object>>(callExpr, targetParam, arrParam).Compile();
         }
 
+        private static Expression GetConvertedArg(Expression value, Type targetType)
+        {
+            if (targetType.IsArray && targetType.GetElementType() != typeof(object))
+            {
+                // TODO: Cache this.
+                var convertNonGeneric = typeof(DelegateConverter).GetMethod("ConvertArray",
+                    BindingFlags.Static | BindingFlags.NonPublic);
+
+                Debug.Assert(convertNonGeneric != null);
+
+                var convertGeneric = convertNonGeneric.MakeGenericMethod(targetType.GetElementType());
+
+                var objArray = Expression.Convert(value, typeof(object[]));
+
+                return Expression.Call(null, convertGeneric, objArray);
+            }
+
+            return Expression.Convert(value, targetType);
+        }
+
+        // ReSharper disable once UnusedMember.Local (used by reflection).
         private static T[] ConvertArray<T>(object[] arr)
         {
             var res = new T[arr.Length];
