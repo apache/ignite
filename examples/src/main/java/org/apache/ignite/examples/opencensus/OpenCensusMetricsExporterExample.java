@@ -31,7 +31,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi;
+import org.apache.ignite.opencensus.spi.metric.OpenCensusMetricExporterSpi;
 
 /**
  * This example demonstrates usage of the `ignite-opencensus` integration module.
