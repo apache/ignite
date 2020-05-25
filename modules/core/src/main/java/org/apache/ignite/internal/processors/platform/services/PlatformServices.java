@@ -517,7 +517,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     /**
      * Proxy holder.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static class ServiceProxyHolder extends PlatformAbstractTarget {
         /** */
         private final Object proxy;
@@ -582,6 +582,8 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
 
+                // Convert Object[] to T[] when required:
+                // Ignite loses array item types when passing arguments through GridServiceProxy.
                 for (int i = 0; i < args.length; i++) {
                     Object arg = args[i];
 
