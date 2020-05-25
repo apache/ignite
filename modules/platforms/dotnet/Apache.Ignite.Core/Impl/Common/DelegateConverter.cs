@@ -182,9 +182,7 @@ namespace Apache.Ignite.Core.Impl.Common
             for (var i = 0; i < methodParams.Length; i++)
             {
                 var arrElem = Expression.ArrayIndex(arrParam, Expression.Constant(i));
-                var paramType = methodParams[i].ParameterType;
-
-                argParams[i] = Convert(arrElem, paramType);
+                argParams[i] = Convert(arrElem, methodParams[i].ParameterType);
             }
 
             Expression callExpr = Expression.Call(targetParamConverted, method, argParams);
