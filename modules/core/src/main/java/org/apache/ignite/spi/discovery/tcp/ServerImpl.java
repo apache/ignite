@@ -373,7 +373,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         lastRingMsgSentTime = 0;
 
-        // Node ping interval is a half of actual failure detection timeout. Timeout on this ping is the second half.
+        // Node ping interval is a half of actual failure detection timeout.
         connCheckInterval = effectiveExchangeTimeout() / 2;
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
@@ -1924,7 +1924,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         return threads;
     }
 
-    /** @return Total timeout of single complete exchange operation in network on established connection. */
+    /** @return Total timeout on complete message exchange in network over established connection. */
     protected long effectiveExchangeTimeout() {
         return spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
             spi.getSocketTimeout() + spi.getAckTimeout();
@@ -3604,19 +3604,22 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 boolean ping = msg instanceof TcpDiscoveryConnectionCheckMessage;
 
+                                long timeout = timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout());
+
                                 // For the ping we take half of actual failure detection. Another half is the interval.
                                 spi.writeToSocket(newNextNode ? newNext : next,
                                     sock,
                                     out,
                                     msg,
-                                    ping ? timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()) / 2 :
-                                        timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout())
+                                    ping && spi.failureDetectionTimeoutEnabled() ? timeout / 2 : timeout
                                 );
+
+                                timeout = timeoutHelper.nextTimeoutChunk(ackTimeout0);
 
                                 long tsNanos0 = System.nanoTime();
 
-                                int res = spi.readReceipt(sock, ping ? timeoutHelper.nextTimeoutChunk(ackTimeout0) / 2 :
-                                    timeoutHelper.nextTimeoutChunk(ackTimeout0));
+                                int res = spi.readReceipt(sock, ping && spi.failureDetectionTimeoutEnabled() ?
+                                    timeout / 2 : timeout);
 
                                 updateLastSentMessageTime();
 

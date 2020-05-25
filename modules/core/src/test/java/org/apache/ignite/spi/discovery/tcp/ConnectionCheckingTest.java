@@ -30,18 +30,22 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckM
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static com.sun.tools.javac.util.Assert.check;
+
 /**
  * Checks pinging next node in the ring relies on configured timeouts.
  */
 public class ConnectionCheckingTest extends GridCommonAbstractTest {
-    /**
-     * Maximal additional delay before sending the ping message. 10 ms is the granulation in {@link
-     * IgniteUtils#currentTimeMillis()} and other 10ms is for code.
-     */
-    private static final int ACCEPTABLE_CODE_DELAYS = 10 + 10;
-
     /** Number of the ping messages to watch to ensure node pinging works well. */
     private static final int PING_MESSAGES_CNT_TO_ENSURE = 10;
+
+    /** Timer granulation in milliseconds. See {@link IgniteUtils#currentTimeMillis()}. */
+    private static final int TIMER_GRANULATION = 10;
+
+    /**
+     * Maximal additional delay before sending the ping message including timer granulation in and other 10ms in code.
+     */
+    private static final int ACCEPTABLE_ADDITIONAL_DELAY = TIMER_GRANULATION + 10;
 
     /** Checks connection to next node is checked depending on configured failure detection timeout. */
     @Test
@@ -58,8 +62,8 @@ public class ConnectionCheckingTest extends GridCommonAbstractTest {
     /** Checks connection to next node is checked depending on configured socket and acknowledgement timeouts. */
     @Test
     public void testWithSocketAndAckTimeouts() throws Exception {
-        for (long sockTimeout = 200; sockTimeout <= 600; sockTimeout += 200) {
-            for (long ackTimeout = 200; ackTimeout <= 600; ackTimeout += 200) {
+        for (long sockTimeout = 200; sockTimeout <= 400; sockTimeout += 100) {
+            for (long ackTimeout = 200; ackTimeout <= 400; ackTimeout += 100) {
                 IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(1));
 
                 cfg.setFailureDetectionTimeout(sockTimeout);
@@ -101,7 +105,7 @@ public class ConnectionCheckingTest extends GridCommonAbstractTest {
 
         String errMsg = errHolder.exchange(null);
 
-        assertNull(errMsg, errMsg);
+        check(errMsg == null, errMsg);
 
         stopAllGrids(true);
     }
@@ -123,7 +127,7 @@ public class ConnectionCheckingTest extends GridCommonAbstractTest {
             /** Stop flag. */
             private boolean stop;
 
-            /** */
+            /** {@inheritDoc} */
             @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
                 long timeout) throws IOException, IgniteCheckedException {
                 super.writeToSocket(sock, out, msg, timeout);
@@ -137,23 +141,20 @@ public class ConnectionCheckingTest extends GridCommonAbstractTest {
 
                             lastSentMsgTime = System.currentTimeMillis();
 
-                            long properTimeout = failureDetectionTimeoutEnabled() ? failureDetectionTimeout() :
-                                getSocketTimeout();
+                            long msgExchangeTimeout = failureDetectionTimeoutEnabled() ? failureDetectionTimeout() :
+                                getSocketTimeout() + getAckTimeout();
 
-                            if (period > properTimeout / 2 + ACCEPTABLE_CODE_DELAYS
-                                || period < properTimeout / 2 - 10) {
-                                stop("Invalid node ping interval: " + period + ". Expected value is half of actual " +
-                                    "message exchange timeout which is: " + properTimeout);
+                            if (period > msgExchangeTimeout / 2 + ACCEPTABLE_ADDITIONAL_DELAY ||
+                                period < msgExchangeTimeout / 2 - TIMER_GRANULATION) {
+                                stop("Invalid interval of sending TcpDiscoveryConnectionCheckMessage: " + period +
+                                    "ms. Expected value is near " + msgExchangeTimeout / 2 + "ms, half of message " +
+                                    "exchange timeout (" + msgExchangeTimeout + "ms).");
                             }
-                            else if (failureDetectionTimeoutEnabled() && timeout > properTimeout / 2) {
-                                stop("Invalid timeout on writting TcpDiscoveryConnectionCheckMessage: " + timeout +
-                                    ". Expected value is half of IgniteConfiguration.getFailureDetectionTimeout()" +
-                                    " which is: " + properTimeout);
-                            }
-                            else if (!failureDetectionTimeoutEnabled() && timeout > properTimeout / 2) {
-                                stop("Invalid timeout on writting TcpDiscoveryConnectionCheckMessage: " + timeout +
-                                    ". Expected value is half of TcpDiscoverySpi.getSocketTimeout() which is: " +
-                                    properTimeout);
+                            else if (failureDetectionTimeoutEnabled() &&
+                                timeout > msgExchangeTimeout / 2 + TIMER_GRANULATION) {
+                                stop("Invalid timeout on sending TcpDiscoveryConnectionCheckMessage: " + timeout +
+                                    "ms. Expected value is near " + failureDetectionTimeout() / 2 + "ms, half of " +
+                                    "IgniteConfiguration.failureDetectionTimeout (" + msgExchangeTimeout + "ms).");
                             }
                             else if (++cycles == PING_MESSAGES_CNT_TO_ENSURE)
                                 stop(null);
@@ -162,24 +163,19 @@ public class ConnectionCheckingTest extends GridCommonAbstractTest {
                 }
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override protected int readReceipt(Socket sock, long timeout) throws IOException {
                 int res = super.readReceipt(sock, timeout);
 
                 synchronized (lastMsg) {
                     lastSentMsgTime = System.currentTimeMillis();
 
-                    if (lastMsg.get() instanceof TcpDiscoveryConnectionCheckMessage) {
-                        if (failureDetectionTimeoutEnabled() && timeout > failureDetectionTimeout() / 2) {
-                            stop("Invalid timeout on reading acknowledgement for TcpDiscoveryConnectionCheckMessage: " +
-                                timeout + ". Expected value is half of IgniteConfiguration.failureDetectionTimeout " +
-                                "which is: " + failureDetectionTimeout());
-                        }
-                        else if (!failureDetectionTimeoutEnabled() && timeout > getAckTimeout() / 2) {
-                            stop("Invalid timeout on reading acknowledgement for TcpDiscoveryConnectionCheckMessage: " +
-                                timeout + ". Expected value is half of TcpDiscoverySpi.ackTimeout " +
-                                "which is: " + getAckTimeout());
-                        }
+                    if ((lastMsg.get() instanceof TcpDiscoveryConnectionCheckMessage) &&
+                        failureDetectionTimeoutEnabled() &&
+                        timeout > failureDetectionTimeout() / 2 + TIMER_GRANULATION) {
+                        stop("Invalid timeout set on reading acknowledgement for TcpDiscoveryConnectionCheckMessage: " +
+                            timeout + "ms. Expected value is up to " + failureDetectionTimeout() / 2 + "ms, half of " +
+                            "IgniteConfiguration.failureDetectionTimeout (" + failureDetectionTimeout() + "ms).");
                     }
                 }
 
@@ -200,7 +196,7 @@ public class ConnectionCheckingTest extends GridCommonAbstractTest {
         };
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -214,10 +210,15 @@ public class ConnectionCheckingTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 3 * 60 * 1000;
     }
 }
