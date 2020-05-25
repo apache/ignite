@@ -898,9 +898,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param cfg Ignite configuration.
      * @return Snapshot directory resolved through given configuration.
      */
-    static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
+    public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
         try {
-            return U.resolveWorkDirectory(cfg.getWorkDirectory(), cfg.getSnapshotPath(), false);
+            return U.resolveWorkDirectory(cfg.getWorkDirectory() == null ? U.defaultWorkDirectory() : cfg.getWorkDirectory(),
+                cfg.getSnapshotPath(), false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

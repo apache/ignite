@@ -1536,6 +1536,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             ignite(0).cluster().state(initialState);
         }
 
+        ignite(0).resetLostPartitions(Arrays.asList(CACHE_NAME_PREFIX + "0", CACHE_NAME_PREFIX + "1"));
+
         checkCaches(nodesCnt);
     }
 

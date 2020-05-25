@@ -117,8 +117,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 .setPageSize(4096))
             .setCacheConfiguration(dfltCacheCfg)
             .setClusterStateOnStart(INACTIVE)
-            // Default work directory must be resolved earlier if snapshot used to start grids.
-            .setWorkDirectory(U.defaultWorkDirectory())
             .setDiscoverySpi(discoSpi);
     }
 

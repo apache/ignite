@@ -62,7 +62,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -83,6 +83,7 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
@@ -823,19 +824,26 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         long startTime = U.currentTimeMillis();
 
-        Map<UUID, Integer> top;
+        ServiceInfo desc;
 
         while (true) {
-            top = serviceTopology(name);
-
-            if (timeout == 0 || (top != null && !top.isEmpty()))
-                return top;
-
             synchronized (servicesTopsUpdateMux) {
-                long wait = timeout - (U.currentTimeMillis() - startTime);
+                desc = lookupInRegisteredServices(name);
 
-                if (wait <= 0)
-                    return top;
+                if (timeout == 0 && desc == null)
+                    return null;
+
+                if (desc != null && desc.topologyInitialized())
+                    return desc.topologySnapshot();
+
+                long wait = 0;
+
+                if (timeout != 0) {
+                    wait = timeout - (U.currentTimeMillis() - startTime);
+
+                    if (wait <= 0)
+                        return desc == null ? null : desc.topologySnapshot();
+                }
 
                 try {
                     servicesTopsUpdateMux.wait(wait);
@@ -845,19 +853,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 }
             }
         }
-    }
-
-    /**
-     * @param name Service name.
-     * @return Service topology.
-     */
-    private Map<UUID, Integer> serviceTopology(String name) {
-        for (ServiceInfo desc : registeredServices.values()) {
-            if (desc.name().equals(name))
-                return desc.topologySnapshot();
-        }
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -951,11 +946,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 Service srvc = ctx.service();
 
                 if (srvc != null) {
-                    if (!srvcCls.isAssignableFrom(srvc.getClass()))
-                        throw new IgniteException("Service does not implement specified interface [srvcCls=" +
-                            srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
-
-                    return (T)srvc;
+                    if (srvcCls.isAssignableFrom(srvc.getClass()))
+                        return (T)srvc;
+                    else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
+                        throw new IgniteException("Service does not implement specified interface [srvcCls="
+                                + srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
+                    }
                 }
             }
         }

@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Tests
                 process.AttachProcessConsoleReader(listDataReader, new IgniteProcessConsoleOutputReader());
 
                 // Wait for node to come up with a thin client connection.
-                if (WaitForStart())
+                if (WaitForStart(listDataReader))
                 {
                     return processWrapper;
                 }
@@ -142,25 +142,11 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Waits for server node to fully start.
         /// </summary>
-        private static bool WaitForStart()
+        private static bool WaitForStart(ListDataReader reader)
         {
-            return TestUtils.WaitForCondition(() =>
-            {
-                try
-                {
-                    // Port 10890 is set in Runner.java
-                    using (var client = Ignition.StartClient(GetClientConfiguration()))
-                    {
-                        // Create cache to ensure valid grid state.
-                        client.GetOrCreateCache<int, int>(typeof(JavaServer).FullName);
-                        return true;
-                    }
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
-            }, 180000);
+            return TestUtils.WaitForCondition(
+                () => reader.GetOutput().Any(m => m.Contains("Ignite node started OK")), 
+                60 * 3 * 1000);
         }
 
         /// <summary>
