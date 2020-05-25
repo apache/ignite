@@ -363,10 +363,10 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
                     spanData.getParentSpanId() == null).
             collect(Collectors.toList());
 
-//        // Check that there's at least one discovery.custom.event span with tag "message.class"
-//        // and value "CacheAffinityChangeMessage"
-//        assertTrue(rootCustomEventSpans.stream().anyMatch(
-//            span -> "CacheAffinityChangeMessage".equals(
-//                attributeValueToString(span.getAttributes().getAttributeMap().get(SpanTags.MESSAGE_CLASS)))));
+        // Check that there's at least one discovery.custom.event span with tag "message.class"
+        // and value "CacheAffinityChangeMessage"
+        assertTrue(rootCustomEventSpans.stream().anyMatch(
+            span -> "DynamicCacheChangeBatch".equals(
+                attributeValueToString(span.getAttributes().getAttributeMap().get(SpanTags.MESSAGE_CLASS)))));
     }
 }

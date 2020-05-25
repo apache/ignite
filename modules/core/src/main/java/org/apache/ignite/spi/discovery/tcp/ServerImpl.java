@@ -971,6 +971,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             Span rootSpan = tracing.create(TraceableMessagesTable.traceName(msg.getClass()))
                 .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), getLocalNodeId().toString())
                 .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID), locNode.consistentId().toString())
+                .addTag(SpanTags.MESSAGE_CLASS, ((CustomMessageWrapper)evt).delegate().getClass().getSimpleName())
                 .addLog("Created");
 
             // This root span will be parent both from local and remote nodes.
