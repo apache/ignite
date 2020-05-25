@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Compiled function that calls specified method on specified target.
         /// </returns>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public static T CompileFunc<T>(Type targetType, MethodInfo method, Type[] argTypes, 
+        public static T CompileFunc<T>(Type targetType, MethodInfo method, Type[] argTypes,
             bool[] convertToObject = null)
             where T : class
         {
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Common
             targetType = method.IsStatic ? null : (targetType ?? method.DeclaringType);
 
             var targetParam = Expression.Parameter(typeof(object));
-            
+
             Expression targetParamConverted = null;
             ParameterExpression[] argParams;
             int argParamsOffset = 0;
@@ -178,9 +178,19 @@ namespace Apache.Ignite.Core.Impl.Common
             for (var i = 0; i < methodParams.Length; i++)
             {
                 var arrElem = Expression.ArrayIndex(arrParam, Expression.Constant(i));
-                argParams[i] = Expression.Convert(arrElem, methodParams[i].ParameterType);
+                var paramType = methodParams[i].ParameterType;
+
+                // TODO: Cache method.
+                var argParam = paramType.IsArray && paramType.GetElementType() != typeof(object)
+                    ? (Expression) Expression.Call(null,
+                        typeof(DelegateConverter).GetMethod("ConvertArray",
+                            BindingFlags.Static | BindingFlags.NonPublic).MakeGenericMethod(paramType.GetElementType()),
+                        Expression.Convert(arrElem, typeof(object[])))
+                    : Expression.Convert(arrElem, paramType);
+
+                argParams[i] = argParam;
             }
-            
+
             Expression callExpr = Expression.Call(targetParamConverted, method, argParams);
 
             if (callExpr.Type == typeof(void))
@@ -197,6 +207,18 @@ namespace Apache.Ignite.Core.Impl.Common
             callExpr = Expression.Convert(callExpr, typeof(object));
 
             return Expression.Lambda<Func<object, object[], object>>(callExpr, targetParam, arrParam).Compile();
+        }
+
+        private static T[] ConvertArray<T>(object[] arr)
+        {
+            var res = new T[arr.Length];
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                res[i] = (T) arr[i];
+            }
+
+            return res;
         }
 
         /// <summary>
@@ -312,11 +334,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <typeparam name="T">Result type</typeparam>
         /// <param name="ctor">The ctor.</param>
-        /// <param name="innerCtorFunc">Function to retrieve reading constructor for an argument. 
+        /// <param name="innerCtorFunc">Function to retrieve reading constructor for an argument.
         /// Can be null or return null, in this case the argument will be read directly via ReadObject.</param>
         /// <returns></returns>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public static Func<IBinaryRawReader, T> CompileCtor<T>(ConstructorInfo ctor, 
+        public static Func<IBinaryRawReader, T> CompileCtor<T>(ConstructorInfo ctor,
             Func<Type, ConstructorInfo> innerCtorFunc)
         {
             Debug.Assert(ctor != null);
@@ -338,7 +360,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>
         /// Ctor call expression.
         /// </returns>
-        private static Expression GetConstructorExpression(ConstructorInfo ctor, 
+        private static Expression GetConstructorExpression(ConstructorInfo ctor,
             Func<Type, ConstructorInfo> innerCtorFunc, Expression readerParam, Type resultType)
         {
             var ctorParams = ctor.GetParameters();
@@ -480,11 +502,11 @@ namespace Apache.Ignite.Core.Impl.Common
 
             Debug.Assert(declaringType != null);
 
-            var method = new DynamicMethod(string.Empty, null, new[] { typeof(object), field.FieldType }, 
+            var method = new DynamicMethod(string.Empty, null, new[] { typeof(object), field.FieldType },
                 declaringType, true);
 
             var il = method.GetILGenerator();
-            
+
             il.Emit(OpCodes.Ldarg_0);
 
             if (declaringType.IsValueType)
