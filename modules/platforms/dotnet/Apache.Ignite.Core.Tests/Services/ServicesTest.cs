@@ -414,6 +414,35 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Test call service proxy from remote node with a methods having an array of user types and objects.
+        /// </summary>
+        [Test]
+        public void TestCallServiceProxyWithMethodsHavingArrays()
+        {
+            // Deploy to the remote node.
+            var nodeId = Grid2.GetCluster().GetLocalNode().Id;
+
+            var cluster = Grid1.GetCluster().ForNodeIds(nodeId);
+
+            cluster.GetServices().DeployNodeSingleton(SvcName, new TestIgniteServiceArraySerializable());
+
+            var enumerable  = new[] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x});
+
+            var prx = Services.GetServiceProxy<ITestIgniteServiceArray>(SvcName);
+
+            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArrayOfObjects(enumerable.ToArray<object>())
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+
+            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray(enumerable.ToArray())
+                  .Select(x => x.Field).ToArray());
+
+            // class TestBinarizableArray2 has no an equals class in Java.
+            Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray2(new[] {10, 11, 12}
+                    .Select(x => new PlatformComputeBinarizable2 {Field = x}).ToArray()).Select(x => x.Field).ToArray());
+
+        }
+
+        /// <summary>
         /// Tests service descriptors.
         /// </summary>
         [Test]
@@ -859,18 +888,23 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
 
             // Binary collections
-            var arr = new [] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x}).ToArray<object>();
+            var enumerable  = new[] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x});
+            var arrOfObj = enumerable.ToArray<object>();
+            var arr = enumerable.ToArray();
+
             Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
-            Assert.AreEqual(new[] {11, 12, 13},
-                svc.testBinarizableArray(arr).OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArrayOfObjects(arrOfObj)
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArray(arr)
+                .Select(x => x.Field).ToArray());
 
             // Binary object
             Assert.AreEqual(15,
                 binSvc.testBinaryObject(
                     Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = 6}))
                     .GetField<int>("Field"));
-            
+
             DateTime dt = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
             Assert.AreEqual(dt, svc.test(dt));
@@ -1115,6 +1149,58 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             object Method(object arg);
+        }
+
+        /// <summary>
+        /// Test serializable service with a methods having an array of user types and objects.
+        /// </summary>
+        public interface ITestIgniteServiceArray
+        {
+            /** */
+            object[] TestBinarizableArrayOfObjects(object[] x);
+
+            /** */
+            PlatformComputeBinarizable[] TestBinarizableArray(PlatformComputeBinarizable[] x);
+
+            /** Class TestBinarizableArray2 has no an equals class in Java. */
+            PlatformComputeBinarizable2[] TestBinarizableArray2(PlatformComputeBinarizable2[] x);
+        }
+
+        /// <summary>
+        /// Test serializable service with a methods having an array of user types and objects.
+        /// </summary>
+        [Serializable]
+        private class TestIgniteServiceArraySerializable : TestIgniteServiceSerializable, ITestIgniteServiceArray
+        {
+            /** */
+            public object[] TestBinarizableArrayOfObjects(object[] arg)
+            {
+                if (arg == null)
+                    return null;
+
+                for (var i = 0; i < arg.Length; i++)
+                    if (arg[i] != null)
+                        if (arg[i].GetType() == typeof(PlatformComputeBinarizable))
+                            arg[i] = new PlatformComputeBinarizable()
+                                {Field = ((PlatformComputeBinarizable) arg[i]).Field + 1};
+                        else
+                            arg[i] = new PlatformComputeBinarizable2()
+                                {Field = ((PlatformComputeBinarizable2) arg[i]).Field + 1};
+
+                return arg;
+            }
+
+            /** */
+            public PlatformComputeBinarizable[] TestBinarizableArray(PlatformComputeBinarizable[] arg)
+            {
+                return (PlatformComputeBinarizable[])TestBinarizableArrayOfObjects(arg);
+            }
+
+            /** */
+            public PlatformComputeBinarizable2[] TestBinarizableArray2(PlatformComputeBinarizable2[] arg)
+            {
+                return (PlatformComputeBinarizable2[])TestBinarizableArrayOfObjects(arg);
+            }
         }
 
         /// <summary>
@@ -1486,7 +1572,10 @@ namespace Apache.Ignite.Core.Tests.Services
             PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
 
             /** */
-            object[] testBinarizableArray(object[] x);
+            object[] testBinarizableArrayOfObjects(object[] x);
+
+            /** */
+            PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] x);
 
             /** */
             ICollection testBinarizableCollection(ICollection x);
@@ -1499,6 +1588,15 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Interop class.
         /// </summary>
         public class PlatformComputeBinarizable
+        {
+            /** */
+            public int Field { get; set; }
+        }
+
+        /// <summary>
+        /// Class has no an equals class in Java.
+        /// </summary>
+        public class PlatformComputeBinarizable2
         {
             /** */
             public int Field { get; set; }

@@ -43,6 +43,7 @@ import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -580,6 +581,24 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = PlatformUtils.unwrapBinariesInArray(args);
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
+
+                for (int i = 0; i < args.length; i++) {
+                    Object arg = args[i];
+
+                    if (arg instanceof Object[]) {
+                        Class<?> parameterType = mtd.getParameterTypes()[i];
+
+                        if (parameterType.isArray() && parameterType != Object[].class) {
+                            Object[] arr = (Object[])arg;
+                            Object newArg = Array.newInstance(parameterType.getComponentType(), arr.length);
+
+                            for (int j = 0; j < arr.length; j++)
+                                Array.set(newArg, j, arr[j]);
+
+                            args[i] = newArg;
+                        }
+                    }
+                }
 
                 try {
                     return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
