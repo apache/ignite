@@ -129,11 +129,19 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         System.setProperty(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, "true");
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP);
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
