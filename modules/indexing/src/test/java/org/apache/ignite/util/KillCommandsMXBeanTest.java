@@ -132,9 +132,8 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        cleanPersistenceDir();
-
         stopAllGrids();
+        cleanPersistenceDir();
     }
 
     /** */
