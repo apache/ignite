@@ -50,7 +50,7 @@ public class ConnectionCheckingTest extends GridCommonAbstractTest {
     /** Checks connection to next node is checked depending on configured failure detection timeout. */
     @Test
     public void testWithFailureDetectionTimeout() throws Exception {
-        for (long failureDetectionTimeout = 200; failureDetectionTimeout <= 600; failureDetectionTimeout += 100) {
+        for (long failureDetectionTimeout = 200; failureDetectionTimeout <= 800; failureDetectionTimeout += 100) {
             IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(1));
 
             cfg.setFailureDetectionTimeout(failureDetectionTimeout);
