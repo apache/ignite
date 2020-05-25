@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCache
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsStartWIthEmptyArchive;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsStartWIthEmptyArchiveWALFsync;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.HistoricalReservationTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManagerTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessorTest;
@@ -80,6 +81,7 @@ public class IgnitePdsTestSuite4 extends TestSuite {
 
         suite.addTestSuite(RebalanceAfterResettingLostPartitionTest.class);
         suite.addTestSuite(IgnitePdsSpuriousRebalancingOnNodeJoinTest.class);
+        suite.addTestSuite(HistoricalReservationTest.class);
 
         return suite;
     }

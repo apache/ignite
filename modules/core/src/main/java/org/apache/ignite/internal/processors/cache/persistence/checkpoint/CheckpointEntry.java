@@ -207,9 +207,22 @@ public class CheckpointEntry {
         }
 
         /**
+         * Return a partition id by an index of this group state.
+         * Index was passed through parameter have to be less than size.
          *
+         * @param idx Partition index.
+         * @return Patition id.
          */
-        public long size(){
+        public int getPartitionByIndex(int idx) {
+            return parts[idx];
+        }
+
+        /**
+         * Return size of this group state.
+         *
+         * @return Size of an internal indexes array fro this group state.
+         */
+        public int size() {
             return idx;
         }
 
