@@ -211,6 +211,8 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
@@ -1853,7 +1855,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 continue;
 
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
-                if (locPart.state() == GridDhtPartitionState.OWNING && locPart.fullSize() > walRebalanceThreshold)
+                if (locPart.state() == OWNING && locPart.fullSize() > walRebalanceThreshold)
                     res.computeIfAbsent(grp.groupId(), k -> new HashSet<>()).add(locPart.id());
             }
         }
@@ -4189,11 +4191,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     CacheState state = new CacheState(parts.size());
 
                     for (GridDhtLocalPartition part : parts) {
+                        GridDhtPartitionState partState = part.state();
+
+                        if (partState == LOST)
+                            partState = OWNING;
+
                         state.addPartitionState(
                             part.id(),
                             part.dataStore().fullSize(),
                             part.updateCounter(),
-                            (byte)part.state().ordinal()
+                            (byte)partState.ordinal()
                         );
                     }
 

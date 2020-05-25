@@ -47,6 +47,8 @@ import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscovery
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeCellularSwitchComplexOperationsTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeCellularSwitchIsolationTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroupsPartitionLossPolicySelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.NotMappedPartitionInTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheAtomicProtocolTest;
@@ -109,6 +111,9 @@ public class IgniteCacheMvccTestSuite5 {
         // Cellular switch can't be performed on MVCC caches, at least at the moment.
         ignoredTests.add(GridExchangeFreeCellularSwitchIsolationTest.class);
         ignoredTests.add(GridExchangeFreeCellularSwitchComplexOperationsTest.class);
+
+        ignoredTests.add(IgniteCachePartitionLossPolicySelfTest.class);
+        ignoredTests.add(IgniteCacheGroupsPartitionLossPolicySelfTest.class);
 
         return IgniteCacheTestSuite5.suite(ignoredTests);
     }

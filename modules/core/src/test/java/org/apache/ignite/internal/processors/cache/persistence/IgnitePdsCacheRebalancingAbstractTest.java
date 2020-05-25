@@ -115,6 +115,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         CacheConfiguration ccfg3 = cacheConfiguration(INDEXED_CACHE_IN_MEMORY)
+            .setBackups(2)
             .setDataRegionName(IN_MEMORY_REGION);
 
         QueryEntity qryEntity = new QueryEntity(Integer.class.getName(), TestValue.class.getName());
