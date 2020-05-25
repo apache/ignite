@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.cache.Cache;
@@ -87,8 +86,7 @@ class KillCommandsTests {
      * @param srvs Server nodes.
      * @param qryCanceler Query cancel closure.
      */
-    public static void doTestScanQueryCancel(IgniteEx cli, List<IgniteEx> srvs,
-        Consumer<T3<UUID, String, Long>> qryCanceler) throws Exception {
+    public static void doTestScanQueryCancel(IgniteEx cli, List<IgniteEx> srvs, Consumer<T3<UUID, String, Long>> qryCanceler) {
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
         QueryCursor<Cache.Entry<Object, Object>> qry1 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));
@@ -97,18 +95,14 @@ class KillCommandsTests {
         // Fetch first entry and therefore caching first page.
         assertNotNull(iter1.next());
 
-        AtomicReference<List<List<?>>> scanQries0 = new AtomicReference<>();
+        List<List<?>> scanQries0 = execute(srvs.get(0),
+            "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
 
-        assertTrue(waitForCondition(() -> {
-            scanQries0.set(execute(srvs.get(0),
-                "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES"));
+        assertEquals(1, scanQries0.size());
 
-            return scanQries0.get().size() == 1;
-        }, 30_000));
-
-        UUID originNodeId = (UUID)scanQries0.get().get(0).get(0);
-        String cacheName = (String)scanQries0.get().get(0).get(1);
-        long qryId = (Long)scanQries0.get().get(0).get(2);
+        UUID originNodeId = (UUID)scanQries0.get(0).get(0);
+        String cacheName = (String)scanQries0.get(0).get(1);
+        long qryId = (Long)scanQries0.get(0).get(2);
 
         // Opens second query.
         QueryCursor<Cache.Entry<Object, Object>> qry2 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));

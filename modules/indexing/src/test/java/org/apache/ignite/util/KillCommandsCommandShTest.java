@@ -82,7 +82,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
     /** */
     @Test
-    public void testCancelScanQuery() throws Exception {
+    public void testCancelScanQuery() {
         doTestScanQueryCancel(client, srvs, args -> {
             int res = execute("--kill", "scan", args.get1().toString(), args.get2(), args.get3().toString());
 
