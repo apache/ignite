@@ -35,7 +35,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -312,7 +311,19 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         System.out.println("Max compressed index: " + maxIdx);
         assertTrue(maxIdx > emptyIdx);
 
-        assertTrue(walSegment.exists()); // Failed to compress WAL segment shoudn't be deleted.
+        if (!walSegment.exists()) {
+            File[] list = nodeArchiveDir.listFiles();
+
+            Arrays.sort(list);
+
+            log.info("Files in archive:" + list.length);
+
+            for (File f : list)
+                log.info(f.getAbsolutePath());
+
+            // Failed to compress WAL segment shoudn't be deleted.
+            fail("File " + walSegment.getAbsolutePath() + " does not exist.");
+        }
     }
 
     /**

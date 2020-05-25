@@ -122,6 +122,8 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testCorruptedCheckpointReservation() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-26123");
+
         walCompactionEnabled = false;
 
         startGrids(2);
@@ -143,6 +145,8 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testCorruptedCheckpointInCompressedWalReservation() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-26123");
+
         walCompactionEnabled = true;
 
         startGrids(2);
@@ -164,6 +168,8 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testCorruptedCompressedWalSegment() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-26123");
+
         walCompactionEnabled = true;
 
         startGrids(2);
