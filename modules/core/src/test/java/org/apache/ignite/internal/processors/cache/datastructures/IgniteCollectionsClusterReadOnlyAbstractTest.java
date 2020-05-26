@@ -19,14 +19,11 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -36,8 +33,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresTestUtils.getCollectionConfigurations;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -218,7 +214,7 @@ abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridCommonAb
     private Collection<Collection> createAndFillCollections() {
         List<Collection> collections = new ArrayList<>();
 
-        for (Map.Entry<String, CollectionConfiguration> e : getCollectionConfiguration().entrySet()) {
+        for (Map.Entry<String, CollectionConfiguration> e : getCollectionConfigurations().entrySet()) {
             Collection col = createCollection(e.getKey(), e.getValue());
 
             assertTrue(col.add(name(col)));
@@ -230,36 +226,5 @@ abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridCommonAb
         }
 
         return collections;
-    }
-
-    /**
-     * @return All variations of configurations according to atomicity mode, backups, cache mode and collocation flag.
-     */
-    public static Map<String, CollectionConfiguration> getCollectionConfiguration() {
-        Map<String, CollectionConfiguration> configs = new HashMap<>();
-
-        for (boolean collocated : Arrays.asList(true, false)) {
-            for (CacheAtomicityMode atomicityMode : Arrays.asList(TRANSACTIONAL, ATOMIC)) {
-                for (int backups : Arrays.asList(0, 1)) {
-                    for (CacheMode cacheMode : CacheMode.values()) {
-                        if (cacheMode == CacheMode.LOCAL) {
-                            // FIXME: https://issues.apache.org/jira/browse/IGNITE-13071
-                            continue;
-                        }
-
-                        CollectionConfiguration cfg = new CollectionConfiguration()
-                            .setCollocated(collocated)
-                            .setAtomicityMode(atomicityMode)
-                            .setBackups(backups)
-                            .setCacheMode(cacheMode)
-                            .setGroupName(cacheMode + "-grp-" + backups);
-
-                        assertNull(configs.put("" + collocated + atomicityMode + backups + cacheMode, cfg));
-                    }
-                }
-            }
-        }
-
-        return configs;
     }
 }

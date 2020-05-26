@@ -18,13 +18,15 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.Map;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.datastructures.IgniteQueueClusterReadOnlyTest.getCollectionConfiguration;
+import static org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresTestUtils.getAtomicConfigurations;
+import static org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresTestUtils.getCollectionConfigurations;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 public class IgniteDatastructuresCreateDeniedInClusterReadOnlyMode extends GridCommonAbstractTest {
@@ -46,9 +48,42 @@ public class IgniteDatastructuresCreateDeniedInClusterReadOnlyMode extends GridC
         super.afterTestsStopped();
     }
 
+    /** */
+    @Test
+    public void testAtomicLong() {
+        for (Map.Entry<String, AtomicConfiguration> t : getAtomicConfigurations().entrySet()) {
+            Throwable ex = assertThrows(
+                log,
+                () -> grid(0).atomicLong(t.getKey(), t.getValue(), 0, true),
+                Exception.class,
+                null
+            );
+
+            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
+                throw new AssertionError("IgniteClusterReadOnlyException not found on queue " + t.getKey(), ex);
+        }
+    }
+
+    /** */
+    @Test
+    public void testAtomicReference() {
+        for (Map.Entry<String, AtomicConfiguration> t : getAtomicConfigurations().entrySet()) {
+            Throwable ex = assertThrows(
+                log,
+                () -> grid(0).atomicReference(t.getKey(), t.getValue(), null, true),
+                Exception.class,
+                null
+            );
+
+            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
+                throw new AssertionError("IgniteClusterReadOnlyException not found on queue " + t.getKey(), ex);
+        }
+    }
+
+    /** */
     @Test
     public void testIgniteSet() {
-        for (Map.Entry<String, CollectionConfiguration> t : getCollectionConfiguration().entrySet()) {
+        for (Map.Entry<String, CollectionConfiguration> t : getCollectionConfigurations().entrySet()) {
             Throwable ex = assertThrows(
                 log,
                 () -> grid(0).set(t.getKey(), t.getValue()),
@@ -61,9 +96,10 @@ public class IgniteDatastructuresCreateDeniedInClusterReadOnlyMode extends GridC
         }
     }
 
+    /** */
     @Test
     public void testIgniteQueue() {
-        for (Map.Entry<String, CollectionConfiguration> t : getCollectionConfiguration().entrySet()) {
+        for (Map.Entry<String, CollectionConfiguration> t : getCollectionConfigurations().entrySet()) {
             Throwable ex = assertThrows(
                 log,
                 () -> grid(0).queue(t.getKey(), 0, t.getValue()),
