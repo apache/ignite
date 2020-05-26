@@ -1268,7 +1268,7 @@ public class GridH2Table extends TableBase {
      *
      * @return Rows count.
      */
-    private long cacheSize(CachePeekMode ... modes) {
+    private long cacheSize(CachePeekMode... modes) {
         try {
             return cacheInfo.cacheContext().cache().localSize(modes);
         }
