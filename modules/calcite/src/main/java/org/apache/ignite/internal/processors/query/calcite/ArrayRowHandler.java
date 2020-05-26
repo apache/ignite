@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
+import java.lang.reflect.Type;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -30,11 +30,6 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
 
     /** */
     private ArrayRowHandler() {}
-
-    /** {@inheritDoc} */
-    @Override public Object[] create(Object... fields) {
-        return fields;
-    }
 
     /** {@inheritDoc} */
     @Override public Object get(int field, Object[] row) {
@@ -52,17 +47,24 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object[] endMarker() {
-        return new Object[] {EndMarker.INSTANCE};
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isEndMarker(Object[] row) {
-        return row[0] == EndMarker.INSTANCE;
-    }
-
-    /** {@inheritDoc} */
     @Override public int columnCount(Object[] row) {
         return row.length;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RowFactory<Object[]> factory(Type... types) {
+        int rowLen = types.length;
+
+        return new RowFactory<Object[]>() {
+            @Override public Object[] create() {
+                return new Object[rowLen];
+            }
+
+            @Override public Object[] create(Object... fields) {
+                assert fields.length == rowLen;
+
+                return fields;
+            }
+        };
     }
 }

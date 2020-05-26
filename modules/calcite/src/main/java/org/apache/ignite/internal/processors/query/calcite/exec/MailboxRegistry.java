@@ -27,35 +27,35 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public interface MailboxRegistry<Row> extends Service {
+public interface MailboxRegistry extends Service {
     /**
      * Tries to register and inbox node and returns it if success or returns previously registered inbox otherwise.
      *
      * @param inbox Inbox.
      * @return Registered inbox.
      */
-    Inbox<Row> register(Inbox<Row> inbox);
+    Inbox<?> register(Inbox<?> inbox);
 
     /**
      * Unregisters an inbox.
      *
      * @param inbox Inbox to unregister.
      */
-    void unregister(Inbox<Row> inbox);
+    void unregister(Inbox<?> inbox);
 
     /**
      * Registers an outbox.
      *
      * @param outbox Outbox to register.
      */
-    void register(Outbox<Row> outbox);
+    void register(Outbox<?> outbox);
 
     /**
      * Unregisters an outbox.
      *
      * @param outbox Outbox to unregister.
      */
-    void unregister(Outbox<Row> outbox);
+    void unregister(Outbox<?> outbox);
 
     /**
      * Returns a registered outbox by provided query ID, exchange ID pair.
@@ -65,7 +65,7 @@ public interface MailboxRegistry<Row> extends Service {
      *
      * @return Registered outbox. May be {@code null} if execution was cancelled.
      */
-    Outbox<Row> outbox(UUID qryId, long exchangeId);
+    Outbox<?> outbox(UUID qryId, long exchangeId);
 
     /**
      * Returns a registered inbox by provided query ID, exchange ID pair.
@@ -75,7 +75,7 @@ public interface MailboxRegistry<Row> extends Service {
      *
      * @return Registered inbox. May be {@code null} if execution was cancelled.
      */
-    Inbox<Row> inbox(UUID qryId, long exchangeId);
+    Inbox<?> inbox(UUID qryId, long exchangeId);
 
     /**
      * Returns all registered inboxes for provided query ID.
@@ -83,7 +83,7 @@ public interface MailboxRegistry<Row> extends Service {
      * @param qryId Query ID. {@code null} means return all registered inboxes.
      * @return Registered inboxes.
      */
-    Collection<Inbox<Row>> inboxes(@Nullable UUID qryId);
+    Collection<Inbox<?>> inboxes(@Nullable UUID qryId);
 
     /**
      * Returns all registered outboxes for provided query ID.
@@ -91,5 +91,5 @@ public interface MailboxRegistry<Row> extends Service {
      * @param qryId Query ID. {@code null} means return all registered outboxes.
      * @return Registered outboxes.
      */
-    Collection<Outbox<Row>> outboxes(@Nullable UUID qryId);
+    Collection<Outbox<?>> outboxes(@Nullable UUID qryId);
 }

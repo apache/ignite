@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -111,7 +112,7 @@ import org.junit.Test;
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
-import static org.apache.ignite.internal.processors.query.calcite.AbstractCalciteQueryProcessor.FRAMEWORK_CONFIG;
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.DEDUPLICATED;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.HAS_REPLICATED_CACHES;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.PARTIALLY_REPLICATED;
@@ -192,7 +193,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -204,7 +205,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -271,7 +271,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -283,7 +283,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -346,7 +345,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -358,7 +357,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -478,7 +476,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -490,7 +488,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelNode root;
@@ -621,7 +618,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -633,7 +630,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelNode root;
@@ -713,7 +709,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -725,7 +721,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelNode root;
@@ -774,13 +769,13 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public IgniteIndex<Object[]> getIndex(String idxName) {
-                return new IgniteIndex<Object[]>(null, null, null, null) {
-                    @Override public Iterable<Object[]> scan(ExecutionContext<Object[]> execCtx, Predicate<Object[]> filters,
-                        Object[] lowerIdxConditions, Object[] upperIdxConditions) {
+            @Override public IgniteIndex getIndex(String idxName) {
+                return new IgniteIndex(null, null, null, null) {
+                    @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
+                        Row lowerIdxConditions, Row upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
-                            new Object[]{0, "Igor", 0},
-                            new Object[]{1, "Roman", 0}
+                            row(execCtx, 0, "Igor", 0),
+                            row(execCtx, 1, "Roman", 0)
                         ));
                     }
                 };
@@ -807,13 +802,13 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public IgniteIndex<Object[]> getIndex(String idxName) {
-                return new IgniteIndex<Object[]>(null, null, null, null) {
-                    @Override public Iterable<Object[]> scan(ExecutionContext<Object[]> execCtx, Predicate<Object[]> filters,
-                        Object[] lowerIdxConditions, Object[] upperIdxConditions) {
+            @Override public IgniteIndex getIndex(String idxName) {
+                return new IgniteIndex(null, null, null, null) {
+                    @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
+                        Row lowerIdxConditions, Row upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
-                            new Object[]{0, "Calcite", 1},
-                            new Object[]{1, "Ignite", 1}
+                            row(execCtx, 0, "Calcite", 1),
+                            row(execCtx, 1, "Ignite", 1)
                         ));
                     }
                 };
@@ -853,7 +848,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -865,7 +860,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -947,7 +941,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -959,7 +953,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -1145,13 +1138,13 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public IgniteIndex<Object[]> getIndex(String idxName) {
-                return new IgniteIndex<Object[]>(null, null, null, null) {
-                    @Override public Iterable<Object[]> scan(ExecutionContext<Object[]> execCtx, Predicate<Object[]> filters,
-                        Object[] lowerIdxConditions, Object[] upperIdxConditions) {
+            @Override public IgniteIndex getIndex(String idxName) {
+                return new IgniteIndex(null, null, null, null) {
+                    @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
+                        Row lowerIdxConditions, Row upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
-                            new Object[]{0, "Igor", 0},
-                            new Object[]{1, "Roman", 0}
+                            row(execCtx, 0, "Igor", 0),
+                            row(execCtx, 1, "Roman", 0)
                         ));
                     }
                 };
@@ -1172,13 +1165,13 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public IgniteIndex<Object[]> getIndex(String idxName) {
-                return new IgniteIndex<Object[]>(null, null, null, null) {
-                    @Override public Iterable<Object[]> scan(ExecutionContext<Object[]> execCtx, Predicate<Object[]> filters,
-                        Object[] lowerIdxConditions, Object[] upperIdxConditions) {
+            @Override public IgniteIndex getIndex(String idxName) {
+                return new IgniteIndex(null, null, null, null) {
+                    @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
+                        Row lowerIdxConditions, Row upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
-                            new Object[]{0, "Calcite", 1},
-                            new Object[]{1, "Ignite", 1}
+                            row(execCtx, 0, "Calcite", 1),
+                            row(execCtx, 1, "Ignite", 1)
                         ));
                     }
                 };
@@ -1214,7 +1207,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1226,7 +1219,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(-10)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         try (IgnitePlanner planner = ctx.planner()) {
@@ -1273,8 +1265,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             GridTestKernalContext kernal;
             QueryTaskExecutorImpl taskExecutor;
             MessageServiceImpl msgSvc;
-            MailboxRegistryImpl<Object[]> mailboxRegistry;
-            ExchangeServiceImpl<Object[]> exchangeSvc;
+            MailboxRegistryImpl mailboxRegistry;
+            ExchangeServiceImpl exchangeSvc;
             ExecutionContext<Object[]> ectx;
             Node<Object[]> exec;
 
@@ -1305,13 +1297,12 @@ public class PlannerTest extends GridCommonAbstractTest {
             msgSvc.taskExecutor(taskExecutor);
             mgr.register(msgSvc);
 
-            mailboxRegistry = new MailboxRegistryImpl<>(kernal);
+            mailboxRegistry = new MailboxRegistryImpl(kernal);
 
-            exchangeSvc = new ExchangeServiceImpl<>(kernal);
+            exchangeSvc = new ExchangeServiceImpl(kernal);
             exchangeSvc.taskExecutor(taskExecutor);
             exchangeSvc.messageService(msgSvc);
             exchangeSvc.mailboxRegistry(mailboxRegistry);
-            exchangeSvc.rowEngineFactory(new ArrayRowEngineFactory());
             exchangeSvc.init();
 
             ectx = new ExecutionContext<>(taskExecutor,
@@ -1323,6 +1314,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                     0,
                     plan.targetMapping(fragment),
                     plan.remoteSources(fragment)),
+                ArrayRowHandler.INSTANCE,
                 Commons.parametersMap(ctx.parameters()));
 
             exec = new LogicalRelImplementor<>(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeSvc,
@@ -1358,18 +1350,17 @@ public class PlannerTest extends GridCommonAbstractTest {
             msgSvc.taskExecutor(taskExecutor);
             mgr.register(msgSvc);
 
-            mailboxRegistry = new MailboxRegistryImpl<>(kernal);
+            mailboxRegistry = new MailboxRegistryImpl(kernal);
 
-            exchangeSvc = new ExchangeServiceImpl<>(kernal);
+            exchangeSvc = new ExchangeServiceImpl(kernal);
             exchangeSvc.taskExecutor(taskExecutor);
             exchangeSvc.messageService(msgSvc);
             exchangeSvc.mailboxRegistry(mailboxRegistry);
-            exchangeSvc.rowEngineFactory(new ArrayRowEngineFactory());
             exchangeSvc.init();
 
             ectx = new ExecutionContext<>(
                 taskExecutor,
-                PlanningContext.<Object[]>builder()
+                PlanningContext.builder()
                     .localNodeId(nodes.get(1))
                     .originatingNodeId(nodes.get(0))
                     .parentContext(Contexts.empty())
@@ -1378,7 +1369,6 @@ public class PlannerTest extends GridCommonAbstractTest {
                         .traitDefs(traitDefs)
                         .build())
                     .logger(log)
-                    .rowEngineFactory(new ArrayRowEngineFactory())
                     .build(),
                 qryId,
                 new FragmentDescription(
@@ -1387,6 +1377,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                     0,
                     plan.targetMapping(fragment),
                     plan.remoteSources(fragment)),
+                ArrayRowHandler.INSTANCE,
                 Commons.parametersMap(ctx.parameters()));
 
             exec = new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
@@ -1425,13 +1416,13 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("ID1", f.createJavaType(Integer.class))
                 .build()) {
 
-            @Override public IgniteIndex<Object[]> getIndex(String idxName) {
-                return new IgniteIndex<Object[]>(null, null, null, null) {
-                    @Override public Iterable<Object[]> scan(ExecutionContext<Object[]> execCtx, Predicate<Object[]> filters,
-                        Object[] lowerIdxConditions, Object[] upperIdxConditions) {
+            @Override public IgniteIndex getIndex(String idxName) {
+                return new IgniteIndex(null, null, null, null) {
+                    @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
+                        Row lowerIdxConditions, Row upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
-                            new Object[]{0, 1},
-                            new Object[]{1, 2}
+                            row(execCtx, 0, 1),
+                            row(execCtx, 1, 2)
                         ));
                     }
                 };
@@ -1461,7 +1452,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1473,7 +1464,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(-10)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         try (IgnitePlanner planner = ctx.planner()) {
@@ -1520,8 +1510,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             GridTestKernalContext kernal;
             QueryTaskExecutorImpl taskExecutor;
             MessageServiceImpl msgSvc;
-            MailboxRegistryImpl<Object[]> mailboxRegistry;
-            ExchangeServiceImpl<Object[]> exchangeSvc;
+            MailboxRegistryImpl mailboxRegistry;
+            ExchangeServiceImpl exchangeSvc;
             ExecutionContext<Object[]> ectx;
             Node<Object[]> exec;
 
@@ -1552,13 +1542,12 @@ public class PlannerTest extends GridCommonAbstractTest {
             msgSvc.taskExecutor(taskExecutor);
             mgr.register(msgSvc);
 
-            mailboxRegistry = new MailboxRegistryImpl<>(kernal);
+            mailboxRegistry = new MailboxRegistryImpl(kernal);
 
-            exchangeSvc = new ExchangeServiceImpl<>(kernal);
+            exchangeSvc = new ExchangeServiceImpl(kernal);
             exchangeSvc.taskExecutor(taskExecutor);
             exchangeSvc.messageService(msgSvc);
             exchangeSvc.mailboxRegistry(mailboxRegistry);
-            exchangeSvc.rowEngineFactory(new ArrayRowEngineFactory());
             exchangeSvc.init();
 
             ectx = new ExecutionContext<>(taskExecutor,
@@ -1570,6 +1559,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                     0,
                     plan.targetMapping(fragment),
                     plan.remoteSources(fragment)),
+                ArrayRowHandler.INSTANCE,
                 Commons.parametersMap(ctx.parameters()));
 
             exec = new LogicalRelImplementor<>(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeSvc,
@@ -1605,18 +1595,17 @@ public class PlannerTest extends GridCommonAbstractTest {
             msgSvc.taskExecutor(taskExecutor);
             mgr.register(msgSvc);
 
-            mailboxRegistry = new MailboxRegistryImpl<>(kernal);
+            mailboxRegistry = new MailboxRegistryImpl(kernal);
 
-            exchangeSvc = new ExchangeServiceImpl<>(kernal);
+            exchangeSvc = new ExchangeServiceImpl(kernal);
             exchangeSvc.taskExecutor(taskExecutor);
             exchangeSvc.messageService(msgSvc);
             exchangeSvc.mailboxRegistry(mailboxRegistry);
-            exchangeSvc.rowEngineFactory(new ArrayRowEngineFactory());
             exchangeSvc.init();
 
             ectx = new ExecutionContext<>(
                 taskExecutor,
-                PlanningContext.<Object[]>builder()
+                PlanningContext.builder()
                     .localNodeId(nodes.get(1))
                     .originatingNodeId(nodes.get(0))
                     .parentContext(Contexts.empty())
@@ -1625,7 +1614,6 @@ public class PlannerTest extends GridCommonAbstractTest {
                         .traitDefs(traitDefs)
                         .build())
                     .logger(log)
-                    .rowEngineFactory(new ArrayRowEngineFactory())
                     .build(),
                 qryId,
                 new FragmentDescription(
@@ -1634,6 +1622,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                     -1,
                     plan.targetMapping(fragment),
                     plan.remoteSources(fragment)),
+                ArrayRowHandler.INSTANCE,
                 Commons.parametersMap(ctx.parameters()));
 
             exec = new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
@@ -1715,7 +1704,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1727,7 +1716,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -1839,7 +1827,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1851,7 +1839,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -1962,7 +1949,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1974,7 +1961,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -2085,7 +2071,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -2097,7 +2083,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -2205,7 +2190,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -2217,7 +2202,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -2314,7 +2298,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -2326,7 +2310,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelNode rel;
@@ -2371,7 +2354,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(serialized);
 
-        ctx = PlanningContext.<Object[]>builder()
+        ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -2383,7 +2366,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         List<RelNode> nodes = new ArrayList<>();
@@ -2435,7 +2417,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelCollationTraitDef.INSTANCE
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -2447,7 +2429,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .query(sql)
             .parameters(2)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -2554,7 +2535,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         };
 
-        PlanningContext<Object[]> ctx = PlanningContext.<Object[]>builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -2565,7 +2546,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             .logger(log)
             .query(sql)
             .topologyVersion(AffinityTopologyVersion.NONE)
-            .rowEngineFactory(new ArrayRowEngineFactory())
             .build();
 
         RelRoot relRoot;
@@ -2631,12 +2611,21 @@ public class PlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private abstract static class TestTable implements IgniteTable<Object[]> {
+    private <Row> Row row(ExecutionContext<Row> ctx, Object... fields) {
+        Type[] types = new Type[fields.length];
+        for (int i = 0; i < fields.length; i++)
+            types[i] = fields[i] == null ? Object.class : fields[i].getClass();
+
+        return ctx.rowHandler().factory(types).create(fields);
+    }
+
+    /** */
+    private abstract static class TestTable implements IgniteTable {
         /** */
         private final RelProtoDataType protoType;
 
         /** */
-        private final Map<String, IgniteIndex<Object[]>> indexes = new HashMap<>();
+        private final Map<String, IgniteIndex> indexes = new HashMap<>();
 
         /** */
         private TestTable(RelDataType type) {
@@ -2742,22 +2731,22 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public TableDescriptor<?, ?, Object[]> descriptor() {
+        @Override public TableDescriptor descriptor() {
             throw new AssertionError();
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, IgniteIndex<Object[]>> indexes() {
+        @Override public Map<String, IgniteIndex> indexes() {
             return indexes;
         }
 
         /** {@inheritDoc} */
-        @Override public void addIndex(IgniteIndex<Object[]> idxTbl) {
+        @Override public void addIndex(IgniteIndex idxTbl) {
             indexes.put(idxTbl.name(), idxTbl);
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteIndex<Object[]> getIndex(String idxName) {
+        @Override public IgniteIndex getIndex(String idxName) {
             return indexes.get(idxName);
         }
 

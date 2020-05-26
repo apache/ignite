@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
 /**
  *
  */
-public interface ExchangeService<Row> extends Service {
+public interface ExchangeService extends Service {
     /**
      * Sends a batch of data to remote node.
      * @param nodeId Target node ID.
@@ -33,9 +33,11 @@ public interface ExchangeService<Row> extends Service {
      * @param fragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
      * @param batchId Batch ID.
+     * @param last Last batch flag.
      * @param rows Data rows.
      */
-    void sendBatch(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId, List<Row> rows) throws IgniteCheckedException;
+    <Row> void sendBatch(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId, boolean last,
+        List<Row> rows) throws IgniteCheckedException;
 
     /**
      * Acknowledges a batch with given ID is processed.

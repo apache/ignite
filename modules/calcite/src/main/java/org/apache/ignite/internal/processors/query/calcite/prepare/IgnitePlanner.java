@@ -27,7 +27,6 @@ import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
@@ -52,7 +51,6 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.Program;
-import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
@@ -83,7 +81,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private final FrameworkConfig frameworkCfg;
 
     /** */
-    private final PlanningContext<?> ctx;
+    private final PlanningContext ctx;
 
     /** */
     @SuppressWarnings("rawtypes")
@@ -122,7 +120,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /**
      * @param ctx Planner context.
      */
-    IgnitePlanner(PlanningContext<?> ctx) {
+    IgnitePlanner(PlanningContext ctx) {
         this.ctx = ctx;
 
         typeFactory = ctx.typeFactory();
@@ -289,11 +287,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** */
-    private RelBuilder createRelBuilder(RelOptCluster cluster, RelOptSchema schema) {
-        return sqlToRelConverterCfg.getRelBuilderFactory().create(cluster, schema);
-    }
-
-    /** */
     private List<RelOptLattice> latices() {
         return ImmutableList.of(); // TODO
     }
@@ -311,11 +304,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         List<RelOptMaterialization> idxMaterializations = new ArrayList<>();
 
         for (RelOptTable tbl : tbls) {
-            IgniteTable<?> igniteTbl = tbl.unwrap(IgniteTable.class);
+            IgniteTable igniteTbl = tbl.unwrap(IgniteTable.class);
 
             IgniteTableScan tblScan = igniteTbl.toRel(cluster, tbl, PK_INDEX_NAME);
 
-            for (IgniteIndex<?> idx : igniteTbl.indexes().values()) {
+            for (IgniteIndex idx : igniteTbl.indexes().values()) {
                 ImmutableList<String> names = ImmutableList.<String>builder()
                     .addAll(Util.skipLast(tbl.getQualifiedName()))
                     .add(F.last(tbl.getQualifiedName()) + "[" + idx.name() + "]")

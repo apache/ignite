@@ -39,10 +39,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row>, AutoCloseable {
     /** */
-    private final ExchangeService<Row> exchange;
+    private final ExchangeService exchange;
 
     /** */
-    private final MailboxRegistry<Row> registry;
+    private final MailboxRegistry registry;
 
     /** */
     private final long exchangeId;
@@ -57,7 +57,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     private final Deque<Row> inBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
 
     /** */
-    private final Map<UUID, Buffer<Row>> nodeBuffers = new HashMap<>();
+    private final Map<UUID, Buffer> nodeBuffers = new HashMap<>();
 
     /** */
     private boolean cancelled;
@@ -75,8 +75,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
      */
     public Outbox(
         ExecutionContext<Row> ctx,
-        ExchangeService<Row> exchange,
-        MailboxRegistry<Row> registry,
+        ExchangeService exchange,
+        MailboxRegistry registry,
         long exchangeId, long
         targetFragmentId,
         Destination dest
@@ -202,8 +202,8 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     }
 
     /** */
-    private void sendBatch(UUID nodeId, int batchId, List<Row> rows) throws IgniteCheckedException {
-        exchange.sendBatch(nodeId, queryId(), targetFragmentId, exchangeId, batchId, rows);
+    private void sendBatch(UUID nodeId, int batchId, boolean last, List<Row> rows) throws IgniteCheckedException {
+        exchange.sendBatch(nodeId, queryId(), targetFragmentId, exchangeId, batchId, last, rows);
     }
 
     /** */
@@ -217,13 +217,13 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     }
 
     /** */
-    private Buffer<Row> getOrCreateBuffer(UUID nodeId) {
+    private Buffer getOrCreateBuffer(UUID nodeId) {
         return nodeBuffers.computeIfAbsent(nodeId, this::createBuffer);
     }
 
     /** */
-    private Buffer<Row> createBuffer(UUID nodeId) {
-        return new Buffer<>(nodeId, this);
+    private Buffer createBuffer(UUID nodeId) {
+        return new Buffer(nodeId);
     }
 
     /** */
@@ -236,10 +236,10 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
 
                 assert !F.isEmpty(nodes);
 
-                Collection<Buffer<Row>> buffers = new ArrayList<>(nodes.size());
+                Collection<Buffer> buffers = new ArrayList<>(nodes.size());
 
                 for (UUID node : nodes) {
-                    Buffer<Row> dest = getOrCreateBuffer(node);
+                    Buffer dest = getOrCreateBuffer(node);
 
                     if (dest.ready())
                         buffers.add(dest);
@@ -250,7 +250,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
                     }
                 }
 
-                for (Buffer<Row> dest : buffers)
+                for (Buffer dest : buffers)
                     dest.add(row);
             }
 
@@ -263,10 +263,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     }
 
     /** */
-    private static final class Buffer<Row> {
-        /** */
-        private final Outbox<Row> owner;
-
+    private final class Buffer {
         /** */
         private final UUID nodeId;
 
@@ -280,11 +277,10 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         private List<Row> curr;
 
         /** */
-        private Buffer(UUID nodeId, Outbox<Row> owner) {
+        private Buffer(UUID nodeId) {
             this.nodeId = nodeId;
-            this.owner = owner;
 
-            curr = new ArrayList<>(IO_BATCH_SIZE + 1); // extra space for end marker;
+            curr = new ArrayList<>(IO_BATCH_SIZE); // extra space for end marker;
         }
 
         /**
@@ -296,9 +292,9 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
             assert ready();
 
             if (curr.size() == IO_BATCH_SIZE) {
-                owner.sendBatch(nodeId, ++hwm, curr);
+                sendBatch(nodeId, ++hwm, false, curr);
 
-                curr = new ArrayList<>(IO_BATCH_SIZE + 1); // extra space for end marker;
+                curr = new ArrayList<>(IO_BATCH_SIZE); // extra space for end marker;
             }
 
             curr.add(row);
@@ -317,9 +313,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
             List<Row> tmp = curr;
             curr = null;
 
-            tmp.add(owner.hnd.endMarker());
-
-            owner.sendBatch(nodeId, batchId, tmp);
+            sendBatch(nodeId, batchId, true, tmp);
         }
 
         /** */
@@ -331,7 +325,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
             hwm = Integer.MAX_VALUE;
 
             curr = null;
-            owner.sendCancel(nodeId, batchId);
+            sendCancel(nodeId, batchId);
         }
 
         /**
@@ -360,7 +354,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
             lwm = id;
 
             if (!readyBefore && ready())
-                owner.flushFromBuffer();
+                flushFromBuffer();
         }
     }
 }

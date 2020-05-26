@@ -24,6 +24,8 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
@@ -37,7 +39,7 @@ public class ExecutionContext<Row> implements DataContext {
     private final UUID qryId;
 
     /** */
-    private final PlanningContext<Row> ctx;
+    private final PlanningContext ctx;
 
     /** */
     private final FragmentDescription fragmentDesc;
@@ -47,6 +49,12 @@ public class ExecutionContext<Row> implements DataContext {
 
     /** */
     private final QueryTaskExecutor executor;
+
+    /** */
+    private final RowHandler<Row> handler;
+
+    /** */
+    private final ExpressionFactory<Row> expressionFactory;
 
     /** */
     private volatile boolean cancelled;
@@ -60,22 +68,26 @@ public class ExecutionContext<Row> implements DataContext {
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public ExecutionContext(
         QueryTaskExecutor executor,
-        PlanningContext<Row> ctx,
+        PlanningContext ctx,
         UUID qryId,
         FragmentDescription fragmentDesc,
+        RowHandler<Row> handler,
         Map<String, Object> params
     ) {
         this.executor = executor;
         this.ctx = ctx;
         this.qryId = qryId;
         this.fragmentDesc = fragmentDesc;
+        this.handler = handler;
         this.params = params;
+
+        expressionFactory = new ExpressionFactoryImpl<>(this, ctx.typeFactory(), ctx.conformance());
     }
 
     /**
      * @return Parent context.
      */
-    public PlanningContext<Row> planningContext() {
+    public PlanningContext planningContext() {
         return ctx;
     }
 
@@ -101,7 +113,7 @@ public class ExecutionContext<Row> implements DataContext {
     }
 
     /** */
-    public int partitionsCount () {
+    public int partitionsCount() {
         return fragmentDesc.partitionsCount();
     }
 
@@ -141,6 +153,20 @@ public class ExecutionContext<Row> implements DataContext {
      */
     public boolean cancelled() {
         return cancelled;
+    }
+
+    /**
+     * @return Handler to access row fields.
+     */
+    public RowHandler<Row> rowHandler() {
+        return handler;
+    }
+
+    /**
+     * @return Expression factory.
+     */
+    public ExpressionFactory<Row> expressionFactory() {
+        return expressionFactory;
     }
 
     /**

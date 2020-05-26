@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import javax.cache.processor.EntryProcessor;
@@ -27,6 +26,7 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
@@ -39,9 +39,9 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
 /**
  *
  */
-public class ModifyNode<Row, K, V> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
-    protected final TableDescriptor<K, V, Row> desc;
+    protected final TableDescriptor desc;
 
     /** */
     private final TableModify.Operation op;
@@ -50,7 +50,7 @@ public class ModifyNode<Row, K, V> extends AbstractNode<Row> implements SingleNo
     private final List<String> cols;
 
     /** */
-    private List<IgniteBiTuple<K, V>> tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
+    private List<IgniteBiTuple<?, ?>> tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
     /** */
     private long updatedRows;
@@ -72,10 +72,9 @@ public class ModifyNode<Row, K, V> extends AbstractNode<Row> implements SingleNo
      * @param desc Table descriptor.
      * @param cols Update column list.
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public ModifyNode(
         ExecutionContext<Row> ctx,
-        TableDescriptor<K, V, Row> desc,
+        TableDescriptor desc,
         TableModify.Operation op,
         List<String> cols
     ) {
@@ -181,7 +180,7 @@ public class ModifyNode<Row, K, V> extends AbstractNode<Row> implements SingleNo
                 state = State.END;
 
                 requested--;
-                downstream.push(hnd.create(updatedRows));
+                downstream.push(ctx.rowHandler().factory(long.class).create(updatedRows));
             }
 
             if (state == State.END && requested > 0) {
@@ -198,22 +197,24 @@ public class ModifyNode<Row, K, V> extends AbstractNode<Row> implements SingleNo
     }
 
     /** */
+    @SuppressWarnings("unchecked")
     private void flush(boolean force) throws IgniteCheckedException {
         if (F.isEmpty(tuples) || !force && tuples.size() < MODIFY_BATCH_SIZE)
             return;
 
-        List<IgniteBiTuple<K, V>> tuples = this.tuples;
+        List<IgniteBiTuple<?,?>> tuples = this.tuples;
         this.tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
-        Map<K, EntryProcessorResult<Long>> res =
-            desc.cacheContext().cache().invokeAll(invokeMap(tuples));
+        GridCacheContext<Object, Object> cctg = desc.cacheContext();
+        Map<Object, EntryProcessor<Object, Object, Long>> map = invokeMap(tuples);
+        Map<Object, EntryProcessorResult<Long>> res = cctg.cache().invokeAll(map);
 
         long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
 
         if (op == TableModify.Operation.INSERT && updated != res.size()) {
             List<Object> duplicates = new ArrayList<>(res.size());
 
-            for (Map.Entry<K, EntryProcessorResult<Long>> e : res.entrySet()) {
+            for (Map.Entry<?, EntryProcessorResult<Long>> e : res.entrySet()) {
                 if (e.getValue().get() == 0)
                     duplicates.add(e.getKey());
             }
@@ -225,22 +226,22 @@ public class ModifyNode<Row, K, V> extends AbstractNode<Row> implements SingleNo
     }
 
     /** */
-    private Map<K, EntryProcessor<K, V, Long>> invokeMap(Collection<IgniteBiTuple<K, V>> tuples) {
-        Map<K, EntryProcessor<K, V, Long>> procMap = U.newLinkedHashMap(tuples.size());
+    private Map<Object, EntryProcessor<Object, Object, Long>> invokeMap(List<IgniteBiTuple<?,?>> tuples) {
+        Map<Object, EntryProcessor<Object, Object, Long>> procMap = U.newLinkedHashMap(tuples.size());
 
         switch (op) {
             case INSERT:
-                for (IgniteBiTuple<K, V> entry : tuples)
+                for (IgniteBiTuple<?, ?> entry : tuples)
                     procMap.put(entry.getKey(), new InsertOperation<>(entry.getValue()));
 
                 break;
             case UPDATE:
-                for (IgniteBiTuple<K, V> entry : tuples)
+                for (IgniteBiTuple<?, ?> entry : tuples)
                     procMap.put(entry.getKey(), new UpdateOperation<>(entry.getValue()));
 
                 break;
             case DELETE:
-                for (IgniteBiTuple<K, V> entry : tuples)
+                for (IgniteBiTuple<?, ?> entry : tuples)
                     procMap.put(entry.getKey(), new DeleteOperation<>());
 
                 break;

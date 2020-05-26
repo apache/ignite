@@ -42,7 +42,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Holds actual schema and mutates it on schema change, requested by Ignite.
  */
-public class SchemaHolderImpl<Row> extends AbstractService implements SchemaHolder, SchemaChangeListener {
+public class SchemaHolderImpl extends AbstractService implements SchemaHolder, SchemaChangeListener {
 
     /** */
     private final Map<String, IgniteSchema> igniteSchemas = new HashMap<>();
@@ -108,22 +108,22 @@ public class SchemaHolderImpl<Row> extends AbstractService implements SchemaHold
 
         String tblName = typeDesc.tableName();
 
-        TableDescriptorImpl<?, ?, Row> desc =
-            new TableDescriptorImpl<>(cacheInfo.cacheContext(), typeDesc, affinityIdentity(cacheInfo));
+        TableDescriptorImpl desc =
+            new TableDescriptorImpl(cacheInfo.cacheContext(), typeDesc, affinityIdentity(cacheInfo));
 
         RelCollation pkCollation = RelCollations.of(new RelFieldCollation(QueryUtils.KEY_COL));
 
-        IgniteTable<Row> tbl = new IgniteTableImpl<>(desc, pkCollation);
+        IgniteTable tbl = new IgniteTableImpl(desc, pkCollation);
         schema.addTable(tblName, tbl);
 
-        IgniteIndex<Row> pkIdx = new IgniteIndex<>(pkCollation, IgniteTableImpl.PK_INDEX_NAME, (GridIndex<H2Row>)pk, tbl);
+        IgniteIndex pkIdx = new IgniteIndex(pkCollation, IgniteTableImpl.PK_INDEX_NAME, (GridIndex<H2Row>)pk, tbl);
         tbl.addIndex(pkIdx);
 
         if (desc.keyField() != QueryUtils.KEY_COL) {
             RelCollation pkAliasCollation = RelCollations.of(new RelFieldCollation(desc.keyField()));
 
-            IgniteIndex<Row> pkAliasIdx =
-                new IgniteIndex<>(pkAliasCollation, IgniteTableImpl.PK_ALIAS_INDEX_NAME,(GridIndex<H2Row>) pk, tbl);
+            IgniteIndex pkAliasIdx =
+                new IgniteIndex(pkAliasCollation, IgniteTableImpl.PK_ALIAS_INDEX_NAME,(GridIndex<H2Row>) pk, tbl);
 
             tbl.addIndex(pkAliasIdx);
         }
@@ -155,12 +155,12 @@ public class SchemaHolderImpl<Row> extends AbstractService implements SchemaHold
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
 
-        IgniteTable<Row> tbl = (IgniteTable<Row>)schema.getTable(tblName);
+        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
         assert tbl != null;
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
-        IgniteIndex<Row> idx = new IgniteIndex<>(idxCollation, idxName, (GridIndex<H2Row>)gridIdx, tbl);
+        IgniteIndex idx = new IgniteIndex(idxCollation, idxName, (GridIndex<H2Row>)gridIdx, tbl);
         tbl.addIndex(idx);
     }
 
@@ -169,7 +169,7 @@ public class SchemaHolderImpl<Row> extends AbstractService implements SchemaHold
      */
     @NotNull private static RelCollation deriveSecondaryIndexCollation(
         GridQueryIndexDescriptor idxDesc,
-        IgniteTable<?> tbl
+        IgniteTable tbl
     ) {
         Map<String, ColumnDescriptor> tblFields = tbl.descriptor().columnDescriptorsMap();
 
@@ -195,7 +195,7 @@ public class SchemaHolderImpl<Row> extends AbstractService implements SchemaHold
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
 
-        IgniteTable<?> tbl = (IgniteTable<?>)schema.getTable(tblName);
+        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
         assert tbl != null;
 
         tbl.removeIndex(idxName);

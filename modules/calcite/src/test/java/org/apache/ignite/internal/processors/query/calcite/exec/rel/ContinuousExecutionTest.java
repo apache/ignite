@@ -119,7 +119,7 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
             FilterNode<Object[]> filter = new FilterNode<>(ectx, r -> (Integer) r[0] >= 2);
             filter.register(project);
 
-            MailboxRegistry<Object[]> registry = mailboxRegistry(locNodeId);
+            MailboxRegistry registry = mailboxRegistry(locNodeId);
 
             Outbox<Object[]> outbox = new Outbox<>(ectx, exchangeService(locNodeId), registry,
                 0, 1, new AllNodes(nodes.subList(0, 1)));
@@ -134,12 +134,12 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
 
         ExecutionContext<Object[]> ectx = executionContext(locNodeId, qryId, 1);
 
-        MailboxRegistry<Object[]> registry = mailboxRegistry(locNodeId);
+        MailboxRegistry registry = mailboxRegistry(locNodeId);
 
-        Inbox<Object[]> inbox =  registry.register(
+        Inbox<Object[]> inbox =  (Inbox<Object[]>) registry.register(
             new Inbox<>(ectx, exchangeService(locNodeId), registry, 0, 0));
 
-        inbox.init(nodes.subList(1, nodes.size()), null);
+        inbox.init(ectx, nodes.subList(1, nodes.size()), null);
 
         RootNode<Object[]> node = new RootNode<>(ectx, r -> {});
 

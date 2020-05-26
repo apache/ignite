@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -35,11 +36,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public interface TableDescriptor<K, V, Row> extends RelProtoDataType, InitializerExpressionFactory {
+@SuppressWarnings("rawtypes")
+public interface TableDescriptor extends RelProtoDataType, InitializerExpressionFactory {
     /**
      * @return Underlying cache context.
      */
-    GridCacheContext<K, V> cacheContext();
+    GridCacheContext cacheContext();
 
     /**
      * @return Distribution.
@@ -92,7 +94,7 @@ public interface TableDescriptor<K, V, Row> extends RelProtoDataType, Initialize
      * @return Relational node row.
      * @throws IgniteCheckedException If failed.
      */
-    Row toRow(ExecutionContext<Row> ectx, CacheDataRow row) throws IgniteCheckedException;
+    <Row> Row toRow(ExecutionContext<Row> ectx, CacheDataRow row, RowHandler.RowFactory<Row> factory) throws IgniteCheckedException;
 
     /**
      * Converts a relational node row to cache key-value tuple;
@@ -104,7 +106,7 @@ public interface TableDescriptor<K, V, Row> extends RelProtoDataType, Initialize
      * @return Cache key-value tuple;
      * @throws IgniteCheckedException If failed.
      */
-    IgniteBiTuple<K, V> toTuple(ExecutionContext<Row> ectx, Row row, TableModify.Operation op, @Nullable Object arg)
+    <Row> IgniteBiTuple toTuple(ExecutionContext<Row> ectx, Row row, TableModify.Operation op, @Nullable Object arg)
         throws IgniteCheckedException;
 
     /**

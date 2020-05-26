@@ -31,11 +31,11 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 /**
  * Ignite table.
  */
-public interface IgniteTable<Row> extends TranslatableTable, ProjectableFilterableTable {
+public interface IgniteTable extends TranslatableTable, ProjectableFilterableTable {
     /**
      * @return Table description.
      */
-    TableDescriptor<?, ?, Row> descriptor();
+    TableDescriptor descriptor();
 
     /**
      * Converts table into relational expression.
@@ -52,7 +52,7 @@ public interface IgniteTable<Row> extends TranslatableTable, ProjectableFilterab
      * @param ctx Planning context.
      * @return Nodes mapping.
      */
-    NodesMapping mapping(PlanningContext<Row> ctx);
+    NodesMapping mapping(PlanningContext ctx);
 
     /**
      * @return Table distribution.
@@ -69,14 +69,14 @@ public interface IgniteTable<Row> extends TranslatableTable, ProjectableFilterab
      *
      * @return Indexes for the current table.
      */
-    Map<String, IgniteIndex<Row>> indexes();
+    Map<String, IgniteIndex> indexes();
 
     /**
      * Adds index to table.
      *
      * @param idxTbl Index table.
      */
-    void addIndex(IgniteIndex<Row> idxTbl);
+    void addIndex(IgniteIndex idxTbl);
 
     /**
      * Returns index by its name.
@@ -84,7 +84,7 @@ public interface IgniteTable<Row> extends TranslatableTable, ProjectableFilterab
      * @param idxName Index name.
      * @return Index.
      */
-    IgniteIndex<Row> getIndex(String idxName);
+    IgniteIndex getIndex(String idxName);
 
 
     /**

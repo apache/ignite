@@ -36,7 +36,7 @@ class ConvertingClosableIterator<Row> implements Iterator<List<?>>, AutoCloseabl
     /** */
     public ConvertingClosableIterator(Iterator<Row> it, ExecutionContext<Row> ectx) {
         this.it = it;
-        this.rowHnd = ectx.planningContext().rowHandler();
+        rowHnd = ectx.rowHandler();
     }
 
     /**

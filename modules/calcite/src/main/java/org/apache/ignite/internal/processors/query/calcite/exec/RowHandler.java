@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.lang.reflect.Type;
+import java.util.List;
+import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+
 /**
  * Universal accessor and mutator for rows. It also has factory methods.
  */
 public interface RowHandler<Row> {
-    /** */
-    Row create(Object... fields);
-
     /** */
     Object get(int field, Row row);
 
@@ -34,11 +37,33 @@ public interface RowHandler<Row> {
     Row concat(Row left, Row right);
 
     /** */
-    Row endMarker();
-
-    /** */
-    boolean isEndMarker(Row row);
-
-    /** */
     int columnCount(Row row);
+
+    /** */
+    default RowFactory<Row> factory(IgniteTypeFactory typeFactory, RelDataType rowType) {
+        if (rowType.isStruct())
+            return factory(typeFactory, RelOptUtil.getFieldTypeList(rowType));
+
+        return factory(typeFactory.getJavaClass(rowType));
+    }
+
+    /** */
+    default RowFactory<Row> factory(IgniteTypeFactory typeFactory, List<RelDataType> fieldTypes) {
+        Type[] types = new Type[fieldTypes.size()];
+        for (int i = 0; i < fieldTypes.size(); i++)
+            types[i] = typeFactory.getJavaClass(fieldTypes.get(i));
+
+        return factory(types);
+    }
+
+    RowFactory<Row> factory(Type... types);
+
+    @SuppressWarnings("PublicInnerClass")
+    interface RowFactory<Row> {
+        /** */
+        Row create();
+
+        /** */
+        Row create(Object... fields);
+    }
 }

@@ -22,7 +22,6 @@ import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -48,12 +47,9 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     /**
      * {@link Inbox} node may not have proper context at creation time in case it
      * creates on first message received from a remote source. This case the context
-     * sets in scope of {@link Inbox#init(Collection, Comparator)} method call.
+     * sets in scope of {@link Inbox#init(ExecutionContext, Collection, Comparator)} method call.
      */
-    protected final ExecutionContext<Row> ctx;
-
-    /** Row access object. */
-    protected final RowHandler<Row> hnd;
+    protected ExecutionContext<Row> ctx;
 
     /** */
     protected Downstream<Row> downstream;
@@ -66,7 +62,6 @@ public abstract class AbstractNode<Row> implements Node<Row> {
      */
     protected AbstractNode(ExecutionContext<Row> ctx) {
         this.ctx = ctx;
-        hnd = ctx.planningContext().rowHandler();
     }
 
     /** {@inheritDoc} */
@@ -75,7 +70,6 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override public void register(List<Node<Row>> sources) {
         this.sources = sources;
 

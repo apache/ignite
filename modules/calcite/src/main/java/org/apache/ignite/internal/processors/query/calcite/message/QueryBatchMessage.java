@@ -24,7 +24,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -34,7 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class QueryBatchMessage<Row> implements MarshalableMessage, ExecutionContextAware {
+public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAware {
     /** */
     private UUID qryId;
 
@@ -48,8 +47,11 @@ public class QueryBatchMessage<Row> implements MarshalableMessage, ExecutionCont
     private int batchId;
 
     /** */
+    private boolean last;
+
+    /** */
     @GridDirectTransient
-    private List<Row> rows;
+    private List<Object> rows;
 
     /** */
     @GridDirectCollection(Message.class)
@@ -57,16 +59,16 @@ public class QueryBatchMessage<Row> implements MarshalableMessage, ExecutionCont
 
     /** */
     public QueryBatchMessage() {
-
     }
 
     /** */
-    public QueryBatchMessage(UUID qryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
+    public QueryBatchMessage(UUID qryId, long fragmentId, long exchangeId, int batchId, boolean last, List<Object> rows) {
         this.qryId = qryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
-        this.rows = Commons.cast(rows);
+        this.last = last;
+        this.rows = rows;
     }
 
     /** {@inheritDoc} */
@@ -94,9 +96,16 @@ public class QueryBatchMessage<Row> implements MarshalableMessage, ExecutionCont
     }
 
     /**
+     * @return Last batch flag.
+     */
+    public boolean last() {
+        return last;
+    }
+
+    /**
      * @return Rows.
      */
-    public List<Row> rows() {
+    public List<Object> rows() {
         return rows;
     }
 
@@ -107,7 +116,7 @@ public class QueryBatchMessage<Row> implements MarshalableMessage, ExecutionCont
 
         mRows = new ArrayList<>(rows.size());
 
-        for (Row row : rows) {
+        for (Object row : rows) {
             Message mRow = CalciteMessageFactory.asMessage(row);
 
             if (mRow instanceof MarshalableMessage)
@@ -128,7 +137,7 @@ public class QueryBatchMessage<Row> implements MarshalableMessage, ExecutionCont
             if (mRow instanceof MarshalableMessage)
                 ((MarshalableMessage) mRow).prepareUnmarshal(marshaller, loader);
 
-            Row row = (Row)CalciteMessageFactory.asRow(mRow);
+            Object row = CalciteMessageFactory.asRow(mRow);
 
             rows.add(row);
         }
@@ -165,12 +174,18 @@ public class QueryBatchMessage<Row> implements MarshalableMessage, ExecutionCont
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeCollection("mRows", mRows, MessageCollectionItemType.MSG))
+                if (!writer.writeBoolean("last", last))
                     return false;
 
                 writer.incrementState();
 
             case 4:
+                if (!writer.writeCollection("mRows", mRows, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
                 if (!writer.writeUuid("queryId", qryId))
                     return false;
 
@@ -214,7 +229,7 @@ public class QueryBatchMessage<Row> implements MarshalableMessage, ExecutionCont
                 reader.incrementState();
 
             case 3:
-                mRows = reader.readCollection("mRows", MessageCollectionItemType.MSG);
+                last = reader.readBoolean("last");
 
                 if (!reader.isLastRead())
                     return false;
@@ -222,6 +237,14 @@ public class QueryBatchMessage<Row> implements MarshalableMessage, ExecutionCont
                 reader.incrementState();
 
             case 4:
+                mRows = reader.readCollection("mRows", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
                 qryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
@@ -241,6 +264,6 @@ public class QueryBatchMessage<Row> implements MarshalableMessage, ExecutionCont
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 }

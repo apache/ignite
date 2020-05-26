@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 /**
  * Ignite scannable index.
  */
-public class IgniteIndex<Row> {
+public class IgniteIndex {
     /** */
     private final RelCollation collation;
 
@@ -37,10 +37,10 @@ public class IgniteIndex<Row> {
     private final GridIndex<H2Row> idx;
 
     /** */
-    private final IgniteTable<Row> tbl;
+    private final IgniteTable tbl;
 
     /** */
-    public IgniteIndex(RelCollation collation, String name, GridIndex<H2Row> idx, IgniteTable<Row> tbl) {
+    public IgniteIndex(RelCollation collation, String name, GridIndex<H2Row> idx, IgniteTable tbl) {
         this.collation = collation;
         idxName = name;
         this.idx = idx;
@@ -63,12 +63,12 @@ public class IgniteIndex<Row> {
     }
 
     /** */
-    public IgniteTable<Row> table() {
+    public IgniteTable table() {
         return tbl;
     }
 
     /** */
-    public Iterable<Row> scan(
+    public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         Predicate<Row> filters,
         Row lowerIdxConditions,

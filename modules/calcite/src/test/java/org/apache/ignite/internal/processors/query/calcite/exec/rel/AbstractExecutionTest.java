@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.calcite.ArrayRowEngineFactory;
+import org.apache.ignite.internal.processors.query.calcite.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -58,10 +58,10 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     private Map<UUID, QueryTaskExecutorImpl> taskExecutors;
 
     /** */
-    private Map<UUID, ExchangeServiceImpl<Object[]>> exchangeServices;
+    private Map<UUID, ExchangeServiceImpl> exchangeServices;
 
     /** */
-    private Map<UUID, MailboxRegistryImpl<Object[]>> mailboxRegistries;
+    private Map<UUID, MailboxRegistryImpl> mailboxRegistries;
 
     /** */
     private List<UUID> nodes;
@@ -89,16 +89,13 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
                 kernal.config().getQueryThreadPoolSize(),
                 kernal.igniteInstanceName(),
                 "calciteQry",
-                (t,ex) -> {
-                    log().error(ex.getMessage(), ex);
-                    lastE = ex;
-                },
+                this::handle,
                 true,
                 DFLT_THREAD_KEEP_ALIVE_TIME
             ));
             taskExecutors.put(uuid, taskExecutor);
 
-            MailboxRegistryImpl<Object[]> mailboxRegistry = new MailboxRegistryImpl<>(kernal);
+            MailboxRegistryImpl mailboxRegistry = new MailboxRegistryImpl(kernal);
 
             mailboxRegistries.put(uuid, mailboxRegistry);
 
@@ -107,11 +104,10 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             msgSvc.taskExecutor(taskExecutor);
             mgr.register(msgSvc);
 
-            ExchangeServiceImpl<Object[]> exchangeSvc = new ExchangeServiceImpl<>(kernal);
+            ExchangeServiceImpl exchangeSvc = new ExchangeServiceImpl(kernal);
             exchangeSvc.taskExecutor(taskExecutor);
             exchangeSvc.messageService(msgSvc);
             exchangeSvc.mailboxRegistry(mailboxRegistry);
-            exchangeSvc.rowEngineFactory(new ArrayRowEngineFactory());
             exchangeSvc.init();
 
             exchangeServices.put(uuid, exchangeSvc);
@@ -134,12 +130,12 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected ExchangeService<Object[]> exchangeService(UUID nodeId) {
+    protected ExchangeService exchangeService(UUID nodeId) {
         return exchangeServices.get(nodeId);
     }
 
     /** */
-    protected MailboxRegistry<Object[]> mailboxRegistry(UUID nodeId) {
+    protected MailboxRegistry mailboxRegistry(UUID nodeId) {
         return mailboxRegistries.get(nodeId);
     }
 
@@ -153,21 +149,17 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         FragmentDescription fragmentDesc = new FragmentDescription(fragmentId, null, -1, null, null);
         return new ExecutionContext<>(
             taskExecutor(nodeId),
-            PlanningContext.<Object[]>builder()
+            PlanningContext.builder()
                 .localNodeId(nodeId)
                 .logger(log())
-                .rowEngineFactory(new ArrayRowEngineFactory())
                 .build(),
-            qryId, fragmentDesc, ImmutableMap.of());
+            qryId, fragmentDesc, ArrayRowHandler.INSTANCE, ImmutableMap.of());
     }
 
     /** */
-    private Void handle(Throwable ex) {
+    private void handle(Thread t, Throwable ex) {
         log().error(ex.getMessage(), ex);
-
         lastE = ex;
-
-        return null;
     }
 
     /** */

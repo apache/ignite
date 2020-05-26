@@ -38,10 +38,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, AutoCloseable {
     /** */
-    private final ExchangeService<Row> exchange;
+    private final ExchangeService exchange;
 
     /** */
-    private final MailboxRegistry<Row> registry;
+    private final MailboxRegistry registry;
 
     /** */
     private final long exchangeId;
@@ -50,7 +50,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
     private final long srcFragmentId;
 
     /** */
-    private final Map<UUID, Buffer<Row>> perNodeBuffers;
+    private final Map<UUID, Buffer> perNodeBuffers;
 
     /** */
     private Collection<UUID> nodes;
@@ -59,7 +59,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
     private Comparator<Row> comp;
 
     /** */
-    private List<Buffer<Row>> buffers;
+    private List<Buffer> buffers;
 
     /** */
     private int requested;
@@ -76,8 +76,8 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
      */
     public Inbox(
         ExecutionContext<Row> ctx,
-        ExchangeService<Row> exchange,
-        MailboxRegistry<Row> registry,
+        ExchangeService exchange,
+        MailboxRegistry registry,
         long exchangeId,
         long srcFragmentId
     ) {
@@ -108,11 +108,15 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
     /**
      * Inits this Inbox.
      *
+     * @param ctx Execution context.
      * @param nodes Source nodes.
      * @param comp Optional comparator for merge exchange.
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public void init(Collection<UUID> nodes, Comparator<Row> comp) {
+    public void init(ExecutionContext<Row> ctx, Collection<UUID> nodes, Comparator<Row> comp) {
+        // It's important to set proper context here because
+        // because the one, that is created on a first message
+        // recived doesn't have all context variables in place.
+        this.ctx = ctx;
         this.nodes = nodes;
         this.comp = comp;
     }
@@ -164,16 +168,17 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
      *
      * @param src Source node.
      * @param batchId Batch ID.
+     * @param last Last batch flag.
      * @param rows Rows.
      */
-    public void onBatchReceived(UUID src, int batchId, List<Row> rows) {
+    public void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
         checkThread();
 
-        Buffer<Row> buf = getOrCreateBuffer(src);
+        Buffer buf = getOrCreateBuffer(src);
 
         boolean waitingBefore = buf.check() == State.WAITING;
 
-        buf.offer(batchId, rows);
+        buf.offer(batchId, last, rows);
 
         if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
             pushInternal();
@@ -201,13 +206,13 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
 
     /** */
     private void pushOrdered() throws IgniteCheckedException {
-         PriorityQueue<Pair<Row, Buffer<Row>>> heap =
+         PriorityQueue<Pair<Row, Buffer>> heap =
             new PriorityQueue<>(buffers.size(), Map.Entry.comparingByKey(comp));
 
-        Iterator<Buffer<Row>> it = buffers.iterator();
+        Iterator<Buffer> it = buffers.iterator();
 
         while (it.hasNext()) {
-            Buffer<Row> buf = it.next();
+            Buffer buf = it.next();
 
             switch (buf.check()) {
                 case END:
@@ -228,7 +233,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
             if (context().cancelled())
                 return;
 
-            Buffer<Row> buf = heap.poll().right;
+            Buffer buf = heap.poll().right;
 
             requested--;
             downstream.push(buf.remove());
@@ -266,7 +271,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
             if (context().cancelled())
                 return;
 
-            Buffer<Row> buf = buffers.get(idx);
+            Buffer buf = buffers.get(idx);
 
             switch (buf.check()) {
                 case END:
@@ -304,13 +309,13 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
     }
 
     /** */
-    private Buffer<Row> getOrCreateBuffer(UUID nodeId) {
+    private Buffer getOrCreateBuffer(UUID nodeId) {
         return perNodeBuffers.computeIfAbsent(nodeId, this::createBuffer);
     }
 
     /** */
-    private Buffer<Row> createBuffer(UUID nodeId) {
-        return new Buffer<>(nodeId, this);
+    private Buffer createBuffer(UUID nodeId) {
+        return new Buffer(nodeId);
     }
 
     /** */
@@ -319,14 +324,18 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         private final int batchId;
 
         /** */
+        private final boolean last;
+
+        /** */
         private final List<Row> rows;
 
         /** */
         private int idx;
 
         /** */
-        private Batch(int batchId, List<Row> rows) {
+        private Batch(int batchId, boolean last, List<Row> rows) {
             this.batchId = batchId;
+            this.last = last;
             this.rows = rows;
         }
 
@@ -337,7 +346,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Batch<?> batch = (Batch<?>) o;
+            Batch<Row> batch = (Batch<Row>) o;
 
             return batchId == batch.batchId;
         }
@@ -348,7 +357,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         }
 
         /** {@inheritDoc} */
-        @Override public int compareTo(@NotNull Inbox.Batch o) {
+        @Override public int compareTo(@NotNull Inbox.Batch<Row> o) {
             return Integer.compare(batchId, o.batchId);
         }
     }
@@ -366,16 +375,13 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
     }
 
     /** */
-    private static final class Buffer<Row> {
-        /** */
-        private static final Batch<?> WAITING = new Batch<>(0, null);
+    private static final Batch<?> WAITING = new Batch<>(0, false, null);
 
-        /** */
-        private static final Batch<?> END = new Batch<>(0, null);
+    /** */
+    private static final Batch<?> END = new Batch<>(0, false, null);
 
-        /** */
-        private final Inbox<Row> owner;
-
+    /** */
+    private final class Buffer {
         /** */
         private final UUID nodeId;
 
@@ -389,14 +395,13 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         private Batch<Row> curr = waitingMark();
 
         /** */
-        private Buffer(UUID nodeId, Inbox<Row> owner) {
+        private Buffer(UUID nodeId) {
             this.nodeId = nodeId;
-            this.owner = owner;
         }
 
         /** */
-        private void offer(int id, List<Row> rows) {
-            batches.offer(new Batch<>(id, rows));
+        private void offer(int id, boolean last, List<Row> rows) {
+            batches.offer(new Batch<>(id, last, rows));
         }
 
         /** */
@@ -418,11 +423,11 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
             if (finished())
                 return State.END;
 
-            if (needToWait())
+            if (waiting())
                 return State.WAITING;
 
-            if (isLastRow()) {
-                curr = endMark();
+            if (isEnd()) {
+                curr = finishedMark();
 
                 return State.END;
             }
@@ -435,7 +440,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
             assert curr != null;
             assert curr != WAITING;
             assert curr != END;
-            assert !owner.hnd.isEndMarker(curr.rows.get(curr.idx));
+            assert !isEnd();
 
             return curr.rows.get(curr.idx);
         }
@@ -445,14 +450,15 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
             assert curr != null;
             assert curr != WAITING;
             assert curr != END;
-            assert !owner.hnd.isEndMarker(curr.rows.get(curr.idx));
+            assert !isEnd();
 
             Row row = curr.rows.set(curr.idx++, null);
 
             if (curr.idx == curr.rows.size()) {
-                owner.acknowledge(nodeId, curr.batchId);
+                acknowledge(nodeId, curr.batchId);
 
-                curr = pollBatch();
+                if (!isEnd())
+                    curr = pollBatch();
             }
 
             return row;
@@ -464,23 +470,23 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         }
 
         /** */
-        private boolean needToWait() {
+        private boolean waiting() {
             return curr == WAITING && (curr = pollBatch()) == WAITING;
         }
 
         /** */
-        private boolean isLastRow() {
-            return owner.hnd.isEndMarker(curr.rows.get(curr.idx));
+        private boolean isEnd() {
+            return curr.last && curr.idx == curr.rows.size();
         }
 
         /** */
-        private static <T> T endMark() {
-            return (T) END;
+        private Batch<Row> finishedMark() {
+            return (Batch<Row>) END;
         }
 
         /** */
-        private static <T> T waitingMark() {
-            return (T) WAITING;
+        private Batch<Row> waitingMark() {
+            return (Batch<Row>) WAITING;
         }
     }
 }

@@ -23,6 +23,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -31,6 +32,9 @@ import org.apache.ignite.internal.util.typedef.F;
 public class JoinNode<Row> extends AbstractNode<Row> {
     /** */
     private final Predicate<Row> cond;
+
+    /** */
+    private final RowHandler<Row> handler;
 
     /** */
     private int requested;
@@ -64,6 +68,7 @@ public class JoinNode<Row> extends AbstractNode<Row> {
         super(ctx);
 
         this.cond = cond;
+        handler = ctx.rowHandler();
     }
 
     /** {@inheritDoc} */
@@ -189,7 +194,7 @@ public class JoinNode<Row> extends AbstractNode<Row> {
                         left = leftInBuf.remove();
 
                     while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                        Row row = hnd.concat(left, rightMaterialized.get(rightIdx++));
+                        Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
 
                         if (!cond.test(row))
                             continue;

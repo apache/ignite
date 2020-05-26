@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -42,7 +43,7 @@ public class RootNode<Row> extends AbstractNode<Row>
     private final Condition cond;
 
     /** */
-    private final ArrayDeque<Row> buff;
+    private final Deque<Row> buff;
 
     /** */
     private final Consumer<RootNode<Row>> onClose;
@@ -154,9 +155,6 @@ public class RootNode<Row> extends AbstractNode<Row>
             if (state != State.RUNNING)
                 return;
 
-            Row lastRowMarker = hnd.endMarker();
-
-            buff.offer(lastRowMarker);
             cond.signalAll();
         }
         finally {
@@ -214,26 +212,28 @@ public class RootNode<Row> extends AbstractNode<Row>
 
     /** */
     private Row take() {
+        assert !F.isEmpty(sources) && sources.size() == 1;
+
         lock.lock();
         try {
             checkCancelled();
-
             assert state == State.RUNNING;
 
-            while (buff.isEmpty()) {
-                requestIfNeeded();
+            while (true) {
+                if (!buff.isEmpty())
+                    return buff.poll();
+                else if (waiting == -1)
+                    break;
+                else if (waiting == 0) {
+                    int req = waiting = IN_BUFFER_SIZE;
+                    context().execute(() -> F.first(sources).request(req));
+                }
 
                 cond.await();
 
                 checkCancelled();
-
                 assert state == State.RUNNING;
             }
-
-            Row row = buff.poll();
-
-            if (!hnd.isEndMarker(row))
-                return row;
 
             state = State.END;
         }
@@ -259,21 +259,6 @@ public class RootNode<Row> extends AbstractNode<Row>
 
             throw new IgniteSQLException("The query was cancelled while executing.", IgniteQueryErrorCode.QUERY_CANCELED);
         }
-    }
-
-    /** */
-    private void requestIfNeeded() {
-        assert !F.isEmpty(sources) && sources.size() == 1;
-
-        assert lock.isHeldByCurrentThread();
-
-        if (waiting != 0)
-            return;
-
-        int req = waiting = IN_BUFFER_SIZE - buff.size();
-
-        if (req > 0)
-            context().execute(() -> F.first(sources).request(req));
     }
 
     /** */

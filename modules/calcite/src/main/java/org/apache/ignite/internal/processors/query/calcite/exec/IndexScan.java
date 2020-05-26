@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Predicate;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -66,7 +68,10 @@ public class IndexScan<Row> implements Iterable<Row> {
     private final GridCacheContext<?, ?> cacheCtx;
 
     /** */
-    private final TableDescriptor<?, ?, Row> desc;
+    private final TableDescriptor desc;
+
+    /** */
+    private final RowFactory<Row> factory;
 
     /** */
     private final GridIndex<H2Row> idx;
@@ -101,7 +106,7 @@ public class IndexScan<Row> implements Iterable<Row> {
      */
     public IndexScan(
         ExecutionContext<Row> ctx,
-        IgniteIndex<Row> igniteIdx,
+        IgniteIndex igniteIdx,
         Predicate<Row> filters,
         Row lowerBound,
         Row upperBound
@@ -119,6 +124,8 @@ public class IndexScan<Row> implements Iterable<Row> {
         partsArr = ctx.partitions();
         mvccSnapshot = ctx.mvccSnapshot();
 
+        RelDataType rowType = desc.selectRowType(ectx.getTypeFactory());
+        factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
     }
 
     /** {@inheritDoc} */
@@ -242,7 +249,7 @@ public class IndexScan<Row> implements Iterable<Row> {
             while (next == null && cursor.next()) {
                 H2Row h2Row = cursor.get();
 
-                Row r = desc.toRow(ectx, (CacheDataRow)h2Row);
+                Row r = desc.toRow(ectx, (CacheDataRow)h2Row, factory);
 
                 if (filters == null || filters.test(r))
                     next = r;
@@ -264,7 +271,7 @@ public class IndexScan<Row> implements Iterable<Row> {
         /** */
         CalciteH2Row(CacheObjectValueContext coCtx, ExecutionContext<Row> ctx, Row row) {
             try {
-                RowHandler<Row> rowHnd = ctx.planningContext().rowHandler();
+                RowHandler<Row> rowHnd = ctx.rowHandler();
 
                 int colCnt = rowHnd.columnCount(row);
 

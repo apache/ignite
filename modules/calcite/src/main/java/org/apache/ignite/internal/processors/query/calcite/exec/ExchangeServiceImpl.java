@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.calcite.AbstractCalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCancelMessage;
@@ -39,18 +39,15 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /**
  *
  */
-public class ExchangeServiceImpl<Row> extends AbstractService implements ExchangeService<Row> {
+public class ExchangeServiceImpl extends AbstractService implements ExchangeService {
     /** */
     private QueryTaskExecutor taskExecutor;
 
     /** */
-    private MailboxRegistry<Row> mailboxRegistry;
+    private MailboxRegistry mailboxRegistry;
 
     /** */
     private MessageService msgSvc;
-
-    /** */
-    private RowEngineFactory<Row> rowEngineFactory;
 
     /**
      * @param ctx Kernal context.
@@ -76,14 +73,14 @@ public class ExchangeServiceImpl<Row> extends AbstractService implements Exchang
     /**
      * @param mailboxRegistry Mailbox registry.
      */
-    public void mailboxRegistry(MailboxRegistry<Row> mailboxRegistry) {
+    public void mailboxRegistry(MailboxRegistry mailboxRegistry) {
         this.mailboxRegistry = mailboxRegistry;
     }
 
     /**
      * @return  Mailbox registry.
      */
-    public MailboxRegistry<Row> mailboxRegistry() {
+    public MailboxRegistry mailboxRegistry() {
         return mailboxRegistry;
     }
 
@@ -94,17 +91,6 @@ public class ExchangeServiceImpl<Row> extends AbstractService implements Exchang
         this.msgSvc = msgSvc;
     }
 
-
-    /** */
-    public RowEngineFactory<Row> rowEngineFactory() {
-        return rowEngineFactory;
-    }
-
-    /** */
-    public void rowEngineFactory(RowEngineFactory<Row> rowEngineFactory) {
-        this.rowEngineFactory = rowEngineFactory;
-    }
-
     /**
      * @return  Message service.
      */
@@ -113,8 +99,9 @@ public class ExchangeServiceImpl<Row> extends AbstractService implements Exchang
     }
 
     /** {@inheritDoc} */
-    @Override public void sendBatch(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId, List<Row> rows) throws IgniteCheckedException {
-        messageService().send(nodeId, new QueryBatchMessage<>(qryId, fragmentId, exchangeId, batchId, rows));
+    @Override public <Row> void sendBatch(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId,
+        boolean last, List<Row> rows) throws IgniteCheckedException {
+        messageService().send(nodeId, new QueryBatchMessage(qryId, fragmentId, exchangeId, batchId, last, Commons.cast(rows)));
     }
 
     /** {@inheritDoc} */
@@ -129,10 +116,9 @@ public class ExchangeServiceImpl<Row> extends AbstractService implements Exchang
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        AbstractCalciteQueryProcessor<Row> proc =
-            Objects.requireNonNull(Commons.lookupComponent(ctx, AbstractCalciteQueryProcessor.class));
+        CalciteQueryProcessor proc =
+            Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
 
-        rowEngineFactory(proc.rowEngineFactory());
         taskExecutor(proc.taskExecutor());
         mailboxRegistry(proc.mailboxRegistry());
         messageService(proc.messageService());
@@ -144,12 +130,12 @@ public class ExchangeServiceImpl<Row> extends AbstractService implements Exchang
     @Override public void init() {
         messageService().register((n, m) -> onMessage(n, (InboxCancelMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage) m), MessageType.QUERY_ACKNOWLEDGE_MESSAGE);
-        messageService().register((n, m) -> onMessage(n, (QueryBatchMessage<Row>) m), MessageType.QUERY_BATCH_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (QueryBatchMessage) m), MessageType.QUERY_BATCH_MESSAGE);
     }
 
     /** */
     protected void onMessage(UUID nodeId, InboxCancelMessage msg) {
-        Inbox<Row> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
+        Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
 
         if (inbox != null)
             inbox.cancel();
@@ -165,7 +151,7 @@ public class ExchangeServiceImpl<Row> extends AbstractService implements Exchang
 
     /** */
     protected void onMessage(UUID nodeId, QueryBatchAcknowledgeMessage msg) {
-        Outbox<Row> outbox = mailboxRegistry().outbox(msg.queryId(), msg.exchangeId());
+        Outbox<?> outbox = mailboxRegistry().outbox(msg.queryId(), msg.exchangeId());
 
         if (outbox != null)
             outbox.onAcknowledge(nodeId, msg.batchId());
@@ -180,20 +166,20 @@ public class ExchangeServiceImpl<Row> extends AbstractService implements Exchang
     }
 
     /** */
-    protected void onMessage(UUID nodeId, QueryBatchMessage<Row> msg) {
-        Inbox<Row> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
+    protected void onMessage(UUID nodeId, QueryBatchMessage msg) {
+        Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
 
         if (inbox == null && msg.batchId() == 0) {
             // first message sent before a fragment is built
             // note that an inbox source fragment id is also used as an exchange id
-            Inbox<Row> newInbox = new Inbox<>(baseInboxContext(msg.queryId(), msg.fragmentId()),
+            Inbox<?> newInbox = new Inbox<>(baseInboxContext(msg.queryId(), msg.fragmentId()),
                 this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId());
 
             inbox = mailboxRegistry().register(newInbox);
         }
 
         if (inbox != null)
-            inbox.onBatchReceived(nodeId, msg.batchId(), msg.rows());
+            inbox.onBatchReceived(nodeId, msg.batchId(), msg.last(), Commons.cast(msg.rows()));
         else if (log.isDebugEnabled()){
             log.debug("Stale batch message received: [" +
                 "nodeId=" + nodeId + ", " +
@@ -207,15 +193,20 @@ public class ExchangeServiceImpl<Row> extends AbstractService implements Exchang
     /**
      * @return Minimal execution context to meet Inbox needs.
      */
-    private ExecutionContext<Row> baseInboxContext(UUID qryId, long fragmentId) {
-        PlanningContext<Row> ctx = PlanningContext.<Row>builder()
-            .logger(log)
-            .rowEngineFactory(rowEngineFactory)
-            .build();
-
-        FragmentDescription fragmentDesc =
-            new FragmentDescription(fragmentId, null, -1, null, null);
-
-        return new ExecutionContext<>(taskExecutor(), ctx, qryId, fragmentDesc, ImmutableMap.of());
+    private ExecutionContext<?> baseInboxContext(UUID qryId, long fragmentId) {
+        return new ExecutionContext<>(
+            taskExecutor(),
+            PlanningContext.builder()
+                .logger(log)
+                .build(),
+            qryId,
+            new FragmentDescription(
+                fragmentId,
+                null,
+                -1,
+                null,
+                null),
+            null,
+            ImmutableMap.of());
     }
 }

@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Comparator;
 import java.util.PriorityQueue;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -40,12 +39,10 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /**
      * @param ctx Execution context.
-     * @param collation Sort collation.
+     * @param comp Rows comparator.
      */
-    public SortNode(ExecutionContext<Row> ctx, RelCollation collation) {
+    public SortNode(ExecutionContext<Row> ctx, Comparator<Row> comp) {
         super(ctx);
-
-        Comparator<Row> comp = ctx.planningContext().expressionFactory().comparator(collation);
 
         rows = comp == null ? new PriorityQueue<>() : new PriorityQueue<>(comp);
     }

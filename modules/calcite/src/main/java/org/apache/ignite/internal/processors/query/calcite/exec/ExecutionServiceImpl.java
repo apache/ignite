@@ -66,7 +66,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.calcite.AbstractCalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
@@ -109,7 +109,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.internal.processors.query.calcite.AbstractCalciteQueryProcessor.FRAMEWORK_CONFIG;
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
  *
@@ -144,7 +144,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private PartitionService partSvc;
 
     /** */
-    private MailboxRegistry<Row> mailboxRegistry;
+    private MailboxRegistry mailboxRegistry;
 
     /** */
     private MappingService mappingSvc;
@@ -153,22 +153,23 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private MessageService msgSvc;
 
     /** */
-    private ExchangeService<Row> exchangeSvc;
+    private ExchangeService exchangeSvc;
 
     /** */
     private ClosableIteratorsHolder iteratorsHolder;
 
     /** */
-    private RowEngineFactory<Row> rowEngineFactory;
+    private final Map<UUID, QueryInfo> running;
 
     /** */
-    private final Map<UUID, QueryInfo> running;
+    private final RowHandler<Row> handler;
 
     /**
      * @param ctx Kernal.
      */
-    public ExecutionServiceImpl(GridKernalContext ctx) {
+    public ExecutionServiceImpl(GridKernalContext ctx, RowHandler<Row> handler) {
         super(ctx);
+        this.handler = handler;
 
         discoLsnr = (e, c) -> onNodeLeft(e.eventNode().id());
         running = new ConcurrentHashMap<>();
@@ -261,14 +262,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /**
      * @param mailboxRegistry Mailbox registry.
      */
-    public void mailboxRegistry(MailboxRegistry<Row> mailboxRegistry) {
+    public void mailboxRegistry(MailboxRegistry mailboxRegistry) {
         this.mailboxRegistry = mailboxRegistry;
     }
 
     /**
      * @return Mailbox registry.
      */
-    public MailboxRegistry<Row> mailboxRegistry() {
+    public MailboxRegistry mailboxRegistry() {
         return mailboxRegistry;
     }
 
@@ -303,14 +304,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /**
      * @param exchangeSvc Exchange service.
      */
-    public void exchangeService(ExchangeService<Row> exchangeSvc) {
+    public void exchangeService(ExchangeService exchangeSvc) {
         this.exchangeSvc = exchangeSvc;
     }
 
     /**
      * @return Exchange service.
      */
-    public ExchangeService<Row> exchangeService() {
+    public ExchangeService exchangeService() {
         return exchangeSvc;
     }
 
@@ -356,20 +357,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         return iteratorsHolder;
     }
 
-    /**
-     * @return Row engine factory.
-     */
-    public RowEngineFactory<Row> rowEngineFactory() {
-        return rowEngineFactory;
-    }
-
-    /**
-     * @param rowEngineFactory  Row engine factory.
-     */
-    public void rowEngineFactory(RowEngineFactory<Row> rowEngineFactory) {
-        this.rowEngineFactory = rowEngineFactory;
-    }
-
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> executeQuery(
         @Nullable QueryContext ctx,
@@ -377,7 +364,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         String qry,
         Object[] params
     ) {
-        PlanningContext<Row> pctx = createContext(ctx, schema, qry, params);
+        PlanningContext pctx = createContext(ctx, schema, qry, params);
 
         List<QueryPlan> qryPlans = prepareQueryPlan(pctx);
 
@@ -392,7 +379,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
      */
     @NotNull public List<FieldsQueryCursor<List<?>>> executePlans(
         Collection<QueryPlan> qryPlans,
-        PlanningContext<Row> pctx
+        PlanningContext pctx
     ) {
         List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(qryPlans.size());
 
@@ -425,8 +412,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         eventManager(ctx.event());
         iteratorsHolder(new ClosableIteratorsHolder(log));
 
-        AbstractCalciteQueryProcessor<Row> proc = (AbstractCalciteQueryProcessor<Row>)Objects.requireNonNull(
-            Commons.lookupComponent(ctx, AbstractCalciteQueryProcessor.class));
+        CalciteQueryProcessor proc = Objects.requireNonNull(
+            Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
 
         queryPlanCache(proc.queryPlanCache());
         schemaHolder(proc.schemaHolder());
@@ -437,7 +424,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         mappingService(proc.mappingService());
         messageService(proc.messageService());
         exchangeService(proc.exchangeService());
-        rowEngineFactory( proc.rowEngineFactory());
 
         init();
      }
@@ -468,7 +454,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private PlanningContext<Row> createContext(
+    private PlanningContext createContext(
         @Nullable QueryContext qryCtx,
         @Nullable String schemaName,
         String qry,
@@ -480,7 +466,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             DistributionTraitDef.INSTANCE
         };
 
-        return PlanningContext.<Row>builder()
+        return PlanningContext.builder()
             .localNodeId(localNodeId())
             .parentContext(Commons.convert(qryCtx))
             .frameworkConfig(Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
@@ -493,12 +479,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             .parameters(params)
             .topologyVersion(topologyVersion())
             .logger(log)
-            .rowEngineFactory(rowEngineFactory)
             .build();
     }
 
     /** */
-    private PlanningContext<Row> createContext(
+    private PlanningContext createContext(
         @Nullable String schemaName,
         UUID originatingNodeId,
         AffinityTopologyVersion topVer
@@ -511,7 +496,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             DistributionTraitDef.INSTANCE
         };
 
-        return PlanningContext.<Row>builder()
+        return PlanningContext.builder()
             .localNodeId(localNodeId())
             .originatingNodeId(originatingNodeId)
             .frameworkConfig(Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
@@ -522,17 +507,16 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 .build())
             .topologyVersion(topVer)
             .logger(log)
-            .rowEngineFactory(rowEngineFactory)
             .build();
     }
 
     /** */
-    private List<QueryPlan> prepareQueryPlan(PlanningContext<Row> ctx) {
+    private List<QueryPlan> prepareQueryPlan(PlanningContext ctx) {
         return queryPlanCache().queryPlan(ctx, new CacheKey(ctx.schemaName(), ctx.query()), this::prepare0);
     }
 
     /** */
-    private List<QueryPlan> prepare0(PlanningContext<Row> ctx) {
+    private List<QueryPlan> prepare0(PlanningContext ctx) {
         try {
             String qry = ctx.query();
 
@@ -567,7 +551,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext<Row> ctx) throws ValidationException {
+    private QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx) throws ValidationException {
         assert single(sqlNode);
 
         ctx.planner().reset();
@@ -594,7 +578,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private QueryPlan prepareQuery(SqlNode sqlNode, PlanningContext<Row> ctx) {
+    private QueryPlan prepareQuery(SqlNode sqlNode, PlanningContext ctx) {
         IgnitePlanner planner = ctx.planner();
 
         // Validate
@@ -611,7 +595,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private QueryPlan prepareDml(SqlNode sqlNode, PlanningContext<Row> ctx) throws ValidationException {
+    private QueryPlan prepareDml(SqlNode sqlNode, PlanningContext ctx) throws ValidationException {
         IgnitePlanner planner = ctx.planner();
 
         // Validate
@@ -646,7 +630,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private QueryPlan prepareExplain(SqlNode explain, PlanningContext<Row> ctx) throws ValidationException {
+    private QueryPlan prepareExplain(SqlNode explain, PlanningContext ctx) throws ValidationException {
         IgnitePlanner planner = ctx.planner();
 
         SqlNode sql = ((SqlExplain)explain).getExplicandum();
@@ -665,7 +649,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private List<GridQueryFieldMetadata> buildExplainColumnMeta(PlanningContext<Row> ctx) {
+    private List<GridQueryFieldMetadata> buildExplainColumnMeta(PlanningContext ctx) {
         IgniteTypeFactory factory = ctx.typeFactory();
         RelDataType planStrDataType =
             factory.createSqlType(SqlTypeName.VARCHAR, RelDataType.PRECISION_NOT_SPECIFIED);
@@ -676,7 +660,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executePlan(UUID qryId, PlanningContext<Row> pctx, QueryPlan plan) {
+    private FieldsQueryCursor<List<?>> executePlan(UUID qryId, PlanningContext pctx, QueryPlan plan) {
         switch (plan.type()) {
             case DML:
                 // TODO a barrier between previous operation and this one
@@ -692,7 +676,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeQuery(UUID qryId, MultiStepPlan plan, PlanningContext<Row> pctx) {
+    private FieldsQueryCursor<List<?>> executeQuery(UUID qryId, MultiStepPlan plan, PlanningContext pctx) {
         plan.init(mappingService(), pctx);
 
         List<Fragment> fragments = plan.fragments();
@@ -723,6 +707,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             pctx,
             qryId,
             fragmentDesc,
+            handler,
             Commons.parametersMap(pctx.parameters()));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
@@ -797,7 +782,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private void register(QueryInfo info) {
         UUID qryId = info.ctx.queryId();
-        PlanningContext<Row> pctx = info.ctx.planningContext();
+        PlanningContext pctx = info.ctx.planningContext();
 
         running.put(qryId, info);
 
@@ -818,7 +803,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private List<GridQueryFieldMetadata> fieldsMetadata(
-        PlanningContext<Row> ctx,
+        PlanningContext ctx,
         RelDataType type,
         @Nullable List<List<String>> origins
     ) {
@@ -856,7 +841,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onMessage(UUID nodeId, QueryStartRequest msg) {
         assert nodeId != null && msg != null;
 
-        PlanningContext<Row> ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());
+        PlanningContext ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());
 
         try {
             ExecutionContext<Row> execCtx = new ExecutionContext<>(
@@ -864,6 +849,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 ctx,
                 msg.queryId(),
                 msg.fragmentDescription(),
+                handler,
                 Commons.parametersMap(msg.parameters())
             );
 
@@ -921,7 +907,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private void onCursorClose(RootNode<Row> rootNode) {
+    private void onCursorClose(RootNode<?> rootNode) {
         switch (rootNode.state()) {
             case CANCELLED:
                 cancelQuery(rootNode.queryId());
@@ -940,7 +926,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onNodeLeft(UUID nodeId) {
         running.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(nodeId));
 
-        final Predicate<Node<Row>> p = new OriginatingFilter<>(nodeId);
+        final Predicate<Node<?>> p = new OriginatingFilter(nodeId);
 
         mailboxRegistry().outboxes(null).stream()
             .filter(p).forEach(this::executeCancel);
@@ -1180,7 +1166,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private static class OriginatingFilter<Row> implements Predicate<Node<Row>> {
+    private static final class OriginatingFilter implements Predicate<Node<?>> {
         /** */
         private final UUID nodeId;
 
@@ -1190,7 +1176,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         }
 
         /** {@inheritDoc} */
-        @Override public boolean test(Node<Row> node) {
+        @Override public boolean test(Node node) {
             // Uninitialized inbox doesn't know originating node ID.
             return Objects.equals(node.context().originatingNodeId(), nodeId);
         }

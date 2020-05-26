@@ -60,8 +60,7 @@ import static java.util.Collections.singletonList;
 /**
  * Ignite table implementation.
  */
-public class IgniteTableImpl<Row> extends AbstractTable
-    implements IgniteTable<Row> {
+public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     /** */
     public static final String PK_INDEX_NAME = "PK";
 
@@ -69,7 +68,7 @@ public class IgniteTableImpl<Row> extends AbstractTable
     public static final String PK_ALIAS_INDEX_NAME = "PK_ALIAS";
 
     /** */
-    private final TableDescriptor<?, ?, Row> desc;
+    private final TableDescriptor desc;
 
     /** */
     private final Statistic statistic;
@@ -78,14 +77,14 @@ public class IgniteTableImpl<Row> extends AbstractTable
     private final List<RelCollation> collations;
 
     /** */
-    private final Map<String, IgniteIndex<Row>> indexes = new ConcurrentHashMap<>();
+    private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
 
     /**
      *
      * @param desc Table descriptor.
      * @param collation Table collation.
      */
-    public IgniteTableImpl(TableDescriptor<?, ?, Row> desc, RelCollation collation) {
+    public IgniteTableImpl(TableDescriptor desc, RelCollation collation) {
         this.desc = desc;
         collations = collation == null ? emptyList() : singletonList(collation);
         statistic = new StatisticsImpl();
@@ -103,7 +102,7 @@ public class IgniteTableImpl<Row> extends AbstractTable
 
 
     /** {@inheritDoc} */
-    @Override public TableDescriptor<?, ?, Row> descriptor() {
+    @Override public TableDescriptor descriptor() {
         return desc;
     }
 
@@ -119,7 +118,7 @@ public class IgniteTableImpl<Row> extends AbstractTable
         RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replace(distribution());
 
-        IgniteIndex<Row> idx = getIndex(idxName);
+        IgniteIndex idx = getIndex(idxName);
 
         if (idx == null)
             return null;
@@ -130,7 +129,7 @@ public class IgniteTableImpl<Row> extends AbstractTable
     }
 
     /** {@inheritDoc} */
-    @Override public NodesMapping mapping(PlanningContext<Row> ctx) {
+    @Override public NodesMapping mapping(PlanningContext ctx) {
         GridCacheContext<?, ?> cctx = desc.cacheContext();
 
         assert cctx != null;
@@ -163,17 +162,17 @@ public class IgniteTableImpl<Row> extends AbstractTable
     /** {@inheritDoc} */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override
-    public Map<String, IgniteIndex<Row>> indexes() {
+    public Map<String, IgniteIndex> indexes() {
         return indexes;
     }
 
     /** {@inheritDoc} */
-    @Override public void addIndex(IgniteIndex<Row> idxTbl) {
+    @Override public void addIndex(IgniteIndex idxTbl) {
         indexes.put(idxTbl.name(), idxTbl);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteIndex<Row> getIndex(String idxName) {
+    @Override public IgniteIndex getIndex(String idxName) {
         return indexes.get(idxName);
     }
 

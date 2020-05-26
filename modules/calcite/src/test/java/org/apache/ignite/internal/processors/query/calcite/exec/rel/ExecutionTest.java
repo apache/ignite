@@ -30,12 +30,12 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.WrappersFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -111,28 +111,25 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     @Test
     public void testUnionAll() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
-
         ScanNode<Object[]> scan1 = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         ScanNode<Object[]> scan2 = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         ScanNode<Object[]> scan3 = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         UnionAllNode<Object[]> union = new UnionAllNode<>(ctx);
@@ -156,13 +153,11 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateMapReduceAvg() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
-
         ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
@@ -184,21 +179,17 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.DOUBLE),
             null);
 
-        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, MAP, F.asList(call), rowType);
-
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory);
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        factory = new WrappersFactoryImpl(ctx, REDUCE, F.asList(call), rowType);
-
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory);
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
         root.register(reduce);
 
         assertTrue(root.hasNext());
-        assertEquals(725d, rowHnd.get(0, root.next()));
+        assertEquals(725d, root.next()[0]);
         assertFalse(root.hasNext());
     }
 
@@ -206,14 +197,11 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     @Test
     public void testAggregateMapReduceSum() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
-
         ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
@@ -237,21 +225,17 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, MAP, F.asList(call), rowType);
-
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory);
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        factory = new WrappersFactoryImpl(ctx, REDUCE, F.asList(call), rowType);
-
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory);
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
         root.register(reduce);
 
         assertTrue(root.hasNext());
-        assertEquals(2900, rowHnd.get(0, root.next()));
+        assertEquals(2900, root.next()[0]);
         assertFalse(root.hasNext());
     }
 
@@ -260,13 +244,11 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateMapReduceMin() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
-
         ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
@@ -288,22 +270,24 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, MAP, F.asList(call), rowType);
-
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory);
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        factory = new WrappersFactoryImpl(ctx, REDUCE, F.asList(call), rowType);
-
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory);
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
         root.register(reduce);
 
         assertTrue(root.hasNext());
-        assertEquals(200, rowHnd.get(0, root.next()));
+        assertEquals(200, root.next()[0]);
         assertFalse(root.hasNext());
+    }
+
+    /** */
+    @NotNull private WrappersFactoryImpl<Object[]> factory(ExecutionContext<Object[]> ctx, AggregateCall call,
+        AggregateNode.AggregateType type, RelDataType rowType) {
+        return new WrappersFactoryImpl<>(ctx, type, F.asList(call), rowType);
     }
 
     /** */
@@ -311,13 +295,11 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateMapReduceMax() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
-
         ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
@@ -339,21 +321,17 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, MAP, F.asList(call), rowType);
-
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory);
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        factory = new WrappersFactoryImpl(ctx, REDUCE, F.asList(call), rowType);
-
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory);
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
         root.register(reduce);
 
         assertTrue(root.hasNext());
-        assertEquals(1400, rowHnd.get(0, root.next()));
+        assertEquals(1400, root.next()[0]);
         assertFalse(root.hasNext());
     }
 
@@ -362,13 +340,11 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateMapReduceCount() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
-
         ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
@@ -390,21 +366,17 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, MAP, F.asList(call), rowType);
-
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory);
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        factory = new WrappersFactoryImpl(ctx, REDUCE, F.asList(call), rowType);
-
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory);
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
         root.register(reduce);
 
         assertTrue(root.hasNext());
-        assertEquals(4, rowHnd.get(0, root.next()));
+        assertEquals(4, root.next()[0]);
         assertFalse(root.hasNext());
     }
 
@@ -413,13 +385,11 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateAvg() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
-
         ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
@@ -441,16 +411,14 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.DOUBLE),
             null);
 
-        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, SINGLE, F.asList(call), rowType);
-
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory);
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
         root.register(agg);
 
         assertTrue(root.hasNext());
-        assertEquals(725d, rowHnd.get(0, root.next()));
+        assertEquals(725d, root.next()[0]);
         assertFalse(root.hasNext());
     }
 
@@ -459,13 +427,11 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateSum() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
-
         ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
@@ -489,16 +455,14 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, SINGLE, F.asList(call), rowType);
-
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory);
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
         root.register(agg);
 
         assertTrue(root.hasNext());
-        assertEquals(2900, rowHnd.get(0, root.next()));
+        assertEquals(2900, root.next()[0]);
         assertFalse(root.hasNext());
     }
 
@@ -507,13 +471,11 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateMin() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
-
         ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
@@ -535,16 +497,14 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, SINGLE, F.asList(call), rowType);
-
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory);
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
         root.register(agg);
 
         assertTrue(root.hasNext());
-        assertEquals(200, rowHnd.get(0, root.next()));
+        assertEquals(200, root.next()[0]);
         assertFalse(root.hasNext());
     }
 
@@ -553,13 +513,11 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateMax() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
-
         ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
@@ -581,16 +539,14 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, SINGLE, F.asList(call), rowType);
-
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory);
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
         root.register(agg);
 
         assertTrue(root.hasNext());
-        assertEquals(1400, rowHnd.get(0, root.next()));
+        assertEquals(1400, root.next()[0]);
         assertFalse(root.hasNext());
     }
 
@@ -599,13 +555,11 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateCount() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
-
         ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 200),
-            rowHnd.create("Roman", 300),
-            rowHnd.create("Ivan", 1400),
-            rowHnd.create("Alexey", 1000)
+            row("Igor", 200),
+            row("Roman", 300),
+            row("Ivan", 1400),
+            row("Alexey", 1000)
         ));
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
@@ -627,16 +581,14 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, SINGLE, F.asList(call), rowType);
-
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory);
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
         root.register(agg);
 
         assertTrue(root.hasNext());
-        assertEquals(4, rowHnd.get(0, root.next()));
+        assertEquals(4, root.next()[0]);
         assertFalse(root.hasNext());
     }
 
@@ -645,13 +597,11 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateCountByGroup() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
-
         ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
-            rowHnd.create("Igor", 0, 200),
-            rowHnd.create("Roman", 1, 300),
-            rowHnd.create("Ivan", 1, 1400),
-            rowHnd.create("Alexey", 0, 1000)
+            row("Igor", 0, 200),
+            row("Roman", 1, 300),
+            row("Ivan", 1, 1400),
+            row("Alexey", 0, 1000)
         ));
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
@@ -674,9 +624,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        WrappersFactoryImpl factory = new WrappersFactoryImpl(ctx, SINGLE, F.asList(call), rowType);
-
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory);
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
@@ -684,8 +632,26 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
 
         assertTrue(root.hasNext());
         // TODO needs a sort, relying on an order in a hash table looks strange
-        Assert.assertArrayEquals(rowHnd.create(1, 2), root.next());
-        Assert.assertArrayEquals(rowHnd.create(0, 2), root.next());
+        Assert.assertArrayEquals(row(1, 2), root.next());
+        Assert.assertArrayEquals(row(0, 2), root.next());
         assertFalse(root.hasNext());
     }
+
+    /** */
+    private Object[] row(Object... fields) {
+        return fields;
+    }
+
+    /** */
+    private RowFactory<Object[]> rowFactory() {
+        return new RowFactory<Object[]>() {
+            @Override public Object[] create() {
+                throw new AssertionError();
+            }
+
+            @Override public Object[] create(Object... fields) {
+                return fields;
+            }
+        };
+    } 
 }

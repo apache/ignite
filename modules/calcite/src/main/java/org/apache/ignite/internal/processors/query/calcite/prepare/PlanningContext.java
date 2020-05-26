@@ -36,30 +36,26 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.calcite.AbstractCalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowEngine;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowEngineFactory;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Planning context.
  */
-public final class PlanningContext<Row> implements Context {
+public final class PlanningContext implements Context {
     /** */
     private static final Context EMPTY_CONTEXT = Contexts.empty();
 
     /** */
     private static final FrameworkConfig EMPTY_CONFIG =
-        Frameworks.newConfigBuilder(AbstractCalciteQueryProcessor.FRAMEWORK_CONFIG)
+        Frameworks.newConfigBuilder(CalciteQueryProcessor.FRAMEWORK_CONFIG)
         .defaultSchema(Frameworks.createRootSchema(false))
         .traitDefs()
         .build();
 
     /** */
-    public static final PlanningContext<?> EMPTY = new PlanningContext<>();
+    public static final PlanningContext EMPTY = new PlanningContext();
 
     /** */
     private final FrameworkConfig cfg;
@@ -92,12 +88,6 @@ public final class PlanningContext<Row> implements Context {
     private final IgniteTypeFactory typeFactory;
 
     /** */
-    private final RowHandler<Row> hnd;
-
-    /** */
-    private final ExpressionFactory<Row> expressionFactory;
-
-    /** */
     private IgnitePlanner planner;
 
     /** */
@@ -117,8 +107,7 @@ public final class PlanningContext<Row> implements Context {
         String qry,
         Object[] parameters,
         AffinityTopologyVersion topVer,
-        IgniteLogger log,
-        RowEngineFactory<Row> rowEngineFactory) {
+        IgniteLogger log) {
         this.locNodeId = locNodeId;
         this.originatingNodeId = originatingNodeId;
         this.qry = qry;
@@ -134,10 +123,6 @@ public final class PlanningContext<Row> implements Context {
 
         RelDataTypeSystem typeSys = connectionConfig().typeSystem(RelDataTypeSystem.class, cfg.getTypeSystem());
         typeFactory = new IgniteTypeFactory(typeSys);
-
-        RowEngine<Row> rowEngine = rowEngineFactory.rowEngine();
-        hnd = rowEngine.rowHandler();
-        expressionFactory = rowEngine.expressionFactory(typeFactory, conformance());
     }
 
     /**
@@ -155,8 +140,6 @@ public final class PlanningContext<Row> implements Context {
         topVer = null;
         qryCancel = null;
         log = null;
-        hnd = null;
-        expressionFactory = null;
     }
 
     /**
@@ -240,16 +223,6 @@ public final class PlanningContext<Row> implements Context {
             planner = new IgnitePlanner(this);
 
         return planner;
-    }
-
-    /** */
-    public RowHandler<Row> rowHandler() {
-        return hnd;
-    }
-
-    /** */
-    public ExpressionFactory<Row> expressionFactory() {
-        return expressionFactory;
     }
 
     /**
@@ -336,22 +309,22 @@ public final class PlanningContext<Row> implements Context {
     /**
      * @return Context builder.
      */
-    public static <T> Builder<T> builder() {
-        return new Builder<>();
+    public static Builder builder() {
+        return new Builder();
     }
 
     /**
      * @return Empty context.
      */
-    public static <T> PlanningContext<T> empty() {
-        return (PlanningContext<T>)EMPTY;
+    public static PlanningContext empty() {
+        return EMPTY;
     }
 
     /**
      * Planner context builder.
      */
     @SuppressWarnings("PublicInnerClass") 
-    public static class Builder<Row> {
+    public static class Builder {
         /** */
         private FrameworkConfig frameworkCfg = EMPTY_CONFIG;
 
@@ -376,14 +349,11 @@ public final class PlanningContext<Row> implements Context {
         /** */
         private IgniteLogger log;
 
-        /** */
-        private RowEngineFactory<Row> engineFactory;
-
         /**
          * @param locNodeId Local node ID.
          * @return Builder for chaining.
          */
-        public Builder<Row> localNodeId(@NotNull UUID locNodeId) {
+        public Builder localNodeId(@NotNull UUID locNodeId) {
             this.locNodeId = locNodeId;
             return this;
         }
@@ -392,7 +362,7 @@ public final class PlanningContext<Row> implements Context {
          * @param originatingNodeId Originating node ID (the node, who started the execution).
          * @return Builder for chaining.
          */
-        public Builder<Row> originatingNodeId(@NotNull UUID originatingNodeId) {
+        public Builder originatingNodeId(@NotNull UUID originatingNodeId) {
             this.originatingNodeId = originatingNodeId;
             return this;
         }
@@ -401,7 +371,7 @@ public final class PlanningContext<Row> implements Context {
          * @param frameworkCfg Framework config.
          * @return Builder for chaining.
          */
-        public Builder<Row> frameworkConfig(@NotNull FrameworkConfig frameworkCfg) {
+        public Builder frameworkConfig(@NotNull FrameworkConfig frameworkCfg) {
             this.frameworkCfg = frameworkCfg;
             return this;
         }
@@ -410,7 +380,7 @@ public final class PlanningContext<Row> implements Context {
          * @param parentCtx Parent context.
          * @return Builder for chaining.
          */
-        public Builder<Row> parentContext(@NotNull Context parentCtx) {
+        public Builder parentContext(@NotNull Context parentCtx) {
             this.parentCtx = parentCtx;
             return this;
         }
@@ -419,7 +389,7 @@ public final class PlanningContext<Row> implements Context {
          * @param qry Query.
          * @return Builder for chaining.
          */
-        public Builder<Row> query(@NotNull String qry) {
+        public Builder query(@NotNull String qry) {
             this.qry = qry;
             return this;
         }
@@ -429,7 +399,7 @@ public final class PlanningContext<Row> implements Context {
          * @return Builder for chaining.
          */
         @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-        public Builder<Row> parameters(@NotNull Object... parameters) {
+        public Builder parameters(@NotNull Object... parameters) {
             this.parameters = parameters;
             return this;
         }
@@ -438,7 +408,7 @@ public final class PlanningContext<Row> implements Context {
          * @param topVer Topology version.
          * @return Builder for chaining.
          */
-        public Builder<Row> topologyVersion(@NotNull AffinityTopologyVersion topVer) {
+        public Builder topologyVersion(@NotNull AffinityTopologyVersion topVer) {
             this.topVer = topVer;
             return this;
         }
@@ -447,17 +417,8 @@ public final class PlanningContext<Row> implements Context {
          * @param log Logger.
          * @return Builder for chaining.
          */
-        public Builder<Row> logger(@NotNull IgniteLogger log) {
+        public Builder logger(@NotNull IgniteLogger log) {
             this.log = log;
-            return this;
-        }
-
-        /**
-         * @param engineFactory Expression factory.
-         * @return Builder for chaining.
-         */
-        public Builder<Row> rowEngineFactory(@NotNull RowEngineFactory<Row> engineFactory) {
-            this.engineFactory = engineFactory;
             return this;
         }
 
@@ -466,9 +427,9 @@ public final class PlanningContext<Row> implements Context {
          *
          * @return Planner context.
          */
-        public PlanningContext<Row> build() {
-            return new PlanningContext<>(frameworkCfg, parentCtx, locNodeId, originatingNodeId, qry,
-                parameters, topVer, log, engineFactory);
+        public PlanningContext build() {
+            return new PlanningContext(frameworkCfg, parentCtx, locNodeId, originatingNodeId, qry,
+                parameters, topVer, log);
         }
     }
 }

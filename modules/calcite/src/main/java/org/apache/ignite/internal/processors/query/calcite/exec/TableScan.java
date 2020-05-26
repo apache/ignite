@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -47,12 +49,18 @@ public class TableScan<Row> implements Iterable<Row> {
     private final ExecutionContext<Row> ectx;
 
     /** */
-    private final TableDescriptor<?, ?, Row> desc;
+    private final TableDescriptor desc;
 
     /** */
-    public TableScan(ExecutionContext<Row> ectx, TableDescriptor<?, ?, Row> desc) {
+    private final RowFactory<Row> factory;
+
+    /** */
+    public TableScan(ExecutionContext<Row> ectx, TableDescriptor desc) {
         this.ectx = ectx;
         this.desc = desc;
+
+        RelDataType rowType = desc.selectRowType(ectx.getTypeFactory());
+        factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
     }
 
     /** {@inheritDoc} */
@@ -117,7 +125,7 @@ public class TableScan<Row> implements Iterable<Row> {
                     if (!desc.match(row))
                         continue;
 
-                    next = desc.toRow(ectx, row);
+                    next = desc.toRow(ectx, row, factory);
 
                     break;
                 } else {

@@ -1,12 +1,11 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Copyright 2019 GridGain Systems, Inc. and Contributors.
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the GridGain Community Edition License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
@@ -35,24 +33,32 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionService;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
+import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowEngineFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
+import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
+import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Array-based query processor.
  */
-public abstract class AbstractCalciteQueryProcessor<Row> extends GridProcessorAdapter implements QueryEngine {
+public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
             .sqlToRelConverterConfig(SqlToRelConverter.configBuilder()
@@ -76,81 +82,43 @@ public abstract class AbstractCalciteQueryProcessor<Row> extends GridProcessorAd
             .costFactory(RelOptCostImpl.FACTORY)
             .typeSystem(IgniteTypeSystem.INSTANCE)
             .build();
-
     /** */
     private final QueryPlanCache qryPlanCache;
-
     /** */
     private final QueryTaskExecutor taskExecutor;
-
     /** */
     private final FailureProcessor failureProcessor;
-
     /** */
     private final PartitionService partSvc;
-
     /** */
     private final SchemaHolder schemaHolder;
-
     /** */
     private final MessageService msgSvc;
-
     /** */
-    private final ExchangeService<Row> exchangeSvc;
-
+    private final ExchangeService exchangeSvc;
     /** */
     private final MappingService mappingSvc;
-    
     /** */
-    private final MailboxRegistry<Row> mailboxRegistry;
-    
+    private final MailboxRegistry mailboxRegistry;
     /** */
     private final ExecutionService executionSvc;
 
-    /** */
-    private final RowEngineFactory<Row> rowEngineFactory;
-
     /**
-     * For tests purpose.
      * @param ctx Kernal context.
-     * @param failureProcessor Failure processor.
-     * @param schemaHolder Schema holder.
-     * @param qryPlanCache Query cache;
-     * @param mailboxRegistry Mailbox registry.
-     * @param taskExecutor Task executor.
-     * @param executionSvc Execution service.
-     * @param partSvc Affinity service.
-     * @param msgSvc Message service.
-     * @param mappingSvc Mapping service.
-     * @param exchangeSvc Exchange service.
      */
-    AbstractCalciteQueryProcessor(
-        GridKernalContext ctx,
-        FailureProcessor failureProcessor,
-        SchemaHolder schemaHolder,
-        QueryPlanCache qryPlanCache,
-        MailboxRegistry<Row> mailboxRegistry,
-        QueryTaskExecutor taskExecutor,
-        ExecutionService executionSvc,
-        PartitionService partSvc,
-        MessageService msgSvc,
-        MappingService mappingSvc,
-        ExchangeService<Row> exchangeSvc,
-        RowEngineFactory<Row> rowEngineFactory
-    ) {
+    public CalciteQueryProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        this.failureProcessor = failureProcessor;
-        this.schemaHolder = schemaHolder;
-        this.qryPlanCache = qryPlanCache;
-        this.mailboxRegistry = mailboxRegistry;
-        this.taskExecutor = taskExecutor;
-        this.executionSvc = executionSvc;
-        this.partSvc = partSvc;
-        this.msgSvc = msgSvc;
-        this.mappingSvc = mappingSvc;
-        this.exchangeSvc = exchangeSvc;
-        this.rowEngineFactory = rowEngineFactory;
+        failureProcessor = ctx.failure();
+        schemaHolder = new SchemaHolderImpl(ctx);
+        qryPlanCache = new QueryPlanCacheImpl(ctx);
+        mailboxRegistry = new MailboxRegistryImpl(ctx);
+        taskExecutor = new QueryTaskExecutorImpl(ctx);
+        executionSvc = new ExecutionServiceImpl<>(ctx, ArrayRowHandler.INSTANCE);
+        partSvc = new PartitionServiceImpl(ctx);
+        msgSvc = new MessageServiceImpl(ctx);
+        mappingSvc = new MappingServiceImpl(ctx);
+        exchangeSvc = new ExchangeServiceImpl(ctx);
     }
 
     /**
@@ -158,13 +126,6 @@ public abstract class AbstractCalciteQueryProcessor<Row> extends GridProcessorAd
      */
     public PartitionService affinityService() {
         return partSvc;
-    }
-
-    /**
-     * @return Row engine factory.
-     */
-    public RowEngineFactory<Row> rowEngineFactory() {
-        return rowEngineFactory;
     }
 
     /**
@@ -205,14 +166,14 @@ public abstract class AbstractCalciteQueryProcessor<Row> extends GridProcessorAd
     /**
      * @return Exchange service.
      */
-    public ExchangeService<Row> exchangeService() {
+    public ExchangeService exchangeService() {
         return exchangeSvc;
     }
 
     /**
      * @return Mailbox registry.
      */
-    public MailboxRegistry<Row> mailboxRegistry() {
+    public MailboxRegistry mailboxRegistry() {
         return mailboxRegistry;
     }
 
@@ -256,7 +217,7 @@ public abstract class AbstractCalciteQueryProcessor<Row> extends GridProcessorAd
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext qryCtx, @Nullable String schemaName,
         String qry, Object... params) throws IgniteSQLException {
-        
+
         return executionSvc.executeQuery(qryCtx, schemaName, qry, params);
     }
 

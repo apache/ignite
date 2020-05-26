@@ -46,7 +46,7 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
      * @param ctx Execution context.
      * @param pred Predicate.
      */
-    public FilterNode(ExecutionContext ctx, Predicate<Row> pred) {
+    public FilterNode(ExecutionContext<Row> ctx, Predicate<Row> pred) {
         super(ctx);
 
         this.pred = pred;

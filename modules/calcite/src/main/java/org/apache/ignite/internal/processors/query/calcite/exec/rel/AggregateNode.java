@@ -28,6 +28,8 @@ import java.util.function.Supplier;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
@@ -42,7 +44,10 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
     private final AggregateType type;
 
     /** */
-    private final Supplier<List<AccumulatorWrapper>> wrappersFactory;
+    private final Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory;
+
+    /** */
+    private final RowFactory<Row> rowFactory;
 
     /** */
     private final ImmutableBitSet grpSet;
@@ -63,11 +68,12 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
      * @param ctx Execution context.
      */
     public AggregateNode(ExecutionContext<Row> ctx, AggregateType type, List<ImmutableBitSet> grpSets,
-        Supplier<List<AccumulatorWrapper>> wrappersFactory) {
+        Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory, RowFactory<Row> rowFactory) {
         super(ctx);
 
         this.type = type;
         this.wrappersFactory = wrappersFactory;
+        this.rowFactory = rowFactory;
 
         ImmutableBitSet.Builder b = ImmutableBitSet.builder();
 
@@ -235,12 +241,17 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
         private final ImmutableBitSet grpFields;
 
         /** */
-        private final Map<GroupKey, List<AccumulatorWrapper>> groups = new HashMap<>();
+        private final Map<GroupKey, List<AccumulatorWrapper<Row>>> groups = new HashMap<>();
+
+        /** */
+        private final RowHandler<Row> handler;
 
         /** */
         private Grouping(byte grpId, ImmutableBitSet grpFields) {
             this.grpId = grpId;
             this.grpFields = grpFields;
+
+            handler = ctx.rowHandler();
         }
 
         /** */
@@ -270,30 +281,30 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
             GroupKey.Builder b = GroupKey.builder(grpFields.cardinality());
 
             for (Integer field : grpFields)
-                b.add(hnd.get(field, row));
+                b.add(handler.get(field, row));
 
             GroupKey grpKey = b.build();
 
-            List<AccumulatorWrapper> wrappers = groups.computeIfAbsent(grpKey, this::create);
+            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, this::create);
 
-            for (AccumulatorWrapper wrapper : wrappers)
+            for (AccumulatorWrapper<Row> wrapper : wrappers)
                 wrapper.add(row);
         }
 
         /** */
         private void addOnReducer(Row row) {
-            byte targetGrpId = (byte)hnd.get(0, row);
+            byte targetGrpId = (byte)handler.get(0, row);
 
             if (targetGrpId != grpId)
                 return;
 
-            GroupKey grpKey = (GroupKey)hnd.get(1, row);
+            GroupKey grpKey = (GroupKey)handler.get(1, row);
 
-            List<AccumulatorWrapper> wrappers = groups.computeIfAbsent(grpKey, this::create);
-            List<Accumulator> accums = (List<Accumulator>)hnd.get(2, row);
+            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, this::create);
+            List<Accumulator> accums = (List<Accumulator>)handler.get(2, row);
 
             for (int i = 0; i < wrappers.size(); i++) {
-                AccumulatorWrapper wrapper = wrappers.get(i);
+                AccumulatorWrapper<Row> wrapper = wrappers.get(i);
                 Accumulator accum = accums.get(i);
 
                 wrapper.apply(accum);
@@ -302,18 +313,18 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
 
         /** */
         private List<Row> getOnMapper(int cnt) {
-            Iterator<Map.Entry<GroupKey, List<AccumulatorWrapper>>> it = groups.entrySet().iterator();
+            Iterator<Map.Entry<GroupKey, List<AccumulatorWrapper<Row>>>> it = groups.entrySet().iterator();
 
             int amount = Math.min(cnt, groups.size());
             List<Row> res = new ArrayList<>(amount);
 
             for (int i = 0; i < amount; i++) {
-                Map.Entry<GroupKey, List<AccumulatorWrapper>> entry = it.next();
+                Map.Entry<GroupKey, List<AccumulatorWrapper<Row>>> entry = it.next();
 
                 GroupKey grpKey = entry.getKey();
                 List<Accumulator> accums = Commons.transform(entry.getValue(), AccumulatorWrapper::accumulator);
 
-                res.add(hnd.create(grpId, grpKey, accums));
+                res.add(rowFactory.create(grpId, grpKey, accums));
                 it.remove();
             }
 
@@ -322,16 +333,16 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
 
         /** */
         private List<Row> getOnReducer(int cnt) {
-            Iterator<Map.Entry<GroupKey, List<AccumulatorWrapper>>> it = groups.entrySet().iterator();
+            Iterator<Map.Entry<GroupKey, List<AccumulatorWrapper<Row>>>> it = groups.entrySet().iterator();
 
             int amount = Math.min(cnt, groups.size());
             List<Row> res = new ArrayList<>(amount);
 
             for (int i = 0; i < amount; i++) {
-                Map.Entry<GroupKey, List<AccumulatorWrapper>> entry = it.next();
+                Map.Entry<GroupKey, List<AccumulatorWrapper<Row>>> entry = it.next();
 
                 GroupKey grpKey = entry.getKey();
-                List<AccumulatorWrapper> wrappers = entry.getValue();
+                List<AccumulatorWrapper<Row>> wrappers = entry.getValue();
 
                 Object[] fields = new Object[grpSet.cardinality() + wrappers.size()];
 
@@ -340,10 +351,10 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
                 for (Integer field : grpSet)
                     fields[j++] = grpFields.get(field) ? grpKey.field(k++) : null;
 
-                for (AccumulatorWrapper wrapper : wrappers)
+                for (AccumulatorWrapper<Row> wrapper : wrappers)
                     fields[j++] = wrapper.end();
 
-                res.add(hnd.create(fields));
+                res.add(rowFactory.create(fields));
                 it.remove();
             }
 
@@ -351,7 +362,7 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
         }
 
         /** */
-        private List<AccumulatorWrapper> create(GroupKey key) {
+        private List<AccumulatorWrapper<Row>> create(GroupKey key) {
             return wrappersFactory.get();
         }
 

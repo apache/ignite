@@ -77,7 +77,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
     private final RexNode cond;
 
     /** */
-    private final IgniteTable<?> igniteTbl;
+    private final IgniteTable igniteTbl;
 
     /** */
     private final RelCollation collation;
@@ -381,7 +381,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
     }
 
     /** */
-    public IgniteTable<?> igniteTable() {
+    public IgniteTable igniteTable() {
         return igniteTbl;
     }
 

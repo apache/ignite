@@ -15,6 +15,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
+import com.google.common.collect.ImmutableList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
@@ -23,27 +24,17 @@ import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
  * Expression factory.
  */
 public interface ExpressionFactory<Row> {
     /** */
-    IgniteTypeFactory typeFactory();
-
-    /** */
-    RexBuilder rexBuilder();
-
-    /** */
-    Supplier<List<AccumulatorWrapper>> wrappersFactory(ExecutionContext<Row> root,
-        AggregateNode.AggregateType type, List<AggregateCall> calls, RelDataType rowType);
+    Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory(AggregateNode.AggregateType type, List<AggregateCall> calls, RelDataType rowType);
 
     /**
      * Creates a comparator for given data type and collations. Mainly used for sorted exchange.
@@ -55,45 +46,37 @@ public interface ExpressionFactory<Row> {
 
     /**
      * Creates a Filter predicate.
-     * @param ctx Execution context, holds a planner context, query and its parameters,
-     *             execution specific variables (like queryId, current user, session, etc).
      * @param filter Filter expression.
      * @param rowType Input row type.
      * @return Filter predicate.
      */
-    Predicate<Row> predicate(ExecutionContext<Row> ctx, RexNode filter, RelDataType rowType);
+    Predicate<Row> predicate(RexNode filter, RelDataType rowType);
 
     /**
      * Creates a Project function. Resulting function returns a row with different fields,
      * fields order, fields types, etc.
-     * @param ctx Execution context, holds a planner context, query and its parameters,
-     *             execution specific variables (like queryId, current user, session, etc).
      * @param projects Projection expressions.
      * @param rowType Input row type.
      * @return Project function.
      */
-    Function<Row, Row> project(ExecutionContext<Row> ctx, List<RexNode> projects, RelDataType rowType);
+    Function<Row, Row> project(List<RexNode> projects, RelDataType rowType);
 
     /**
      * Creates a Values relational node rows source.
      *
-     * @param ctx Execution context, holds a planner context, query and its parameters,
-     *             execution specific variables (like queryId, current user, session, etc).
      * @param values Values.
-     * @param rowLen Row length.
+     * @param rowType Output row type.
      * @return Values relational node rows source.
      */
-    Iterable<Row> values(ExecutionContext<Row> ctx, List<RexLiteral> values, int rowLen);
+    Iterable<Row> values(List<RexLiteral> values, RelDataType rowType);
 
     /**
      * Creates row from RexNodes.
      *
-     * @param ctx Execution context, holds a planner context, query and its parameters,
-     *             execution specific variables (like queryId, current user, session, etc).
      * @param values Values.
      * @return Row.
      */
-    Row asRow(ExecutionContext<Row> ctx, List<RexNode> values, RelDataType rowType);
+    Row asRow(List<RexNode> values, RelDataType rowType);
 
     /**
      * Creates {@link Scalar}, a code-generated expressions evaluator.
@@ -102,7 +85,9 @@ public interface ExpressionFactory<Row> {
      * @param type Row type.
      * @return Scalar.
      */
-    Scalar scalar(RexNode node, RelDataType type);
+    default Scalar scalar(RexNode node, RelDataType type) {
+        return scalar(ImmutableList.of(node), type);
+    }
 
     /**
      * Creates {@link Scalar}, a code-generated expressions evaluator.
