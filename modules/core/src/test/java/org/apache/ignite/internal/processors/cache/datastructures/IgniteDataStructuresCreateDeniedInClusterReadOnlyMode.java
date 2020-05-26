@@ -29,7 +29,10 @@ import static org.apache.ignite.internal.processors.cache.datastructures.IgniteD
 import static org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresTestUtils.getCollectionConfigurations;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
-public class IgniteDatastructuresCreateDeniedInClusterReadOnlyMode extends GridCommonAbstractTest {
+/**
+ * Tests that Ignite data structures can't be created if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} mode.
+ */
+public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -103,6 +106,22 @@ public class IgniteDatastructuresCreateDeniedInClusterReadOnlyMode extends GridC
             Throwable ex = assertThrows(
                 log,
                 () -> grid(0).queue(t.getKey(), 0, t.getValue()),
+                Exception.class,
+                null
+            );
+
+            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
+                throw new AssertionError("IgniteClusterReadOnlyException not found on queue " + t.getKey(), ex);
+        }
+    }
+
+    /** */
+    @Test
+    public void testIgniteAtomicSequence() {
+        for (Map.Entry<String, AtomicConfiguration> t : getAtomicConfigurations().entrySet()) {
+            Throwable ex = assertThrows(
+                log,
+                () -> grid(0).atomicSequence(t.getKey(), t.getValue(), 0, true),
                 Exception.class,
                 null
             );
