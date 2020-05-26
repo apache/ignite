@@ -130,4 +130,20 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
                 throw new AssertionError("IgniteClusterReadOnlyException not found on queue " + t.getKey(), ex);
         }
     }
+
+    /** */
+    @Test
+    public void testIgniteAtomicStamped() {
+        for (Map.Entry<String, AtomicConfiguration> t : getAtomicConfigurations().entrySet()) {
+            Throwable ex = assertThrows(
+                log,
+                () -> grid(0).atomicStamped(t.getKey(), t.getValue(), 0, 0, true),
+                Exception.class,
+                null
+            );
+
+            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
+                throw new AssertionError("IgniteClusterReadOnlyException not found on queue " + t.getKey(), ex);
+        }
+    }
 }
