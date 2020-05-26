@@ -33,6 +33,8 @@ endif ()
 
 add_library(${TARGET} SHARED ${SOURCES})
 
+set_target_properties(${TARGET} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
+
 target_link_libraries(${TARGET} ignite-common ${JVM_LIBRARY})
 
 target_include_directories(${TARGET} INTERFACE include)

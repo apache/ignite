@@ -55,6 +55,8 @@ if (!WIN32)
     target_link_libraries($TARGET ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
+set_target_properties(${TARGET} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
+
 target_include_directories(${TARGET} INTERFACE include ${OS_INCLUDE})
 
 install(DIRECTORY include/ ${OS_INCLUDE}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h")
