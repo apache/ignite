@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -1031,12 +1030,11 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                 Service svc = ctx.service();
 
                 if (svc != null) {
-                    if (srvcCls.isAssignableFrom(svc.getClass()))
-                        return (T)svc;
-                    else if (!PlatformService.class.isAssignableFrom(svc.getClass())) {
+                    if (!srvcCls.isAssignableFrom(svc.getClass()))
                         throw new IgniteException("Service does not implement specified interface [svcItf=" +
-                                srvcCls.getName() + ", svcCls=" + svc.getClass().getName() + ']');
-                    }
+                            srvcCls.getName() + ", svcCls=" + svc.getClass().getName() + ']');
+
+                    return (T)svc;
                 }
             }
         }
