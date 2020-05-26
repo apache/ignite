@@ -23,9 +23,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
@@ -47,18 +44,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     private static List<IgniteEx> srvs;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setMaxSize(100L * 1024 * 1024)
-                    .setPersistenceEnabled(true)));
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        cleanPersistenceDir();
-
         super.beforeTestsStarted();
 
         srvs = new ArrayList<>();
@@ -71,7 +57,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         // There must be enough cache entries to keep scan query cursor opened.
-        // Cursor will be concurrently closed when all the data retrieved.
+        // Cursor may be concurrently closed when all the data retrieved.
         for (int i = 0; i < PAGES_CNT * PAGE_SZ; i++)
             cache.put(i, i);
 

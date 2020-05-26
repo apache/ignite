@@ -111,7 +111,7 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         // There must be enough cache entries to keep scan query cursor opened.
-        // Cursor will be concurrently closed when all the data retrieved.
+        // Cursor may be concurrently closed when all the data retrieved.
         for (int i = 0; i < PAGES_CNT * PAGE_SZ; i++)
             cache.put(i, i);
 
