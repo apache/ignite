@@ -17,20 +17,55 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
+import org.apache.ignite.internal.util.typedef.X;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 public class IgniteDataStructuresTestUtils {
     /** */
     private IgniteDataStructuresTestUtils() {
         // No-op
+    }
+
+    /**
+     * Performs given {@code action} for all presented elements of given {@code collection} and heck that
+     * {@link IgniteClusterReadOnlyException} had been thrown.
+     *
+     * @param log Logger
+     * @param collection Collection for applying action
+     * @param nameExtractor Function for extraction element collection nam
+     * @param action Action.
+     * @param <E> Type of element's collection.
+     */
+    static <E> void performAction(
+        IgniteLogger log,
+        Collection<E> collection,
+        Function<E, String> nameExtractor,
+        Consumer<? super E> action
+    ) {
+        for (E e : collection) {
+            Throwable ex = assertThrows(log, () -> action.accept(e), Exception.class, null);
+
+            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class)) {
+                throw new AssertionError(
+                    "IgniteClusterReadOnlyException not found on queue " + nameExtractor.apply(e),
+                    ex
+                );
+            }
+        }
     }
 
     /**

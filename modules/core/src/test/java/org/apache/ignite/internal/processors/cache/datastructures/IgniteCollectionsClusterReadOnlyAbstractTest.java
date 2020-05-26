@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cluster.ClusterState;
@@ -29,12 +31,10 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresTestUtils.getCollectionConfigurations;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Abstract class for test common methods of {@link IgniteQueue} and {@link IgniteSet} behaviour if cluster in a
@@ -200,14 +200,10 @@ abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridCommonAb
      * had been thrown.
      *
      * @param action Action with a collection.
+     * @see IgniteDataStructuresTestUtils#performAction(IgniteLogger, Collection, Function, Consumer)
      */
     void performAction(Consumer<? super Collection> action) {
-        for (Collection col : igniteCollections) {
-            Throwable ex = assertThrows(log, () -> action.accept(col), Exception.class, null);
-
-            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on queue " + name(col), ex);
-        }
+        IgniteDataStructuresTestUtils.performAction(log, igniteCollections, this::name, action);
     }
 
     /** */
