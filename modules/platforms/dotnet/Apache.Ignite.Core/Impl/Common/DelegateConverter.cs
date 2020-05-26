@@ -550,6 +550,11 @@ namespace Apache.Ignite.Core.Impl.Common
         // ReSharper disable once UnusedMember.Local (used by reflection).
         private static T[] ConvertArray<T>(object[] arr)
         {
+            if (arr == null)
+            {
+                return null;
+            }
+
             var res = new T[arr.Length];
 
             Array.Copy(arr, res, arr.Length);
