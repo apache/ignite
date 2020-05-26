@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.parsers;
+package org.apache.ignite.internal.profiling.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.profiling.ProfilingLogParser.currentNodeId;
+import static org.apache.ignite.internal.profiling.ProfilingFilesParser.currentNodeId;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 import static org.apache.ignite.internal.profiling.util.Utils.createArrayIfAbsent;
 import static org.apache.ignite.internal.profiling.util.Utils.createObjectIfAbsent;
@@ -50,7 +50,7 @@ import static org.apache.ignite.internal.profiling.util.Utils.createObjectIfAbse
  * }
  * </pre>
  */
-public class TransactionsParser implements IgniteLogParser {
+public class TransactionsHandler implements IgniteProfilingHandler {
     /** Field name of aggregated by caches/nodes values. */
     private static final String TOTAL = "total";
 

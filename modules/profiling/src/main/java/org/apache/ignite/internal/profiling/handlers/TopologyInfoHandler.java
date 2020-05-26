@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.parsers;
+package org.apache.ignite.internal.profiling.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.profiling.ProfilingLogParser.currentNodeId;
+import static org.apache.ignite.internal.profiling.ProfilingFilesParser.currentNodeId;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 
 /**
@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  * }
  * </pre>
  */
-public class TopologyInfoParser implements IgniteLogParser {
+public class TopologyInfoHandler implements IgniteProfilingHandler {
     /** Result JSON. */
     private final ObjectNode res = MAPPER.createObjectNode();
 
@@ -45,7 +45,7 @@ public class TopologyInfoParser implements IgniteLogParser {
     private final ObjectNode nodesInfo = MAPPER.createObjectNode();
 
     /** */
-    public TopologyInfoParser() {
+    public TopologyInfoHandler() {
         res.put("profilingStartTime", 0);
         res.set("nodesInfo", nodesInfo);
     }

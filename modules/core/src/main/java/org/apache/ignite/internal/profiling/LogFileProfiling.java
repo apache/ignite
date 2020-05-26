@@ -60,6 +60,9 @@ public class LogFileProfiling implements IgniteProfiling {
     /** Default minimal batch size to flush in bytes. */
     public static final int DFLT_FLUSH_SIZE = 8 * 1024 * 1024;
 
+    /** Directory to store profiling files. Placed under Ignite work directory. */
+    public static final String PROFILING_DIR = "profiling";
+
     /** Factory to provide I/O interface for profiling file. */
     private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
 
@@ -164,19 +167,19 @@ public class LogFileProfiling implements IgniteProfiling {
             /*startTime*/ 8 +
             /*duration*/ 8;
 
-        SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.CACHE_OPERATION, size);
+        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.CACHE_OPERATION, size);
 
-        if (segment == null)
+        if (seg == null)
             return;
 
-        ByteBuffer buf = segment.buffer();
+        ByteBuffer buf = seg.buffer();
 
         buf.put((byte)type.ordinal());
         buf.putInt(cacheId);
         buf.putLong(startTime);
         buf.putLong(duration);
 
-        segment.release();
+        seg.release();
     }
 
     /** {@inheritDoc} */
@@ -186,12 +189,12 @@ public class LogFileProfiling implements IgniteProfiling {
             /*duration*/ 8 +
             /*commit*/ 1;
 
-        SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.TRANSACTION, size);
+        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.TRANSACTION, size);
 
-        if (segment == null)
+        if (seg == null)
             return;
 
-        ByteBuffer buf = segment.buffer();
+        ByteBuffer buf = seg.buffer();
 
         buf.putInt(cacheIds.size());
 
@@ -204,7 +207,7 @@ public class LogFileProfiling implements IgniteProfiling {
         buf.putLong(duration);
         buf.put(commit ? (byte)1 : 0);
 
-        segment.release();
+        seg.release();
     }
 
     /** {@inheritDoc} */
@@ -220,12 +223,12 @@ public class LogFileProfiling implements IgniteProfiling {
             /*duration*/ 8 +
             /*startTime*/ 1;
 
-        SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.QUERY, size);
+        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.QUERY, size);
 
-        if (segment == null)
+        if (seg == null)
             return;
 
-        ByteBuffer buf = segment.buffer();
+        ByteBuffer buf = seg.buffer();
 
         buf.put((byte)type.ordinal());
         buf.putInt(textBytes.length);
@@ -236,7 +239,7 @@ public class LogFileProfiling implements IgniteProfiling {
         buf.putLong(duration);
         buf.put(success ? (byte)1 : 0);
 
-        segment.release();
+        seg.release();
     }
 
     /** {@inheritDoc} */
@@ -248,12 +251,12 @@ public class LogFileProfiling implements IgniteProfiling {
             /*logicalReads*/ 8 +
             /*physicalReads*/ 8;
 
-        SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.QUERY_READS, size);
+        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.QUERY_READS, size);
 
-        if (segment == null)
+        if (seg == null)
             return;
 
-        ByteBuffer buf = segment.buffer();
+        ByteBuffer buf = seg.buffer();
 
         buf.put((byte)type.ordinal());
         writeUuid(buf, queryNodeId);
@@ -261,7 +264,7 @@ public class LogFileProfiling implements IgniteProfiling {
         buf.putLong(logicalReads);
         buf.putLong(physicalReads);
 
-        segment.release();
+        seg.release();
     }
 
     /** {@inheritDoc} */
@@ -274,12 +277,12 @@ public class LogFileProfiling implements IgniteProfiling {
             /*duration*/ 8 +
             /*affPartId*/ 4;
 
-        SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.TASK, size);
+        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.TASK, size);
 
-        if (segment == null)
+        if (seg == null)
             return;
 
-        ByteBuffer buf = segment.buffer();
+        ByteBuffer buf = seg.buffer();
 
         writeIgniteUuid(buf, sesId);
         buf.putInt(taskNameBytes.length);
@@ -288,7 +291,7 @@ public class LogFileProfiling implements IgniteProfiling {
         buf.putLong(duration);
         buf.putInt(affPartId);
 
-        segment.release();
+        seg.release();
     }
 
     /** {@inheritDoc} */
@@ -299,12 +302,12 @@ public class LogFileProfiling implements IgniteProfiling {
             /*duration*/ 8 +
             /*timedOut*/ 1;
 
-        SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.JOB, size);
+        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.JOB, size);
 
-        if (segment == null)
+        if (seg == null)
             return;
 
-        ByteBuffer buf = segment.buffer();
+        ByteBuffer buf = seg.buffer();
 
         writeIgniteUuid(buf, sesId);
         buf.putLong(queuedTime);
@@ -312,7 +315,7 @@ public class LogFileProfiling implements IgniteProfiling {
         buf.putLong(duration);
         buf.put(timedOut ? (byte)1 : 0);
 
-        segment.release();
+        seg.release();
     }
 
     /** {@inheritDoc} */
@@ -327,12 +330,12 @@ public class LogFileProfiling implements IgniteProfiling {
             /*groupName*/ 4 + groupNameBytes.length +
             /*userCacheFlag*/ 1;
 
-        SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.CACHE_START, size);
+        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.CACHE_START, size);
 
-        if (segment == null)
+        if (seg == null)
             return;
 
-        ByteBuffer buf = segment.buffer();
+        ByteBuffer buf = seg.buffer();
 
         buf.putInt(cacheId);
         buf.putLong(startTime);
@@ -349,34 +352,34 @@ public class LogFileProfiling implements IgniteProfiling {
 
         buf.put(userCache ? (byte)1 : 0);
 
-        segment.release();
+        seg.release();
     }
 
     /** {@inheritDoc} */
     @Override public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime) {
         byte[] nameBytes = igniteInstanceName.getBytes();
-        byte[] versionBytes = igniteVersion.getBytes();
+        byte[] verBytes = igniteVersion.getBytes();
 
         int size = /*nodeId*/ 16 +
             /*igniteInstanceName*/ 4 + nameBytes.length +
-            /*version*/ 4 + versionBytes.length +
+            /*version*/ 4 + verBytes.length +
             /*profilingStartTime*/ 8;
 
-        SegmentedRingByteBuffer.WriteSegment segment = reserveBuffer(OperationType.PROFILING_START, size);
+        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.PROFILING_START, size);
 
-        if (segment == null)
+        if (seg == null)
             return;
 
-        ByteBuffer buf = segment.buffer();
+        ByteBuffer buf = seg.buffer();
 
         writeUuid(buf, nodeId);
         buf.putInt(nameBytes.length);
         buf.put(nameBytes);
-        buf.putInt(versionBytes.length);
-        buf.put(versionBytes);
+        buf.putInt(verBytes.length);
+        buf.put(verBytes);
         buf.putLong(startTime);
 
-        segment.release();
+        seg.release();
     }
 
     /**
@@ -423,39 +426,37 @@ public class LogFileProfiling implements IgniteProfiling {
     public static File profilingFile(GridKernalContext ctx) throws IgniteCheckedException {
         String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
 
-        File profilingDir = U.resolveWorkDirectory(igniteWorkDir, "profiling", false);
+        File profilingDir = U.resolveWorkDirectory(igniteWorkDir, PROFILING_DIR, false);
 
         return new File(profilingDir, "node-" + ctx.localNodeId() + ".prf");
     }
 
-    /** */
+    /** Writes {@link UUID} to buffer. */
     public static void writeUuid(ByteBuffer buf, UUID uuid) {
         buf.putLong(uuid.getMostSignificantBits());
         buf.putLong(uuid.getLeastSignificantBits());
     }
 
-    /** */
+    /** Reads {@link UUID} from buffer. */
     public static UUID readUuid(ByteBuffer buf) {
         return new UUID(buf.getLong(), buf.getLong());
     }
 
-    /** */
+    /** Writes {@link IgniteUuid} to buffer. */
     public static void writeIgniteUuid(ByteBuffer buf, IgniteUuid uuid) {
         buf.putLong(uuid.globalId().getMostSignificantBits());
         buf.putLong(uuid.globalId().getLeastSignificantBits());
         buf.putLong(uuid.localId());
     }
 
-    /** */
+    /** Reads {@link IgniteUuid} from buffer. */
     public static IgniteUuid readIgniteUuid(ByteBuffer buf) {
         UUID globalId = new UUID(buf.getLong(), buf.getLong());
 
         return new IgniteUuid(globalId, buf.getLong());
     }
 
-    /**
-     * Writes to profiling file.
-     */
+    /** Worker to write to profiling file. */
     private class FileWriter extends GridWorker {
         /** Profiling file I/O. */
         private final FileIO fileIo;
@@ -463,13 +464,13 @@ public class LogFileProfiling implements IgniteProfiling {
         /** File write buffer. */
         private final SegmentedRingByteBuffer ringByteBuffer;
 
-        /** */
+        /** Minimal batch size to flush in bytes. */
         private final int flushBatchSize;
 
-        /** */
+        /** Size of ready for flushing bytes. */
         private final AtomicInteger readyForFlushSize = new AtomicInteger();
 
-        /** */
+        /** Stop file writer future. */
         GridFutureAdapter<Void> stopFut = new GridFutureAdapter<>();
 
         /**
@@ -531,9 +532,9 @@ public class LogFileProfiling implements IgniteProfiling {
             SegmentedRingByteBuffer.WriteSegment seg = ringByteBuffer.offer(size);
 
             if (seg != null) {
-                int readySize = readyForFlushSize.getAndAdd(size);
+                int readySize = readyForFlushSize.addAndGet(size);
 
-                if (readySize > DFLT_FLUSH_SIZE) {
+                if (readySize >= DFLT_FLUSH_SIZE) {
                     synchronized (this) {
                         notify();
                     }

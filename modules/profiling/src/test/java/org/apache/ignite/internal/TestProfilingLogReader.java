@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -52,11 +50,8 @@ public class TestProfilingLogReader implements IgniteProfiling {
     /** File read buffer. */
     private final ByteBuffer readBuf = allocateDirect(READ_BUFFER_SIZE).order(nativeOrder());
 
-    /** Profiling file. */
-    private final File profilingFile;
-
-    /** Last read file position. */
-    private long pos;
+    /** Log to write operations to. */
+    private final IgniteEx ignite;
 
     /** Log to write operations to. */
     private final IgniteLogger log;
@@ -65,17 +60,22 @@ public class TestProfilingLogReader implements IgniteProfiling {
      * @param ignite Ignite instance.
      * @param log Log to write operations to.
      */
-    TestProfilingLogReader(IgniteEx ignite, IgniteLogger log) throws IgniteCheckedException {
+    TestProfilingLogReader(IgniteEx ignite, IgniteLogger log) {
+        this.ignite = ignite;
+        this.log = log;
+    }
+
+    /** Starts read profiling file to the configured log until node stoped. */
+    public void startRead() {
         ignite.context().metric().startProfiling(DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, 0);
 
-        this.profilingFile = profilingFile(ignite.context());
-        this.log = log;
-
         GridTestUtils.runAsync(() -> {
-            while (!ignite.context().isStopping()) {
-                read();
+            try (FileIO io = ioFactory.create(profilingFile(ignite.context()))) {
+                while (!ignite.context().isStopping()) {
+                    read(io);
 
-                U.sleep(100);
+                    U.sleep(100);
+                }
             }
 
             return null;
@@ -83,34 +83,23 @@ public class TestProfilingLogReader implements IgniteProfiling {
     }
 
     /** Reads profiling file since last read position. */
-    private void read() throws Exception {
-        try (FileIO io = ioFactory.create(profilingFile)) {
-            io.position(pos);
+    private void read(FileIO io) throws Exception {
+        while (!ignite.context().isStopping()) {
+            int read = io.read(readBuf);
 
-            readBuf.clear();
+            readBuf.flip();
 
-            while (true) {
-                int read = io.read(readBuf);
+            if (read < 0)
+                break;
 
-                pos = io.position();
+            for (;;) {
+                boolean deserialize = OperationDeserializer.deserialize(readBuf, this);
 
-                readBuf.flip();
-
-                if (read <= 0)
+                if (!deserialize)
                     break;
-
-                while (true) {
-                    boolean deserialize = OperationDeserializer.deserialize(readBuf, this);
-
-                    if (!deserialize)
-                        break;
-                }
-
-                readBuf.compact();
             }
 
-            if (readBuf.remaining() > 0)
-                throw new AssertionError("The buffer was not deserialized fully.");
+            readBuf.compact();
         }
     }
 

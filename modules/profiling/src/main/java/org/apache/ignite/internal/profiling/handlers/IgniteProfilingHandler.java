@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.parsers;
+package org.apache.ignite.internal.profiling.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
@@ -26,9 +26,9 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * The interface represents log parser. Creates JSON for UI views.
+ * The interface represents profiling operations handler to build JSON for UI views.
  */
-public interface IgniteLogParser extends IgniteProfiling {
+public interface IgniteProfilingHandler extends IgniteProfiling {
     /**
      * Map of named JSON results.
      *

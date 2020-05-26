@@ -41,12 +41,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.profiling.LogFileProfiling.PROFILING_DIR;
+
 /**
- * Tests profiling log.
+ * Tests profiling.
  */
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
-public class ProfilingLogTest extends GridCommonAbstractTest {
-    /** */
+public class ProfilingSelfTest extends GridCommonAbstractTest {
+    /** Test entry processor. */
     private static final EntryProcessor<Object, Object, Object> ENTRY_PROC =
         new EntryProcessor<Object, Object, Object>() {
         @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
@@ -55,7 +57,7 @@ public class ProfilingLogTest extends GridCommonAbstractTest {
         }
     };
 
-    /** */
+    /** Test cache entry processor. */
     private static final CacheEntryProcessor<Object, Object, Object> CACHE_ENTRY_PROC =
         new CacheEntryProcessor<Object, Object, Object>() {
         @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
@@ -64,7 +66,7 @@ public class ProfilingLogTest extends GridCommonAbstractTest {
         }
     };
 
-    /** Log. */
+    /** Log to register profiling operations. */
     private static ListeningTestLogger log;
 
     /** {@inheritDoc} */
@@ -83,7 +85,7 @@ public class ProfilingLogTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        log = new ListeningTestLogger(false, GridAbstractTest.log);
+        log = new ListeningTestLogger(GridAbstractTest.log);
 
         cleanPersistenceDir();
 
@@ -96,7 +98,7 @@ public class ProfilingLogTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
-        new TestProfilingLogReader(grid(0), log);
+        new TestProfilingLogReader(grid(0), log).startRead();
     }
 
     /** {@inheritDoc} */
@@ -105,7 +107,7 @@ public class ProfilingLogTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "profiling", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PROFILING_DIR, false));
     }
 
     /** {@inheritDoc} */
@@ -134,7 +136,7 @@ public class ProfilingLogTest extends GridCommonAbstractTest {
             .setArgs(args)
             .setSchema("PUBLIC");
 
-        LogListener lsnr = LogListener.matches("query").andMatches(sql).andMatches("type=SQL_FIELDS").build();
+        LogListener lsnr = LogListener.matches("query ").andMatches(sql).andMatches("type=SQL_FIELDS").build();
 
         log.registerListener(lsnr);
 
@@ -146,7 +148,7 @@ public class ProfilingLogTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testScanQuery() throws Exception {
-        LogListener lsnr = LogListener.matches("query").andMatches("type=SCAN").build();
+        LogListener lsnr = LogListener.matches("query ").andMatches("type=SCAN").build();
 
         log.registerListener(lsnr);
 
@@ -214,12 +216,14 @@ public class ProfilingLogTest extends GridCommonAbstractTest {
 
         checkCacheOp(CacheOperationType.INVOKE, cache -> cache.invoke(10, ENTRY_PROC));
         checkCacheOp(CacheOperationType.INVOKE, cache -> cache.invokeAsync(10, ENTRY_PROC).get());
+
         checkCacheOp(CacheOperationType.INVOKE, cache -> cache.invoke(10, CACHE_ENTRY_PROC));
         checkCacheOp(CacheOperationType.INVOKE, cache -> cache.invokeAsync(10, CACHE_ENTRY_PROC).get());
 
         checkCacheOp(CacheOperationType.INVOKE_ALL, cache -> cache.invokeAll(Collections.singleton(10), ENTRY_PROC));
         checkCacheOp(CacheOperationType.INVOKE_ALL,
             cache -> cache.invokeAllAsync(Collections.singleton(10), ENTRY_PROC).get());
+
         checkCacheOp(CacheOperationType.INVOKE_ALL,
             cache -> cache.invokeAll(Collections.singleton(10), CACHE_ENTRY_PROC));
         checkCacheOp(CacheOperationType.INVOKE_ALL,
@@ -228,7 +232,7 @@ public class ProfilingLogTest extends GridCommonAbstractTest {
 
     /** */
     private void checkCacheOp(CacheOperationType op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
-        LogListener lsnr = LogListener.matches("cacheOperation").andMatches("type=" + op).build();
+        LogListener lsnr = LogListener.matches("cacheOperation ").andMatches("type=" + op).build();
 
         log.registerListener(lsnr);
 
@@ -255,7 +259,7 @@ public class ProfilingLogTest extends GridCommonAbstractTest {
     private void checkTx(boolean commit) throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        LogListener lsnr = LogListener.matches("transaction").andMatches("commit=" + commit).build();
+        LogListener lsnr = LogListener.matches("transaction ").andMatches("commit=" + commit).build();
 
         log.registerListener(lsnr);
 

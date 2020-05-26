@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-/** Profiles operations. */
+/** The interface represents profiling operations. */
 public interface IgniteProfiling {
     /**
      * @param type Operation type.
@@ -97,7 +97,7 @@ public interface IgniteProfiling {
      */
     void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime);
 
-    /** Cache operation type. */
+    /** Cache operations types. */
     public enum CacheOperationType {
         /** */
         GET,

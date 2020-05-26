@@ -48,13 +48,13 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.profiling.parsers.StartedCachesParser;
-import org.apache.ignite.internal.profiling.parsers.CacheOperationsParser;
-import org.apache.ignite.internal.profiling.parsers.ComputeParser;
-import org.apache.ignite.internal.profiling.parsers.IgniteLogParser;
-import org.apache.ignite.internal.profiling.parsers.QueryParser;
-import org.apache.ignite.internal.profiling.parsers.TopologyInfoParser;
-import org.apache.ignite.internal.profiling.parsers.TransactionsParser;
+import org.apache.ignite.internal.profiling.handlers.StartedCachesHandler;
+import org.apache.ignite.internal.profiling.handlers.CacheOperationsHandler;
+import org.apache.ignite.internal.profiling.handlers.ComputeHandler;
+import org.apache.ignite.internal.profiling.handlers.IgniteProfilingHandler;
+import org.apache.ignite.internal.profiling.handlers.QueryHandler;
+import org.apache.ignite.internal.profiling.handlers.TopologyInfoHandler;
+import org.apache.ignite.internal.profiling.handlers.TransactionsHandler;
 import org.apache.ignite.internal.profiling.util.OperationDeserializer;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,17 +66,17 @@ import static java.util.regex.Pattern.compile;
 import static org.apache.ignite.internal.util.IgniteUtils.sizeInMegabytes;
 
 /**
- * Profiling log parser. Creates JSONs for UI interface. Builds the report.
+ * Profiling files parser. Creates JSONs for UI interface. Builds the report.
  */
-public class ProfilingLogParser {
-    /** Profiling log file name pattern. */
+public class ProfilingFilesParser {
+    /** Profiling file name pattern. */
     private static final Pattern PROFILING_FILE_PATTERN = compile(".*node-(.+).prf$");
 
     /** Maven-generated archive of UI report resources. */
     private static final String REPORT_RESOURCE_NAME = "report.zip";
 
     /** File read buffer size. */
-    private static final int READ_BUFFER_SIZE = 32 * 1024 * 1024;
+    private static final int READ_BUFFER_SIZE = 8 * 1024 * 1024;
 
     /** File read buffer. */
     private static final ByteBuffer readBuf = allocateDirect(READ_BUFFER_SIZE).order(nativeOrder());
@@ -84,7 +84,7 @@ public class ProfilingLogParser {
     /** IO factory. */
     private static final RandomAccessFileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
-    /** Node id of current parsed log. */
+    /** Node id of current parsed file. */
     private static UUID curNodeId;
 
     /**
@@ -198,13 +198,13 @@ public class ProfilingLogParser {
      * @param resDir Results directory.
      */
     private static void parseLogs(HashMap<UUID, File> logs, String resDir) throws Exception {
-        IgniteLogParser[] parsers = new IgniteLogParser[] {
-            new QueryParser(),
-            new StartedCachesParser(),
-            new CacheOperationsParser(),
-            new TransactionsParser(),
-            new ComputeParser(),
-            new TopologyInfoParser()
+        IgniteProfilingHandler[] parsers = new IgniteProfilingHandler[] {
+            new QueryHandler(),
+            new StartedCachesHandler(),
+            new CacheOperationsHandler(),
+            new TransactionsHandler(),
+            new ComputeHandler(),
+            new TopologyInfoHandler()
         };
 
         int currLog = 1;
@@ -224,7 +224,7 @@ public class ProfilingLogParser {
             currLog++;
         }
 
-        for (IgniteLogParser parser : parsers) {
+        for (IgniteProfilingHandler parser : parsers) {
             for (Map.Entry<String, JsonNode> entry : parser.results().entrySet()) {
                 String fileName = entry.getKey();
                 JsonNode json = entry.getValue();
@@ -239,12 +239,12 @@ public class ProfilingLogParser {
     /**
      * Parses node's profiling log.
      *
-     * @param parsers Parsers.
+     * @param handlers Parsers.
      * @param nodeId Node id.
      * @param log Log to parse.
      * @param msg Progress message to log.
      */
-    private static void parseLog(IgniteLogParser[] parsers, UUID nodeId, File log, String msg)
+    private static void parseLog(IgniteProfilingHandler[] handlers, UUID nodeId, File log, String msg)
         throws Exception {
         System.out.println("Starting parse log [file=" + log.getAbsolutePath() +
             ", size=" + FileUtils.byteCountToDisplaySize(log.length()) + ", nodeId=" + nodeId + ']');
@@ -267,7 +267,7 @@ public class ProfilingLogParser {
                 parsedBytes += read;
 
                 while (true) {
-                    boolean deserialize = OperationDeserializer.deserialize(readBuf, parsers);
+                    boolean deserialize = OperationDeserializer.deserialize(readBuf, handlers);
 
                     if (!deserialize)
                         break;
@@ -354,7 +354,7 @@ public class ProfilingLogParser {
      * @param resDir Directory to copy sources to.
      */
     private static void copyReportSources(String resDir) throws Exception {
-        try (InputStream in = ProfilingLogParser.class.getClassLoader().getResourceAsStream(REPORT_RESOURCE_NAME)) {
+        try (InputStream in = ProfilingFilesParser.class.getClassLoader().getResourceAsStream(REPORT_RESOURCE_NAME)) {
             if (in == null) {
                 // Run from IDE require custom maven assembly (try to package module).
                 System.err.println("Run from IDE require custom maven assembly (try to package " +

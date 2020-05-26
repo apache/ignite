@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.parsers;
+package org.apache.ignite.internal.profiling.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -31,7 +31,7 @@ import org.apache.ignite.internal.profiling.util.OrderedFixedSizeStructure;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
-import static org.apache.ignite.internal.profiling.ProfilingLogParser.currentNodeId;
+import static org.apache.ignite.internal.profiling.ProfilingFilesParser.currentNodeId;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 
 /**
@@ -69,7 +69,7 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  * ]
  * </pre>
  */
-public class ComputeParser implements IgniteLogParser {
+public class ComputeHandler implements IgniteProfilingHandler {
     /** Aggregated tasks: taskName -> aggregatedInfo. */
     private final Map<String, AggregatedTaskInfo> taskRes = new HashMap<>();
 

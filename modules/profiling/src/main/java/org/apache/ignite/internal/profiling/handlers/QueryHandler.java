@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.parsers;
+package org.apache.ignite.internal.profiling.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -63,7 +63,7 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  * ]
  * </pre>
  */
-public class QueryParser implements IgniteLogParser {
+public class QueryHandler implements IgniteProfilingHandler {
     /**  Queries results: queryType -> queryText -> aggregatedInfo. */
     private final Map<GridCacheQueryType, Map<String, AggregatedQueryInfo>> aggrQuery =
         new EnumMap<>(GridCacheQueryType.class);

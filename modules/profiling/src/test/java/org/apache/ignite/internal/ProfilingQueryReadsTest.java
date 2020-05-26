@@ -39,11 +39,12 @@ import org.junit.Test;
 import static java.util.regex.Pattern.compile;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.profiling.LogFileProfiling.PROFILING_DIR;
 
-/** Tests profile of query reads. */
-public class ProfilingQueryTest extends GridCommonAbstractTest {
+/** Tests profiling of query reads. */
+public class ProfilingQueryReadsTest extends GridCommonAbstractTest {
     /** Log listen timeout. */
-    public static final long TIMEOUT = 5_000L;
+    public static final long TIMEOUT = 30_000L;
 
     /** Cache entry count. */
     private static final int ENTRY_COUNT = 100;
@@ -72,7 +73,7 @@ public class ProfilingQueryTest extends GridCommonAbstractTest {
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
 
-        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
 
         cfg.setGridLogger(testLog);
 
@@ -101,8 +102,6 @@ public class ProfilingQueryTest extends GridCommonAbstractTest {
 
         cache = client.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setName(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setQueryEntities(Collections.singletonList(
                 new QueryEntity(Integer.class, Integer.class)
                     .setTableName(DEFAULT_CACHE_NAME)))
@@ -111,9 +110,9 @@ public class ProfilingQueryTest extends GridCommonAbstractTest {
         for (int i = 0; i < ENTRY_COUNT; i++)
             cache.put(i, i);
 
-        new TestProfilingLogReader(grid(0), log0);
-        new TestProfilingLogReader(grid(1), log1);
-        new TestProfilingLogReader(client, clientLog);
+        new TestProfilingLogReader(grid(0), log0).startRead();
+        new TestProfilingLogReader(grid(1), log1).startRead();
+        new TestProfilingLogReader(client, clientLog).startRead();
     }
 
     /** {@inheritDoc} */
@@ -122,7 +121,7 @@ public class ProfilingQueryTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "profiling", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PROFILING_DIR, false));
     }
 
     /** {@inheritDoc} */

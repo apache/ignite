@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.parsers;
+package org.apache.ignite.internal.profiling.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  * }
  * </pre>
  */
-public class StartedCachesParser implements IgniteLogParser {
+public class StartedCachesHandler implements IgniteProfilingHandler {
     /** Result JSON. */
     private final ObjectNode res = MAPPER.createObjectNode();
 

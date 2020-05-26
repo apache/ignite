@@ -82,7 +82,7 @@ fi
 # Set main class to start service (grid node by default).
 #
 if [ "${MAIN_CLASS:-}" = "" ]; then
-    MAIN_CLASS=org.apache.ignite.internal.profiling.ProfilingLogParser
+    MAIN_CLASS=org.apache.ignite.internal.profiling.ProfilingFilesParser
 fi
 
 #
