@@ -29,6 +29,7 @@ import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseBoolean;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
@@ -149,6 +150,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
                 fmt.quoteChars(BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS);
                 fmt.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
                 fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
+                fmt.nullString(BulkLoadCsvFormat.DEFAULT_NULL_STRING);
+                fmt.trim(BulkLoadCsvFormat.DEFAULT_TRIM_SPACES);
 
                 parseCsvOptions(lex, fmt);
 
@@ -189,6 +192,26 @@ public class SqlBulkLoadCommand implements SqlCommand {
                     String delimiter = parseString(lex);
 
                     format.fieldSeparator(Pattern.compile(delimiter));
+
+                    break;
+                }
+
+                case SqlKeyword.TRIM: {
+                    lex.shift();
+
+                    Boolean trim = parseBoolean(lex);
+
+                    format.trim(trim);
+
+                    break;
+                }
+
+                case SqlKeyword.NULLSTRING: {
+                    lex.shift();
+
+                    String nullString = parseString(lex);
+
+                    format.nullString(nullString);
 
                     break;
                 }
