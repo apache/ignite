@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Tests
         public const int DfltBusywaitSleepInterval = 200;
 
         /** System cache name. */
-        public const string utilityCacheName = "ignite-sys-cache";
+        public const string UtilityCacheName = "ignite-sys-cache";
 
         /** Work dir. */
         private static readonly string WorkDir =
@@ -259,7 +259,7 @@ namespace Apache.Ignite.Core.Tests
         ///   <c>True</c> if topology took required size.
         /// </returns>
         public static bool WaitTopology(this IIgnite grid, AffinityTopologyVersion waitingTop,
-            string cacheName = utilityCacheName, int timeout = 30000)
+            string cacheName = UtilityCacheName, int timeout = 30000)
         {
             int checkPeriod = 200;
 

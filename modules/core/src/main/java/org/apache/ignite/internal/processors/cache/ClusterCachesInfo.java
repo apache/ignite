@@ -1259,7 +1259,8 @@ public class ClusterCachesInfo {
                 grpDesc.persistenceEnabled(),
                 grpDesc.walEnabled(),
                 grpDesc.walChangeRequests(),
-                splitCfg.get2());
+                splitCfg.get2() != null ? grpDesc.cacheConfigurationEnrichment() : null
+            );
 
             cacheGrps.put(grpDesc.groupId(), grpData);
         }
@@ -1280,7 +1281,7 @@ public class ClusterCachesInfo {
                 desc.sql(),
                 false,
                 0,
-                splitCfg.get2()
+                splitCfg.get2() != null ? desc.cacheConfigurationEnrichment() : null
             );
 
             caches.put(desc.cacheName(), cacheData);
@@ -1303,7 +1304,7 @@ public class ClusterCachesInfo {
                 false,
                 true,
                 0,
-                splitCfg.get2()
+                splitCfg.get2() != null ? desc.cacheConfigurationEnrichment() : null
             );
 
             templates.put(desc.cacheName(), cacheData);

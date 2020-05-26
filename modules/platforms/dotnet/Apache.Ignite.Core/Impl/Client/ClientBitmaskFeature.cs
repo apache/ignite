@@ -23,8 +23,9 @@ namespace Apache.Ignite.Core.Impl.Client
     internal enum ClientBitmaskFeature
     {
         // UserAttributes = 0,
-        // ExecuteTaskByName = 1,
-        // ClusterApi = 2,
-        ClusterGroupGetNodesEndpoints = 3
+        ExecuteTaskByName = 1,
+        // ClusterStates = 2,
+        ClusterGroupGetNodesEndpoints = 3,
+        ClusterGroups = 4
     }
 }

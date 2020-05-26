@@ -63,6 +63,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -133,6 +134,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
@@ -806,11 +808,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         final InternalScanFilter<K, V> intFilter = keyValFilter != null ? new InternalScanFilter<>(keyValFilter) : null;
 
         try {
-            if (keyValFilter instanceof PlatformCacheEntryFilter) {
+            if (keyValFilter instanceof PlatformCacheEntryFilter)
                 ((PlatformCacheEntryFilter)keyValFilter).cacheContext(cctx);
-            } else {
+            else
                 injectResources(keyValFilter);
-            }
 
             Integer part = cctx.isLocal() ? null : qry.partition();
 
@@ -840,9 +841,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 GridDhtLocalPartition locPart0 = dht.topology().localPartition(part, topVer, false);
 
-                if (locPart0 == null || locPart0.state() != OWNING || !locPart0.reserve())
-                    throw new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
-                        "Partition can not be reserved");
+                if (locPart0 == null || locPart0.state() != OWNING || !locPart0.reserve()) {
+                    throw locPart0 != null && locPart0.state() == LOST ?
+                        new CacheInvalidStateException("Failed to execute scan query because cache partition has been " +
+                            "lost [cacheName=" + cctx.name() + ", part=" + part + "]") :
+                        new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
+                            "Partition can not be reserved");
+                }
 
                 locPart = locPart0;
 
@@ -851,6 +856,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
             else {
                 locPart = null;
+
+                if (!cctx.isLocal()) {
+                    final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+
+                    Set<Integer> lostParts = dht.topology().lostPartitions();
+
+                    if (!lostParts.isEmpty()) {
+                        throw new CacheInvalidStateException("Failed to execute scan query because cache partition " +
+                            "has been lost [cacheName=" + cctx.name() + ", part=" + lostParts.iterator().next() + "]");
+                    }
+                }
 
                 it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
                     qry.mvccSnapshot(), qry.isDataPageScanEnabled());

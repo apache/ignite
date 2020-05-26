@@ -75,7 +75,7 @@ public class JdbcQuery implements JdbcRawBinarylizable {
             writer.writeInt(args.length);
 
             for (Object arg : args)
-                SqlListenerUtils.writeObject(writer, arg, false);
+                SqlListenerUtils.writeObject(writer, arg, protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT));
         }
     }
 
@@ -91,7 +91,8 @@ public class JdbcQuery implements JdbcRawBinarylizable {
         args = new Object[argsNum];
 
         for (int i = 0; i < argsNum; ++i)
-            args[i] = SqlListenerUtils.readObject(reader, false);
+            args[i] = SqlListenerUtils.readObject(reader, protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT),
+                protoCtx.keepBinary());
     }
 
     /** {@inheritDoc} */

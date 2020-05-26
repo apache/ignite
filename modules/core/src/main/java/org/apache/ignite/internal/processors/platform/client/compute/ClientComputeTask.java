@@ -51,6 +51,9 @@ class ClientComputeTask implements ClientCloseableResource {
     /** No result cache flag mask. */
     private static final byte NO_RESULT_CACHE_FLAG_MASK = 0x02;
 
+    /** Keep binary flag mask. */
+    public static final byte KEEP_BINARY_FLAG_MASK = 0x04;
+
     /** Context. */
     private final ClientConnectionContext ctx;
 
