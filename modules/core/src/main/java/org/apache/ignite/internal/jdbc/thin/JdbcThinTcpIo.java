@@ -40,6 +40,7 @@ import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
@@ -50,7 +51,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcProtocolContext;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
@@ -154,20 +154,25 @@ public class JdbcThinTcpIo {
     /** Protocol context (version, supported features, etc). */
     private JdbcProtocolContext protoCtx;
 
+    /** Binary context for serialization/deserialization of binary objects. */
+    private final BinaryContext ctx;
+
     /**
      * Start connection and perform handshake.
      *
      * @param connProps Connection properties.
      * @param sockAddr Socket address.
+     * @param ctx Binary context for proper serialization/deserialization of binary objects.
      * @param timeout Socket connection timeout in ms.
      *
      * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      */
-    public JdbcThinTcpIo(ConnectionProperties connProps, InetSocketAddress sockAddr, int timeout)
+    public JdbcThinTcpIo(ConnectionProperties connProps, InetSocketAddress sockAddr, BinaryContext ctx, int timeout)
         throws SQLException, IOException {
         this.connProps = connProps;
         this.sockAddr = sockAddr;
+        this.ctx = ctx;
 
         Socket sock = null;
 
@@ -235,7 +240,7 @@ public class JdbcThinTcpIo {
 
         srvProtoVer = handshakeRes.serverProtocolVersion();
 
-        protoCtx = new JdbcProtocolContext(srvProtoVer, handshakeRes.features());
+        protoCtx = new JdbcProtocolContext(srvProtoVer, handshakeRes.features(), connProps.isKeepBinary());
     }
 
     /**
@@ -252,7 +257,7 @@ public class JdbcThinTcpIo {
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        ctx.configure(marsh, new IgniteConfiguration());
+        ctx.configure(marsh);
 
         BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
@@ -444,7 +449,7 @@ public class JdbcThinTcpIo {
      * @throws IOException In case of IO error.
      * @throws SQLException On error.
      */
-    void sendBatchRequestNoWaitResponse(JdbcOrderedBatchExecuteRequest req) throws IOException, SQLException {
+    void sendRequestNoWaitResponse(JdbcRequest req) throws IOException, SQLException {
         if (!isUnorderedStreamSupported()) {
             throw new SQLException("Streaming without response doesn't supported by server [driverProtocolVer="
                 + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
@@ -500,8 +505,7 @@ public class JdbcThinTcpIo {
      * @throws IOException In case of IO error.
      */
     JdbcResponse readResponse() throws IOException {
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null,
-            null, false);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, new BinaryHeapInputStream(read()), null, true);
 
         JdbcResponse res = new JdbcResponse();
 
@@ -546,8 +550,8 @@ public class JdbcThinTcpIo {
     private void sendRequestRaw(JdbcRequest req) throws IOException {
         int cap = guessCapacity(req);
 
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
-            null, null);
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(cap),
+            BinaryThreadLocalContext.get().schemaHolder(), null);
 
         req.writeBinary(writer, protoCtx);
 
@@ -667,6 +671,15 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * Whether custom objects are supported by the server or not.
+     *
+     * @return {@code true} if custom objects are supported, {@code false} otherwise.
+     */
+    boolean isCustomObjectSupported() {
+        return protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT);
+    }
+
+    /**
      * Get next server index.
      *
      * @param len Number of servers.
@@ -722,7 +735,10 @@ public class JdbcThinTcpIo {
         return connected;
     }
 
-    /** */
+    /**
+     * Set of features enabled on clien side. To get features
+     * supported by both sides use {@link #protoCtx}.
+     */
     private EnumSet<JdbcThinFeature> enabledFeatures() {
         EnumSet<JdbcThinFeature> features = JdbcThinFeature.allFeaturesAsEnumSet();
 
