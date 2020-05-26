@@ -264,7 +264,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         startedFut.onDone(th);
 
         if (!(th instanceof IgniteFutureCancelledCheckedException))
-            U.warn(log, "Snapshot task has accepted exception to stop: " + th);
+            U.error(log, "Snapshot task has accepted exception to stop", th);
     }
 
     /** {@inheritDoc} */

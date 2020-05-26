@@ -211,16 +211,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @return Working directory.
      */
     public static File resolveBinaryWorkDir(String igniteWorkDir, String consId) {
-        try {
-            File workDir = binaryWorkDir(igniteWorkDir, consId);
+        File workDir = binaryWorkDir(igniteWorkDir, consId);
 
-            U.ensureDirectory(workDir, "directory for serialized binary metadata", null);
+        if (!U.mkdirs(workDir))
+            throw new IgniteException("Could not create directory for binary metadata: " + workDir);
 
-            return workDir;
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        return workDir;
     }
 
     /**

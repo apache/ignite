@@ -608,16 +608,12 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @return Resolved directory.
      */
     public static File mappingFileStoreWorkDir(String igniteWorkDir) {
-        try {
-            File dir = mappingWorkDir(igniteWorkDir);
+        File dir = mappingWorkDir(igniteWorkDir);
 
-            U.ensureDirectory(dir, "directory for serialized marshaller mappings", null);
+        if (!U.mkdirs(dir))
+            throw new IgniteException("Could not create directory for marshaller mappings: " + dir);
 
-            return dir;
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        return dir;
     }
 
     /**
