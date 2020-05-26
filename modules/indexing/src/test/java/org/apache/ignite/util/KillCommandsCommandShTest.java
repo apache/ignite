@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
+import static org.apache.ignite.util.KillCommandsTests.PAGES_CNT;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
@@ -71,7 +72,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
         // There must be enough cache entries to keep scan query cursor opened.
         // Cursor will be concurrently closed when all the data retrieved.
-        for (int i = 0; i < 10_000 * PAGE_SZ; i++)
+        for (int i = 0; i < PAGES_CNT * PAGE_SZ; i++)
             cache.put(i, i);
 
         awaitPartitionMapExchange();
