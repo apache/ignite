@@ -625,6 +625,9 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @return Work directory for marshaller mappings.
      */
     public static File mappingWorkDir(String igniteWorkDir) {
+        if (F.isEmpty(igniteWorkDir))
+            throw new IgniteException("Work directory has not been set: " + igniteWorkDir);
+
         return new File(igniteWorkDir, "marshaller");
     }
 

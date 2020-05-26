@@ -229,6 +229,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @return Working directory.
      */
     public static File binaryWorkDir(String igniteWorkDir, String consId) {
+        if (F.isEmpty(igniteWorkDir) || F.isEmpty(consId)) {
+            throw new IgniteException("Work directory or consistent id has not been set " +
+                "[igniteWorkDir=" + igniteWorkDir + ", consId=" + consId + ']');
+        }
+
         return Paths.get(igniteWorkDir, BINARY_META_FOLDER, consId).toFile();
     }
 
