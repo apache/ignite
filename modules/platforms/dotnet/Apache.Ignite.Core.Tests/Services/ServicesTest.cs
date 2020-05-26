@@ -436,8 +436,12 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArrayOfObjects(objArray)
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
 
+            Assert.IsNull(prx.TestBinarizableArrayOfObjects(null));
+
             Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray(typedArray)
                   .Select(x => x.Field).ToArray());
+
+            Assert.IsNull(prx.TestBinarizableArray(null));
 
             // TestBinarizableArray2 has no corresponding class in Java.
             var typedArray2 = new[] {10, 11, 12}
@@ -900,10 +904,16 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+
             Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArrayOfObjects(arrOfObj)
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+
+            Assert.IsNull(svc.testBinarizableArrayOfObjects(null));
+
             Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArray(arr)
                 .Select(x => x.Field).ToArray());
+
+            Assert.IsNull(svc.testBinarizableArray(null));
 
             // Binary object
             Assert.AreEqual(15,
