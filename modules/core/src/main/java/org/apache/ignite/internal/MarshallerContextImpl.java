@@ -191,7 +191,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      */
     public static void saveMappings(GridKernalContext ctx, List<Map<Integer, MappedName>> mappings, File dir) {
         MarshallerMappingFileStore writer = new MarshallerMappingFileStore(ctx,
-            mappingFileStoreWorkDir(dir.getAbsolutePath()));
+            resolveMappingFileStoreWorkDir(dir.getAbsolutePath()));
 
         addPlatformMappings(ctx.log(MarshallerContextImpl.class),
             mappings,
@@ -592,7 +592,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
 
         fileStore = marshallerMappingFileStoreDir == null ?
-            new MarshallerMappingFileStore(ctx, mappingFileStoreWorkDir(workDir)) :
+            new MarshallerMappingFileStore(ctx, resolveMappingFileStoreWorkDir(workDir)) :
             new MarshallerMappingFileStore(ctx, marshallerMappingFileStoreDir);
 
         this.transport = transport;
@@ -607,8 +607,8 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param igniteWorkDir Base ignite working directory.
      * @return Resolved directory.
      */
-    public static File mappingFileStoreWorkDir(String igniteWorkDir) {
-        File dir = mappingWorkDir(igniteWorkDir);
+    public static File resolveMappingFileStoreWorkDir(String igniteWorkDir) {
+        File dir = mappingFileStoreWorkDir(igniteWorkDir);
 
         if (!U.mkdirs(dir))
             throw new IgniteException("Could not create directory for marshaller mappings: " + dir);
@@ -620,7 +620,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param igniteWorkDir Base ignite working directory.
      * @return Work directory for marshaller mappings.
      */
-    public static File mappingWorkDir(String igniteWorkDir) {
+    public static File mappingFileStoreWorkDir(String igniteWorkDir) {
         if (F.isEmpty(igniteWorkDir))
             throw new IgniteException("Work directory has not been set: " + igniteWorkDir);
 

@@ -115,7 +115,7 @@ import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
-import static org.apache.ignite.internal.MarshallerContextImpl.mappingWorkDir;
+import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -405,7 +405,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             U.delete(binDir);
             U.delete(nodeDbDir);
 
-            File marshDir = mappingWorkDir(snpDir.getAbsolutePath());
+            File marshDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
 
             // Concurrently traverse the snapshot marshaller directory and delete all files.
             Files.walkFileTree(marshDir.toPath(), new SimpleFileVisitor<Path>() {

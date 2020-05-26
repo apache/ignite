@@ -59,7 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.MarshallerContextImpl.mappingWorkDir;
+import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
@@ -111,9 +111,9 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         PdsFolderSettings settings = ig.context().pdsFolderResolver().resolveFolders();
         String nodePath = databaseRelativePath(settings.folderName());
         File binWorkDir = binaryWorkDir(cfg.getWorkDirectory(), settings.folderName());
-        File marshWorkDir = mappingWorkDir(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
+        File marshWorkDir = mappingFileStoreWorkDir(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
         File snpBinWorkDir = binaryWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath(), settings.folderName());
-        File snpMarshWorkDir = mappingWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
+        File snpMarshWorkDir = mappingFileStoreWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
 
         final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
         final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(
