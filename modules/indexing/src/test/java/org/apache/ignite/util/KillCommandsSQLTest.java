@@ -98,7 +98,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
-        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
+        // There must be enough cache entries to keep scan query cursor opened.
+        // Cursor will be concurrently closed when all the data retrieved.
+        for (int i = 0; i < 10_000 * PAGE_SZ; i++)
             cache.put(i, i);
     }
 
