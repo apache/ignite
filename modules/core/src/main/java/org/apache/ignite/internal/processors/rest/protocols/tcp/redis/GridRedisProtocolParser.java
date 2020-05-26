@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 
@@ -286,6 +287,37 @@ public class GridRedisProtocolParser {
      */
     public static ByteBuffer toArray(Map<Object, Object> vals) {
         return toArray(vals.values());
+    }
+
+    /**
+     * Converts a resultant map response to an array,
+     * the order of elements in the resulting array is defined by the order of elements in the {@code origin} collection.
+     *
+     * @param vals Map.
+     * @param origin List that defines the order of the resulting array.
+     * @return Array response.
+     */
+    public static ByteBuffer toOrderedArray(Map<Object, Object> vals, List<?> origin) {
+        assert vals != null : "The resulting map is null.";
+        assert origin != null : "The origin list is null.";
+
+        byte[] arrSize = String.valueOf(vals.size()).getBytes();
+
+        ByteBuffer buf = ByteBuffer.allocateDirect(1024 * 1024);
+        buf.put(ARRAY);
+        buf.put(arrSize);
+        buf.put(CRLF);
+
+        origin.forEach(o -> {
+            Object val = vals.get(o);
+
+            if (val != null)
+                buf.put(toBulkString(val));
+        });
+
+        buf.flip();
+
+        return buf;
     }
 
     /**

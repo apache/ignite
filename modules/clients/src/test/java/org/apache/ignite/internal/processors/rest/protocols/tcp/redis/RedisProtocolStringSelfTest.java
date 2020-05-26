@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -94,6 +95,36 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
 //            not supported.
 //            fail("Incompatible! getAll() does not return null values!");
 //            Assert.assertTrue(result.contains("nil"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMGetOrder() throws Exception {
+        int keysCnt = 33;
+
+        List<String> keys = new ArrayList<>(keysCnt);
+        List<String> values = new ArrayList<>(keysCnt);
+
+        // Fill values.
+        for (int i = 0; i < keysCnt; ++i) {
+            keys.add("getKey" + i);
+
+            values.add("getValue" + i);
+        }
+
+        try (Jedis jedis = pool.getResource()) {
+            for (int i = 0; i < keysCnt; ++i)
+                jcache().put(keys.get(i), values.get(i));
+
+            List<String> res = jedis.mget(keys.toArray(new String[keysCnt]));
+
+            Assert.assertEquals("The response size is not expected.", keysCnt, res.size());
+
+            for (int i = 0; i < keysCnt; ++i)
+                Assert.assertEquals(values.get(i), res.get(i));
         }
     }
 
