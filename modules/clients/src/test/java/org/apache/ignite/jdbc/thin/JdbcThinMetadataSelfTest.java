@@ -207,10 +207,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Ensure metadata returned for cache without explicit query entities:
-     *      - create a cache with indexed types and without explicit query entities
-     *      - request metadata for columns from the cache
-     *      - verify returned result
+     * Ensure metadata returned for cache without explicit query entities: <ul>
+     *     <li>create a cache with indexed types and without explicit query entities</li>
+     *     <li>request metadata for columns from the cache</li>
+     *     <li>verify returned result</li>
+     * </ul>
      *
      * @throws SQLException
      */
@@ -243,10 +244,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Ensure metadata returned for cache with explicit query entities has no duplicate columns:
-     *      - create a cache with indexed types and explicit query entity
-     *      - request metadata for columns from the cache
-     *      - verify returned result
+     * Ensure metadata returned for cache with explicit query entities has no duplicate columns: <ul>
+     *     <li>create a cache with indexed types and explicit query entity</li>
+     *     <li>request metadata for columns from the cache</li>
+     *     <li>verify returned result</li>
+     * </ul>
      *
      * @throws SQLException
      */
@@ -1423,8 +1425,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
     /** */
     private enum MetadataColumn {
-        /** */ TABLE_SCHEMA("TABLE_SCHEM"),
-        /** */ COLUMN_NAME("COLUMN_NAME");
+        /** */
+        TABLE_SCHEMA("TABLE_SCHEM"),
+
+        /** */
+        COLUMN_NAME("COLUMN_NAME");
 
         /** Column name. */
         private final String colName;
