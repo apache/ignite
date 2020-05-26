@@ -44,17 +44,18 @@ namespace Apache.Ignite.Core.Impl.Client
                 {ClientOp.ClusterIsActive, new ClientProtocolVersion(1, 5, 0)},
                 {ClientOp.ClusterChangeState, new ClientProtocolVersion(1, 5, 0)},
                 {ClientOp.ClusterChangeWalState, new ClientProtocolVersion(1, 5, 0)},
-                {ClientOp.ClusterGetWalState, new ClientProtocolVersion(1, 5, 0)},
-                {ClientOp.ClusterGroupGetNodeIds, new ClientProtocolVersion(1, 5, 0)},
-                {ClientOp.ClusterGroupGetNodesInfo, new ClientProtocolVersion(1, 5, 0)},
+                {ClientOp.ClusterGetWalState, new ClientProtocolVersion(1, 5, 0)}
             };
-        
+
         /** */
-        private static readonly Dictionary<ClientOp, ClientBitmaskFeature> OpFeature = 
+        private static readonly Dictionary<ClientOp, ClientBitmaskFeature> OpFeature =
             new Dictionary<ClientOp, ClientBitmaskFeature>
-        {
-            {ClientOp.ClusterGroupGetNodesEndpoints, ClientBitmaskFeature.ClusterGroupGetNodesEndpoints}
-        };
+            {
+                {ClientOp.ClusterGroupGetNodesEndpoints, ClientBitmaskFeature.ClusterGroupGetNodesEndpoints},
+                {ClientOp.ComputeTaskExecute, ClientBitmaskFeature.ExecuteTaskByName},
+                {ClientOp.ClusterGroupGetNodeIds, ClientBitmaskFeature.ClusterGroups},
+                {ClientOp.ClusterGroupGetNodesInfo, ClientBitmaskFeature.ClusterGroups}
+            };
         
         /** */
         private readonly ClientProtocolVersion _protocolVersion;
@@ -161,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             var requiredFeature = GetFeature(operation);
 
-            if (_features != null && requiredFeature != null && !_features.Get((int) requiredFeature.Value))
+            if (requiredFeature != null && (_features == null || !_features.Get((int) requiredFeature.Value)))
             {
                 if (shouldThrow)
                 {

@@ -255,6 +255,12 @@
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterGroupTests.cs" Link="ThinClient\Cluster\ClientClusterGroupTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterTests.cs" Link="ThinClient\Cluster\ClientClusterTests.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Compute\ComputeClientDisabledTests.cs">
+      <Link>ThinClient\Compute\ComputeClientDisabledTests.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Compute\ComputeClientTests.cs">
+      <Link>ThinClient\Compute\ComputeClientTests.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\EndpointTest.cs" Link="ThinClient\EndpointTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\IgniteClientConfigurationTest.cs" Link="ThinClient\IgniteClientConfigurationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\RawSecureSocketTest.cs" Link="ThinClient\RawSecureSocketTest.cs" />
@@ -304,6 +310,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Plugin\TestIgnitePluginException.cs" Link="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Plugin\TestIgnitePluginProvider.cs" Link="Plugin\TestIgnitePluginProvider.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Query\BinarizablePerson.cs" Link="Cache\Query\BinarizablePerson.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Services\CallPlatformServiceTest.cs" Link="Services\CallPlatformServiceTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServiceProxyTest.cs" Link="Services\ServiceProxyTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesAsyncWrapper.cs" Link="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTest.cs" Link="Services\ServicesTest.cs" />

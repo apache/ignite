@@ -1933,9 +1933,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 ((BinaryObjectImpl)obj).context(ctx);
 
-                if (!GridBinaryMarshaller.KEEP_BINARY_OBJECTS.get())
-                    obj = ((BinaryObject)obj).deserialize();
-
                 break;
 
             case ENUM:
@@ -1950,9 +1947,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case BINARY_ENUM:
                 obj = BinaryUtils.doReadBinaryEnum(in, ctx);
-
-                if (!GridBinaryMarshaller.KEEP_BINARY_OBJECTS.get())
-                    obj = ((BinaryObject)obj).deserialize();
 
                 break;
 

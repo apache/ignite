@@ -32,10 +32,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Initializes a new instance of <see cref="ClientRequestContext"/> class.
         /// </summary>
         /// <param name="stream">Stream.</param>
-        /// <param name="marshaller">Marshaller.</param>
-        /// <param name="features">Features supported by this request.</param>
-        public ClientRequestContext(IBinaryStream stream, Marshaller marshaller, ClientFeatures features)
-            : base(stream, marshaller, features)
+        /// <param name="socket">Socket.</param>
+        public ClientRequestContext(IBinaryStream stream, ClientSocket socket)
+            : base(stream, socket)
 
         {
             // No-op.

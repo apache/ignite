@@ -1,6 +1,88 @@
 Apache Ignite Release Notes
 ===========================
 
+
+Apache Ignite In-Memory Computing Platform 2.8.1
+-----------------------------------------------------------
+
+Security:
+* Fixed vulnerability of using H2 admin rights for user SQL connections
+
+Ignite Core:
+* Added cluster achieving fully rebalanced (PME-free ready) state metric
+* Added compute job system view
+* Added support long keys in DistributedMetaStorage
+* Added transaction operations metrics
+* Fixed ClassCastException in Thin Client
+* Fixed IllegalArgumentException on activation of LogExporterSpi
+* Fixed JDBC thin client SELECT hanging under 2.8.0
+* Fixed Java thin client: Wrong typeId generation for system types
+* Fixed MERGE INTO query failing on Ignite client node
+* Fixed MetricRegistryMBean and OpenCensusExporterSpi memory leak
+* Fixed MetricRegistryMBean nit showing histogram values when histogram name contains underscore
+* Fixed MetricRegistryMBean thread safety
+* Fixed NullPointerException while initializing Cassandra Store
+* Fixed NullPointerException thrown by ExchangeLatchManager during cache creation
+* Fixed SQL: H2Connection leaking on INSERT
+* Fixed SQL: KILL QUERY command hanging on query when query cursor is held by user or leak
+* Fixed SQL: Potential race on MapResult close
+* Fixed SQL: Query reduce can failing with NPE on retry
+* Fixed SQL: Local queries cursors must be closed or full read to unlock the GridH2Table
+* Fixed TcpCommunicationSpi metrics implementation
+* Fixed Thin client thread not stopping
+* Fixed affinity cache for version of last server event being wiped from history
+* Fixed all binary types being registered twice
+* Fixed empty cluster failing if wal segment size small
+* Fixed cache stopping on supplier during rebalance causing NPE and supplying failure
+* Fixed not being able to set serialized enum to a BinaryObject's field
+* Fixed cluster failing to find the node by consistent ID
+* Fixed cluster restart leading to cluster activation error
+* Fixed continuously generating thread dumps in failure processor slowing down the whole system
+* Fixed destroy of big cache which is not only cache in cache group causing IgniteOOME
+* Fixed dynamic SQL index recreation after cache clear resulting in AssertionError or JVM crash
+* Fixed contention on ConcurrentHashMap.size()
+* Fixed consistency issues for atomic and mixed tx-atomic cache groups
+* Fixed getting SecurityContext from GridSecurityProcessor
+* Fixed h2Tree going into illegal state when non-indexed columns are dropped
+* Fixed historical (WAL) rebalance starting on cleared partition if some baseline node leaves the cluster and then rejoins
+* Fixed igniteQueue.removeAll throwing NPE
+* Fixed ignitevisorcmd not connecting to cluster
+* Fixed inconsistency between cache data and indexes when cache operation is interrupted
+* Fixed incorrect rewriting of wal record type in marshalled mode during iteration
+* Fixed intermittent [Failed to notify direct custom event listener] exception on node shutdown
+* Fixed dynamically setting used cache for Spring Data
+* Fixed logging exceptions inside IgniteSecurityProcessor#withContext(java.util.UUID)
+* Fixed long exchange on deactivation process
+* Fixed memory leak on unstable topology caused by partition reservation
+* Fixed metric exporter implementation issue leading to NullPointerException from gauge which invokes communication
+* Fixed node failing after get operation when entries from the cache expired concurrently
+* Fixed node failing after putting incorrect key class for indexed type to transactional cache
+* Fixed node leaving causing NullPointerException during IO message processing if security is enabled
+* Fixed node stopping on type mismatch error between index type and type of value from searched row
+* Fixed non-comparable keys for eviction policy causing failure handle and node shutdown
+* Fixed pages leak suspicion in PDS
+* Fixed partition desync if a partition is evicted then owned again and historically rebalanced
+* Fixed possible extra page release when throttling and checkpoint thread store it concurrently
+* Fixed possible tx desync during recovery on near node left
+* Fixed partitions owned by other nodes switching their state to MOVING due to counter difference on node join
+* Fixed Spring Data query annotations not working if statement keywords are in lower case
+* Fixed remote thin client operations not being authorized correctly
+* Fixed scan query shutting down the node in some cases
+* Fixed scan query/iterator on a replicated cache getting wrong results
+* Fixed searching checkpoint record in WAL not working with segment compaction
+* Fixed some of rentingFutures in GridDhtPartitionTopologyImpl accumulating a huge number of eviction callbacks
+* Fixed cache#putAllAsync method not collecting statistics
+* Fixed thin JDBC streaming failing with BatchUpdateException if function is used
+* Fixed page difference output throttling in PageMemoryTracker
+* Fixed transaction hanging after too many open files NIO exception
+* Fixed update of partition states becoming stuck when rebalance completed during exchange
+* Fixed zookeeper discovery not working due to missed dependency
+
+Ignite .Net:
+* Fixed services failing to call method with DateTime or Guid argument
+* Fixed NullReferenceException when serializing fields of the same type in different order
+
+
 Apache Ignite In-Memory Database and Caching Platform 2.8
 ---------------------------------------------------------
 
