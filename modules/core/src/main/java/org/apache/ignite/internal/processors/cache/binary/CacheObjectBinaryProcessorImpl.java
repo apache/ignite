@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -211,11 +212,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      */
     public static File resolveBinaryWorkDir(String igniteWorkDir, String consId) {
         try {
-            File workDir = new File(U.resolveWorkDirectory(
-                igniteWorkDir,
-                BINARY_META_FOLDER,
-                false),
-                consId);
+            File workDir = binaryWorkDir(igniteWorkDir, consId);
 
             U.ensureDirectory(workDir, "directory for serialized binary metadata", null);
 
@@ -224,6 +221,15 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @param igniteWorkDir Basic ignite working directory.
+     * @param consId Node consistent id.
+     * @return Working directory.
+     */
+    public static File binaryWorkDir(String igniteWorkDir, String consId) {
+        return Paths.get(igniteWorkDir, BINARY_META_FOLDER, consId).toFile();
     }
 
     /** {@inheritDoc} */

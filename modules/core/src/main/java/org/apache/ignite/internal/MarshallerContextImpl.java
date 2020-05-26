@@ -609,11 +609,23 @@ public class MarshallerContextImpl implements MarshallerContext {
      */
     public static File mappingFileStoreWorkDir(String igniteWorkDir) {
         try {
-            return U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
+            File dir = mappingWorkDir(igniteWorkDir);
+
+            U.ensureDirectory(dir, "directory for serialized marshaller mappings", null);
+
+            return dir;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @param igniteWorkDir Base ignite working directory.
+     * @return Work directory for marshaller mappings.
+     */
+    public static File mappingWorkDir(String igniteWorkDir) {
+        return new File(igniteWorkDir, "marshaller");
     }
 
     /**

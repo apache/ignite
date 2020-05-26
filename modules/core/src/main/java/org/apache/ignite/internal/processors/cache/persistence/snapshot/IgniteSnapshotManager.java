@@ -115,13 +115,13 @@ import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
-import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
+import static org.apache.ignite.internal.MarshallerContextImpl.mappingWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
@@ -399,13 +399,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         assert snpDir.isDirectory() : snpDir;
 
         try {
-            File binDir = resolveBinaryWorkDir(snpDir.getAbsolutePath(), folderName);
-            File dbDir = U.resolveWorkDirectory(snpDir.getAbsolutePath(), databaseRelativePath(folderName), false);
+            File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
+            File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
 
             U.delete(binDir);
-            U.delete(dbDir);
+            U.delete(nodeDbDir);
 
-            File marshDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
+            File marshDir = mappingWorkDir(snpDir.getAbsolutePath());
 
             // Concurrently traverse the snapshot marshaller directory and delete all files.
             Files.walkFileTree(marshDir.toPath(), new SimpleFileVisitor<Path>() {
@@ -439,7 +439,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 U.delete(snpDir);
             }
         }
-        catch (IOException | IgniteCheckedException e) {
+        catch (IOException e) {
             throw new IgniteException(e);
         }
     }
