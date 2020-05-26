@@ -20,21 +20,23 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.compatibility.sql.model.ModelFactory;
+import org.apache.ignite.compatibility.sql.model.Person;
 import org.apache.ignite.compatibility.testframework.junits.Dependency;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -56,6 +58,9 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
     /** */
     private static final int NEW_JDBC_PORT = 10801;
 
+    /** Query workers count. */
+    private static final int WORKERS_CNT = 8;
+
     /** */
     public static final TcpDiscoveryIpFinder OLD_VER_FINDER = new TcpDiscoveryVmIpFinder(true) {{
         setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
@@ -71,55 +76,75 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
      */
     @Test
     public void testSqlPerformanceRegressions() throws Exception {
-        IgniteEx oldNode = null;
-        IgniteEx newNode = null;
         try {
-            oldNode = startGrid(1, IGNITE_VERSION, new ConfigurationClosure(), new PostStartupClosure(true));
+            startOldAndNewClusters();
 
-            newNode = (IgniteEx)IgnitionEx.start(prepareConfig(getConfiguration(), NEW_VER_FINDER, NEW_JDBC_PORT));
+            populateData();
 
             try (Connection oldConn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + OLD_JDBC_PORT);
-                Connection newConn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + NEW_JDBC_PORT)) {
-                System.out.println("populateData(oldConn);");
-                populateData(oldConn);
-                System.out.println("populateData(newConn);");
-                populateData(newConn);
+                 Connection newConn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + NEW_JDBC_PORT)) {
+                newConn.setSchema("PUBLIC");
+                try (PreparedStatement stmt = newConn.prepareStatement("SELECT * FROM person")) {
 
-            }
-
-
-            IgniteCache newCache = newNode.getOrCreateCache("Test");
-
-            System.out.println("newCache.get(1)=" + newCache.get(1));
-            newCache.put(2, 2);
-            System.out.println("newCache.get(1)=" + newCache.get(1));
-            System.out.println("newCache.get(2)=" + newCache.get(2));
-            //executeSql(oldNode, "SELECT *");
-            doSleep(2000);
-        }
-        finally {
-            IgniteProcessProxy.killAll();
-            U.close(newNode, log);
-        }
-    }
-
-    public void populateData(Connection oldConn) throws SQLException {
-        try (Statement stmt = oldConn.createStatement()) {
-            stmt.execute("CREATE TABLE person (id BIGINT PRIMARY KEY, name VARCHAR) " +
-                "WITH \"cache_name=PERSON_CACHE\"");
-
-            stmt.execute("INSERT INTO person VALUES (1, 'KOKO')");
-            stmt.execute("INSERT INTO person VALUES (2, 'BEBE')");
-        }
-        try (PreparedStatement stmt = oldConn.prepareStatement("SELECT * FROM person")) {
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    System.out.println("RS=" + rs.getInt(1) + ", " + rs.getString(2));
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        while (rs.next()) {
+                            System.out.println("RS=" + rs.getString(1) + ", " + rs.getInt(2));
+                        }
+                    }
                 }
             }
         }
+        finally {
+            stopClusters();
+        }
+    }
+
+    public void startOldAndNewClusters() throws Exception {
+        // Old cluster.
+        startGrid(1, IGNITE_VERSION, new NodeConfigurationClosure(), new PostStartupClosure(true));
+
+        // New cluster
+        IgnitionEx.start(prepareNodeConfig(
+            getConfiguration(getTestIgniteInstanceName(0)), NEW_VER_FINDER, NEW_JDBC_PORT));
+    }
+
+    public void populateData() throws SQLException {
+        initializeSchema(grid(0));
+        // TODO use streamer.
+//        try (Connection oldConn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + OLD_JDBC_PORT);
+//             Connection newConn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + NEW_JDBC_PORT)) {
+//            System.out.println("populateData(oldConn);");
+//            populateData(oldConn);
+//            System.out.println("populateData(newConn);");
+//            populateData(newConn);
+//        }
+    }
+
+    public void stopClusters() {
+        IgniteProcessProxy.killAll();
+        stopGrid(0);
+    }
+
+
+
+    public void populateData(Connection oldConn) throws SQLException {
 
     }
+
+//    try (Statement stmt = oldConn.createStatement()) {
+//            stmt.execute("CREATE TABLE person (id BIGINT PRIMARY KEY, name VARCHAR) " +
+//                "WITH \"cache_name=PERSON_CACHE\"");
+//
+//            stmt.execute("INSERT INTO person VALUES (1, 'KOKO')");
+//            stmt.execute("INSERT INTO person VALUES (2, 'BEBE')");
+//        }
+//        try (PreparedStatement stmt = oldConn.prepareStatement("SELECT * FROM person")) {
+//            try (ResultSet rs = stmt.executeQuery()) {
+//                while (rs.next()) {
+//                    System.out.println("RS=" + rs.getInt(1) + ", " + rs.getString(2));
+//                }
+//            }
+//        }
 
     /**
      * Run SQL statement on specified node.
@@ -169,46 +194,37 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
-            ignite.active(true);
-
-            IgniteEx igniteEx = (IgniteEx)ignite;
-
-            if (createTable)
-                initializeTable(igniteEx, "TABLE_NAME");
-
-            IgniteCache oldCache = ignite.getOrCreateCache("Test");
-
-            oldCache.put(1, 1);
-
-            System.out.println("oldCache.get(1)=" + oldCache.get(1));
-
-
+            if (createTable) {
+                initializeSchema(ignite);
+            }
         }
+
+
     }
 
-    /**
-     * @param igniteEx Ignite instance.
-     * @param tblName Table name.
-     */
-    @NotNull private static void initializeTable(IgniteEx igniteEx, String tblName) {
-        executeSql(igniteEx, "CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
-            "primary key (id, name, city)) WITH \"affinity_key=name\"");
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static void initializeSchema(Ignite ignite) {
+        ModelFactory factory = new Person.PersonFactory(0);
+        QueryEntity qryEntity = factory.queryEntity();
+        CacheConfiguration cacheCfg = new CacheConfiguration<>(factory.tableName())
+            .setQueryEntities(Collections.singleton(qryEntity)).setSqlSchema("PUBLIC");
 
-        executeSql(igniteEx, "CREATE INDEX ON " + tblName + "(city, age)");
+        IgniteCache personCache = ignite.createCache(cacheCfg);
 
-        for (int i = 0; i < 1000; i++)
-            executeSql(igniteEx, "INSERT INTO " + tblName + " (id, name, age, company, city) VALUES(?,'name',2,'company', 'city')", i);
+        for (long i = 0; i < 10; i++)
+            personCache.put(i, factory.createRandom());
     }
+
 
     /** */
-    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+    private static class NodeConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** {@inheritDoc} */
         @Override public void apply(IgniteConfiguration cfg) {
-            prepareConfig(cfg, OLD_VER_FINDER, OLD_JDBC_PORT);
+            prepareNodeConfig(cfg, OLD_VER_FINDER, OLD_JDBC_PORT);
         }
     }
 
-    private static IgniteConfiguration prepareConfig(IgniteConfiguration cfg, TcpDiscoveryIpFinder ipFinder,
+    private static IgniteConfiguration prepareNodeConfig(IgniteConfiguration cfg, TcpDiscoveryIpFinder ipFinder,
         int jdbcPort) {
         cfg.setLocalHost("127.0.0.1");
         cfg.setPeerClassLoadingEnabled(false);
