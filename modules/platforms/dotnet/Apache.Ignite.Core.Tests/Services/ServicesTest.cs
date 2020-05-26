@@ -438,8 +438,12 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.IsNull(prx.TestBinarizableArrayOfObjects(null));
 
+            Assert.IsEmpty(prx.TestBinarizableArrayOfObjects(new object[0]));
+
             Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray(typedArray)
                   .Select(x => x.Field).ToArray());
+
+            Assert.IsEmpty(prx.TestBinarizableArray(new PlatformComputeBinarizable[0]));
 
             Assert.IsNull(prx.TestBinarizableArray(null));
 
