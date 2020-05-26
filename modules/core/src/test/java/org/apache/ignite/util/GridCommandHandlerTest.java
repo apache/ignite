@@ -157,7 +157,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         initDiagnosticDir();
 
-        cleanPersistenceDir();
         cleanDiagnosticDir();
     }
 
