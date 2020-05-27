@@ -757,7 +757,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @Test
     public void testInvalidAtomicity() {
         assertCreateTableWithParamsThrows("atomicity=InvalidValue",
-            "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL or ATOMIC): InvalidValue");
+            "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL, ATOMIC, " +
+            "TRANSACTIONAL_SNAPSHOT): InvalidValue");
     }
 
     /**
