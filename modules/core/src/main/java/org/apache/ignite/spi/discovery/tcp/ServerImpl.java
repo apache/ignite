@@ -275,7 +275,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Last time received message from ring. */
     private volatile long lastRingMsgReceivedTime;
 
-    /** Time of last sent and answered message. */
+    /** Time of last sent and acknowledged message. */
     private volatile long lastRingMsgSentTime;
 
     /** */
