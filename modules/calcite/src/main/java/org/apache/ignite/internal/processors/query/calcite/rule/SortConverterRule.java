@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptCluster;
@@ -22,25 +21,25 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 
 /**
- *
+ * Converter rule for sort operator.
  */
-public class ProjectConverterRule extends RelOptRule {
+public class SortConverterRule extends RelOptRule {
     /** */
-    public static final RelOptRule INSTANCE = new ProjectConverterRule();
+    public static final RelOptRule INSTANCE = new SortConverterRule();
 
     /** */
-    public ProjectConverterRule() {
-        super(operand(LogicalProject.class, any()));
+    public SortConverterRule() {
+        super(operand(LogicalSort.class, any()));
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        LogicalProject rel = call.rel(0);
+        LogicalSort rel = call.rel(0);
 
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = cluster.traitSet()
@@ -48,6 +47,6 @@ public class ProjectConverterRule extends RelOptRule {
         RelNode input = convert(rel.getInput(), traits);
 
         RuleUtils.transformTo(call,
-            new IgniteProject(cluster, traits, input, rel.getProjects(), rel.getRowType()));
+            new IgniteSort(cluster, rel.getTraitSet().plus(IgniteConvention.INSTANCE), input, rel.collation, rel.offset, rel.fetch));
     }
 }

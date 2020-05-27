@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
@@ -60,5 +63,13 @@ public class IgniteExchange extends Exchange implements IgniteRel {
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        double rowCount = mq.getRowCount(this);
+        double bytesPerRow = getRowType().getFieldCount();
+        return planner.getCostFactory().makeCost(
+            rowCount, rowCount, 0);
     }
 }

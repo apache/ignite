@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.util;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -34,29 +35,36 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class TableScan implements Iterable<Object[]> {
+public class TableScan<Row> implements Iterable<Row> {
     /** */
-    private final ExecutionContext ectx;
+    private final ExecutionContext<Row> ectx;
 
     /** */
     private final TableDescriptor desc;
 
     /** */
-    public TableScan(ExecutionContext ectx, TableDescriptor desc) {
+    private final RowFactory<Row> factory;
+
+    /** */
+    public TableScan(ExecutionContext<Row> ectx, TableDescriptor desc) {
         this.ectx = ectx;
         this.desc = desc;
+
+        RelDataType rowType = desc.selectRowType(ectx.getTypeFactory());
+        factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Object[]> iterator() {
+    @Override public Iterator<Row> iterator() {
         try {
             return new IteratorImpl().init();
         }
@@ -68,7 +76,7 @@ public class TableScan implements Iterable<Object[]> {
     /**
      * Table scan iterator.
      */
-    public class IteratorImpl extends GridCloseableIteratorAdapter<Object[]> {
+    private class IteratorImpl extends GridCloseableIteratorAdapter<Row> {
         /** */
         private int cacheId;
 
@@ -82,14 +90,14 @@ public class TableScan implements Iterable<Object[]> {
         private GridCursor<? extends CacheDataRow> cur;
 
         /** */
-        private Object[] next;
+        private Row next;
 
         /** {@inheritDoc} */
-        @Override protected Object[] onNext() {
+        @Override protected Row onNext() {
             if (next == null)
                 throw new NoSuchElementException();
 
-            Object[] next = this.next;
+            Row next = this.next;
 
             this.next = null;
 
@@ -117,7 +125,7 @@ public class TableScan implements Iterable<Object[]> {
                     if (!desc.match(row))
                         continue;
 
-                    next = desc.toRow(ectx, row);
+                    next = desc.toRow(ectx, row, factory);
 
                     break;
                 } else {
@@ -145,7 +153,7 @@ public class TableScan implements Iterable<Object[]> {
         }
 
         /** */
-        public Iterator<Object[]> init() throws IgniteCheckedException {
+        public Iterator<Row> init() throws IgniteCheckedException {
             if (isClosed())
                 return Collections.emptyIterator();
 
@@ -163,7 +171,7 @@ public class TableScan implements Iterable<Object[]> {
                 top.readLock();
                 try {
                     GridDhtTopologyFuture fut = top.topologyVersionFuture();
-                    AffinityTopologyVersion topVer = ectx.parent().topologyVersion();
+                    AffinityTopologyVersion topVer = ectx.planningContext().topologyVersion();
 
                     if (!fut.isDone() || fut.topologyVersion().compareTo(topVer) != 0)
                         throw new ClusterTopologyCheckedException("Failed to execute query. Retry on stable topology.");
@@ -193,11 +201,11 @@ public class TableScan implements Iterable<Object[]> {
 
         /** */
         private void reserveReplicated(GridDhtPartitionTopology top) {
-            List<GridDhtLocalPartition> localParts = top.localPartitions();
+            List<GridDhtLocalPartition> locParts = top.localPartitions();
 
-            parts = new ArrayDeque<>(localParts.size());
+            parts = new ArrayDeque<>(locParts.size());
 
-            for (GridDhtLocalPartition local : localParts) {
+            for (GridDhtLocalPartition local : locParts) {
                 if (!local.reserve())
                     throw reservationException();
                 else if (local.state() != GridDhtPartitionState.OWNING) {
@@ -212,7 +220,7 @@ public class TableScan implements Iterable<Object[]> {
 
         /** */
         private void reservePartitioned(GridDhtPartitionTopology top) {
-            AffinityTopologyVersion topVer = ectx.parent().topologyVersion();
+            AffinityTopologyVersion topVer = ectx.planningContext().topologyVersion();
             int[] partitions = ectx.partitions();
 
             assert topVer != null && !F.isEmpty(partitions);
@@ -220,17 +228,17 @@ public class TableScan implements Iterable<Object[]> {
             parts = new ArrayDeque<>(partitions.length);
 
             for (int p : partitions) {
-                GridDhtLocalPartition local = top.localPartition(p, topVer, false);
+                GridDhtLocalPartition loc = top.localPartition(p, topVer, false);
 
-                if (local == null || !local.reserve())
+                if (loc == null || !loc.reserve())
                     throw reservationException();
-                else if (local.state() != GridDhtPartitionState.OWNING) {
-                    local.release();
+                else if (loc.state() != GridDhtPartitionState.OWNING) {
+                    loc.release();
 
                     throw reservationException();
                 }
 
-                parts.offer(local);
+                parts.offer(loc);
             }
         }
 

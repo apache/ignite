@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Array-based query processor.
  */
 public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
     /** */
@@ -86,7 +86,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .build();
 
     /** */
-    private final QueryPlanCache queryPlanCache;
+    private final QueryPlanCache qryPlanCache;
 
     /** */
     private final QueryTaskExecutor taskExecutor;
@@ -95,83 +95,56 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final FailureProcessor failureProcessor;
 
     /** */
-    private final PartitionService partitionService;
+    private final PartitionService partSvc;
 
     /** */
     private final SchemaHolder schemaHolder;
 
     /** */
-    private final MessageService messageService;
+    private final MessageService msgSvc;
 
     /** */
-    private final ExchangeService exchangeService;
+    private final ExchangeService exchangeSvc;
 
     /** */
-    private final MappingService mappingService;
-    
+    private final MappingService mappingSvc;
+
     /** */
     private final MailboxRegistry mailboxRegistry;
-    
+
     /** */
-    private final ExecutionService executionService;
+    private final ExecutionService executionSvc;
 
     /**
      * @param ctx Kernal context.
      */
     public CalciteQueryProcessor(GridKernalContext ctx) {
-        this(
-            ctx,
-            ctx.failure(),
-            new SchemaHolderImpl(ctx),
-            new QueryPlanCacheImpl(ctx),
-            new MailboxRegistryImpl(ctx),
-            new QueryTaskExecutorImpl(ctx),
-            new ExecutionServiceImpl(ctx),
-            new PartitionServiceImpl(ctx),
-            new MessageServiceImpl(ctx),
-            new MappingServiceImpl(ctx),
-            new ExchangeServiceImpl(ctx));
+        super(ctx);
+
+        failureProcessor = ctx.failure();
+        schemaHolder = new SchemaHolderImpl(ctx);
+        qryPlanCache = new QueryPlanCacheImpl(ctx);
+        mailboxRegistry = new MailboxRegistryImpl(ctx);
+        taskExecutor = new QueryTaskExecutorImpl(ctx);
+        executionSvc = new ExecutionServiceImpl<>(ctx, ArrayRowHandler.INSTANCE);
+        partSvc = new PartitionServiceImpl(ctx);
+        msgSvc = new MessageServiceImpl(ctx);
+        mappingSvc = new MappingServiceImpl(ctx);
+        exchangeSvc = new ExchangeServiceImpl(ctx);
     }
 
     /**
-     * For tests purpose.
-     * @param ctx Kernal context.
-     * @param failureProcessor Failure processor.
-     * @param schemaHolder Schema holder.
-     * @param queryPlanCache Query cache;
-     * @param mailboxRegistry Mailbox registry.
-     * @param taskExecutor Task executor.
-     * @param executionService Execution service.
-     * @param partitionService Affinity service.
-     * @param messageService Message service.
-     * @param mappingService Mapping service.
-     * @param exchangeService Exchange service.
+     * @return Affinity service.
      */
-    CalciteQueryProcessor(GridKernalContext ctx, FailureProcessor failureProcessor, SchemaHolder schemaHolder, QueryPlanCache queryPlanCache, MailboxRegistry mailboxRegistry, QueryTaskExecutor taskExecutor, ExecutionService executionService, PartitionService partitionService, MessageService messageService,
-        MappingService mappingService, ExchangeService exchangeService) {
-        super(ctx);
-
-        this.failureProcessor = failureProcessor;
-        this.schemaHolder = schemaHolder;
-        this.queryPlanCache = queryPlanCache;
-        this.mailboxRegistry = mailboxRegistry;
-        this.taskExecutor = taskExecutor;
-        this.executionService = executionService;
-        this.partitionService = partitionService;
-        this.messageService = messageService;
-        this.mappingService = mappingService;
-        this.exchangeService = exchangeService;
-    }
-
     public PartitionService affinityService() {
-        return partitionService;
+        return partSvc;
     }
 
     /**
      * @return Query cache.
      */
     public QueryPlanCache queryPlanCache() {
-        return queryPlanCache;
+        return qryPlanCache;
     }
 
     /**
@@ -192,21 +165,21 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
      * @return Message service.
      */
     public MessageService messageService() {
-        return messageService;
+        return msgSvc;
     }
 
     /**
      * @return Mapping service.
      */
     public MappingService mappingService() {
-        return mappingService;
+        return mappingSvc;
     }
 
     /**
      * @return Exchange service.
      */
     public ExchangeService exchangeService() {
-        return exchangeService;
+        return exchangeSvc;
     }
 
     /**
@@ -226,38 +199,38 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** {@inheritDoc} */
     @Override public void start() {
         onStart(ctx,
-            executionService,
+            executionSvc,
             mailboxRegistry,
-            partitionService,
+            partSvc,
             schemaHolder,
-            messageService,
+            msgSvc,
             taskExecutor,
-            mappingService,
-            queryPlanCache,
-            exchangeService
+            mappingSvc,
+            qryPlanCache,
+            exchangeSvc
         );
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         onStop(
-            executionService,
+            executionSvc,
             mailboxRegistry,
-            partitionService,
+            partSvc,
             schemaHolder,
-            messageService,
+            msgSvc,
             taskExecutor,
-            mappingService,
-            queryPlanCache,
-            exchangeService
+            mappingSvc,
+            qryPlanCache,
+            exchangeSvc
         );
     }
 
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext qryCtx, @Nullable String schemaName,
-        String query, Object... params) throws IgniteSQLException {
-        
-        return executionService.executeQuery(qryCtx, schemaName, query, params);
+        String qry, Object... params) throws IgniteSQLException {
+
+        return executionSvc.executeQuery(qryCtx, schemaName, qry, params);
     }
 
     /** */

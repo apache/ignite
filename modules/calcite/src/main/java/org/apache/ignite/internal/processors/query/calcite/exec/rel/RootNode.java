@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -27,19 +28,14 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Client iterator.
  */
-public class RootNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Downstream<Object[]>, Iterator<Object[]>, AutoCloseable {
-    /** */
-    public enum State {
-        RUNNING, CANCELLED, END
-    }
-
+public class RootNode<Row> extends AbstractNode<Row>
+    implements SingleNode<Row>, Downstream<Row>, Iterator<Row>, AutoCloseable {
     /** */
     private final ReentrantLock lock;
 
@@ -47,10 +43,10 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     private final Condition cond;
 
     /** */
-    private final ArrayDeque<Object> buff;
+    private final Deque<Row> buff;
 
     /** */
-    private final Consumer<RootNode> onClose;
+    private final Consumer<RootNode<Row>> onClose;
 
     /** */
     private volatile State state = State.RUNNING;
@@ -59,7 +55,7 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     private volatile IgniteSQLException ex;
 
     /** */
-    private Object row;
+    private Row row;
 
     /** */
     private int waiting;
@@ -67,7 +63,7 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     /**
      * @param ctx Execution context.
      */
-    public RootNode(ExecutionContext ctx, Consumer<RootNode> onClose) {
+    public RootNode(ExecutionContext<Row> ctx, Consumer<RootNode<Row>> onClose) {
         super(ctx);
 
         this.onClose = onClose;
@@ -77,7 +73,8 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
         lock = new ReentrantLock();
         cond = lock.newCondition();
     }
-    
+
+    /** */
     public UUID queryId() {
         return context().queryId();
     }
@@ -118,10 +115,10 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Object[] row) {
+    @Override public void push(Row row) {
         checkThread();
 
-        int request = 0;
+        int req = 0;
 
         lock.lock();
         try {
@@ -135,7 +132,7 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
             buff.offer(row);
 
             if (waiting == 0)
-                waiting = request = IN_BUFFER_SIZE - buff.size();
+                waiting = req = IN_BUFFER_SIZE - buff.size();
 
             cond.signalAll();
         }
@@ -143,8 +140,8 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
             lock.unlock();
         }
 
-        if (request > 0)
-            F.first(sources).request(request);
+        if (req > 0)
+            F.first(sources).request(req);
     }
 
     /** {@inheritDoc} */
@@ -158,7 +155,6 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
             if (state != State.RUNNING)
                 return;
 
-            buff.offer(EndMarker.INSTANCE);
             cond.signalAll();
         }
         finally {
@@ -186,18 +182,18 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public Object[] next() {
+    @Override public Row next() {
         if (!hasNext())
             throw new NoSuchElementException();
 
-        Object cur0 = row;
+        Row cur0 = row;
         row = null;
 
-        return (Object[]) cur0;
+        return cur0;
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Object[]> requestDownstream(int idx) {
+    @Override protected Downstream<Row> requestDownstream(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
 
@@ -205,37 +201,39 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public void onRegister(Downstream<Object[]> downstream) {
+    @Override public void onRegister(Downstream<Row> downstream) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCount) {
+    @Override public void request(int rowsCnt) {
         throw new UnsupportedOperationException();
     }
 
     /** */
-    private Object take() {
+    private Row take() {
+        assert !F.isEmpty(sources) && sources.size() == 1;
+
         lock.lock();
         try {
             checkCancelled();
-
             assert state == State.RUNNING;
 
-            while (buff.isEmpty()) {
-                requestIfNeeded();
+            while (true) {
+                if (!buff.isEmpty())
+                    return buff.poll();
+                else if (waiting == -1)
+                    break;
+                else if (waiting == 0) {
+                    int req = waiting = IN_BUFFER_SIZE;
+                    context().execute(() -> F.first(sources).request(req));
+                }
 
                 cond.await();
 
                 checkCancelled();
-
                 assert state == State.RUNNING;
             }
-
-            Object row = buff.poll();
-
-            if (row != EndMarker.INSTANCE)
-                return row;
 
             state = State.END;
         }
@@ -264,17 +262,14 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** */
-    private void requestIfNeeded() {
-        assert !F.isEmpty(sources) && sources.size() == 1;
+    public enum State {
+        /** */
+        RUNNING,
 
-        assert lock.isHeldByCurrentThread();
+        /** */
+        CANCELLED,
 
-        if (waiting != 0)
-            return;
-
-        int request = waiting = IN_BUFFER_SIZE - buff.size();
-
-        if (request > 0)
-            context().execute(() -> F.first(sources).request(request));
+        /** */
+        END
     }
 }

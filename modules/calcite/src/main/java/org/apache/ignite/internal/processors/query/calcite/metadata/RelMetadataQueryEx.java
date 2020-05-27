@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
@@ -49,7 +50,8 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
                 IgniteJoin.class,
                 IgniteTableScan.class,
                 IgniteValues.class,
-                IgniteTableModify.class));
+                IgniteTableModify.class,
+                IgniteSort.class));
     }
 
     /** */

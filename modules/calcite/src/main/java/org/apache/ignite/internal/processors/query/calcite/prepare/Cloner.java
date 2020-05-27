@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggre
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
@@ -120,7 +121,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableScan rel) {
-        return new IgniteTableScan(cluster, rel.getTraitSet(), rel.getTable());
+        return new IgniteTableScan(cluster, rel.getTraitSet(), rel.getTable(), rel.indexName(), rel.condition());
     }
 
     /** {@inheritDoc} */
@@ -133,6 +134,13 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
         List<RelNode> inputs = Commons.transform(rel.getInputs(), rel0 -> visit((IgniteRel) rel0));
 
         return new IgniteUnionAll(cluster, rel.getTraitSet(), inputs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteSort rel) {
+        RelNode input = visit((IgniteRel) rel.getInput());
+
+        return new IgniteSort(cluster, rel.getTraitSet(), input, rel.collation, rel.offset, rel.fetch);
     }
 
     /** {@inheritDoc} */

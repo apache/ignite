@@ -14,40 +14,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.logical.LogicalProject;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 
 /**
  *
  */
-public class ProjectConverterRule extends RelOptRule {
+public class SortTraitsPropagationRule extends RelOptRule {
     /** */
-    public static final RelOptRule INSTANCE = new ProjectConverterRule();
+    public static final RelOptRule INSTANCE = new SortTraitsPropagationRule();
 
     /** */
-    public ProjectConverterRule() {
-        super(operand(LogicalProject.class, any()));
+    public SortTraitsPropagationRule() {
+        super(RuleUtils.traitPropagationOperand(IgniteSort.class));
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        LogicalProject rel = call.rel(0);
+        IgniteSort rel = call.rel(0);
+        RelNode input = call.rel(1);
 
         RelOptCluster cluster = rel.getCluster();
-        RelTraitSet traits = cluster.traitSet()
-            .replace(IgniteConvention.INSTANCE);
-        RelNode input = convert(rel.getInput(), traits);
 
-        RuleUtils.transformTo(call,
-            new IgniteProject(cluster, traits, input, rel.getProjects(), rel.getRowType()));
+        RelTraitSet traits = input.getTraitSet()
+            .replace(rel.getCollation());
+
+        RelCollation sortCollation = rel.getCollation();
+        RelCollation inputCollation = input.getTraitSet().getTrait(RelCollationTraitDef.INSTANCE);
+
+        if (sortCollation.equals(inputCollation))
+            RuleUtils.transformTo(call, input);
+        else {
+            RuleUtils.transformTo(call,
+                new IgniteSort(cluster, traits, input, rel.getCollation(), rel.offset, rel.fetch));
+        }
     }
 }

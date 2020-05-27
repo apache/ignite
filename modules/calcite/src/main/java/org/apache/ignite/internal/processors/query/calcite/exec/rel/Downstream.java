@@ -23,12 +23,12 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
  * <p/><b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request(int)}, {@link Node#cancel()},
  * {@link Downstream#push(Object)} and {@link Downstream#end()} methods should be used from one single thread.
  */
-public interface Downstream<T> {
+public interface Downstream<Row> {
     /**
      * Pushes a row to consumer.
      * @param row Data row.
      */
-    void push(T row);
+    void push(Row row);
 
     /**
      * Signals that data is over.

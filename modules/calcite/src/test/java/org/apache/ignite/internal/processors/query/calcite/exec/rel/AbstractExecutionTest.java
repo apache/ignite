@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.calcite.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -50,7 +52,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KE
  */
 public class AbstractExecutionTest extends GridCommonAbstractTest {
     /** */
-    private Throwable lastException;
+    private Throwable lastE;
 
     /** */
     private Map<UUID, QueryTaskExecutorImpl> taskExecutors;
@@ -65,11 +67,12 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     private List<UUID> nodes;
 
     /** */
-    protected int nodesCount = 3;
+    protected int nodesCnt = 3;
 
+    /** */
     @Before
     public void setup() throws Exception {
-        nodes = IntStream.range(0, nodesCount)
+        nodes = IntStream.range(0, nodesCnt)
             .mapToObj(i -> UUID.randomUUID()).collect(Collectors.toList());
 
         taskExecutors = new HashMap<>(nodes.size());
@@ -86,10 +89,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
                 kernal.config().getQueryThreadPoolSize(),
                 kernal.igniteInstanceName(),
                 "calciteQry",
-                (t,ex) -> {
-                    log().error(ex.getMessage(), ex);
-                    lastException = ex;
-                },
+                this::handle,
                 true,
                 DFLT_THREAD_KEEP_ALIVE_TIME
             ));
@@ -99,60 +99,67 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
             mailboxRegistries.put(uuid, mailboxRegistry);
 
-            MessageServiceImpl messageService = new TestMessageServiceImpl(kernal, mgr);
-            messageService.localNodeId(uuid);
-            messageService.taskExecutor(taskExecutor);
-            mgr.register(messageService);
+            MessageServiceImpl msgSvc = new TestMessageServiceImpl(kernal, mgr);
+            msgSvc.localNodeId(uuid);
+            msgSvc.taskExecutor(taskExecutor);
+            mgr.register(msgSvc);
 
-            ExchangeServiceImpl exchangeService = new ExchangeServiceImpl(kernal);
-            exchangeService.taskExecutor(taskExecutor);
-            exchangeService.messageService(messageService);
-            exchangeService.mailboxRegistry(mailboxRegistry);
-            exchangeService.init();
+            ExchangeServiceImpl exchangeSvc = new ExchangeServiceImpl(kernal);
+            exchangeSvc.taskExecutor(taskExecutor);
+            exchangeSvc.messageService(msgSvc);
+            exchangeSvc.mailboxRegistry(mailboxRegistry);
+            exchangeSvc.init();
 
-            exchangeServices.put(uuid, exchangeService);
+            exchangeServices.put(uuid, exchangeSvc);
         }
     }
 
+    /** */
     @After
     public void tearDown() {
         taskExecutors.values().forEach(QueryTaskExecutorImpl::tearDown);
 
-        if (lastException != null)
-            throw new AssertionError(lastException);
+        if (lastE != null)
+            throw new AssertionError(lastE);
     }
 
+    /** */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     protected List<UUID> nodes() {
         return nodes;
     }
 
+    /** */
     protected ExchangeService exchangeService(UUID nodeId) {
         return exchangeServices.get(nodeId);
     }
 
+    /** */
     protected MailboxRegistry mailboxRegistry(UUID nodeId) {
         return mailboxRegistries.get(nodeId);
     }
 
+    /** */
     protected QueryTaskExecutor taskExecutor(UUID nodeId) {
         return taskExecutors.get(nodeId);
     }
 
-    protected ExecutionContext executionContext(UUID nodeId, UUID queryId, long fragmentId) {
-        FragmentDescription fragmentDescription = new FragmentDescription(fragmentId, null, -1, null, null);
-        return new ExecutionContext(
+    /** */
+    protected ExecutionContext<Object[]> executionContext(UUID nodeId, UUID qryId, long fragmentId) {
+        FragmentDescription fragmentDesc = new FragmentDescription(fragmentId, null, -1, null, null);
+        return new ExecutionContext<>(
             taskExecutor(nodeId),
-            PlanningContext.builder().localNodeId(nodeId).logger(log()).build(),
-            queryId, fragmentDescription, ImmutableMap.of());
+            PlanningContext.builder()
+                .localNodeId(nodeId)
+                .logger(log())
+                .build(),
+            qryId, fragmentDesc, ArrayRowHandler.INSTANCE, ImmutableMap.of());
     }
 
     /** */
-    private Void handle(Throwable ex) {
+    private void handle(Thread t, Throwable ex) {
         log().error(ex.getMessage(), ex);
-
-        lastException = ex;
-
-        return null;
+        lastE = ex;
     }
 
     /** */
@@ -161,7 +168,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         private final TestIoManager mgr;
 
         /** */
-        private TestMessageServiceImpl(GridTestKernalContext kernal, TestIoManager mgr) {
+        private TestMessageServiceImpl(GridKernalContext kernal, TestIoManager mgr) {
             super(kernal);
             this.mgr = mgr;
         }

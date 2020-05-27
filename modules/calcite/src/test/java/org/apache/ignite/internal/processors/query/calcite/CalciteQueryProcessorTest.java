@@ -41,7 +41,7 @@ import org.junit.Test;
 /**
  *
  */
-@WithSystemProperty(key = "calcite.debug", value = "true")
+@WithSystemProperty(key = "calcite.debug", value = "false")
 public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     /** */
     private IgniteEx ignite;
@@ -288,8 +288,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
             "" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?;" +
-                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?"
-            , 0,1);
+                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0,1);
 
         assertEquals(2, query.size());
 
@@ -314,7 +313,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertEquals(1, query.size());
 
-        List<?> row = F.first(query.get(0).getAll());
+        List<List<?>> rows = query.get(0).getAll();
+
+        assertEquals(1, rows.size());
+
+        List<?> row = rows.get(0);
 
         assertNotNull(row);
 

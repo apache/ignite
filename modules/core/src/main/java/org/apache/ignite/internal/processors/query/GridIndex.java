@@ -14,18 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.query;
 
-package org.apache.ignite.internal.processors.query.calcite.schema;
-
-import java.util.List;
-import org.apache.calcite.rel.RelCollation;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.util.lang.GridCursor;
 
 /**
+ * Index interface.
  *
+ * @param <R> Indexing row type.
  */
-public interface SortedTable {
+public interface GridIndex<R> {
     /**
-     * @return The table collations.
+     * Index lookup method.
+     *
+     * @param lower Lower bound.
+     * @param upper Upper bound.
+     * @param filterC Filtering closure.
+     * @return Cursor over the rows within bounds.
      */
-    List<RelCollation> collations();
+    GridCursor<R> find(R lower, R upper, BPlusTree.TreeRowClosure<R, R> filterC);
 }

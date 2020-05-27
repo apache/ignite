@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.query.GridIndex;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -77,7 +79,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
         List<QueryPlan> template = cache.get(key);
 
         if (template != null)
-            return Commons.transform(template, t-> t.clone(ctx));
+            return Commons.transform(template, t -> t.clone(ctx));
         else {
             List<QueryPlan> prepared = factory.create(ctx);
 
@@ -101,7 +103,18 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     }
 
     /** {@inheritDoc} */
-    @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo) {
+    @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor) {
+        clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onIndexCreate(String schemaName, String tblName, String idxName,
+        GridQueryIndexDescriptor idxDesc, GridIndex idx) {
+        clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onIndexDrop(String schemaName, String tblName, String idxName) {
         clear();
     }
 
@@ -111,7 +124,8 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     }
 
     /** {@inheritDoc} */
-    @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo) {
+    @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor,
+        GridCacheContextInfo<?, ?> cacheInfo, GridIndex<?> pk) {
         // No-op
     }
 }

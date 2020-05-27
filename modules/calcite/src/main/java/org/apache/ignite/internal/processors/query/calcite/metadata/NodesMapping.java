@@ -46,22 +46,22 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class NodesMapping implements MarshalableMessage {
     /** */
-    public static final byte HAS_MOVING_PARTITIONS  = 1;
+    public static final byte HAS_MOVING_PARTITIONS = 1;
 
     /** */
-    public static final byte HAS_REPLICATED_CACHES  = 1 << 1;
+    public static final byte HAS_REPLICATED_CACHES = 1 << 1;
 
     /** */
     public static final byte HAS_PARTITIONED_CACHES = 1 << 2;
 
     /** */
-    public static final byte PARTIALLY_REPLICATED   = 1 << 3;
+    public static final byte PARTIALLY_REPLICATED = 1 << 3;
 
     /** */
-    public static final byte DEDUPLICATED           = 1 << 4;
+    public static final byte DEDUPLICATED = 1 << 4;
 
     /** */
-    public static final byte CLIENT                 = 1 << 5;
+    public static final byte CLIENT = 1 << 5;
 
     /** */
     @GridDirectCollection(UUID.class)

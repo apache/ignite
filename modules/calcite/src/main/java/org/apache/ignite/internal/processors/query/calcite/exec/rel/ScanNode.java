@@ -26,12 +26,12 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /**
  * Scan node.
  */
-public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, AutoCloseable {
+public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, AutoCloseable {
     /** */
-    private final Iterable<Object[]> source;
+    private final Iterable<Row> src;
 
     /** */
-    private Iterator<Object[]> it;
+    private Iterator<Row> it;
 
     /** */
     private int requested;
@@ -41,21 +41,21 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
 
     /**
      * @param ctx Execution context.
-     * @param source Source.
+     * @param src Source.
      */
-    public ScanNode(ExecutionContext ctx, Iterable<Object[]> source) {
+    public ScanNode(ExecutionContext<Row> ctx, Iterable<Row> src) {
         super(ctx);
 
-        this.source = source;
+        this.src = src;
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCount) {
+    @Override public void request(int rowsCnt) {
         checkThread();
 
-        assert rowsCount > 0 && requested == 0;
+        assert rowsCnt > 0 && requested == 0;
 
-        requested = rowsCount;
+        requested = rowsCnt;
 
         if (!inLoop)
             context().execute(this::pushInternal);
@@ -74,12 +74,12 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public void register(List<Node<Object[]>> sources) {
+    @Override public void register(List<Node<Row>> sources) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Object[]> requestDownstream(int idx) {
+    @Override protected Downstream<Row> requestDownstream(int idx) {
         throw new UnsupportedOperationException();
     }
 
@@ -88,7 +88,7 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
         inLoop = true;
         try {
             if (it == null)
-                it = source.iterator();
+                it = src.iterator();
 
             int processed = 0;
 

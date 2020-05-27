@@ -26,32 +26,32 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
  * <p/><b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request(int)}, {@link Node#cancel()},
  * {@link Downstream#push(Object)} and {@link Downstream#end()} methods should be used from one single thread.
  */
-public interface Node<T> {
+public interface Node<Row> {
     /**
      * Returns runtime context allowing access to the tables in a database.
      *
      * @return Execution context.
      */
-    ExecutionContext context();
+    ExecutionContext<Row> context();
 
     /**
      * Registers node sources.
      *
      * @param sources Sources collection.
      */
-    void register(List<Node<T>> sources);
+    void register(List<Node<Row>> sources);
 
     /**
      * Registers downstream.
      *
      * @param downstream Downstream.
      */
-    void onRegister(Downstream<T> downstream);
+    void onRegister(Downstream<Row> downstream);
 
     /**
      * Requests next bunch of rows.
      */
-    void request(int rowsCount);
+    void request(int rowsCnt);
 
     /**
      * Cancels execution.

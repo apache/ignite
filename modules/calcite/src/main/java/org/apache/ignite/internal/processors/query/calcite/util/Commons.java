@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import com.google.common.collect.ImmutableList;
-import java.io.PrintWriter;
 import java.io.StringReader;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,7 +30,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.calcite.config.CalciteSystemProperty;
-import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
@@ -44,7 +41,6 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -58,7 +54,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
@@ -270,13 +266,6 @@ public final class Commons {
     }
 
     /** */
-    public static Class<?> boxType(Class<?> type) {
-        Primitive primitive = Primitive.of(type);
-
-        return primitive == null ? type : primitive.boxClass;
-    }
-
-    /** */
     public static <T> List<T> flat(List<List<? extends T>> src) {
         return src.stream().flatMap(List::stream).collect(Collectors.toList());
     }
@@ -335,13 +324,6 @@ public final class Commons {
     }
 
     /** */
-    public static String explain(RelNode rel) {
-        StringWriter writer = new StringWriter();
-        rel.explain(new RelWriterImpl(new PrintWriter(writer)));
-        return writer.toString();
-    }
-
-    /** */
     public static <T> T compile(Class<T> interfaceType, String body) {
         final boolean debug = CalciteSystemProperty.DEBUG.value();
 
@@ -361,7 +343,7 @@ public final class Commons {
             IClassBodyEvaluator cbe = compilerFactory.newClassBodyEvaluator();
 
             cbe.setImplementedInterfaces(new Class[]{ interfaceType });
-            cbe.setParentClassLoader(ExpressionFactory.class.getClassLoader());
+            cbe.setParentClassLoader(ExpressionFactoryImpl.class.getClassLoader());
 
             if (debug)
                 // Add line numbers to the generated janino class

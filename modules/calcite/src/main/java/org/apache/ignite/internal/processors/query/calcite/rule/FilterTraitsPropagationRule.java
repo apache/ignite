@@ -21,6 +21,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
@@ -46,7 +47,9 @@ public class FilterTraitsPropagationRule extends RelOptRule {
         RelMetadataQuery mq = cluster.getMetadataQuery();
 
         RelTraitSet traits = rel.getTraitSet()
-            .replace(IgniteMdDistribution._distribution(input, mq));
+            .replace(IgniteMdDistribution._distribution(input, mq))
+            .replaceIf(RelCollationTraitDef.INSTANCE,
+                () -> input.getTraitSet().getTrait(RelCollationTraitDef.INSTANCE));
 
         RuleUtils.transformTo(call,
             new IgniteFilter(cluster, traits, input, rel.getCondition()));

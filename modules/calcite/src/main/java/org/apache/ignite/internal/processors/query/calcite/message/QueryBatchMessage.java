@@ -24,7 +24,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -36,7 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAware {
     /** */
-    private UUID queryId;
+    private UUID qryId;
 
     /** */
     private long fragmentId;
@@ -48,6 +47,9 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     private int batchId;
 
     /** */
+    private boolean last;
+
+    /** */
     @GridDirectTransient
     private List<Object> rows;
 
@@ -57,21 +59,21 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
 
     /** */
     public QueryBatchMessage() {
-
     }
 
     /** */
-    public QueryBatchMessage(UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
-        this.queryId = queryId;
+    public QueryBatchMessage(UUID qryId, long fragmentId, long exchangeId, int batchId, boolean last, List<Object> rows) {
+        this.qryId = qryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
-        this.rows = Commons.cast(rows);
+        this.last = last;
+        this.rows = rows;
     }
 
     /** {@inheritDoc} */
     @Override public UUID queryId() {
-        return queryId;
+        return qryId;
     }
 
     /** {@inheritDoc} */
@@ -91,6 +93,13 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
      */
     public int batchId() {
         return batchId;
+    }
+
+    /**
+     * @return Last batch flag.
+     */
+    public boolean last() {
+        return last;
     }
 
     /**
@@ -165,13 +174,19 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeCollection("mRows", mRows, MessageCollectionItemType.MSG))
+                if (!writer.writeBoolean("last", last))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeUuid("queryId", queryId))
+                if (!writer.writeCollection("mRows", mRows, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeUuid("queryId", qryId))
                     return false;
 
                 writer.incrementState();
@@ -214,7 +229,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 3:
-                mRows = reader.readCollection("mRows", MessageCollectionItemType.MSG);
+                last = reader.readBoolean("last");
 
                 if (!reader.isLastRead())
                     return false;
@@ -222,7 +237,15 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 4:
-                queryId = reader.readUuid("queryId");
+                mRows = reader.readCollection("mRows", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                qryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -241,6 +264,6 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 }

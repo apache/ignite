@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.schema;
 
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.query.GridIndex;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 
 /**
@@ -40,19 +42,40 @@ public interface SchemaChangeListener {
 
     /**
      * Callback method.
-     *
      * @param schemaName Schema name.
-     * @param typeDescriptor type descriptor.
+     * @param typeDesc type descriptor.
      * @param cacheInfo Cache info.
+     * @param pk Primary key index
      */
-    void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo);
+    void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?, ?> cacheInfo, GridIndex<?> pk);
 
     /**
      * Callback method.
      *
      * @param schemaName Schema name.
-     * @param typeDescriptor type descriptor.
-     * @param cacheInfo Cache info.
+     * @param typeDesc type descriptor.
      */
-    void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo);
+    void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDesc);
+
+    /**
+     * Callback on index creation.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @param idxDesc Index descriptor.
+     * @param idx Index.
+     */
+    void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc,
+        GridIndex<?> idx);
+
+    /**
+     * Callback on index drop.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     */
+    void onIndexDrop(String schemaName, String tblName, String idxName);
 }

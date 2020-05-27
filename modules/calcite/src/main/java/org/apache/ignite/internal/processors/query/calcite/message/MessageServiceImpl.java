@@ -229,7 +229,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
             if (msg instanceof MarshalableMessage)
                 ((MarshalableMessage) msg).prepareUnmarshal(marshaller(), classLoader());
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;

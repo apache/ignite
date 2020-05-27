@@ -28,7 +28,6 @@ import java.util.PriorityQueue;
 import java.util.UUID;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
@@ -37,7 +36,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A part of exchange.
  */
-public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoCloseable {
+public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, AutoCloseable {
     /** */
     private final ExchangeService exchange;
 
@@ -48,7 +47,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     private final long exchangeId;
 
     /** */
-    private final long sourceFragmentId;
+    private final long srcFragmentId;
 
     /** */
     private final Map<UUID, Buffer> perNodeBuffers;
@@ -57,7 +56,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     private Collection<UUID> nodes;
 
     /** */
-    private Comparator<T> comparator;
+    private Comparator<Row> comp;
 
     /** */
     private List<Buffer> buffers;
@@ -73,14 +72,20 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
      * @param exchange Exchange service.
      * @param registry Mailbox registry.
      * @param exchangeId Exchange ID.
-     * @param sourceFragmentId Source fragment ID.
+     * @param srcFragmentId Source fragment ID.
      */
-    public Inbox(ExecutionContext ctx, ExchangeService exchange, MailboxRegistry registry, long exchangeId, long sourceFragmentId) {
+    public Inbox(
+        ExecutionContext<Row> ctx,
+        ExchangeService exchange,
+        MailboxRegistry registry,
+        long exchangeId,
+        long srcFragmentId
+    ) {
         super(ctx);
         this.exchange = exchange;
         this.registry = registry;
 
-        this.sourceFragmentId = sourceFragmentId;
+        this.srcFragmentId = srcFragmentId;
         this.exchangeId = exchangeId;
 
         perNodeBuffers = new HashMap<>();
@@ -105,22 +110,25 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
      *
      * @param ctx Execution context.
      * @param nodes Source nodes.
-     * @param comparator Optional comparator for merge exchange.
+     * @param comp Optional comparator for merge exchange.
      */
-    public void init(ExecutionContext ctx, Collection<UUID> nodes, Comparator<T> comparator) {
+    public void init(ExecutionContext<Row> ctx, Collection<UUID> nodes, Comparator<Row> comp) {
+        // It's important to set proper context here because
+        // because the one, that is created on a first message
+        // recived doesn't have all context variables in place.
         this.ctx = ctx;
         this.nodes = nodes;
-        this.comparator = comparator;
+        this.comp = comp;
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCount) {
+    @Override public void request(int rowsCnt) {
         checkThread();
 
         assert nodes != null;
-        assert rowsCount > 0 && requested == 0;
+        assert rowsCnt > 0 && requested == 0;
 
-        requested = rowsCount;
+        requested = rowsCnt;
 
         if (buffers == null) {
             nodes.forEach(this::getOrCreateBuffer);
@@ -146,32 +154,33 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<T> requestDownstream(int idx) {
+    @Override protected Downstream<Row> requestDownstream(int idx) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public void register(List<Node<T>> sources) {
+    @Override public void register(List<Node<Row>> sources) {
         throw new UnsupportedOperationException();
     }
 
     /**
      * Pushes a batch into a buffer.
      *
-     * @param source Source node.
+     * @param src Source node.
      * @param batchId Batch ID.
+     * @param last Last batch flag.
      * @param rows Rows.
      */
-    public void onBatchReceived(UUID source, int batchId, List<?> rows) {
+    public void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
         checkThread();
 
-        Buffer buffer = getOrCreateBuffer(source);
+        Buffer buf = getOrCreateBuffer(src);
 
-        boolean waitingBefore = buffer.check() == State.WAITING;
+        boolean waitingBefore = buf.check() == State.WAITING;
 
-        buffer.offer(batchId, rows);
+        buf.offer(batchId, last, rows);
 
-        if (requested > 0 && waitingBefore && buffer.check() != State.WAITING)
+        if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
             pushInternal();
     }
 
@@ -181,7 +190,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
         inLoop = true;
         try {
-            if (comparator != null)
+            if (comp != null)
                 pushOrdered();
             else
                 pushUnordered();
@@ -197,21 +206,21 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private void pushOrdered() throws IgniteCheckedException {
-         PriorityQueue<Pair<T, Buffer>> heap =
-            new PriorityQueue<>(buffers.size(), Map.Entry.comparingByKey(comparator));
+         PriorityQueue<Pair<Row, Buffer>> heap =
+            new PriorityQueue<>(buffers.size(), Map.Entry.comparingByKey(comp));
 
         Iterator<Buffer> it = buffers.iterator();
 
         while (it.hasNext()) {
-            Buffer buffer = it.next();
+            Buffer buf = it.next();
 
-            switch (buffer.check()) {
+            switch (buf.check()) {
                 case END:
                     it.remove();
 
                     break;
                 case READY:
-                    heap.offer(Pair.of((T)buffer.peek(), buffer));
+                    heap.offer(Pair.of(buf.peek(), buf));
 
                     break;
                 case WAITING:
@@ -224,18 +233,18 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
             if (context().cancelled())
                 return;
 
-            Buffer buffer = heap.poll().right;
+            Buffer buf = heap.poll().right;
 
             requested--;
-            downstream.push((T)buffer.remove());
+            downstream.push(buf.remove());
 
-            switch (buffer.check()) {
+            switch (buf.check()) {
                 case END:
-                    buffers.remove(buffer);
+                    buffers.remove(buf);
 
                     break;
                 case READY:
-                    heap.offer(Pair.of((T)buffer.peek(), buffer));
+                    heap.offer(Pair.of(buf.peek(), buf));
 
                     break;
                 case WAITING:
@@ -262,9 +271,9 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
             if (context().cancelled())
                 return;
 
-            Buffer buffer = buffers.get(idx);
+            Buffer buf = buffers.get(idx);
 
-            switch (buffer.check()) {
+            switch (buf.check()) {
                 case END:
                     buffers.remove(idx--);
 
@@ -272,7 +281,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
                 case READY:
                     noProgress = 0;
                     requested--;
-                    downstream.push((T)buffer.remove());
+                    downstream.push(buf.remove());
 
                     break;
                 case WAITING:
@@ -296,7 +305,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private void acknowledge(UUID nodeId, int batchId) throws IgniteCheckedException {
-        exchange.acknowledge(nodeId, queryId(), sourceFragmentId, exchangeId, batchId);
+        exchange.acknowledge(nodeId, queryId(), srcFragmentId, exchangeId, batchId);
     }
 
     /** */
@@ -306,23 +315,27 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private Buffer createBuffer(UUID nodeId) {
-        return new Buffer(nodeId, this);
+        return new Buffer(nodeId);
     }
 
     /** */
-    private static final class Batch implements Comparable<Batch> {
+    private static final class Batch<Row> implements Comparable<Batch<Row>> {
         /** */
         private final int batchId;
 
         /** */
-        private final List<?> rows;
+        private final boolean last;
+
+        /** */
+        private final List<Row> rows;
 
         /** */
         private int idx;
 
         /** */
-        private Batch(int batchId, List<?> rows) {
+        private Batch(int batchId, boolean last, List<Row> rows) {
             this.batchId = batchId;
+            this.last = last;
             this.rows = rows;
         }
 
@@ -333,7 +346,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Batch batch = (Batch) o;
+            Batch<Row> batch = (Batch<Row>) o;
 
             return batchId == batch.batchId;
         }
@@ -344,27 +357,31 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         }
 
         /** {@inheritDoc} */
-        @Override public int compareTo(@NotNull Inbox.Batch o) {
+        @Override public int compareTo(@NotNull Inbox.Batch<Row> o) {
             return Integer.compare(batchId, o.batchId);
         }
     }
 
     /** */
     private enum State {
-        END, READY, WAITING
+        /** */
+        END,
+
+        /** */
+        READY,
+
+        /** */
+        WAITING
     }
 
     /** */
-    private static final class Buffer {
-        /** */
-        private static final Batch WAITING = new Batch(0, null);
+    private static final Batch<?> WAITING = new Batch<>(0, false, null);
 
-        /** */
-        private static final Batch END = new Batch(0, null);
+    /** */
+    private static final Batch<?> END = new Batch<>(0, false, null);
 
-        /** */
-        private final Inbox<?> owner;
-
+    /** */
+    private final class Buffer {
         /** */
         private final UUID nodeId;
 
@@ -372,28 +389,27 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         private int lastEnqueued = -1;
 
         /** */
-        private final PriorityQueue<Batch> batches = new PriorityQueue<>(IO_BATCH_CNT);
+        private final PriorityQueue<Batch<Row>> batches = new PriorityQueue<>(IO_BATCH_CNT);
 
         /** */
-        private Batch curr = WAITING;
+        private Batch<Row> curr = waitingMark();
 
         /** */
-        private Buffer(UUID nodeId, Inbox<?> owner) {
+        private Buffer(UUID nodeId) {
             this.nodeId = nodeId;
-            this.owner = owner;
         }
 
         /** */
-        private void offer(int id, List<?> rows) {
-            batches.offer(new Batch(id, rows));
+        private void offer(int id, boolean last, List<Row> rows) {
+            batches.offer(new Batch<>(id, last, rows));
         }
 
         /** */
-        private Batch pollBatch() {
+        private Batch<Row> pollBatch() {
             if (batches.isEmpty() || batches.peek().batchId != lastEnqueued + 1)
-                return WAITING;
+                return waitingMark();
 
-            Batch batch = batches.poll();
+            Batch<Row> batch = batches.poll();
 
             assert batch != null && batch.batchId == lastEnqueued + 1;
 
@@ -404,14 +420,14 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
         /** */
         private State check() {
-            if (curr == END)
+            if (finished())
                 return State.END;
 
-            if (curr == WAITING && (curr = pollBatch()) == WAITING)
+            if (waiting())
                 return State.WAITING;
 
-            if (curr.rows.get(curr.idx) == EndMarker.INSTANCE) {
-                curr = END;
+            if (isEnd()) {
+                curr = finishedMark();
 
                 return State.END;
             }
@@ -420,31 +436,57 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         }
 
         /** */
-        private Object peek() {
+        private Row peek() {
             assert curr != null;
             assert curr != WAITING;
             assert curr != END;
-            assert curr.rows.get(curr.idx) != EndMarker.INSTANCE;
+            assert !isEnd();
 
             return curr.rows.get(curr.idx);
         }
 
         /** */
-        private Object remove() throws IgniteCheckedException {
+        private Row remove() throws IgniteCheckedException {
             assert curr != null;
             assert curr != WAITING;
             assert curr != END;
-            assert curr.rows.get(curr.idx) != EndMarker.INSTANCE;
+            assert !isEnd();
 
-            Object row = curr.rows.set(curr.idx++, null);
+            Row row = curr.rows.set(curr.idx++, null);
 
             if (curr.idx == curr.rows.size()) {
-                owner.acknowledge(nodeId, curr.batchId);
+                acknowledge(nodeId, curr.batchId);
 
-                curr = pollBatch();
+                if (!isEnd())
+                    curr = pollBatch();
             }
 
             return row;
+        }
+
+        /** */
+        private boolean finished() {
+            return curr == END;
+        }
+
+        /** */
+        private boolean waiting() {
+            return curr == WAITING && (curr = pollBatch()) == WAITING;
+        }
+
+        /** */
+        private boolean isEnd() {
+            return curr.last && curr.idx == curr.rows.size();
+        }
+
+        /** */
+        private Batch<Row> finishedMark() {
+            return (Batch<Row>) END;
+        }
+
+        /** */
+        private Batch<Row> waitingMark() {
+            return (Batch<Row>) WAITING;
         }
     }
 }

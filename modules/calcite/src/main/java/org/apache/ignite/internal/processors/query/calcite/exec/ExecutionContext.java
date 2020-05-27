@@ -24,6 +24,8 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
@@ -32,15 +34,15 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 /**
  * Runtime context allowing access to the tables in a database.
  */
-public class ExecutionContext implements DataContext {
+public class ExecutionContext<Row> implements DataContext {
     /** */
-    private final UUID queryId;
+    private final UUID qryId;
 
     /** */
     private final PlanningContext ctx;
 
     /** */
-    private final FragmentDescription fragmentDescription;
+    private final FragmentDescription fragmentDesc;
 
     /** */
     private final Map<String, Object> params;
@@ -49,27 +51,43 @@ public class ExecutionContext implements DataContext {
     private final QueryTaskExecutor executor;
 
     /** */
+    private final RowHandler<Row> handler;
+
+    /** */
+    private final ExpressionFactory<Row> expressionFactory;
+
+    /** */
     private volatile boolean cancelled;
 
     /**
      * @param ctx Parent context.
-     * @param queryId Query ID.
-     * @param fragmentDescription Partitions information.
+     * @param qryId Query ID.
+     * @param fragmentDesc Partitions information.
      * @param params Parameters.
      */
-    public ExecutionContext(QueryTaskExecutor executor, PlanningContext ctx, UUID queryId,
-        FragmentDescription fragmentDescription, Map<String, Object> params) {
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public ExecutionContext(
+        QueryTaskExecutor executor,
+        PlanningContext ctx,
+        UUID qryId,
+        FragmentDescription fragmentDesc,
+        RowHandler<Row> handler,
+        Map<String, Object> params
+    ) {
         this.executor = executor;
         this.ctx = ctx;
-        this.queryId = queryId;
-        this.fragmentDescription = fragmentDescription;
+        this.qryId = qryId;
+        this.fragmentDesc = fragmentDesc;
+        this.handler = handler;
         this.params = params;
+
+        expressionFactory = new ExpressionFactoryImpl<>(this, ctx.typeFactory(), ctx.conformance());
     }
 
     /**
      * @return Parent context.
      */
-    public PlanningContext parent() {
+    public PlanningContext planningContext() {
         return ctx;
     }
 
@@ -77,43 +95,43 @@ public class ExecutionContext implements DataContext {
      * @return Query ID.
      */
     public UUID queryId() {
-        return queryId;
+        return qryId;
     }
 
     /**
      * @return Fragment ID.
      */
     public long fragmentId() {
-        return fragmentDescription.fragmentId();
+        return fragmentDesc.fragmentId();
     }
 
     /**
      * @return Interested partitions.
      */
     public int[] partitions() {
-        return fragmentDescription.partitions();
+        return fragmentDesc.partitions();
     }
 
     /** */
-    public int partitionsCount () {
-        return fragmentDescription.partitionsCount();
+    public int partitionsCount() {
+        return fragmentDesc.partitionsCount();
     }
 
     /**
      * @return Target mapping.
      */
     public NodesMapping targetMapping() {
-        return fragmentDescription.targetMapping();
+        return fragmentDesc.targetMapping();
     }
 
     /** */
     public List<UUID> remoteSources(long exchangeId) {
-        return fragmentDescription.remoteSources().get(exchangeId);
+        return fragmentDesc.remoteSources().get(exchangeId);
     }
 
     /** */
     public FragmentDescription fragmentDescription() {
-        return fragmentDescription;
+        return fragmentDesc;
     }
 
     /**
@@ -138,10 +156,24 @@ public class ExecutionContext implements DataContext {
     }
 
     /**
+     * @return Handler to access row fields.
+     */
+    public RowHandler<Row> rowHandler() {
+        return handler;
+    }
+
+    /**
+     * @return Expression factory.
+     */
+    public ExpressionFactory<Row> expressionFactory() {
+        return expressionFactory;
+    }
+
+    /**
      * @return Originating node ID.
      */
     public UUID originatingNodeId() {
-        return parent().originatingNodeId();
+        return planningContext().originatingNodeId();
     }
 
     /** {@inheritDoc} */
@@ -178,6 +210,6 @@ public class ExecutionContext implements DataContext {
      * @param task Query task.
      */
     public void execute(Runnable task) {
-        executor.execute(queryId, fragmentId(), task);
+        executor.execute(qryId, fragmentId(), task);
     }
 }

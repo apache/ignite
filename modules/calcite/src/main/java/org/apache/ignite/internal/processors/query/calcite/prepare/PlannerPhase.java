@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
+import org.apache.calcite.rel.rules.SortRemoveRule;
 import org.apache.calcite.rel.rules.SubQueryRemoveRule;
 import org.apache.calcite.rel.rules.UnionMergeRule;
 import org.apache.calcite.tools.Program;
@@ -30,9 +32,11 @@ import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverterRul
 import org.apache.ignite.internal.processors.query.calcite.rule.JoinTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectTraitsPropagationRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.PushFilterIntoScanRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.UnionTraitsTraitsPropagationRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.UnionTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalFilterMergeRule;
@@ -83,9 +87,13 @@ public enum PlannerPhase {
                 LogicalFilterProjectTransposeRule.INSTANCE,
                 FilterTraitsPropagationRule.INSTANCE,
                 TableModifyConverterRule.INSTANCE,
+                PushFilterIntoScanRule.FILTER_INTO_SCAN,
+                ProjectFilterTransposeRule.INSTANCE,
                 UnionMergeRule.INSTANCE,
                 UnionConverterRule.INSTANCE,
-                UnionTraitsTraitsPropagationRule.INSTANCE);
+                UnionTraitsPropagationRule.INSTANCE,
+                SortConverterRule.INSTANCE,
+                SortRemoveRule.INSTANCE);
         }
 
         /** {@inheritDoc} */
@@ -106,6 +114,7 @@ public enum PlannerPhase {
 
     /**
      * Returns rule set, calculated on the basis of query, planner context and planner phase.
+     *
      * @param ctx Planner context.
      * @return Rule set.
      */
@@ -113,6 +122,7 @@ public enum PlannerPhase {
 
     /**
      * Returns a program, calculated on the basis of query, planner context planner phase and rules set.
+     *
      * @param ctx Planner context.
      * @return Rule set.
      */

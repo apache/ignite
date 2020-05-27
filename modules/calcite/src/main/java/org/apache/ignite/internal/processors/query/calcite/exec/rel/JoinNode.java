@@ -23,14 +23,18 @@ import java.util.Deque;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * TODO remove buffers.
  */
-public class JoinNode extends AbstractNode<Object[]> {
+public class JoinNode<Row> extends AbstractNode<Row> {
     /** */
-    private final Predicate<Object[]> condition;
+    private final Predicate<Row> cond;
+
+    /** */
+    private final RowHandler<Row> handler;
 
     /** */
     private int requested;
@@ -42,49 +46,50 @@ public class JoinNode extends AbstractNode<Object[]> {
     private int waitingRight;
 
     /** */
-    private List<Object[]> rightMaterialized = new ArrayList<>(IN_BUFFER_SIZE);
+    private final List<Row> rightMaterialized = new ArrayList<>(IN_BUFFER_SIZE);
 
     /** */
-    private Deque<Object[]> leftInBuffer = new ArrayDeque<>(IN_BUFFER_SIZE);
+    private final Deque<Row> leftInBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
 
     /** */
     private boolean inLoop;
 
     /** */
-    private Object[] left;
+    private Row left;
 
     /** */
     private int rightIdx;
 
     /**
      * @param ctx Execution context.
-     * @param condition Join expression.
+     * @param cond Join expression.
      */
-    public JoinNode(ExecutionContext ctx, Predicate<Object[]> condition) {
+    public JoinNode(ExecutionContext<Row> ctx, Predicate<Row> cond) {
         super(ctx);
 
-        this.condition = condition;
+        this.cond = cond;
+        handler = ctx.rowHandler();
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCount) {
+    @Override public void request(int rowsCnt) {
         checkThread();
 
         assert !F.isEmpty(sources) && sources.size() == 2;
-        assert rowsCount > 0 && requested == 0;
+        assert rowsCnt > 0 && requested == 0;
 
-        requested = rowsCount;
+        requested = rowsCnt;
 
         if (!inLoop)
             context().execute(this::flushFromBuffer);
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Object[]> requestDownstream(int idx) {
+    @Override protected Downstream<Row> requestDownstream(int idx) {
         if (idx == 0)
-            return new Downstream<Object[]>() {
+            return new Downstream<Row>() {
                 /** {@inheritDoc} */
-                @Override public void push(Object[] row) {
+                @Override public void push(Row row) {
                     pushLeft(row);
                 }
 
@@ -99,9 +104,9 @@ public class JoinNode extends AbstractNode<Object[]> {
                 }
             };
         else if (idx == 1)
-            return new Downstream<Object[]>() {
+            return new Downstream<Row>() {
                 /** {@inheritDoc} */
-                @Override public void push(Object[] row) {
+                @Override public void push(Row row) {
                     pushRight(row);
                 }
 
@@ -120,19 +125,19 @@ public class JoinNode extends AbstractNode<Object[]> {
     }
 
     /** */
-    private void pushLeft(Object[] row) {
+    private void pushLeft(Row row) {
         checkThread();
 
         assert downstream != null;
         assert waitingLeft > 0;
 
-        leftInBuffer.add(row);
+        leftInBuf.add(row);
 
         flushFromBuffer();
     }
 
     /** */
-    private void pushRight(Object[] row) {
+    private void pushRight(Row row) {
         checkThread();
 
         assert downstream != null;
@@ -184,14 +189,14 @@ public class JoinNode extends AbstractNode<Object[]> {
         inLoop = true;
         try {
             if (waitingRight == -1) {
-                while (requested > 0 && (left != null || !leftInBuffer.isEmpty())) {
+                while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
                     if (left == null)
-                        left = leftInBuffer.remove();
+                        left = leftInBuf.remove();
 
                     while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                        Object[] row = F.concat(left, rightMaterialized.get(rightIdx++));
+                        Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
 
-                        if (!condition.test(row))
+                        if (!cond.test(row))
                             continue;
 
                         requested--;
@@ -208,10 +213,10 @@ public class JoinNode extends AbstractNode<Object[]> {
             if (waitingRight == 0)
                 sources.get(1).request(waitingRight = IN_BUFFER_SIZE);
 
-            if (waitingLeft == 0 && leftInBuffer.isEmpty())
+            if (waitingLeft == 0 && leftInBuf.isEmpty())
                 sources.get(0).request(waitingLeft = IN_BUFFER_SIZE);
 
-            if (requested > 0 && waitingLeft == -1 && waitingRight == -1 && left == null && leftInBuffer.isEmpty()) {
+            if (requested > 0 && waitingLeft == -1 && waitingRight == -1 && left == null && leftInBuf.isEmpty()) {
                 downstream.end();
                 requested = 0;
             }

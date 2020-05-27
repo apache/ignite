@@ -14,42 +14,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.function.Predicate;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Sort node.
  */
-public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
-    /** */
-    private final Predicate<Row> pred;
-
-    /** */
-    private final Deque<Row> inBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
-
-    /** */
+public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+    /** How many rows are requested by downstream. */
     private int requested;
 
-    /** */
+    /** How many rows are we waiting for from the upstream. {@code -1} means end of stream. */
     private int waiting;
 
-    /** */
+    /**  */
     private boolean inLoop;
+
+    /** Rows buffer. */
+    private final PriorityQueue<Row> rows;
 
     /**
      * @param ctx Execution context.
-     * @param pred Predicate.
+     * @param comp Rows comparator.
      */
-    public FilterNode(ExecutionContext<Row> ctx, Predicate<Row> pred) {
+    public SortNode(ExecutionContext<Row> ctx, Comparator<Row> comp) {
         super(ctx);
 
-        this.pred = pred;
+        rows = comp == null ? new PriorityQueue<>() : new PriorityQueue<>(comp);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Downstream<Row> requestDownstream(int idx) {
+        if (idx != 0)
+            throw new IndexOutOfBoundsException();
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -61,8 +64,12 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
         requested = rowsCnt;
 
-        if (!inLoop)
+        if (waiting == -1 && !inLoop)
             context().execute(this::flushFromBuffer);
+        else if (waiting == 0)
+            F.first(sources).request(waiting = IN_BUFFER_SIZE);
+        else
+            throw new AssertionError();
     }
 
     /** {@inheritDoc} */
@@ -75,10 +82,10 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         waiting--;
 
         try {
-            if (pred.test(row))
-                inBuf.add(row);
+            rows.add(row);
 
-            flushFromBuffer();
+            if (waiting == 0)
+                F.first(sources).request(waiting = IN_BUFFER_SIZE);
         }
         catch (Exception e) {
             downstream.onError(e);
@@ -111,32 +118,44 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         downstream.onError(e);
     }
 
-    /** {@inheritDoc} */
-    @Override protected Downstream<Row> requestDownstream(int idx) {
-        if (idx != 0)
-            throw new IndexOutOfBoundsException();
-
-        return this;
-    }
-
     /** */
-    public void flushFromBuffer() {
+    private void flushFromBuffer() {
+        assert waiting == -1;
+
         inLoop = true;
+
         try {
-            while (requested > 0 && !inBuf.isEmpty()) {
-                requested--;
-                downstream.push(inBuf.remove());
+            int processed = 0;
+
+            while (requested > 0) {
+                int toSnd = Math.min(requested, IN_BUFFER_SIZE - processed);
+
+                for (int i = 0; i < toSnd; i++) {
+                    requested--;
+
+                    if (rows.isEmpty())
+                        break;
+
+                    Row row = rows.poll();
+
+                    downstream.push(row);
+
+                    processed++;
+                }
+
+                if (processed >= IN_BUFFER_SIZE && requested > 0) {
+                    // allow others to do their job
+                    context().execute(this::flushFromBuffer);
+
+                    return;
+                }
             }
 
-            if (inBuf.isEmpty() && waiting == 0)
-                F.first(sources).request(waiting = IN_BUFFER_SIZE);
-
-            if (waiting == -1 && requested > 0) {
-                assert inBuf.isEmpty();
-
+            if (requested >= 0) {
                 downstream.end();
                 requested = 0;
             }
+
         }
         finally {
             inLoop = false;

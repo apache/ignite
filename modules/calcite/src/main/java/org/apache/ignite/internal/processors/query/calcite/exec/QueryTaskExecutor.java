@@ -27,9 +27,9 @@ public interface QueryTaskExecutor extends Service {
     /**
      * Executes a query task in a thread, responsible for particular query fragment.
      *
-     * @param queryId Query ID.
+     * @param qryId Query ID.
      * @param fragmentId Fragment ID.
-     * @param queryTask Query task.
+     * @param qryTask Query task.
      */
-    void execute(UUID queryId, long fragmentId, Runnable queryTask);
+    void execute(UUID qryId, long fragmentId, Runnable qryTask);
 }

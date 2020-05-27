@@ -99,7 +99,8 @@ public class RuleUtils {
         RelNode first = F.first(newRels);
         Map<RelNode, RelNode> equivMap = equivMap(orig, newRels.subList(1, newRels.size()));
 
-        call.transformTo(first, equivMap);
+        if (first != null)
+            call.transformTo(first, equivMap);
     }
 
     /** */
@@ -137,7 +138,7 @@ public class RuleUtils {
 
             assert traitDef == toTrait.getTraitDef();
 
-            if (fromTrait.equals(toTrait))
+            if (fromTrait.satisfies(toTrait))
                 continue;
 
             rel = traitDef.convert(planner, converted, toTrait, true);

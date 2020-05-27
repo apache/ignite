@@ -43,9 +43,11 @@ public class FilterConverterRule extends RelOptRule {
         LogicalFilter rel = call.rel(0);
 
         RelOptCluster cluster = rel.getCluster();
-        RelNode input = convert(rel.getInput(), IgniteConvention.INSTANCE);
-        RelTraitSet traits = rel.getTraitSet()
+
+        RelTraitSet traits = cluster.traitSet()
             .replace(IgniteConvention.INSTANCE);
+
+        RelNode input = convert(rel.getInput(), traits);
 
         RuleUtils.transformTo(call,
             new IgniteFilter(cluster, traits, input, rel.getCondition()));

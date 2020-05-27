@@ -14,48 +14,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Query explain plan.
  */
-public class RowMetadata {
-   /** */
-   private final List<GridQueryFieldMetadata> fieldsMeta;
+public class ExplainPlan implements QueryPlan {
+    /** Column name. */
+    public static final String PLAN_COL_NAME = "PLAN";
 
-   /** */
-   public RowMetadata(@NotNull List<GridQueryFieldMetadata> fieldsMeta) {
-      this.fieldsMeta = fieldsMeta;
-   }
+    /** */
+    private final List<GridQueryFieldMetadata> fieldsMeta;
 
-   /**
-    * @return Query metadata.
-    */
-   public List<GridQueryFieldMetadata> fieldsMetadata() {
-      return fieldsMeta;
-   }
+    /** */
+    private final String plan;
 
-   /**
-    * Gets number of columns in a row.
-    *
-    * @return row size.
-    */
-   public int fieldsCount() {
-      return fieldsMeta.size();
-   }
+    /** */
+    public ExplainPlan(String plan, List<GridQueryFieldMetadata> meta) {
+        this.fieldsMeta = meta;
+        this.plan = plan;
+    }
 
-   /**
-    * Gets field name.
-    *
-    * @param idx field index.
-    * @return Field name.
-    */
-   public String fieldName(int idx){
-      return fieldsMeta.get(idx).fieldName();
-   }
+    /** {@inheritDoc} */
+    @Override public Type type() {
+        return Type.EXPLAIN;
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryPlan clone(@Nullable PlanningContext ctx) {
+        return this;
+    }
+
+    /** */
+    public List<GridQueryFieldMetadata> fieldsMeta() {
+        return fieldsMeta;
+    }
+
+    /** */
+    public String plan() {
+        return plan;
+    }
 }
