@@ -507,6 +507,7 @@ public class GridServiceProxy<T> implements Serializable {
             U.writeString(out, mtdName);
             U.writeArray(out, argTypes);
             U.writeArray(out, args);
+            out.writeBoolean(keepBinary);
         }
 
         /** {@inheritDoc} */
@@ -515,6 +516,7 @@ public class GridServiceProxy<T> implements Serializable {
             mtdName = U.readString(in);
             argTypes = U.readClassArray(in);
             args = U.readArray(in);
+            keepBinary = in.readBoolean();
         }
 
         /** {@inheritDoc} */
