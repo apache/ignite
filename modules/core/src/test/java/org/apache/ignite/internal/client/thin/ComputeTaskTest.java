@@ -266,7 +266,8 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             val = client.compute(grp).execute(TestTask.class.getName(), null);
 
             assertEquals(nodeId(0), val.get1());
-            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().nodes())), val.get2());        }
+            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().nodes())), val.get2());
+        }
     }
 
     /**
