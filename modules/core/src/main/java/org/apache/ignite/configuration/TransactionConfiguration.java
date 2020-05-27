@@ -53,7 +53,7 @@ public class TransactionConfiguration implements Serializable {
     public static final TransactionIsolation DFLT_TX_ISOLATION = TransactionIsolation.REPEATABLE_READ;
 
     /** Default transaction timeout. */
-    public static final long DFLT_TRANSACTION_TIMEOUT = 0;
+    public static final long DFLT_TRANSACTION_TIMEOUT = 300_000;
 
     /** Transaction timeout on partition map synchronization. */
     public static final long TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE = 0;
