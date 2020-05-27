@@ -36,6 +36,12 @@ if("${isSystemDir}" STREQUAL "-1")
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 endif("${isSystemDir}" STREQUAL "-1")
 
+if (WIN32)
+    add_definitions(-DUNICODE=1)
+
+    add_compile_options(/source-charset:utf-8)
+endif()
+
 option (WITH_ODBC OFF)
 option (WITH_THIN_CLIENT OFF)
 option (WITH_TESTS OFF)

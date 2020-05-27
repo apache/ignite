@@ -26,7 +26,7 @@ include_directories(${JNI_INCLUDE_DIRS} include)
 set(SOURCES src/java.cpp src/exports.cpp)
 
 if (WIN32)
-    list(APPEND SOURCES os/linux/win/utils.cpp)
+    list(APPEND SOURCES os/win/src/utils.cpp)
 else()
     list(APPEND SOURCES os/linux/src/utils.cpp)
 endif ()

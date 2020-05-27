@@ -22,6 +22,12 @@ set(CMAKE_CXX_STANDARD 98)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
+if (WIN32)
+    add_definitions(-DUNICODE=1)
+
+    add_compile_options(/source-charset:utf-8)
+endif()
+
 add_subdirectory(compute-example)
 add_subdirectory(continuous-query-example)
 add_subdirectory(odbc-example)
