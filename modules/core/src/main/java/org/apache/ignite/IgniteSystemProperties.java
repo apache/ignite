@@ -1263,6 +1263,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES = "IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES";
 
     /**
+     * Defines how many exchange futures are kept uncleared in the queue. Default is 10.
+     */
+    public static final String IGNITE_KEEP_UNCLEARED_EXCHANGE_FUTURES_LIMIT =
+        "IGNITE_KEEP_UNCLEARED_EXCHANGE_FUTURES_LIMIT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

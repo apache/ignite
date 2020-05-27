@@ -66,4 +66,9 @@ public class IgnitePdsContinuousRestartTestWithExpiryPolicy extends IgnitePdsCon
 
         return cfg;
     }
+
+    /** {@inheritDoc} */
+    @Override protected boolean validatePartitions() {
+        return false; // Validation is broken with enabled expiration.
+    }
 }
