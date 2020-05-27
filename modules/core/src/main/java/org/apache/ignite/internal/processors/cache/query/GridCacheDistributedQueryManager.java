@@ -201,7 +201,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert req.mvccSnapshot() != null || !cctx.mvccEnabled() || req.cancel() ||
             (req.type() == null && !req.fields()) : req; // Last assertion means next page request.
 
-        if (cctx.kernalContext().metric().profilingEnabled())
+        boolean profilingEnabled = cctx.kernalContext().metric().profilingEnabled();
+
+        if (profilingEnabled)
             IoStatisticsQueryHelper.startGatheringQueryStatistics();
 
         try {
@@ -255,7 +257,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 }
             }
         } finally {
-            if (cctx.kernalContext().metric().profilingEnabled()) {
+            if (profilingEnabled) {
                 IoStatisticsHolderQuery stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
                 if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
@@ -615,8 +617,10 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert qry.type() == GridCacheQueryType.SCAN : qry;
         assert qry.mvccSnapshot() != null || !cctx.mvccEnabled();
 
-        long startTime = cctx.kernalContext().metric().profilingEnabled() ? System.currentTimeMillis() : 0;
-        long startTimeNanos = cctx.kernalContext().metric().profilingEnabled() ? System.nanoTime() : 0;
+        boolean profilingEnabled = cctx.kernalContext().metric().profilingEnabled();
+
+        long startTime = profilingEnabled ? System.currentTimeMillis() : 0;
+        long startTimeNanos = profilingEnabled ? System.nanoTime() : 0;
 
         GridCloseableIterator locIter0 = null;
 
@@ -691,7 +695,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (fut != null)
                     fut.cancel();
 
-                if (cctx.kernalContext().metric().profilingEnabled()) {
+                if (profilingEnabled) {
                     cctx.kernalContext().metric().profiling().query(
                         SCAN,
                         cctx.name(),

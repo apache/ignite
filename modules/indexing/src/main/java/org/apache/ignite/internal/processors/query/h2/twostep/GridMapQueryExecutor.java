@@ -301,7 +301,9 @@ public class GridMapQueryExecutor {
         @Nullable final MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled
     ) {
-        if (ctx.metric().profilingEnabled())
+        boolean profilingEnabled = ctx.metric().profilingEnabled();
+
+        if (profilingEnabled)
             IoStatisticsQueryHelper.startGatheringQueryStatistics();
 
         // Prepare to run queries.
@@ -527,7 +529,7 @@ public class GridMapQueryExecutor {
             if (reserved != null)
                 reserved.release();
 
-            if (ctx.metric().profilingEnabled()) {
+            if (profilingEnabled) {
                 IoStatisticsHolderQuery stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
                 if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {

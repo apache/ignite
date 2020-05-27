@@ -359,6 +359,8 @@ public class ProfilingFilesParser {
     private static void copyReportSources(String resDir) throws Exception {
         try (InputStream in = ProfilingFilesParser.class.getClassLoader().getResourceAsStream(REPORT_RESOURCE_NAME)) {
             if (in == null) {
+                U.delete(new File(resDir));
+
                 throw new RuntimeException("Run from IDE require custom maven assembly (try to package " +
                     "'ignite-profiling' module). The report sources will not be copied to the result directory.");
             }

@@ -46,7 +46,7 @@ public class TopologyInfoHandler implements IgniteProfilingHandler {
 
     /** */
     public TopologyInfoHandler() {
-        res.put("profilingStartTime", 0);
+        res.put("profilingStartTime", Long.MAX_VALUE);
         res.set("nodesInfo", nodesInfo);
     }
 

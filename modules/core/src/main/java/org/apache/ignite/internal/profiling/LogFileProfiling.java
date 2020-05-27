@@ -31,6 +31,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -152,6 +153,9 @@ public class LogFileProfiling implements IgniteProfiling {
         }
 
         profilingStart(ctx.localNodeId(), ctx.igniteInstanceName(), IgniteVersionUtils.VER_STR, U.currentTimeMillis());
+
+        for (GridCacheContext cctx : ctx.cache().context().cacheContexts())
+            cacheStart(cctx.cacheId(), cctx.startTime(), cctx.name(), cctx.config().getGroupName(), cctx.userCache());
     }
 
     /** Stops profiling. */

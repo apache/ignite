@@ -198,7 +198,7 @@ public class RunningQueryManager {
             }
         }
 
-        if (ctx.metric().profilingEnabled()) {
+        if (ctx.metric().profilingEnabled() && qry.startTimeNanos() > 0) {
             ctx.metric().profiling().query(
                 qry.queryType(),
                 qry.query(),
