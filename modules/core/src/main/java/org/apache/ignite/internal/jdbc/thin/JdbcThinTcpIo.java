@@ -309,6 +309,12 @@ public class JdbcThinTcpIo {
             }
         }
 
+        if (ver.compareTo(VER_2_8_1) >= 0)
+            writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(enabledFeatures()));
+
+        if (ver.compareTo(VER_2_9_0) >= 0)
+            writer.writeBoolean(connProps.isUseExperimentalQueryEngine());
+
         if (!F.isEmpty(connProps.getUsername())) {
             assert ver.compareTo(VER_2_5_0) >= 0 : "Authentication is supported since 2.5";
 
