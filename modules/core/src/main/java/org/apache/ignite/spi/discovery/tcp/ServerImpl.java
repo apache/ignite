@@ -199,8 +199,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static final TcpDiscoveryAbstractMessage WAKEUP = new TcpDiscoveryDummyWakeupMessage();
 
-    /** Interval of checking connection to next node in the ring. */
-    private long connCheckInterval;
+    /** When this interval pass connection check will be performed. */
+    private static final int CON_CHECK_INTERVAL = 500;
 
     /** */
     private IgniteThreadPoolExecutor utilityPool;
@@ -359,8 +359,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override long connectionCheckInterval() {
-        return connCheckInterval;
+    @Override public long connectionCheckInterval() {
+        return CON_CHECK_INTERVAL;
     }
 
     /** {@inheritDoc} */
@@ -372,9 +372,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         lastRingMsgReceivedTime = 0;
 
         lastRingMsgSentTime = 0;
-
-        // Node ping interval is a half of actual failure detection timeout.
-        connCheckInterval = effectiveExchangeTimeout() / 2;
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
@@ -1922,12 +1919,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         threads.removeAll(Collections.<IgniteSpiThread>singleton(null));
 
         return threads;
-    }
-
-    /** @return Total timeout on complete message exchange in network over established connection. */
-    protected long effectiveExchangeTimeout() {
-        return spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
-            spi.getSocketTimeout() + spi.getAckTimeout();
     }
 
     /** {@inheritDoc} */
@@ -3602,26 +3593,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been written to socket: " + msg.id());
 
-                                boolean ping = msg instanceof TcpDiscoveryConnectionCheckMessage;
-
-                                long timeout = timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout());
-
-                                // For the ping we take half of actual failure detection. Another half is the interval.
                                 spi.writeToSocket(newNextNode ? newNext : next,
                                     sock,
                                     out,
                                     msg,
-                                    ping && spi.failureDetectionTimeoutEnabled() ? timeout / 2 : timeout
-                                );
-
-                                timeout = timeoutHelper.nextTimeoutChunk(ackTimeout0);
+                                    timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                                 long tsNanos0 = System.nanoTime();
 
-                                int res = spi.readReceipt(sock, ping && spi.failureDetectionTimeoutEnabled() ?
-                                    timeout / 2 : timeout);
-
-                                updateLastSentMessageTime();
+                                int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been acked: " + msg.id());
@@ -6194,12 +6174,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Check connection to next node in the ring.
+         * Check connection aliveness status.
          */
         private void checkConnection() {
             Boolean hasRemoteSrvNodes = null;
 
-            long elapsed = (lastRingMsgSentTime + connCheckInterval) - U.currentTimeMillis();
+            long elapsed = (lastRingMsgSentTime + U.millisToNanos(CON_CHECK_INTERVAL)) - System.nanoTime();
 
             if (elapsed > 0)
                 return;
@@ -6219,7 +6199,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Fixates time of last sent message. */
     private void updateLastSentMessageTime() {
-        lastRingMsgSentTime = U.currentTimeMillis();
+        lastRingMsgSentTime = System.nanoTime();
     }
 
     /** Thread that executes {@link TcpServer}'s code. */
@@ -6554,10 +6534,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         // Node cannot connect to it's next (for local node it's previous).
                         // Need to check connectivity to it.
                         long rcvdTime = lastRingMsgReceivedTime;
-                        long now = U.currentTimeMillis();
+                        long now = System.nanoTime();
 
                         // We got message from previous in less than double connection check interval.
-                        boolean ok = rcvdTime + connCheckInterval * 2 >= now;
+                        boolean ok = rcvdTime + U.millisToNanos(CON_CHECK_INTERVAL) * 2 >= now;
                         TcpDiscoveryNode previous = null;
 
                         if (ok) {
@@ -6606,7 +6586,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 ", checkPreviousNodeId=" + req.checkPreviousNodeId() +
                                 ", actualPreviousNode=" + previous +
                                 ", lastMessageReceivedTime=" + rcvdTime + ", now=" + now +
-                                ", connCheckInterval=" + connCheckInterval + ']');
+                                ", connCheckInterval=" + CON_CHECK_INTERVAL + ']');
                         }
                     }
 
@@ -7046,7 +7026,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Update last ring message received timestamp.
          */
         private void ringMessageReceived() {
-            lastRingMsgReceivedTime = U.currentTimeMillis();
+            lastRingMsgReceivedTime = System.nanoTime();
         }
 
         /**
