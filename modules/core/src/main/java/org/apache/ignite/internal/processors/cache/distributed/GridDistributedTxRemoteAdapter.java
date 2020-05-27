@@ -694,7 +694,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     txEntry.conflictExpireTime(),
                                                     near() ? null : explicitVer,
                                                     CU.subjectId(this, cctx),
-                                                    resolveTaskName(),
+                                                    taskName,
                                                     dhtVer,
                                                     txEntry.updateCounter());
 
