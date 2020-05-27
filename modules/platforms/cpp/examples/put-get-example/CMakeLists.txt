@@ -20,6 +20,7 @@ project(put-get-example)
 set(TARGET ignite-${PROJECT_NAME})
 
 find_package(Ignite)
+find_package(Threads)
 find_package(Java 1.8 REQUIRED)
 find_package(JNI REQUIRED)
 
@@ -27,4 +28,4 @@ include_directories(../include ${IGNITE_INCLUDE_DIR} ${JNI_INCLUDE_DIRS})
 
 add_executable(${TARGET} src/put_get_example.cpp)
 
-target_link_libraries(${TARGET} ${IGNITE_LIB} ${IGNITE_BINARY_LIB} ${IGNITE_COMMON_LIB})
+target_link_libraries(${TARGET} ${IGNITE_LIB} ${IGNITE_BINARY_LIB} ${IGNITE_COMMON_LIB} ${CMAKE_THREAD_LIBS_INIT})

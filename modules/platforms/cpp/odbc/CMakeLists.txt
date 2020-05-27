@@ -25,8 +25,7 @@ include_directories(include ${ODBC_INCLUDE_DIRS})
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(SOURCES
-        src/app/application_data_buffer.cpp
+set(SOURCES src/app/application_data_buffer.cpp
         src/app/parameter.cpp
         src/app/parameter_set.cpp
         src/common_types.cpp
@@ -91,8 +90,8 @@ target_link_libraries(${TARGET} ignite-binary ignite-network ${ODBC_LIB})
 
 target_include_directories(${TARGET} INTERFACE include)
 
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")
 
 if (WIN32)
-    install(DIRECTORY os/win/include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h")
+    install(DIRECTORY os/win/include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")
 endif()

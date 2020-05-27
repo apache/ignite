@@ -23,8 +23,7 @@ find_package(Boost 1.56 REQUIRED COMPONENTS unit_test_framework chrono thread sy
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
 
-set(SOURCES
-        src/reference_test.cpp
+set(SOURCES src/reference_test.cpp
         src/bits_test.cpp
         src/binary_identity_resolver_test.cpp
         src/cache_test.cpp

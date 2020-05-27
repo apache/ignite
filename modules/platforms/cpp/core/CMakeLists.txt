@@ -50,4 +50,4 @@ target_link_libraries(${TARGET} ignite-binary ignite-jni)
 
 target_include_directories(${TARGET} INTERFACE include)
 
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")

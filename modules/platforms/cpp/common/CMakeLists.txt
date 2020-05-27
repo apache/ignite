@@ -49,14 +49,15 @@ endif()
 include_directories(${OS_INCLUDE})
 
 add_library(${TARGET} SHARED ${SOURCES})
-if (!WIN32)
+
+if (NOT WIN32)
     find_package(Threads REQUIRED)
 
-    target_link_libraries($TARGET ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(${TARGET} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
 endif()
 
 set_target_properties(${TARGET} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 
 target_include_directories(${TARGET} INTERFACE include ${OS_INCLUDE})
 
-install(DIRECTORY include/ ${OS_INCLUDE}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY include/ ${OS_INCLUDE}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")
