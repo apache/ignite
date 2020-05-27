@@ -54,6 +54,8 @@ public class AbstractContinuousQuerySandboxTest extends AbstractSandboxTest {
             }
             catch (AccessControlException e) {
                 error = e;
+
+                throw e;
             }
         }
     };
@@ -108,11 +110,24 @@ public class AbstractContinuousQuerySandboxTest extends AbstractSandboxTest {
         if (init)
             cache.put(primaryKey(grid(SRV), cache.getName()), 100);
 
+        Integer key = primaryKey(grid(SRV), cache.getName());
+
         try (QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(q)) {
             if (!init)
-                cache.put(primaryKey(grid(SRV), cache.getName()), 100);
+                cache.put(key, 100);
 
             cur.getAll();
+        }
+        catch (Exception e) {
+            if (init)
+                throw e;
+
+            fail(e.getMessage());
+        }
+
+        if (!init) {
+            // Put operation should be successful regardless of exceptions inside a remote filter or transformer.
+            assertEquals(Integer.valueOf(100), cache.get(key));
         }
     }
 
