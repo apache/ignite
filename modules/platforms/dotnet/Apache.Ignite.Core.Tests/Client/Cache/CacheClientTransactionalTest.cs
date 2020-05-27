@@ -17,10 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
-    using System;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client.Cache;
-    using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
     /// <summary>
@@ -28,6 +26,17 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// </summary>
     public class CacheClientTransactionalTest : ClientTestBase
     {
+        /** */
+        private const int ServerCount = 3;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheClientTransactionalTest" /> class.
+        /// </summary>
+        public CacheClientTransactionalTest() : base(ServerCount)
+        {
+            // No-op.
+        }
+
         /// <summary>
         /// Tests that commit applies cache changes.
         /// </summary>
@@ -53,7 +62,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests that rollback reverts cache changes.
         /// </summary>
         [Test]
-        public void TestTxRollback([Values(true /*, false*/)] bool async)
+        public void TestTxRollback([Values(true /*, false*/)]
+            bool async)
         {
             var cache = TransactionalCache();
 
