@@ -183,7 +183,7 @@ public class IndexScan<Row> implements Iterable<Row> {
 
             return parts;
         }
-        else if (ctx.isPartitioned()){
+        else if (ctx.isPartitioned()) {
             assert arr != null;
             List<GridDhtLocalPartition> parts = new ArrayList<>(arr.length);
             GridDhtPartitionTopology top = ctx.topology();

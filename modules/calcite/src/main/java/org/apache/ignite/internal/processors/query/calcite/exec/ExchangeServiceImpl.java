@@ -180,7 +180,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
         if (inbox != null)
             inbox.onBatchReceived(nodeId, msg.batchId(), msg.last(), Commons.cast(msg.rows()));
-        else if (log.isDebugEnabled()){
+        else if (log.isDebugEnabled()) {
             log.debug("Stale batch message received: [" +
                 "nodeId=" + nodeId + ", " +
                 "queryId=" + msg.queryId() + ", " +

@@ -2370,7 +2370,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         List<RelNode> nodes = new ArrayList<>();
 
-        try(IgnitePlanner ignored = ctx.planner()) {
+        try (IgnitePlanner ignored = ctx.planner()) {
             for (String s : serialized) {
                 RelJsonReader reader = new RelJsonReader(ctx.createCluster(), ctx.catalogReader());
                 nodes.add(reader.read(s));
@@ -2433,7 +2433,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = ctx.planner()){
+        try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
             String qry = ctx.query();

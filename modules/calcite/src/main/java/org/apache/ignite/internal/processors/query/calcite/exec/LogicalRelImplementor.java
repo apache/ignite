@@ -241,7 +241,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableModify rel) {
-        switch (rel.getOperation()){
+        switch (rel.getOperation()) {
             case INSERT:
             case UPDATE:
             case DELETE:

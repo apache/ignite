@@ -79,7 +79,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
         List<QueryPlan> template = cache.get(key);
 
         if (template != null)
-            return Commons.transform(template, t-> t.clone(ctx));
+            return Commons.transform(template, t -> t.clone(ctx));
         else {
             List<QueryPlan> prepared = factory.create(ctx);
 

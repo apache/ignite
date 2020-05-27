@@ -205,7 +205,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
                 lowerIdxCond.add(bestLower);
                 selectivity *= 0.1;
             }
-            else if (bestLower != null && bestUpper!= null) { // "x>5 AND x<10"
+            else if (bestLower != null && bestUpper != null) { // "x>5 AND x<10"
                 upperIdxCond.add(bestUpper);
                 lowerIdxCond.add(bestLower);
                 selectivity *= 0.25;
@@ -316,7 +316,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
     }
 
     /** */
-    public List<RexNode>  upperIndexCondition() {
+    public List<RexNode> upperIndexCondition() {
         if (F.isEmpty(upperIdxCond))
             return null;
 

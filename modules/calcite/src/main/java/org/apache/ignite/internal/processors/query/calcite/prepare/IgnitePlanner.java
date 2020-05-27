@@ -246,7 +246,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @param rel Root node of relational tree.
      * @return The root of the new RelNode tree.
      */
-    public <T extends RelNode> T transform(PlannerPhase phase, RelTraitSet targetTraits, RelNode rel)  {
+    public <T extends RelNode> T transform(PlannerPhase phase, RelTraitSet targetTraits, RelNode rel) {
         return (T) phase.getProgram(ctx).run(planner(), rel, targetTraits.simplify(), materializations(rel), latices());
     }
 

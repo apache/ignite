@@ -55,7 +55,7 @@ public class IgniteSort extends Sort implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override  public Sort copy(
+    @Override public Sort copy(
         RelTraitSet traitSet,
         RelNode newInput,
         RelCollation newCollation,

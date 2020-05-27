@@ -244,7 +244,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateMapReduceMin() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
@@ -276,7 +276,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
         AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -295,7 +295,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateMapReduceMax() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
@@ -327,7 +327,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
         AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -340,7 +340,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateMapReduceCount() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
@@ -372,7 +372,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
         AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -385,7 +385,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateAvg() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
@@ -414,7 +414,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
         AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -427,7 +427,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateSum() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
@@ -458,7 +458,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
         AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -471,7 +471,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateMin() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
@@ -500,7 +500,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
         AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -513,7 +513,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateMax() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
@@ -542,7 +542,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
         AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -555,7 +555,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateCount() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
@@ -584,7 +584,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
         AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -597,7 +597,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     public void testAggregateCountByGroup() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        ScanNode<Object[]>scan = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
             row("Igor", 0, 200),
             row("Roman", 1, 300),
             row("Ivan", 1, 1400),
@@ -627,7 +627,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
         AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]>root = new RootNode<>(ctx, c -> {});
+        RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
         root.register(agg);
 
         assertTrue(root.hasNext());

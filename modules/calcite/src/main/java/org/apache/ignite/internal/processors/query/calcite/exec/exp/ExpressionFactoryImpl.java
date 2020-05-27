@@ -188,7 +188,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         return SCALAR_CACHE.computeIfAbsent(digest(nodes, type), k -> compile(nodes, type));
     }
 
-    /** {@inheritDoc} */
+    /** */
     private Scalar compile(Iterable<RexNode> nodes, RelDataType type) {
         RelDataType rowType = type == null ? emptyType : type;
 

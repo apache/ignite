@@ -778,7 +778,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         return cur;
     }
 
-
     /** */
     private void register(QueryInfo info) {
         UUID qryId = info.ctx.queryId();

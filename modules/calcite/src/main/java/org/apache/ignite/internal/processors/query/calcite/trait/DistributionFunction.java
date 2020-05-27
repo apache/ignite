@@ -73,7 +73,7 @@ public abstract class DistributionFunction implements Serializable {
     /**
      * @return Function name. This name used for equality checking and in {@link RelNode#getDigest()}.
      */
-    public final String name(){
+    public final String name() {
         if (name != null)
             return name;
 

@@ -22,7 +22,7 @@ import org.apache.calcite.rel.RelNode;
 /**
  *
  */
-public class OptimisticPlanningException extends RuntimeException{
+public class OptimisticPlanningException extends RuntimeException {
     /** */
     private final RelNode node;
 

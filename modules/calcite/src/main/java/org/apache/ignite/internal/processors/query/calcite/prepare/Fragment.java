@@ -56,7 +56,7 @@ public class Fragment {
      * @param root Root node of the fragment.
      * @param remotes Remote sources of the fragment.
      */
-    public Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes){
+    public Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes) {
         this.id = id;
         this.root = root;
         this.remotes = ImmutableList.copyOf(remotes);

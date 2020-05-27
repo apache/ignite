@@ -125,7 +125,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
         traitSet = traitSet.replace(idx.collation());
 
-        return new IgniteTableScan(cluster, traitSet, relOptTbl, idxName,  null);
+        return new IgniteTableScan(cluster, traitSet, relOptTbl, idxName, null);
     }
 
     /** {@inheritDoc} */
@@ -161,8 +161,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
     /** {@inheritDoc} */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    @Override
-    public Map<String, IgniteIndex> indexes() {
+    @Override public Map<String, IgniteIndex> indexes() {
         return indexes;
     }
 

@@ -48,7 +48,6 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      */
     IgniteDistribution distribution();
 
-
     /**
      * Returns row type excluding effectively virtual fields.
      *
