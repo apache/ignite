@@ -47,15 +47,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_KEEP_UNCLEARED_EXCHANGE_FUTURES_LIMIT;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Cause by https://issues.apache.org/jira/browse/IGNITE-7278
@@ -268,8 +262,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
                     Random rnd = ThreadLocalRandom.current();
 
                     while (!done.get()) {
-                        final int mode = rnd.nextInt(3);
-
                         Map<Integer, Person> map = new TreeMap<>();
 
                         for (int i = 0; i < batch; i++) {
@@ -280,33 +272,11 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
                         while (true) {
                             try {
-                                switch (mode) {
-                                    case 0: // Pessimistic tx.
-                                        try (Transaction tx = load.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                                            cache.putAll(map);
-
-                                            tx.commit();
-                                        }
-
-                                        break;
-
-                                    case 1: // Optimistic serializable tx.
-                                        try (Transaction tx = load.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                                            cache.putAll(map);
-
-                                            tx.commit();
-                                        }
-
-                                        break;
-
-                                    default: // Implicit tx.
-                                        cache.putAll(map);
-                                }
+                                cache.putAll(map);
 
                                 break;
                             } catch (Exception e) {
                                 if (X.hasCause(e,
-                                    TransactionOptimisticException.class,
                                     TransactionRollbackException.class,
                                     ClusterTopologyException.class,
                                     NodeStoppingException.class))
