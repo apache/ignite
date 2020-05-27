@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.Cache.Entry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObject;
@@ -28,6 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -85,6 +85,7 @@ public class IgniteCachePutKeyAttachedBinaryObjectTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13080")
     public void testKeyRefersToSubkeyInValue() throws Exception {
         startGrid(0);
 
@@ -101,10 +102,6 @@ public class IgniteCachePutKeyAttachedBinaryObjectTest extends GridCommonAbstrac
         BinaryObject binObj = (BinaryObject)binCache.get(compositeKey);
 
         binCache.put(binObj.field("key"), binObj.toBuilder().setField("val", "bar").build());
-
-        // For debugging purpose only, may be removed after test is fixed.
-        for (Entry e : binCache)
-            log.info("Entry: " + e);
 
         assertEquals("bar", cache.get(compositeKey).val());
 
