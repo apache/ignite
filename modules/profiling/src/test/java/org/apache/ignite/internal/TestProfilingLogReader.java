@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.profiling.IgniteProfiling;
-import org.apache.ignite.internal.profiling.util.OperationDeserializer;
+import org.apache.ignite.internal.profiling.util.ProfilingDeserializer;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -70,37 +70,34 @@ public class TestProfilingLogReader implements IgniteProfiling {
         ignite.context().metric().startProfiling(DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, 0);
 
         GridTestUtils.runAsync(() -> {
-            try (FileIO io = ioFactory.create(profilingFile(ignite.context()))) {
+            try (
+                FileIO io = ioFactory.create(profilingFile(ignite.context()));
+                ProfilingDeserializer des = new ProfilingDeserializer(this)
+            ) {
                 while (!ignite.context().isStopping()) {
-                    read(io);
+                    int read = io.read(readBuf);
 
-                    U.sleep(100);
+                    readBuf.flip();
+
+                    if (read < 0) {
+                        U.sleep(100);
+
+                        continue;
+                    }
+
+                    for (;;) {
+                        boolean deserialized = des.deserialize(readBuf);
+
+                        if (!deserialized)
+                            break;
+                    }
+
+                    readBuf.compact();
                 }
             }
 
             return null;
         }, "profiling-file-reader-" + ignite.name());
-    }
-
-    /** Reads profiling file since last read position. */
-    private void read(FileIO io) throws Exception {
-        while (!ignite.context().isStopping()) {
-            int read = io.read(readBuf);
-
-            readBuf.flip();
-
-            if (read < 0)
-                break;
-
-            for (;;) {
-                boolean deserialize = OperationDeserializer.deserialize(readBuf, this);
-
-                if (!deserialize)
-                    break;
-            }
-
-            readBuf.compact();
-        }
     }
 
     /** {@inheritDoc} */
@@ -116,10 +113,10 @@ public class TestProfilingLogReader implements IgniteProfiling {
     }
 
     /** {@inheritDoc} */
-    @Override public void query(GridCacheQueryType type, String text, UUID queryNodeId, long id, long startTime,
-        long duration, boolean success) {
-        log("query", "type", type, "text", text, "queryNodeId", queryNodeId, "id", id,
-            "startTime", startTime, "duration", duration, "success", success);
+    @Override public void query(GridCacheQueryType type, String text, long id, long startTime, long duration,
+        boolean success) {
+        log("query", "type", type, "text", text, "id", id, "startTime", startTime,
+            "duration", duration, "success", success);
     }
 
     /** {@inheritDoc} */

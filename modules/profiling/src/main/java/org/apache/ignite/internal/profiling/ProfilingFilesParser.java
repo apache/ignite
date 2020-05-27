@@ -48,14 +48,14 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.profiling.handlers.StartedCachesHandler;
 import org.apache.ignite.internal.profiling.handlers.CacheOperationsHandler;
 import org.apache.ignite.internal.profiling.handlers.ComputeHandler;
 import org.apache.ignite.internal.profiling.handlers.IgniteProfilingHandler;
 import org.apache.ignite.internal.profiling.handlers.QueryHandler;
+import org.apache.ignite.internal.profiling.handlers.StartedCachesHandler;
 import org.apache.ignite.internal.profiling.handlers.TopologyInfoHandler;
 import org.apache.ignite.internal.profiling.handlers.TransactionsHandler;
-import org.apache.ignite.internal.profiling.util.OperationDeserializer;
+import org.apache.ignite.internal.profiling.util.ProfilingDeserializer;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -249,11 +249,15 @@ public class ProfilingFilesParser {
         System.out.println("Starting parse log [file=" + log.getAbsolutePath() +
             ", size=" + FileUtils.byteCountToDisplaySize(log.length()) + ", nodeId=" + nodeId + ']');
 
+        int infoFrequency = 1_000_000;
         long ts = System.currentTimeMillis();
         long parsed = 0;
         long parsedBytes = 0;
 
-        try (FileIO io = ioFactory.create(log)) {
+        try (
+            FileIO io = ioFactory.create(log);
+            ProfilingDeserializer des = new ProfilingDeserializer(handlers)
+        ) {
             readBuf.clear();
 
             while (true) {
@@ -267,13 +271,13 @@ public class ProfilingFilesParser {
                 parsedBytes += read;
 
                 while (true) {
-                    boolean deserialize = OperationDeserializer.deserialize(readBuf, handlers);
+                    boolean deserialized = des.deserialize(readBuf);
 
-                    if (!deserialize)
+                    if (!deserialized)
                         break;
 
-                    if (++parsed % 1_000_000 == 0) {
-                        long speed = 1_000_000 / (System.currentTimeMillis() - ts) * 1000;
+                    if (++parsed % infoFrequency == 0) {
+                        long speed = infoFrequency / (System.currentTimeMillis() - ts) * 1000;
 
                         Runtime runtime = Runtime.getRuntime();
 
@@ -281,7 +285,6 @@ public class ProfilingFilesParser {
 
                         System.out.println(msg +
                             " progress: " + parsedBytes * 100 / log.length() + " %," +
-                            " parsed: " + parsed / 1_000_000 + " MM operations," +
                             " speed: " + speed + " ops/sec," +
                             " memory usage: " + memoryUsage + "% of " + sizeInMegabytes(runtime.totalMemory()) + " MB");
 
@@ -356,11 +359,8 @@ public class ProfilingFilesParser {
     private static void copyReportSources(String resDir) throws Exception {
         try (InputStream in = ProfilingFilesParser.class.getClassLoader().getResourceAsStream(REPORT_RESOURCE_NAME)) {
             if (in == null) {
-                // Run from IDE require custom maven assembly (try to package module).
-                System.err.println("Run from IDE require custom maven assembly (try to package " +
+                throw new RuntimeException("Run from IDE require custom maven assembly (try to package " +
                     "'ignite-profiling' module). The report sources will not be copied to the result directory.");
-
-                return;
             }
 
             try (ZipInputStream zip = new ZipInputStream(in)) {

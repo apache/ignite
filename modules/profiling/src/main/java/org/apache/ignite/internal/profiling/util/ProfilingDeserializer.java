@@ -19,6 +19,7 @@ package org.apache.ignite.internal.profiling.util;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.profiling.IgniteProfiling;
 import org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType;
@@ -35,13 +36,25 @@ import static org.apache.ignite.internal.profiling.LogFileProfiling.readUuid;
  *
  * @see LogFileProfiling
  */
-public class OperationDeserializer {
+public class ProfilingDeserializer implements AutoCloseable {
+    /** Cached strings by id. */
+    private final ConcurrentHashMap<Short, String> stringById = new ConcurrentHashMap<>();
+
+    /** Handlers to process deserialized operation. */
+    private final IgniteProfiling[] handlers;
+
+    /** @param handlers Handlers to process deserialized operation. */
+    public ProfilingDeserializer(IgniteProfiling... handlers) {
+        this.handlers = handlers;
+    }
+
     /**
+     * Tries to deserialize profiling operation from buffer.
+     *
      * @param buf Buffer.
-     * @param handlers Handlers to process deserialized operation.
      * @return {@code True} if operation parsed. {@code False} if not enough bytes.
      */
-    public static boolean deserialize(ByteBuffer buf, IgniteProfiling... handlers) {
+    public boolean deserialize(ByteBuffer buf) {
         int pos = buf.position();
 
         if (buf.remaining() < 1)
@@ -92,25 +105,39 @@ public class OperationDeserializer {
             }
 
             case QUERY: {
-                if (buf.remaining() < 1 + 4)
+                if (buf.remaining() < 1 + 1 + 2 + 8 + 8 + 8 + 1)
                     break;
 
                 GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
+                boolean needReadString = buf.get() != 0;
+                short strId = buf.getShort();
 
-                int textLength = buf.getInt();
+                String str;
 
-                if (buf.remaining() < textLength + 16 + 8 + 8 + 8 + 1)
-                    break;
+                if (needReadString) {
+                    int textLength = buf.getInt();
 
-                String text = readString(buf, textLength);
-                UUID uuid = readUuid(buf);
+                    if (buf.remaining() < textLength + 8 + 8 + 8 + 1)
+                        break;
+
+                    str = readString(buf, textLength);
+
+                    stringById.putIfAbsent(strId, str);
+                }
+                else
+                    str = stringById.get(strId);
+
                 long id = buf.getLong();
                 long startTime = buf.getLong();
                 long duration = buf.getLong();
                 boolean success = buf.get() != 0;
 
+                // TODO Delay deserealization.
+                if (str == null)
+                    return true;
+
                 for (IgniteProfiling handler : handlers)
-                    handler.query(queryType, text, uuid, id, startTime, duration, success);
+                    handler.query(queryType, str, id, startTime, duration, success);
 
                 return true;
             }
@@ -133,20 +160,35 @@ public class OperationDeserializer {
             }
 
             case TASK: {
-                if (buf.remaining() < 24 + 4)
+                if (buf.remaining() < 24 + 1 + 2 + 8 + 8 + 4)
                     break;
 
                 IgniteUuid sesId = readIgniteUuid(buf);
+                boolean needReadString = buf.get() != 0;
+                short strId = buf.getShort();
 
-                int taskNameLength = buf.getInt();
+                String taskName;
 
-                if (buf.remaining() < taskNameLength + 8 + 8 + 4)
-                    break;
+                if (needReadString) {
+                    int textLength = buf.getInt();
 
-                String taskName = readString(buf, taskNameLength);
+                    if (buf.remaining() < textLength + 8 + 8 + 4)
+                        break;
+
+                    taskName = readString(buf, textLength);
+
+                    stringById.putIfAbsent(strId, taskName);
+                }
+                else
+                    taskName = stringById.get(strId);
+
                 long startTime = buf.getLong();
                 long duration = buf.getLong();
                 int affPartId = buf.getInt();
+
+                // TODO Delay deserealization.
+                if (taskName == null)
+                    return true;
 
                 for (IgniteProfiling handler : handlers)
                     handler.task(sesId, taskName, startTime, duration, affPartId);
@@ -159,7 +201,6 @@ public class OperationDeserializer {
                     break;
 
                 IgniteUuid sesId = readIgniteUuid(buf);
-
                 long queuedTime = buf.getLong();
                 long startTime = buf.getLong();
                 long duration = buf.getLong();
@@ -244,5 +285,10 @@ public class OperationDeserializer {
         buf.get(bytes);
 
         return new String(bytes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        stringById.clear();
     }
 }

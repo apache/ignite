@@ -15,22 +15,7 @@
  * limitations under the License.
  */
 
-function prepareComputeTableData() {
-    var res = [];
-
-    $.each(report_totalCompute, function (taskName, taskData) {
-        res.push({
-            "taskName": taskName,
-            "count": taskData["count"],
-            "duration": taskData["duration"],
-            "jobsCount": taskData["jobsCount"],
-            "jobsTotalDuration": taskData["jobsTotalDuration"]
-        });
-    });
-
-    return res;
-}
-
+/** Builds tasks statistics table. */
 $('#computeStatisticsTable').bootstrapTable({
     pagination: true,
     search: true,
@@ -60,24 +45,24 @@ $('#computeStatisticsTable').bootstrapTable({
     sortOrder: 'desc'
 })
 
-function prepareSlowComputeTableData() {
+/** Tasks statistics table data. */
+function prepareComputeTableData() {
     var res = [];
 
-    $.each(report_topSlowCompute, function (k, sqlData) {
+    $.each(report_totalCompute, function (taskName, taskData) {
         res.push({
-            taskName: sqlData["taskName"],
-            duration: sqlData["duration"],
-            startTime: new Date(sqlData["startTime"]),
-            nodeId: sqlData["nodeId"],
-            affPartId: sqlData["affPartId"],
-            jobsTotalDuration: sqlData["jobsTotalDuration"],
-            index: k
+            "taskName": taskName,
+            "count": taskData["count"],
+            "duration": taskData["duration"],
+            "jobsCount": taskData["jobsCount"],
+            "jobsTotalDuration": taskData["jobsTotalDuration"]
         });
     });
 
     return res;
 }
 
+/** Builds top slow task table. */
 $('#topSlowComputeTable').bootstrapTable({
     pagination: true,
     search: true,
@@ -107,29 +92,49 @@ $('#topSlowComputeTable').bootstrapTable({
         title: 'Affinity partition id',
         sortable: true
     }],
-    data: prepareSlowComputeTableData(),
+    data: prepareSlowTasksTableData(),
     sortName: 'duration',
     sortOrder: 'desc',
     detailViewIcon: true,
     detailViewByClick: true,
     detailView: true,
     onExpandRow: function (index, row, $detail) {
-        buildSubTable($detail.html("<h5>Jobs</h5><table></table>").find('table'), row.index)
+        buildJobsSubTable($detail.html("<h5>Jobs</h5><table></table>").find('table'), row.index)
     }
 })
 
-function buildSubTable($el, index) {
+/** Top of slow tasks table data. */
+function prepareSlowTasksTableData() {
+    var res = [];
+
+    $.each(report_topSlowCompute, function (k, sqlData) {
+        res.push({
+            taskName: sqlData["taskName"],
+            duration: sqlData["duration"],
+            startTime: new Date(sqlData["startTime"]),
+            nodeId: sqlData["nodeId"],
+            affPartId: sqlData["affPartId"],
+            jobsTotalDuration: sqlData["jobsTotalDuration"],
+            index: k
+        });
+    });
+
+    return res;
+}
+
+/** Builds jobs statistics subtable. */
+function buildJobsSubTable($el, index) {
     var jobs = report_topSlowCompute[index]["jobs"];
 
     var data = [];
 
-    $.each(jobs, function (k, data0) {
+    $.each(jobs, function (k, job) {
         data.push({
-            queuedTime: data0["queuedTime"],
-            duration: data0["duration"],
-            startTime: new Date(data0["startTime"]),
-            nodeId: data0["nodeId"],
-            isTimedOut: data0["isTimedOut"]
+            queuedTime: job["queuedTime"],
+            duration: job["duration"],
+            startTime: new Date(job["startTime"]),
+            nodeId: job["nodeId"],
+            isTimedOut: job["isTimedOut"]
         });
     });
 

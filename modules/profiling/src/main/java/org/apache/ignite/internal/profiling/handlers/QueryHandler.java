@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.profiling.util.OrderedFixedSizeStructure;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.profiling.ProfilingFilesParser.currentNodeId;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 
 /**
@@ -77,8 +78,10 @@ public class QueryHandler implements IgniteProfilingHandler {
         new EnumMap<>(GridCacheQueryType.class);
 
     /** {@inheritDoc} */
-    @Override public void query(GridCacheQueryType type, String text, UUID queryNodeId, long id, long startTime,
+    @Override public void query(GridCacheQueryType type, String text, long id, long startTime,
         long duration, boolean success) {
+        UUID queryNodeId = currentNodeId();
+
         Query query = new Query(type, text, queryNodeId, id, startTime, duration, success);
 
         OrderedFixedSizeStructure<Long, Query> tree = topSlow.computeIfAbsent(type,

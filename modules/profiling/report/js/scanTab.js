@@ -15,23 +15,6 @@
  * limitations under the License.
  */
 
-function prepareScanTableData() {
-    var res = [];
-
-    $.each(report_scan, function (cacheName, sqlData) {
-        res.push({
-            "cacheName": cacheName,
-            "count": numberWithCommas(sqlData["count"]),
-            "duration": numberWithCommas(sqlData["duration"]),
-            "logicalReads": numberWithCommas(sqlData["logicalReads"]),
-            "physicalReads": numberWithCommas(sqlData["physicalReads"]),
-            "failures": numberWithCommas(sqlData["failures"])
-        });
-    });
-
-    return res;
-}
-
 $('#scanStatisticsTable').bootstrapTable({
     pagination: true,
     search: true,
@@ -65,18 +48,17 @@ $('#scanStatisticsTable').bootstrapTable({
     sortOrder: 'desc'
 })
 
-function prepareSlowScanTableData() {
+function prepareScanTableData() {
     var res = [];
 
-    $.each(report_topSlowScan, function (key, sqlData) {
+    $.each(report_scan, function (cacheName, sqlData) {
         res.push({
-            text: sqlData["text"],
-            duration: numberWithCommas(sqlData["duration"]),
-            startTime: new Date(sqlData["startTime"]),
-            nodeId: sqlData["nodeId"],
-            logicalReads: numberWithCommas(sqlData["logicalReads"]),
-            physicalReads: numberWithCommas(sqlData["physicalReads"]),
-            success: sqlData["success"]
+            "cacheName": cacheName,
+            "count": numberWithCommas(sqlData["count"]),
+            "duration": numberWithCommas(sqlData["duration"]),
+            "logicalReads": numberWithCommas(sqlData["logicalReads"]),
+            "physicalReads": numberWithCommas(sqlData["physicalReads"]),
+            "failures": numberWithCommas(sqlData["failures"])
         });
     });
 
@@ -120,3 +102,21 @@ $('#topSlowScanTable').bootstrapTable({
     sortName: 'duration',
     sortOrder: 'desc'
 })
+
+function prepareSlowScanTableData() {
+    var res = [];
+
+    $.each(report_topSlowScan, function (key, sqlData) {
+        res.push({
+            text: sqlData["text"],
+            duration: numberWithCommas(sqlData["duration"]),
+            startTime: new Date(sqlData["startTime"]),
+            nodeId: sqlData["nodeId"],
+            logicalReads: numberWithCommas(sqlData["logicalReads"]),
+            physicalReads: numberWithCommas(sqlData["physicalReads"]),
+            success: sqlData["success"]
+        });
+    });
+
+    return res;
+}

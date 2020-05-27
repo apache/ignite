@@ -15,23 +15,6 @@
  * limitations under the License.
  */
 
-function prepareSqlTableData() {
-    var res = [];
-
-    $.each(report_sql, function (queryText, sqlData) {
-        res.push({
-            "text": queryText,
-            "count": sqlData["count"],
-            "duration": sqlData["duration"],
-            "logicalReads": sqlData["logicalReads"],
-            "physicalReads": sqlData["physicalReads"],
-            "failures": sqlData["failures"]
-        });
-    });
-
-    return res;
-}
-
 $('#sqlStatisticsTable').bootstrapTable({
     pagination: true,
     search: true,
@@ -65,18 +48,17 @@ $('#sqlStatisticsTable').bootstrapTable({
     sortOrder: 'desc'
 })
 
-function prepareSlowSqlTableData() {
+function prepareSqlTableData() {
     var res = [];
 
-    $.each(report_topSlowSql, function (key, sqlData) {
+    $.each(report_sql, function (queryText, sqlData) {
         res.push({
-            text: sqlData["text"],
-            duration: sqlData["duration"],
-            startTime: new Date(sqlData["startTime"]),
-            nodeId: sqlData["nodeId"],
-            logicalReads: sqlData["logicalReads"],
-            physicalReads: sqlData["physicalReads"],
-            success: sqlData["success"]
+            "text": queryText,
+            "count": sqlData["count"],
+            "duration": sqlData["duration"],
+            "logicalReads": sqlData["logicalReads"],
+            "physicalReads": sqlData["physicalReads"],
+            "failures": sqlData["failures"]
         });
     });
 
@@ -120,3 +102,21 @@ $('#topSlowSqlTable').bootstrapTable({
     sortName: 'duration',
     sortOrder: 'desc'
 })
+
+function prepareSlowSqlTableData() {
+    var res = [];
+
+    $.each(report_topSlowSql, function (key, sqlData) {
+        res.push({
+            text: sqlData["text"],
+            duration: sqlData["duration"],
+            startTime: new Date(sqlData["startTime"]),
+            nodeId: sqlData["nodeId"],
+            logicalReads: sqlData["logicalReads"],
+            physicalReads: sqlData["physicalReads"],
+            success: sqlData["success"]
+        });
+    });
+
+    return res;
+}

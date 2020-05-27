@@ -40,7 +40,7 @@ const searchNodesSelect = $('#searchNodes');
 
 var opsCountPerType = {};
 
-function drawCharts() {
+function drawCacheCharts() {
     $("#operationsCharts").empty();
 
     $.each(CACHE_OPERATIONS, function (k, opName) {
@@ -97,7 +97,7 @@ function drawCharts() {
         })
     });
 
-    drawBar();
+    drawCacheBar();
 }
 
 function prepareCacheDatasets(opName) {
@@ -137,7 +137,7 @@ function prepareCacheDatasets(opName) {
     return res;
 }
 
-function drawBar() {
+function drawCacheBar() {
     $("#operationsCharts").prepend('<canvas class="my-4" id="operationBarChart" height="60"/>');
 
     var data = [];
@@ -186,7 +186,7 @@ function drawBar() {
 
 }
 
-buildSelectCaches(searchCachesSelect, drawCharts);
-buildSelectNodes(searchNodesSelect, drawCharts);
+buildSelectCaches(searchCachesSelect, drawCacheCharts);
+buildSelectNodes(searchNodesSelect, drawCacheCharts);
 
-drawCharts()
+drawCacheCharts()

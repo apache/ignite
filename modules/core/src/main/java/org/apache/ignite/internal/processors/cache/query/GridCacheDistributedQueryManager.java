@@ -695,7 +695,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     cctx.kernalContext().metric().profiling().query(
                         SCAN,
                         cctx.name(),
-                        cctx.nodeId(),
                         ((GridCacheDistributedQueryFuture)fut).requestId(),
                         startTime,
                         System.nanoTime() - startTimeNanos,

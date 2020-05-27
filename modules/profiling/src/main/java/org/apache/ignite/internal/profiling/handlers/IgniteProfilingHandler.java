@@ -47,8 +47,8 @@ public interface IgniteProfilingHandler extends IgniteProfiling {
     }
 
     /** {@inheritDoc} */
-    @Override default void query(GridCacheQueryType type, String text, UUID queryNodeId, long id, long startTime,
-        long duration, boolean success) {
+    @Override default void query(GridCacheQueryType type, String text, long id, long startTime, long duration,
+        boolean success) {
         // No-op.
     }
 

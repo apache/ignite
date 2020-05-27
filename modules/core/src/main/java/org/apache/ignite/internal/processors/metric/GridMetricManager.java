@@ -38,7 +38,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -324,14 +323,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                     GridMetricManager.this.metastorage = metastorage;
                 }
             });
-
-        // TODO Ignite system vars.
-        boolean profilingEnabled = IgniteSystemProperties.getBoolean("IGNITE_PROFILING_ENABLED_ON_START", false);
-
-        if (profilingEnabled) {
-            startProfiling(LogFileProfiling.DFLT_FILE_MAX_SIZE, LogFileProfiling.DFLT_BUFFER_SIZE,
-                LogFileProfiling.DFLT_FLUSH_SIZE);
-        }
     }
 
     /** {@inheritDoc} */

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -48,7 +49,19 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Profiling implementation based on logging to a profiling file.
+ * Profiling implementation based on logging statistics to a profiling file.
+ * <p>
+ * Each node collects statistics to a profiling file placed under {@link #PROFILING_DIR}.
+ * <p>
+ * To build the performance report follow:
+ * <ol>
+ *     <li>Start profiling. See {@link #startProfiling(long, int, int)}</li>
+ *     <li>Collect workload statistics.</li>
+ *     <li>Stop profiling. See {@link #stopProfiling()}</li>
+ *     <li>Collect profiling files from all nodes under an empty directory.</li>
+ *     <li>Run script {@code ./bin/profiling.sh path_to_files} to build the performance report.</li>
+ * </ol>
+ * <b>Note:</b> Start profiling again will erase previous profiling files.
  */
 public class LogFileProfiling implements IgniteProfiling {
     /** Default Maximum file size in bytes. Profiling will be stopped when the size exceeded. */
@@ -211,17 +224,34 @@ public class LogFileProfiling implements IgniteProfiling {
     }
 
     /** {@inheritDoc} */
-    @Override public void query(GridCacheQueryType type, String text, UUID queryNodeId, long id, long startTime,
-        long duration, boolean success) {
-        byte[] textBytes = text.getBytes();
+    @Override public void query(GridCacheQueryType type, String text, long id, long startTime, long duration,
+        boolean success) {
+        FileWriter writer = fileWriter;
+
+        if (writer == null)
+            return;
+
+        Short strId = writer.stringId(text);
+
+        boolean needWriteStr = strId == null;
+
+        byte[] strBytes = null;
 
         int size = /*type*/ 1 +
-            /*text*/ 4 + textBytes.length +
-            /*queryNodeId*/ 16 +
+            /*compactStringFlag*/ 1 +
+            /*strId*/ 2 +
             /*id*/ 8 +
             /*startTime*/ 8 +
             /*duration*/ 8 +
-            /*startTime*/ 1;
+            /*success*/ 1;
+
+        if (needWriteStr) {
+            strBytes = text.getBytes();
+
+            size += /*text*/ 4 + strBytes.length;
+
+            strId = writer.generateStringId(text);
+        }
 
         SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.QUERY, size);
 
@@ -231,9 +261,14 @@ public class LogFileProfiling implements IgniteProfiling {
         ByteBuffer buf = seg.buffer();
 
         buf.put((byte)type.ordinal());
-        buf.putInt(textBytes.length);
-        buf.put(textBytes);
-        writeUuid(buf, queryNodeId);
+        buf.put(needWriteStr ? (byte)1 : 0);
+        buf.putShort(strId);
+
+        if (needWriteStr) {
+            buf.putInt(strBytes.length);
+            buf.put(strBytes);
+        }
+
         buf.putLong(id);
         buf.putLong(startTime);
         buf.putLong(duration);
@@ -269,13 +304,31 @@ public class LogFileProfiling implements IgniteProfiling {
 
     /** {@inheritDoc} */
     @Override public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
-        byte[] taskNameBytes = taskName.getBytes();
+        FileWriter writer = fileWriter;
+
+        if (writer == null)
+            return;
+
+        Short strId = writer.stringId(taskName);
+
+        boolean needWriteStr = strId == null;
+
+        byte[] strBytes = null;
 
         int size = /*sesId*/ 24 +
-            /*taskName*/ 4 + taskNameBytes.length +
+            /*compactStringFlag*/ 1 +
+            /*strId*/ 2 +
             /*startTime*/ 8 +
             /*duration*/ 8 +
             /*affPartId*/ 4;
+
+        if (needWriteStr) {
+            strBytes = taskName.getBytes();
+
+            size += /*taskName*/ 4 + strBytes.length;
+
+            strId = writer.generateStringId(taskName);
+        }
 
         SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.TASK, size);
 
@@ -285,8 +338,14 @@ public class LogFileProfiling implements IgniteProfiling {
         ByteBuffer buf = seg.buffer();
 
         writeIgniteUuid(buf, sesId);
-        buf.putInt(taskNameBytes.length);
-        buf.put(taskNameBytes);
+        buf.put(needWriteStr ? (byte)1 : 0);
+        buf.putShort(strId);
+
+        if (needWriteStr) {
+            buf.putInt(strBytes.length);
+            buf.put(strBytes);
+        }
+
         buf.putLong(startTime);
         buf.putLong(duration);
         buf.putInt(affPartId);
@@ -407,8 +466,9 @@ public class LogFileProfiling implements IgniteProfiling {
             seg.release();
 
             if (!fileWriter.isCancelled()) {
-               log.warning("The profiling file maximum size is reached. Profiling will be stopped.");
+                log.warning("The profiling file maximum size is reached. Profiling will be stopped.");
 
+                // TODO Stop on all nodes.
                 stopProfiling();
             }
 
@@ -458,6 +518,9 @@ public class LogFileProfiling implements IgniteProfiling {
 
     /** Worker to write to profiling file. */
     private class FileWriter extends GridWorker {
+        /** Maximum cached string count. */
+        private static final short MAX_CACHED_STRING_COUNT = Short.MAX_VALUE;
+
         /** Profiling file I/O. */
         private final FileIO fileIo;
 
@@ -472,6 +535,12 @@ public class LogFileProfiling implements IgniteProfiling {
 
         /** Stop file writer future. */
         GridFutureAdapter<Void> stopFut = new GridFutureAdapter<>();
+
+        /** Cached strings by id. */
+        private final ConcurrentHashMap<String, Short> stringIds = new ConcurrentHashMap<>();
+
+        /** String id generator. */
+        private final AtomicInteger idsGen = new AtomicInteger();
 
         /**
          * @param ctx Kernal context.
@@ -495,7 +564,7 @@ public class LogFileProfiling implements IgniteProfiling {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!isCancelled()) {
+            while (!isCancelled() && !Thread.interrupted()) {
                 blockingSectionBegin();
 
                 try {
@@ -511,6 +580,8 @@ public class LogFileProfiling implements IgniteProfiling {
                 }
             }
 
+            fileWriter = null;
+
             ringByteBuffer.close();
 
             // Make sure that all producers released their buffers to safe deallocate memory.
@@ -520,11 +591,25 @@ public class LogFileProfiling implements IgniteProfiling {
 
             U.closeQuiet(fileIo);
 
-            fileWriter = null;
+            stringIds.clear();
 
             stopFut.onDone();
 
             log.info("Profiling stopped.");
+        }
+
+        /** @return Unique per file string identifier. {@code Null} if there is no cached identifier. */
+        Short stringId(String str) {
+            return stringIds.get(str);
+        }
+
+        /** @return Generate unique per file string identifier. {@code -1} if max cached limit exceeded. */
+        short generateStringId(String str) {
+            if (idsGen.get() > MAX_CACHED_STRING_COUNT)
+                return -1;
+
+            return stringIds.computeIfAbsent(str,
+                s -> (short)idsGen.updateAndGet(id -> id < MAX_CACHED_STRING_COUNT ? id + 1 : -1));
         }
 
         /** @return Write segment.*/

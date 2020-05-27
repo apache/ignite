@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-const reportStartTime = report_topology["profilingStartTime"];
+const REPORT_START_TIME = report_topology["profilingStartTime"];
 
-$("#reportTiming").html("Collected from " + moment(reportStartTime).format());
+$("#reportTiming").html("Collected from " + moment(REPORT_START_TIME).format());
 
+/** Plugin for charts to print 'No data to display' if there are no data. */
 Chart.plugins.register({
     afterDraw: function (chart) {
         if (chart.data.datasets.length === 0 || chart.data.datasets.every(val => val.data.length === 0)) {
@@ -26,7 +27,6 @@ Chart.plugins.register({
             var ctx = chart.chart.ctx;
             var width = chart.chart.width;
             var height = chart.chart.height
-            //chart.clear()
 
             ctx.save();
             ctx.textAlign = 'center';
@@ -38,6 +38,7 @@ Chart.plugins.register({
     }
 });
 
+/** Sorts array. */
 function sortByKeyDesc(array, key) {
     return array.sort(function (a, b) {
         var x = a[key];
@@ -47,6 +48,7 @@ function sortByKeyDesc(array, key) {
     });
 }
 
+/** Sorts array. */
 function sortByKeyAsc(array, key) {
     return array.sort(function (a, b) {
         var x = a[key];
@@ -56,10 +58,12 @@ function sortByKeyAsc(array, key) {
     });
 }
 
+/** Number with commas as thousands separators. */
 function numberWithCommas(x) {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+/** Builds bootstrap-select for caches. */
 function buildSelectCaches(el, callback) {
     el.append('<option data-content="<b>All caches</b>" value="total"/>');
 
@@ -86,6 +90,7 @@ function buildSelectCaches(el, callback) {
     });
 }
 
+/** Builds bootstrap-select for nodes. */
 function buildSelectNodes(el, callback) {
     el.append('<option data-content="<b>All nodes</b>" value="total"/>');
 

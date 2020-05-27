@@ -26,7 +26,7 @@ const txSearchCachesSelect = $('#txSearchCaches');
 const txSearchNodesSelect = $('#txSearchNodes');
 const txCharts = $("#txCharts");
 
-function tx_drawCharts() {
+function drawTxCharts() {
     var cacheId = searchCachesSelect.val();
     var nodeId = searchNodesSelect.val();
 
@@ -40,7 +40,7 @@ function tx_drawCharts() {
         new Chart(document.getElementById(txChartId), {
             type: 'line',
             data: {
-                datasets: tx_prepareCacheDatasets(nodeId, cacheId, opName)
+                datasets: prepareTxDatasets(nodeId, cacheId, opName)
             },
             options: {
                 scales: {
@@ -89,8 +89,8 @@ function tx_drawCharts() {
     new Chart(document.getElementById("txHistogram"), {
         type: 'bar',
         data: {
-            labels: buildHistogramBuckets(),
-            datasets: tx_prepareHistogramDatasets(nodeId, cacheId)
+            labels: buildTxHistogramBuckets(),
+            datasets: prepareTxHistogramDatasets(nodeId, cacheId)
         },
         options: {
             scales: {
@@ -124,7 +124,7 @@ function tx_drawCharts() {
     });
 }
 
-function tx_prepareHistogramDatasets(nodeId, cacheId) {
+function prepareTxHistogramDatasets(nodeId, cacheId) {
     var res = [];
 
     var data = report_txHistogram[nodeId] === undefined ? undefined : report_txHistogram[nodeId][cacheId];
@@ -143,7 +143,7 @@ function tx_prepareHistogramDatasets(nodeId, cacheId) {
     return res;
 }
 
-function tx_prepareCacheDatasets(nodeId, cacheId, opName) {
+function prepareTxDatasets(nodeId, cacheId, opName) {
     var res = [];
 
     var totalCacheStat = report_tx[nodeId] === undefined ? undefined : report_tx[nodeId][cacheId];
@@ -175,7 +175,7 @@ function tx_prepareCacheDatasets(nodeId, cacheId, opName) {
     return res;
 }
 
-function buildHistogramBuckets() {
+function buildTxHistogramBuckets() {
     var buckets = [];
 
     var lastVal = 0;
@@ -190,7 +190,7 @@ function buildHistogramBuckets() {
     return buckets;
 }
 
-buildSelectCaches(txSearchCachesSelect, tx_drawCharts);
-buildSelectNodes(txSearchNodesSelect, tx_drawCharts);
+buildSelectCaches(txSearchCachesSelect, drawTxCharts);
+buildSelectNodes(txSearchNodesSelect, drawTxCharts);
 
-tx_drawCharts()
+drawTxCharts()

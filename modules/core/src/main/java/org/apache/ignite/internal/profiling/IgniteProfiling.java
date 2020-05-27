@@ -44,14 +44,12 @@ public interface IgniteProfiling {
     /**
      * @param type Cache query type.
      * @param text Query text in case of SQL query. Cache name in case of SCAN query.
-     * @param queryNodeId Originating node id.
      * @param id Query id.
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
      * @param success Success flag.
      */
-    void query(GridCacheQueryType type, String text, UUID queryNodeId, long id, long startTime, long duration,
-        boolean success);
+    void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success);
 
     /**
      * @param type Cache query type.

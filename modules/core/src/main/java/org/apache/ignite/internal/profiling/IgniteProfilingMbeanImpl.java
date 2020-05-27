@@ -21,8 +21,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.T4;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
+
+import static org.apache.ignite.internal.profiling.LogFileProfiling.DFLT_BUFFER_SIZE;
+import static org.apache.ignite.internal.profiling.LogFileProfiling.DFLT_FILE_MAX_SIZE;
+import static org.apache.ignite.internal.profiling.LogFileProfiling.DFLT_FLUSH_SIZE;
 
 /**
  * {@link IgniteProfilingMBean} implementation.
@@ -38,12 +44,27 @@ public class IgniteProfilingMbeanImpl implements IgniteProfilingMBean {
 
     /** {@inheritDoc} */
     @Override public void startProfiling() throws IgniteCheckedException {
-        ctx.closure().broadcast(new ProfilingJob(), true, ctx.discovery().allNodes(), null).get();
+        ctx.closure().broadcast(new ProfilingJob(),
+            new T4<>(true, DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, DFLT_FLUSH_SIZE),
+            ctx.discovery().allNodes(), null).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void startProfiling(long maxFileSize, int bufferSize, int flushBatchSize)
+        throws IgniteCheckedException {
+        A.ensure(maxFileSize > 0, "maxFileSize > 0");
+        A.ensure(bufferSize > 0, "bufferSize > 0");
+        A.ensure(flushBatchSize >= 0, "flushBatchSize >= 0");
+
+        ctx.closure().broadcast(new ProfilingJob(),
+            new T4<>(true, maxFileSize, bufferSize, flushBatchSize),
+            ctx.discovery().allNodes(), null).get();
     }
 
     /** {@inheritDoc} */
     @Override public void stopProfiling() throws IgniteCheckedException {
-        ctx.closure().broadcast(new ProfilingJob(), false, ctx.discovery().allNodes(), null).get();
+        ctx.closure().broadcast(new ProfilingJob(), new T4<>(false, 0L, 0, 0),
+            ctx.discovery().allNodes(), null).get();
     }
 
     /** {@inheritDoc} */
@@ -53,7 +74,7 @@ public class IgniteProfilingMbeanImpl implements IgniteProfilingMBean {
 
     /** Job to start/stop profiling. */
     @GridInternal
-    private static class ProfilingJob implements IgniteClosure<Boolean, Void> {
+    private static class ProfilingJob implements IgniteClosure<T4<Boolean, Long, Integer, Integer>, Void> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -61,12 +82,10 @@ public class IgniteProfilingMbeanImpl implements IgniteProfilingMBean {
         @IgniteInstanceResource
         private transient IgniteEx ignite;
 
-        /** @param start {@code True} if start profiling. {@code True} if stop profiling. */
-        @Override public Void apply(Boolean start) {
-            if (start) {
-                ignite.context().metric().startProfiling(LogFileProfiling.DFLT_FILE_MAX_SIZE,
-                    LogFileProfiling.DFLT_BUFFER_SIZE, LogFileProfiling.DFLT_FLUSH_SIZE);
-            }
+        /** @param t Tuple with settings. */
+        @Override public Void apply(T4<Boolean, Long, Integer, Integer> t) {
+            if (t.get1())
+                ignite.context().metric().startProfiling(t.get2(), t.get3(), t.get4());
             else
                 ignite.context().metric().stopProfiling();
 
