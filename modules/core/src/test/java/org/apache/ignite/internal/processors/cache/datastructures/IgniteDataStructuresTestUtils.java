@@ -28,6 +28,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.util.typedef.X;
 
@@ -60,12 +61,7 @@ public class IgniteDataStructuresTestUtils {
         for (E e : collection) {
             Throwable ex = assertThrows(log, () -> action.accept(e), Exception.class, null);
 
-            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class)) {
-                throw new AssertionError(
-                    "IgniteClusterReadOnlyException not found on queue " + nameExtractor.apply(e),
-                    ex
-                );
-            }
+            ClusterReadOnlyModeTestUtils.checkRootCause(ex, nameExtractor.apply(e));
         }
     }
 

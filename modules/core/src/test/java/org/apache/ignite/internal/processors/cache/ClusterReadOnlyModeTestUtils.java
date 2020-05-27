@@ -28,9 +28,12 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -161,6 +164,17 @@ public class ClusterReadOnlyModeTestUtils {
                     fail("Streaming to " + cacheName + " must " + (readOnly ? "fail" : "succeed"));
             }
         }
+    }
+
+    /**
+     * Checks that given {@code ex} exception has a cause of {@link IgniteClusterReadOnlyException}.
+     *
+     * @param ex Exception for the check.
+     * @param name Name of object (optional).
+     */
+    public static void checkRootCause(Throwable ex, @Nullable String name) {
+        if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
+            throw new AssertionError("IgniteClusterReadOnlyException not found on " + name, ex);
     }
 
     /**

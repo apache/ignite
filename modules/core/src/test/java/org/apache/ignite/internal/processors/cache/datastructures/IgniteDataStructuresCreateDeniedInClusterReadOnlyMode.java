@@ -21,6 +21,7 @@ import java.util.Map;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -63,8 +64,7 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
                 null
             );
 
-            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on data structure" + t.getKey(), ex);
+            ClusterReadOnlyModeTestUtils.checkRootCause(ex, t.getKey());
         }
     }
 
@@ -79,8 +79,7 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
                 null
             );
 
-            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on data structure" + t.getKey(), ex);
+            ClusterReadOnlyModeTestUtils.checkRootCause(ex, t.getKey());
         }
     }
 
@@ -95,8 +94,7 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
                 null
             );
 
-            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on data structure" + t.getKey(), ex);
+            ClusterReadOnlyModeTestUtils.checkRootCause(ex, t.getKey());
         }
     }
 
@@ -111,8 +109,7 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
                 null
             );
 
-            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on data structure" + t.getKey(), ex);
+            ClusterReadOnlyModeTestUtils.checkRootCause(ex, t.getKey());
         }
     }
 
@@ -127,8 +124,7 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
                 null
             );
 
-            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on data structure" + t.getKey(), ex);
+            ClusterReadOnlyModeTestUtils.checkRootCause(ex, t.getKey());
         }
     }
 
@@ -143,8 +139,7 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
                 null
             );
 
-            if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on data structure" + t.getKey(), ex);
+            ClusterReadOnlyModeTestUtils.checkRootCause(ex, t.getKey());
         }
     }
 
@@ -158,7 +153,6 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
             null
         );
 
-        if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-            throw new AssertionError("IgniteClusterReadOnlyException not found on data structure", ex);
+        ClusterReadOnlyModeTestUtils.checkRootCause(ex, "test-latch");
     }
 }
