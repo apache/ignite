@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.tracing;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.apache.ignite.spi.tracing.Scope;
+import org.apache.ignite.spi.tracing.SpanStatus;
 
 /**
  * Noop and null-safe implementation of Span.

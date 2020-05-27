@@ -25,9 +25,9 @@ import io.opencensus.trace.Sampler;
 import io.opencensus.trace.Tracing;
 import io.opencensus.trace.export.SpanExporter;
 import io.opencensus.trace.samplers.Samplers;
-import org.apache.ignite.internal.processors.tracing.SpiSpecificSpan;
-import org.apache.ignite.internal.processors.tracing.TracingSpi;
-import org.apache.ignite.internal.processors.tracing.TracingSpiType;
+import org.apache.ignite.spi.tracing.SpiSpecificSpan;
+import org.apache.ignite.spi.tracing.TracingSpi;
+import org.apache.ignite.spi.tracing.TracingSpiType;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.opencensus.spi.tracing.OpenCensusTraceExporter;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -37,8 +37,8 @@ import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
-import static org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
 
 /**
  * Tracing SPI implementation based on OpenCensus library.

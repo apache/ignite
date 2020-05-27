@@ -24,18 +24,18 @@ import java.util.HashSet;
 import java.util.Map;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.processors.tracing.Scope;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationCoordinates;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationManager;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters;
+import org.apache.ignite.spi.tracing.Scope;
+import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.apache.ignite.internal.commandline.TracingConfigurationCommand;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.processors.tracing.Scope.COMMUNICATION;
-import static org.apache.ignite.internal.processors.tracing.Scope.EXCHANGE;
-import static org.apache.ignite.internal.processors.tracing.Scope.TX;
+import static org.apache.ignite.spi.tracing.Scope.COMMUNICATION;
+import static org.apache.ignite.spi.tracing.Scope.EXCHANGE;
+import static org.apache.ignite.spi.tracing.Scope.TX;
 
 /**
  * Tests for {@link TracingConfigurationCommand}

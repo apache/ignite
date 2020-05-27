@@ -27,11 +27,11 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Scope;
+import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
-import org.apache.ignite.internal.processors.tracing.TracingSpi;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationCoordinates;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters;
+import org.apache.ignite.spi.tracing.TracingSpi;
+import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
+import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
 import org.junit.Assert;
 import org.junit.Test;
@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.DISCOVERY_N
 import static org.apache.ignite.internal.processors.tracing.SpanType.DISCOVERY_NODE_JOIN_REQUEST;
 import static org.apache.ignite.internal.processors.tracing.SpanType.DISCOVERY_NODE_LEFT;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
-import static org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
 
 /**
  * Tests to check correctness of OpenCensus Tracing SPI implementation.

@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.tracing;
 
 import java.util.Set;
 import java.util.function.Supplier;
+import org.apache.ignite.spi.tracing.Scope;
+import org.apache.ignite.spi.tracing.SpanStatus;
+import org.apache.ignite.spi.tracing.SpiSpecificSpan;
 
 /**
  * Implementation of a {@link Span}

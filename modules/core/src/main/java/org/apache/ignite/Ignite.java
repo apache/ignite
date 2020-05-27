@@ -31,7 +31,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationManager;
+import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -755,5 +756,6 @@ public interface Ignite extends AutoCloseable {
      * </ul>
      * @return {@link TracingConfigurationManager} instance.
      */
+    @IgniteExperimental
     public @NotNull TracingConfigurationManager tracingConfiguration();
 }

@@ -22,7 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Set;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.processors.tracing.Scope;
+import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -56,7 +56,7 @@ public class VisorTracingConfigurationItem extends IgniteDataTransferObject {
      * Set of {@link Scope} that defines which sub-traces will be included in given trace. In other words, if child's
      * span scope is equals to parent's scope or it belongs to the parent's span included scopes, then given child span
      * will be attached to the current trace, otherwise it'll be skipped. See {@link
-     * Span#isChainable(org.apache.ignite.internal.processors.tracing.Scope)} for more details.
+     * Span#isChainable(Scope)} for more details.
      */
     private Set<Scope> includedScopes;
 
@@ -78,7 +78,7 @@ public class VisorTracingConfigurationItem extends IgniteDataTransferObject {
      *  In other words, if child's span scope is equals to parent's scope
      *  or it belongs to the parent's span included scopes, then given child span will be attached to the current trace,
      *  otherwise it'll be skipped.
-     *  See {@link Span#isChainable(org.apache.ignite.internal.processors.tracing.Scope)} for more details.
+     *  See {@link Span#isChainable(Scope)} for more details.
      */
     public VisorTracingConfigurationItem(
         Scope scope,

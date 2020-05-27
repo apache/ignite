@@ -19,15 +19,18 @@ package org.apache.ignite.internal.processors.monitoring.opencensus;
 
 import java.util.Collections;
 
-import org.apache.ignite.internal.processors.tracing.TracingSpi;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationManager;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationCoordinates;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters;
+import org.apache.ignite.spi.tracing.TracingSpi;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
+import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.tracing.Scope.COMMUNICATION;
-import static org.apache.ignite.internal.processors.tracing.Scope.TX;
+import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_BASELINE_AUTO_ADJUST_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_DISTRIBUTED_META_STORAGE_FEATURE;
+import static org.apache.ignite.spi.tracing.Scope.COMMUNICATION;
+import static org.apache.ignite.spi.tracing.Scope.TX;
 
 /**
  * Tests for OpenCensus based {@link TracingConfigurationManager#get(TracingConfigurationCoordinates)}.
