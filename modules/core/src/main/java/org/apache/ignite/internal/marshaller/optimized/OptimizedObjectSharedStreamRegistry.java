@@ -118,5 +118,4 @@ public class OptimizedObjectSharedStreamRegistry extends OptimizedObjectStreamRe
             inAcquireCnt--;
         }
     }
-
 }

@@ -312,7 +312,6 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         }
     }
 
-
     /**
      * Test informative exception message while failed object marshalling
      *
