@@ -3451,7 +3451,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 () -> format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheName, "dynamicStartCache"));
         }
 
-        if (cacheType != CacheType.INTERNAL)
+        // Null configuration means request cache instance from cluster to a client.
+        if (cacheType != CacheType.INTERNAL && ccfg != null)
             checkReadOnlyState("dynamic start cache", ccfg);
 
         GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
@@ -3537,14 +3538,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cfgs Cache configurations.
      * @throws CacheException If cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
      */
-    private void checkReadOnlyState(String opName, CacheConfiguration... cfgs) {
+    public void checkReadOnlyState(String opName, CacheConfiguration... cfgs) {
         IgniteOutClosure<String> cacheNameClo = null;
         IgniteOutClosure<String> cacheGrpNameClo = null;
 
         if (!F.isEmpty(cfgs)) {
             if (cfgs.length == 1) {
-                cacheNameClo = () -> cfgs[0].getName();
-                cacheGrpNameClo = () -> cfgs[0].getGroupName();
+                cacheNameClo = () -> cfgs[0] == null ? null : cfgs[0].getName();
+                cacheGrpNameClo = () -> cfgs[0] == null ? null : cfgs[0].getGroupName();
             }
             else {
                 cacheNameClo = () -> Stream.of(cfgs)

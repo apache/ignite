@@ -1239,6 +1239,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         //TODO IGNITE-7952
         MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
 
+        ctx.shared().cache().checkReadOnlyState("clear", ctx.config());
+
         if (isLocal()) {
             if (keys == null)
                 clearLocally(true, false, false);
@@ -1258,6 +1260,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private IgniteInternalFuture<?> clearAsync(@Nullable final Set<? extends K> keys) {
         //TODO IGNITE-7952
         MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
+
+        ctx.shared().cache().checkReadOnlyState("clear", ctx.config());
 
         if (isLocal())
             return clearLocallyAsync(keys);
@@ -4758,6 +4762,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
 
         ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+
+        ctx.shared().cache().checkReadOnlyState("clear", ctx.config());
 
         if (keyCheck)
             validateCacheKey(key);
