@@ -23,12 +23,12 @@ import java.util.function.Supplier;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -100,48 +100,33 @@ public class AbstractContinuousQuerySandboxTest extends AbstractSandboxTest {
      * @param q {@link Query}.
      * @param init True if needing put data to a cache before openning a cursor.
      */
-    private void executeQuery(Ignite ignite, Query<Cache.Entry<Integer, Integer>> q, boolean init) {
+    private void executeQuery(Ignite ignite, Query<Cache.Entry<Integer, Integer>> q, boolean init)
+        throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(
             new CacheConfiguration<Integer, Integer>()
                 .setName(CACHE_NAME + CACHE_INDEX.incrementAndGet())
                 .setCacheMode(CacheMode.PARTITIONED)
         );
 
-        if (init)
-            cache.put(primaryKey(grid(SRV), cache.getName()), 100);
+        Integer key = primaryKey(grid(SRV).cache(cache.getName()));
 
-        Integer key = primaryKey(grid(SRV), cache.getName());
+        if (init)
+            cache.put(key, 100);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(q)) {
-            if (!init)
-                cache.put(key, 100);
+            if (!init) {
+                try {
+                    cache.put(key, 100);
+                }
+                catch (Exception e) {
+                    fail(e.getMessage());
+                }
+            }
 
             cur.getAll();
         }
-        catch (Exception e) {
-            if (init)
-                throw e;
 
-            fail(e.getMessage());
-        }
-
-        if (!init) {
-            // Put operation should be successful regardless of exceptions inside a remote filter or transformer.
-            assertEquals(Integer.valueOf(100), cache.get(key));
-        }
-    }
-
-    /**
-     * Getting the key that is contained on primary partition on passed node for cache.
-     *
-     * @param ignite Node.
-     * @param cacheName Cache name.
-     * @return Key.
-     */
-    private Integer primaryKey(IgniteEx ignite, String cacheName) {
-        return findKeys(ignite.localNode(), ignite.cache(cacheName), 1, 0, 0)
-            .stream()
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException(ignite.name() + " isn't primary node for any key."));
+        // Put operation should be successful regardless of exceptions inside a remote filter or transformer.
+        assertEquals(Integer.valueOf(100), cache.get(key));
     }
 }
