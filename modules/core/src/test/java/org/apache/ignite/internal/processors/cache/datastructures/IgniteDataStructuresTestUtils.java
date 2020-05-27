@@ -30,13 +30,15 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
-import org.apache.ignite.internal.util.typedef.X;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
-public class IgniteDataStructuresTestUtils {
+/**
+ *
+ */
+class IgniteDataStructuresTestUtils {
     /** */
     private IgniteDataStructuresTestUtils() {
         // No-op
