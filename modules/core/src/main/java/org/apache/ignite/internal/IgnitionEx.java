@@ -1698,12 +1698,13 @@ public class IgnitionEx {
                         startCtx.config() != null ? startCtx.config() : new IgniteConfiguration()
                     );
 
-                    TimeBag startNodeTimer = new TimeBag(TimeUnit.MILLISECONDS);
+                    TimeBag startNodeTimer = new TimeBag(TimeUnit.MILLISECONDS, log.isInfoEnabled());
 
                     start0(startCtx, myCfg, startNodeTimer);
 
-                    log.info("Node started : "
-                        + startNodeTimer.stagesTimings().stream().collect(joining(",", "[", "]")));
+                    if (log.isInfoEnabled())
+                        log.info("Node started : "
+                            + startNodeTimer.stagesTimings().stream().collect(joining(",", "[", "]")));
                 }
                 catch (Exception e) {
                     if (log != null)

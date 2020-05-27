@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Text.RegularExpressions;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
@@ -67,6 +68,26 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests that Client Compute throws exception on older protocols.
+        /// </summary>
+        [Test]
+        public void TestComputeThrowsNotSupportedOnVersionsOlderThan170(
+            [Values(0, 1, 2, 3, 4, 5, 6)] short minor)
+        {
+            var version = new ClientProtocolVersion(1, minor, 0);
+            
+            using (var client = GetClient(version))
+            {
+                var compute = client.GetCompute();
+
+                AssertNotSupportedFeatureOperation(
+                    () => compute.ExecuteJavaTask<int>("unused", null),
+                    ClientBitmaskFeature.ExecuteTaskByName,
+                    ClientOp.ComputeTaskExecute);
+            }
+        }
+
+        /// <summary>
         /// Tests that partition awareness disables automatically on older server versions.
         /// </summary>
         [Test]
@@ -83,10 +104,13 @@ namespace Apache.Ignite.Core.Tests.Client
                 cache.Put(1, 2);
                 Assert.AreEqual(2, cache.Get(1));
 
-                var log = GetLogs(client).Last();
-                var expectedMessage = string.Format("Partition awareness has been disabled: server protocol version " +
-                                                    "{0} is lower than required 1.4.0", version);
+                var log = GetLogs(client).FirstOrDefault(e => e.Message.StartsWith("Partition"));
+
+                var expectedMessage = string.Format(
+                    "Partition awareness has been disabled: server protocol version " +
+                    "{0} is lower than required 1.4.0", version);
                 
+                Assert.IsNotNull(log);
                 Assert.AreEqual(expectedMessage, log.Message);
                 Assert.AreEqual(LogLevel.Warn, log.Level);
                 Assert.AreEqual(typeof(ClientFailoverSocket).Name, log.Category);
@@ -131,7 +155,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Assert.AreEqual(version, client.Socket.CurrentProtocolVersion);
 
-                var lastLog = GetLogs(client).Last();
+                var lastLog = GetLogs(client).Last(e => e.Level == LogLevel.Debug);
                 var expectedLog = string.Format(
                     "Handshake completed on 127.0.0.1:10800, protocol version = {0}", version);
                 
@@ -173,6 +197,21 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Asserts proper exception for non-supported operation.
+        /// </summary>
+        internal static void AssertNotSupportedFeatureOperation(Action action, ClientBitmaskFeature feature, ClientOp op)
+        {
+            var ex = Assert.Throws<IgniteClientException>(() => action());
+            
+            var expectedMessage = string.Format(
+                "Operation {0} is not supported by the server. " +
+                "Feature {1} is missing.",
+                op, feature);
+
+            Assert.AreEqual(expectedMessage, ex.Message);
+        }
+
+        /// <summary>
         /// Gets the client with specified protocol version.
         /// </summary>
         private IgniteClient GetClient(ClientProtocolVersion version, bool enablePartitionAwareness = false)
@@ -184,6 +223,21 @@ namespace Apache.Ignite.Core.Tests.Client
             };
 
             return (IgniteClient) Ignition.StartClient(cfg);
+        }
+
+        /** <inheritdoc /> */
+        protected override IgniteConfiguration GetIgniteConfiguration()
+        {
+            return new IgniteConfiguration(base.GetIgniteConfiguration())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientConfiguration = new ThinClientConfiguration
+                    {
+                        MaxActiveComputeTasksPerConnection = 1
+                    }
+                }
+            };
         }
     }
 }

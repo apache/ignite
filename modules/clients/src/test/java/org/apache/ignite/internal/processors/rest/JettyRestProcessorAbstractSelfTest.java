@@ -151,6 +151,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -175,9 +176,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        String path = U.resolveIgnitePath("modules/core/src/test/config/class_list_exploit_included.txt").getPath();
+        System.setProperty(IGNITE_MARSHALLER_BLACKLIST, path);
+
         super.beforeTestsStarted();
 
         initCache();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -655,6 +666,23 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         );
 
         assertResponseContainsError(ret, "Failed to convert value to specified type");
+
+        // Check forbidden type.
+        ForbiddenType forbidden = new ForbiddenType(new Exploit[] {
+            new Exploit(1),
+            new Exploit(2)
+        });
+
+        json = JSON_MAPPER.writeValueAsString(forbidden);
+
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
+            "keyType", "int",
+            "key", "5",
+            "valueType", ForbiddenType.class.getName(),
+            "val", json
+        );
+
+        assertResponseContainsError(ret, "Deserialization of class " + Exploit.class.getName() + " is disallowed.");
     }
 
     /**
@@ -3280,8 +3308,46 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /** */
+    private static class ForbiddenType {
+        /** Data. */
+        @JsonProperty
+        private Exploit[] data;
+
+        /** */
+        ForbiddenType() {
+            // No-op.
+        }
+
+        /**
+         * @param data Data.
+         */
+        ForbiddenType(Exploit[] data) {
+            this.data = data;
+        }
+    }
+
+    /** */
+    private static class Exploit {
+        /** Value. */
+        @JsonProperty
+        private int val = 10;
+
+        /**
+         * @param val Value
+         */
+        Exploit(int val) {
+            this.val = val;
+        }
+
+        /** */
+        Exploit() {
+            // No-op.
+        }
+    }
+
+    /** */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class OuterClass {
+    private static class OuterClass {
         /** */
         @JsonProperty
         private long id;
@@ -3329,7 +3395,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         }
 
         /** */
-        @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
         OuterClass(long id, String name, double doubleVal, List<Integer> list, Timestamp timestamp, long[] longs,
             UUID uuid, IgniteUuid igniteUuid, OptionalObject optional) {
             this.id = id;
@@ -3412,7 +3477,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /** */
-    public enum Color {
+    private enum Color {
         /** */
         RED,
 
@@ -3424,8 +3489,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /** Complex entity. */
-    @SuppressWarnings({"InnerClassMayBeStatic", "AssignmentOrReturnOfFieldWithMutableType"})
-    static class Complex implements Serializable {
+    private static class Complex implements Serializable {
         /** */
         @QuerySqlField(index = true)
         @JsonProperty

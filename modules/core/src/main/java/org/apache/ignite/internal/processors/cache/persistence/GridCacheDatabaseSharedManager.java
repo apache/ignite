@@ -211,6 +211,8 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
@@ -542,8 +544,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         int pagesNum = 0;
 
-        boolean hasUserDirtyPages = false;
-
         for (DataRegion reg : dataRegions()) {
             if (!reg.config().isPersistenceEnabled())
                 continue;
@@ -560,7 +560,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (progress != null)
             progress.currentCheckpointPagesCount(pagesNum);
 
-        return new CheckpointPagesInfoHolder(res, pagesNum, hasUserDirtyPages);
+        return new CheckpointPagesInfoHolder(res, pagesNum);
     }
 
     /**
@@ -1855,7 +1855,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 continue;
 
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
-                if (locPart.state() == GridDhtPartitionState.OWNING && locPart.fullSize() > walRebalanceThreshold)
+                if (locPart.state() == OWNING && locPart.fullSize() > walRebalanceThreshold)
                     res.computeIfAbsent(grp.groupId(), k -> new HashSet<>()).add(locPart.id());
             }
         }
@@ -2298,8 +2298,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 WALPointer cpMark = ((CheckpointRecord)startRec).checkpointMark();
 
                 if (cpMark != null) {
-                    log.info("Restoring checkpoint after logical recovery, will start physical recovery from " +
-                        "back pointer: " + cpMark);
+                    if (log.isInfoEnabled())
+                        log.info("Restoring checkpoint after logical recovery, will start physical recovery from " +
+                            "back pointer: " + cpMark);
 
                     recPtr = cpMark;
                 }
@@ -2468,8 +2469,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     "on disk, but checkpoint record is missed in WAL) " +
                     "[cpStatus=" + status + ", lastRead=" + lastReadPtr + "]");
 
-            log.info("Finished applying memory changes [changesApplied=" + applied +
-                ", time=" + (U.currentTimeMillis() - start) + " ms]");
+            if (log.isInfoEnabled())
+                log.info("Finished applying memory changes [changesApplied=" + applied +
+                    ", time=" + (U.currentTimeMillis() - start) + " ms]");
 
             finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr, exec);
         }
@@ -4008,8 +4010,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 dirtyPagesCount = cpPagesHolder.pagesNum();
 
-                hasUserPages = !cpPagesHolder.onlySystemPages();
-
                 hasPartitionsToDestroy = !curr.getDestroyQueue().pendingReqs().isEmpty();
 
                 WALPointer cpPtr = null;
@@ -4040,7 +4040,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 tracker.onLockRelease();
             }
 
-            DbCheckpointListener.Context ctx = createOnCheckpointBeginContext(ctx0, hasUserPages);
+            DbCheckpointListener.Context ctx = createOnCheckpointBeginContext(ctx0, dirtyPagesCount > 0);
 
             curr.transitTo(LOCK_RELEASED);
 
@@ -4191,11 +4191,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     CacheState state = new CacheState(parts.size());
 
                     for (GridDhtLocalPartition part : parts) {
+                        GridDhtPartitionState partState = part.state();
+
+                        if (partState == LOST)
+                            partState = OWNING;
+
                         state.addPartitionState(
                             part.id(),
                             part.dataStore().fullSize(),
                             part.updateCounter(),
-                            (byte)part.state().ordinal()
+                            (byte)partState.ordinal()
                         );
                     }
 
@@ -5222,11 +5227,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             GridDhtLocalPartition part = grp.topology().localPartition(p);
 
             if (part != null) {
-                log.info("Partition [grp=" + grp.cacheOrGroupName()
-                    + ", id=" + p
-                    + ", state=" + part.state()
-                    + ", counter=" + part.dataStore().partUpdateCounter()
-                    + ", size=" + part.fullSize() + "]");
+                if (log.isInfoEnabled())
+                    log.info("Partition [grp=" + grp.cacheOrGroupName()
+                        + ", id=" + p
+                        + ", state=" + part.state()
+                        + ", counter=" + part.dataStore().partUpdateCounter()
+                        + ", size=" + part.fullSize() + "]");
 
                 continue;
             }
@@ -5237,7 +5243,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             pageStore.ensure(grp.groupId(), p);
 
             if (pageStore.pages(grp.groupId(), p) <= 1) {
-                log.info("Partition [grp=" + grp.cacheOrGroupName() + ", id=" + p + ", state=N/A (only file header) ]");
+                if (log.isInfoEnabled())
+                    log.info("Partition [grp=" + grp.cacheOrGroupName() + ", id=" + p + ", state=N/A (only file header) ]");
 
                 continue;
             }
@@ -5258,11 +5265,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     long updateCntr = io.getUpdateCounter(pageAddr);
                     long size = io.getSize(pageAddr);
 
-                    log.info("Partition [grp=" + grp.cacheOrGroupName()
-                            + ", id=" + p
-                            + ", state=" + state
-                            + ", counter=" + updateCntr
-                            + ", size=" + size + "]");
+                    if (log.isInfoEnabled())
+                        log.info("Partition [grp=" + grp.cacheOrGroupName()
+                                + ", id=" + p
+                                + ", state=" + state
+                                + ", counter=" + updateCntr
+                                + ", size=" + size + "]");
                 }
                 finally {
                     pageMem.readUnlock(grp.groupId(), partMetaId, partMetaPage);
@@ -5577,9 +5585,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Current checkpoint pages information. */
     private static class CheckpointPagesInfoHolder {
-        /** If {@code true} there are user pages in checkpoint. */
-        private final boolean hasUserDirtyPages;
-
         /** Total pages count in cp. */
         private final int pagesNum;
 
@@ -5589,16 +5594,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private CheckpointPagesInfoHolder(
             Collection<Map.Entry<PageMemoryEx, GridMultiCollectionWrapper<FullPageId>>> pages,
-            int num,
-            boolean hasUserPages) {
+            int num) {
             cpPages = pages;
             pagesNum = num;
-            hasUserDirtyPages = hasUserPages;
-        }
-
-        /** If {@code true} there are user pages in checkpoint. */
-        private boolean onlySystemPages() {
-            return !hasUserDirtyPages;
         }
 
         /** Total pages count in cp. */

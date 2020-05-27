@@ -44,6 +44,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -98,7 +99,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
-        cfg.setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2");
+        cfg.setSqlConfiguration(new SqlConfiguration().setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
 
         return cfg;
     }

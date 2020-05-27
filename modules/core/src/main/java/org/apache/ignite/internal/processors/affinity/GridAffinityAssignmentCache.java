@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -535,7 +535,7 @@ public class GridAffinityAssignmentCache {
         float deltaPrimary = Math.abs(1 - (float)locPrimaryCnt / expCnt) * 100;
         float deltaBackup = Math.abs(1 - (float)locBackupCnt / (expCnt * backups)) * 100;
 
-        if (deltaPrimary > partDistribution || deltaBackup > partDistribution) {
+        if ((deltaPrimary > partDistribution || deltaBackup > partDistribution) && log.isInfoEnabled()) {
             log.info(String.format("Local node affinity assignment distribution is not ideal " +
                     "[cache=%s, expectedPrimary=%.2f, actualPrimary=%d, " +
                     "expectedBackups=%.2f, actualBackups=%d, warningThreshold=%.2f%%]",
@@ -997,7 +997,7 @@ public class GridAffinityAssignmentCache {
     /**
      * @return All initialized versions.
      */
-    public Collection<AffinityTopologyVersion> cachedVersions() {
+    public NavigableSet<AffinityTopologyVersion> cachedVersions() {
         return affCache.keySet();
     }
 

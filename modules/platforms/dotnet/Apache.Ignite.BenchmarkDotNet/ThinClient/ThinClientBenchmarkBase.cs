@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,33 +15,41 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
+namespace Apache.Ignite.BenchmarkDotNet.ThinClient
 {
-    using System;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Client;
+    using global::BenchmarkDotNet.Attributes;
 
     /// <summary>
-    /// Version attribute for <see cref="ClientOp"/>.
+    /// Base class for thin client benchmarks.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Field)]
-    internal sealed class MinVersionAttribute : Attribute
+    public abstract class ThinClientBenchmarkBase
     {
         /** */
-        private readonly ClientProtocolVersion _version;
+        public IIgnite Ignite { get; set; }
+
+        /** */
+        public IIgniteClient Client { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="MinVersionAttribute"/> class.
+        /// Sets up the benchmark.
         /// </summary>
-        public MinVersionAttribute(short major, short minor, short maintenance)
+        [GlobalSetup]
+        public virtual void GlobalSetup()
         {
-            _version = new ClientProtocolVersion(major, minor, maintenance);
+            Ignite = Ignition.Start(Utils.GetIgniteConfiguration());
+            Client = Ignition.StartClient(Utils.GetIgniteClientConfiguration());
         }
 
         /// <summary>
-        /// Gets the version.
+        /// Cleans up the benchmark.
         /// </summary>
-        public ClientProtocolVersion Version
+        [GlobalCleanup]
+        public virtual void GlobalCleanup()
         {
-            get { return _version; }
+            Client.Dispose();
+            Ignite.Dispose();
         }
     }
 }

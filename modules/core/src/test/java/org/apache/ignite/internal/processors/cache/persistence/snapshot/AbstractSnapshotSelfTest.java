@@ -24,12 +24,14 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
@@ -68,6 +70,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 
@@ -114,8 +117,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 .setPageSize(4096))
             .setCacheConfiguration(dfltCacheCfg)
             .setClusterStateOnStart(INACTIVE)
-            // Default work directory must be resolved earlier if snapshot used to start grids.
-            .setWorkDirectory(U.defaultWorkDirectory())
             .setDiscoverySpi(discoSpi);
     }
 
@@ -508,6 +509,44 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(Account.class, this);
+        }
+    }
+
+    /** */
+    protected static class BlockingExecutor implements Executor {
+        /** Delegate executor. */
+        private final Executor delegate;
+
+        /** Waiting tasks. */
+        private final Queue<Runnable> tasks = new ArrayDeque<>();
+
+        /** {@code true} if tasks must be blocked. */
+        private volatile boolean block = true;
+
+        /**
+         * @param delegate Delegate executor.
+         */
+        public BlockingExecutor(Executor delegate) {
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(@NotNull Runnable cmd) {
+            if (block)
+                tasks.offer(cmd);
+            else
+                delegate.execute(cmd);
+        }
+
+        /** Unblock and schedule tasks for execution. */
+        public void unblock() {
+            block = false;
+
+            Runnable r;
+
+            while ((r = tasks.poll()) != null) {
+                delegate.execute(r);
+            }
         }
     }
 }

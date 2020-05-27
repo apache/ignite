@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.THREAD_DUMP_MSG;
 @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, value = "true")
 public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstractTest {
     /** Test logger. */
-    private final ListeningTestLogger testLog = new ListeningTestLogger(true, log);
+    private final ListeningTestLogger testLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

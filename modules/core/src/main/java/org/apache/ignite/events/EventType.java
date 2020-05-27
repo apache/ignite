@@ -434,17 +434,17 @@ public interface EventType {
      *
      * @see CacheEvent
      */
-     public static final int EVT_CACHE_ENTRY_CREATED = 60;
+    public static final int EVT_CACHE_ENTRY_CREATED = 60;
 
-     /**
-      * Built-in event type: entry destroyed.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      *
-      * @see CacheEvent
-      */
-     public static final int EVT_CACHE_ENTRY_DESTROYED = 61;
+    /**
+     * Built-in event type: entry destroyed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_ENTRY_DESTROYED = 61;
 
     /**
      * Built-in event type: entry evicted.
@@ -454,57 +454,57 @@ public interface EventType {
      *
      * @see CacheEvent
      */
-     public static final int EVT_CACHE_ENTRY_EVICTED = 62;
+    public static final int EVT_CACHE_ENTRY_EVICTED = 62;
 
-     /**
-      * Built-in event type: object put.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      *
-      * @see CacheEvent
-      */
-     public static final int EVT_CACHE_OBJECT_PUT = 63;
+    /**
+     * Built-in event type: object put.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_OBJECT_PUT = 63;
 
-     /**
-      * Built-in event type: object read.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      *
-      * @see CacheEvent
-      */
-     public static final int EVT_CACHE_OBJECT_READ = 64;
+    /**
+     * Built-in event type: object read.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_OBJECT_READ = 64;
 
-     /**
-      * Built-in event type: object removed.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      *
-      * @see CacheEvent
-      */
-     public static final int EVT_CACHE_OBJECT_REMOVED = 65;
+    /**
+     * Built-in event type: object removed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_OBJECT_REMOVED = 65;
 
-     /**
-      * Built-in event type: object locked.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      *
-      * @see CacheEvent
-      */
-     public static final int EVT_CACHE_OBJECT_LOCKED = 66;
+    /**
+     * Built-in event type: object locked.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_OBJECT_LOCKED = 66;
 
-     /**
-      * Built-in event type: object unlocked.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      *
-      * @see CacheEvent
-      */
-     public static final int EVT_CACHE_OBJECT_UNLOCKED = 67;
+    /**
+     * Built-in event type: object unlocked.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_OBJECT_UNLOCKED = 67;
 
     /**
      * Built-in event type: cache object was expired when reading it.
@@ -921,6 +921,24 @@ public interface EventType {
      * @see ClusterActivationEvent
      */
     public static final int EVT_CLUSTER_DEACTIVATED = 141;
+
+    /**
+     * Built-in event type: page replacement started in one of the data regions. The name of the data region will
+     * be indicated in the event.
+     * <p>
+     * Fired whan all existing free pages are exhausted and Ignite replaces one of the loaded pages with a
+     * cold page from disk.
+     * <p>
+     * When started, page replacement negatively affects performance; it is recommended to monitor page replacement
+     * metrics and set data region size accordingly.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see org.apache.ignite.configuration.DataRegionConfiguration#setMaxSize(long)
+     * @see PageReplacementStartedEvent
+     */
+    public static final int EVT_PAGE_REPLACEMENT_STARTED = 142;
 
     /**
      * Built-in event type: Cluster state changed.
