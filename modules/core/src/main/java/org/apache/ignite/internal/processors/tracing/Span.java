@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.tracing;
 
-import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Logical piece of a trace that represents a single operation.
@@ -28,37 +28,23 @@ import java.util.Set;
  * You can use tracing to debug errors and latency issues in your applications.
  */
 public interface Span {
-
     /**
      * Adds tag to span with {@code String} value.
      *
      * @param tagName Tag name.
-     * @param tagVal Tag value.
+     * @param tagValSupplier Tag value supplier. Supplier is used instead of strict tag value cause of it's lazy nature.
+     *  So that it's possible not to generate String tag value in case of NoopSpan.
      */
-    Span addTag(String tagName, String tagVal);
-
-    /**
-     * Adds tag to span with {@code long} value.
-     *
-     * @param tagName Tag name.
-     * @param tagVal Tag value.
-     */
-    Span addTag(String tagName, long tagVal);
+    Span addTag(String tagName, Supplier<String> tagValSupplier);
 
     /**
      * Logs work to span.
      *
-     * @param logDesc Log description.
+     * @param logDescSupplier Log description supplier.
+     *  Supplier is used instead of strict log description cause of it's lazy nature.
+     *  So that it's possible not to generate String log description in case of NoopSpan.
      */
-    Span addLog(String logDesc);
-
-    /**
-     * Adds log to span with additional attributes.
-     *
-     * @param logDesc Log description.
-     * @param attrs Attributes.
-     */
-    Span addLog(String logDesc, Map<String, String> attrs);
+    Span addLog(Supplier<String> logDescSupplier);
 
     /**
      * Explicitly set status for span.

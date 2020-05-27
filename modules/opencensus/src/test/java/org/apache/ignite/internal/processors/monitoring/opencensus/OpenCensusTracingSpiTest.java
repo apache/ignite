@@ -249,7 +249,7 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
             List<SpanData> exchFutSpans = handler().spansReportedByNode(getTestIgniteInstanceName(i))
                 .filter(span -> EXCHANGE_FUTURE.spanName().equals(span.getName()))
                 .filter(span -> span.getStatus() == Status.OK)
-                .filter(span -> AttributeValue.longAttributeValue(EventType.EVT_NODE_LEFT).equals(
+                .filter(span -> AttributeValue.stringAttributeValue(String.valueOf(EventType.EVT_NODE_LEFT)).equals(
                     span.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT, SpanTags.TYPE))))
                 .filter(span -> stringAttributeValue(leftNodeId).equals(
                     span.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID))))
@@ -280,13 +280,13 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
                 );
                 Assert.assertEquals(
                     "Exchange future major topology version is invalid " + span,
-                    AttributeValue.longAttributeValue(curTopVer + 1),
+                    AttributeValue.stringAttributeValue(String.valueOf(curTopVer + 1)),
                     span.getAttributes().getAttributeMap().get(
                         SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MAJOR))
                 );
                 Assert.assertEquals(
                     "Exchange future minor version is invalid " + span,
-                    AttributeValue.longAttributeValue(0),
+                    AttributeValue.stringAttributeValue("0"),
                     span.getAttributes().getAttributeMap().get(
                         SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MINOR))
                 );

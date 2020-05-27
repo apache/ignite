@@ -165,12 +165,12 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
         if (span == null)
             return null;
 
-        span.addTag(SpanTags.NODE_ID, ctx.localNodeId().toString());
-        span.addTag(SpanTags.tag(NODE, SpanTags.NAME), ctx.igniteInstanceName());
+        span.addTag(SpanTags.NODE_ID, () -> ctx.localNodeId().toString());
+        span.addTag(SpanTags.tag(NODE, SpanTags.NAME), ctx::igniteInstanceName);
 
         ClusterNode locNode = ctx.discovery().localNode();
         if (locNode != null && locNode.consistentId() != null)
-            span.addTag(SpanTags.tag(NODE, SpanTags.CONSISTENT_ID), locNode.consistentId().toString());
+            span.addTag(SpanTags.tag(NODE, SpanTags.CONSISTENT_ID), () -> locNode.consistentId().toString());
 
         return span;
     }
