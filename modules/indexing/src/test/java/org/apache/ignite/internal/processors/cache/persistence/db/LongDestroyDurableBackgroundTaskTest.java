@@ -40,6 +40,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -141,19 +142,30 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setFailureHandler(new StopNodeFailureHandler())
             .setDataStorageConfiguration(
-                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                        .setPersistenceEnabled(true)
-                        .setInitialSize(10 * 1024L * 1024L)
-                        .setMaxSize(50 * 1024L * 1024L)
-                )
-                .setCheckpointFrequency(Integer.MAX_VALUE)
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setPersistenceEnabled(true)
+                            .setInitialSize(10 * 1024L * 1024L)
+                            .setMaxSize(50 * 1024L * 1024L)
+                    )
+                    .setDataRegionConfigurations(
+                        new DataRegionConfiguration()
+                            .setName("dr1")
+                            .setPersistenceEnabled(false)
+                    )
+                    .setCheckpointFrequency(Integer.MAX_VALUE)
             )
             .setCacheConfiguration(
                 new CacheConfiguration(DEFAULT_CACHE_NAME)
                     .setBackups(1)
+                    .setSqlSchema("PUBLIC"),
+                new CacheConfiguration<Integer, Integer>("TEST")
                     .setSqlSchema("PUBLIC")
+                    .setBackups(1)
+                    .setDataRegionName("dr1")
             )
             .setGridLogger(testLog);
     }
@@ -505,6 +517,51 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         forceCheckpoint();
 
         return ignite;
+    }
+
+    /**
+     * Test case when cluster deactivation happens with no-persistence cache. Index tree deletion task should not be
+     * started after stopping cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testClusterDeactivationShouldPassWithoutErrors() throws Exception {
+        IgniteEx ignite = startGrids(NODES_COUNT);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache("TEST");
+
+        query(cache, "create table TEST (id integer primary key, p integer, f integer, p integer) with " +
+            "\"DATA_REGION=dr1\"");
+
+        query(cache, "create index TEST_IDX on TEST (p)");
+
+        for (int i = 0; i < 5_000; i++)
+            query(cache, "insert into TEST (id, p, f) values (?, ?, ?)", i, i, i);
+
+        LogListener lsnr = LogListener.matches("Could not execute durable background task").build();
+        LogListener lsnr2 = LogListener.matches("Executing durable background task").build();
+        LogListener lsnr3 = LogListener.matches("Execution of durable background task completed").build();
+
+        testLog.registerListener(lsnr);
+        testLog.registerListener(lsnr2);
+        testLog.registerListener(lsnr3);
+
+        ignite.cluster().active(false);
+
+        doSleep(1_000);
+
+        assertFalse(lsnr.check());
+        assertFalse(lsnr2.check());
+        assertFalse(lsnr3.check());
+
+        testLog.unregisterListener(lsnr);
+        testLog.unregisterListener(lsnr2);
+        testLog.unregisterListener(lsnr3);
+
+        for (int i = 0; i < NODES_COUNT; i++)
+            grid(i);
     }
 
     /**
