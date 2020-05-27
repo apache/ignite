@@ -104,6 +104,7 @@
                 <module>examples</module>
                 <module>modules/benchmarks</module>
                 <module>modules/compatibility</module>
+                <module>modules/ducktests</module>
                 <module>modules/geospatial</module>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
@@ -131,6 +132,13 @@
             <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
             <modules> <!-- sorted alphabetically -->
                 <module>modules/web-console</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>ducktests</id>
+            <modules>
+                <module>modules/ducktests</module>
             </modules>
         </profile>
 
@@ -617,7 +625,6 @@
             <id>benchmarks</id>
             <modules>
                 <module>modules/benchmarks</module>
-                <module>modules/integration-tests</module>
             </modules>
         </profile>
 

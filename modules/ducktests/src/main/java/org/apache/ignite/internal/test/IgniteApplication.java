@@ -27,9 +27,16 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+/**
+ *
+ */
 public class IgniteApplication {
+    /** Config path. */
     public static final String CONFIG_PATH = "/mnt/client_app/ignite-client-config.xml";
 
+    /**
+     * @param args Args.
+     */
     public static void main(String[] args) throws IgniteCheckedException {
         IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfgs = IgnitionEx.loadConfiguration(CONFIG_PATH);
         IgniteConfiguration cfg = cfgs.get1();
@@ -43,9 +50,8 @@ public class IgniteApplication {
 
             IgniteCache<Integer, Integer> cache = ign.createCache("test-cache");
 
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < 1000; i++)
                 cache.put(i, i);
-            }
 
             executeSql(cache, "CREATE TABLE person(id INT, fio VARCHAR, PRIMARY KEY(id))");
             executeSql(cache, "INSERT INTO person(id, fio) VALUES(?, ?)", 1, "Ivanov Ivan");
@@ -56,7 +62,12 @@ public class IgniteApplication {
         }
     }
 
-    private static void executeSql(IgniteCache<Integer, Integer> cache, String query, Object...args) {
+    /**
+     * @param cache Cache.
+     * @param query Query.
+     * @param args Args.
+     */
+    private static void executeSql(IgniteCache<Integer, Integer> cache, String query, Object... args) {
         cache.query(new SqlFieldsQuery(query).setArgs(args)).getAll();
     }
 }

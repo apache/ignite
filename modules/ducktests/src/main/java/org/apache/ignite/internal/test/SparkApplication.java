@@ -25,13 +25,22 @@ import org.apache.spark.sql.ignite.IgniteSparkSession;
 
 import static org.apache.ignite.internal.test.IgniteApplication.CONFIG_PATH;
 
+/**
+ *
+ */
 public class SparkApplication {
+    /** Home. */
     public static final String HOME = "/opt/ignite-dev";
 
+    /** Version. */
     public static final String VER = "2.9.0-SNAPSHOT";
 
+    /** Spring version. */
     public static final String SPRING_VER = "4.3.26.RELEASE";
 
+    /**
+     * @param args Args.
+     */
     public static void main(String[] args) {
         System.out.println("SparkApplication.main - args");
         for (String arg : args)
@@ -44,12 +53,15 @@ public class SparkApplication {
         System.out.println("Ignite Client Finish.");
     }
 
+    /**
+     * @param masterUrl Master url.
+     */
     private static void sparkSession(String masterUrl) {
         //Creating spark session.
         try (SparkSession spark = SparkSession.builder()
-                .appName("SparkApplication")
-                .master(masterUrl)
-                .getOrCreate()) {
+            .appName("SparkApplication")
+            .master(masterUrl)
+            .getOrCreate()) {
             spark.sparkContext().addJar(HOME + "/modules/core/target/ignite-core-" + VER + ".jar");
             spark.sparkContext().addJar(HOME + "/modules/spring/target/ignite-spring-" + VER + ".jar");
             spark.sparkContext().addJar(HOME + "/modules/log4j/target/ignite-log4j-" + VER + ".jar");
@@ -66,6 +78,9 @@ public class SparkApplication {
         }
     }
 
+    /**
+     * @param masterUrl Master url.
+     */
     private static void igniteSession(String masterUrl) {
         //Creating spark session.
         try (IgniteSparkSession spark = IgniteSparkSession.builder()
@@ -91,6 +106,9 @@ public class SparkApplication {
         }
     }
 
+    /**
+     * @param spark Spark.
+     */
     private static void sparkDSLExample(SparkSession spark) {
         System.out.println("Querying using Spark DSL.");
 
