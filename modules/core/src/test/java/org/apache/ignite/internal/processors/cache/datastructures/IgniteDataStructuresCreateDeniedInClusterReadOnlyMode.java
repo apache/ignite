@@ -63,7 +63,7 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
             );
 
             if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on queue " + t.getKey(), ex);
+                throw new AssertionError("IgniteClusterReadOnlyException not found on data structure" + t.getKey(), ex);
         }
     }
 
@@ -79,7 +79,7 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
             );
 
             if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on queue " + t.getKey(), ex);
+                throw new AssertionError("IgniteClusterReadOnlyException not found on data structure" + t.getKey(), ex);
         }
     }
 
@@ -95,7 +95,7 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
             );
 
             if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on queue " + t.getKey(), ex);
+                throw new AssertionError("IgniteClusterReadOnlyException not found on data structure" + t.getKey(), ex);
         }
     }
 
@@ -111,7 +111,7 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
             );
 
             if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on queue " + t.getKey(), ex);
+                throw new AssertionError("IgniteClusterReadOnlyException not found on data structure" + t.getKey(), ex);
         }
     }
 
@@ -127,7 +127,7 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
             );
 
             if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on queue " + t.getKey(), ex);
+                throw new AssertionError("IgniteClusterReadOnlyException not found on data structure" + t.getKey(), ex);
         }
     }
 
@@ -143,7 +143,21 @@ public class IgniteDataStructuresCreateDeniedInClusterReadOnlyMode extends GridC
             );
 
             if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
-                throw new AssertionError("IgniteClusterReadOnlyException not found on queue " + t.getKey(), ex);
+                throw new AssertionError("IgniteClusterReadOnlyException not found on data structure" + t.getKey(), ex);
         }
+    }
+
+    /** */
+    @Test
+    public void testIgniteCountDownLatch() {
+        Throwable ex = assertThrows(
+            log,
+            () -> grid(0).countDownLatch("test-latch", 10, false, true),
+            Exception.class,
+            null
+        );
+
+        if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
+            throw new AssertionError("IgniteClusterReadOnlyException not found on data structure", ex);
     }
 }

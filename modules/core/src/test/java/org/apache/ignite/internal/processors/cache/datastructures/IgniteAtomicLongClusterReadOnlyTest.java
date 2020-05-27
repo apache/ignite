@@ -32,6 +32,9 @@ import static org.apache.ignite.internal.processors.cache.datastructures.IgniteD
  * Tests methods of {@link IgniteAtomicLong} behaviour if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
  */
 public class IgniteAtomicLongClusterReadOnlyTest extends GridCommonAbstractTest {
+    /** Initial value. */
+    private static final int INITIAL_VAL = 0;
+
     /** Ignite atomic longs. */
     private static List<IgniteAtomicLong> atomicLongs = new ArrayList<>();
 
@@ -46,7 +49,7 @@ public class IgniteAtomicLongClusterReadOnlyTest extends GridCommonAbstractTest 
         grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (Map.Entry<String, AtomicConfiguration> e : getAtomicConfigurations().entrySet())
-            atomicLongs.add(grid(0).atomicLong(e.getKey(), e.getValue(), 0, true));
+            atomicLongs.add(grid(0).atomicLong(e.getKey(), e.getValue(), INITIAL_VAL, true));
 
         grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
     }
@@ -62,20 +65,27 @@ public class IgniteAtomicLongClusterReadOnlyTest extends GridCommonAbstractTest 
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        atomicLongs.forEach(l -> assertEquals(l.name(), 0, l.get()));
+        atomicLongs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        atomicLongs.forEach(l -> assertEquals(l.name(), 0, l.get()));
+        atomicLongs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
 
         super.afterTest();
     }
 
     /** */
     @Test
+    public void testGetInstanceWithoutCreateAllowed() {
+        for (Map.Entry<String, AtomicConfiguration> e : getAtomicConfigurations().entrySet())
+            assertNotNull(e.getKey(), grid(0).atomicLong(e.getKey(), e.getValue(), INITIAL_VAL, false));
+    }
+
+    /** */
+    @Test
     public void testGetAllowed() {
-        atomicLongs.forEach(l -> assertEquals(l.name(), 0, l.get()));
+        atomicLongs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
     }
 
     /** */
@@ -111,7 +121,7 @@ public class IgniteAtomicLongClusterReadOnlyTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testCompareAndSetDenied() {
-        performAction(l -> l.compareAndSet(0, 5));
+        performAction(l -> l.compareAndSet(INITIAL_VAL, 5));
     }
 
     /** */

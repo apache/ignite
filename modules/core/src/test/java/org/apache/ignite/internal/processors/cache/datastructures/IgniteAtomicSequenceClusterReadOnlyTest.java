@@ -32,6 +32,9 @@ import static org.apache.ignite.internal.processors.cache.datastructures.IgniteD
  * Tests methods of {@link IgniteAtomicSequence} behaviour if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
  */
 public class IgniteAtomicSequenceClusterReadOnlyTest extends GridCommonAbstractTest {
+    /** Initial value. */
+    private static final int INITIAL_VAL = 0;
+
     /** Ignite atomic longs. */
     private static List<IgniteAtomicSequence> atomicSeqs = new ArrayList<>();
 
@@ -46,7 +49,7 @@ public class IgniteAtomicSequenceClusterReadOnlyTest extends GridCommonAbstractT
         grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (Map.Entry<String, AtomicConfiguration> e : getAtomicConfigurations().entrySet())
-            atomicSeqs.add(grid(0).atomicSequence(e.getKey(), e.getValue(), 0, true));
+            atomicSeqs.add(grid(0).atomicSequence(e.getKey(), e.getValue(), INITIAL_VAL, true));
 
         grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
     }
@@ -62,12 +65,12 @@ public class IgniteAtomicSequenceClusterReadOnlyTest extends GridCommonAbstractT
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        atomicSeqs.forEach(l -> assertEquals(l.name(), 0, l.get()));
+        atomicSeqs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        atomicSeqs.forEach(l -> assertEquals(l.name(), 0, l.get()));
+        atomicSeqs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
 
         super.afterTest();
     }
@@ -75,7 +78,14 @@ public class IgniteAtomicSequenceClusterReadOnlyTest extends GridCommonAbstractT
     /** */
     @Test
     public void testGetAllowed() {
-        atomicSeqs.forEach(l -> assertEquals(l.name(), 0, l.get()));
+        atomicSeqs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
+    }
+
+    /** */
+    @Test
+    public void testGetInstanceWithoutCreateAllowed() {
+        for (Map.Entry<String, AtomicConfiguration> e : getAtomicConfigurations().entrySet())
+            assertNotNull(e.getKey(), grid(0).atomicSequence(e.getKey(), e.getValue(), INITIAL_VAL, false));
     }
 
     /** */

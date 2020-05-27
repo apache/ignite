@@ -32,6 +32,12 @@ import static org.apache.ignite.internal.processors.cache.datastructures.IgniteD
  * Tests methods of {@link IgniteAtomicStamped} behaviour if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
  */
 public class IgniteAtomicStampedClusterReadOnlyTest extends GridCommonAbstractTest {
+    /** Initial value. */
+    private static final int INITIAL_VAL = 1;
+
+    /** Initial stamp. */
+    private static final int INITIAL_STAMP = 0;
+
     /** Ignite atomic longs. */
     private static List<IgniteAtomicStamped> atomicStamps = new ArrayList<>();
 
@@ -46,7 +52,7 @@ public class IgniteAtomicStampedClusterReadOnlyTest extends GridCommonAbstractTe
         grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (Map.Entry<String, AtomicConfiguration> e : getAtomicConfigurations().entrySet())
-            atomicStamps.add(grid(0).atomicStamped(e.getKey(), e.getValue(), 0, 0, true));
+            atomicStamps.add(grid(0).atomicStamped(e.getKey(), e.getValue(), INITIAL_VAL, INITIAL_STAMP, true));
 
         grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
     }
@@ -62,35 +68,42 @@ public class IgniteAtomicStampedClusterReadOnlyTest extends GridCommonAbstractTe
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        atomicStamps.forEach(l -> assertEquals(l.name(), 0, l.get().get1()));
-        atomicStamps.forEach(l -> assertEquals(l.name(), 0, l.get().get2()));
+        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get().get1()));
+        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_STAMP, l.get().get2()));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        atomicStamps.forEach(l -> assertEquals(l.name(), 0, l.get().get1()));
-        atomicStamps.forEach(l -> assertEquals(l.name(), 0, l.get().get2()));
+        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get().get1()));
+        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_STAMP, l.get().get2()));
 
         super.afterTest();
     }
 
     /** */
     @Test
+    public void testGetInstanceWithoutCreateAllowed() {
+        for (Map.Entry<String, AtomicConfiguration> e : getAtomicConfigurations().entrySet())
+            assertNotNull(grid(0).atomicStamped(e.getKey(), e.getValue(), INITIAL_VAL, INITIAL_STAMP, false));
+    }
+
+    /** */
+    @Test
     public void testGetAllowed() {
-        atomicStamps.forEach(l -> assertEquals(l.name(), 0, l.get().get1()));
-        atomicStamps.forEach(l -> assertEquals(l.name(), 0, l.get().get2()));
+        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get().get1()));
+        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_STAMP, l.get().get2()));
     }
 
     /** */
     @Test
     public void testGetStampAllowed() {
-        atomicStamps.forEach(l -> assertEquals(l.name(), 0, l.stamp()));
+        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_STAMP, l.stamp()));
     }
 
     /** */
     @Test
     public void testGetValueAllowed() {
-        atomicStamps.forEach(l -> assertEquals(l.name(), 0, l.value()));
+        atomicStamps.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.value()));
     }
 
     /** */
@@ -102,13 +115,13 @@ public class IgniteAtomicStampedClusterReadOnlyTest extends GridCommonAbstractTe
     /** */
     @Test
     public void testSetDenied() {
-        performAction(s -> s.set(1, 1));
+        performAction(s -> s.set(INITIAL_VAL + 1, INITIAL_STAMP + 1));
     }
 
     /** */
     @Test
     public void testCompareAndSetDenied() {
-        performAction(s -> s.compareAndSet(0, 0,1, 1));
+        performAction(s -> s.compareAndSet(INITIAL_VAL, INITIAL_VAL + 1,INITIAL_STAMP, INITIAL_STAMP + 1));
     }
 
     /** */

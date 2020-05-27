@@ -32,6 +32,9 @@ import static org.apache.ignite.internal.processors.cache.datastructures.IgniteD
  * Tests methods of {@link IgniteAtomicReference} behaviour if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
  */
 public class IgniteAtomicReferenceClusterReadOnlyTest extends GridCommonAbstractTest {
+    /** Initial value. */
+    private static final int INITIAL_VAL = 0;
+
     /** Ignite atomic longs. */
     private static List<IgniteAtomicReference> atomicRefs = new ArrayList<>();
 
@@ -46,7 +49,7 @@ public class IgniteAtomicReferenceClusterReadOnlyTest extends GridCommonAbstract
         grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (Map.Entry<String, AtomicConfiguration> e : getAtomicConfigurations().entrySet())
-            atomicRefs.add(grid(0).atomicReference(e.getKey(), e.getValue(), 0, true));
+            atomicRefs.add(grid(0).atomicReference(e.getKey(), e.getValue(), INITIAL_VAL, true));
 
         grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
     }
@@ -62,20 +65,27 @@ public class IgniteAtomicReferenceClusterReadOnlyTest extends GridCommonAbstract
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        atomicRefs.forEach(l -> assertEquals(l.name(), 0, l.get()));
+        atomicRefs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        atomicRefs.forEach(l -> assertEquals(l.name(), 0, l.get()));
+        atomicRefs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
 
         super.afterTest();
     }
 
     /** */
     @Test
+    public void testGetInstanceWithoutCreateAllowed() {
+        for (Map.Entry<String, AtomicConfiguration> e : getAtomicConfigurations().entrySet())
+            assertNotNull(e.getKey(), grid(0).atomicReference(e.getKey(), e.getValue(), INITIAL_VAL, false));
+    }
+
+    /** */
+    @Test
     public void testGetAllowed() {
-        atomicRefs.forEach(l -> assertEquals(l.name(), 0, l.get()));
+        atomicRefs.forEach(l -> assertEquals(l.name(), INITIAL_VAL, l.get()));
     }
 
     /** */
@@ -93,7 +103,7 @@ public class IgniteAtomicReferenceClusterReadOnlyTest extends GridCommonAbstract
     /** */
     @Test
     public void testCompareAndSetDenied() {
-        performAction(r -> r.compareAndSet(0, 1));
+        performAction(r -> r.compareAndSet(INITIAL_VAL, 1));
     }
 
     /** */
