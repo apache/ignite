@@ -113,6 +113,18 @@ class RelJson {
         @Override RelNode apply(RelInput input);
     }
 
+    private static final Map<String,Class> PRIMITIVE_CLASSES = ImmutableMap.<String,Class>builder()
+        .put("int", Integer.TYPE)
+        .put("long", Long.TYPE)
+        .put("double", Double.TYPE)
+        .put("float", Float.TYPE)
+        .put("boolean", Boolean.TYPE)
+        .put("char", Character.TYPE)
+        .put("byte", Byte.TYPE)
+        .put("void", Void.TYPE)
+        .put("short", Short.TYPE)
+        .build();
+
     /** */
     private static final LoadingCache<String, RelFactory> FACTORIES_CACHE = CacheBuilder.newBuilder()
         .build(CacheLoader.from(RelJson::relFactory));
@@ -193,7 +205,11 @@ class RelJson {
     /** */
     private static Class<?> classForName(String typeName, boolean skipNotFound) {
         try {
-            return Class.forName(typeName);
+            Class aClass = PRIMITIVE_CLASSES.get(typeName);
+            if (aClass == null)
+                aClass = Class.forName(typeName);
+
+            return aClass;
         }
         catch (ClassNotFoundException e) {
             if (skipNotFound)
@@ -304,9 +320,6 @@ class RelJson {
         }
 
         Map<String, Object> map = (Map<String, Object>)distribution;
-
-        assert "hash".equals(map.get("type"));
-
         DistributionFunction function = DistributionFunction.HashDistribution.INSTANCE;
 
         Number cacheId = (Number)map.get("cacheId");
@@ -353,6 +366,8 @@ class RelJson {
                     return typeFactory.createSqlIntervalType(
                         new SqlIntervalQualifier(startUnit, endUnit, SqlParserPos.ZERO));
                 }
+                else if (sqlTypeName == SqlTypeName.ARRAY)
+                    return typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
                 RelDataType type;
                 if (precision == null)
                     type = typeFactory.createSqlType(sqlTypeName);
@@ -654,6 +669,12 @@ class RelJson {
             for (RelDataTypeField field : node.getFieldList())
                 list.add(toJson(field));
             return list;
+        }
+        else if (node.getSqlTypeName() == SqlTypeName.ARRAY) {
+            Map<String, Object> map = map();
+            map.put("type", toJson(node.getSqlTypeName()));
+            map.put("elementType", toJson(node.getComponentType()));
+            return map;
         }
         else {
             Map<String, Object> map = map();
