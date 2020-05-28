@@ -34,7 +34,7 @@ LABEL ducker.creator=$ducker_creator
 # Update Linux and install necessary utilities.
 RUN apt update && apt install -y sudo netcat iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python-pip python-dev libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc && apt-get -y clean
 RUN python -m pip install -U pip==9.0.3;
-RUN pip install --upgrade cffi virtualenv pyasn1 boto3 pycrypto pywinrm ipaddress enum34 && pip install --upgrade ducktape==0.7.6
+RUN pip install --upgrade cffi virtualenv pyasn1 boto3 pycrypto pywinrm ipaddress enum34 && pip install --upgrade ducktape==0.7.7
 
 # Set up ssh
 COPY ./ssh-config /root/.ssh/config
@@ -45,13 +45,14 @@ RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 RUN chmod a+wr /opt
 
 ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
+ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install binary test dependencies.
 ARG IGNITE_VERSION="2.8.0"
 ARG IGNITE_NAME="ignite-$IGNITE_VERSION"
 ARG IGNITE_RELEASE_NAME="apache-ignite-$IGNITE_VERSION-bin"
 
-ADD $APACHE_MIRROR/ignite/$IGNITE_VERSION/$IGNITE_RELEASE_NAME.zip /opt/
+ADD $APACHE_ARCHIVE/ignite/$IGNITE_VERSION/$IGNITE_RELEASE_NAME.zip /opt/
 RUN cd /opt && unzip $IGNITE_RELEASE_NAME.zip && rm $IGNITE_RELEASE_NAME.zip
 RUN mv /opt/$IGNITE_RELEASE_NAME /opt/$IGNITE_NAME
 RUN chmod a+wr /opt/$IGNITE_NAME -R
