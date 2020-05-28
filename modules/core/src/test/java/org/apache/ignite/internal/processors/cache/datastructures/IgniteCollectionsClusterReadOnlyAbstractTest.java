@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.cache.datastructures.IgniteD
  * Abstract class for test common methods of {@link IgniteQueue} and {@link IgniteSet} behaviour if cluster in a
  * {@link ClusterState#ACTIVE_READ_ONLY} state.
  */
-abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridCommonAbstractTest {
+public abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridCommonAbstractTest {
     /** Node count. */
     private static final int NODE_CNT = 2;
 
@@ -52,7 +52,7 @@ abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridCommonAb
     private static final int COLLECTION_SIZE = 2;
 
     /** Element not in a queue. */
-    protected static final int UNKNOWN_ELEM = 777;
+    static final int UNKNOWN_ELEM = 777;
 
     /** Collection of Ignite collections (IgniteQueue or IgniteSet). */
     static Collection<? extends Collection> igniteCollections;

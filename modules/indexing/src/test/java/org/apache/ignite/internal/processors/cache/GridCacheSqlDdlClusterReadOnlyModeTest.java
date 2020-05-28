@@ -40,33 +40,22 @@ public class GridCacheSqlDdlClusterReadOnlyModeTest extends CacheCreateDestroyCl
     /** Sql select query error message. */
     private static final String SQL_SELECT_ERROR_MSG = "Failed to parse query. Column \"CITY\" not found";
 
-    /** Create tables flag. */
-    private boolean createTables = true;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        if (createTables) {
-            for (String ddl : generateCreateTableDDL())
-                execute(grid(0), ddl);
-
-            for (String cacheName : cacheNames())
-                execute(grid(0), "INSERT INTO " + tableName(cacheName) + " (id, city_id, age) VALUES (1, 1, 1)");
-        }
-
-        grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
     }
 
     /** */
     @Test
     public void testCreateTableDenied() {
-        createTables = false;
+        grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
 
         for (String ddl : generateCreateTableDDL()) {
             for (Ignite node : G.allGrids()) {
+                log.info(node.name());
+
                 Throwable t = assertThrows(log, () -> execute(node, ddl), Exception.class, null);
 
                 ClusterReadOnlyModeTestUtils.checkRootCause(t, node.name() + " sql: " + ddl);
@@ -77,6 +66,10 @@ public class GridCacheSqlDdlClusterReadOnlyModeTest extends CacheCreateDestroyCl
     /** */
     @Test
     public void testDropTableDenied() {
+        createTables();
+
+        grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
+
         for (String cacheName : cacheNames()) {
             String sql = "drop table " + tableName(cacheName);
 
@@ -91,6 +84,10 @@ public class GridCacheSqlDdlClusterReadOnlyModeTest extends CacheCreateDestroyCl
     /** */
     @Test
     public void testCreateDropIndexAllowed() {
+        createTables();
+
+        grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
+
         for (String cacheName : cacheNames()) {
             for (Ignite node : G.allGrids()) {
                 String indexName = "age_idx_" + tableName(cacheName);
@@ -104,6 +101,10 @@ public class GridCacheSqlDdlClusterReadOnlyModeTest extends CacheCreateDestroyCl
     /** */
     @Test
     public void testAlterTableAllowed() {
+        createTables();
+
+        grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
+
         for (CacheConfiguration cfg : cacheConfigurations()) {
             String cacheName = cfg.getName();
 
@@ -150,6 +151,15 @@ public class GridCacheSqlDdlClusterReadOnlyModeTest extends CacheCreateDestroyCl
             ddls.add(sb.toString());
         }
         return ddls;
+    }
+
+    /** */
+    private void createTables() {
+        for (String ddl : generateCreateTableDDL())
+            execute(grid(0), ddl);
+
+        for (String cacheName : cacheNames())
+            execute(grid(0), "INSERT INTO " + tableName(cacheName) + " (id, city_id, age) VALUES (1, 1, 1)");
     }
 
     /** */
