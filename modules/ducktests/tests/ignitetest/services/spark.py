@@ -18,7 +18,7 @@ import os.path
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.service import Service
 
-from ignitetest.ignite_utils.ignite_config import IgniteConfig
+from ignitetest.services.utils.ignite_config import IgniteConfig
 from ignitetest.services.ignite_client_app import IgniteClientApp, create_client_configs
 
 

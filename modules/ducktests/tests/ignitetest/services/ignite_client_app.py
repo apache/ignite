@@ -17,8 +17,8 @@ import os
 
 from ducktape.services.background_thread import BackgroundThreadService
 
-from ignitetest.ignite_utils.ignite_config import IgniteConfig
-from ignitetest.ignite_utils.ignite_path import IgnitePath
+from ignitetest.services.utils.ignite_config import IgniteConfig
+from ignitetest.services.utils.ignite_path import IgnitePath
 from ignitetest.version import DEV_BRANCH
 
 """
