@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private const int EchoTypeChar = 4;
 
         /** Echo type: int. */
-        private const int EchoTypeInt = 5;
+        public const int EchoTypeInt = 5;
 
         /** Echo type: long. */
         private const int EchoTypeLong = 6;
@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         public const int EchoTypeBinarizable = 12;
 
         /** Echo type: binary (Java only). */
-        private const int EchoTypeBinarizableJava = 13;
+        public const int EchoTypeBinarizableJava = 13;
 
         /** Type: object array. */
         private const int EchoTypeObjArray = 14;
@@ -316,7 +316,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.AreEqual(val, binRes.GetField<long>("Field"));
 
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0
+#if !NETCOREAPP
                 var dotNetBin = _grid1.GetBinary().ToBinary<BinaryObject>(res);
 
                 Assert.AreEqual(dotNetBin.Header.HashCode, ((BinaryObject)binRes).Header.HashCode);
@@ -347,7 +347,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                 compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
             });
 
-            Assert.AreEqual("Unknown pair [platformId=1, typeId=2009791293]", ex.Message);
+            Assert.AreEqual(
+                "Failed to resolve class name [platformId=1, platform=.NET, typeId=2009791293]", ex.Message);
         }
 
         /// <summary>
