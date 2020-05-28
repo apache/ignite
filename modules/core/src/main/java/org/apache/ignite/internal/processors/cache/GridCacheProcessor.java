@@ -3451,10 +3451,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 () -> format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheName, "dynamicStartCache"));
         }
 
-        // Null configuration means request cache instance from cluster to a client.
-        if (cacheType != CacheType.INTERNAL && ccfg != null)
-            checkReadOnlyState("dynamic start cache", ccfg);
-
         GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
             (grpKeys, masterKeyDigest) -> {
             assert ccfg == null || !ccfg.isEncryptionEnabled() || !grpKeys.isEmpty();
@@ -3702,8 +3698,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 return format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheNames, "dynamicStartCachesByStoredConf");
             });
         }
-
-        checkReadOnlyState("dynamic start caches by stored config", storedCacheDataList);
 
         GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
             (grpKeys, masterKeyDigest) -> {
