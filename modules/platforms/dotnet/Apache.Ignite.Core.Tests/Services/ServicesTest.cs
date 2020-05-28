@@ -417,7 +417,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Test call service proxy from remote node with a methods having an array of user types and objects.
         /// </summary>
         [Test]
-        public void TestCallServiceProxyWithMethodsHavingArrays()
+        public void TestCallServiceProxyWithTypedArrayParameters()
         {
             // Deploy to the remote node.
             var nodeId = Grid2.GetCluster().GetLocalNode().Id;
@@ -431,6 +431,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var objArray = typedArray.ToArray<object>();
 
+            // object[]
             var prx = Services.GetServiceProxy<ITestIgniteServiceArray>(SvcName);
 
             Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArrayOfObjects(objArray)
@@ -440,12 +441,24 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.IsEmpty(prx.TestBinarizableArrayOfObjects(new object[0]));
 
+            // T[]
             Assert.AreEqual(new[] {11, 12, 13}, prx.TestBinarizableArray(typedArray)
                   .Select(x => x.Field).ToArray());
 
             Assert.IsEmpty(prx.TestBinarizableArray(new PlatformComputeBinarizable[0]));
 
             Assert.IsNull(prx.TestBinarizableArray(null));
+
+            // BinaryObject[]
+            var binPrx = cluster.GetServices()
+                .WithKeepBinary()
+                .WithServerKeepBinary()
+                .GetServiceProxy<ITestIgniteServiceArray>(SvcName);
+
+            var res = binPrx.TestBinaryObjectArray(
+                typedArray.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray());
+
+            Assert.AreEqual(new[] {11, 12, 13}, res.Select(b => b.GetField<int>("Field")));
 
             // TestBinarizableArray2 has no corresponding class in Java.
             var typedArray2 = new[] {10, 11, 12}
@@ -1182,6 +1195,9 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             PlatformComputeBinarizable[] TestBinarizableArray(PlatformComputeBinarizable[] x);
 
+            /** */
+            IBinaryObject[] TestBinaryObjectArray(IBinaryObject[] x);
+
             /** Class TestBinarizableArray2 has no an equals class in Java. */
             PlatformComputeBinarizable2[] TestBinarizableArray2(PlatformComputeBinarizable2[] x);
         }
@@ -1215,6 +1231,21 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 // ReSharper disable once CoVariantArrayConversion
                 return (PlatformComputeBinarizable[])TestBinarizableArrayOfObjects(arg);
+            }
+
+            /** */
+            public IBinaryObject[] TestBinaryObjectArray(IBinaryObject[] x)
+            {
+                for (var i = 0; i < x.Length; i++)
+                {
+                    var binaryObject = x[i];
+
+                    var fieldVal = binaryObject.GetField<int>("Field");
+
+                    x[i] = binaryObject.ToBuilder().SetField("Field", fieldVal + 1).Build();
+                }
+
+                return x;
             }
 
             /** */
