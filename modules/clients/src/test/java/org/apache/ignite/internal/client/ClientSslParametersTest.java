@@ -184,8 +184,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
                 "TLC_FAKE_CIPHER",
                 "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
             },
-            null,
-            "Unsupported ciphersuite"
+            null
         );
     }
 
@@ -226,8 +225,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
             new String[] {
                 "SSLv3",
                 "SSLvDoesNotExist"
-            },
-            "SSLvDoesNotExist"
+            }
         );
     }
 
