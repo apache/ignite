@@ -953,6 +953,12 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc.testNullUUID(null));
             Assert.AreEqual(guid, svc.testArray(new Guid?[] {guid})[0]);
 
+            // Binary object array.
+            var binArr = arr.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray();
+
+            Assert.AreEqual(new[] {11, 12, 13}, binSvc.testBinaryObjectArray(binArr)
+                .Select(x => x.GetField<int>("Field")));
+
             Services.Cancel(javaSvcName);
         }
 
@@ -1627,6 +1633,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             object[] testBinarizableArrayOfObjects(object[] x);
+
+            /** */
+            IBinaryObject[] testBinaryObjectArray(IBinaryObject[] x);
 
             /** */
             PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] x);
