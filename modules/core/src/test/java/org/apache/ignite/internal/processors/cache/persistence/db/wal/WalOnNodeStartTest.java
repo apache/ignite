@@ -52,6 +52,7 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
                 .setWalSegments(3)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
+                        .setMaxSize(50 * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )
         );
