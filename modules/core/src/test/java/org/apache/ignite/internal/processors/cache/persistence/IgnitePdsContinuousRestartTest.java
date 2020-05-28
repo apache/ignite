@@ -25,7 +25,6 @@ import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -38,8 +37,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -47,6 +48,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionRollbackException;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_KEEP_UNCLEARED_EXCHANGE_FUTURES_LIMIT;
 
 /**
  * Cause by https://issues.apache.org/jira/browse/IGNITE-7278
@@ -230,77 +233,100 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         int threads,
         final int batch
     ) throws Exception {
-        this.checkpointDelay = checkpointDelay;
+        System.setProperty(IGNITE_KEEP_UNCLEARED_EXCHANGE_FUTURES_LIMIT, "1000");
 
-        startGrids(GRID_CNT);
+        try {
+            this.checkpointDelay = checkpointDelay;
 
-        final Ignite load = ignite(0);
+            startGrids(GRID_CNT);
 
-        load.cluster().active(true);
+            final IgniteEx load = ignite(0);
 
-        try (IgniteDataStreamer<Object, Object> s = load.dataStreamer(CACHE_NAME)) {
-            s.allowOverwrite(true);
+            load.cluster().active(true);
 
-            for (int i = 0; i < ENTRIES_COUNT; i++)
-                s.addData(i, i);
-        }
+            try (IgniteDataStreamer<Object, Object> s = load.dataStreamer(CACHE_NAME)) {
+                s.allowOverwrite(true);
 
-        final AtomicBoolean done = new AtomicBoolean(false);
-
-        IgniteInternalFuture<?> busyFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-            /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
-                IgniteCache<Object, Object> cache = load.cache(CACHE_NAME);
-                Random rnd = ThreadLocalRandom.current();
-
-                while (!done.get()) {
-                    Map<Integer, Person> map = new TreeMap<>();
-
-                    for (int i = 0; i < batch; i++) {
-                        int key = rnd.nextInt(ENTRIES_COUNT);
-
-                        map.put(key, new Person("fn" + key, "ln" + key));
-                    }
-
-                    while (true) {
-                        try {
-                            cache.putAll(map);
-
-                            break;
-                        }
-                        catch (Exception e) {
-                            if (X.hasCause(e,
-                                TransactionRollbackException.class,
-                                ClusterTopologyException.class,
-                                NodeStoppingException.class))
-                                continue; // Expected types.
-                        }
-                    }
-                }
-
-                return null;
+                for (int i = 0; i < ENTRIES_COUNT; i++)
+                    s.addData(i, i);
             }
-        }, threads, "updater");
 
-        long end = System.currentTimeMillis() + 90_000;
+            final AtomicBoolean done = new AtomicBoolean(false);
 
-        Random rnd = ThreadLocalRandom.current();
+            IgniteInternalFuture<?> busyFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+                /**
+                 * {@inheritDoc}
+                 */
+                @Override public Object call() throws Exception {
+                    IgniteCache<Object, Object> cache = load.cache(CACHE_NAME);
+                    Random rnd = ThreadLocalRandom.current();
 
-        while (System.currentTimeMillis() < end) {
-            int idx = rnd.nextInt(GRID_CNT - 1) + 1;
+                    while (!done.get()) {
+                        Map<Integer, Person> map = new TreeMap<>();
 
-            stopGrid(idx, cancel);
+                        for (int i = 0; i < batch; i++) {
+                            int key = rnd.nextInt(ENTRIES_COUNT);
 
-            U.sleep(restartDelay);
+                            map.put(key, new Person("fn" + key, "ln" + key));
+                        }
 
-            startGrid(idx);
+                        while (true) {
+                            try {
+                                cache.putAll(map);
 
-            U.sleep(restartDelay);
+                                break;
+                            } catch (Exception e) {
+                                if (X.hasCause(e,
+                                    TransactionRollbackException.class,
+                                    ClusterTopologyException.class,
+                                    NodeStoppingException.class))
+                                    continue; // Expected types.
+                            }
+                        }
+                    }
+
+                    return null;
+                }
+            }, threads, "updater");
+
+            long end = System.currentTimeMillis() + 90_000;
+
+            Random rnd = ThreadLocalRandom.current();
+
+            while (System.currentTimeMillis() < end) {
+                int idx = rnd.nextInt(2) + 1; // Prevent data loss.
+
+                stopGrid(idx, cancel);
+
+                U.sleep(restartDelay);
+
+                startGrid(idx);
+
+                U.sleep(restartDelay);
+            }
+
+            done.set(true);
+
+            busyFut.get();
+
+            awaitPartitionMapExchange();
+
+            // Skip consistency check if expiration is on.
+            if (validatePartitions()) {
+                assertPartitionsSame(idleVerify(load, CACHE_NAME));
+
+                for (GridDhtPartitionsExchangeFuture fut : load.context().cache().context().exchange().exchangeFutures())
+                    assertTrue(fut.toString(), fut.invalidPartitions().isEmpty());
+            }
         }
+        finally {
+            System.clearProperty(IGNITE_KEEP_UNCLEARED_EXCHANGE_FUTURES_LIMIT);
+        }
+    }
 
-        done.set(true);
-
-        busyFut.get();
+    /** */
+    protected boolean validatePartitions() {
+        return true;
     }
 
     /**
