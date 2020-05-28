@@ -28,3 +28,5 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET} ignite)
 
 set_target_properties(ignite-bin PROPERTIES OUTPUT_NAME ignite)
+
+install(TARGETS ${TARGET} RUNTIME DESTINATION bin)

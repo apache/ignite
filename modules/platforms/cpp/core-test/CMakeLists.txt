@@ -58,11 +58,13 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET} ignite ${Boost_LIBRARIES})
 
-if (${WITH_TESTS})
-    set(TEST_TARGET IgniteCoreTest)
-
-    add_test(NAME ${TEST_TARGET} COMMAND ${TARGET} -s false -l all)
-
-    set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT
-            IGNITE_NATIVE_TEST_CPP_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config)
+if (NOT WIN32)
+    target_link_libraries(${TARGET} -rdynamic)
 endif()
+
+set(TEST_TARGET IgniteCoreTest)
+
+add_test(NAME ${TEST_TARGET} COMMAND ${TARGET} -s false -l all)
+
+set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT
+        IGNITE_NATIVE_TEST_CPP_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config)

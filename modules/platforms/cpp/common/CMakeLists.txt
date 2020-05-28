@@ -60,4 +60,5 @@ set_target_properties(${TARGET} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 
 target_include_directories(${TARGET} INTERFACE include ${OS_INCLUDE})
 
+install(TARGETS ${TARGET} LIBRARY DESTINATION lib)
 install(DIRECTORY include/ ${OS_INCLUDE}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")

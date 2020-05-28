@@ -87,11 +87,8 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET} ${Boost_LIBRARIES} ignite ${ODBC_LIBRARY})
 
-if (${WITH_TESTS})
-    set(TEST_TARGET IgniteOdbcTest)
+set(TEST_TARGET IgniteOdbcTest)
 
-    add_test(NAME ${TEST_TARGET} COMMAND ${TARGET} -s false -l all)
+add_test(NAME ${TEST_TARGET} COMMAND ${TARGET} -s false -l all)
 
-    set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT
-            IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config)
-endif()
+set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config)

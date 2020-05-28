@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.6)
 project(Ignite.C++ VERSION 2.9.0.42453)
 
 set(CMAKE_CXX_STANDARD 98)
@@ -23,6 +23,8 @@ set(CMAKE_CXX_STANDARD 98)
 find_package(Java 1.8 REQUIRED)
 find_package(JNI REQUIRED)
 
+set(CMAKE_PROJECT_VERSION ${PROJECT_VERSION})
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIGNITE_IMPL -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS")
 
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
@@ -58,12 +60,9 @@ if (${WITH_TESTS})
     add_subdirectory(core-test)
 endif()
 
-install(TARGETS ignite-common ignite-binary ignite-jni ignite ignite-bin)
 
 if ((${WITH_THIN_CLIENT}) OR (${WITH_ODBC}))
     add_subdirectory(network)
-
-    install(TARGETS ignite-network)
 endif()
 
 if (${WITH_THIN_CLIENT})
@@ -72,8 +71,6 @@ if (${WITH_THIN_CLIENT})
     if (${WITH_TESTS})
         add_subdirectory(thin-client-test)
     endif()
-
-    install(TARGETS ignite-thin-client)
 endif()
 
 if (${WITH_ODBC})
@@ -82,6 +79,4 @@ if (${WITH_ODBC})
     if (${WITH_TESTS})
         add_subdirectory(odbc-test)
     endif()
-
-    install(TARGETS ignite-odbc)
 endif()

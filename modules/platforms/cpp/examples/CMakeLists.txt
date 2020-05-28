@@ -15,12 +15,12 @@
 # limitations under the License.
 #
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.6)
 project(examples)
 
 set(CMAKE_CXX_STANDARD 98)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../cmake")
 
 if (WIN32)
     add_definitions(-DUNICODE=1)

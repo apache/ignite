@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-cmake_minimum_required(VERSION 3.16)
-
 find_path(IGNITE_INCLUDE_DIR ignite/ignite.h
         HINTS ${IGNITE_CPP_DIR}/include
         PATH_SUFFIXES ignite)

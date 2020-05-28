@@ -90,6 +90,7 @@ target_link_libraries(${TARGET} ignite-binary ignite-network ${ODBC_LIB})
 
 target_include_directories(${TARGET} INTERFACE include)
 
+install(TARGETS ${TARGET} LIBRARY DESTINATION lib)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")
 
 if (WIN32)
