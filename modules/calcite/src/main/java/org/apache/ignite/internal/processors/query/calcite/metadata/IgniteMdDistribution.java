@@ -18,13 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import org.apache.calcite.plan.hep.HepRelVertex;
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.core.Values;
-import org.apache.calcite.rel.logical.LogicalExchange;
-import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
@@ -33,7 +30,6 @@ import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -82,13 +78,6 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
     /**
      * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
      */
-    public IgniteDistribution distribution(IgniteTableScan rel, RelMetadataQuery mq) {
-        return rel.getTable().unwrap(IgniteTable.class).distribution();
-    }
-
-    /**
-     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
-     */
     public IgniteDistribution distribution(Values rel, RelMetadataQuery mq) {
         return IgniteDistributions.broadcast();
     }
@@ -97,27 +86,6 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
      */
     public IgniteDistribution distribution(Exchange rel, RelMetadataQuery mq) {
-        return (IgniteDistribution) rel.distribution;
-    }
-
-    /**
-     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
-     */
-    public IgniteDistribution distribution(RelSubset rel, RelMetadataQuery mq) {
-        return rel.getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
-    }
-
-    /**
-     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
-     */
-    public IgniteDistribution distribution(LogicalTableScan rel, RelMetadataQuery mq) {
-        return rel.getTable().unwrap(IgniteTable.class).distribution();
-    }
-
-    /**
-     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
-     */
-    public IgniteDistribution distribution(LogicalExchange rel, RelMetadataQuery mq) {
         return (IgniteDistribution) rel.distribution;
     }
 

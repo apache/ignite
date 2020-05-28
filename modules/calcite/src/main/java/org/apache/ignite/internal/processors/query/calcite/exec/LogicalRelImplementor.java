@@ -278,11 +278,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteAggregate rel) {
         AggregateNode.AggregateType type = AggregateNode.AggregateType.SINGLE;
 
-        Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory = expressionFactory.wrappersFactory(
+        Supplier<List<AccumulatorWrapper<Row>>> accFactory = expressionFactory.accumulatorsFactory(
             type, rel.getAggCallList(), rel.getInput().getRowType());
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType());
 
-        AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), wrappersFactory, rowFactory);
+        AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), accFactory, rowFactory);
 
         Node<Row> input = visit(rel.getInput());
 
@@ -295,11 +295,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteMapAggregate rel) {
         AggregateNode.AggregateType type = AggregateNode.AggregateType.MAP;
 
-        Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory = expressionFactory.wrappersFactory(
+        Supplier<List<AccumulatorWrapper<Row>>> accFactory = expressionFactory.accumulatorsFactory(
             type, rel.getAggCallList(), rel.getInput().getRowType());
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType());
 
-        AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), wrappersFactory, rowFactory);
+        AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), accFactory, rowFactory);
 
         Node<Row> input = visit(rel.getInput());
 
@@ -312,11 +312,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteReduceAggregate rel) {
         AggregateNode.AggregateType type = AggregateNode.AggregateType.REDUCE;
 
-        Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory = expressionFactory.wrappersFactory(
+        Supplier<List<AccumulatorWrapper<Row>>> accFactory = expressionFactory.accumulatorsFactory(
             type, rel.aggregateCalls(), null);
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType());
 
-        AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.groupSets(), wrappersFactory, rowFactory);
+        AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.groupSets(), accFactory, rowFactory);
 
         Node<Row> input = visit(rel.getInput());
 
