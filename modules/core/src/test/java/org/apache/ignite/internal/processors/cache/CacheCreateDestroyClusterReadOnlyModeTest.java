@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -39,6 +40,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  */
 public class CacheCreateDestroyClusterReadOnlyModeTest extends CacheCreateDestroyClusterReadOnlyModeAbstractTest {
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13091")
     @Test
     public void testCacheCreateDenied() {
         grid(0).cluster().state(ACTIVE_READ_ONLY);
@@ -54,6 +56,7 @@ public class CacheCreateDestroyClusterReadOnlyModeTest extends CacheCreateDestro
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13091")
     @Test
     public void testGetOrCreateNotExistedCacheDenied() {
         grid(0).cluster().state(ACTIVE_READ_ONLY);
@@ -91,6 +94,7 @@ public class CacheCreateDestroyClusterReadOnlyModeTest extends CacheCreateDestro
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13091")
     @Test
     public void testCachesCreateDenied() {
         grid(0).cluster().state(ACTIVE_READ_ONLY);
@@ -104,6 +108,7 @@ public class CacheCreateDestroyClusterReadOnlyModeTest extends CacheCreateDestro
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13091")
     @Test
     public void testGetOrCreateNotExistedCachesDenied() {
         grid(0).cluster().state(ACTIVE_READ_ONLY);

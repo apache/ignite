@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheConfigurations;
@@ -48,6 +49,7 @@ public class GridCacheSqlDdlClusterReadOnlyModeTest extends CacheCreateDestroyCl
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13091")
     @Test
     public void testCreateTableDenied() {
         grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
