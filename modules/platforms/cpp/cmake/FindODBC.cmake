@@ -41,7 +41,7 @@ if (UNIX AND ODBC_CONFIG)
             OUTPUT_VARIABLE _libs OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     # Collect paths of include directories from CFLAGS
-    separate_arguments(_cflags NATIVE_COMMAND "${_cflags}")
+    separate_arguments(_cflags UNIX_COMMAND "${_cflags}")
     foreach(arg IN LISTS _cflags)
         if("${arg}" MATCHES "^-I(.*)$")
             list(APPEND _odbc_include_paths "${CMAKE_MATCH_1}")
@@ -50,7 +50,7 @@ if (UNIX AND ODBC_CONFIG)
     unset(_cflags)
 
     # Collect paths of library names and directories from LIBS
-    separate_arguments(_libs NATIVE_COMMAND "${_libs}")
+    separate_arguments(_libs UNIX_COMMAND "${_libs}")
     foreach(arg IN LISTS _libs)
         if("${arg}" MATCHES "^-L(.*)$")
             list(APPEND _odbc_lib_paths "${CMAKE_MATCH_1}")
