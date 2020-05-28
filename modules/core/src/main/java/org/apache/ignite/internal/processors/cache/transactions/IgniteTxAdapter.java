@@ -1311,10 +1311,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * cache transaction can still be rolled back.
      *
      * @param writeEntries Transaction write set.
+     * @param taskName Task name.
      * @throws IgniteCheckedException If batch update failed.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    protected final void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries) throws IgniteCheckedException {
+    protected final void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries, String taskName) throws IgniteCheckedException {
         if (!storeEnabled() || internal() ||
             (!local() && near())) // No need to work with local store at GridNearTxRemote.
             return;
@@ -1360,7 +1361,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         if (intercept || !F.isEmpty(e.entryProcessors()))
                             e.cached().unswap(false);
 
-                        IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false, null);
+                        IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false, null, taskName);
 
                         GridCacheContext cacheCtx = e.context();
 
@@ -1528,7 +1529,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected IgniteBiTuple<GridCacheOperation, CacheObject> applyTransformClosures(
         IgniteTxEntry txEntry,
         boolean metrics,
-        @Nullable GridCacheReturn ret) throws GridCacheEntryRemovedException, IgniteCheckedException {
+        @Nullable GridCacheReturn ret,
+        String taskName
+    ) throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert txEntry.op() != TRANSFORM || !F.isEmpty(txEntry.entryProcessors()) : txEntry;
 
         GridCacheContext cacheCtx = txEntry.context();
@@ -1569,7 +1572,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     /*event*/recordEvt,
                     /*subjId*/subjId,
                     /*closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
-                    resolveTaskName(),
+                    taskName,
                     null,
                     keepBinary);
             }
