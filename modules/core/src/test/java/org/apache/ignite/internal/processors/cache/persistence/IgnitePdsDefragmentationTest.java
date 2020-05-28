@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -24,14 +25,35 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     /** */
     public static final int PARTS = 1;
+
+    /** */
+    public static final int ADDED_KEYS_COUNT = 500;
+
+    /** */
+    public static final int REMOVED_KEYS_COUNT = 100;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -77,8 +99,60 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDefragmentedPartitionCreated() throws Exception {
-        IgniteEx igniteEx = startGrid(0);
+        IgniteEx ig = startGrid(0);
 
-        igniteEx.cluster().state(ClusterState.ACTIVE);
+        ig.cluster().state(ClusterState.ACTIVE);
+
+        fillCache(ig.cache(DEFAULT_CACHE_NAME));
+
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+
+        AtomicReference<File> cachePartFile = new AtomicReference<>();
+        AtomicReference<File> defragCachePartFile = new AtomicReference<>();
+
+        Files.walkFileTree(workDir.toPath(), new FileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+                if (path.toString().contains(DEFAULT_CACHE_NAME)) {
+                    if (path.toFile().getName().contains("part-"))
+                        cachePartFile.set(path.toFile());
+                    else if (path.toFile().getName().contains("part-dfrg-"))
+                        defragCachePartFile.set(path.toFile());
+                }
+
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path path, IOException e) throws IOException {
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path path, IOException e) throws IOException {
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        assertNotNull(cachePartFile.get());
+        assertNotNull(defragCachePartFile.get());
+    }
+
+    /** */
+    private void fillCache(IgniteCache<Integer,Integer> cache) {
+        Map kvs = new HashMap(ADDED_KEYS_COUNT);
+
+        for (int i = 0; i < ADDED_KEYS_COUNT; i++)
+            kvs.put(i, new byte[8192]);
+
+        cache.putAll(kvs);
+
+        for (int i = 0; i < REMOVED_KEYS_COUNT; i++)
+            cache.remove(new Random().nextInt(ADDED_KEYS_COUNT));
     }
 }
