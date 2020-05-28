@@ -41,8 +41,18 @@ public interface CacheContinuousQueryListener<K, V> {
         boolean recordIgniteEvt, @Nullable GridDhtAtomicAbstractUpdateFuture fut);
 
     /**
+     *
+     */
+    public void onBeforeRegister();
+
+    /**
+     *
+     */
+    public void onAfterRegister();
+
+    /**
      * Listener registration callback.
-     * NOTE: This method should be called under the {@link CacheGroupContext#listenerLock} write lock held.
+     * NOTE: This method should be called under the {@link CacheGroupContext#listenerLock()}} write lock held.
      */
     public void onRegister();
 
