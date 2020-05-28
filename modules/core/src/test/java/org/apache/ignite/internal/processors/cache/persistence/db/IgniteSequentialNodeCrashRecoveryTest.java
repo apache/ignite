@@ -76,7 +76,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(512 * 1024 * 1024).setPersistenceEnabled(true))
+                    .setMaxSize(256 * 1024 * 1024).setPersistenceEnabled(true))
             // Set large checkpoint frequency to make sure no checkpoint happens right after the node start.
             .setCheckpointFrequency(getTestTimeout())
             .setPageSize(PAGE_SIZE);

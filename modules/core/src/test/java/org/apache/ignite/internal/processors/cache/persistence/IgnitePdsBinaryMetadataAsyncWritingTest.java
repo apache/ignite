@@ -85,6 +85,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
+                        .setMaxSize(50 * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )
                 .setFileIOFactory(
@@ -473,7 +474,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         fileWriteLatch.countDown();
 
-        assertTrue(GridTestUtils.waitForCondition(() -> map.isEmpty(), 5_000));
+        assertTrue(GridTestUtils.waitForCondition(map::isEmpty, 15_000));
     }
 
     /**
@@ -581,13 +582,26 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
     private int findAffinityKeyForNode(Affinity aff, ClusterNode targetNode, Integer... excludeKeys) {
         int key = 0;
 
-        while (true) {
+        while (key < 100) {
             if (aff.isPrimary(targetNode, key)
                 && (excludeKeys != null ? !Arrays.asList(excludeKeys).contains(Integer.valueOf(key)) : true))
                 return key;
 
             key++;
         }
+        //Unreachable line in success scenario.
+        //Diagnostic info:
+        while (key >= 0) {
+            log.warning("Unmapped KEY = " + key
+                + " : nodes = " + aff.mapKeyToPrimaryAndBackups(key)
+                + " : parition = " + aff.partition(key));
+
+            key--;
+        }
+
+        log.warning("Target node primary partitions : " + Arrays.toString(aff.primaryPartitions(targetNode)));
+
+        throw new IllegalStateException("Impossible to find affinity key for node = " + targetNode + ", affinity = " + aff);
     }
 
     /** */
