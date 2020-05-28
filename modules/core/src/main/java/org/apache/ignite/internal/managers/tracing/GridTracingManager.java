@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.SpanType;
 import org.apache.ignite.internal.processors.tracing.Tracing;
-import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.spi.tracing.TracingSpi;
@@ -497,9 +496,6 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
 
     /** {@inheritDoc} */
     @Override public @NotNull TracingConfigurationManager configuration() {
-        if (noop)
-           return NoopTracingConfigurationManager.INSTANCE;
-
         return tracingConfiguration;
     }
 }
