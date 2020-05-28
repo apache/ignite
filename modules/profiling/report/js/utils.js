@@ -15,11 +15,9 @@
  * limitations under the License.
  */
 
-const REPORT_START_TIME = report_topology["profilingStartTime"];
+$("#reportTiming").html("Profiling started at " + moment(REPORT_DATA.clusterInfo.profilingStartTime).format());
 
-$("#reportTiming").html("Collected from " + moment(REPORT_START_TIME).format());
-
-/** Plugin for charts to print 'No data to display' if there are no data. */
+/** Plugin for Charts JS to print 'No data to display' if there is no data for chart. */
 Chart.plugins.register({
     afterDraw: function (chart) {
         if (chart.data.datasets.length === 0 || chart.data.datasets.every(val => val.data.length === 0)) {
@@ -64,43 +62,39 @@ function numberWithCommas(x) {
 }
 
 /** Builds bootstrap-select for caches. */
-function buildSelectCaches(el, callback) {
+function buildSelectCaches(el, onSelect) {
     el.append('<option data-content="<b>All caches</b>" value="total"/>');
 
-    Object.keys(report_startedCaches).forEach(cacheId => report_startedCaches[cacheId].cacheId = cacheId);
+    var caches = REPORT_DATA.clusterInfo.caches;
 
-    var cachesInfo = sortByKeyAsc(Object.values(report_startedCaches), "cacheName");
+    Object.keys(caches).forEach(cacheId => caches[cacheId].cacheId = cacheId);
 
-    console.log(cachesInfo);
+    caches = sortByKeyAsc(Object.values(caches), "cacheName");
 
-    if (cachesInfo.length === 0)
+    if (caches.length === 0)
         return;
 
-    $.each(cachesInfo, function (k, info) {
+    $.each(caches, function (idx, cache) {
         var system = '';
 
-        if (!info.userCache)
+        if (!cache.userCache)
             system = "<span class='badge badge-warning align-middle ml-2'>System</span>";
 
-        el.append('<option data-content="' + info.cacheName + system + '" value="' + info.cacheId + '"/>');
+        el.append('<option data-content="' + cache.cacheName + system + '" value="' + cache.cacheId + '"/>');
     });
 
-    el.on('changed.bs.select', function (e, clickedIndex, newValue, oldValue) {
-        callback();
-    });
+    el.on('changed.bs.select', onSelect);
 }
 
 /** Builds bootstrap-select for nodes. */
-function buildSelectNodes(el, callback) {
+function buildSelectNodes(el, onSelect) {
     el.append('<option data-content="<b>All nodes</b>" value="total"/>');
 
-    var nodesInfo = report_topology["nodesInfo"];
+    var nodes = REPORT_DATA.clusterInfo.nodes;
 
-    $.each(nodesInfo, function (nodeId, nodeInfo) {
-        el.append('<option data-content="' + nodeId + '" value="' + nodeId + '"/>');
+    $.each(nodes, (nodeId, node) => {
+        el.append('<option data-content="' + node.name + '" value="' + nodeId + '"/>');
     });
 
-    el.on('changed.bs.select', function (e, clickedIndex, newValue, oldValue) {
-        callback();
-    });
+    el.on('changed.bs.select', onSelect);
 }

@@ -97,6 +97,6 @@ public class CacheOperationsHandler implements IgniteProfilingHandler {
             });
         });
 
-        return U.map("ops", jsonRes);
+        return U.map("cacheOps", jsonRes);
     }
 }

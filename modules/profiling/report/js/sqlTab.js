@@ -49,10 +49,10 @@ $('#sqlStatisticsTable').bootstrapTable({
 })
 
 function prepareSqlTableData() {
-    var res = [];
+    var data = [];
 
-    $.each(report_sql, function (queryText, sqlData) {
-        res.push({
+    $.each(REPORT_DATA.sql, function (queryText, sqlData) {
+        data.push({
             "text": queryText,
             "count": sqlData["count"],
             "duration": sqlData["duration"],
@@ -62,7 +62,7 @@ function prepareSqlTableData() {
         });
     });
 
-    return res;
+    return data;
 }
 
 $('#topSlowSqlTable').bootstrapTable({
@@ -104,10 +104,10 @@ $('#topSlowSqlTable').bootstrapTable({
 })
 
 function prepareSlowSqlTableData() {
-    var res = [];
+    var data = [];
 
-    $.each(report_topSlowSql, function (key, sqlData) {
-        res.push({
+    $.each(REPORT_DATA.topSlowSql, function (key, sqlData) {
+        data.push({
             text: sqlData["text"],
             duration: sqlData["duration"],
             startTime: new Date(sqlData["startTime"]),
@@ -118,5 +118,5 @@ function prepareSlowSqlTableData() {
         });
     });
 
-    return res;
+    return data;
 }

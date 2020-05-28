@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.profiling;
 
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -49,11 +50,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.profiling.handlers.CacheOperationsHandler;
+import org.apache.ignite.internal.profiling.handlers.ClusterInfoHandler;
 import org.apache.ignite.internal.profiling.handlers.ComputeHandler;
 import org.apache.ignite.internal.profiling.handlers.IgniteProfilingHandler;
 import org.apache.ignite.internal.profiling.handlers.QueryHandler;
-import org.apache.ignite.internal.profiling.handlers.StartedCachesHandler;
-import org.apache.ignite.internal.profiling.handlers.TopologyInfoHandler;
 import org.apache.ignite.internal.profiling.handlers.TransactionsHandler;
 import org.apache.ignite.internal.profiling.util.ProfilingDeserializer;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -63,6 +63,7 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.regex.Pattern.compile;
+import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 import static org.apache.ignite.internal.util.IgniteUtils.sizeInMegabytes;
 
 /**
@@ -198,13 +199,12 @@ public class ProfilingFilesParser {
      * @param resDir Results directory.
      */
     private static void parseLogs(HashMap<UUID, File> logs, String resDir) throws Exception {
-        IgniteProfilingHandler[] parsers = new IgniteProfilingHandler[] {
+        IgniteProfilingHandler[] handlers = new IgniteProfilingHandler[] {
             new QueryHandler(),
-            new StartedCachesHandler(),
             new CacheOperationsHandler(),
             new TransactionsHandler(),
             new ComputeHandler(),
-            new TopologyInfoHandler()
+            new ClusterInfoHandler()
         };
 
         int currLog = 1;
@@ -217,23 +217,21 @@ public class ProfilingFilesParser {
 
             curNodeId = nodeId;
 
-            parseLog(parsers, nodeId, log, progressMsg);
+            parseLog(handlers, nodeId, log, progressMsg);
 
             curNodeId = null;
 
             currLog++;
         }
 
-        for (IgniteProfilingHandler parser : parsers) {
-            for (Map.Entry<String, JsonNode> entry : parser.results().entrySet()) {
-                String fileName = entry.getKey();
-                JsonNode json = entry.getValue();
+        ObjectNode dataJson = MAPPER.createObjectNode();
 
-                writeJsonToFile(resDir + "/data/" + fileName + ".json", json);
+        for (IgniteProfilingHandler handler : handlers)
+            handler.results().forEach(dataJson::set);
 
-                jsonToJsVar(resDir + "/data/" + fileName + ".json", "report_" + fileName);
-            }
-        }
+        writeJsonToFile(resDir + "/data/data.json", dataJson);
+
+        jsonToJsVar(resDir + "/data/data.json", "REPORT_DATA");
     }
 
     /**
@@ -294,9 +292,6 @@ public class ProfilingFilesParser {
 
                 readBuf.compact();
             }
-
-            if (readBuf.remaining() > 0)
-                System.out.println("WARNING: bad end of file.");
         }
 
         System.out.println("Log parsed successfully [nodeId=" + nodeId + ']');
@@ -314,7 +309,7 @@ public class ProfilingFilesParser {
      * @param json JSON to write.
      */
     public static void writeJsonToFile(String fileName, JsonNode json) throws IOException {
-        ObjectWriter writer = new ObjectMapper().writer(new DefaultPrettyPrinter());
+        ObjectWriter writer = new ObjectMapper().writer(new MinimalPrettyPrinter());
 
         File file = new File(fileName);
 

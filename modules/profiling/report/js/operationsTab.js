@@ -104,25 +104,25 @@ function prepareCacheDatasets(opName) {
     var cacheId = searchCachesSelect.val();
     var nodeId = searchNodesSelect.val();
 
-    var res = [];
+    var datasets = [];
 
-    var totalCacheStat = report_ops[nodeId] === undefined ? undefined : report_ops[nodeId][cacheId];
+    var cacheOps = REPORT_DATA.cacheOps[nodeId] === undefined ? undefined : REPORT_DATA.cacheOps[nodeId][cacheId];
 
-    if (totalCacheStat === undefined)
-        return res;
+    if (cacheOps === undefined)
+        return datasets;
 
-    var data0 = [];
+    var datasetData = [];
 
-    $.each(totalCacheStat[opName], function (k, arr) {
-        data0.push({t: parseInt(arr[0]), y: arr[1]})
+    $.each(cacheOps[opName], function (k, arr) {
+        datasetData.push({t: parseInt(arr[0]), y: arr[1]})
 
         opsCountPerType[opName] += arr[1];
     });
 
-    sortByKeyAsc(data0, "t");
+    sortByKeyAsc(datasetData, "t");
 
     var dataset = {
-        data: data0,
+        data: datasetData,
         label: "Count of " + opName,
         lineTension: 0,
         backgroundColor: 'transparent',
@@ -132,9 +132,9 @@ function prepareCacheDatasets(opName) {
         pointBackgroundColor: CACHE_OPERATIONS_COLORS[opName],
     };
 
-    res.push(dataset);
+    datasets.push(dataset);
 
-    return res;
+    return datasets;
 }
 
 function drawCacheBar() {

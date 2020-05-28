@@ -47,10 +47,10 @@ $('#computeStatisticsTable').bootstrapTable({
 
 /** Tasks statistics table data. */
 function prepareComputeTableData() {
-    var res = [];
+    var data = [];
 
-    $.each(report_totalCompute, function (taskName, taskData) {
-        res.push({
+    $.each(REPORT_DATA.totalCompute, function (taskName, taskData) {
+        data.push({
             "taskName": taskName,
             "count": taskData["count"],
             "duration": taskData["duration"],
@@ -59,7 +59,7 @@ function prepareComputeTableData() {
         });
     });
 
-    return res;
+    return data;
 }
 
 /** Builds top slow task table. */
@@ -105,10 +105,10 @@ $('#topSlowComputeTable').bootstrapTable({
 
 /** Top of slow tasks table data. */
 function prepareSlowTasksTableData() {
-    var res = [];
+    var data = [];
 
-    $.each(report_topSlowCompute, function (k, sqlData) {
-        res.push({
+    $.each(REPORT_DATA.topSlowCompute, function (k, sqlData) {
+        data.push({
             taskName: sqlData["taskName"],
             duration: sqlData["duration"],
             startTime: new Date(sqlData["startTime"]),
@@ -119,12 +119,12 @@ function prepareSlowTasksTableData() {
         });
     });
 
-    return res;
+    return data;
 }
 
 /** Builds jobs statistics subtable. */
 function buildJobsSubTable($el, index) {
-    var jobs = report_topSlowCompute[index]["jobs"];
+    var jobs = REPORT_DATA.topSlowCompute[index]["jobs"];
 
     var data = [];
 

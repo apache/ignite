@@ -125,42 +125,42 @@ function drawTxCharts() {
 }
 
 function prepareTxHistogramDatasets(nodeId, cacheId) {
-    var res = [];
+    var datasets = [];
 
-    var data = report_txHistogram[nodeId] === undefined ? undefined : report_txHistogram[nodeId][cacheId];
+    var datasetData = REPORT_DATA.txHistogram[nodeId] === undefined ? undefined : REPORT_DATA.txHistogram[nodeId][cacheId];
 
-    if (data === undefined)
-        return res;
+    if (datasetData === undefined)
+        return datasets;
 
     var dataset = {
         label: 'Count of transactions',
-        data: data,
+        data: datasetData,
         backgroundColor: '#FAA586',
     }
 
-    res.push(dataset);
+    datasets.push(dataset);
 
-    return res;
+    return datasets;
 }
 
 function prepareTxDatasets(nodeId, cacheId, opName) {
-    var res = [];
+    var datasets = [];
 
-    var totalCacheStat = report_tx[nodeId] === undefined ? undefined : report_tx[nodeId][cacheId];
+    var txData = REPORT_DATA.tx[nodeId] === undefined ? undefined : REPORT_DATA.tx[nodeId][cacheId];
 
-    if (totalCacheStat === undefined)
-        return res;
+    if (txData === undefined)
+        return datasets;
 
-    var data = [];
+    var datasetData = [];
 
-    $.each(totalCacheStat[opName], function (time, arr) {
-        data.push({t: parseInt(arr[0]), y: arr[1]})
+    $.each(txData[opName], function (time, arr) {
+        datasetData.push({t: parseInt(arr[0]), y: arr[1]})
     });
 
-    sortByKeyAsc(data, "t");
+    sortByKeyAsc(datasetData, "t");
 
     var dataset = {
-        data: data,
+        data: datasetData,
         label: "Count of " + opName,
         lineTension: 0,
         backgroundColor: 'transparent',
@@ -170,9 +170,9 @@ function prepareTxDatasets(nodeId, cacheId, opName) {
         pointBackgroundColor: TX_COLORS[opName]
     };
 
-    res.push(dataset);
+    datasets.push(dataset);
 
-    return res;
+    return datasets;
 }
 
 function buildTxHistogramBuckets() {
@@ -180,7 +180,7 @@ function buildTxHistogramBuckets() {
 
     var lastVal = 0;
 
-    $.each(report_txHistogramBuckets, function (idx, value) {
+    $.each(REPORT_DATA.txHistogramBuckets, function (idx, value) {
         buckets.push(lastVal + " to " + value + " ms");
         lastVal = value;
     });

@@ -49,10 +49,10 @@ $('#scanStatisticsTable').bootstrapTable({
 })
 
 function prepareScanTableData() {
-    var res = [];
+    var data = [];
 
-    $.each(report_scan, function (cacheName, sqlData) {
-        res.push({
+    $.each(REPORT_DATA.scan, function (cacheName, sqlData) {
+        data.push({
             "cacheName": cacheName,
             "count": numberWithCommas(sqlData["count"]),
             "duration": numberWithCommas(sqlData["duration"]),
@@ -62,7 +62,7 @@ function prepareScanTableData() {
         });
     });
 
-    return res;
+    return data;
 }
 
 $('#topSlowScanTable').bootstrapTable({
@@ -104,10 +104,10 @@ $('#topSlowScanTable').bootstrapTable({
 })
 
 function prepareSlowScanTableData() {
-    var res = [];
+    var data = [];
 
-    $.each(report_topSlowScan, function (key, sqlData) {
-        res.push({
+    $.each(REPORT_DATA.topSlowScan, function (key, sqlData) {
+        data.push({
             text: sqlData["text"],
             duration: numberWithCommas(sqlData["duration"]),
             startTime: new Date(sqlData["startTime"]),
@@ -118,5 +118,5 @@ function prepareSlowScanTableData() {
         });
     });
 
-    return res;
+    return data;
 }
