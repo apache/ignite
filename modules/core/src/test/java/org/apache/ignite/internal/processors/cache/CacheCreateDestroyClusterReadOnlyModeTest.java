@@ -128,8 +128,6 @@ public class CacheCreateDestroyClusterReadOnlyModeTest extends CacheCreateDestro
         G.allGrids().forEach(n -> assertEquals(n.name(), ACTIVE_READ_ONLY, n.cluster().state()));
 
         for (Ignite node : G.allGrids()) {
-            log.error("IGNITE-13071 node: " + node.name());
-
             Collection<IgniteCache> caches = node.getOrCreateCaches(cfgs);
 
             assertEquals(cfgs.toString(), cfgs.size(), caches.size());

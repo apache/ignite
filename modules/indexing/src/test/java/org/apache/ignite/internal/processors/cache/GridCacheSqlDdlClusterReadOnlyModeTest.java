@@ -54,8 +54,6 @@ public class GridCacheSqlDdlClusterReadOnlyModeTest extends CacheCreateDestroyCl
 
         for (String ddl : generateCreateTableDDL()) {
             for (Ignite node : G.allGrids()) {
-                log.error(node.name());
-
                 Throwable t = assertThrows(log, () -> execute(node, ddl), Exception.class, null);
 
                 ClusterReadOnlyModeTestUtils.checkRootCause(t, node.name() + " sql: " + ddl);
