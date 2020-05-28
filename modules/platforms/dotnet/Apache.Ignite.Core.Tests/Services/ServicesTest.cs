@@ -916,19 +916,20 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
 
             // Binary collections
-            var arr  = new[] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x}).ToArray();
+            var arr  = new[] {10, 11, 12}.Select(
+                x => new PlatformComputeBinarizable {Field = x}).ToArray();
             var arrOfObj = arr.ToArray<object>();
 
             Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
-                .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
 
             Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArrayOfObjects(arrOfObj)
-                .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
 
             Assert.IsNull(svc.testBinarizableArrayOfObjects(null));
 
             Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArray(arr)
-                .Select(x => x.Field).ToArray());
+                .Select(x => x.Field));
 
             Assert.IsNull(svc.testBinarizableArray(null));
 
