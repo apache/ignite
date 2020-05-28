@@ -3283,7 +3283,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             UUID locNodeId = getLocalNodeId();
 
-            ringLoop: while (true) {
+            while (true) {
                 TcpDiscoveryNode newNext = ring.nextNode(failedNodes);
 
                 if (newNext == null) {
@@ -3367,12 +3367,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 // Handshake.
                                 TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId);
 
-                                // Topology treated as changes if next node is not available.
-                                boolean changeTop = sndState != null && !sndState.isStartingPoint();
-
-                                if (changeTop)
-                                    hndMsg.changeTopology(ring.previousNodeOf(next).id());
-
                                 if (log.isDebugEnabled())
                                     log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState + ']');
 
@@ -3384,36 +3378,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
-
-                                // We should take previousNodeAlive flag into account only if we received the response from the correct node.
-                                if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
-                                    // Remote node checked connection to it's previous and got success.
-                                    boolean previousNode = sndState.markLastFailedNodeAlive();
-
-                                    if (previousNode)
-                                        failedNodes.remove(failedNodes.size() - 1);
-                                    else {
-                                        newNextNode = false;
-
-                                        next = ring.nextNode(failedNodes);
-                                    }
-
-                                    U.closeQuiet(sock);
-
-                                    sock = null;
-
-                                    if (sndState.isFailed()) {
-                                        segmentLocalNodeOnSendFail(failedNodes);
-
-                                        return; // Nothing to do here.
-                                    }
-
-                                    if (previousNode)
-                                        U.warn(log, "New next node has connection to it's previous, trying previous " +
-                                            "again. [next=" + next + ']');
-
-                                    continue ringLoop;
-                                }
 
                                 if (locNodeId.equals(res.creatorNodeId())) {
                                     if (log.isDebugEnabled())
@@ -6562,65 +6526,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (req.client())
                         res.clientAck(true);
-                    else if (req.changeTopology()) {
-                        // Node cannot connect to it's next (for local node it's previous).
-                        // Need to check connectivity to it.
-                        long rcvdTime = lastRingMsgReceivedTime;
-                        long now = U.currentTimeMillis();
-
-                        // We got message from previous in less than double connection check interval.
-                        boolean ok = rcvdTime + CON_CHECK_INTERVAL * 2 >= now;
-                        TcpDiscoveryNode previous = null;
-
-                        if (ok) {
-                            // Check case when previous node suddenly died. This will speed up
-                            // node failing.
-                            Set<TcpDiscoveryNode> failed;
-
-                            synchronized (mux) {
-                                failed = failedNodes.keySet();
-                            }
-
-                            previous = ring.previousNode(failed);
-
-                            InetSocketAddress liveAddr = null;
-
-                            if (previous != null && !previous.id().equals(nodeId) &&
-                                (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
-                                Collection<InetSocketAddress> nodeAddrs =
-                                    spi.getNodeAddresses(previous, false);
-
-                                for (InetSocketAddress addr : nodeAddrs) {
-                                    // Connection refused may be got if node doesn't listen
-                                    // (or blocked by firewall, but anyway assume it is dead).
-                                    if (!isConnectionRefused(addr)) {
-                                        liveAddr = addr;
-
-                                        break;
-                                    }
-                                }
-
-                                if (log.isInfoEnabled())
-                                    log.info("Connection check done [liveAddr=" + liveAddr
-                                        + ", previousNode=" + previous + ", addressesToCheck=" + nodeAddrs
-                                        + ", connectingNodeId=" + nodeId + ']');
-                            }
-
-                            // If local node was able to connect to previous, confirm that it's alive.
-                            ok = liveAddr != null && (!liveAddr.getAddress().isLoopbackAddress()
-                                || !locNode.socketAddresses().contains(liveAddr));
-                        }
-
-                        res.previousNodeAlive(ok);
-
-                        if (log.isInfoEnabled()) {
-                            log.info("Previous node alive status [alive=" + ok +
-                                ", checkPreviousNodeId=" + req.checkPreviousNodeId() +
-                                ", actualPreviousNode=" + previous +
-                                ", lastMessageReceivedTime=" + rcvdTime + ", now=" + now +
-                                ", connCheckInterval=" + CON_CHECK_INTERVAL + ']');
-                        }
-                    }
 
                     spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvSock));
 
@@ -7059,24 +6964,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void ringMessageReceived() {
             lastRingMsgReceivedTime = U.currentTimeMillis();
-        }
-
-        /**
-         * @param addr Address to check.
-         * @return {@code True} if got connection refused on connect try.
-         */
-        private boolean isConnectionRefused(SocketAddress addr) {
-            try (Socket sock = new Socket()) {
-                sock.connect(addr, 100);
-            }
-            catch (ConnectException e) {
-                return true;
-            }
-            catch (IOException e) {
-                return false;
-            }
-
-            return false;
         }
 
         /**

@@ -39,39 +39,8 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
         super(creatorNodeId);
     }
 
-    /**
-     * Gets topology change flag.<br>
-     * {@code True} means node intent to fail nodes in a ring.
-     *
-     * @return Change topology flag.
-     */
-    public boolean changeTopology() {
-        return getFlag(CHANGE_TOPOLOGY_FLAG_POS);
-    }
-
-    /**
-     * Gets expected previous node ID to check.
-     *
-     * @return Previous node ID to check.
-     */
-    public UUID checkPreviousNodeId() {
-        return prevNodeId;
-    }
-
-    /**
-     * Sets topology change flag and previous node ID to check.<br>
-     *
-     * @param prevNodeId If not {@code null}, will set topology check flag and set node ID to check.
-     */
-    public void changeTopology(UUID prevNodeId) {
-        setFlag(CHANGE_TOPOLOGY_FLAG_POS, prevNodeId != null);
-
-        this.prevNodeId = prevNodeId;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryHandshakeRequest.class, this, "super", super.toString(),
-            "isChangeTopology", changeTopology());
+        return S.toString(TcpDiscoveryHandshakeRequest.class, this, "super", super.toString());
     }
 }
