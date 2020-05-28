@@ -81,14 +81,15 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TASK_SESSION_ATTR_SET;
-import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_SIBLINGS;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
@@ -137,6 +138,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
+    /** {@code true} if local node has persistent region in configuration and is not a client. */
+    private final boolean isPersistenceEnabled;
+
     /**
      * @param ctx Kernal context.
      */
@@ -146,6 +150,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         marsh = ctx.config().getMarshaller();
 
         discoLsnr = new TaskDiscoveryListener();
+
+        isPersistenceEnabled = !ctx.clientNode() && isPersistenceEnabled(ctx.config());
     }
 
     /** {@inheritDoc} */
@@ -489,6 +495,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @return Task name or {@code null} if not found.
      */
     public String resolveTaskName(int taskNameHash) {
+        assert !isPersistenceEnabled || !ctx.cache().context().database().checkpointLockIsHeldByThread():
+            "Resolving a task name should not be executed under the checkpoint lock.";
+
         if (taskNameHash == 0)
             return null;
 

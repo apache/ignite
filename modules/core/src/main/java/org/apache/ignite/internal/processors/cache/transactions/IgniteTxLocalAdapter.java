@@ -87,6 +87,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
@@ -587,11 +590,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             cctx.tm().addCommittedTx(this);
 
         if (!empty) {
-            batchStoreCommit(writeEntries());
+            boolean needTaskName = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ) ||
+                cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_PUT) ||
+                cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
+
+            String taskName = needTaskName ? resolveTaskName() : null;
+
+            batchStoreCommit(writeEntries(), taskName);
 
             WALPointer ptr = null;
 
-            IgniteCheckedException err = null;
+            IgniteCheckedException err;
 
             cctx.database().checkpointReadLock();
 
@@ -640,8 +649,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 if (!F.isEmpty(txEntry.entryProcessors()) || !F.isEmpty(txEntry.filters()))
                                     txEntry.cached().unswap(false);
 
-                                IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(txEntry,
-                                    true, null);
+                                IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(
+                                    txEntry,
+                                    true,
+                                    null,
+                                    taskName);
 
                                 GridCacheVersion dhtVer = null;
 
@@ -759,7 +771,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         txEntry.conflictExpireTime(),
                                         cached.isNear() ? null : explicitVer,
                                         CU.subjectId(this, cctx),
-                                        resolveTaskName(),
+                                        taskName,
                                         dhtVer,
                                         null);
 
@@ -793,7 +805,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 txEntry.conflictExpireTime(),
                                                 null,
                                                 CU.subjectId(this, cctx),
-                                                resolveTaskName(),
+                                                taskName,
                                                 dhtVer0,
                                                 null)
                                         );
@@ -815,7 +827,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         cached.detached() ? DR_NONE : drType,
                                         cached.isNear() ? null : explicitVer,
                                         CU.subjectId(this, cctx),
-                                        resolveTaskName(),
+                                        taskName,
                                         dhtVer,
                                         null);
 
@@ -844,7 +856,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 DR_NONE,
                                                 null,
                                                 CU.subjectId(this, cctx),
-                                                resolveTaskName(),
+                                                taskName,
                                                 dhtVer0,
                                                 null)
                                         );
