@@ -137,8 +137,8 @@ public class GridDhtPartitionsStateValidator {
     }
 
     /**
-     * Returns set of partitions that did not pass validation for all caches
-     * that were checked.
+     * Returns set of partitions that did not pass validation for all caches that were checked.
+     * Cleared on exchange future cleanup, see {@link #cleanUp()}.
      *
      * @return Collection of invalid partitions.
      * @see GridDhtPartitionsStateValidator#validatePartitionCountersAndSizes
@@ -151,19 +151,19 @@ public class GridDhtPartitionsStateValidator {
      * Returns set of partitions that did not pass validation
      * for the given cache group.
      *
-     * @param groupId Cache group id.
+     * @param grpId Cache group id.
      * @return Set of invalid partitions.
      * @see GridDhtPartitionsStateValidator#validatePartitionCountersAndSizes
      */
-    public Set<Integer> invalidPartitions(int groupId) {
-        return invalidParts.getOrDefault(groupId, Collections.emptySet());
+    public Set<Integer> invalidPartitions(int grpId) {
+        return invalidParts.getOrDefault(grpId, Collections.emptySet());
     }
 
     /**
      * Cleans up resources to avoid excessive memory usage.
      */
     public void cleanUp() {
-        invalidParts = null;
+        invalidParts.clear();
     }
 
     /**
