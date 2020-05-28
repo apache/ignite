@@ -83,7 +83,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 90_000;
+        return 390_000;
     }
 
     /** {@inheritDoc} */
