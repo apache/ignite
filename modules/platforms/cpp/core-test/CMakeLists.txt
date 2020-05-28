@@ -59,6 +59,8 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET} ignite ${Boost_LIBRARIES})
 
 if (NOT WIN32)
+    add_definitions(-DBOOST_TEST_DYN_LINK)
+
     target_link_libraries(${TARGET} -rdynamic)
 endif()
 

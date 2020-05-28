@@ -89,6 +89,7 @@ Building and installing the Apache Ignite C++ components:
  * Navigate to the directory $IGNITE_HOME/platforms/cpp
  * Execute the following commands one by one to build the project:
  * mkdir cmake-build-[release|debug]
+ * cd ./cmake-build-[release|debug]
  * cmake -DCMAKE_BUILD_TYPE=[Release|Debug] [-DCMAKE_INSTALL_PREFIX=<install_dir>] ..
  * make
  * make install

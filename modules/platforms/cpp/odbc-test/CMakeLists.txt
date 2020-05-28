@@ -87,6 +87,10 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET} ${Boost_LIBRARIES} ignite ${ODBC_LIBRARY})
 
+if (NOT WIN32)
+    add_definitions(-DBOOST_TEST_DYN_LINK)
+endif()
+
 set(TEST_TARGET IgniteOdbcTest)
 
 add_test(NAME ${TEST_TARGET} COMMAND ${TARGET} -s false -l all)
