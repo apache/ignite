@@ -17,9 +17,9 @@
 #
 
 #
-# Updates Ignite version in Java pom files, .NET AssemblyInfo files, C++ configure files.
+# Builds project.
 # Run in Ignite sources root directory.
-# Usage: ./update-versions 2.6.0
+# Usage: ./build.sh
 #
 
 mvn clean package -Pall-java,all-scala -DskipTests -Dmaven.javadoc.skip=true
