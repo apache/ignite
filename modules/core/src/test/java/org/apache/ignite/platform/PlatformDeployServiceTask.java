@@ -383,7 +383,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public BinaryObject[] testBinaryObjectArray(BinaryObject[] arg) {
-            for(int i = 0; i < arg.length; i++) {
+            for (int i = 0; i < arg.length; i++) {
                 int field = arg[i].field("Field");
 
                 arg[i] = arg[i].toBuilder().setField("Field", field + 1).build();
