@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -189,10 +190,9 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
         assert l > 0;
 
         if (ctx.shared().readOnlyMode()) {
-            throw new CacheInvalidStateException(
-                new IgniteClusterReadOnlyException("Failed to perform cache operation (cluster is in " +
-                    "read-only mode) [cacheGrp=" + ctx.group().name() + ", cache=" + ctx.name() + ']')
-            );
+            throw new CacheInvalidStateException(new IgniteClusterReadOnlyException(
+                String.format(CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT, "sequence", ctx.group().name(), ctx.name())
+            ));
         }
 
         localUpdate.lock();
