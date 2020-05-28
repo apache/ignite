@@ -29,6 +29,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.service.GridServiceAssignmentsKey;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -87,6 +89,45 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** */
+    @Test
+    public void testMetaStorageAvailableForUpdatesOnReadOnlyCluster() throws Exception {
+        IgniteEx node = startGrid(0);
+
+        node.cluster().state(ACTIVE);
+
+        IgniteCacheDatabaseSharedManager db = node.context().cache().context().database();
+
+        MetaStorage metaStorage = db.metaStorage();
+
+        db.checkpointReadLock();
+
+        try {
+            metaStorage.write("key", "val");
+        }
+        finally {
+            db.checkpointReadUnlock();
+        }
+
+        node.cluster().state(ACTIVE_READ_ONLY);
+
+        db.checkpointReadLock();
+
+        try {
+            assertEquals("val", metaStorage.read("key"));
+
+            metaStorage.write("key", "new_val");
+
+            assertEquals("new_val", metaStorage.read("key"));
+
+            metaStorage.remove("key");
+
+            assertNull(metaStorage.read("key"));
+        } finally {
+            db.checkpointReadUnlock();
+        }
     }
 
     /** */
