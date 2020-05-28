@@ -157,7 +157,8 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
 
     /** {@inheritDoc} */
     @Override public ClientClusterGroup forServers() {
-        return forProjectionFilters(projectionFilters.forNodeType(true));
+        return forProjectionFilters(projectionFilters == ProjectionFilters.FULL_PROJECTION ?
+            ProjectionFilters.DEFAULT_PROJECTION : projectionFilters.forNodeType(true));
     }
 
     /** {@inheritDoc} */
@@ -263,10 +264,10 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
      *
      * Note: This method is for internal use only. For optimization purposes it can return not existing node IDs if
      * only filter by node IDs was explicitly set.
-     * Method also returns null if no filter was set (full projection needed).
+     * Method also returns null for default projection (for server nodes).
      */
     public Collection<UUID> nodeIds() {
-        if (projectionFilters == ProjectionFilters.FULL_PROJECTION)
+        if (projectionFilters == ProjectionFilters.DEFAULT_PROJECTION)
             return null;
         else if (projectionFilters.hasOnlyNodeIdsFilters())
             return Collections.unmodifiableCollection(projectionFilters.nodeIds);
@@ -482,6 +483,13 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     private static class ProjectionFilters {
         /** Projection without any filters for full set of nodes. */
         public static final ProjectionFilters FULL_PROJECTION = new ProjectionFilters();
+
+        /**
+         * Projection for server nodes, used by default for compute and service operations when cluster group is not
+         * defined explicitly.
+         */
+        public static final ProjectionFilters DEFAULT_PROJECTION =
+            new ProjectionFilters(null, null, Boolean.TRUE, null, null);
 
         /** Filter for empty projection. Will be returned if there are mutually exclusive filters detected. */
         public static final ProjectionFilters EMPTY_PROJECTION =
