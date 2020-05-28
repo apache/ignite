@@ -18,6 +18,7 @@ package org.apache.ignite.compatibility.sql;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -40,6 +42,10 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.compatibility.sql.model.City;
+import org.apache.ignite.compatibility.sql.model.Company;
+import org.apache.ignite.compatibility.sql.model.Country;
+import org.apache.ignite.compatibility.sql.model.Department;
 import org.apache.ignite.compatibility.sql.model.ModelFactory;
 import org.apache.ignite.compatibility.sql.model.Person;
 import org.apache.ignite.compatibility.testframework.junits.Dependency;
@@ -136,13 +142,22 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
     @Test
     public void testSqlPerformanceRegressions() throws Exception {
         try {
-            startOldAndNewClusters();
+            int seed = ThreadLocalRandom.current().nextInt();
 
-            createTablesAndPopulateData(grid(0));
+            if (log.isInfoEnabled())
+                log.info("Chosen random seed=" + seed);
+
+            startOldAndNewClusters(seed);
+
+            createTablesAndPopulateData(grid(0), seed);
 
             Supplier<String> qrysSupplier = new PredefinedQueriesSupplier(Arrays.asList(
-                "SELECT * FROM person p1, person p2",
-                "SELECT * FROM person p1"
+                //"SELECT * FROM person p1, person p2",
+                "SELECT * FROM person p1",
+                "SELECT * FROM department d1",
+                "SELECT * FROM country c1",
+                "SELECT * FROM city ci1",
+                "SELECT * FROM company co1"
             ));
 
             try (SimpleConnectionPool oldConnPool = new SimpleConnectionPool(JDBC_URL, OLD_JDBC_PORT, WORKERS_CNT);
@@ -215,10 +230,11 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
     /**
      * Starts old and new Ignite clusters.
+     * @param seed
      */
-    public void startOldAndNewClusters() throws Exception {
+    public void startOldAndNewClusters(int seed) throws Exception {
         // Old cluster.
-        startGrid(1, IGNITE_VERSION, new NodeConfigurationClosure(), new PostStartupClosure(true));
+        startGrid(1, IGNITE_VERSION, new NodeConfigurationClosure(), new PostStartupClosure(true, seed));
 
         // New cluster
         IgnitionEx.start(prepareNodeConfig(
@@ -249,19 +265,28 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
     }
 
     /**
-     *
      * @param ignite Ignite node.
+     * @param seed Random seed.
      */
+    private static void createTablesAndPopulateData(Ignite ignite, int seed) {
+        createAndPopulateTable(ignite, new Person.Factory(seed));
+        createAndPopulateTable(ignite, new Department.Factory(seed));
+        createAndPopulateTable(ignite, new Country.Factory(seed));
+        createAndPopulateTable(ignite, new City.Factory(seed));
+        createAndPopulateTable(ignite, new Company.Factory(seed));
+    }
+
+    /** */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private static void createTablesAndPopulateData(Ignite ignite) {
-        ModelFactory factory = new Person.PersonFactory(0);
+    private static void createAndPopulateTable(Ignite ignite, ModelFactory factory) {
         QueryEntity qryEntity = factory.queryEntity();
         CacheConfiguration cacheCfg = new CacheConfiguration<>(factory.tableName())
-            .setQueryEntities(Collections.singleton(qryEntity)).setSqlSchema("PUBLIC");
+            .setQueryEntities(Collections.singleton(qryEntity))
+            .setSqlSchema("PUBLIC");
 
         IgniteCache personCache = ignite.createCache(cacheCfg);
 
-        for (long i = 0; i < 100; i++)
+        for (long i = 0; i < factory.count(); i++)
             personCache.put(i, factory.createRandom());
     }
 
@@ -299,17 +324,22 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
         /** */
         private final boolean createTbl;
 
+        /** Random seed. */
+        private final int seed;
+
         /**
          * @param createTbl {@code true} In case table should be created
+         * @param seed
          */
-        PostStartupClosure(boolean createTbl) {
+        PostStartupClosure(boolean createTbl, int seed) {
             this.createTbl = createTbl;
+            this.seed = seed;
         }
 
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
             if (createTbl) {
-                createTablesAndPopulateData(ignite);
+                createTablesAndPopulateData(ignite, seed);
             }
         }
     }
@@ -481,7 +511,16 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
                     while (rs.next()) { // TODO check for empty result
                         cnt++;
                     }
-                    System.out.println("Rs size=" + cnt);
+
+                    ResultSetMetaData md = rs.getMetaData();
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 1; i <= md.getColumnCount(); i++) {
+                        if (i > 0)
+                            sb.append(", ");
+
+                        sb.append(md.getColumnName(i));
+                    }
+                    System.out.println("Rs size=" + cnt + ", tblName=" + md.getTableName(1) + ", fields=" + sb);
                 }
             }
             catch (SQLException e) {

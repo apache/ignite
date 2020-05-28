@@ -15,110 +15,90 @@
  */
 package org.apache.ignite.compatibility.sql.model;
 
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
-import java.util.Set;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
-import static org.apache.ignite.compatibility.sql.model.City.Factory.CITY_CNT;
 import static org.apache.ignite.compatibility.sql.model.ModelUtil.randomString;
 
 /**
- * Person entity.
+ * Country model.
  */
-public class Person {
-    /**  */
+public class Country {
+    /** */
     @QuerySqlField
     private final String name;
 
     /** */
     @QuerySqlField
-    private final String depCode;
+    private final String phoneCode;
 
-    /**  */
+    /** */
     @QuerySqlField
-    private final int age;
+    private final int population;
 
-    /**  */
-    @QuerySqlField
-    private final int cityId;
-
-    /**  */
-    @QuerySqlField
-    private final String position;
-
-    /**  */
-    public Person(String name, String depCode, int age, int cityId, String position) {
+    /** */
+    public Country(String name, String phoneCode, int population) {
         this.name = name;
-        this.depCode = depCode;
-        this.age = age;
-        this.cityId = cityId;
-        this.position = position;
+        this.phoneCode = phoneCode;
+        this.population = population;
     }
 
-    /**  */
-    public String Name() {
+    /** */
+    public String name() {
         return name;
     }
 
-    /**  */
-    public String DepCode() {
-        return depCode;
+    /** */
+    public String phoneCode() {
+        return phoneCode;
     }
 
-    /**  */
-    public int Age() {
-        return age;
+    /** */
+    public int population() {
+        return population;
     }
 
-    /**  */
-    public int CityId() {
-        return cityId;
-    }
-
-    /**  */
-    public String Position() {
-        return position;
-    }
-
-    /**  */
+    /** */
     public static class Factory implements ModelFactory {
         /** Table name. */
-        private static final String TABLE_NAME = "person";
+        private static final String TABLE_NAME = "country";
 
-        /** Person count. */
-        private static final int PERSON_CNT = 10_000; // TODO scale
+        /** */
+        public static final int COUNTRY_CNT = 50;
 
-        /**  */
+        /** */
         private final Random rnd;
 
-        /**  */
+        /** */
         private final QueryEntity qryEntity;
 
-        /**  */
+        /**
+         * @param seed Seed.
+         */
         public Factory(int seed) {
             this.rnd = new Random(seed);
-            QueryEntity entity = new QueryEntity(Long.class, Person.class);
+            QueryEntity entity = new QueryEntity(Long.class, Country.class);
             entity.setKeyFieldName("id");
             entity.addQueryField("id", Long.class.getName(), null);
-            Set<QueryIndex> indices = Collections.singleton(new QueryIndex("depCode", QueryIndexType.SORTED));
-
+            List<QueryIndex> indices = Arrays.asList(
+                new QueryIndex(Arrays.asList("name"), QueryIndexType.SORTED)
+            );
             entity.setIndexes(indices);
             entity.setTableName(TABLE_NAME);
             this.qryEntity = entity;
         }
 
         /** {@inheritDoc} */
-        @Override public Person createRandom() {
-            return new Person(
-                randomString(rnd, 1, 10), // name
-                randomString(rnd, 1, 1), // depCode == 1 char
-                rnd.nextInt(60), // age
-                rnd.nextInt(CITY_CNT), // cityId
-                randomString(rnd, 0, 10) // position
+        @Override public Country createRandom() {
+            return new Country(
+                randomString(rnd, 5, 10), // name
+                randomString(rnd, 3, 3), // phone code
+                rnd.nextInt(1_000_000) // population
             );
         }
 
@@ -134,7 +114,7 @@ public class Person {
 
         /** {@inheritDoc} */
         @Override public int count() {
-            return PERSON_CNT;
+            return COUNTRY_CNT;
         }
     }
 }

@@ -25,4 +25,5 @@ public interface ModelFactory {
     Object createRandom();
     QueryEntity queryEntity();
     String tableName();
+    int count();
 }
