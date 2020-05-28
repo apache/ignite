@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
-import org.apache.ignite.internal.processors.query.calcite.rule.RuleUtils;
 
 /**
  *
@@ -63,7 +63,7 @@ public class DistributionTraitDef extends RelTraitDef<IgniteDistribution> {
             newRel = planner.register(new IgniteTrimExchange(rel.getCluster(), newTraits, rel, toDist), rel);
         }
         else {
-            RelNode input = RuleUtils.convert(rel, IgniteDistributions.any()); // erasing source distribution a bit reduces search space
+            RelNode input = RelOptRule.convert(rel, IgniteDistributions.any()); // erasing source distribution a bit reduces search space
             newRel = planner.register(new IgniteExchange(rel.getCluster(), newTraits, input, toDist), rel);
         }
 

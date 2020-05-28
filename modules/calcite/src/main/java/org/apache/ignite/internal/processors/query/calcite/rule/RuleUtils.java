@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -33,7 +35,6 @@ import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -52,36 +53,6 @@ public class RuleUtils {
     }
 
     /** */
-    public static RelNode convert(RelNode rel, @NotNull RelTrait toTrait) {
-        RelTraitSet toTraits = rel.getTraitSet().replace(toTrait);
-
-        if (rel.getTraitSet().matches(toTraits))
-            return rel;
-
-        RelOptPlanner planner = rel.getCluster().getPlanner();
-
-        return planner.changeTraits(rel, toTraits.simplify());
-    }
-
-    /** */
-    public static RelNode convert(RelNode rel, @NotNull RelTraitSet toTraits) {
-        RelTraitSet outTraits = rel.getTraitSet();
-        for (int i = 0; i < toTraits.size(); i++) {
-            RelTrait toTrait = toTraits.getTrait(i);
-
-            if (toTrait != null)
-                outTraits = outTraits.replace(i, toTrait);
-        }
-
-        if (rel.getTraitSet().matches(outTraits))
-            return rel;
-
-        RelOptPlanner planner = rel.getCluster().getPlanner();
-
-        return planner.changeTraits(rel, outTraits);
-    }
-
-    /** */
     public static void transformTo(RelOptRuleCall call, RelNode newRel) {
         transformTo(call, ImmutableList.of(newRel));
     }
@@ -93,14 +64,18 @@ public class RuleUtils {
         if (F.isEmpty(newRels))
             return;
 
-        if (isRoot(orig))
-            newRels = Commons.transform(newRels, RuleUtils::changeToRootTraits);
+        if (isRoot(orig)) {
+            Set<RelNode> set = U.newHashSet(newRels.size());
+            for (RelNode rel : newRels)
+                set.add(changeToRootTraits(rel));
+
+            newRels = new ArrayList<>(set);
+        }
+
 
         RelNode first = F.first(newRels);
         Map<RelNode, RelNode> equivMap = equivMap(orig, newRels.subList(1, newRels.size()));
-
-        if (first != null)
-            call.transformTo(first, equivMap);
+        call.transformTo(first, equivMap);
     }
 
     /** */
@@ -144,9 +119,6 @@ public class RuleUtils {
             rel = traitDef.convert(planner, converted, toTrait, true);
 
             assert rel == null || rel.getTraitSet().getTrait(traitDef).satisfies(toTrait);
-
-            if (rel != null)
-                planner.register(rel, converted);
 
             converted = rel;
         }
