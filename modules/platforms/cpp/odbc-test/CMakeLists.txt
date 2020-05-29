@@ -19,7 +19,7 @@ project(ignite-odbc-tests)
 
 set(TARGET ${PROJECT_NAME})
 
-find_package(Boost 1.56 REQUIRED COMPONENTS unit_test_framework chrono thread)
+find_package(Boost 1.56 REQUIRED COMPONENTS unit_test_framework chrono thread system)
 
 find_package(ODBC REQUIRED)
 
@@ -93,6 +93,6 @@ endif()
 
 set(TEST_TARGET IgniteOdbcTest)
 
-add_test(NAME ${TEST_TARGET} COMMAND ${TARGET} -s false -l all)
+add_test(NAME ${TEST_TARGET} COMMAND ${TARGET} --catch_system_errors=no --log_level=all)
 
 set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config)
