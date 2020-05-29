@@ -64,8 +64,8 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     /** Utils for serialization/deserialization. */
     private final ClientUtils utils;
 
-    /** ClientCluster instance. */
-    private final ClientClusterImpl cluster;
+    /** Default cluster group. */
+    private final ClientClusterGroupImpl dfltGrp;
 
     /** Active tasks. */
     private final Map<ClientChannel, Map<Long, ClientComputeTask<Object>>> activeTasks = new ConcurrentHashMap<>();
@@ -74,10 +74,10 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     private final ReadWriteLock guard = new ReentrantReadWriteLock();
 
     /** Constructor. */
-    ClientComputeImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterImpl cluster) {
+    ClientComputeImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl dfltGrp) {
         this.ch = ch;
         this.marsh = marsh;
-        this.cluster = cluster;
+        this.dfltGrp = dfltGrp;
 
         utils = new ClientUtils(marsh);
 
@@ -102,32 +102,32 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
     /** {@inheritDoc} */
     @Override public ClientClusterGroup clusterGroup() {
-        return cluster;
+        return dfltGrp;
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(String taskName, @Nullable T arg) throws ClientException, InterruptedException {
-        return execute0(taskName, arg, cluster, (byte)0, 0L);
+        return execute0(taskName, arg, dfltGrp, (byte)0, 0L);
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> Future<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
-        return executeAsync0(taskName, arg, cluster, (byte)0, 0L);
+        return executeAsync0(taskName, arg, dfltGrp, (byte)0, 0L);
     }
 
     /** {@inheritDoc} */
     @Override public ClientCompute withTimeout(long timeout) {
-        return timeout == 0L ? this : new ClientComputeModificator(this, cluster, (byte)0, timeout);
+        return timeout == 0L ? this : new ClientComputeModificator(this, dfltGrp, (byte)0, timeout);
     }
 
     /** {@inheritDoc} */
     @Override public ClientCompute withNoFailover() {
-        return new ClientComputeModificator(this, cluster, NO_FAILOVER_FLAG_MASK, 0L);
+        return new ClientComputeModificator(this, dfltGrp, NO_FAILOVER_FLAG_MASK, 0L);
     }
 
     /** {@inheritDoc} */
     @Override public ClientCompute withNoResultCache() {
-        return new ClientComputeModificator(this, cluster, NO_RESULT_CACHE_FLAG_MASK, 0L);
+        return new ClientComputeModificator(this, dfltGrp, NO_RESULT_CACHE_FLAG_MASK, 0L);
     }
 
     /**
@@ -178,7 +178,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         byte flags,
         long timeout
     ) throws ClientException {
-        Collection<UUID> nodeIds = clusterGrp == cluster ? null : clusterGrp.nodeIds();
+        Collection<UUID> nodeIds = clusterGrp.nodeIds();
 
         if (F.isEmpty(taskName))
             throw new ClientException("Task name can't be null or empty.");
