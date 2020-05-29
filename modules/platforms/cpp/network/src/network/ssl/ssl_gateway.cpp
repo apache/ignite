@@ -82,7 +82,7 @@ namespace ignite
                 {
                     const char* paths[] = {"bin", "lib"};
 
-                    for (size_t i = 0; i < sizeof(paths); i++) {
+                    for (size_t i = 0; i < 2; i++) {
                         std::stringstream constructor;
 
                         constructor << home << Fs << paths[i] << Fs << fullName;
