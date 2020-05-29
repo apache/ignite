@@ -34,10 +34,8 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
-import java.security.AccessController;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.security.PrivilegedAction;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -1622,27 +1620,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * Change static final fields.
-     * @param field Need to be changed.
-     * @param newVal New value.
-     * @throws Exception If failed.
-     */
-    public static void setFieldValue(Field field, Object newVal) throws Exception {
-        field.setAccessible(true);
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-
-        AccessController.doPrivileged(new PrivilegedAction() {
-            @Override public Object run() {
-                modifiersField.setAccessible(true);
-                return null;
-            }
-        });
-
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-        field.set(null, newVal);
-    }
-
-    /**
      * Get inner class by its name from the enclosing class.
      *
      * @param parentCls Parent class to resolve inner class for.
@@ -1673,6 +1650,18 @@ public final class GridTestUtils {
             Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
 
             Field field = cls.getDeclaredField(fieldName);
+
+            boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
+
+            boolean isStatic = (field.getModifiers() & Modifier.STATIC) != 0;
+
+            /**
+             * http://java.sun.com/docs/books/jls/third_edition/html/memory.html#17.5.3
+             * If a final field is initialized to a compile-time constant in the field declaration,
+             *   changes to the final field may not be observed.
+             */
+            if (isFinal && isStatic)
+                throw new IgniteException("Modification of static final field through reflection.");
 
             boolean accessible = field.isAccessible();
 
@@ -1707,6 +1696,16 @@ public final class GridTestUtils {
                 field.setAccessible(true);
 
             boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
+
+            boolean isStatic = (field.getModifiers() & Modifier.STATIC) != 0;
+
+            /**
+             * http://java.sun.com/docs/books/jls/third_edition/html/memory.html#17.5.3
+             * If a final field is initialized to a compile-time constant in the field declaration,
+             *   changes to the final field may not be observed.
+             */
+            if (isFinal && isStatic)
+                throw new IgniteException("Modification of static final field through reflection.");
 
             if (isFinal) {
                 Field modifiersField = Field.class.getDeclaredField("modifiers");
