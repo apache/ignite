@@ -255,8 +255,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             cts.Cancel();
             Assert.IsTrue(task.IsCanceled);
             
-            // TODO: Verify that Java task is cancelled: get client resources on the server side?
-            // Or get a list of active tasks somehow?
+            // TODO: Verify that Java task is cancelled: use IgniteCompute.activeTaskFutures
         }
 
         /// <summary>
