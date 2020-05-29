@@ -62,7 +62,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             Transaction tx = evt.tx();
 
-            if (tx.timeout() < 300_200)
+            if (tx.timeout(0) < 200)
                 tx.setRollbackOnly();
 
             return true;
@@ -71,14 +71,14 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         IgniteCache cache = ignite.getOrCreateCache(defaultCacheConfiguration());
 
         try (Transaction tx = ignite.transactions().txStart(
-            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 300_200, 2)) {
+            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 200, 2)) {
             cache.put(1, 1);
 
             tx.commit();
         }
 
         try (Transaction tx = ignite.transactions().txStart(
-            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 300_100, 2)) {
+            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
             cache.put(1, 2);
 
             tx.commit();
@@ -236,7 +236,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
                 Transaction tx = evt.tx();
 
-                if (tx.timeout() == 300_000)
+                if (tx.timeout(0) == 0)
                     tx.setRollbackOnly();
 
                 return true;
@@ -244,14 +244,14 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             EVT_TX_STARTED);
 
         try (Transaction tx = ignite.transactions().txStart(
-            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 300_100, 2)) {
+            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
             cacheLocal.put(1, 1);
 
             tx.commit();
         }
 
         try (Transaction tx = remote.transactions().txStart(
-            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 300_100, 2)) {
+            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
             cacheRemote.put(1, 2);
 
             tx.commit();
