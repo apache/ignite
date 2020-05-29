@@ -1740,12 +1740,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (cctx != null)
                 cacheInfo = new GridCacheContextInfo<>(cctx, false);
+            else
+                return;
 
-        } else
+        }
+        else {
             cacheInfo = idx.registeredCacheInfo(cacheName);
 
-        if (cacheInfo == null || !F.eq(depId, cacheInfo.dynamicDeploymentId()))
-            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
+            if (cacheInfo == null || !F.eq(depId, cacheInfo.dynamicDeploymentId()))
+                throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
+        }
 
         try {
             if (op instanceof SchemaIndexCreateOperation) {
@@ -2045,7 +2049,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param destroy Destroy flag.
      */
     public void onCacheStop0(GridCacheContextInfo cacheInfo, boolean destroy) {
-        if (idx == null || !cacheSupportSql(cacheInfo.config()))
+        if (idx == null || !cacheNames.contains(cacheInfo.name()))
             return;
 
         String cacheName = cacheInfo.name();

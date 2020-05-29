@@ -1961,6 +1961,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!cctx.group().persistenceEnabled() && !rebuildInMemory)
             return null;
 
+        if (!CU.affinityNode(cctx.localNode(), cctx.config().getNodeFilter()))
+            return null;
+
         IgnitePageStoreManager pageStore = cctx.shared().pageStore();
 
         SchemaIndexCacheVisitorClosure clo;
