@@ -97,6 +97,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -137,6 +138,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -842,7 +844,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param c Cache proxy.
      */
-    protected void printPartitionState(IgniteCache<?, ?> c) {
+    protected static void printPartitionState(IgniteCache<?, ?> c) {
         printPartitionState(c.getConfiguration(CacheConfiguration.class).getName(), 0);
     }
 
@@ -852,7 +854,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      * Print partitionState for cache.
      */
-    protected void printPartitionState(String cacheName, int firstParts) {
+    protected static void printPartitionState(String cacheName, int firstParts) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("----preload sync futures----\n");
@@ -1206,7 +1208,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         List<Integer> keys = new ArrayList<>(cnt);
 
-        while(c < cnt) {
+        while (c < cnt) {
             if (cctx.affinity().partition(k) == part) {
                 if (skip0 < skipCnt) {
                     k++;
@@ -1244,7 +1246,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
 
             private void advance() {
-                while(cctx.affinity().partition(cur = next++) != part);
+                while (cctx.affinity().partition(cur = next++) != part);
             }
 
             @Override public boolean hasNext() {
@@ -1419,7 +1421,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         BitSet before = m1.get(ign.cluster().localNode());
         BitSet after = m2.get(ign.cluster().localNode());
 
-        for (int p = before.nextSetBit(0); p >= 0; p = before.nextSetBit(p+1)) {
+        for (int p = before.nextSetBit(0); p >= 0; p = before.nextSetBit(p + 1)) {
             if (!after.get(p)) {
                 partsToRet.add(p);
 
@@ -1862,7 +1864,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), BINARY_META_FOLDER, false));
     }
 
     /**
@@ -2197,7 +2199,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 break;
 
             default:
-                try(IgniteDataStreamer<Integer, Integer> ds = grid(gridName).dataStreamer(cacheName)) {
+                try (IgniteDataStreamer<Integer, Integer> ds = grid(gridName).dataStreamer(cacheName)) {
                     ds.allowOverwrite(mode == 2);
 
                     ds.addData(map);
@@ -2480,5 +2482,38 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         return true;
+    }
+
+    /**
+     * Enable checkpoints on a specific nodes.
+     *
+     * @param nodes Ignite nodes.
+     * @param enable {@code True} For checkpoint enabling.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void enableCheckpoints(Collection<Ignite> nodes, boolean enable) throws IgniteCheckedException {
+        for (Ignite node : nodes) {
+            assert !node.cluster().localNode().isClient();
+
+            IgniteCacheDatabaseSharedManager dbMgr = (((IgniteEx)node).context()
+                .cache().context().database());
+
+            assert dbMgr instanceof GridCacheDatabaseSharedManager;
+
+            GridCacheDatabaseSharedManager dbMgr0 = (GridCacheDatabaseSharedManager) dbMgr;
+
+            dbMgr0.enableCheckpoints(enable).get();
+        }
+    }
+
+    /**
+     * Enable checkpoints on a specific nodes.
+     *
+     * @param node Ignite node.
+     * @param enable {@code True} For checkpoint enabling.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void enableCheckpoints(Ignite node, boolean enable) throws IgniteCheckedException {
+        enableCheckpoints(Collections.singletonList(node), enable);
     }
 }

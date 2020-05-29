@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.lang.reflect.Constructor;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -40,11 +39,14 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
+import org.apache.ignite.internal.processors.query.h2.H2StatementCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.QueryDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
@@ -329,7 +331,7 @@ public final class UpdatePlanBuilder {
             for (int i1 = 0; i1 < row.length; i1++) {
                 GridSqlElement el = row[i1];
 
-                if(!(noQry &=  (el instanceof GridSqlConst || el instanceof GridSqlParameter)))
+                if (!(noQry &= (el instanceof GridSqlConst || el instanceof GridSqlParameter)))
                     return noQry;
 
             }
@@ -902,9 +904,14 @@ public final class UpdatePlanBuilder {
         if ((!mvccEnabled && !planKey.skipReducerOnUpdate()) || planKey.batched())
             return null;
 
-        try (Connection conn = idx.connections().connectionNoCache(planKey.schemaName())) {
+        try (H2PooledConnection conn = idx.connections().connection(planKey.schemaName())) {
+            H2Utils.setupConnection(conn,
+                QueryContext.parseContext(idx.backupFilter(null, null), planKey.local()),
+                planKey.distributedJoins(),
+                planKey.enforceJoinOrder());
+
             // Get a new prepared statement for derived select query.
-            try (PreparedStatement stmt = conn.prepareStatement(selectQry)) {
+            try (PreparedStatement stmt = conn.prepareStatement(selectQry, H2StatementCache.queryFlags(planKey))) {
                 Prepared prep = GridSqlQueryParser.prepared(stmt);
                 GridSqlQuery selectStmt = (GridSqlQuery)new GridSqlQueryParser(false, log).parse(prep);
 

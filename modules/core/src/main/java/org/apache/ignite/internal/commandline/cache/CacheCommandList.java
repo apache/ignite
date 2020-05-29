@@ -45,6 +45,11 @@ public enum CacheCommandList {
     VALIDATE_INDEXES("validate_indexes", new CacheValidateIndexes()),
 
     /**
+     * Check secondary indexes inline size.
+     */
+    CHECK_INDEX_INLINE_SIZES("check_index_inline_sizes", new CheckIndexInlineSizes()),
+
+    /**
      * Prints info about contended keys (the keys concurrently locked from multiple transactions).
      */
     CONTENTION("contention", new CacheContention()),

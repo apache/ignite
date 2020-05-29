@@ -29,7 +29,9 @@ import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
+import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
@@ -40,6 +42,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
 import static org.apache.ignite.internal.sql.SqlKeyword.BEGIN;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
+import static org.apache.ignite.internal.sql.SqlKeyword.CONTINUOUS;
 import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
@@ -52,6 +55,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
 import static org.apache.ignite.internal.sql.SqlKeyword.REVOKE;
 import static org.apache.ignite.internal.sql.SqlKeyword.ROLLBACK;
+import static org.apache.ignite.internal.sql.SqlKeyword.SCAN;
 import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.internal.sql.SqlKeyword.SET;
 import static org.apache.ignite.internal.sql.SqlKeyword.SHOW;
@@ -295,8 +299,14 @@ public class SqlParser {
                 case QUERY:
                     return new SqlKillQueryCommand().parse(lex);
 
+                case SCAN:
+                    return new SqlKillScanQueryCommand().parse(lex);
+
                 case COMPUTE:
                     return new SqlKillComputeTaskCommand().parse(lex);
+
+                case CONTINUOUS:
+                    return new SqlKillContinuousQueryCommand().parse(lex);
 
                 case SERVICE:
                     return new SqlKillServiceCommand().parse(lex);
@@ -488,7 +498,7 @@ public class SqlParser {
     /**
      * Last successfully parsed sql statement. It corresponds to the last command returned by {@link #nextCommand()}.
      */
-    public String lastCommandSql(){
+    public String lastCommandSql() {
         if (lastCmdEndPos < 0)
             return null;
 

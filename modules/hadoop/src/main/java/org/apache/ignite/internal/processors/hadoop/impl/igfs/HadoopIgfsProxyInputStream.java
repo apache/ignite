@@ -115,7 +115,7 @@ public class HadoopIgfsProxyInputStream extends InputStream implements Seekable,
         long res;
 
         try {
-            res =  is.skip(n);
+            res = is.skip(n);
         }
         finally {
             readEnd();

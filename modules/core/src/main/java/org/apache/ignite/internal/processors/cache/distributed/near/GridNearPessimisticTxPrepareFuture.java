@@ -546,7 +546,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             }
 
             if (log.isDebugEnabled())
-                log.debug("Error on tx prepare [fut=" + this + ", err=" + e + ", tx=" + tx +  ']');
+                log.debug("Error on tx prepare [fut=" + this + ", err=" + e + ", tx=" + tx + ']');
 
             if (ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, e))
                 tx.setRollbackOnly();

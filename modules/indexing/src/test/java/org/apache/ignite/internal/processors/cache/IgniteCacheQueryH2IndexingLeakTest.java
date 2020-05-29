@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
@@ -28,7 +26,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
+import org.apache.ignite.internal.processors.query.h2.ConcurrentStripedPool;
+import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CAX;
@@ -123,12 +122,9 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
         IgniteH2Indexing h2Idx = (IgniteH2Indexing)qryProcessor.getIndexing();
 
-        Map<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> conns = h2Idx.connections().connectionsForThread();
+        ConcurrentStripedPool<H2Connection> conns = GridTestUtils.getFieldValue(h2Idx.connections(), "connPool");
 
-        return conns.values().stream()
-            .mapToInt(set ->
-                set.keySet().stream()
-                    .mapToInt(H2ConnectionWrapper::statementCacheSize).sum()).sum();
+        return conns.stream().mapToInt(H2Connection::statementCacheSize).sum();
     }
 
     /**
@@ -138,7 +134,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     public void testLeaksInIgniteH2IndexingOnTerminatedThread() throws Exception {
         final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        for(int i = 0; i < ITERATIONS; ++i) {
+        for (int i = 0; i < ITERATIONS; ++i) {
             info("Iteration #" + i);
 
             final AtomicBoolean stop = new AtomicBoolean();
@@ -167,7 +163,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                         // is out there, are terminated and their statement caches are cleaned up.
                         return getStatementCacheSize(qryProc) >= THREAD_COUNT;
                     }
-                }, STMT_CACHE_CLEANUP_TIMEOUT));
+                }, STMT_CACHE_CLEANUP_TIMEOUT * 4));
             }
             finally {
                 stop.set(true);
@@ -193,7 +189,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        for(int i = 0; i < ITERATIONS; ++i) {
+        for (int i = 0; i < ITERATIONS; ++i) {
             info("Iteration #" + i);
 
             // Open iterator on the created cursor: add entries to the cache

@@ -247,7 +247,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
          * @return Object constructed from string.
          */
         @Nullable private Object toObject(Class cls, String val) {
-            if (val == null  || "null".equals(val) || "nil".equals(val))
+            if (val == null || "null".equals(val) || "nil".equals(val))
                 return null;
 
             if (String.class == cls)
@@ -300,7 +300,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
                 byte[] res = new byte[els.length];
 
-                for (int i = 0; i < els.length; i ++)
+                for (int i = 0; i < els.length; i++)
                     res[i] = Byte.valueOf(els[i]);
 
                 return res;

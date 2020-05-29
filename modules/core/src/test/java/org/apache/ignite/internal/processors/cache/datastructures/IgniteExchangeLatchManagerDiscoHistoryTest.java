@@ -84,7 +84,7 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
 
         TcpDiscoveryIpFinder ipFinder = ((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder();
 
-        int topHistSize = victim? TOPOLOGY_HISTORY_SIZE: TcpDiscoverySpi.DFLT_TOP_HISTORY_SIZE;
+        int topHistSize = victim ? TOPOLOGY_HISTORY_SIZE : TcpDiscoverySpi.DFLT_TOP_HISTORY_SIZE;
 
         CustomTcpDiscoverySpi discoSpi = new CustomTcpDiscoverySpi(topHistSize, ipFinder);
 
@@ -185,7 +185,7 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
         // Start server node with short topology history.
         victim = true;
 
-        GridTestUtils.runAsync(() ->startGrid(1));
+        GridTestUtils.runAsync(() -> startGrid(1));
 
         // Waits for the initial exchange.
         startSrvsLatch.await(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);

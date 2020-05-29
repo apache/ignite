@@ -42,7 +42,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -1129,7 +1129,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /**
      * @return WAL disable context.
      */
-    public WALDisableContext walDisableContext(){
+    public WALDisableContext walDisableContext() {
         return walDisableContext;
     }
 
@@ -1207,7 +1207,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    public static class WALDisableContext implements MetastorageLifecycleListener{
+    public static class WALDisableContext implements MetastorageLifecycleListener {
         /** */
         public static final String WAL_DISABLED = "wal-disabled";
 
@@ -1327,7 +1327,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             Boolean disabled = (Boolean)ms.read(WAL_DISABLED);
 
             // Node crash when WAL was disabled.
-            if (disabled != null && disabled){
+            if (disabled != null && disabled) {
                 resetWalFlag = true;
 
                 pageStoreMgr.cleanupPersistentSpace();

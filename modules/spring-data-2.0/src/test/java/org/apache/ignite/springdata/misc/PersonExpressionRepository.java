@@ -24,5 +24,5 @@ import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
  *
  */
 @RepositoryConfig(cacheName = "#{cacheNames.personCacheName}")
-public interface PersonExpressionRepository  extends IgniteRepository<Person, Integer> {
+public interface PersonExpressionRepository extends IgniteRepository<Person, Integer> {
 }

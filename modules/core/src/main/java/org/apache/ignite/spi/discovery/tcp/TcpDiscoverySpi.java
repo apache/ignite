@@ -1572,9 +1572,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             sock.bind(new InetSocketAddress(locHost, 0));
 
-            sock.setTcpNoDelay(true);
-
-            sock.setSoLinger(getSoLinger() >= 0, getSoLinger());
+            configureSocketOptions(sock);
 
             return sock;
         } catch (IOException e) {
@@ -1628,6 +1626,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (!cancelled)
                 throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
         }
+    }
+
+    /**
+     * Configures socket options.
+     *
+     * @param sock Socket.
+     * @throws SocketException If failed.
+     */
+    void configureSocketOptions(Socket sock) throws SocketException {
+        sock.setTcpNoDelay(true);
+
+        sock.setSoLinger(getSoLinger() >= 0, getSoLinger());
+
+        sock.setKeepAlive(true);
     }
 
     /**
@@ -2489,7 +2501,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
 
         /** {@inheritDoc} */
-        @Override public  IgniteUuid id() {
+        @Override public IgniteUuid id() {
             return id;
         }
 

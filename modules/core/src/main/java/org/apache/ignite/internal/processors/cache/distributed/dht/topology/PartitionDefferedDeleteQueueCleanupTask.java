@@ -69,8 +69,7 @@ public class PartitionDefferedDeleteQueueCleanupTask implements GridTimeoutObjec
     /** {@inheritDoc} */
     @Override public void onTimeout() {
         cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 try {
                     for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                         if (!grp.isLocal() && grp.affinityNode()) {

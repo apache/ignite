@@ -308,7 +308,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
 
                         entries.put(o, 1);
 
-                        k = incrementKey(o, + 13);
+                        k = incrementKey(o, +13);
 
                         involvedKeys.add(k);
 

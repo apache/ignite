@@ -110,10 +110,10 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
      *
      * @param grp Group context.
      */
-    public void onCacheGroupStopped(CacheGroupContext grp){
+    public void onCacheGroupStopped(CacheGroupContext grp) {
         GroupEvictionContext grpEvictionCtx = evictionGroupsMap.remove(grp.groupId());
 
-        if (grpEvictionCtx != null){
+        if (grpEvictionCtx != null) {
             grpEvictionCtx.stop();
 
             grpEvictionCtx.awaitFinishAll();
@@ -295,7 +295,8 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         if (threads == 0)
             threads = permits = 1;
 
-        log.info("Evict partition permits=" + permits);
+        if (log.isInfoEnabled())
+            log.info("Evict partition permits=" + permits);
 
         evictionQueue = new BucketQueue(threads);
     }
@@ -408,7 +409,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /**
          * Await evict finish.
          */
-        private void awaitFinishAll(){
+        private void awaitFinishAll() {
             partsEvictFutures.forEach(this::awaitFinish);
 
             evictionGroupsMap.remove(grp.groupId());
@@ -420,8 +421,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         private void awaitFinish(Integer part, IgniteInternalFuture<?> fut) {
             // Wait for last offered partition eviction completion
             try {
-                log.info("Await partition evict, grpName=" + grp.cacheOrGroupName() +
-                    ", grpId=" + grp.groupId() + ", partId=" + part);
+                if (log.isInfoEnabled())
+                    log.info("Await partition evict, grpName=" + grp.cacheOrGroupName() +
+                        ", grpId=" + grp.groupId() + ", partId=" + part);
 
                 fut.get();
             }
@@ -436,7 +438,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          */
         private void showProgress() {
             if (log.isInfoEnabled())
-                log.info("Group eviction in progress [grpName=" + grp.cacheOrGroupName()+
+                log.info("Group eviction in progress [grpName=" + grp.cacheOrGroupName() +
                     ", grpId=" + grp.groupId() +
                     ", remainingPartsToEvict=" + (totalTasks.get() - taskInProgress) +
                     ", partsEvictInProgress=" + taskInProgress +
@@ -562,7 +564,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * @return Partition evict task.
          */
         PartitionEvictionTask pollAny() {
-            for (int bucket = 0; bucket < bucketSizes.length; bucket++){
+            for (int bucket = 0; bucket < bucketSizes.length; bucket++) {
                 if (!buckets[bucket].isEmpty())
                     return poll(bucket);
             }
@@ -590,14 +592,14 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /**
          * @return {@code True} if queue is empty, {@code} False if not empty.
          */
-        boolean isEmpty(){
+        boolean isEmpty() {
             return size() == 0;
         }
 
         /**
          * @return Queue size.
          */
-        int size(){
+        int size() {
             int size = 0;
 
             for (Queue<PartitionEvictionTask> queue : buckets)

@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,9 +30,11 @@ import org.junit.Test;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
+import static org.apache.ignite.util.KillCommandsTests.doTestScanQueryCancel;
 
 /** Tests cancel of user created entities via control.sh. */
 public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassAbstractTest {
@@ -60,6 +63,16 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         // No-op. Prevent cache destroy from super class.
+    }
+
+    /** */
+    @Test
+    public void testCancelScanQuery() {
+        doTestScanQueryCancel(client, srvs, args -> {
+            int res = execute("--kill", "scan", args.get1().toString(), args.get2(), args.get3().toString());
+
+            assertEquals(EXIT_CODE_OK, res);
+        });
     }
 
     /** @throws Exception If failed. */
@@ -102,6 +115,24 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         });
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelContinuousQuery() throws Exception {
+        doTestCancelContinuousQuery(client, srvs, (nodeId, routineId) -> {
+            int res = execute("--kill", "continuous", nodeId.toString(), routineId.toString());
+
+            assertEquals(EXIT_CODE_OK, res);
+        });
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownScanQuery() {
+        int res = execute("--kill", "scan", srvs.get(0).localNode().id().toString(), "unknown", "1");
+
+        assertEquals(EXIT_CODE_OK, res);
+    }
+
     /** */
     @Test
     public void testCancelUnknownComputeTask() {
@@ -130,6 +161,15 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     @Test
     public void testCancelUnknownSQLQuery() {
         int res = execute("--kill", "sql", srvs.get(0).localNode().id().toString() + "_42");
+
+        assertEquals(EXIT_CODE_OK, res);
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownContinuousQuery() {
+        int res = execute("--kill", "continuous", srvs.get(0).localNode().id().toString(),
+            UUID.randomUUID().toString());
 
         assertEquals(EXIT_CODE_OK, res);
     }

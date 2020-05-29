@@ -40,6 +40,7 @@ import java.io.PrintStream;
 import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringWriter;
+import java.io.UTFDataFormatException;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.lang.management.CompilationMXBean;
@@ -270,6 +271,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
+import static java.util.Objects.isNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_HOSTNAME_VERIFIER;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
@@ -303,6 +305,12 @@ public abstract class IgniteUtils {
 
     /** */
     public static final long GB = 1024L * 1024 * 1024;
+
+    /**
+     * String limit in bytes for {@link DataOutput#writeUTF} and
+     * {@link DataInput#readUTF()}, that use "Modified UTF-8".
+     */
+    public static final int UTF_BYTE_LIMIT = 65_535;
 
     /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE = GB / 4;
@@ -359,8 +367,8 @@ public abstract class IgniteUtils {
     /** Thread dump message. */
     public static final String THREAD_DUMP_MSG = "Thread dump at ";
 
-    /** Correct Mbean cache name pattern. */
-    private static Pattern MBEAN_CACHE_NAME_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
+    /** Alphanumeric with underscore regexp pattern. */
+    private static final Pattern ALPHANUMERIC_UNDERSCORE_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
 
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
@@ -1180,8 +1188,7 @@ public abstract class IgniteUtils {
             return GRID_EVTS;
 
         List<Integer> evts = toIntList(GRID_EVTS, new P1<Integer>() {
-            @Override
-            public boolean apply(Integer i) {
+            @Override public boolean apply(Integer i) {
                 return !containsIntArray(excl, i);
             }
         });
@@ -1822,12 +1829,12 @@ public abstract class IgniteUtils {
      * Gets 8-character substring of {@link org.apache.ignite.lang.IgniteUuid} (for terse logging).
      * The ID8 will be constructed as follows:
      * <ul>
-     * <li>Take first 4 digits for global ID, i.e. {@code GridUuid.globalId()}.</li>
-     * <li>Take last 4 digits for local ID, i.e. {@code GridUuid.localId()}.</li>
+     * <li>Take first 4 digits for global ID, i.e. {@link IgniteUuid#globalId()}.</li>
+     * <li>Take last 4 digits for local ID, i.e. {@link IgniteUuid#localId()}.</li>
      * </ul>
      *
      * @param id Input ID.
-     * @return 8-character representation of {@code GridUuid}.
+     * @return 8-character representation of {@link IgniteUuid}.
      */
     public static String id8(IgniteUuid id) {
         String s = id.toString();
@@ -4786,10 +4793,18 @@ public abstract class IgniteUtils {
      * @return An escaped string.
      */
     private static String escapeObjectNameValue(String s) {
-        if (MBEAN_CACHE_NAME_PATTERN.matcher(s).matches())
+        if (alphanumericUnderscore(s))
             return s;
 
         return '\"' + s.replaceAll("[\\\\\"?*]", "\\\\$0") + '\"';
+    }
+
+    /**
+     * @param s String to check.
+     * @return {@code true} if given string contains only alphanumeric and underscore symbols.
+     */
+    public static boolean alphanumericUnderscore(String s) {
+        return ALPHANUMERIC_UNDERSCORE_PATTERN.matcher(s).matches();
     }
 
     /**
@@ -4831,7 +4846,7 @@ public abstract class IgniteUtils {
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, ObjectName name, T impl, Class<T> itf)
         throws JMException {
-        if(IGNITE_MBEANS_DISABLED)
+        if (IGNITE_MBEANS_DISABLED)
             throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
 
         assert mbeanSrv != null;
@@ -5090,35 +5105,35 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Writes Grid UUIDs to output stream. This method is meant to be used by
+     * Writes Ignite UUIDs to output stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
      * @param out Output stream.
-     * @param col Grid UUIDs to write.
+     * @param col Ignite UUIDs to write.
      * @throws IOException If write failed.
      */
-    public static void writeGridUuids(DataOutput out, @Nullable Collection<IgniteUuid> col) throws IOException {
+    public static void writeIgniteUuids(DataOutput out, @Nullable Collection<IgniteUuid> col) throws IOException {
         if (col != null) {
             out.writeBoolean(true);
 
             out.writeInt(col.size());
 
             for (IgniteUuid id : col)
-                writeGridUuid(out, id);
+                writeIgniteUuid(out, id);
         }
         else
             out.writeBoolean(false);
     }
 
     /**
-     * Reads Grid UUIDs from input stream. This method is meant to be used by
+     * Reads Ignite UUIDs from input stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
      * @param in Input stream.
-     * @return Read Grid UUIDs.
+     * @return Read Ignite UUIDs.
      * @throws IOException If read failed.
      */
-    @Nullable public static List<IgniteUuid> readGridUuids(DataInput in) throws IOException {
+    @Nullable public static List<IgniteUuid> readIgniteUuids(DataInput in) throws IOException {
         List<IgniteUuid> col = null;
 
         // Check null flag.
@@ -5128,7 +5143,7 @@ public abstract class IgniteUtils {
             col = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++)
-                col.add(readGridUuid(in));
+                col.add(readIgniteUuid(in));
         }
 
         return col;
@@ -5218,7 +5233,7 @@ public abstract class IgniteUtils {
      * @param uid UUID to write.
      * @throws IOException If write failed.
      */
-    public static void writeGridUuid(DataOutput out, IgniteUuid uid) throws IOException {
+    public static void writeIgniteUuid(DataOutput out, IgniteUuid uid) throws IOException {
         // Write null flag.
         out.writeBoolean(uid == null);
 
@@ -5238,7 +5253,7 @@ public abstract class IgniteUtils {
      * @return Read UUID.
      * @throws IOException If read failed.
      */
-    @Nullable public static IgniteUuid readGridUuid(DataInput in) throws IOException {
+    @Nullable public static IgniteUuid readIgniteUuid(DataInput in) throws IOException {
         // If UUID is not null.
         if (!in.readBoolean()) {
             long most = in.readLong();
@@ -5255,9 +5270,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts GridUuid to bytes.
+     * Converts {@link IgniteUuid} to bytes.
      *
-     * @param uuid GridUuid to convert.
+     * @param uuid {@link IgniteUuid} to convert.
      * @return Bytes.
      */
     public static byte[] igniteUuidToBytes(IgniteUuid uuid) {
@@ -5271,9 +5286,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts GridUuid to bytes.
+     * Converts {@link IgniteUuid} to bytes.
      *
-     * @param uuid GridUuid to convert.
+     * @param uuid {@link IgniteUuid} to convert.
      * @param out Output array to write to.
      * @param off Offset from which to write.
      */
@@ -5286,11 +5301,11 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts bytes to GridUuid.
+     * Converts bytes to {@link IgniteUuid}.
      *
      * @param in Input byte array.
      * @param off Offset from which start reading.
-     * @return GridUuid instance.
+     * @return {@link IgniteUuid} instance.
      */
     public static IgniteUuid bytesToIgniteUuid(byte[] in, int off) {
         long most = bytesToLong(in, off);
@@ -5445,7 +5460,7 @@ public abstract class IgniteUtils {
      * @param obj Object.
      */
     public static int hashCode(Object obj) {
-        if(obj == null)
+        if (obj == null)
             return 0;
 
         if (obj.getClass().isArray()) {
@@ -5711,6 +5726,29 @@ public abstract class IgniteUtils {
 
     /**
      * Writes string to output stream accounting for {@code null} values.
+     * <p>
+     * Limitation for max string lenght of {@link #UTF_BYTE_LIMIT} bytes is caused by {@link ObjectOutputStream#writeUTF}
+     * used under the hood to perform an actual write.
+     * </p>
+     * <p>
+     * If longer string is passes a {@link UTFDataFormatException} exception will be thrown.
+     * </p>
+     * <p>
+     * To write longer strings use one of two options:
+     * <ul>
+     *     <li>
+     *         {@link #writeLongString(DataOutput, String)} writes string as is converting it into binary array of UTF-8
+     *         encoded characters.
+     *         To read the value back {@link #readLongString(DataInput)} should be used.
+     *     </li>
+     *     <li>
+     *         {@link #writeCutString(DataOutput, String)} cuts passed string to {@link #UTF_BYTE_LIMIT} bytes
+     *         and then writes them without converting to byte array.
+     *         No exceptions will be thrown for string of any length; written string can be read back with regular
+     *         {@link #readString(DataInput)} method.
+     *     </li>
+     * </ul>
+     * </p>
      *
      * @param out Output stream to write to.
      * @param s String to write, possibly {@code null}.
@@ -5726,6 +5764,13 @@ public abstract class IgniteUtils {
 
     /**
      * Reads string from input stream accounting for {@code null} values.
+     *
+     * Method enables to read strings shorter than {@link #UTF_BYTE_LIMIT} bytes in UTF-8 otherwise an exception will be thrown.
+     *
+     * Strings written by {@link #writeString(DataOutput, String)} or {@link #writeCutString(DataOutput, String)}
+     * can be read by this method.
+     *
+     * @see #writeString(DataOutput, String) for more information about writing strings.
      *
      * @param in Stream to read from.
      * @return Read string, possibly {@code null}.
@@ -6820,23 +6865,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Indicates that Ignite has been sufficiently tested on the current OS.
-     *
-     * @return {@code true} if current OS was sufficiently tested - {@code false} otherwise.
-     */
-    public static boolean isSufficientlyTestedOs() {
-        return
-            win7 ||
-                win8 ||
-                win81 ||
-                winXp ||
-                winVista ||
-                mac ||
-                linux ||
-                solaris;
-    }
-
-    /**
      * Indicates whether current OS is Windows XP.
      *
      * @return {@code true} if current OS is Windows XP- {@code false} otherwise.
@@ -7810,7 +7838,7 @@ public abstract class IgniteUtils {
 
                         if (ucp instanceof URLClassLoader)
                             return ((URLClassLoader)ucp).getURLs();
-                        else if (clsURLClassPath!= null && clsURLClassPath.isInstance(ucp))
+                        else if (clsURLClassPath != null && clsURLClassPath.isInstance(ucp))
                             return (URL[])mthdURLClassPathGetUrls.invoke(ucp);
                         else
                             throw new RuntimeException("Unknown classloader: " + clsLdr.getClass());
@@ -8159,11 +8187,11 @@ public abstract class IgniteUtils {
      * @return Segment index.
      */
     public static int concurrentMapSegment(int hash, int concurLvl) {
-        hash += (hash <<  15) ^ 0xffffcd7d;
+        hash += (hash << 15) ^ 0xffffcd7d;
         hash ^= (hash >>> 10);
-        hash += (hash <<   3);
-        hash ^= (hash >>>  6);
-        hash += (hash <<   2) + (hash << 14);
+        hash += (hash << 3);
+        hash ^= (hash >>> 6);
+        hash += (hash << 2) + (hash << 14);
 
         int shift = 0;
         int size = 1;
@@ -8277,12 +8305,13 @@ public abstract class IgniteUtils {
      * @param fieldName Field name.
      * @return Boolean flag.
      */
-    public static boolean hasField(Object obj, String fieldName){
+    public static boolean hasField(Object obj, String fieldName) {
         try {
             field(obj, fieldName);
 
             return true;
-        }catch (IgniteException e){
+        }
+        catch (IgniteException e) {
             return false;
         }
     }
@@ -8884,10 +8913,10 @@ public abstract class IgniteUtils {
      * @param ldr Class loader.
      * @param clsName Class name of clearing class.
      */
-    public static void clearClassFromClassCache(ClassLoader ldr, String clsName){
+    public static void clearClassFromClassCache(ClassLoader ldr, String clsName) {
         ConcurrentMap<String, Class> map = classCache.get(ldr);
 
-        if (map!=null)
+        if (map != null)
             map.remove(clsName);
     }
 
@@ -8923,11 +8952,11 @@ public abstract class IgniteUtils {
     public static int hash(int h) {
         // Spread bits to regularize both segment and index locations,
         // using variant of single-word Wang/Jenkins hash.
-        h += (h <<  15) ^ 0xffffcd7d;
+        h += (h << 15) ^ 0xffffcd7d;
         h ^= (h >>> 10);
-        h += (h <<   3);
-        h ^= (h >>>  6);
-        h += (h <<   2) + (h << 14);
+        h += (h << 3);
+        h ^= (h >>> 6);
+        h += (h << 2) + (h << 14);
 
         return h ^ (h >>> 16);
     }
@@ -10710,7 +10739,7 @@ public abstract class IgniteUtils {
     public static int fileCount(Path dir) throws IOException {
         int cnt = 0;
 
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)){
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
             for (Path d : ds) {
                 if (Files.isDirectory(d))
                     cnt += fileCount(d);
@@ -10837,7 +10866,7 @@ public abstract class IgniteUtils {
 
         long y = 1;
 
-        while (y < x){
+        while (y < x) {
             if (y * 2 > Integer.MAX_VALUE)
                 return (int)y;
 
@@ -11311,7 +11340,7 @@ public abstract class IgniteUtils {
         /**
          * @param task Add task.
          */
-        public void addTask(T task){
+        public void addTask(T task) {
             tasks.add(task);
         }
 
@@ -11698,5 +11727,165 @@ public abstract class IgniteUtils {
      */
     public static String unquote(String s) {
         return s == null ? null : s.replaceAll("^\"|\"$", "");
+    }
+
+    /**
+     * Writes string to output stream accounting for {@code null} values. <br/>
+     *
+     * This method can write string of any length, no {@link #UTF_BYTE_LIMIT} limits are applied.
+     *
+     * @param out Output stream to write to.
+     * @param s String to write, possibly {@code null}.
+     * @throws IOException If write failed.
+     */
+    public static void writeLongString(DataOutput out, @Nullable String s) throws IOException {
+        // Write null flag.
+        out.writeBoolean(isNull(s));
+
+        if (isNull(s))
+            return;
+
+        int sLen = s.length();
+
+        // Write string length.
+        out.writeInt(sLen);
+
+        // Write byte array.
+        for (int i = 0; i < sLen; i++) {
+            char c = s.charAt(i);
+            int utfBytes = utfBytes(c);
+
+            if (utfBytes == 1)
+                out.writeByte((byte)c);
+            else if (utfBytes == 3) {
+                out.writeByte((byte)(0xE0 | (c >> 12) & 0x0F));
+                out.writeByte((byte)(0x80 | (c >> 6) & 0x3F));
+                out.writeByte((byte)(0x80 | (c & 0x3F)));
+            }
+            else {
+                out.writeByte((byte)(0xC0 | ((c >> 6) & 0x1F)));
+                out.writeByte((byte)(0x80 | (c & 0x3F)));
+            }
+        }
+    }
+
+    /**
+     * Reads string from input stream accounting for {@code null} values. <br/>
+     *
+     * This method can read string of any length, no {@link #UTF_BYTE_LIMIT} limits are applied.
+     *
+     * @param in Stream to read from.
+     * @return Read string, possibly {@code null}.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static String readLongString(DataInput in) throws IOException {
+        // Check null value.
+        if (in.readBoolean())
+            return null;
+
+        // Read string length.
+        int sLen = in.readInt();
+
+        StringBuilder strBuilder = new StringBuilder(sLen);
+
+        // Read byte array.
+        for (int i = 0, b0, b1, b2; i < sLen; i++) {
+            b0 = in.readByte() & 0xff;
+
+            switch (b0 >> 4) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                case 7:   // 1 byte format: 0xxxxxxx
+                    strBuilder.append((char)b0);
+                    break;
+
+                case 12:
+                case 13:  // 2 byte format: 110xxxxx 10xxxxxx
+                    b1 = in.readByte();
+
+                    if ((b1 & 0xC0) != 0x80)
+                        throw new UTFDataFormatException();
+
+                    strBuilder.append((char)(((b0 & 0x1F) << 6) | (b1 & 0x3F)));
+                    break;
+
+                case 14:  // 3 byte format: 1110xxxx 10xxxxxx 10xxxxxx
+                    b1 = in.readByte();
+                    b2 = in.readByte();
+
+                    if ((b1 & 0xC0) != 0x80 || (b2 & 0xC0) != 0x80)
+                        throw new UTFDataFormatException();
+
+                    strBuilder.append((char)(((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F)));
+                    break;
+
+                default:  // 10xx xxxx, 1111 xxxx
+                    throw new UTFDataFormatException();
+            }
+        }
+
+        return strBuilder.toString();
+    }
+
+    /**
+     * Writes string to output stream accounting for {@code null} values. <br/>
+     *
+     * <p>
+     *     Uses {@link ObjectOutputStream#writeUTF(String)} to write the string under the hood
+     *     but cuts strings longer than {@link #UTF_BYTE_LIMIT} to the limit to avoid {@link UTFDataFormatException}.
+     * </p>
+     *
+     * <p>
+     *     Strings written by the method can be read by {@link #readString(DataInput)}.
+     * </p>
+     *
+     * @see #writeString(DataOutput, String) for more information.
+     *
+     * @param out Output stream to write to.
+     * @param s String to write, possibly {@code null}.
+     * @throws IOException If write failed.
+     */
+    public static void writeCutString(DataOutput out, @Nullable String s) throws IOException {
+        // Write null flag.
+        out.writeBoolean(isNull(s));
+
+        if (isNull(s))
+            return;
+
+        //Conversion of string to limit.
+        for (int i = 0, bs = 0; i < s.length(); i++) {
+            if ((bs += utfBytes(s.charAt(i))) > UTF_BYTE_LIMIT) {
+                s = s.substring(0, i);
+                break;
+            }
+        }
+
+        out.writeUTF(s);
+    }
+
+    /**
+     * Get number of bytes for {@link DataOutput#writeUTF},
+     * depending on character: <br/>
+     *
+     * One byte - If a character <code>c</code> is in the range
+     * <code>&#92;u0001</code> through <code>&#92;u007f</code>.<br/>
+     *
+     * Two bytes - If a character <code>c</code> is <code>&#92;u0000</code> or
+     * is in the range <code>&#92;u0080</code> through <code>&#92;u07ff</code>.
+     * <br/>
+     *
+     * Three bytes - If a character <code>c</code> is in the range
+     * <code>&#92;u0800</code> through <code>uffff</code>.
+     *
+     * @param c Character.
+     * @return Number of bytes.
+     */
+    public static int utfBytes(char c) {
+        return (c >= 0x0001 && c <= 0x007F) ? 1 : (c > 0x07FF) ? 3 : 2;
     }
 }

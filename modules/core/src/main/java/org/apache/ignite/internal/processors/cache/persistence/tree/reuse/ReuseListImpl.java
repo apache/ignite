@@ -81,7 +81,7 @@ public class ReuseListImpl extends PagesList implements ReuseList {
 
     /** {@inheritDoc} */
     @Override protected boolean isReuseBucket(int bucket) {
-        assert bucket == 0: bucket;
+        assert bucket == 0 : bucket;
 
         return true;
     }

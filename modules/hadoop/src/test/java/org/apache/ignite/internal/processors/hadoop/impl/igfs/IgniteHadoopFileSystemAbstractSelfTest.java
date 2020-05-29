@@ -1262,8 +1262,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         final Path file = new Path(fsHome, "someFile");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 return fs.rename(file, null);
             }
         }, NullPointerException.class, "Ouch! Argument cannot be null: dst");
@@ -1743,8 +1742,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         final AtomicBoolean err = new AtomicBoolean();
 
         multithreaded(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 int idx = cnt.getAndIncrement();
 
                 byte[] data = new byte[256];
@@ -1920,8 +1918,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         final AtomicBoolean err = new AtomicBoolean();
 
         multithreaded(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 FSDataInputStream is = null;
 
                 try {

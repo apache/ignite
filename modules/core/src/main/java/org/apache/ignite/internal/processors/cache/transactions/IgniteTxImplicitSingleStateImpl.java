@@ -78,7 +78,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public GridIntList cacheIds() {
-        return  GridIntList.asList(cacheCtx.cacheId());
+        return GridIntList.asList(cacheCtx.cacheId());
     }
 
     /** {@inheritDoc} */
@@ -163,8 +163,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
         if (cacheCtx.topology().stopping()) {
             fut.onDone(
-                cctx.cache().isCacheRestarting(cacheCtx.name())?
-                    new IgniteCacheRestartingException(cacheCtx.name()):
+                cctx.cache().isCacheRestarting(cacheCtx.name()) ?
+                    new IgniteCacheRestartingException(cacheCtx.name()) :
                     new CacheStoppedException(cacheCtx.name()));
 
             return null;

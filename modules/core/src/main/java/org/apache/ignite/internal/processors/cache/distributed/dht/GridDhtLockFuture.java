@@ -268,7 +268,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         }
 
         if (tx != null) {
-            while(true) {
+            while (true) {
                 IgniteInternalFuture fut = tx.lockFut;
 
                 if (fut != null) {
@@ -1205,7 +1205,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             sb.append("Transaction tx=").append(tx.getClass().getSimpleName());
             sb.append(" [xid=").append(tx.xid());
             sb.append(", xidVer=").append(tx.xidVersion());
-            sb.append(", nearXid=").append(tx.nearXidVersion().asGridUuid());
+            sb.append(", nearXid=").append(tx.nearXidVersion().asIgniteUuid());
             sb.append(", nearXidVer=").append(tx.nearXidVersion());
             sb.append(", nearNodeId=").append(tx.nearNodeId());
             sb.append(", label=").append(tx.label());
@@ -1231,7 +1231,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                 sb.append("key=").append(key).append(", owner=");
                                 sb.append("[xid=").append(itx.xid()).append(", ");
                                 sb.append("xidVer=").append(itx.xidVersion()).append(", ");
-                                sb.append("nearXid=").append(itx.nearXidVersion().asGridUuid()).append(", ");
+                                sb.append("nearXid=").append(itx.nearXidVersion().asIgniteUuid()).append(", ");
                                 sb.append("nearXidVer=").append(itx.nearXidVersion()).append(", ");
                                 sb.append("label=").append(itx.label()).append(", ");
                                 sb.append("nearNodeId=").append(candidate.otherNodeId()).append("]");

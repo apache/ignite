@@ -78,15 +78,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
+     * @param qctx Query context.
      * @return Index segment ID for current query context.
      */
-    protected int threadLocalSegment() {
-        if(segmentsCount() == 1)
+    protected int segment(QueryContext qctx) {
+        if (segmentsCount() == 1)
             return 0;
 
-        QueryContext qctx = queryContextRegistry().getThreadLocal();
-
-        if(qctx == null)
+        if (qctx == null)
             throw new IllegalStateException("GridH2QueryContext is not initialized.");
 
         return qctx.segment();
@@ -189,7 +188,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param partition Partition idx.
      * @return Segment ID for given key
      */
-    public int segmentForPartition(int partition){
+    public int segmentForPartition(int partition) {
         return segmentsCount() == 1 ? 0 : (partition % segmentsCount());
     }
 

@@ -65,7 +65,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -89,6 +89,7 @@ import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -244,7 +245,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private ThrottlingPolicy throttlingPlc;
 
     /** Checkpoint progress provider. Null disables throttling. */
-    @Nullable private final CheckpointWriteProgressSupplier cpProgressProvider;
+    @Nullable private final IgniteOutClosure<CheckpointProgress> cpProgressProvider;
 
     /** Flag indicating page replacement started (rotation with disk), allocating new page requires freeing old one. */
     private volatile boolean pageReplacementWarned;
@@ -282,7 +283,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl memMetrics,
         @Nullable ThrottlingPolicy throttlingPlc,
-        @NotNull CheckpointWriteProgressSupplier cpProgressProvider
+        IgniteOutClosure<CheckpointProgress> cpProgressProvider
     ) {
         assert ctx != null;
         assert pageSize > 0;
@@ -801,7 +802,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (readPageFromStore) {
                     boolean locked = rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
 
-                    assert locked: "Page ID " + fullId + " expected to be locked";
+                    assert locked : "Page ID " + fullId + " expected to be locked";
 
                     lockedPageAbsPtr = absPtr;
                 }
@@ -832,7 +833,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             seg.acquirePage(absPtr);
 
-            if(!readPageFromStore)
+            if (!readPageFromStore)
                 statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
 
             return absPtr;
@@ -1259,7 +1260,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         CheckpointMetricsTracker tracker
     ) throws IgniteCheckedException {
         assert absPtr != 0;
-        assert PageHeader.isAcquired(absPtr);
+        assert PageHeader.isAcquired(absPtr) || !isInCheckpoint(fullId);
 
         // Exception protection flag.
         // No need to write if exception occurred.
@@ -1275,17 +1276,23 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             buf.clear();
 
-            pageStoreWriter.writePage(fullId, buf, TRY_AGAIN_TAG);
+            if (isInCheckpoint(fullId))
+                pageStoreWriter.writePage(fullId, buf, TRY_AGAIN_TAG);
+
+            return;
+        }
+
+        if (!clearCheckpoint(fullId)) {
+            rwLock.writeUnlock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+            if (!pageSingleAcquire)
+                PageHeader.releasePage(absPtr);
 
             return;
         }
 
         try {
             long tmpRelPtr = PageHeader.tempBufferPointer(absPtr);
-
-            boolean success = clearCheckpoint(fullId);
-
-            assert success : "Page was pin when we resolve abs pointer, it can not be evicted";
 
             if (tmpRelPtr != INVALID_REL_PTR) {
                 PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
@@ -1322,7 +1329,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         finally {
             rwLock.writeUnlock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
 
-            if (canWrite){
+            if (canWrite) {
                 buf.rewind();
 
                 pageStoreWriter.writePage(fullId, buf, tag);
@@ -1545,7 +1552,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override  public long readLock(long absPtr, long pageId, boolean force, boolean touch) {
+    @Override public long readLock(long absPtr, long pageId, boolean force, boolean touch) {
         assert started;
 
         int tag = force ? -1 : PageIdUtils.tag(pageId);

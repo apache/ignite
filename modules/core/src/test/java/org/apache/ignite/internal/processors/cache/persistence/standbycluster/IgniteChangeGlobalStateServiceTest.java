@@ -84,7 +84,7 @@ public class IgniteChangeGlobalStateServiceTest extends IgniteChangeGlobalStateA
     /**
      *
      */
-    private static class TestService implements Service{
+    private static class TestService implements Service {
         /** */
         private static final long serialVersionUID = 0L;
 

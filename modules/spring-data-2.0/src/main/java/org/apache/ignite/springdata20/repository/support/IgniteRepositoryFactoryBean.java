@@ -72,7 +72,7 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
             try {
                 IgniteConfiguration cfg = (IgniteConfiguration)ctx.getBean("igniteCfg");
 
-                return new IgniteRepositoryFactory(cfg, ctx) ;
+                return new IgniteRepositoryFactory(cfg, ctx);
             }
             catch (BeansException ex2) {
                 try {

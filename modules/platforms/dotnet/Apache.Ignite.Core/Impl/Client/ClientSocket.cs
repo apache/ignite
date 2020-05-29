@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Collections;
     using System.Collections.Concurrent;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -48,9 +49,6 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Version 1.2.0. */
         public static readonly ClientProtocolVersion Ver120 = new ClientProtocolVersion(1, 2, 0);
-
-        /** Version 1.3.0. */
-        public static readonly ClientProtocolVersion Ver130 = new ClientProtocolVersion(1, 3, 0);
 
         /** Version 1.4.0. */
         public static readonly ClientProtocolVersion Ver140 = new ClientProtocolVersion(1, 4, 0);
@@ -90,9 +88,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Callback checker guard. */
         private volatile bool _checkingTimeouts;
 
-        /** Server protocol version. */
-        public ClientProtocolVersion ServerVersion { get; private set; }
-
         /** Current async operations, map from request id. */
         private readonly ConcurrentDictionary<long, Request> _requests
             = new ConcurrentDictionary<long, Request>();
@@ -123,6 +118,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
+
+        /** Features. */
+        private readonly ClientFeatures _features;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
@@ -155,7 +153,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             Validate(clientConfiguration);
 
-            Handshake(clientConfiguration, ServerVersion);
+            _features = Handshake(clientConfiguration, ServerVersion);
 
             // Check periodically if any request has timed out.
             if (_timeout > TimeSpan.Zero)
@@ -230,6 +228,14 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
+        /// Gets the features.
+        /// </summary>
+        public ClientFeatures Features
+        {
+            get { return _features; }
+        }
+        
+        /// <summary>
         /// Gets the current remote EndPoint.
         /// </summary>
         public EndPoint RemoteEndPoint { get { return _socket.RemoteEndPoint; } }
@@ -251,6 +257,11 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             get { return _isDisposed; }
         }
+
+        /// <summary>
+        /// Gets the server protocol version.
+        /// </summary>
+        public ClientProtocolVersion ServerVersion { get; private set; }
 
         /// <summary>
         /// Starts waiting for the new message.
@@ -350,7 +361,7 @@ namespace Apache.Ignite.Core.Impl.Client
             if (statusCode == ClientStatusCode.Success)
             {
                 return readFunc != null 
-                    ? readFunc(new ClientResponseContext(stream, _marsh, ServerVersion)) 
+                    ? readFunc(new ClientResponseContext(stream, _marsh, _features)) 
                     : default(T);
             }
 
@@ -367,9 +378,10 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Performs client protocol handshake.
         /// </summary>
-        private void Handshake(IgniteClientConfiguration clientConfiguration, ClientProtocolVersion version)
+        private ClientFeatures Handshake(IgniteClientConfiguration clientConfiguration, ClientProtocolVersion version)
         {
-            bool auth = version >= Ver110 && clientConfiguration.UserName != null;
+            var hasAuth = version >= Ver110 && clientConfiguration.UserName != null;
+            var hasFeatures = version >= Ver170;
 
             // Send request.
             int messageLen;
@@ -386,19 +398,21 @@ namespace Apache.Ignite.Core.Impl.Client
                 // Client type: platform.
                 stream.WriteByte(ClientType);
 
-                // TODO User attributes
-                if (version >= Ver170)
-                    stream.WriteByte(BinaryUtils.HdrNull);
+                // Writing features.
+                if (hasFeatures)
+                {
+                    BinaryUtils.Marshaller.Marshal(stream, 
+                        w => w.WriteByteArray(ClientFeatures.AllFeatures));
+                }
 
                 // Authentication data.
-                if (auth)
+                if (hasAuth)
                 {
-                    var writer = BinaryUtils.Marshaller.StartMarshal(stream);
-
-                    writer.WriteString(clientConfiguration.UserName);
-                    writer.WriteString(clientConfiguration.Password);
-
-                    BinaryUtils.Marshaller.FinishMarshal(writer);
+                    BinaryUtils.Marshaller.Marshal(stream, writer =>
+                    {
+                        writer.WriteString(clientConfiguration.UserName);
+                        writer.WriteString(clientConfiguration.Password);
+                    });
                 }
             }, 12, out messageLen);
 
@@ -414,6 +428,13 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (success)
                 {
+                    BitArray featureBits = null;
+                    
+                    if (hasFeatures)
+                    {
+                        featureBits = new BitArray(BinaryUtils.Marshaller.Unmarshal<byte[]>(stream));
+                    }
+
                     if (version >= Ver140)
                     {
                         ServerNodeId = BinaryUtils.Marshaller.Unmarshal<Guid>(stream);
@@ -424,7 +445,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     _logger.Debug("Handshake completed on {0}, protocol version = {1}", 
                         _socket.RemoteEndPoint, version);
 
-                    return;
+                    return new ClientFeatures(version, featureBits);
                 }
 
                 ServerVersion =
@@ -459,14 +480,12 @@ namespace Apache.Ignite.Core.Impl.Client
                     _logger.Debug("Retrying handshake on {0} with protocol version {1}", 
                         _socket.RemoteEndPoint, ServerVersion);
                     
-                    Handshake(clientConfiguration, ServerVersion);
+                    return Handshake(clientConfiguration, ServerVersion);
                 }
-                else
-                {
-                    throw new IgniteClientException(string.Format(
-                        "Client handshake failed: '{0}'. Client version: {1}. Server version: {2}",
-                        errMsg, version, ServerVersion), null, errCode);
-                }
+
+                throw new IgniteClientException(string.Format(
+                    "Client handshake failed: '{0}'. Client version: {1}. Server version: {2}",
+                    errMsg, version, ServerVersion), null, errCode);
             }
         }
 
@@ -598,7 +617,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private RequestMessage WriteMessage(Action<ClientRequestContext> writeAction, ClientOp opId)
         {
-            ClientUtils.ValidateOp(opId, ServerVersion);
+            _features.ValidateOp(opId);
             
             var requestId = Interlocked.Increment(ref _requestId);
             
@@ -613,7 +632,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (writeAction != null)
             {
-                var ctx = new ClientRequestContext(stream, _marsh, ServerVersion);
+                var ctx = new ClientRequestContext(stream, _marsh, _features);
                 writeAction(ctx);
                 ctx.FinishMarshal();
             }

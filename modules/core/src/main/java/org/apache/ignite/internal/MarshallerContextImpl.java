@@ -32,6 +32,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -168,27 +170,73 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /**
-     * @param platformId Platform id.
-     * @param marshallerMappings All marshaller mappings for given platformId.
-     * @throws IgniteCheckedException In case of failure to process incoming marshaller mappings.
+     * @param log Ignite logger.
+     * @param mappings All marshaller mappings to write.
      */
-    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMappings)
-        throws IgniteCheckedException
-    {
-        ConcurrentMap<Integer, MappedName> platformCache = getCacheFor(platformId);
+    public void onMappingDataReceived(IgniteLogger log, List<Map<Integer, MappedName>> mappings) {
+        addPlatformMappings(log,
+            mappings,
+            this::getCacheFor,
+            (mappedName, clsName) ->
+                mappedName == null || F.isEmpty(clsName) || !clsName.equals(mappedName.className()),
+            fileStore);
+    }
 
-        for (Map.Entry<Integer, MappedName> e : marshallerMappings.entrySet()) {
-            int typeId = e.getKey();
-            String clsName = e.getValue().className();
+    /**
+     * @param ctx Kernal context.
+     * @param mappings Marshaller mappings to save.
+     * @param dir Directory to save given mappings to.
+     */
+    public static void saveMappings(GridKernalContext ctx, List<Map<Integer, MappedName>> mappings, File dir) {
+        MarshallerMappingFileStore writer = new MarshallerMappingFileStore(ctx,
+            mappingFileStoreWorkDir(dir.getAbsolutePath()));
 
-            MappedName mappedName = platformCache.get(typeId);
+        addPlatformMappings(ctx.log(MarshallerContextImpl.class),
+            mappings,
+            b -> new ConcurrentHashMap<>(),
+            (mappedName, clsName) -> true,
+            writer);
+    }
 
-            if (mappedName != null && !F.isEmpty(clsName) && clsName.equals(mappedName.className()))
+    /**
+     * @param mappings Map of marshaller mappings.
+     * @param mappedCache Cache to attach new mappings to.
+     * @param cacheAddPred Check mapping can be added.
+     * @param writer Persistence mapping writer.
+     */
+    private static void addPlatformMappings(
+        IgniteLogger log,
+        List<Map<Integer, MappedName>> mappings,
+        Function<Byte, ConcurrentMap<Integer, MappedName>> mappedCache,
+        BiPredicate<MappedName, String> cacheAddPred,
+        MarshallerMappingFileStore writer
+    ) {
+        if (mappings == null)
+            return;
+
+        for (byte platformId = 0; platformId < mappings.size(); platformId++) {
+            Map<Integer, MappedName> attach = mappings.get(platformId);
+
+            if (attach == null)
                 continue;
 
-            platformCache.put(typeId, new MappedName(clsName, true));
+            ConcurrentMap<Integer, MappedName> cached = mappedCache.apply(platformId);
 
-            fileStore.mergeAndWriteMapping(platformId, typeId, clsName);
+            for (Map.Entry<Integer, MappedName> e : attach.entrySet()) {
+                Integer typeId = e.getKey();
+                String clsName = e.getValue().className();
+
+                if (cacheAddPred.test(cached.get(typeId), clsName)) {
+                    try {
+                        cached.put(typeId, new MappedName(clsName, true));
+
+                        writer.mergeAndWriteMapping(platformId, typeId, clsName);
+                    }
+                    catch (IgniteCheckedException ex) {
+                        U.error(log, "Failed to write marshaller mapping data", ex);
+                    }
+                }
+            }
         }
     }
 
@@ -198,7 +246,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param fileName File name.
      */
     public void checkHasClassName(String clsName, ClassLoader ldr, String fileName) {
-        ConcurrentMap cache = getCacheFor(JAVA_ID);
+        ConcurrentMap<Integer, MappedName> cache = getCacheFor(JAVA_ID);
 
         if (!cache.containsKey(clsName.hashCode()))
             throw new IgniteException("Failed to read class name from class names properties file. " +
@@ -257,8 +305,8 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+    @Override public boolean registerClassName(byte platformId, int typeId, String clsName)
+        throws IgniteCheckedException {
         return registerClassName(platformId, typeId, clsName, false);
     }
 
@@ -502,16 +550,29 @@ public class MarshallerContextImpl implements MarshallerContext {
         IgniteConfiguration cfg = ctx.config();
         String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
 
-        final IgniteLogger fileStoreLog = ctx.log(MarshallerMappingFileStore.class);
         fileStore = marshallerMappingFileStoreDir == null ?
-            new MarshallerMappingFileStore(workDir, fileStoreLog) :
-            new MarshallerMappingFileStore(fileStoreLog, marshallerMappingFileStoreDir);
+            new MarshallerMappingFileStore(ctx, mappingFileStoreWorkDir(workDir)) :
+            new MarshallerMappingFileStore(ctx, marshallerMappingFileStoreDir);
+
         this.transport = transport;
         closProc = ctx.closure();
         clientNode = ctx.clientNode();
 
         if (CU.isPersistenceEnabled(ctx.config()))
             fileStore.restoreMappings(this);
+    }
+
+    /**
+     * @param igniteWorkDir Base ignite working directory.
+     * @return Resolved directory.
+     */
+    public static File mappingFileStoreWorkDir(String igniteWorkDir) {
+        try {
+            return U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**

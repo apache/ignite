@@ -707,7 +707,7 @@ public class GridH2Table extends TableBase {
      *
      * @param rmIndex Flag indicate remove index on destroy or not.
      */
-    public void setRemoveIndexOnDestroy(boolean rmIndex){
+    public void setRemoveIndexOnDestroy(boolean rmIndex) {
         this.rmIndex = rmIndex;
     }
 
@@ -871,7 +871,7 @@ public class GridH2Table extends TableBase {
     public void markRebuildFromHashInProgress(boolean value) {
         assert !value || (idxs.size() >= 2 && index(1).getIndexType().isHash()) : "Table has no hash index.";
 
-        if (rebuildFromHashInProgressFiledUpdater.compareAndSet(this, value? FALSE: TRUE, value ? TRUE: FALSE)) {
+        if (rebuildFromHashInProgressFiledUpdater.compareAndSet(this, value ? FALSE : TRUE, value ? TRUE : FALSE)) {
             lock.writeLock().lock();
 
             try {
@@ -1045,20 +1045,20 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Check whether user index with provided name exists.
+     * Get user index with provided name.
      *
      * @param idxName Index name.
-     * @return {@code True} if exists.
+     * @return User index if exists and {@code null} othwerwise.
      */
-    public boolean containsUserIndex(String idxName) {
+    @Nullable public Index userIndex(String idxName) {
         for (int i = 2; i < idxs.size(); i++) {
             Index idx = idxs.get(i);
 
             if (idx.getName().equalsIgnoreCase(idxName))
-                return true;
+                return idx;
         }
 
-        return false;
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -1208,7 +1208,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        if (!localQuery())
+        if (!localQuery(QueryContext.threadLocal()))
             return 10_000; // Fallback to the previous behaviour.
 
         refreshStatsIfNeeded();
@@ -1217,11 +1217,11 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * @param qctx Context.
+     *
      * @return {@code True} if the current query is a local query.
      */
-    private boolean localQuery() {
-        QueryContext qctx = rowDescriptor().indexing().queryContextRegistry().getThreadLocal();
-
+    private boolean localQuery(QueryContext qctx) {
         assert qctx != null;
 
         return qctx.local();
@@ -1434,7 +1434,7 @@ public class GridH2Table extends TableBase {
                             ", colName=" + name + ']');
                 }
 
-                size --;
+                size--;
             }
 
             assert size > QueryUtils.DEFAULT_COLUMNS_COUNT;

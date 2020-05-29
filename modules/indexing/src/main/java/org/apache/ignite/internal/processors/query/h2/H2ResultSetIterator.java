@@ -30,8 +30,6 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -99,14 +97,8 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     /** Canceled. */
     private boolean canceled;
 
-    /** Query context. */
-    private final QueryContext qctx;
-
-    /** Query context registry. */
-    private final QueryContextRegistry qryCtxReg;
-
-    /** Query context registry. */
-    private final boolean lazy;
+    /** Fetch size interceptor. */
+    final H2QueryFetchSizeInterceptor fetchSizeInterceptor;
 
     /**
      * @param data Data array.
@@ -115,13 +107,16 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
      * @param pageSize Page size.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2ResultSetIterator(ResultSet data, int pageSize, IgniteLogger log, IgniteH2Indexing h2,
-        QueryContext qctx, boolean lazy) throws IgniteCheckedException {
+    protected H2ResultSetIterator(
+        ResultSet data,
+        int pageSize,
+        IgniteLogger log,
+        IgniteH2Indexing h2,
+        H2QueryInfo qryInfo
+    )
+        throws IgniteCheckedException {
+        this.pageSize = pageSize;
         this.data = data;
-        this.qctx = qctx;
-        qryCtxReg = h2.queryContextRegistry();
-        this.lazy = lazy;
-        this.pageSize = !lazy ? 1 : pageSize;
 
         try {
             res = (ResultInterface)RESULT_FIELD.get(data);
@@ -151,6 +146,9 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
         assert log != null;
         assert h2 != null;
+        assert qryInfo != null;
+
+        fetchSizeInterceptor = new H2QueryFetchSizeInterceptor(h2, qryInfo, log);
     }
 
     /**
@@ -158,15 +156,10 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
      * @throws IgniteCheckedException On cancel.
      */
     private boolean fetchPage() throws IgniteCheckedException {
-        if (lazy) {
-            lockTables();
-
-            qryCtxReg.setThreadLocal(qctx);
-        }
+        lockTables();
 
         try {
-            if (lazy)
-                GridH2Table.checkTablesVersions(ses);
+            GridH2Table.checkTablesVersions(ses);
 
             page.clear();
 
@@ -217,11 +210,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
             }
         }
         finally {
-            if (lazy) {
-                qryCtxReg.clearThreadLocal();
-
-                unlockTables();
-            }
+            unlockTables();
         }
     }
 
@@ -252,13 +241,13 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
     /** */
     public void lockTables() {
-        if (ses.isLazyQueryExecution() && !isClosed())
+        if (!isClosed() && ses.isLazyQueryExecution())
             GridH2Table.readLockTables(ses);
     }
 
     /** */
     public void unlockTables() {
-        if (ses != null && ses.isLazyQueryExecution())
+        if (ses.isLazyQueryExecution())
             GridH2Table.unlockTables(ses);
     }
 
@@ -273,6 +262,8 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (rowIter != null && rowIter.hasNext()) {
             row = rowIter.next();
 
+            fetchSizeInterceptor.checkOnFetchNext();
+
             return true;
         }
 
@@ -284,6 +275,8 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
         if (rowIter != null && rowIter.hasNext()) {
             row = rowIter.next();
+
+            fetchSizeInterceptor.checkOnFetchNext();
 
             return true;
         }
@@ -307,6 +300,8 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         lockTables();
 
         try {
+            fetchSizeInterceptor.checkOnClose();
+
             data.close();
         }
         catch (SQLException e) {
