@@ -697,7 +697,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     assertNull(tx.label());
                     assertFalse(tx.onePhaseCommit());
                     assertFalse(tx.internal());
-                    assertEquals(0, tx.timeout());
+                    assertEquals(300_000, tx.timeout());
                     assertTrue(tx.startTime() <= System.currentTimeMillis());
 
                     String s1 = cacheId(cache1.getName()) + "," + cacheId(cache2.getName());

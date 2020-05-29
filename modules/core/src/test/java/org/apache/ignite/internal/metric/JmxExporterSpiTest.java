@@ -670,7 +670,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 assertNull(txv.get("label"));
                 assertFalse((boolean)txv.get("onePhaseCommit"));
                 assertFalse((boolean)txv.get("internal"));
-                assertEquals(0L, txv.get("timeout"));
+                assertEquals(300_000L, txv.get("timeout"));
                 assertTrue(((long)txv.get("startTime")) <= System.currentTimeMillis());
             }
         }
