@@ -22,7 +22,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -61,7 +60,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.logger.java.JavaLoggerFormatter;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
@@ -125,8 +123,8 @@ public class CommandHandler {
     /** */
     public static final String NULL = "null";
 
-    /** */
-    public static final String ATTR_SECURITY_USER_CERTIFICATES = "com.sbt.sbergrid.users.security.cert";
+    /** Node SSL PEM certificate attribute name. */
+    public static final String ATTR_SECURITY_USER_CERTIFICATE_PEM = "com.sbt.sbergrid.users.security.cert.pem";
 
     /** JULs logger. */
     private final Logger logger;
@@ -485,19 +483,19 @@ public class CommandHandler {
 
             Map<String, String> userAttr = new HashMap<>();
 
-            X509Certificate[] selfCerts;
+            String selfCertPem;
 
             try {
-                selfCerts = extractCertificates(loadKeyStore(sslCtxFactory.getKeyStoreFilePath(),
+                X509Certificate selfCert = extractCertificate(loadKeyStore(sslCtxFactory.getKeyStoreFilePath(),
                     sslCtxFactory.getKeyStorePassword()));
+
+                selfCertPem = Base64.getEncoder().encodeToString(selfCert.getEncoded());
             }
             catch (Exception e) {
                 throw new SecurityException("Failed to get user private key chain.", e);
             }
 
-            byte[] selfCertsBase64 = Base64.getEncoder().encode(U.marshal(new JdkMarshaller(), selfCerts));
-
-            userAttr.put(ATTR_SECURITY_USER_CERTIFICATES, new String(selfCertsBase64, StandardCharsets.ISO_8859_1));
+            userAttr.put(ATTR_SECURITY_USER_CERTIFICATE_PEM, selfCertPem);
 
             clientCfg.setUserAttributes(userAttr);
         }
@@ -713,7 +711,7 @@ public class CommandHandler {
      * @throws SecurityException If any exceptions while key store file reading occur or if the stored
      *     certificate number different from one.
      */
-    public static X509Certificate[] extractCertificates(KeyStore keyStore) {
+    public static X509Certificate extractCertificate(KeyStore keyStore) {
         try {
             Enumeration<String> aliases = keyStore.aliases();
 
@@ -743,7 +741,7 @@ public class CommandHandler {
                     " [alias: " + selfAlias + "]. Expected type: java.security.cert.X509Certificate.");
             }
 
-            return Arrays.copyOf(certChain, certChain.length, X509Certificate[].class);
+            return (X509Certificate)certChain[0];
         }
         catch (KeyStoreException e) {
             throw new SecurityException("Key store is not initialized.", e);
