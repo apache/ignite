@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
     internal class ClientQueryCursorBase<T> : QueryCursorBase<T>
     {
         /** Ignite. */
-        private readonly IgniteClient _ignite;
+        private readonly ClientSocket _socket;
 
         /** Cursor ID. */
         private readonly long _cursorId;
@@ -40,17 +40,17 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientQueryCursorBase{T}" /> class.
         /// </summary>
-        /// <param name="ignite">The ignite.</param>
+        /// <param name="socket">Connection that holds the cursor.</param>
         /// <param name="cursorId">The cursor identifier.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
         /// <param name="getPageOp">The get page op.</param>
         /// <param name="readFunc">Read func.</param>
-        public ClientQueryCursorBase(IgniteClient ignite, long cursorId, bool keepBinary,
+        public ClientQueryCursorBase(ClientSocket socket, long cursorId, bool keepBinary,
             IBinaryStream initialBatchStream, ClientOp getPageOp, Func<BinaryReader, T> readFunc)
-            : base(ignite.Marshaller, keepBinary, readFunc, initialBatchStream)
+            : base(socket.Marshaller, keepBinary, readFunc, initialBatchStream)
         {
-            _ignite = ignite;
+            _socket = socket;
             _cursorId = cursorId;
             _getPageOp = getPageOp;
         }
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /** <inheritdoc /> */
         protected override T[] GetBatch()
         {
-            return _ignite.Socket.DoOutInOp(_getPageOp, ctx => ctx.Stream.WriteLong(_cursorId),
+            return _socket.DoOutInOp(_getPageOp, ctx => ctx.Stream.WriteLong(_cursorId),
                 ctx => ConvertGetBatch(ctx.Stream));
         }
 
@@ -79,8 +79,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         {
             try
             {
-                // TODO: This does not guarantee the same connection that holds the resource.
-                _ignite.Socket.DoOutInOp<object>(ClientOp.ResourceClose,
+                _socket.DoOutInOp<object>(ClientOp.ResourceClose,
                     ctx => ctx.Writer.WriteLong(_cursorId), null);
             }
             finally
