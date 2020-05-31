@@ -46,8 +46,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
         /// <param name="getPageOp">The get page op.</param>
         /// <param name="readFunc">Read func.</param>
-        public ClientQueryCursorBase(IgniteClient ignite, long cursorId, bool keepBinary, 
-            IBinaryStream initialBatchStream, ClientOp getPageOp, Func<BinaryReader, T> readFunc) 
+        public ClientQueryCursorBase(IgniteClient ignite, long cursorId, bool keepBinary,
+            IBinaryStream initialBatchStream, ClientOp getPageOp, Func<BinaryReader, T> readFunc)
             : base(ignite.Marshaller, keepBinary, readFunc, initialBatchStream)
         {
             _ignite = ignite;
@@ -79,7 +79,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         {
             try
             {
-                _ignite.Socket.DoOutInOp<object>(ClientOp.ResourceClose, ctx => ctx.Writer.WriteLong(_cursorId), null);
+                // TODO: This does not guarantee the same connection that holds the resource.
+                _ignite.Socket.DoOutInOp<object>(ClientOp.ResourceClose,
+                    ctx => ctx.Writer.WriteLong(_cursorId), null);
             }
             finally
             {
