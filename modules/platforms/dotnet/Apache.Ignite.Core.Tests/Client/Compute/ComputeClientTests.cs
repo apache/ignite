@@ -253,17 +253,21 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             const long delayMs = 1000;
 
+            var taskFutures = GetActiveTaskFutures();
+            Assert.AreEqual(0, taskFutures.Length);
+
             var cts = new CancellationTokenSource();
             var task = Client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
 
-            var taskFutures = GetActiveTaskFutures();
+            taskFutures = GetActiveTaskFutures();
             Assert.AreEqual(1, taskFutures.Length);
+
 
             cts.Cancel();
             Assert.IsTrue(task.IsCanceled);
 
             taskFutures = GetActiveTaskFutures();
-            Assert.AreEqual(0, taskFutures.Length);
+            Assert.AreEqual(1, taskFutures.Length);
 
             // TODO: Test cancel after finish.
         }
@@ -490,11 +494,10 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         /// <summary>
         /// Gets active task futures from all server nodes.
         /// </summary>
-        private static IgniteGuid[] GetActiveTaskFutures()
+        private IgniteGuid[] GetActiveTaskFutures()
         {
-            return Ignition.GetAll()
-                .SelectMany(ign => ign.GetCompute().ExecuteJavaTask<IgniteGuid[]>(ActiveTaskFuturesTask, null))
-                .ToArray();
+            // TODO: This executes on a random node, giving random results.
+            return Client.GetCompute().ExecuteJavaTask<IgniteGuid[]>(ActiveTaskFuturesTask, null);
         }
     }
 }
