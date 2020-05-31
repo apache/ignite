@@ -357,7 +357,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 .ToArray();
 
             var ex = Assert.Throws<AggregateException>(() => Task.WaitAll(tasks));
-            var clientEx = (IgniteClientException)ex.GetInnermostException();
+            var clientEx = (IgniteClientException) ex.GetInnermostException();
 
             StringAssert.StartsWith("Active compute tasks per connection limit (8) exceeded", clientEx.Message);
             Assert.AreEqual(ClientStatusCode.TooManyComputeTasks, clientEx.StatusCode);
