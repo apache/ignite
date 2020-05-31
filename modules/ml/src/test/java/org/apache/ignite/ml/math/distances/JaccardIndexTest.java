@@ -30,7 +30,7 @@ public class JaccardIndexTest {
     /** */
     @Test
     public void jaccardIndex() {
-        double expRes =  0.2;
+        double expRes = 0.2;
         double[] data2 = new double[] {2.0, 1.0, 0.0};
         Vector v1 = new DenseVector(new double[] {0.0, 0.0, 0.0});
         Vector v2 = new DenseVector(data2);
