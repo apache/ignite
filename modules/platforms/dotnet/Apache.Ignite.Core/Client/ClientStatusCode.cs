@@ -65,6 +65,11 @@ namespace Apache.Ignite.Core.Client
         SecurityViolation = 1012,
 
         /// <summary>
+        /// Too many compute tasks (see <see cref="ThinClientConfiguration.MaxActiveComputeTasksPerConnection"/>).
+        /// </summary>
+        TooManyComputeTasks = 1030,
+
+        /// <summary>
         /// Authentication failed.
         /// </summary>
         AuthenticationFailed = 2000
