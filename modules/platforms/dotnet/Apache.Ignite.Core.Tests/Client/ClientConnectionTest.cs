@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     Assert.AreEqual("foo", client.GetCacheNames().Single());
                 }
-                
+
                 // Port range.
                 cfg = new IgniteClientConfiguration("127.0.0.1:10798..10800");
 
@@ -259,9 +259,9 @@ namespace Apache.Ignite.Core.Tests.Client
             var cfg = new IgniteClientConfiguration("127.0.0.1:10800..10700");
 
             var ex = Assert.Throws<IgniteClientException>(() => Ignition.StartClient(cfg));
-            
+
             Assert.AreEqual(
-                "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: 127.0.0.1:10800..10700", 
+                "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: 127.0.0.1:10800..10700",
                 ex.Message);
         }
 
@@ -590,6 +590,16 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
                 Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
             }
+        }
+
+        /// <summary>
+        /// Tests that client stops it's receiver thread upon disposal.
+        /// </summary>
+        [Test]
+        public void TestClientDisposalStopsReceiverThread()
+        {
+            // TODO: Check scenarios - async and sync
+            // Check threads by name
         }
 
         /// <summary>
