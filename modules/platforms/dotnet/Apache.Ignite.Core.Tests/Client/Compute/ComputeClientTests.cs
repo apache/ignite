@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Client.Compute;
@@ -46,6 +47,9 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 
         /** */
         private const string TestFailoverTask = "org.apache.ignite.internal.client.thin.TestFailoverTask";
+
+        /** */
+        private const string ActiveTaskFuturesTask = "org.apache.ignite.platform.PlatformComputeActiveTaskFuturesTask";
 
         /** */
         private const int MaxTasks = 8;
@@ -252,10 +256,14 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             var cts = new CancellationTokenSource();
             var task = Client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
 
+            var taskFutures = GetActiveTaskFutures();
+            Assert.AreEqual(1, taskFutures.Length);
+
             cts.Cancel();
             Assert.IsTrue(task.IsCanceled);
 
-            // TODO: Verify that Java task is cancelled: use IgniteCompute.activeTaskFutures
+            taskFutures = GetActiveTaskFutures();
+            Assert.AreEqual(0, taskFutures.Length);
         }
 
         /// <summary>
@@ -474,6 +482,17 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 SocketTimeout = TimeSpan.FromSeconds(3),
                 EnablePartitionAwareness = false
             };
+        }
+
+
+        /// <summary>
+        /// Gets active task futures from all server nodes.
+        /// </summary>
+        private static IgniteGuid[] GetActiveTaskFutures()
+        {
+            return Ignition.GetAll()
+                .SelectMany(ign => ign.GetCompute().ExecuteJavaTask<IgniteGuid[]>(ActiveTaskFuturesTask, null))
+                .ToArray();
         }
     }
 }
