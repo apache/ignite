@@ -184,10 +184,19 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
 
             cancellationToken.Register(() =>
             {
-                // TODO: Ignore exceptions.
                 ctx.Socket.DoOutInOpAsync<object>(ClientOp.ResourceClose,
                     c => c.Stream.WriteLong(taskId),
-                    _ => null);
+                    _ => null,
+                    (status, msg) =>
+                    {
+                        if (status == ClientStatusCode.ResourceDoesNotExist)
+                        {
+                            // Task finished before we could cancel it - ignore.
+                            return null;
+                        }
+
+                        throw new IgniteClientException(msg, null, status);
+                    });
             });
 
             ctx.Socket.AddNotificationHandler(taskId, (stream, ex) =>
