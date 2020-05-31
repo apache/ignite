@@ -40,10 +40,10 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
     {
         /** */
         private const string TestTask = "org.apache.ignite.internal.client.thin.TestTask";
-        
+
         /** */
         private const string TestResultCacheTask = "org.apache.ignite.internal.client.thin.TestResultCacheTask";
-        
+
         /** */
         private const string TestFailoverTask = "org.apache.ignite.internal.client.thin.TestFailoverTask";
 
@@ -66,9 +66,9 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             var logger = (ListLogger) Client.GetConfiguration().Logger;
             var entries = logger.Entries;
-            
+
             logger.Clear();
-            
+
             foreach (var entry in entries)
             {
                 if (entry.Level >= LogLevel.Warn)
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             var ex = (IgniteClientException) Assert.Throws<AggregateException>(
                     () => Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.EchoTask, -42))
                 .GetInnermostException();
-            
+
             StringAssert.EndsWith("Unknown type: -42", ex.Message);
         }
 
@@ -116,16 +116,16 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             {
                 AutoGenerateIgniteInstanceName = true
             };
-            
+
             var ignite = Ignition.Start(cfg);
 
             var port = ignite.GetCluster().GetLocalNode().GetAttribute<int>("clientListenerPort");
-            
+
             var clientCfg = new IgniteClientConfiguration(GetClientConfiguration())
             {
                 Endpoints = new[] {"127.0.0.1:" + port}
             };
-            
+
             var client = Ignition.StartClient(clientCfg);
 
             try
@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             var res = Client.GetCompute().WithKeepBinary().ExecuteJavaTask<IBinaryObject>(
                 ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizableJava);
-            
+
             Assert.AreEqual(1, res.GetField<int>("field"));
             Assert.AreEqual("field", res.GetBinaryType().Fields.Single());
             Assert.AreEqual("org.apache.ignite.platform.PlatformComputeJavaBinarizable", res.GetBinaryType().TypeName);
@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             var arg = new PlatformComputeNetBinarizable {Field = 42};
 
             var res = Client.GetCompute().WithKeepBinary().ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
-            
+
             Assert.AreEqual(arg.Field, res);
         }
 
@@ -183,11 +183,11 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 Client.GetCompute().ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg));
 
             var clientEx = (IgniteClientException) ex.GetInnermostException();
-            
+
             var expected = string.Format(
-                "Failed to resolve .NET class '{0}' in Java [platformId=0, typeId=-315989221].", 
+                "Failed to resolve .NET class '{0}' in Java [platformId=0, typeId=-315989221].",
                 arg.GetType().FullName);
-            
+
             Assert.AreEqual(expected, clientEx.Message);
         }
 
@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             var computeWithFailover = Client.GetCompute();
             var computeWithNoFailover = Client.GetCompute().WithNoFailover();
-            
+
             Assert.IsTrue(computeWithFailover.ExecuteJavaTask<bool>(TestFailoverTask, null));
             Assert.IsFalse(computeWithNoFailover.ExecuteJavaTask<bool>(TestFailoverTask, null));
         }
@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             var computeWithCache = Client.GetCompute();
             var computeWithNoCache = Client.GetCompute().WithNoResultCache();
-            
+
             Assert.IsTrue(computeWithCache.ExecuteJavaTask<bool>(TestResultCacheTask, null));
             Assert.IsFalse(computeWithNoCache.ExecuteJavaTask<bool>(TestResultCacheTask, null));
         }
@@ -228,7 +228,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 
             var ex = Assert.Throws<AggregateException>(() => compute.ExecuteJavaTask<object>(TestTask, timeoutMs * 4));
             var clientEx = (IgniteClientException) ex.GetInnermostException();
-            
+
             StringAssert.StartsWith("Task timed out (check logs for error messages):", clientEx.Message);
         }
 
@@ -248,13 +248,13 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         public void TestExecuteJavaTaskAsyncCancellation()
         {
             const long delayMs = 1000;
-            
+
             var cts = new CancellationTokenSource();
             var task = Client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
-            
+
             cts.Cancel();
             Assert.IsTrue(task.IsCanceled);
-            
+
             // TODO: Verify that Java task is cancelled: use IgniteCompute.activeTaskFutures
         }
 
@@ -270,16 +270,16 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 
                 return ((ArrayList) res.Item2).OfType<Guid>().ToArray();
             };
-            
+
             // Default: full cluster.
             var nodeIds = Client.GetCluster().GetNodes().Select(n => n.Id).ToArray();
 
             CollectionAssert.AreEquivalent(nodeIds, getProjection(Client.GetCompute()));
-            
+
             // One node.
             var nodeId = nodeIds[1];
             var proj = Client.GetCluster().ForPredicate(n => n.Id == nodeId);
-            
+
             Assert.AreEqual(new[]{nodeId}, getProjection(proj.GetCompute()));
 
             // Two nodes.
@@ -295,7 +295,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         public void TestExecuteJavaTaskWithMixedModifiers()
         {
             const long timeoutMs = 200;
-            
+
             var cluster = Client.GetCluster();
             var nodeId = cluster.GetNode().Id;
 
@@ -308,19 +308,19 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             // KeepBinary.
             var res = compute.ExecuteJavaTask<IBinaryObject>(
                 ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizableJava);
-            
+
             Assert.AreEqual(1, res.GetField<int>("field"));
 
             // Timeout.
             var ex = Assert.Throws<AggregateException>(() => compute.ExecuteJavaTask<object>(TestTask, timeoutMs * 3));
             var clientEx = (IgniteClientException) ex.GetInnermostException();
-            
+
             StringAssert.StartsWith("Task timed out (check logs for error messages):", clientEx.Message);
-            
+
             // Flags.
             Assert.IsFalse(compute.ExecuteJavaTask<bool>(TestFailoverTask, null));
             Assert.IsFalse(compute.WithNoResultCache().ExecuteJavaTask<bool>(TestResultCacheTask, null));
-            
+
             // Cluster.
             var executedNodeIds = (ArrayList) compute.ExecuteJavaTask<IgniteBiTuple>(TestTask, null).Item2;
             Assert.AreEqual(nodeId, executedNodeIds.Cast<Guid>().Single());
@@ -336,12 +336,12 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                     () => Client.GetCompute().ExecuteJavaTask<int>("bad", null));
 
             var innerEx = ex.GetInnermostException();
-            
+
             StringAssert.StartsWith(
-                "Unknown task name or failed to auto-deploy task (was task (re|un)deployed?) [taskName=bad, ", 
+                "Unknown task name or failed to auto-deploy task (was task (re|un)deployed?) [taskName=bad, ",
                 innerEx.Message);
         }
-        
+
         /// <summary>
         /// Tests <see cref="IComputeClient.ExecuteJavaTask{TRes}"/> with exceeded
         /// <see cref="ThinClientConfiguration.MaxActiveComputeTasksPerConnection"/>.
@@ -357,9 +357,10 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 .ToArray();
 
             var ex = Assert.Throws<AggregateException>(() => Task.WaitAll(tasks));
-            var clientEx = ex.GetInnermostException();
+            var clientEx = (IgniteClientException)ex.GetInnermostException();
 
             StringAssert.StartsWith("Active compute tasks per connection limit (8) exceeded", clientEx.Message);
+            Assert.AreEqual(ClientStatusCode.TooManyComputeTasks, clientEx.StatusCode);
         }
 
         /// <summary>
@@ -372,7 +373,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             var compute = Client.GetCompute().WithKeepBinary();
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
             cache[1] = 1;
-            
+
             TestUtils.RunMultiThreaded(() =>
             {
                 while (true)
@@ -380,7 +381,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                     var arg = new PlatformComputeNetBinarizable { Field = Interlocked.Decrement(ref count) };
 
                     var res = compute.ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
-                
+
                     Assert.AreEqual(arg.Field, res);
 
                     // Perform other operations to mix notifications and responses.
@@ -405,14 +406,14 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             var task = Client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, (long) 500);
 
             Client.GetCacheNames();
-            
+
             Assert.IsFalse(task.IsCompleted);
-            
+
             task.Wait();
         }
 
         /// <summary>
-        /// Tests that failed deserialization (caused by missing type) produces correct exception. 
+        /// Tests that failed deserialization (caused by missing type) produces correct exception.
         /// </summary>
         [Test]
         public void TestExecuteJavaTaskWithFailedResultDeserializationProducesBinaryObjectException()
@@ -420,9 +421,9 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             var ex = Assert.Throws<AggregateException>(
                 () => Client.GetCompute().ExecuteJavaTask<object>(
                     ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizableJava));
-            
+
             var clientEx = (IgniteClientException) ex.GetInnermostException();
-            
+
             Assert.AreEqual("Failed to resolve Java class 'org.apache.ignite.platform.PlatformComputeJavaBinarizable'" +
                             " in .NET [platformId=1, typeId=-422570294].", clientEx.Message);
         }
@@ -434,7 +435,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         public void TestClientTimeoutShorterThanTaskDuration()
         {
             const long timeoutMs = 300;
-            
+
             var cfg = new IgniteClientConfiguration(GetClientConfiguration())
             {
                 SocketTimeout = TimeSpan.FromMilliseconds(timeoutMs)
@@ -445,7 +446,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 var compute = client.GetCompute().WithKeepBinary();
 
                 var res = compute.ExecuteJavaTask<IgniteBiTuple>(TestTask, timeoutMs * 3);
-                
+
                 Assert.IsInstanceOf<Guid>(res.Item1);
             }
         }
