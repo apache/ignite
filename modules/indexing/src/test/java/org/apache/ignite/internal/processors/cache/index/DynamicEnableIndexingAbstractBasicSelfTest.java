@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -34,7 +35,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -44,6 +44,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -111,7 +112,7 @@ public class DynamicEnableIndexingAbstractBasicSelfTest extends GridCommonAbstra
     private static final String NAME_FIELD_NAME = "name";
 
     /** */
-    private static final String NAME_FIELD_IDX_NAME = "name_idx";
+    private static final String SCAN_IDX_NAME = "poi.__scan_";
 
     /** */
     private static final String LATITUDE_FIELD_NAME = "latitude";
@@ -190,7 +191,8 @@ public class DynamicEnableIndexingAbstractBasicSelfTest extends GridCommonAbstra
 
         loadData(NUM_ENTRIES / 2, NUM_ENTRIES);
 
-        performQueryingIntegrityCheck();
+        for (Ignite ig: G.allGrids())
+            performQueryingIntegrityCheck((IgniteEx)ig);
     }
 
     /** */
@@ -212,8 +214,8 @@ public class DynamicEnableIndexingAbstractBasicSelfTest extends GridCommonAbstra
     }
 
     /** */
-    private void performQueryingIntegrityCheck() throws Exception {
-        IgniteCache<Object, Object> cache = node().getOrCreateCache(POI_CACHE_NAME).withKeepBinary();
+    private void performQueryingIntegrityCheck(IgniteEx ig) throws Exception {
+        IgniteCache<Object, Object> cache = ig.cache(POI_CACHE_NAME).withKeepBinary();
 
         List<List<?>> res = cache.query(new SqlFieldsQuery(String.format("SELECT * FROM %s", POI_TABLE_NAME))
                 .setSchema(POI_SCHEMA_NAME)).getAll();
@@ -240,7 +242,7 @@ public class DynamicEnableIndexingAbstractBasicSelfTest extends GridCommonAbstra
 
         assertEquals("POI_100", ((BinaryObject)cache.get(100)).field(NAME_FIELD_NAME));
 
-        assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE name = 'POI_10'", NAME_FIELD_IDX_NAME);
+        assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE id = 100", SCAN_IDX_NAME);
     }
 
     /** */
@@ -341,17 +343,12 @@ public class DynamicEnableIndexingAbstractBasicSelfTest extends GridCommonAbstra
         fields.put(LATITUDE_FIELD_NAME, Double.class.getName());
         fields.put(LONGITUDE_FIELD_NAME, Double.class.getName());
 
-        Collection<QueryIndex> indices = Collections.singletonList(
-                new QueryIndex(NAME_FIELD_NAME).setName(NAME_FIELD_IDX_NAME)
-        );
-
         return Collections.singletonList(
                 new QueryEntity()
                         .setKeyType(Integer.class.getName())
                         .setValueType(POI_CLASS_NAME)
                         .setTableName(POI_TABLE_NAME)
                         .setFields(fields)
-                        .setIndexes(indices)
         );
     }
 

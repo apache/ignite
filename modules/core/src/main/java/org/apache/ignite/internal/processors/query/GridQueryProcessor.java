@@ -1744,12 +1744,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return;
 
         }
-        else {
+        else
             cacheInfo = idx.registeredCacheInfo(cacheName);
 
-            if (cacheInfo == null || !F.eq(depId, cacheInfo.dynamicDeploymentId()))
-                throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
-        }
+        if (cacheInfo == null || !F.eq(depId, cacheInfo.dynamicDeploymentId()))
+            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
 
         try {
             if (op instanceof SchemaIndexCreateOperation) {
