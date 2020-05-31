@@ -95,8 +95,8 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
 
             var task = _ignite.Socket.DoOutInOpAsync(
                 ClientOp.ComputeTaskExecute,
-                ctx => WriteJavaTaskRequest(taskName, taskArg, ctx),
-                ctx => ReadJavaTaskResponse(ctx, tcs, keepBinary));
+                ctx => WriteJavaTaskRequest(ctx, taskName, taskArg),
+                ctx => ReadJavaTaskResponse(ctx, tcs, cancellationToken, keepBinary));
 
             // ReSharper disable once AssignNullToNotNullAttribute (t.Exception won't be null).
             task.ContinueWith(t => tcs.TrySetException(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /// <summary>
         /// Writes the java task.
         /// </summary>
-        private void WriteJavaTaskRequest(string taskName, object taskArg, ClientRequestContext ctx)
+        private void WriteJavaTaskRequest(ClientRequestContext ctx, string taskName, object taskArg)
         {
             var writer = ctx.Writer;
 
@@ -178,9 +178,17 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static object ReadJavaTaskResponse<TRes>(ClientResponseContext ctx, TaskCompletionSource<TRes> tcs,
-            bool keepBinary)
+            CancellationToken cancellationToken, bool keepBinary)
         {
             var taskId = ctx.Stream.ReadLong();
+
+            cancellationToken.Register(() =>
+            {
+                // TODO: Ignore exceptions.
+                ctx.Socket.DoOutInOpAsync<object>(ClientOp.ResourceClose,
+                    c => c.Stream.WriteLong(taskId),
+                    _ => null);
+            });
 
             ctx.Socket.AddNotificationHandler(taskId, (stream, ex) =>
             {
