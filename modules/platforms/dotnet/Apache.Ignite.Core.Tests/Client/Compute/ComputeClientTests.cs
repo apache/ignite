@@ -264,6 +264,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 
             taskFutures = GetActiveTaskFutures();
             Assert.AreEqual(0, taskFutures.Length);
+
+            // TODO: Test cancel after finish.
         }
 
         /// <summary>
