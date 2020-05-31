@@ -35,8 +35,8 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         private readonly IgniteClient _ignite;
 
         /** */
-        private readonly ComputeClientFlags _flags; 
-        
+        private readonly ComputeClientFlags _flags;
+
         /** */
         private readonly TimeSpan _timeout;
 
@@ -47,8 +47,8 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /// Initializes a new instance of <see cref="ComputeClient"/>.
         /// </summary>
         internal ComputeClient(
-            IgniteClient ignite, 
-            ComputeClientFlags flags, 
+            IgniteClient ignite,
+            ComputeClientFlags flags,
             TimeSpan? timeout,
             IClientClusterGroup clusterGroup)
         {
@@ -73,16 +73,26 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         }
 
         /** <inheritdoc /> */
-        public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg, 
+        public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg,
             CancellationToken cancellationToken)
         {
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
-            
+
             var tcs = new TaskCompletionSource<TRes>();
-            cancellationToken.Register(() => tcs.SetCanceled());
+            cancellationToken.Register(() =>
+            {
+                // TODO: There is a race between cancellation and completion.
+                // Task closes automatically upon completion,
+                // and OP_RESOURCE_CLOSE throws an error if resource is already closed.
+                // We can ignore the error though.
+                if (tcs.TrySetCanceled())
+                {
+
+                }
+            });
 
             var keepBinary = (_flags & ComputeClientFlags.KeepBinary) == ComputeClientFlags.KeepBinary;
-            
+
             var task = _ignite.Socket.DoOutInOpAsync(
                 ClientOp.ComputeTaskExecute,
                 ctx => WriteJavaTaskRequest(taskName, taskArg, ctx),
@@ -98,8 +108,8 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
         /** <inheritdoc /> */
         public IComputeClient WithTimeout(TimeSpan timeout)
         {
-            return _timeout != timeout 
-                ? new ComputeClient(_ignite, _flags, timeout, _clusterGroup) 
+            return _timeout != timeout
+                ? new ComputeClient(_ignite, _flags, timeout, _clusterGroup)
                 : this;
         }
 
@@ -159,10 +169,10 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
             writer.WriteLong((long) _timeout.TotalMilliseconds);
             writer.WriteString(taskName);
             writer.WriteObject(taskArg);
-            
+
             ctx.Socket.ExpectNotifications();
         }
-        
+
         /// <summary>
         /// Reads java task execution response.
         /// </summary>
@@ -182,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
 
                 ctx.Socket.RemoveNotificationHandler(taskId);
 
-                var reader = ctx.Marshaller.StartUnmarshal(stream, 
+                var reader = ctx.Marshaller.StartUnmarshal(stream,
                     keepBinary ? BinaryMode.ForceBinary : BinaryMode.Deserialize);
 
                 try
