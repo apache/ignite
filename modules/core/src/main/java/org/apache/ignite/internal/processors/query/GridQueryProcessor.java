@@ -2963,16 +2963,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cacheName Cache name
      * @param schemaName Target schema name.
-     * @param entities Collecion of {@code QueryEntity}
+     * @param entity Instance of {@code QueryEntity}
      */
-    public IgniteInternalFuture<?> dynamicAddQueryEntities(
+    public IgniteInternalFuture<?> dynamicAddQueryEntity(
             String cacheName,
             String schemaName,
-            Collection<QueryEntity> entities
+            QueryEntity entity
     ) {
         GridCacheContext<?, ?> cctx = ctx.cache().cache(cacheName).context();
 
-        Collection<QueryEntity> entities0 = QueryUtils.normalizeQueryEntities(entities, cctx.config());
+        Collection<QueryEntity> entities0 = QueryUtils.normalizeQueryEntities(Collections.singletonList(entity),
+                cctx.config());
 
         SchemaAddQueryEntitiesOperation op = new SchemaAddQueryEntitiesOperation(UUID.randomUUID(), cacheName,
                 schemaName, entities0);

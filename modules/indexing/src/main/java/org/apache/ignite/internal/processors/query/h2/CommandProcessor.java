@@ -787,21 +787,25 @@ public class CommandProcessor {
                     if (err != null)
                         throw err;
 
-                    ctx.query().dynamicTableCreate(
-                        cmd.schemaName(),
-                        e,
-                        cmd.templateName(),
-                        cmd.cacheName(),
-                        cmd.cacheGroup(),
-                        cmd.dataRegionName(),
-                        cmd.affinityKey(),
-                        cmd.atomicityMode(),
-                        cmd.writeSynchronizationMode(),
-                        cmd.backups(),
-                        cmd.ifNotExists(),
-                        cmd.encrypted(),
-                        cmd.parallelism()
-                    );
+                    if (ctx.cache().cacheDescriptor(cmd.cacheName()) != null)
+                        ctx.query().dynamicAddQueryEntity(cmd.cacheName(), cmd.schemaName(), e).get();
+                    else {
+                        ctx.query().dynamicTableCreate(
+                            cmd.schemaName(),
+                            e,
+                            cmd.templateName(),
+                            cmd.cacheName(),
+                            cmd.cacheGroup(),
+                            cmd.dataRegionName(),
+                            cmd.affinityKey(),
+                            cmd.atomicityMode(),
+                            cmd.writeSynchronizationMode(),
+                            cmd.backups(),
+                            cmd.ifNotExists(),
+                            cmd.encrypted(),
+                            cmd.parallelism()
+                        );
+                    }
                 }
             }
             else if (cmdH2 instanceof GridSqlDropTable) {

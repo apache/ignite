@@ -112,7 +112,7 @@ public class DynamicEnableIndexingAbstractBasicSelfTest extends GridCommonAbstra
     private static final String NAME_FIELD_NAME = "name";
 
     /** */
-    private static final String SCAN_IDX_NAME = "poi.__scan_";
+    private static final String KEY_PK_IDX_NAME = "_key_pk";
 
     /** */
     private static final String LATITUDE_FIELD_NAME = "latitude";
@@ -185,7 +185,18 @@ public class DynamicEnableIndexingAbstractBasicSelfTest extends GridCommonAbstra
 
         loadData(0, NUM_ENTRIES / 2);
 
-        node().cache(POI_CACHE_NAME).enableIndexing(POI_SCHEMA_NAME, queryEntities()).get();
+        node().cache(POI_CACHE_NAME).query(new SqlFieldsQuery(
+                String.format("CREATE TABLE %s.%s " +
+                        "(%s INT, %s VARCHAR," +
+                        " %s DOUBLE PRECISION," +
+                        " %s DOUBLE PRECISION," +
+                        " PRIMARY KEY (%s)" +
+                        ") WITH " +
+                        " \"CACHE_NAME=%s,VALUE_TYPE=%s\"",
+                        POI_SCHEMA_NAME, POI_TABLE_NAME, ID_FIELD_NAME, NAME_FIELD_NAME,
+                        LATITUDE_FIELD_NAME, LONGITUDE_FIELD_NAME, ID_FIELD_NAME,
+                        POI_CACHE_NAME, POI_CLASS_NAME)
+                ));
 
         grid(IDX_SRV_CRD).cache(POI_CACHE_NAME).indexReadyFuture().get();
 
@@ -202,7 +213,6 @@ public class DynamicEnableIndexingAbstractBasicSelfTest extends GridCommonAbstra
 
             for (int i = start; i < end; i++) {
                 BinaryObject bo = node().binary().builder(POI_CLASS_NAME)
-                        .setField(ID_FIELD_NAME, i, Integer.class)
                         .setField(NAME_FIELD_NAME, "POI_" + i, String.class)
                         .setField(LATITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
                         .setField(LONGITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
@@ -231,18 +241,18 @@ public class DynamicEnableIndexingAbstractBasicSelfTest extends GridCommonAbstra
                 String.format(
                         "INSERT INTO %s(%s) VALUES (%s)",
                         POI_TABLE_NAME,
-                        String.join(",", "_KEY", ID_FIELD_NAME, NAME_FIELD_NAME),
-                        String.join(",", "100", "100","'test'"))
+                        String.join(",", ID_FIELD_NAME, NAME_FIELD_NAME),
+                        String.join(",", "100","'test'"))
         ).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertNotNull(cache.get(100));
 
-        cache.query(new SqlFieldsQuery(String.format("UPDATE %s SET %s = '%s' WHERE _KEY = 100",
+        cache.query(new SqlFieldsQuery(String.format("UPDATE %s SET %s = '%s' WHERE ID = 100",
                 POI_TABLE_NAME, NAME_FIELD_NAME, "POI_100")).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertEquals("POI_100", ((BinaryObject)cache.get(100)).field(NAME_FIELD_NAME));
 
-        assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE id = 100", SCAN_IDX_NAME);
+        assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE ID = 100", KEY_PK_IDX_NAME);
     }
 
     /** */
@@ -320,6 +330,8 @@ public class DynamicEnableIndexingAbstractBasicSelfTest extends GridCommonAbstra
 
         cfg.setConsistentId(gridName);
 
+        cfg.setSqlSchemas(POI_SCHEMA_NAME);
+
         return optimize(cfg);
     }
 
@@ -346,6 +358,7 @@ public class DynamicEnableIndexingAbstractBasicSelfTest extends GridCommonAbstra
         return Collections.singletonList(
                 new QueryEntity()
                         .setKeyType(Integer.class.getName())
+                        .setKeyFieldName(ID_FIELD_NAME)
                         .setValueType(POI_CLASS_NAME)
                         .setTableName(POI_TABLE_NAME)
                         .setFields(fields)

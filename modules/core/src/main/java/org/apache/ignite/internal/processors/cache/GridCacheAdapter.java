@@ -60,7 +60,6 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -5437,12 +5436,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> enableIndexing(String schemaName, Collection<QueryEntity> entities)
-        throws IgniteCheckedException {
-        return ctx.kernalContext().query().dynamicAddQueryEntities(ctx.name(), schemaName, entities);
     }
 
     /**

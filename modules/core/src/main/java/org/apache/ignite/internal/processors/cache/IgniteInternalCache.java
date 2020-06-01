@@ -36,7 +36,6 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.store.CacheStore;
@@ -1840,9 +1839,4 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws IgniteCheckedException If failed.
      */
     public boolean localPreloadPartition(int part) throws IgniteCheckedException;
-
-    /**
-     * @param entities Query entities.
-     */
-    public IgniteInternalFuture<?> enableIndexing(String schemaName, Collection<QueryEntity> entities) throws IgniteCheckedException;
 }
