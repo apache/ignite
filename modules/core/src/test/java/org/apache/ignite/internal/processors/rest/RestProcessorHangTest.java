@@ -37,7 +37,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Test for rest processor hanging on stop
+ * Test for rest processor hanging on stop.
  */
 public class RestProcessorHangTest extends GridCommonAbstractTest {
     /**
@@ -54,7 +54,7 @@ public class RestProcessorHangTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that node doesn't hang if there are rest requests and discovery SPI failed
+     * Test that node doesn't hang if there are rest requests and discovery SPI failed.
      *
      * Description: Fire up one node that always rejects connections.
      * Fire up another node and without waiting for it to start up publish CACHE_GET request to the rest processor.
@@ -70,13 +70,15 @@ public class RestProcessorHangTest extends GridCommonAbstractTest {
 
         IgniteConfiguration regjectorGridCfg = getConfiguration(rejectorGridName);
 
-        // discovery spi that never allows connecting
+        // Discovery spi that never allows connecting.
         TestTcpDiscoverySpi discoSpi = new TestTcpDiscoverySpi() {
             @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout) throws IOException {
                 try {
-                    // wait until request added to rest processor
+                    // Wait until request is added to rest processor.
                     latch.await();
-                } catch (InterruptedException ignored) {
+                }
+                catch (InterruptedException ignored) {
+                    //  No-op.
                 }
 
                 super.writeToSocket(msg, sock, 255, timeout);
@@ -100,7 +102,8 @@ public class RestProcessorHangTest extends GridCommonAbstractTest {
                 IgniteKernal failingGrid = IgnitionEx.gridx(hangGridName);
 
                 return failingGrid != null && failingGrid.context().rest() != null;
-            } catch (Exception ignored) {
+            }
+            catch (Exception ignored) {
                 return false;
             }
         }, 20_000);
@@ -123,16 +126,17 @@ public class RestProcessorHangTest extends GridCommonAbstractTest {
             latch.countDown();
 
             try {
-                // submitting cache get request to node that didn't fully start
-                // must hang
+                // Submitting cache get request to node that didn't fully start must hang.
                 hnd.handle(req);
-            } catch (IgniteCheckedException ignored) {
+            }
+            catch (IgniteCheckedException ignored) {
+                // No-op.
             }
         }).start();
 
         latch.await();
 
-        // node should stop correctly
+        // Node should stop correctly.
         assertTrue(GridTestUtils.waitForCondition(() -> {
             List<Ignite> ignites = IgnitionEx.allGrids();
             return ignites.stream().noneMatch(ignite -> Objects.equals(ignite.name(), hangGridName));
