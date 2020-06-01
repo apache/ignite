@@ -82,6 +82,18 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     /** Unknown key. */
     private static final int UNKNOWN_KEY = 3;
 
+    /** */
+    private static final Predicate<CacheConfiguration> ATOMIC_CACHES_PRED = cfg -> cfg.getAtomicityMode() == ATOMIC;
+
+    /** */
+    private static final Predicate<CacheConfiguration> TX_CACHES_PRED = cfg -> cfg.getAtomicityMode() == TRANSACTIONAL;
+
+    /** */
+    private static final Predicate<CacheConfiguration> MVCC_CACHES_PRED = cfg -> cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+
+    /** */
+    private static final Predicate<CacheConfiguration> NO_MVCC_CACHES_PRED = ATOMIC_CACHES_PRED.or(TX_CACHES_PRED);
+
     static {
         kvMap.put(KEY, VAL);
         kvMap.put(KEY_2, VAL_2);
@@ -90,8 +102,13 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration[] cfgs = cacheConfigurations();
+
+        for (CacheConfiguration cfg : cfgs)
+            cfg.setReadFromBackup(true);
+
         return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(ClusterReadOnlyModeTestUtils.cacheConfigurations());
+            .setCacheConfiguration(cfgs);
     }
 
     /** {@inheritDoc} */
@@ -160,13 +177,13 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     /** */
     @Test
     public void testLockDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.lock(KEY).lock(), cfg -> cfg.getAtomicityMode() == TRANSACTIONAL);
+        performActionReadOnlyExceptionExpected(cache -> cache.lock(KEY).lock(), TX_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testLockAllDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.lockAll(asList(KEY, KEY_2)).lock(), cfg -> cfg.getAtomicityMode() == TRANSACTIONAL);
+        performActionReadOnlyExceptionExpected(cache -> cache.lockAll(asList(KEY, KEY_2)).lock(), TX_CACHES_PRED);
     }
 
     /** */
@@ -321,7 +338,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
                     }
                 }
             },
-            cfg -> cfg.getAtomicityMode() != ATOMIC
+            TX_CACHES_PRED.or(MVCC_CACHES_PRED)
         );
     }
 
@@ -363,7 +380,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
                     }
                 }
             },
-            cfg -> cfg.getAtomicityMode() != ATOMIC
+            TX_CACHES_PRED.or(MVCC_CACHES_PRED)
         );
     }
 
@@ -461,6 +478,165 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     }
 
     /** */
+    @Test
+    public void testRemoveAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.removeAsync(KEY).get());
+        performActionReadOnlyExceptionExpected(cache -> cache.removeAsync(UNKNOWN_KEY).get());
+    }
+
+    /** */
+    @Test
+    public void testRemoveWithOldValueDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.remove(KEY, VAL));
+    }
+
+    /** */
+    @Test
+    public void testRemoveWithOldValueAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.removeAsync(KEY, VAL).get());
+    }
+
+    /** */
+    @Test
+    public void testGetAndRemoveDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.getAndRemove(KEY));
+        performActionReadOnlyExceptionExpected(cache -> cache.getAndRemove(UNKNOWN_KEY));
+    }
+
+    /** */
+    @Test
+    public void testGetAndRemoveAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.getAndRemoveAsync(KEY).get());
+        performActionReadOnlyExceptionExpected(cache -> cache.getAndRemoveAsync(UNKNOWN_KEY).get());
+    }
+
+    /** */
+    @Test
+    public void testReplaceWithOldValueDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.replace(KEY, VAL, VAL + 1));
+    }
+
+    /** */
+    @Test
+    public void testReplaceWithOldValueAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.replaceAsync(KEY, VAL, VAL + 1).get());
+    }
+
+    /** */
+    @Test
+    public void testReplaceDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.replace(KEY,VAL + 1));
+    }
+
+    /** */
+    @Test
+    public void testReplaceAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.replaceAsync(KEY, VAL + 1).get());
+    }
+
+    /** */
+    @Test
+    public void testGetAndReplaceDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.getAndReplace(KEY,VAL + 1));
+    }
+
+    /** */
+    @Test
+    public void testGetAndReplaceAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.getAndReplaceAsync(KEY, VAL + 1).get());
+    }
+
+    /** */
+    @Test
+    public void testRemoveAllWithKeysDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.removeAll(kvMap.keySet()));
+    }
+
+    /** */
+    @Test
+    public void testRemoveAllWithKeysAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.removeAllAsync(kvMap.keySet()).get());
+    }
+
+    /** */
+    @Test
+    public void testRemoveAllDenied() {
+        performActionReadOnlyExceptionExpected(IgniteCache::removeAll);
+    }
+
+    /** */
+    @Test
+    public void testRemoveAllAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.removeAllAsync().get());
+    }
+
+    /** */
+    @Test
+    public void testClearDenied() {
+        performActionReadOnlyExceptionExpected(IgniteCache::clear, NO_MVCC_CACHES_PRED);
+    }
+
+    /** */
+    @Test
+    public void testClearAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync().get(), NO_MVCC_CACHES_PRED);
+    }
+
+    /** */
+    @Test
+    public void testClearWithKeyDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.clear(KEY), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clear(UNKNOWN_KEY), NO_MVCC_CACHES_PRED);
+    }
+
+    /** */
+    @Test
+    public void testClearWithKeyAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync(KEY).get(), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync(UNKNOWN_KEY).get(), NO_MVCC_CACHES_PRED);
+    }
+
+    /** */
+    @Test
+    public void testClearAllDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAll(kvMap.keySet()), NO_MVCC_CACHES_PRED);
+    }
+
+    /** */
+    @Test
+    public void testClearAllAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAllAsync(kvMap.keySet()).get(), NO_MVCC_CACHES_PRED);
+    }
+
+    /** */
+    @Test
+    public void testLocalClearDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.localClear(KEY), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.localClear(UNKNOWN_KEY), NO_MVCC_CACHES_PRED);
+    }
+
+    /** */
+    @Test
+    public void testLocalClearAllDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.localClearAll(kvMap.keySet()), NO_MVCC_CACHES_PRED);
+    }
+
+    /** */
+    @Test
+    public void testCloseAllowed() {
+        performAction((node, cache) -> {
+            if (!node.configuration().isClientMode())
+                return;
+
+            assertFalse(cache.isClosed());
+
+            cache.close();
+
+            assertTrue(cache.isClosed());
+        });
+    }
+
+    /** */
     private void performActionReadOnlyExceptionExpected(Consumer<IgniteCache<Integer, Integer>> clo) {
         performActionReadOnlyExceptionExpected(clo, null);
     }
@@ -482,6 +658,11 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
 
     /** */
     private void performAction(Consumer<IgniteCache<Integer, Integer>> clo) {
+        performAction(clo, null);
+    }
+
+    /** */
+    private void performAction(BiConsumer<Ignite, IgniteCache<Integer, Integer>> clo) {
         performAction(clo, null);
     }
 
