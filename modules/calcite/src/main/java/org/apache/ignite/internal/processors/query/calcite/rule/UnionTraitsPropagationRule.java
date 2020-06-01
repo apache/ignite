@@ -59,7 +59,7 @@ public class UnionTraitsPropagationRule extends RelOptRule {
             List<RelNode> inputs0 = new ArrayList<>(inputs.size());
 
             for (RelNode input : inputs)
-                inputs0.add(RuleUtils.changeTraits(input, suggestion.in()));
+                inputs0.add(convert(input, suggestion.in()));
 
             newRels.add(new IgniteUnionAll(cluster, traits, inputs0));
         }

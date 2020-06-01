@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl.PK_INDEX_NAME;
 
@@ -203,7 +202,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(this,
             validator, catalogReader, createCluster(), convertletTbl, sqlToRelConverterCfg);
 
-        return sqlToRelConverter.convertQuery(sql, false, true);
+        RelRoot root = sqlToRelConverter.convertQuery(sql, false, true);
+        root = root.withRel(sqlToRelConverter.decorrelate(sql, root.rel));
+
+        return root;
     }
 
     /** {@inheritDoc} */
@@ -222,7 +224,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             throw new IgniteSQLException("parse failed", IgniteQueryErrorCode.PARSING, e);
         }
 
-        SqlConformance conformance = this.conformance;
         CalciteCatalogReader catalogReader = this.catalogReader.withSchemaPath(schemaPath);
         SqlValidator validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, conformance);
         validator.setIdentifierExpansion(true);
@@ -230,7 +231,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(this,
             validator, catalogReader, createCluster(), convertletTbl, sqlToRelConverterCfg);
 
-        return sqlToRelConverter.convertQuery(sqlNode, true, false);
+        RelRoot root = sqlToRelConverter.convertQuery(sqlNode, true, false);
+        root = root.withRel(sqlToRelConverter.decorrelate(sqlNode, root.rel));
+
+        return root;
     }
 
     /** {@inheritDoc} */
@@ -311,7 +315,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             for (IgniteIndex idx : igniteTbl.indexes().values()) {
                 ImmutableList<String> names = ImmutableList.<String>builder()
                     .addAll(Util.skipLast(tbl.getQualifiedName()))
-                    .add(F.last(tbl.getQualifiedName()) + "[" + idx.name() + "]")
+                    .add(Util.last(tbl.getQualifiedName()) + "[" + idx.name() + "]")
                     .build();
 
                 IgniteTableScan idxTblScan = igniteTbl.toRel(cluster, tbl, idx.name());

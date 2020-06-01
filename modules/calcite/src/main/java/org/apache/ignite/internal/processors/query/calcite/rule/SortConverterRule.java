@@ -43,10 +43,15 @@ public class SortConverterRule extends RelOptRule {
 
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = cluster.traitSet()
+            .replace(IgniteConvention.INSTANCE)
+            .replace(rel.getCollation());
+
+        RelTraitSet inputTraits = cluster.traitSet()
             .replace(IgniteConvention.INSTANCE);
-        RelNode input = convert(rel.getInput(), traits);
+
+        RelNode input = convert(rel.getInput(), inputTraits);
 
         RuleUtils.transformTo(call,
-            new IgniteSort(cluster, rel.getTraitSet().plus(IgniteConvention.INSTANCE), input, rel.collation, rel.offset, rel.fetch));
+            new IgniteSort(cluster, traits, input, rel.getCollation(), rel.offset, rel.fetch));
     }
 }

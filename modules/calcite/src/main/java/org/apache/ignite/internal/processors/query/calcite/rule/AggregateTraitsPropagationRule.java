@@ -68,14 +68,14 @@ public class AggregateTraitsPropagationRule extends RelOptRule {
 
         for (IgniteDistributions.Suggestion suggestion : suggestions) {
             RelTraitSet traits = rel.getTraitSet().replace(suggestion.out());
-            RelNode input0 = RuleUtils.changeTraits(input, suggestion.in());
+            RelNode input0 = convert(input, suggestion.in());
 
             if (isMapReduce(suggestion)) {
                 RelTraitSet mapTraits = input0.getTraitSet()
                     .replace(IgniteDistributions.mapAggregate(mq, input0, groupSet, groupSets, aggCalls));
 
                 input0 = new IgniteMapAggregate(cluster, mapTraits, input0, groupSet, groupSets, aggCalls);
-                input0 = RuleUtils.changeTraits(input0, suggestion.out());
+                input0 = convert(input0, suggestion.out());
 
                 newRels.add(new IgniteReduceAggregate(cluster, traits, input0, groupSet, groupSets, aggCalls, rel.getRowType()));
             }

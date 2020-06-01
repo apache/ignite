@@ -57,15 +57,13 @@ import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Array-based query processor.
- */
+/** */
 public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
             .sqlToRelConverterConfig(SqlToRelConverter.configBuilder()
-                .withConvertTableAccess(true)
                 .withTrimUnusedFields(false)
+                .withDecorrelationEnabled(true)
                 .build())
             .parserConfig(SqlParser.configBuilder()
                 // Lexical configuration defines how identifiers are quoted, whether they are converted to upper or lower

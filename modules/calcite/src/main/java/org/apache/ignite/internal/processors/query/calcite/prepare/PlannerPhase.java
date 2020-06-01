@@ -26,8 +26,10 @@ import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.ignite.internal.processors.query.calcite.rule.AggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.AggregateTraitsPropagationRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.ExchangeConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterTraitsPropagationRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.FinishConversionRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.JoinTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
@@ -43,9 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalF
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalFilterProjectTransposeRule;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
-import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.decorrelate;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.hep;
-import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.sequence;
 
 /**
  * Represents a planner phase with its description and a used rule set.
@@ -64,7 +64,7 @@ public enum PlannerPhase {
 
         /** {@inheritDoc} */
         @Override public Program getProgram(PlanningContext ctx) {
-            return sequence(hep(getRules(ctx)), decorrelate());
+            return hep(getRules(ctx));
         }
     },
 
@@ -73,6 +73,7 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
+                FinishConversionRule.INSTANCE,
                 AggregateConverterRule.INSTANCE,
                 AggregateTraitsPropagationRule.INSTANCE,
                 JoinConverterRule.INSTANCE,
@@ -87,6 +88,7 @@ public enum PlannerPhase {
                 LogicalFilterProjectTransposeRule.INSTANCE,
                 FilterTraitsPropagationRule.INSTANCE,
                 TableModifyConverterRule.INSTANCE,
+                ExchangeConverterRule.INSTANCE,
                 PushFilterIntoScanRule.FILTER_INTO_SCAN,
                 ProjectFilterTransposeRule.INSTANCE,
                 UnionMergeRule.INSTANCE,

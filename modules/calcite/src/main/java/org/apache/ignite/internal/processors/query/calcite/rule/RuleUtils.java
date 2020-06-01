@@ -28,7 +28,6 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelTrait;
-import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.plan.volcano.RelSubset;
@@ -64,14 +63,7 @@ public class RuleUtils {
         if (F.isEmpty(newRels))
             return;
 
-        if (isRoot(orig)) {
-            Set<RelNode> set = U.newHashSet(newRels.size());
-            for (RelNode rel : newRels)
-                set.add(changeToRootTraits(rel));
-
-            newRels = new ArrayList<>(set);
-        }
-
+        newRels = changeRootTraits(orig, newRels);
 
         RelNode first = F.first(newRels);
         Map<RelNode, RelNode> equivMap = equivMap(orig, newRels.subList(1, newRels.size()));
@@ -79,57 +71,58 @@ public class RuleUtils {
     }
 
     /** */
-    public static RelNode changeTraits(RelNode rel, RelTrait... diff) {
-        RelTraitSet traits = rel.getTraitSet();
-
-        for (RelTrait trait : diff)
-            traits = traits.replace(trait);
+    public static RelNode changeTraits(RelNode rel, RelTrait trait) {
+        RelTraitSet traits = rel.getTraitSet().replace(trait);
 
         return changeTraits(rel, traits);
     }
 
     /** */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static RelNode changeTraits(RelNode rel, RelTraitSet toTraits) {
-        RelTraitSet fromTraits = rel.getTraitSet();
+    public static RelNode changeTraits(RelNode rel, RelTrait trait, RelTrait... diff) {
+        RelTraitSet traits = rel.getTraitSet().replace(trait);
 
-        if (fromTraits.satisfies(toTraits))
-            return rel;
+        for (RelTrait trait0 : diff)
+            traits = traits.replace(trait0);
 
-        assert fromTraits.size() >= toTraits.size();
-
-        RelOptPlanner planner = rel.getCluster().getPlanner();
-
-        RelNode converted = rel;
-
-        for (int i = 0; (converted != null) && (i < toTraits.size()); i++) {
-            RelTrait fromTrait = converted.getTraitSet().getTrait(i);
-            RelTrait toTrait = toTraits.getTrait(i);
-
-            RelTraitDef traitDef = fromTrait.getTraitDef();
-
-            if (toTrait == null)
-                continue;
-
-            assert traitDef == toTrait.getTraitDef();
-
-            if (fromTrait.satisfies(toTrait))
-                continue;
-
-            rel = traitDef.convert(planner, converted, toTrait, true);
-
-            assert rel == null || rel.getTraitSet().getTrait(traitDef).satisfies(toTrait);
-
-            converted = rel;
-        }
-
-        assert converted == null || converted.getTraitSet().satisfies(toTraits);
-
-        return converted;
+        return changeTraits(rel, traits);
     }
 
     /** */
-    private static boolean isRoot(RelNode rel) {
+    @SuppressWarnings({"unchecked"})
+    public static RelNode changeTraits(RelNode rel, RelTraitSet toTraits) {
+        RelOptPlanner planner = rel.getCluster().getPlanner();
+        rel = planner.ensureRegistered(rel, null);
+        RelTraitSet fromTraits = rel.getTraitSet();
+
+        RelNode res = rel;
+
+        if (!fromTraits.satisfies(toTraits)) {
+            for (int i = 0; (rel != null) && (i < toTraits.size()); i++) {
+                RelTrait fromTrait = rel.getTraitSet().getTrait(i);
+                RelTrait toTrait = toTraits.getTrait(i);
+
+                if (fromTrait.satisfies(toTrait))
+                    continue;
+
+                RelNode old = rel;
+                rel = fromTrait.getTraitDef().convert(planner, old, toTrait, true);
+
+                if (rel != null)
+                    rel = planner.ensureRegistered(rel, old);
+
+                assert rel == null || rel.getTraitSet().getTrait(i).satisfies(toTrait);
+            }
+
+            assert rel == null || rel.getTraitSet().satisfies(toTraits);
+
+            res = rel == null ? planner.changeTraits(res, toTraits) : rel;
+        }
+
+        return res;
+    }
+
+    /** */
+    public static boolean isRoot(RelNode rel) {
         RelOptPlanner planner = rel.getCluster().getPlanner();
         RelNode root = planner.getRoot();
 
@@ -143,13 +136,22 @@ public class RuleUtils {
     }
 
     /** */
-    private static RelNode changeToRootTraits(RelNode rel) {
-        if (rel.getConvention() == Convention.NONE)
-            return rel; // logical rels will be converted after to-ignite transformation
+    public static List<RelNode> changeRootTraits(RelNode orig, List<RelNode> rels) {
+        if (!isRoot(orig))
+            return rels;
 
-        RelTraitSet rootTraits = rel.getCluster().getPlanner().getRoot().getTraitSet();
+        RelTraitSet rootTraits = orig.getCluster().getPlanner().getRoot().getTraitSet();
+        Set<RelNode> newNodes = U.newHashSet(rels.size());
 
-        return changeTraits(rel, rootTraits);
+        for (RelNode rel : rels) {
+            RelNode newNode = rel.getConvention() == Convention.NONE
+                ? rel // logical rels will be converted after to-ignite transformation
+                : changeTraits(rel, rootTraits);
+
+            newNodes.add(newNode);
+        }
+
+        return new ArrayList<>(newNodes);
     }
 
     /** */

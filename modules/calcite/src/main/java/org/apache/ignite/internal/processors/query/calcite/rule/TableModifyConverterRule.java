@@ -49,7 +49,7 @@ public class TableModifyConverterRule extends RelOptRule {
 
         RelNode input = convert(rel.getInput(), inputTraits);
 
-        input = RuleUtils.changeTraits(input, IgniteDistributions.single());
+        input = convert(input, IgniteDistributions.single());
 
         RelTraitSet traits = rel.getTraitSet()
             .replace(IgniteConvention.INSTANCE)

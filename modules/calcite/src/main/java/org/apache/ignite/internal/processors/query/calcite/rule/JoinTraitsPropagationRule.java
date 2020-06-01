@@ -65,8 +65,8 @@ public class JoinTraitsPropagationRule extends RelOptRule {
         for (IgniteDistributions.BiSuggestion suggestion : suggestions) {
             RelTraitSet traits = rel.getTraitSet().replace(suggestion.out());
 
-            RelNode left0 = RuleUtils.changeTraits(left, suggestion.left());
-            RelNode right0 = RuleUtils.changeTraits(right, suggestion.right());
+            RelNode left0 = convert(left, suggestion.left());
+            RelNode right0 = convert(right, suggestion.right());
 
             newRels.add(new IgniteJoin(cluster, traits, left0, right0,
                 condition, variablesSet, joinType));
