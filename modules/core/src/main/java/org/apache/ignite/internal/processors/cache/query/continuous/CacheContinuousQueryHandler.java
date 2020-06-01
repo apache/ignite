@@ -1222,7 +1222,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param part Partition.
      * @return Event buffer.
      */
-    private CacheContinuousQueryEventBuffer partitionBuffer(final GridCacheContext cctx, int part) {
+    CacheContinuousQueryEventBuffer partitionBuffer(final GridCacheContext cctx, int part) {
         CacheContinuousQueryEventBuffer buf = entryBufs.get(part);
 
         if (buf == null) {
