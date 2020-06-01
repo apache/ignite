@@ -39,7 +39,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -105,6 +104,19 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         fillCache(ig.cache(DEFAULT_CACHE_NAME));
 
+        stopGrid(0);
+
+        String defrag = "DEFRAGMENTATION";
+
+        System.setProperty(defrag, "true");
+
+        try {
+            startGrid(0);
+        }
+        finally {
+            System.clearProperty(defrag);
+        }
+
         File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
         AtomicReference<File> cachePartFile = new AtomicReference<>();
@@ -119,9 +131,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             @Override
             public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
                 if (path.toString().contains(DEFAULT_CACHE_NAME)) {
-                    if (path.toFile().getName().contains("part-"))
+                    if (path.toFile().getName().contains("part-dfrg-"))
                         cachePartFile.set(path.toFile());
-                    else if (path.toFile().getName().contains("part-dfrg-"))
+                    else if (path.toFile().getName().contains("part-"))
                         defragCachePartFile.set(path.toFile());
                 }
 
