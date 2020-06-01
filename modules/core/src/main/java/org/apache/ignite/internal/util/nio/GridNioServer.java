@@ -1341,11 +1341,8 @@ public class GridNioServer<T> {
                 else
                     readBuf.clear();
 
-                if (ses.hasSystemMessage() && !ses.procWrite.get()) {
-                    ses.procWrite.set(true);
-
+                if (ses.hasSystemMessage() && !ses.procWrite.get())
                     registerWrite(ses);
-                }
             }
             catch (IgniteCheckedException e) {
                 close(ses, e);
@@ -2254,6 +2251,8 @@ public class GridNioServer<T> {
          * @param ses Session.
          */
         @Override public final void registerWrite(GridSelectorNioSessionImpl ses) {
+            ses.procWrite.set(true);
+
             SelectionKey key = ses.key();
 
             if (key.isValid()) {
