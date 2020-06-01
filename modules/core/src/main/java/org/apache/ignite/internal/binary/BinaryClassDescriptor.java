@@ -956,7 +956,7 @@ public class BinaryClassDescriptor {
             typeName,
             stableFieldsMeta,
             affKeyFieldName,
-            null,
+            stableSchema == null ? null : Collections.singleton(stableSchema),
             isEnum(),
             cls.isEnum() ? enumMap(cls) : null);
     }
