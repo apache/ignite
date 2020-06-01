@@ -54,6 +54,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -234,19 +235,26 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
      */
     public void startOldAndNewClusters(int seed) throws Exception {
         // Old cluster.
-        startGrid(1, IGNITE_VERSION, new NodeConfigurationClosure(), new PostStartupClosure(true, seed));
+        startGrid(2, IGNITE_VERSION, new NodeConfigurationClosure(), new PostStartupClosure(true, seed));
+        startGrid(3, IGNITE_VERSION, new NodeConfigurationClosure(), new PostStartupClosure(false, seed));
 
         // New cluster
         IgnitionEx.start(prepareNodeConfig(
             getConfiguration(getTestIgniteInstanceName(0)), NEW_VER_FINDER, NEW_JDBC_PORT));
+        IgnitionEx.start(prepareNodeConfig(
+            getConfiguration(getTestIgniteInstanceName(1)), NEW_VER_FINDER, NEW_JDBC_PORT));
     }
 
     /**
      * Stops both new and old clusters.
      */
     public void stopClusters() {
+        // Old cluster.
         IgniteProcessProxy.killAll();
-        stopGrid(0);
+
+        // New cluster.
+        for (Ignite ignite : G.allGrids())
+            U.close(ignite, log);
     }
 
     /**
