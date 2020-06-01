@@ -340,16 +340,16 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
         CacheConfiguration ccfg = defaultCacheConfiguration()
                 .setNearConfiguration(null)
                 .setNodeFilter(new AttributeNodeFilter(attrName, attrVal))
-                .setBackups(0)
                 .setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
-        final Ignite node = startGrid(getTestIgniteInstanceName(1), getConfiguration()
+        final IgniteEx node = (IgniteEx) startGrid(getTestIgniteInstanceName(1), getConfiguration()
                 .setCacheConfiguration(ccfg)
                 .setUserAttributes(F.asMap(attrName, attrVal)));
 
         checkTopology(2);
 
         assertTrue(crd.context().coordinators().mvccEnabled());
+        assertTrue(node.context().coordinators().mvccEnabled());
     }
 
     /**

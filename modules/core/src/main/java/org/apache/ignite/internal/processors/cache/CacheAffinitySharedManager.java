@@ -1350,6 +1350,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         Collection<DynamicCacheDescriptor> descs
     ) throws IgniteCheckedException {
         IgniteInternalFuture<?> res = cachesRegistry.addUnregistered(descs);
+
         for (DynamicCacheDescriptor d: descs) {
             cctx.coordinators().validateCacheConfiguration(d.cacheConfiguration());
         }
