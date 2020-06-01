@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -34,16 +35,28 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheConfigurations;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheNames;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 
+/**
+ *
+ */
 public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
     /** Key. */
     private static final int KEY = 10;
@@ -63,6 +76,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     /** Value 3. */
     private static final int VAL_3 = 31;
 
+    /** Map with all pairs in caches. */
     private static final Map<Integer, Integer> kvMap = new HashMap<>();
 
     /** Unknown key. */
@@ -159,9 +173,9 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     @Test
     public void testScanQueryAllowed() {
         performAction(cache -> {
-            try (QueryCursor query = cache.query(new ScanQuery())) {
-                for (Object o : query.getAll()) {
-                    IgniteBiTuple<?, ?> tuple = (IgniteBiTuple<?, ?>)o;
+            try (QueryCursor qry = cache.query(new ScanQuery<>())) {
+                for (Object o : qry.getAll()) {
+                    IgniteBiTuple<Integer, Integer> tuple = (IgniteBiTuple<Integer, Integer>)o;
 
                     assertEquals(o.toString(), kvMap.get(tuple.getKey()), tuple.getValue());
                 }
@@ -178,7 +192,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     /** */
     @Test
     public void testSizeAsyncAllowed() {
-        performAction(cache -> assertEquals(kvMap.size(), cache.sizeAsync().get()));
+        performAction(cache -> assertEquals(kvMap.size(), (long)cache.sizeAsync().get()));
     }
 
     /** */
@@ -190,20 +204,20 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     /** */
     @Test
     public void testSizeLongAsyncAllowed() {
-        performAction(cache -> assertEquals((long)kvMap.size(), cache.sizeLongAsync().get()));
+        performAction(cache -> assertEquals(kvMap.size(), (long)cache.sizeLongAsync().get()));
     }
 
     /** */
     @Test
     public void testGetAllowed() {
-        performAction(cache -> assertEquals(VAL, cache.get(KEY)));
+        performAction(cache -> assertEquals(VAL, (int)cache.get(KEY)));
         performAction(cache -> assertNull(cache.get(UNKNOWN_KEY)));
     }
 
     /** */
     @Test
     public void testGetAsyncAllowed() {
-        performAction(cache -> assertEquals(VAL, cache.getAsync(KEY).get()));
+        performAction(cache -> assertEquals(VAL, (int)cache.getAsync(KEY).get()));
         performAction(cache -> assertNull(cache.getAsync(UNKNOWN_KEY).get()));
     }
 
@@ -224,7 +238,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     @Test
     public void testGetEntryAsyncAllowed() {
         performAction(cache -> {
-            CacheEntry entry = (CacheEntry)cache.getEntryAsync(KEY).get();
+            CacheEntry entry = cache.getEntryAsync(KEY).get();
 
             assertEquals(KEY, entry.getKey());
             assertEquals(VAL, entry.getValue());
@@ -236,13 +250,13 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     /** */
     @Test
     public void testGetAllAllowed() {
-        performAction(cache -> assertEqualsCollections(kvMap.values(), cache.getAll(kvMap.keySet()).values()));
+        performAction(cache -> assertEquals(kvMap, cache.getAll(kvMap.keySet())));
     }
 
     /** */
     @Test
     public void testGetAllAsyncAllowed() {
-        performAction(cache -> assertEqualsCollections(kvMap.values(), ((Map)(cache.getAllAsync(kvMap.keySet()).get())).values()));
+        performAction(cache -> assertEquals(kvMap, (cache.getAllAsync(kvMap.keySet()).get())));
     }
 
     /** */
@@ -250,7 +264,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     public void testGetEntriesAllowed() {
         performAction(cache -> {
             for (Object o : cache.getEntries(kvMap.keySet())) {
-                CacheEntry entry = (CacheEntry)o;
+                CacheEntry<Integer, Integer> entry = (CacheEntry<Integer, Integer>)o;
 
                 assertEquals(kvMap.get(entry.getKey()), entry.getValue());
             }
@@ -261,8 +275,8 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     @Test
     public void testGetEntriesAsyncAllowed() {
         performAction(cache -> {
-            for (Object o : (Collection)cache.getEntriesAsync(kvMap.keySet()).get()) {
-                CacheEntry entry = (CacheEntry)o;
+            for (Object o : cache.getEntriesAsync(kvMap.keySet()).get()) {
+                CacheEntry<Integer, Integer> entry = (CacheEntry<Integer, Integer>)o;
 
                 assertEquals(kvMap.get(entry.getKey()), entry.getValue());
             }
@@ -270,18 +284,195 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     }
 
     /** */
-    private void performActionReadOnlyExceptionExpected(Consumer<IgniteCache> clo) {
+    @Test
+    public void testGetAllOutTxAllowed() {
+        performAction(
+            (node, cache) -> {
+                for (TransactionConcurrency level : TransactionConcurrency.values()) {
+                    for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                        CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
+
+                        if (level == OPTIMISTIC && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
+                            // Only pessimistic transactions are supported when MVCC is enabled.
+                            continue;
+                        }
+
+                        Transaction tx = node.transactions().txStart(level, isolation);
+
+                        try {
+                            cache.get(UNKNOWN_KEY);
+
+                            assertEquals(kvMap, cache.getAllOutTx(kvMap.keySet()));
+
+                            tx.commit();
+                        }
+                        catch (Exception e) {
+                            RuntimeException ex = new RuntimeException(new AssertionError(
+                                "Got exception on node: " + node.name() + " cache: " + cache.getName() + " isolation: " + isolation + " txLevel: " + level,
+                                e
+                            ));
+
+                            log.error("", ex);
+
+                            tx.rollback();
+
+                            throw ex;
+                        }
+                    }
+                }
+            },
+            cfg -> cfg.getAtomicityMode() != ATOMIC
+        );
+    }
+
+    /** */
+    @Test
+    public void testGetAllOutTxAsyncAllowed() {
+        performAction(
+            (node, cache) -> {
+                for (TransactionConcurrency level : TransactionConcurrency.values()) {
+                    for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                        CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
+
+                        if (level == OPTIMISTIC && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
+                            // Only pessimistic transactions are supported when MVCC is enabled.
+                            continue;
+                        }
+
+                        Transaction tx = node.transactions().txStart(level, isolation);
+
+                        try {
+                            cache.get(UNKNOWN_KEY);
+
+                            assertEquals(kvMap, cache.getAllOutTxAsync(kvMap.keySet()).get());
+
+                            tx.commit();
+                        }
+                        catch (Exception e) {
+                            RuntimeException ex = new RuntimeException(new AssertionError(
+                                "Got exception on node: " + node.name() + " cache: " + cache.getName() + " isolation: " + isolation + " txLevel: " + level,
+                                e
+                            ));
+
+                            log.error("", ex);
+
+                            tx.rollback();
+
+                            throw ex;
+                        }
+                    }
+                }
+            },
+            cfg -> cfg.getAtomicityMode() != ATOMIC
+        );
+    }
+
+    /** */
+    @Test
+    public void testContainsKeyAllowed() {
+        performAction(cache -> assertTrue(KEY + "", cache.containsKey(KEY)));
+        performAction(cache -> assertFalse(UNKNOWN_KEY + "", cache.containsKey(UNKNOWN_KEY)));
+    }
+
+    /** */
+    @Test
+    public void testContainsKeyAsyncAllowed() {
+        performAction(cache -> assertTrue(KEY + "", cache.containsKeyAsync(KEY).get()));
+        performAction(cache -> assertFalse(UNKNOWN_KEY + "", cache.containsKeyAsync(UNKNOWN_KEY).get()));
+    }
+
+    /** */
+    @Test
+    public void testContainsKeysAllowed() {
+        performAction(cache -> assertTrue(valueOf(kvMap.keySet()), cache.containsKeys(kvMap.keySet())));
+        performAction(cache -> assertFalse(UNKNOWN_KEY + "", cache.containsKeys(singleton(UNKNOWN_KEY))));
+    }
+
+    /** */
+    @Test
+    public void testContainsKeysAsyncAllowed() {
+        performAction(cache -> assertTrue(valueOf(kvMap.keySet()), cache.containsKeysAsync(kvMap.keySet()).get()));
+        performAction(cache -> assertFalse(UNKNOWN_KEY + "", cache.containsKeysAsync(singleton(UNKNOWN_KEY)).get()));
+    }
+
+    /** */
+    @Test
+    public void testPutDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.put(KEY, VAL + 1));
+        performActionReadOnlyExceptionExpected(cache -> cache.put(UNKNOWN_KEY, 777));
+    }
+
+    /** */
+    @Test
+    public void testPutAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.putAsync(KEY, VAL + 1).get());
+        performActionReadOnlyExceptionExpected(cache -> cache.putAsync(UNKNOWN_KEY, 777).get());
+    }
+
+    /** */
+    @Test
+    public void testGetAndPutDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.getAndPut(KEY, VAL + 1));
+        performActionReadOnlyExceptionExpected(cache -> cache.getAndPut(UNKNOWN_KEY, 777));
+    }
+
+    /** */
+    @Test
+    public void testGetAndPutAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.getAndPutAsync(KEY, VAL + 1).get());
+        performActionReadOnlyExceptionExpected(cache -> cache.getAndPutAsync(UNKNOWN_KEY, 777).get());
+    }
+
+    /** */
+    @Test
+    public void testPutAllDenied() {
+        Map<Integer, Integer> newMap = kvMap.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> e.getValue() + 1));
+
+        performActionReadOnlyExceptionExpected(cache -> cache.putAll(newMap));
+    }
+
+    /** */
+    @Test
+    public void testPutAllAsyncDenied() {
+        Map<Integer, Integer> newMap = kvMap.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> e.getValue() + 1));
+
+        performActionReadOnlyExceptionExpected(cache -> cache.putAllAsync(newMap).get());
+    }
+
+    /** */
+    @Test
+    public void testPutIfAbsentDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.putIfAbsent(KEY, VAL + 1));
+        performActionReadOnlyExceptionExpected(cache -> cache.putIfAbsent(UNKNOWN_KEY, 777));
+    }
+
+    /** */
+    @Test
+    public void testPutIfAbsentAsyncDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.putIfAbsentAsync(KEY, VAL + 1).get());
+        performActionReadOnlyExceptionExpected(cache -> cache.putIfAbsentAsync(UNKNOWN_KEY, 777).get());
+    }
+
+    /** */
+    @Test
+    public void testRemoveDenied() {
+        performActionReadOnlyExceptionExpected(cache -> cache.remove(KEY));
+        performActionReadOnlyExceptionExpected(cache -> cache.remove(UNKNOWN_KEY));
+    }
+
+    /** */
+    private void performActionReadOnlyExceptionExpected(Consumer<IgniteCache<Integer, Integer>> clo) {
         performActionReadOnlyExceptionExpected(clo, null);
     }
 
     /** */
     private void performActionReadOnlyExceptionExpected(
-        Consumer<IgniteCache> clo,
+        Consumer<IgniteCache<Integer, Integer>> clo,
         @Nullable Predicate<CacheConfiguration> cfgFilter
     ) {
         performAction(
             cache -> {
-                Throwable ex = assertThrows(log, ()-> clo.accept(cache), Exception.class, null);
+                Throwable ex = assertThrows(log, () -> clo.accept(cache), Exception.class, null);
 
                 ClusterReadOnlyModeTestUtils.checkRootCause(ex, cache.getName());
             },
@@ -290,19 +481,30 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     }
 
     /** */
-    private void performAction(Consumer<IgniteCache> clo) {
+    private void performAction(Consumer<IgniteCache<Integer, Integer>> clo) {
         performAction(clo, null);
     }
 
     /** */
-    private void performAction(Consumer<IgniteCache> clo, @Nullable Predicate<CacheConfiguration> cfgFilter) {
+    private void performAction(
+        Consumer<IgniteCache<Integer, Integer>> clo,
+        @Nullable Predicate<CacheConfiguration> cfgFilter
+    ) {
+        performAction((node, cache) -> clo.accept(cache), cfgFilter);
+    }
+
+    /** */
+    private void performAction(
+        BiConsumer<Ignite, IgniteCache<Integer, Integer>> clo,
+        @Nullable Predicate<CacheConfiguration> cfgFilter
+    ) {
         Collection<String> cacheNames = cfgFilter == null ?
             cacheNames() :
             Stream.of(cacheConfigurations()).filter(cfgFilter).map(CacheConfiguration::getName).collect(toList());
 
         for (Ignite node : G.allGrids()) {
             for (String cacheName : cacheNames)
-                clo.accept(node.cache(cacheName));
+                clo.accept(node, node.cache(cacheName));
         }
     }
 
@@ -314,7 +516,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
             assertEquals(node.name(), ClusterState.ACTIVE_READ_ONLY, node.cluster().state());
 
             for (String cacheName : cacheNames()) {
-                IgniteCache cache = node.cache(cacheName);
+                IgniteCache<Integer, Integer> cache = node.cache(cacheName);
 
                 assertEquals(node.name() + " " + cacheName, kvMap.size(), cache.size());
 
