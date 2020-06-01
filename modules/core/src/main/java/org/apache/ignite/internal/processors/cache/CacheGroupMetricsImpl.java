@@ -92,7 +92,7 @@ public class CacheGroupMetricsImpl {
 
         DataStorageConfiguration dsCfg = ctx.shared().kernalContext().config().getDataStorageConfiguration();
 
-        boolean persistentEnabled = CU.isPersistentCache(cacheCfg, dsCfg);
+        boolean persistentEnabled = CU.isPersistentCache(cacheCfg, dsCfg) && !ctx.shared().kernalContext().clientNode();
 
         MetricRegistry mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
 
@@ -464,12 +464,16 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getTotalAllocatedPages() {
-        return grpPageAllocationTracker.value();
+        return ctx.shared().kernalContext().clientNode() ?
+            0 :
+            grpPageAllocationTracker.value();
     }
 
     /** */
     public long getTotalAllocatedSize() {
-        return getTotalAllocatedPages() * ctx.dataRegion().pageMemory().pageSize();
+        return ctx.shared().kernalContext().clientNode() ?
+            0 :
+            getTotalAllocatedPages() * ctx.dataRegion().pageMemory().pageSize();
     }
 
     /** */
