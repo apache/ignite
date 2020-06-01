@@ -20,7 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.CachePartitionDefragmentationManager;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.DefragmentationEventsListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
@@ -50,6 +52,9 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
      */
     private List<DistributedConfigurationLifecycleListener> distributedConfigurationListeners = new ArrayList<>();
 
+    /** */
+    private DefragmentationEventsListener defragLsnr = new CachePartitionDefragmentationManager();
+
     /**
      * @param ctx Kernal context.
      */
@@ -67,6 +72,11 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** */
     public List<MetastorageLifecycleListener> getMetastorageSubscribers() {
         return metastorageListeners;
+    }
+
+    /** */
+    public DefragmentationEventsListener getDefragmentationListener() {
+        return defragLsnr;
     }
 
     /** */

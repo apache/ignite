@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DefragmentationEventsListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -189,6 +190,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
     /** */
+    private final DefragmentationEventsListener derfgEventLsnr;
+
+    /** */
     private final GridStripedReadWriteLock initDirLock =
         new GridStripedReadWriteLock(Math.max(Runtime.getRuntime().availableProcessors(), 8));
 
@@ -212,6 +216,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         pageStoreV1FileIoFactory = pageStoreFileIoFactory = dsCfg.getFileIOFactory();
 
         marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+
+        derfgEventLsnr = ctx.internalSubscriptionProcessor().getDefragmentationListener();
     }
 
     /** {@inheritDoc} */
@@ -767,7 +773,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         allocatedTracker);
 
                     partStores[partId] = partStore;
-                }
+
+                    if (partStore.exists())
+                        derfgEventLsnr.onPageStoreCreated(pageStoreFactory, cacheWorkDir, p);
+            }
 
             return new CacheStoreHolder(idxStore, partStores);
         }
