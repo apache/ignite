@@ -736,8 +736,8 @@ public class CommandHandler {
             if (F.isEmpty(certChain))
                 throw new SecurityException("Certificate chain is missing [alias: " + selfAlias + ']');
 
-            if (!Arrays.stream(certChain).allMatch(cert -> cert instanceof X509Certificate)) {
-                throw new SecurityException("Certificate chain contains certificates with unexceptale types" +
+            if (!(certChain[0] instanceof X509Certificate)) {
+                throw new SecurityException("Unexpected certificate type" +
                     " [alias: " + selfAlias + "]. Expected type: java.security.cert.X509Certificate.");
             }
 
