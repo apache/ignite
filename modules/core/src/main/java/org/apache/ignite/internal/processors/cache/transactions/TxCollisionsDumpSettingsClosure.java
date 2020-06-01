@@ -15,39 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.transactions;
 
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
- * Closure that is sent to the node in order to change
- * "Long operations dump timeout" parameter and also reschedule the task for
- * dumping long operations.
+ * Change tx collisions interval or negative for disabling.
  */
-public class LongOperationsDumpSettingsClosure implements IgniteRunnable {
+public class TxCollisionsDumpSettingsClosure implements IgniteRunnable {
     /** Serialization ID. */
     private static final long serialVersionUID = 0L;
-
-    /** Long operations dump timeout. */
-    private final long longOpsDumpTimeout;
 
     /** Auto-inject Ignite instance. */
     @IgniteInstanceResource
     private IgniteEx ignite;
 
     /**
-     * Constructor.
-     *
-     * @param longOpsDumpTimeout Long operations dump timeout.
+     * Tx key collision dump interval.
+     * Check {@link IgniteSystemProperties#IGNITE_DUMP_TX_COLLISIONS_INTERVAL} for additional info.
      */
-    public LongOperationsDumpSettingsClosure(long longOpsDumpTimeout) {
-        this.longOpsDumpTimeout = longOpsDumpTimeout;
+    private final int interval;
+
+    /** Constructor.
+     *
+     * @param timeout New interval for key collisions collection.
+     */
+    TxCollisionsDumpSettingsClosure(int timeout) {
+        interval = timeout;
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
-        ignite.context().cache().context().tm().longOperationsDumpTimeout(longOpsDumpTimeout);
+        ignite.context().cache().context().tm().txCollisionsDumpInterval(interval);
     }
 }

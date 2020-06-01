@@ -564,10 +564,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (joinFut != null)
                 joinFut.onDone(false);
 
-            GridFutureAdapter<Void> transitionFut = transitionFuts.remove(discoClusterState.transitionRequestId());
+            GridFutureAdapter<Void> transitionFut = transitionFuts.get(discoClusterState.transitionRequestId());
 
             if (transitionFut != null) {
                 discoClusterState.setTransitionResult(msg.requestId(), msg.state());
+
+                transitionFuts.remove(discoClusterState.transitionRequestId());
 
                 transitionFut.onDone();
             }
