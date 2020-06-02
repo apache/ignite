@@ -92,7 +92,7 @@ public class CacheGroupMetricsImpl {
 
         DataStorageConfiguration dsCfg = ctx.shared().kernalContext().config().getDataStorageConfiguration();
 
-        boolean persistentEnabled = CU.isPersistentCache(cacheCfg, dsCfg) && !ctx.shared().kernalContext().clientNode();
+        boolean persistentEnabled = !ctx.shared().kernalContext().clientNode() && CU.isPersistentCache(cacheCfg, dsCfg);
 
         MetricRegistry mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
 
