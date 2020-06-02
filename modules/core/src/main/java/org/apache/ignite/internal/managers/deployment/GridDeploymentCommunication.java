@@ -208,7 +208,7 @@ class GridDeploymentCommunication {
                 String clsName = req.resourceName().replace('/', '.');
 
                 try {
-                    int idx = clsName.indexOf(".class");
+                    int idx = clsName.lastIndexOf(".class");
 
                     if (idx >= 0)
                         clsName = clsName.substring(0, idx);
