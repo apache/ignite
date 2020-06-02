@@ -611,7 +611,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             using (var client = Ignition.StartClient(cfg))
             {
-
+                client.GetCacheNames();
             }
 
             Assert.Fail("TODO");

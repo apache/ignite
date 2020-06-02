@@ -288,7 +288,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             task.Wait(cts.Token);
             cts.Cancel();
 
-            Assert.IsTrue(task.IsCompletedSuccessfully);
+            Assert.IsTrue(task.IsCompleted);
+            Assert.IsFalse(task.IsFaulted);
         }
 
         /// <summary>
