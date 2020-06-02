@@ -27,6 +27,8 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
+import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTaskArg;
 import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTask;
 import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
@@ -35,25 +37,25 @@ import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTask;
 import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTaskArg;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTask;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTaskArg;
-import org.apache.ignite.mxbean.QueryMXBean;
-import org.apache.ignite.mxbean.ServiceMXBean;
-import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
-import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTaskArg;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
+import org.apache.ignite.mxbean.QueryMXBean;
+import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.CONTINUOUS;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.SCAN;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.SERVICE;
-import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.SQL;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.TRANSACTION;
 import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
@@ -171,6 +173,13 @@ public class KillCommand implements Command<Object> {
 
                 break;
 
+            case SNAPSHOT:
+                taskArgs = argIter.nextArg("Expected snapshot name.");
+
+                taskName = VisorSnapshotCancelTask.class.getName();
+
+                break;
+
             default:
                 throw new IllegalArgumentException("Unknown kill subcommand: " + cmd);
         }
@@ -205,6 +214,9 @@ public class KillCommand implements Command<Object> {
 
         Command.usage(log, "Kill continuous query by routine id:", KILL, params, CONTINUOUS.toString(),
             "origin_node_id", "routine_id");
+
+        Command.usage(log, "Kill running snapshot by snapshot name:", KILL, singletonMap("snapshot_name", "Snapshot name."),
+            SNAPSHOT.toString(), "snapshot_name");
     }
 
     /** {@inheritDoc} */

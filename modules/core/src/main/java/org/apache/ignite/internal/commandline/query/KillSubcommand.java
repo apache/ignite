@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline.query;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.mxbean.ServiceMXBean;
+import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 
 /**
@@ -30,6 +31,7 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
  * @see ComputeMXBean
  * @see TransactionsMXBean
  * @see ServiceMXBean
+ * @see SnapshotMXBean
  */
 public enum KillSubcommand {
     /** Kill compute task. */
@@ -49,4 +51,7 @@ public enum KillSubcommand {
 
     /** Kill continuous query. */
     CONTINUOUS,
+
+    /** Kill snapshot operation. */
+    SNAPSHOT,
 }
