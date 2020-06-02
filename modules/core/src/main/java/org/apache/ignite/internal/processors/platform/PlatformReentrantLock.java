@@ -17,12 +17,25 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLock;
 
 /**
  * Platform wrapper for {@link IgniteLock}.
  */
 class PlatformReentrantLock extends PlatformAbstractTarget {
+    /** */
+    private static final int OP_LOCK = 1;
+
+    /** */
+    private static final int OP_TRY_LOCK = 2;
+
+    /** */
+    private static final int OP_UNLOCK = 3;
+
+    /** */
+    private static final int OP_CLOSE = 4;
+
     /** Wrapped lock. */
     private final IgniteLock lock;
 
@@ -35,5 +48,34 @@ class PlatformReentrantLock extends PlatformAbstractTarget {
         super(ctx);
 
         this.lock = lock;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_LOCK: {
+                lock.lock();
+
+                return TRUE;
+            }
+
+            case OP_TRY_LOCK: {
+                return lock.tryLock() ? TRUE : FALSE;
+            }
+
+            case OP_UNLOCK: {
+                lock.unlock();
+
+                return TRUE;
+            }
+
+            case OP_CLOSE: {
+                lock.close();
+
+                return TRUE;
+            }
+        }
+
+        return super.processInLongOutLong(type, val);
     }
 }
