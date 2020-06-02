@@ -99,7 +99,8 @@ namespace Apache.Ignite.Core.Impl
             GetBaselineAutoAdjustTimeout = 34,
             SetBaselineAutoAdjustTimeout = 35,
             GetCacheConfig = 36,
-            GetThreadLocal = 37
+            GetThreadLocal = 37,
+            GetOrCreateLock = 38
         }
 
         /** */
@@ -998,9 +999,11 @@ namespace Apache.Ignite.Core.Impl
         public IIgniteLock GetOrCreateLock(string name, bool failoverSafe, bool fair, bool create)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
-            
+
             // TODO: failoverSafe - what happens when .NET thread is interrupted from Java?
-            throw new NotImplementedException();
+            var target = DoOutOpObject((int) Op.GetOrCreateLock, w => { w.WriteString(name); });
+            
+            return new IgniteLock(target, name);
         }
 
         /// <summary>

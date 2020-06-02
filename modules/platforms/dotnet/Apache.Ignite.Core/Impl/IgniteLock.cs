@@ -32,11 +32,16 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="name">Name.</param>
-        protected IgniteLock(IPlatformTargetInternal target, string name) : base(target)
+        public IgniteLock(IPlatformTargetInternal target, string name) : base(target)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
-            
+
             _name = name;
+        }
+
+        public string Name
+        {
+            get { return _name; }
         }
     }
 }

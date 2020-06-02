@@ -23,6 +23,6 @@ namespace Apache.Ignite.Core
     public interface IIgniteLock
     {
         // TODO
-        
+        string Name { get; }
     }
 }
