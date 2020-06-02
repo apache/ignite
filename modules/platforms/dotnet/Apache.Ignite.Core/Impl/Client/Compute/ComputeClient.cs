@@ -79,17 +79,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
 
             var tcs = new TaskCompletionSource<TRes>();
-            cancellationToken.Register(() =>
-            {
-                // TODO: There is a race between cancellation and completion.
-                // Task closes automatically upon completion,
-                // and OP_RESOURCE_CLOSE throws an error if resource is already closed.
-                // We can ignore the error though.
-                if (tcs.TrySetCanceled())
-                {
-
-                }
-            });
+            cancellationToken.Register(() => tcs.TrySetCanceled());
 
             var keepBinary = (_flags & ComputeClientFlags.KeepBinary) == ComputeClientFlags.KeepBinary;
 
