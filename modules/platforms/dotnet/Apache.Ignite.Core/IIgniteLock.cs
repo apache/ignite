@@ -17,10 +17,12 @@
 
 namespace Apache.Ignite.Core
 {
+    using System;
+
     /// <summary>
     /// Distributed re-entrant lock.
     /// </summary>
-    public interface IIgniteLock
+    public interface IIgniteLock : IDisposable
     {
         /// <summary>
         /// Gets the name of this lock.
@@ -44,5 +46,13 @@ namespace Apache.Ignite.Core
         /// setting, but have smaller variances in times to obtain locks and guarantee lack of starvation.
         /// </summary>
         bool Fair { get; }
+
+        void Lock(); // TODO: Rename to Enter, TryEnter - like CacheLock, Monitor, etc?
+
+        bool TryLock();
+        
+        bool TryLock(TimeSpan timeout);
+
+        void Unlock();
     }
 }

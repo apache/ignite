@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl
 {
+    using System;
     using System.Diagnostics;
 
     /// <summary>
@@ -24,6 +25,17 @@ namespace Apache.Ignite.Core.Impl
     /// </summary>
     internal class IgniteLock : PlatformTargetAdapter, IIgniteLock
     {
+        /// <summary>
+        /// Lock operations.
+        /// </summary>
+        private enum Op
+        {
+            Lock = 1,
+            TryLock = 2,
+            Unlock = 3,
+            Close = 4
+        }
+        
         /** */
         private readonly string _name;
 
@@ -66,6 +78,35 @@ namespace Apache.Ignite.Core.Impl
         public bool Fair
         {
             get { return _fair; }
+        }
+
+        /** <inheritDoc /> */
+        public void Lock()
+        {
+            Target.InLongOutLong((int) Op.Lock, 0);
+        }
+
+        /** <inheritDoc /> */
+        public bool TryLock()
+        {
+            return Target.InLongOutLong((int) Op.TryLock, 0) == True;
+        }
+
+        public bool TryLock(TimeSpan timeout)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public void Unlock()
+        {
+            Target.InLongOutLong((int) Op.Unlock, 0);
+        }
+
+        /** <inheritDoc /> */
+        public void Dispose()
+        {
+            Target.InLongOutLong((int) Op.Close, 0);
         }
     }
 }
