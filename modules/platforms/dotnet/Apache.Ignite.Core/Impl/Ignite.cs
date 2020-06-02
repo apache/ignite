@@ -1009,7 +1009,7 @@ namespace Apache.Ignite.Core.Impl
                 w.WriteBoolean(create);
             });
             
-            return new IgniteLock(target, name);
+            return new IgniteLock(target, name, failoverSafe, fair);
         }
 
         /// <summary>

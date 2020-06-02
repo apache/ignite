@@ -27,21 +27,42 @@ namespace Apache.Ignite.Core.Impl
         /** */
         private readonly string _name;
 
+        /** */
+        private readonly bool _failoverSafe;
+        
+        /** */
+        private readonly bool _fair;
+
         /// <summary>
         /// Initializes a new instance of <see cref="IgniteLock"/>.
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="name">Name.</param>
-        public IgniteLock(IPlatformTargetInternal target, string name) : base(target)
+        /// <param name="failoverSafe">Failover-safe flag.</param>
+        /// <param name="fair">Fair flag.</param>
+        public IgniteLock(IPlatformTargetInternal target, string name, bool failoverSafe, bool fair) 
+            : base(target)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
 
             _name = name;
+            _failoverSafe = failoverSafe;
+            _fair = fair;
         }
-
+        
         public string Name
         {
             get { return _name; }
+        }
+
+        public bool FailoverSafe
+        {
+            get { return _failoverSafe; }
+        }
+
+        public bool Fair
+        {
+            get { return _fair; }
         }
     }
 }

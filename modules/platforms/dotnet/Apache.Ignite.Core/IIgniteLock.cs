@@ -22,7 +22,18 @@ namespace Apache.Ignite.Core
     /// </summary>
     public interface IIgniteLock
     {
-        // TODO
+        /// <summary>
+        /// Gets the name of this lock.
+        /// </summary>
         string Name { get; }
+        
+        /// <summary>
+        /// Gets a value indicating whether this lock is failover-safe: when true, if any node leaves topology,
+        /// all locks already acquired by that node are silently released and become available for other nodes
+        /// to acquire. When false, all threads on other nodes waiting to acquire the lock are interrupted.
+        /// </summary>
+        bool FailoverSafe { get; }
+        
+        bool Fair { get; }
     }
 }

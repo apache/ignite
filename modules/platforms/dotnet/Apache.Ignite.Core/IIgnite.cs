@@ -478,7 +478,7 @@ namespace Apache.Ignite.Core
         /// Gets or creates distributed re-entrant lock.
         /// </summary>
         /// <param name="name">Lock name.</param>
-        /// <param name="failoverSafe">Whether the lock should be failover-safe: if any node leaves topology,
+        /// <param name="failoverSafe">Whether the lock should be failover-safe: when true, if any node leaves topology,
         /// all locks already acquired by that node are silently released and become available for other nodes
         /// to acquire. When false, all threads on other nodes waiting to acquire the lock are interrupted.</param>
         /// <param name="fair"></param>
