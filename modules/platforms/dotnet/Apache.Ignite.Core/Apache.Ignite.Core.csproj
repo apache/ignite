@@ -87,6 +87,7 @@
     <Compile Include="Failure\NoOpFailureHandler.cs" />
     <Compile Include="Failure\StopNodeFailureHandler.cs" />
     <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
+    <Compile Include="IIgniteLock.cs" />
     <Compile Include="Impl\Binary\BinaryHashCodeUtils.cs" />
     <Compile Include="Impl\Binary\IgniteBiTuple.cs" />
     <Compile Include="Impl\Cache\Platform\IPlatformCache.cs" />

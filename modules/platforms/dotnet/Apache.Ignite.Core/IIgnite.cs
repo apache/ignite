@@ -473,5 +473,17 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="configuration">Configuration.</param>
         void AddCacheConfiguration(CacheConfiguration configuration);
+
+        /// <summary>
+        /// Gets or creates distributed re-entrant lock.
+        /// </summary>
+        /// <param name="name">Lock name.</param>
+        /// <param name="failoverSafe">Whether the lock should be failover-safe: if any node leaves topology,
+        /// all locks already acquired by that node are silently released and become available for other nodes
+        /// to acquire. When false, all threads on other nodes waiting to acquire the lock are interrupted.</param>
+        /// <param name="fair"></param>
+        /// <param name="create"></param>
+        /// <returns><see cref="IIgniteLock"/></returns>
+        IIgniteLock GetOrCreateLock(string name, bool failoverSafe, bool fair, bool create);
     }
 }

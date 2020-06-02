@@ -994,6 +994,13 @@ namespace Apache.Ignite.Core.Impl
                 s => configuration.Write(BinaryUtils.Marshaller.StartMarshal(s)));
         }
 
+        /** <inheritdoc /> */
+        public IIgniteLock GetOrCreateLock(string name, bool failoverSafe, bool fair, bool create)
+        {
+            // TODO: failoverSafe - what happens when .NET thread is interrupted from Java?
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Gets or creates near cache.
         /// </summary>
