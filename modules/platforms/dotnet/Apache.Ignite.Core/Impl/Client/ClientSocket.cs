@@ -335,8 +335,7 @@ namespace Apache.Ignite.Core.Impl.Client
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void WaitForMessages()
         {
-            _logger.Trace("Receiver thread #{0} started for connection {1} -> {2}",
-                Thread.CurrentThread.ManagedThreadId, LocalEndPoint, RemoteEndPoint);
+            _logger.Trace("Receiver thread #{0} started.", Thread.CurrentThread.ManagedThreadId);
 
             try
             {
@@ -380,9 +379,10 @@ namespace Apache.Ignite.Core.Impl.Client
                 _exception = ex;
                 Dispose();
             }
-
-            _logger.Trace("Receiver thread #{0} stopped for connection {1} -> {2}",
-                Thread.CurrentThread.ManagedThreadId, LocalEndPoint, RemoteEndPoint);
+            finally
+            {
+                _logger.Trace("Receiver thread #{0} stopped.", Thread.CurrentThread.ManagedThreadId);
+            }
         }
 
         /// <summary>

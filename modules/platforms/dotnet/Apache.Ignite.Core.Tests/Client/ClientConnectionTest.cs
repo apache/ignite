@@ -610,9 +610,6 @@ namespace Apache.Ignite.Core.Tests.Client
                 Logger = logger
             };
 
-            Func<ProcessThread[]> getThreads = () =>
-                Process.GetCurrentProcess().Threads.Cast<ProcessThread>().ToArray();
-
             using (var client = Ignition.StartClient(cfg))
             {
                 var cache = client.GetOrCreateCache<int, int>("c");
@@ -628,13 +625,13 @@ namespace Apache.Ignite.Core.Tests.Client
             }
 
             var threadId = logger.Entries
-                .Select(e => Regex.Match(e.Message, "Receiver thread #([0-9]+) started"))
+                .Select(e => Regex.Match(e.Message, "Receiver thread #([0-9]+) started."))
                 .Where(m => m.Success)
                 .Select(m => int.Parse(m.Groups[1].Value))
-                .FirstOrDefault();
+                .First();
 
             TestUtils.WaitForTrueCondition(() => logger.Entries.Any(
-                e => e.Message.StartsWith(string.Format("Receiver thread #{0} stopped", threadId))));
+                e => e.Message == string.Format("Receiver thread #{0} stopped.", threadId)));
         }
 
         /// <summary>
