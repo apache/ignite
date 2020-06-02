@@ -254,14 +254,19 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             const long delayMs = 10000;
 
             // GetActiveTaskFutures uses Task internally, so it always returns at least 1 future.
-            Assert.AreEqual(1, GetActiveTaskFutures().Length);
+            var futs1 = GetActiveTaskFutures();
+            Assert.AreEqual(1, futs1.Length);
 
             // Start a long-running task and verify that 2 futures are active.
             var cts = new CancellationTokenSource();
             var task = GetComputeForDefaultServer().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
 
             var taskFutures = GetActiveTaskFutures();
-            Assert.AreEqual(2, taskFutures.Length);
+            TestUtils.WaitForTrueCondition(() =>
+            {
+                taskFutures = GetActiveTaskFutures();
+                return taskFutures.Length == 2;
+            });
 
             // Cancel and assert that the future from the step above is no longer present.
             cts.Cancel();

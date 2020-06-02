@@ -37,11 +37,14 @@ import java.util.Set;
 /**
  * Task to get active task futures.
  */
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class PlatformComputeActiveTaskFuturesTask extends ComputeTaskAdapter<Object, IgniteUuid[]> {
     /** {@inheritDoc} */
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
                                                                          @Nullable Object arg) {
-        return Collections.singletonMap(new ActiveTaskFuturesJob(), F.first(subgrid));
+        ClusterNode localNode = subgrid.stream().filter(ClusterNode::isLocal).findFirst().get();
+
+        return Collections.singletonMap(new ActiveTaskFuturesJob(), localNode);
     }
 
     /** {@inheritDoc} */
