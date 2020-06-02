@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorage;
@@ -316,7 +317,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                     return false;
                 }
 
-                assert store instanceof GridCacheOffheapManager.GridCacheDataStore;
+                assert store instanceof GridCacheDataStore;
                 assert store.pendingTree() != null;
 
                 store.pendingTree().invoke(row, WITHOUT_KEY, new PutIfAbsentClosure(row));
