@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Map;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
- * Tests most of public API methods of near {@link IgniteCache} when cluster in a {@link ClusterState#ACTIVE_READ_ONLY}
- * state.
+ * Tests that {@link IgniteCache#invoke(Object, EntryProcessor, Object...)}, {@link IgniteCache#invokeAll(Map, Object...)}
+ * overloaded and async methods works fine with near cache when cluster in a {@link ClusterState#ACTIVE_READ_ONLY} mode.
  */
-public class IgniteNearCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterReadOnlyModeSelfTest {
+public class IgniteNearCacheInvokeClusterReadOnlyModeSelfTest extends IgniteCacheInvokeClusterReadOnlyModeSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<?, ?>[] cacheConfigurations() {
         return filterAndAddNearCacheConfig(super.cacheConfigurations());

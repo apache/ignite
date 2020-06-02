@@ -17,33 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 
 /**
@@ -536,61 +527,5 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
 
             assertTrue(cache.isClosed());
         });
-    }
-
-    /** */
-    private void performActionReadOnlyExceptionExpected(Consumer<IgniteCache<Integer, Integer>> clo) {
-        performActionReadOnlyExceptionExpected(clo, null);
-    }
-
-    /** */
-    private void performActionReadOnlyExceptionExpected(
-        Consumer<IgniteCache<Integer, Integer>> clo,
-        @Nullable Predicate<CacheConfiguration> cfgFilter
-    ) {
-        performAction(
-            cache -> {
-                Throwable ex = assertThrows(log, () -> clo.accept(cache), Exception.class, null);
-
-                ClusterReadOnlyModeTestUtils.checkRootCause(ex, cache.getName());
-            },
-            cfgFilter
-        );
-    }
-
-    /** */
-    private void performAction(Consumer<IgniteCache<Integer, Integer>> clo) {
-        performAction(clo, null);
-    }
-
-    /** */
-    private void performAction(BiConsumer<Ignite, IgniteCache<Integer, Integer>> clo) {
-        performAction(clo, null);
-    }
-
-    /** */
-    private void performAction(
-        Consumer<IgniteCache<Integer, Integer>> clo,
-        @Nullable Predicate<CacheConfiguration> cfgFilter
-    ) {
-        performAction((node, cache) -> clo.accept(cache), cfgFilter);
-    }
-
-    /** */
-    private void performAction(
-        BiConsumer<Ignite, IgniteCache<Integer, Integer>> clo,
-        @Nullable Predicate<CacheConfiguration> cfgFilter
-    ) {
-        Collection<String> names = cfgFilter == null ?
-            cacheNames :
-            cacheConfigurations.stream()
-                .filter(cfgFilter)
-                .map(CacheConfiguration::getName)
-                .collect(toList());
-
-        for (Ignite node : G.allGrids()) {
-            for (String name : names)
-                clo.accept(node, node.cache(name));
-        }
     }
 }

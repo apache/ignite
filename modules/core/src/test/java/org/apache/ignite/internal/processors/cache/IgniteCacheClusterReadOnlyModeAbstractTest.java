@@ -22,19 +22,27 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Class with common logic for tests {@link IgniteCache} API when cluster in a {@link ClusterState#ACTIVE_READ_ONLY}
@@ -161,6 +169,62 @@ public abstract class IgniteCacheClusterReadOnlyModeAbstractTest extends GridCom
     }
 
     /** */
+    protected void performActionReadOnlyExceptionExpected(Consumer<IgniteCache<Integer, Integer>> clo) {
+        performActionReadOnlyExceptionExpected(clo, null);
+    }
+
+    /** */
+    protected void performActionReadOnlyExceptionExpected(
+        Consumer<IgniteCache<Integer, Integer>> clo,
+        @Nullable Predicate<CacheConfiguration> cfgFilter
+    ) {
+        performAction(
+            cache -> {
+                Throwable ex = assertThrows(log, () -> clo.accept(cache), Exception.class, null);
+
+                ClusterReadOnlyModeTestUtils.checkRootCause(ex, cache.getName());
+            },
+            cfgFilter
+        );
+    }
+
+    /** */
+    protected void performAction(Consumer<IgniteCache<Integer, Integer>> clo) {
+        performAction(clo, null);
+    }
+
+    /** */
+    protected void performAction(BiConsumer<Ignite, IgniteCache<Integer, Integer>> clo) {
+        performAction(clo, null);
+    }
+
+    /** */
+    protected void performAction(
+        Consumer<IgniteCache<Integer, Integer>> clo,
+        @Nullable Predicate<CacheConfiguration> cfgFilter
+    ) {
+        performAction((node, cache) -> clo.accept(cache), cfgFilter);
+    }
+
+    /** */
+    protected void performAction(
+        BiConsumer<Ignite, IgniteCache<Integer, Integer>> clo,
+        @Nullable Predicate<CacheConfiguration> cfgFilter
+    ) {
+        Collection<String> names = cfgFilter == null ?
+            cacheNames :
+            cacheConfigurations.stream()
+                .filter(cfgFilter)
+                .map(CacheConfiguration::getName)
+                .collect(toList());
+
+        for (Ignite node : G.allGrids()) {
+            for (String name : names)
+                clo.accept(node, node.cache(name));
+        }
+    }
+
+    /** */
     private void commonChecks() {
         assertEquals(kvMap.toString(), 3, kvMap.size());
 
@@ -178,5 +242,14 @@ public abstract class IgniteCacheClusterReadOnlyModeAbstractTest extends GridCom
                 assertNull(node.name() + " " + cacheName, cache.get(UNKNOWN_KEY));
             }
         }
+    }
+
+    /** */
+    protected static CacheConfiguration<?, ?>[] filterAndAddNearCacheConfig(CacheConfiguration<?, ?>[] cfgs) {
+        return Stream.of(cfgs)
+            // Near caches doesn't support in a MVCC mode.
+            .filter(cfg -> cfg.getAtomicityMode() != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+            .map(cfg -> cfg.setNearConfiguration(new NearCacheConfiguration<>()))
+            .toArray(CacheConfiguration[]::new);
     }
 }
