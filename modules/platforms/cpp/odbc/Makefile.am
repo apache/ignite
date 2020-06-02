@@ -88,7 +88,8 @@ libignite_odbc_la_SOURCES = \
     src/statement.cpp \
     src/type_traits.cpp \
     src/utility.cpp \
-    src/log.cpp
+    src/log.cpp \
+    src/ssl_mode.cpp
 
 clean-local:
 	$(RM) *.gcno *.gcda
