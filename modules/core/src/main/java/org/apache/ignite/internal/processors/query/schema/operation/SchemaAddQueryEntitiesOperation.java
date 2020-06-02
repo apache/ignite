@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.schema.operation;
 
-import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cache.QueryEntity;
 
@@ -29,27 +28,28 @@ public class SchemaAddQueryEntitiesOperation extends SchemaAbstractOperation {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final Collection<QueryEntity> entities;
+    private final QueryEntity entity;
 
     /**
      * @param opId    Operation ID.
      * @param cacheName Cache name.
      * @param schemaName Schema name.
+     * @param entity QueryEntity.
      */
     public SchemaAddQueryEntitiesOperation(
             UUID opId,
             String cacheName,
             String schemaName,
-            Collection<QueryEntity> entities
+            QueryEntity entity
     ) {
         super(opId, cacheName, schemaName);
-        this.entities = entities;
+        this.entity = entity;
     }
 
     /**
-     * @return Query entities.
+     * @return Query entity.
      */
-    public Collection<QueryEntity> entities() {
-        return entities;
+    public QueryEntity entity() {
+        return entity;
     }
 }

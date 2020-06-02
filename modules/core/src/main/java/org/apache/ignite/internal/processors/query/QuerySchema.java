@@ -321,8 +321,9 @@ public class QuerySchema implements Serializable {
 
                 assert entities.isEmpty();
 
-                for (QueryEntity entity: ((SchemaAddQueryEntitiesOperation)op).entities())
-                    entities.add(QueryUtils.copy(entity));
+                QueryEntity opEntity = ((SchemaAddQueryEntitiesOperation)op).entity();
+
+                entities.add(QueryUtils.copy(opEntity));
             }
         }
     }

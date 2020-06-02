@@ -787,8 +787,8 @@ public class CommandProcessor {
                     if (err != null)
                         throw err;
 
-                    if (ctx.cache().cacheDescriptor(cmd.cacheName()) != null)
-                        ctx.query().dynamicAddQueryEntity(cmd.cacheName(), cmd.schemaName(), e).get();
+                    if (!F.isEmpty(cmd.cacheName()) && ctx.cache().cacheDescriptor(cmd.cacheName()) != null)
+                        ctx.query().dynamicAddQueryEntity(cmd.cacheName(), cmd.schemaName(), e, true).get();
                     else {
                         ctx.query().dynamicTableCreate(
                             cmd.schemaName(),

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
@@ -368,7 +369,7 @@ public class DynamicCacheDescriptor {
                 SchemaAddQueryEntitiesOperation op = (SchemaAddQueryEntitiesOperation)msg.operation();
 
                 CacheConfiguration cacheCfg0 = new CacheConfiguration(cacheCfg);
-                cacheCfg0.setQueryEntities(op.entities());
+                cacheCfg0.setQueryEntities(Collections.singletonList(op.entity()));
                 cacheCfg0.setSqlSchema(op.schemaName());
 
                 cacheCfg = cacheCfg0;
