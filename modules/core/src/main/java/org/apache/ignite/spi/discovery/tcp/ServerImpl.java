@@ -3555,9 +3555,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     try {
                                         spi.writeToSocket(sock, out, pendingMsg, timeoutHelper.nextTimeoutChunk(
                                             spi.getSocketTimeout()));
-
-                                        spi.writeToSocket(sock, out, pendingMsg, timeoutHelper.nextTimeoutChunk(
-                                            spi.getSocketTimeout()));
                                     }
                                     finally {
                                         clearNodeAddedMessage(pendingMsg);
