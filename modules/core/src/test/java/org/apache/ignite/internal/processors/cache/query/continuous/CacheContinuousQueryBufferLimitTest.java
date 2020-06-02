@@ -45,6 +45,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -99,6 +100,8 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
         IgniteInternalFuture<?> updFut = null;
 
         try (QueryCursor<?> qry = locIgnite.cache(DEFAULT_CACHE_NAME).query(cq)) {
+            awaitPartitionMapExchange();
+
             for (int j = 0; j < TOTAL_KEYS; j++)
                 putX2Value(cache, rnd.nextInt(TOTAL_KEYS));
 
@@ -111,8 +114,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             ConcurrentMap<Long, CacheContinuousQueryEntry> pending =
                 getContinuousQueryPendingBuffer(rmtIgnite, routineId, CU.cacheId(DEFAULT_CACHE_NAME), 0);
 
-            TestRecordingCommunicationSpi.spi(locIgnite)
-                .blockMessages((n, msg) -> msg instanceof GridDhtAtomicSingleUpdateRequest
+            spi(locIgnite).blockMessages((n, msg) -> msg instanceof GridDhtAtomicSingleUpdateRequest
                     && blockCnt.getAndIncrement() == 10);
 
             updFut = GridTestUtils.runMultiThreadedAsync(() -> {
@@ -124,6 +126,8 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             assertNotNull("Partition remote buffers must be inited", pending);
 
             boolean await = waitForCondition(() -> pending.size() > PENDING_LIMIT, OVERFLOW_TIMEOUT_MS);
+
+            spi(locIgnite).stopBlock();
 
             assertFalse("Pending buffer exceeded the limit despite entries have been acked " +
                 "[lastAcked=" + lastAcked + ", pending=" + pending.keySet() + ']',

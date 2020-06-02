@@ -1226,17 +1226,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         CacheContinuousQueryEventBuffer buf = entryBufs.get(part);
 
         if (buf == null) {
-            buf = new CacheContinuousQueryEventBuffer(part) {
-                @Override protected long currentPartitionCounter(boolean backup) {
-                    GridDhtLocalPartition locPart = cctx.topology().localPartition(part, null, false);
+            buf = new CacheContinuousQueryEventBuffer(part, backup -> {
+                GridDhtLocalPartition locPart = cctx.topology().localPartition(part, null, false);
 
-                    if (locPart == null)
-                        return -1L;
+                if (locPart == null)
+                    return -1L;
 
-                    // Use HWM for primary, LWM for backup.
-                    return backup ? locPart.updateCounter() : locPart.reservedCounter();
-                }
-            };
+                // Use HWM for primary, LWM for backup.
+                return backup ? locPart.updateCounter() : locPart.reservedCounter();
+            });
 
             CacheContinuousQueryEventBuffer oldBuf = entryBufs.putIfAbsent(part, buf);
 

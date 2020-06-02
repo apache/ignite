@@ -26,11 +26,13 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.jetbrains.annotations.Nullable;
 import org.apache.ignite.util.deque.FastSizeDeque;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -43,23 +45,42 @@ public class CacheContinuousQueryEventBuffer {
     /** */
     private static final Object RETRY = new Object();
 
-    /** */
-    protected final int part;
+    /** Field updater. */
+    private static final AtomicLongFieldUpdater<CacheContinuousQueryEventBuffer> ACKED_UPDATER =
+        AtomicLongFieldUpdater.newUpdater(CacheContinuousQueryEventBuffer.class, "ackedUpdCntr");
 
     /** */
-    private AtomicReference<Batch> curBatch = new AtomicReference<>();
+    private final int part;
+
+    /** Partition counter resolver. */
+    private final Function<Boolean, Long> startingCntr;
 
     /** */
-    private FastSizeDeque<CacheContinuousQueryEntry> backupQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
+    private final AtomicReference<Batch> curBatch = new AtomicReference<>();
 
     /** */
-    private ConcurrentSkipListMap<Long, CacheContinuousQueryEntry> pending = new ConcurrentSkipListMap<>();
+    private final FastSizeDeque<CacheContinuousQueryEntry> backupQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
+
+    /** */
+    private final ConcurrentSkipListMap<Long, CacheContinuousQueryEntry> pending = new ConcurrentSkipListMap<>();
+
+    /** Last seen ack partition counter from primary. */
+    private volatile long ackedUpdCntr;
 
     /**
      * @param part Partition number.
      */
     CacheContinuousQueryEventBuffer(int part) {
+        this(part, b -> 0L);
+    }
+
+    /**
+     * @param part Partition number.
+     * @param startingCntr Partition counter resolver.
+     */
+    CacheContinuousQueryEventBuffer(int part, Function<Boolean, Long> startingCntr) {
         this.part = part;
+        this.startingCntr = startingCntr;
     }
 
     /**
@@ -74,6 +95,11 @@ public class CacheContinuousQueryEventBuffer {
             if (backupEntry.updateCounter() <= updateCntr)
                 it.remove();
         }
+
+        long val = ackedUpdCntr;
+
+        while (val < updateCntr && !ACKED_UPDATER.compareAndSet(this, val, updateCntr))
+            val = ackedUpdCntr;
     }
 
     /**
@@ -114,14 +140,6 @@ public class CacheContinuousQueryEventBuffer {
     }
 
     /**
-     * @param backup {@code True} if backup context.
-     * @return Initial partition counter.
-     */
-    protected long currentPartitionCounter(boolean backup) {
-        return 0;
-    }
-
-    /**
      * For test purpose only.
      *
      * @return Current number of filtered events.
@@ -154,6 +172,7 @@ public class CacheContinuousQueryEventBuffer {
         Object res = null;
 
         for (;;) {
+            // Init bach only if null (first attempt).
             batch = initBatch(entry.topologyVersion(), backup);
 
             if (batch == null || cntr < batch.startCntr) {
@@ -172,21 +191,26 @@ public class CacheContinuousQueryEventBuffer {
                 if (res == RETRY)
                     continue;
             }
-            else
+            else {
+                if (batch.endCntr < ackedUpdCntr)
+                    batch.tryRollOver(entry.topologyVersion());
+
                 pending.put(cntr, entry);
+            }
 
             break;
         }
 
         Batch batch0 = curBatch.get();
 
+        // Batch has been changed on entry processing to the new one.
         if (batch0 != batch) {
             do {
                 batch = batch0;
 
                 res = processPending(res, batch, backup);
 
-                batch0 = initBatch(entry.topologyVersion(), backup);
+                batch0 = curBatch.get();
             }
             while (batch != batch0);
         }
@@ -206,7 +230,7 @@ public class CacheContinuousQueryEventBuffer {
             return batch;
 
         for (;;) {
-            long curCntr = currentPartitionCounter(backup);
+            long curCntr = startingCntr.apply(backup);
 
             if (curCntr == -1)
                 return null;
@@ -439,6 +463,7 @@ public class CacheContinuousQueryEventBuffer {
                 entries[pos] = entry;
 
                 int next = lastProc + 1;
+                long ackedUpdCntr0 = ackedUpdCntr;
 
                 if (next == pos) {
                     for (int i = next; i < entries.length; i++) {
@@ -463,26 +488,47 @@ public class CacheContinuousQueryEventBuffer {
 
                     lastProc = pos;
 
-                    if (pos == entries.length - 1) {
-                        Arrays.fill(entries, null);
-
-                        Batch nextBatch = new Batch(this.startCntr + BUF_SIZE,
-                            filtered,
-                            entries,
-                            entry.topologyVersion());
-
-                        entries = null;
-
-                        assert curBatch.get() == this;
-
-                        curBatch.set(nextBatch);
-                    }
+                    if (pos == entries.length - 1)
+                        rollOver(startCntr + BUF_SIZE, filtered, entry.topologyVersion());
                 }
-                else
-                    return res;
+                else if (endCntr < ackedUpdCntr0)
+                    rollOver(ackedUpdCntr0 + 1, 0, entry.topologyVersion());
             }
 
             return res;
+        }
+
+        /**
+         * @param topVer Topology version of current processing entry.
+         */
+        private synchronized void tryRollOver(AffinityTopologyVersion topVer) {
+            if (entries == null)
+                return;
+
+            long ackedUpdCntr0 = ackedUpdCntr;
+
+            if (endCntr < ackedUpdCntr0)
+                rollOver(ackedUpdCntr0 + 1, 0, topVer);
+        }
+
+        /**
+         * @param startCntr Start batch position.
+         * @param filtered Number of filtered entries prior start position.
+         * @param topVer Next topology version based on cache entry.
+         */
+        private void rollOver(long startCntr, long filtered, AffinityTopologyVersion topVer) {
+            Arrays.fill(entries, null);
+
+            Batch nextBatch = new Batch(startCntr,
+                filtered,
+                entries,
+                topVer);
+
+            entries = null;
+
+            boolean changed = curBatch.compareAndSet(this, nextBatch);
+
+            assert changed;
         }
     }
 }
