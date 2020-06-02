@@ -33,7 +33,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -56,7 +55,6 @@ import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -481,7 +479,6 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12845")
     public void testExecuteTaskConcurrentLoad() throws Exception {
         try (IgniteClient client = startClient(0)) {
             int threadsCnt = 20;
@@ -511,9 +508,14 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
                             Future<T2<UUID, Set<UUID>>> fut = compute.executeAsync(TestTask.class.getName(), null);
 
+                            boolean cancelled = (i % 3 == 0) && fut.cancel(true);
+
                             assertEquals((Integer)i, cache.get(threadIdx));
 
-                            assertEquals(nodeIds(nodeIdx), fut.get().get2());
+                            if (cancelled)
+                                assertTrue(fut.isCancelled());
+                            else
+                                assertEquals(nodeIds(nodeIdx), fut.get().get2());
                         }
                     }
                     catch (ExecutionException e) {
