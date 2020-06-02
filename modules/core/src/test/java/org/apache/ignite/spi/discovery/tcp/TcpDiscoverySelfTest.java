@@ -1976,8 +1976,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             ignite1.configuration().getDiscoverySpi().failNode(coordId, null);
 
-            // Wait for the configured timeout + other possible code delays.
-            assertTrue(failedLatch.await(ignite1.configuration().getFailureDetectionTimeout() + 50, MILLISECONDS));
+            assertTrue(failedLatch.await(2000, MILLISECONDS));
 
             assertTrue(coordSegmented.get());
 
