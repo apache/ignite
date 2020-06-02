@@ -20,10 +20,10 @@ package org.apache.ignite.springdata20.repository.query;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.Query;
@@ -42,10 +42,13 @@ import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 
+import static org.apache.ignite.springdata20.repository.query.IgniteQueryGenerator.addPaging;
+import static org.apache.ignite.springdata20.repository.query.IgniteQueryGenerator.addSorting;
+
 /**
  * Ignite SQL query implementation.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class IgniteRepositoryQuery implements RepositoryQuery {
     /** Defines the way how to process query result */
     private enum ReturnStrategy {
@@ -118,9 +121,9 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     @Override public Object execute(Object[] prmtrs) {
         Query qry = prepareQuery(prmtrs);
 
-        QueryCursor qryCursor = cache.query(qry);
-
-        return transformQueryCursor(prmtrs, qryCursor);
+        try(QueryCursor qryCursor = cache.query(qry)) {
+            return transformQueryCursor(prmtrs, qryCursor);
+        }
     }
 
     /** {@inheritDoc} */
@@ -196,7 +199,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
      * @return Query cursor or slice
      */
     @Nullable private Object transformQueryCursor(Object[] prmtrs, QueryCursor qryCursor) {
-        if (this.qry.isFieldQuery()) {
+        if (qry.isFieldQuery()) {
             Iterable<List> qryIter = (Iterable<List>)qryCursor;
 
             switch (returnStgy) {
@@ -207,6 +210,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                         list.add(entry.get(0));
 
                     return list;
+
                 case ONE_VALUE:
                     Iterator<List> iter = qryIter.iterator();
 
@@ -214,6 +218,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                         return iter.next().get(0);
 
                     return null;
+
                 case SLICE_OF_VALUES:
                     List content = new ArrayList<>();
 
@@ -221,10 +226,13 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                         content.add(entry.get(0));
 
                     return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+
                 case SLICE_OF_LISTS:
                     return new SliceImpl(qryCursor.getAll(), (Pageable)prmtrs[prmtrs.length - 1], true);
+
                 case LIST_OF_LISTS:
                     return qryCursor.getAll();
+
                 default:
                     throw new IllegalStateException();
             }
@@ -240,6 +248,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                         list.add(entry.getValue());
 
                     return list;
+
                 case ONE_VALUE:
                     Iterator<CacheEntryImpl> iter1 = qryIter.iterator();
 
@@ -247,6 +256,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                         return iter1.next().getValue();
 
                     return null;
+
                 case CACHE_ENTRY:
                     Iterator<CacheEntryImpl> iter2 = qryIter.iterator();
 
@@ -254,6 +264,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                         return iter2.next();
 
                     return null;
+
                 case SLICE_OF_VALUES:
                     List content = new ArrayList<>();
 
@@ -261,10 +272,13 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                         content.add(entry.getValue());
 
                     return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+
                 case SLICE_OF_CACHE_ENTRIES:
                     return new SliceImpl(qryCursor.getAll(), (Pageable)prmtrs[prmtrs.length - 1], true);
+
                 case LIST_OF_CACHE_ENTRIES:
                     return qryCursor.getAll();
+
                 default:
                     throw new IllegalStateException();
             }
@@ -275,38 +289,38 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
      * @param prmtrs Prmtrs.
      * @return prepared query for execution
      */
+    @SuppressWarnings("deprecation")
     @NotNull private Query prepareQuery(Object[] prmtrs) {
         Object[] parameters = prmtrs;
         String sql = qry.sql();
 
-        Query query;
-
         switch (qry.options()) {
             case SORTING:
-                sql = IgniteQueryGenerator.addSorting(new StringBuilder(sql),
-                    (Sort)parameters[parameters.length - 1]).toString();
+                sql = addSorting(new StringBuilder(sql), (Sort)parameters[parameters.length - 1]).toString();
                 parameters = Arrays.copyOfRange(parameters, 0, parameters.length - 1);
+
                 break;
+
             case PAGINATION:
-                sql = IgniteQueryGenerator.addPaging(new StringBuilder(sql),
-                    (Pageable)parameters[parameters.length - 1]).toString();
+                sql = addPaging(new StringBuilder(sql), (Pageable)parameters[parameters.length - 1]).toString();
                 parameters = Arrays.copyOfRange(parameters, 0, parameters.length - 1);
+
                 break;
+
+            case NONE:
+                // No-op.
         }
 
         if (qry.isFieldQuery()) {
             SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(sql);
             sqlFieldsQry.setArgs(parameters);
 
-            query = sqlFieldsQry;
-        }
-        else {
-            SqlQuery sqlQry = new SqlQuery(type, sql);
-            sqlQry.setArgs(parameters);
-
-            query = sqlQry;
+            return sqlFieldsQry;
         }
 
-        return query;
+        SqlQuery sqlQry = new SqlQuery(type, sql);
+        sqlQry.setArgs(parameters);
+
+        return sqlQry;
     }
 }
