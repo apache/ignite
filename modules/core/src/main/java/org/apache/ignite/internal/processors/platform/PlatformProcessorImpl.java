@@ -732,8 +732,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 IgniteLock lck = ctx.grid().reentrantLock(name, failoverSafe, fair, create);
 
-                // TODO: Wrapper
-                return lck;
+                return new PlatformReentrantLock(platformCtx, lck);
             }
         }
 
