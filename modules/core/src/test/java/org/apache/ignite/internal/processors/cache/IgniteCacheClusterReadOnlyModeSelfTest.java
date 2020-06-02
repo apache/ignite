@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -32,10 +29,8 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -47,9 +42,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -57,122 +49,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 /**
  * Tests most of public API methods of {@link IgniteCache} when cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
  */
-public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
-    /** Key. */
-    private static final int KEY = 10;
-
-    /** Value. */
-    private static final int VAL = 11;
-
-    /** Key 2. */
-    private static final int KEY_2 = 20;
-
-    /** Value 2. */
-    private static final int VAL_2 = 21;
-
-    /** Key 3. */
-    private static final int KEY_3 = 30;
-
-    /** Value 3. */
-    private static final int VAL_3 = 31;
-
-    /** Map with all pairs in caches. */
-    private static final Map<Integer, Integer> kvMap = new HashMap<>();
-
-    /** Unknown key. */
-    private static final int UNKNOWN_KEY = 3;
-
-    /** */
-    private static final Predicate<CacheConfiguration> ATOMIC_CACHES_PRED = cfg -> cfg.getAtomicityMode() == ATOMIC;
-
-    /** */
-    private static final Predicate<CacheConfiguration> TX_CACHES_PRED = cfg -> cfg.getAtomicityMode() == TRANSACTIONAL;
-
-    /** */
-    private static final Predicate<CacheConfiguration> MVCC_CACHES_PRED = cfg -> cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
-
-    /** */
-    private static final Predicate<CacheConfiguration> NO_MVCC_CACHES_PRED = ATOMIC_CACHES_PRED.or(TX_CACHES_PRED);
-
-    /** Started cache configurations. */
-    protected static Collection<CacheConfiguration<?, ?>> cacheConfigurations;
-
-    /** Started cache names. */
-    protected static Collection<String> cacheNames;
-
-    static {
-        kvMap.put(KEY, VAL);
-        kvMap.put(KEY_2, VAL_2);
-        kvMap.put(KEY_3, VAL_3);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration<?, ?>[] cfgs = cacheConfigurations();
-
-        cacheConfigurations = Collections.unmodifiableCollection(Arrays.asList(cfgs));
-
-        cacheNames = Collections.unmodifiableSet(
-            cacheConfigurations.stream()
-                .map(CacheConfiguration::getName)
-                .collect(toSet())
-        );
-
-        return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(cfgs);
-    }
-
-    /**
-     * @return Cache configurations for node start.
-     */
-    protected CacheConfiguration<?, ?>[] cacheConfigurations() {
-        CacheConfiguration<?, ?>[] cfgs = ClusterReadOnlyModeTestUtils.cacheConfigurations();
-
-        for (CacheConfiguration cfg : cfgs)
-            cfg.setReadFromBackup(true);
-
-        return cfgs;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrids(2);
-        startClientGridsMultiThreaded(3, 2);
-
-        grid(0).cluster().state(ClusterState.ACTIVE);
-
-        for (String cacheName : cacheNames) {
-            grid(0).cache(cacheName).put(KEY, VAL);
-            grid(0).cache(cacheName).put(KEY_2, VAL_2);
-            grid(0).cache(cacheName).put(KEY_3, VAL_3);
-        }
-
-        grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        commonChecks();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        commonChecks();
-
-        super.afterTest();
-    }
-
+public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterReadOnlyModeAbstractTest {
     /** */
     @Test
     public void testGetAndPutIfAbsentDeniedIfKeyIsPresented() {
@@ -714,26 +591,6 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
         for (Ignite node : G.allGrids()) {
             for (String name : names)
                 clo.accept(node, node.cache(name));
-        }
-    }
-
-    /** */
-    private void commonChecks() {
-        assertEquals(kvMap.toString(), 3, kvMap.size());
-
-        for (Ignite node : G.allGrids()) {
-            assertEquals(node.name(), ClusterState.ACTIVE_READ_ONLY, node.cluster().state());
-
-            for (String cacheName : cacheNames) {
-                IgniteCache<Integer, Integer> cache = node.cache(cacheName);
-
-                assertEquals(node.name() + " " + cacheName, kvMap.size(), cache.size());
-
-                for (Map.Entry<Integer, Integer> entry : kvMap.entrySet())
-                    assertEquals(node.name() + " " + cacheName, entry.getValue(), cache.get(entry.getKey()));
-
-                assertNull(node.name() + " " + cacheName, cache.get(UNKNOWN_KEY));
-            }
         }
     }
 }

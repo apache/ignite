@@ -32,6 +32,7 @@ public class IgniteNearCacheClusterReadOnlyModeSelfTest extends IgniteCacheClust
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<?, ?>[] cacheConfigurations() {
         return Stream.of(super.cacheConfigurations())
+            // Near caches doesn't support in a MVCC mode.
             .filter(cfg -> cfg.getAtomicityMode() != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
             .map(cfg -> cfg.setNearConfiguration(new NearCacheConfiguration<>()))
             .toArray(CacheConfiguration[]::new);
