@@ -1001,7 +1001,13 @@ namespace Apache.Ignite.Core.Impl
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
             // TODO: failoverSafe - what happens when .NET thread is interrupted from Java?
-            var target = DoOutOpObject((int) Op.GetOrCreateLock, w => { w.WriteString(name); });
+            var target = DoOutOpObject((int) Op.GetOrCreateLock, w =>
+            {
+                w.WriteString(name);
+                w.WriteBoolean(failoverSafe);
+                w.WriteBoolean(fair);
+                w.WriteBoolean(create);
+            });
             
             return new IgniteLock(target, name);
         }

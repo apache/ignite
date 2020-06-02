@@ -17,12 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteAtomicSequence;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -189,6 +184,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** */
     private static final int OP_GET_THREAD_LOCAL = 37;
+
+    /** */
+    private static final int OP_GET_OR_CREATE_LOCK = 38;
 
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -724,6 +722,18 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                 String lbl = reader.readString();
 
                 return new PlatformTransactions(platformCtx, lbl);
+            }
+
+            case OP_GET_OR_CREATE_LOCK: {
+                String name = reader.readString();
+                boolean failoverSafe = reader.readBoolean();
+                boolean fair = reader.readBoolean();
+                boolean create = reader.readBoolean();
+
+                IgniteLock lck = ctx.grid().reentrantLock(name, failoverSafe, fair, create);
+
+                // TODO: Wrapper
+                return lck;
             }
         }
 
