@@ -34,6 +34,15 @@ namespace Apache.Ignite.Core
         /// </summary>
         bool FailoverSafe { get; }
         
+        /// <summary>
+        /// Gets a value indicating whether this lock is in fair mode.
+        /// <para />
+        /// When true, under contention, locks favor granting access to the longest-waiting thread.
+        /// Otherwise this lock does not guarantee any particular access order.
+        /// <para />
+        /// Fair locks accessed by many threads may display lower overall throughput than those using the default
+        /// setting, but have smaller variances in times to obtain locks and guarantee lack of starvation.
+        /// </summary>
         bool Fair { get; }
     }
 }
