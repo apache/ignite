@@ -997,6 +997,8 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IIgniteLock GetOrCreateLock(string name, bool failoverSafe, bool fair, bool create)
         {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            
             // TODO: failoverSafe - what happens when .NET thread is interrupted from Java?
             throw new NotImplementedException();
         }
