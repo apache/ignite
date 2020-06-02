@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -597,24 +599,42 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Tests that client stops it's receiver thread upon disposal.
         /// </summary>
         [Test]
-        public void TestClientDisposalStopsReceiverThread()
+        public void TestClientDisposalStopsReceiverThread([Values(true, false)] bool async)
         {
-            // TODO: Check scenarios - async and sync
-            // Check threads by name
+            Ignition.Start(TestUtils.GetTestConfiguration());
 
-            var logger = new ListLogger {EnabledLevels = new[] {LogLevel.Info}};
+            var logger = new ListLogger {EnabledLevels = new[] {LogLevel.Trace}};
 
             var cfg = new IgniteClientConfiguration(GetClientConfiguration())
             {
                 Logger = logger
             };
 
+            Func<ProcessThread[]> getThreads = () =>
+                Process.GetCurrentProcess().Threads.Cast<ProcessThread>().ToArray();
+
             using (var client = Ignition.StartClient(cfg))
             {
-                client.GetCacheNames();
+                var cache = client.GetOrCreateCache<int, int>("c");
+
+                if (async)
+                {
+                    cache.PutAsync(1, 1);
+                }
+                else
+                {
+                    cache.Put(1, 1);
+                }
             }
 
-            Assert.Fail("TODO");
+            var threadId = logger.Entries
+                .Select(e => Regex.Match(e.Message, "Receiver thread #([0-9]+) started"))
+                .Where(m => m.Success)
+                .Select(m => int.Parse(m.Groups[1].Value))
+                .FirstOrDefault();
+
+            TestUtils.WaitForTrueCondition(() => logger.Entries.Any(
+                e => e.Message.StartsWith(string.Format("Receiver thread #{0} stopped", threadId))));
         }
 
         /// <summary>
