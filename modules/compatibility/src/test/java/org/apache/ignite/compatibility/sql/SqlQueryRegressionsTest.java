@@ -54,6 +54,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -84,7 +85,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
     private static final int OLD_JDBC_PORT = 10800;
 
     /** */
-    private static final int NEW_JDBC_PORT = 10801;
+    private static final int NEW_JDBC_PORT = 10802;
 
     /** Query workers count. */
     private static final int WORKERS_CNT = 4;
@@ -113,7 +114,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
     @Override protected @NotNull Collection<Dependency> getDependencies(String igniteVer) {
         Collection<Dependency> dependencies = super.getDependencies(igniteVer);
 
-        dependencies.add(new Dependency("indexing", "org.apache.ignite", "ignite-indexing", IGNITE_VERSION, false));
+        dependencies.add(new Dependency("indexing", "ignite-indexing", false));
 
         // TODO add and exclude proper versions of h2
         dependencies.add(new Dependency("h2", "com.h2database", "h2", "1.4.195", false));
@@ -154,8 +155,8 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
             Supplier<String> qrysSupplier = new PredefinedQueriesSupplier(Arrays.asList(
                 //"SELECT * FROM person p1, person p2",
-                "SELECT * FROM person p1",
-                "SELECT * FROM department d1",
+                "SELECT * FROM person p1 WHERE id > 0",
+                "SELECT * FROM department d1 WHERE id > 0",
                 "SELECT * FROM country c1",
                 "SELECT * FROM city ci1",
                 "SELECT * FROM company co1"
@@ -164,11 +165,11 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
             try (SimpleConnectionPool oldConnPool = new SimpleConnectionPool(JDBC_URL, OLD_JDBC_PORT, WORKERS_CNT);
                  SimpleConnectionPool newConnPool = new SimpleConnectionPool(JDBC_URL, NEW_JDBC_PORT, WORKERS_CNT)) {
                 // 0. Warm-up.
-                runBenchmark(WARM_UP_TIMEOUT, oldConnPool, newConnPool, qrysSupplier);
+                runBenchmark(WARM_UP_TIMEOUT, oldConnPool, newConnPool, qrysSupplier, 0, 1);
 
                 // 1. Initial run.
                 Collection<QueryDuelResult> suspiciousQrys =
-                    runBenchmark(WARM_UP_TIMEOUT, oldConnPool, newConnPool, qrysSupplier);
+                    runBenchmark(WARM_UP_TIMEOUT, oldConnPool, newConnPool, qrysSupplier, 1, 1);
 
                 if (suspiciousQrys.isEmpty())
                     return; // No suspicious queries - no problem.
@@ -184,7 +185,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
                 // 2. Rerun problematic queries to ensure they are not outliers.
                 Collection<QueryDuelResult> failedQueries =
-                    runBenchmark(WARM_UP_TIMEOUT, oldConnPool, newConnPool, problematicQrysSupplier);
+                    runBenchmark(WARM_UP_TIMEOUT, oldConnPool, newConnPool, problematicQrysSupplier, 3, 5);
 
                 assertTrue("Found SQL performance regression for queries: " + formatPretty(failedQueries),
                     failedQueries.isEmpty());
@@ -209,7 +210,9 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
         final long timeout,
         SimpleConnectionPool oldConnPool,
         SimpleConnectionPool newConnPool,
-        Supplier<String> qrySupplier
+        Supplier<String> qrySupplier,
+        int successCnt,
+        int attemptsCnt
     ) throws InterruptedException {
         Collection<QueryDuelResult> suspiciousQrys = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -219,7 +222,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
         while (System.currentTimeMillis() < end) {
             QueryDuelRunner runner =
-                new QueryDuelRunner(oldConnPool, newConnPool, qrySupplier , suspiciousQrys);
+                new QueryDuelRunner(oldConnPool, newConnPool, qrySupplier , suspiciousQrys, successCnt, attemptsCnt);
 
             exec.execute(runner);
         }
@@ -231,7 +234,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
     /**
      * Starts old and new Ignite clusters.
-     * @param seed
+     * @param seed Random seed.
      */
     public void startOldAndNewClusters(int seed) throws Exception {
         // Old cluster.
@@ -368,56 +371,99 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
         /** Collection of suspicious queries. */
         private final Collection<QueryDuelResult> suspiciousQrs;
 
+        /** Number of success runs where oldExecTime <= newExecTime to pass the duel duel successfully. */
+        private int successCnt;
+
+        /**
+         * Number of duel attempts. Duel is successful when it
+         * made {@link #successCnt} successful runs with {@link #attemptsCnt} attempts.
+         */
+        private int attemptsCnt;
+
         /** */
         private QueryDuelRunner(
             SimpleConnectionPool oldConnPool,
             SimpleConnectionPool newConnPool,
             Supplier<String> qrySupplier,
-            Collection<QueryDuelResult> suspiciousQrs
+            Collection<QueryDuelResult> suspiciousQrs,
+            int successCnt,
+            int attemptsCnt
         ) {
+            assert successCnt <= attemptsCnt : "successCnt=" + successCnt + ", attemptsCnt=" + attemptsCnt;
+
             this.oldConnPool = oldConnPool;
             this.newConnPool = newConnPool;
             this.qrySupplier = qrySupplier;
             this.suspiciousQrs = suspiciousQrs;
+            this.successCnt = successCnt;
+            this.attemptsCnt = attemptsCnt;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
             String qry = qrySupplier.get();
+            List<Long> oldQryExecTimes = new ArrayList<>(attemptsCnt);
+            List<Long> newQryExecTimes = new ArrayList<>(attemptsCnt);
+            List<Exception> exceptions = new ArrayList<>(attemptsCnt);
 
-            try {
-                QueryExecutionTimer oldVerRun = new QueryExecutionTimer(qry, oldConnPool);
-                QueryExecutionTimer newVerRun = new QueryExecutionTimer(qry, newConnPool);
+            while (attemptsCnt-- > 0) {
+                try {
+                    QueryExecutionTimer oldVerRun = new QueryExecutionTimer(qry, oldConnPool);
+                    QueryExecutionTimer newVerRun = new QueryExecutionTimer(qry, newConnPool);
 
-                CompletableFuture<Long> oldVerFut = CompletableFuture.supplyAsync(oldVerRun);
-                CompletableFuture<Long> newVerFut = CompletableFuture.supplyAsync(newVerRun);
+                    CompletableFuture<Long> oldVerFut = CompletableFuture.supplyAsync(oldVerRun);
+                    CompletableFuture<Long> newVerFut = CompletableFuture.supplyAsync(newVerRun);
 
-                CompletableFuture.allOf(oldVerFut, newVerFut).get();
+                    CompletableFuture.allOf(oldVerFut, newVerFut).get();
 
-                Long oldRes = oldVerFut.get();
-                Long newRes = newVerFut.get();
+                    Long oldRes = oldVerFut.get();
+                    Long newRes = newVerFut.get();
 
-                if (log.isDebugEnabled()) {
-                    log.info("Query running time: newVer" + newRes + ", oldVer=" + oldRes +
-                        ", diff=" + (newRes - oldRes));
+                    oldQryExecTimes.add(oldRes);
+                    newQryExecTimes.add(newRes);
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("Query running time: newVer" + newRes + ", oldVer=" + oldRes +
+                            ", diff=" + (newRes - oldRes));
+                    }
+
+                    if (isSuccessfulRun(oldRes, newRes))
+                        successCnt--;
+
+                    if (successCnt == 0)
+                        break;
                 }
+                catch (Exception e) {
+                    e.printStackTrace();
 
-                // TODO move magic numbers to constants.
-                final double epsilon = 10.0; // Let's say 10 ms is about statistical error.
+                    exceptions.add(e);
 
-                if (oldRes < newRes && (oldRes > epsilon || newRes > epsilon)) {
-                    double newD = Math.max(newRes, epsilon);
-                    double oldD = Math.max(oldRes, epsilon);
-
-                    if (newD / oldD > 2) // TODO collect statistics to ensure the regression?
-                        suspiciousQrs.add(new QueryDuelResult(qry, oldRes, newRes, null));
+                    break;
                 }
             }
-            catch (Exception e) {
-                e.printStackTrace();
 
-                suspiciousQrs.add(new QueryDuelResult(qry, -1, -1, e));
+            if (successCnt > 0)
+                suspiciousQrs.add(new QueryDuelResult(qry, oldQryExecTimes, newQryExecTimes, exceptions));
+        }
+
+        /**
+         * @param oldRes Query execution time in the old engine.
+         * @param newRes Query execution time int current engine.
+         * @return {@code True} if a query execution time in the new engine is not much longer than in the old one.
+         */
+        public boolean isSuccessfulRun(Long oldRes, Long newRes) {
+            // TODO move magic numbers to constants.
+            final double epsilon = 10.0; // Let's say 10 ms is about statistical error.
+
+            if (oldRes < newRes && (oldRes > epsilon || newRes > epsilon)) {
+                double newD = Math.max(newRes, epsilon);
+                double oldD = Math.max(oldRes, epsilon);
+
+                if (newD / oldD > 2)
+                    return false;
             }
+
+            return true;
         }
     }
 
@@ -429,20 +475,20 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
         private final String qry;
 
         /** */
-        private final long oldQryExecTime;
+        private final List<Long> oldQryExecTimes;
 
         /** */
-        private final long newQryExecTime;
+        private final List<Long> newQryExecTimes;
 
         /** */
-        private final Exception err;
+        private final List<Exception> errors;
 
         /** */
-        QueryDuelResult(String qry, long oldQryExecTime, long newQryExecTime, Exception err) {
+        QueryDuelResult(String qry, List<Long> oldQryExecTimes, List<Long> newQryExecTimes, List<Exception> errors) {
             this.qry = qry;
-            this.oldQryExecTime = oldQryExecTime;
-            this.newQryExecTime = newQryExecTime;
-            this.err = err;
+            this.oldQryExecTimes = oldQryExecTimes;
+            this.newQryExecTimes = newQryExecTimes;
+            this.errors = errors;
         }
 
         /** */
@@ -451,18 +497,18 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
         }
 
         /** */
-        public long oldExecutionTime() {
-            return oldQryExecTime;
+        public List<Long> oldExecutionTime() {
+            return oldQryExecTimes;
         }
 
         /** */
-        public long newExecutionTime() {
-            return newQryExecTime;
+        public List<Long> newExecutionTime() {
+            return newQryExecTimes;
         }
 
         /** */
-        public Exception error() {
-            return err;
+        public List<Exception> error() {
+            return errors;
         }
 
         /** {@inheritDoc} */
@@ -484,9 +530,9 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
         @Override public String toString() {
             return "QueryDuelResult{" +
                 "qry='" + qry + '\'' +
-                ", oldQryExecTime=" + oldQryExecTime +
-                ", newQryExecTime=" + newQryExecTime +
-                ", err=" + err +
+                ", oldQryExecTimes=" + oldQryExecTimes +
+                ", newQryExecTimes=" + newQryExecTimes +
+                ", err=" + errors +
                 '}';
         }
     }
@@ -528,7 +574,8 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
                         sb.append(md.getColumnName(i));
                     }
-                    System.out.println("Rs size=" + cnt + ", tblName=" + md.getTableName(1) + ", fields=" + sb);
+                    System.out.println("Rs size=" + cnt + ", tblName=" + md.getTableName(1) + ", fields=" + sb +
+                        ", conn=" + ((JdbcThinConnection)conn).url());
                 }
             }
             catch (SQLException e) {
