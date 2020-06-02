@@ -251,23 +251,28 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskAsyncCancellation()
         {
-            const long delayMs = 1000;
+            const long delayMs = 10000;
+
+            // GetActiveTaskFutures uses Task internally, so it always returns at least 1 future.
+            Assert.AreEqual(1, GetActiveTaskFutures().Length);
+
+            // Start a long-running task and verify that 2 futures are active.
+            var cts = new CancellationTokenSource();
+            var task = GetComputeForDefaultServer().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
 
             var taskFutures = GetActiveTaskFutures();
-            Assert.AreEqual(0, taskFutures.Length);
+            Assert.AreEqual(2, taskFutures.Length);
 
-            var cts = new CancellationTokenSource();
-            var task = Client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
-
-            taskFutures = GetActiveTaskFutures();
-            Assert.AreEqual(1, taskFutures.Length);
-
-
+            // Cancel and assert that the future from the step above is no longer present.
             cts.Cancel();
             Assert.IsTrue(task.IsCanceled);
 
-            taskFutures = GetActiveTaskFutures();
-            Assert.AreEqual(1, taskFutures.Length);
+            TestUtils.WaitForTrueCondition(() =>
+            {
+                var futures = GetActiveTaskFutures();
+
+                return futures.Length == 1 && !taskFutures.Contains(futures[0]);
+            }, message: "Unexpected number of active tasks: " + GetActiveTaskFutures().Length);
 
             // TODO: Test cancel after finish.
         }
@@ -490,14 +495,24 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
             };
         }
 
+        /// <summary>
+        /// Gets client compute with a projection to the single default server.
+        /// </summary>
+        private IComputeClient GetComputeForDefaultServer()
+        {
+            var nodeId = Ignition.GetAll().First().GetCluster().GetLocalNode().Id;
+
+            var clientCluster = Client.GetCluster().ForPredicate(n => n.Id == nodeId);
+
+            return clientCluster.GetCompute();
+        }
 
         /// <summary>
         /// Gets active task futures from all server nodes.
         /// </summary>
         private IgniteGuid[] GetActiveTaskFutures()
         {
-            // TODO: This executes on a random node, giving random results.
-            return Client.GetCompute().ExecuteJavaTask<IgniteGuid[]>(ActiveTaskFuturesTask, null);
+            return GetComputeForDefaultServer().ExecuteJavaTask<IgniteGuid[]>(ActiveTaskFuturesTask, null);
         }
     }
 }
