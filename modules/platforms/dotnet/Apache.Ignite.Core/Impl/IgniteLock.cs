@@ -50,16 +50,19 @@ namespace Apache.Ignite.Core.Impl
             _fair = fair;
         }
         
+        /** <inheritDoc /> */
         public string Name
         {
             get { return _name; }
         }
 
+        /** <inheritDoc /> */
         public bool FailoverSafe
         {
             get { return _failoverSafe; }
         }
 
+        /** <inheritDoc /> */
         public bool Fair
         {
             get { return _fair; }
