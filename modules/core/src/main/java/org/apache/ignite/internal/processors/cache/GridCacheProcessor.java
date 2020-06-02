@@ -104,8 +104,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -5278,7 +5278,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return F.flat(F.iterator(dataStores, dataStore -> {
             RowStore rowStore = dataStore.rowStore();
 
-            if (rowStore == null || !(dataStore instanceof GridCacheOffheapManager.GridCacheDataStore))
+            if (rowStore == null || !(dataStore instanceof GridCacheDataStore))
                 return Collections.emptySet();
 
             PagesList pagesList = (PagesList)rowStore.freeList();
