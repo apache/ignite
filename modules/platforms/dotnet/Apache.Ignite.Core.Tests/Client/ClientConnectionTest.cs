@@ -613,6 +613,8 @@ namespace Apache.Ignite.Core.Tests.Client
             {
 
             }
+
+            Assert.Fail("TODO");
         }
 
         /// <summary>
