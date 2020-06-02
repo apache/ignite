@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
@@ -46,16 +47,15 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheConfigurations;
-import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheNames;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 
 /**
- *
+ * Tests most of public API methods of {@link IgniteCache} when cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
  */
 public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
     /** Key. */
@@ -94,6 +94,12 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
     /** */
     private static final Predicate<CacheConfiguration> NO_MVCC_CACHES_PRED = ATOMIC_CACHES_PRED.or(TX_CACHES_PRED);
 
+    /** Started cache configurations. */
+    protected static Collection<CacheConfiguration<?, ?>> cacheConfigurations;
+
+    /** Started cache names. */
+    protected static Collection<String> cacheNames;
+
     static {
         kvMap.put(KEY, VAL);
         kvMap.put(KEY_2, VAL_2);
@@ -102,13 +108,30 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration[] cfgs = cacheConfigurations();
+        CacheConfiguration<?, ?>[] cfgs = cacheConfigurations();
+
+        cacheConfigurations = Collections.unmodifiableCollection(Arrays.asList(cfgs));
+
+        cacheNames = Collections.unmodifiableSet(
+            cacheConfigurations.stream()
+                .map(CacheConfiguration::getName)
+                .collect(toSet())
+        );
+
+        return super.getConfiguration(igniteInstanceName)
+            .setCacheConfiguration(cfgs);
+    }
+
+    /**
+     * @return Cache configurations for node start.
+     */
+    protected CacheConfiguration<?, ?>[] cacheConfigurations() {
+        CacheConfiguration<?, ?>[] cfgs = ClusterReadOnlyModeTestUtils.cacheConfigurations();
 
         for (CacheConfiguration cfg : cfgs)
             cfg.setReadFromBackup(true);
 
-        return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(cfgs);
+        return cfgs;
     }
 
     /** {@inheritDoc} */
@@ -120,7 +143,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
 
         grid(0).cluster().state(ClusterState.ACTIVE);
 
-        for (String cacheName : cacheNames()) {
+        for (String cacheName : cacheNames) {
             grid(0).cache(cacheName).put(KEY, VAL);
             grid(0).cache(cacheName).put(KEY_2, VAL_2);
             grid(0).cache(cacheName).put(KEY_3, VAL_3);
@@ -681,13 +704,16 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
         BiConsumer<Ignite, IgniteCache<Integer, Integer>> clo,
         @Nullable Predicate<CacheConfiguration> cfgFilter
     ) {
-        Collection<String> cacheNames = cfgFilter == null ?
-            cacheNames() :
-            Stream.of(cacheConfigurations()).filter(cfgFilter).map(CacheConfiguration::getName).collect(toList());
+        Collection<String> names = cfgFilter == null ?
+            cacheNames :
+            cacheConfigurations.stream()
+                .filter(cfgFilter)
+                .map(CacheConfiguration::getName)
+                .collect(toList());
 
         for (Ignite node : G.allGrids()) {
-            for (String cacheName : cacheNames)
-                clo.accept(node, node.cache(cacheName));
+            for (String name : names)
+                clo.accept(node, node.cache(name));
         }
     }
 
@@ -698,7 +724,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends GridCommonAbstractTe
         for (Ignite node : G.allGrids()) {
             assertEquals(node.name(), ClusterState.ACTIVE_READ_ONLY, node.cluster().state());
 
-            for (String cacheName : cacheNames()) {
+            for (String cacheName : cacheNames) {
                 IgniteCache<Integer, Integer> cache = node.cache(cacheName);
 
                 assertEquals(node.name() + " " + cacheName, kvMap.size(), cache.size());
