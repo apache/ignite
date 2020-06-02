@@ -679,7 +679,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 Partition = part
             };
 
-            Func<bool> isReserved = () => IsPartitionReserved(_grid, cache.Name, part);
+            Func<bool> isReserved = () => TestUtils.IsPartitionReserved(_grid, cache.Name, part);
             
             Assert.IsFalse(isReserved());
 
@@ -1323,7 +1323,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             // Error is logged.
             Func<ListLogger.Entry> getEntry = () => 
-                _logger.Entries.FirstOrDefault(e => e.Message == "Failure in Java callback");
+                _logger.Entries.FirstOrDefault(e => e.Message.StartsWith("Failure in Java callback"));
 
             var message = string.Join(" | ", _logger.Entries.Select(e => e.Message));
             TestUtils.WaitForTrueCondition(() => getEntry() != null, 3000, message);
@@ -1548,16 +1548,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         private void WaitForRebalance()
         {
             TestUtils.WaitForTrueCondition(() => _grid2.GetAffinity(CacheName).MapKeyToNode(1).IsLocal, 2000);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether specified partition is reserved.
-        /// </summary>
-        private static bool IsPartitionReserved(IIgnite ignite, string cacheName, int part)
-        {
-            const string taskName = "org.apache.ignite.platform.PlatformIsPartitionReservedTask";
-
-            return ignite.GetCompute().ExecuteJavaTask<bool>(taskName, new object[] {cacheName, part});
         }
 
         /** */

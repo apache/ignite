@@ -75,7 +75,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
      */
     @Test
     public void testPutAllGetAll_ClientServer_Backups0_RestartCoordinator_ScanDml() throws Exception {
-        putAllGetAll(RestartMode.RESTART_CRD  , 2, 1, 0, 64,
+        putAllGetAll(RestartMode.RESTART_CRD, 2, 1, 0, 64,
             new InitIndexing(Integer.class, Integer.class), SCAN, DML);
     }
 
@@ -87,7 +87,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     public void testPutAllGetAll_SingleNode_RestartCoordinator_ScanDml_Persistence() throws Exception {
         persistence = true;
 
-        putAllGetAll(RestartMode.RESTART_CRD  , 1, 0, 0, 1,
+        putAllGetAll(RestartMode.RESTART_CRD, 1, 0, 0, 1,
             new InitIndexing(Integer.class, Integer.class), SCAN, DML);
     }
 

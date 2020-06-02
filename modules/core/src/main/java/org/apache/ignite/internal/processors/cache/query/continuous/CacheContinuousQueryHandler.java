@@ -392,6 +392,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         log = ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY);
 
         CacheContinuousQueryListener<K, V> lsnr = new CacheContinuousQueryListener<K, V>() {
+            @Override public void onBeforeRegister() {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                if (cctx != null && !cctx.isLocal())
+                    cctx.topology().readLock();
+            }
+
+            @Override public void onAfterRegister() {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                if (cctx != null && !cctx.isLocal())
+                    cctx.topology().readUnlock();
+            }
+
             @Override public void onRegister() {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
@@ -419,7 +433,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (cctx == null)
                     return;
 
-                if (!needNotify(false, cctx, -1, -1,  evt))
+                if (!needNotify(false, cctx, -1, -1, evt))
                     return;
 
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.

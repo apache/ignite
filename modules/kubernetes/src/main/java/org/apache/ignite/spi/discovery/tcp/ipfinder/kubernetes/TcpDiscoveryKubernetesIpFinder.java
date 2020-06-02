@@ -296,7 +296,7 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
      * @param file The path to the service account token.
      * @return Service account token.
      */
-    private String serviceAccountToken(String file)  {
+    private String serviceAccountToken(String file) {
         try {
             return new String(Files.readAllBytes(Paths.get(file)));
         } catch (IOException e) {

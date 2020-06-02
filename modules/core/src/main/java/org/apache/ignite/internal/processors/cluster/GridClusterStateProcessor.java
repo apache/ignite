@@ -564,10 +564,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (joinFut != null)
                 joinFut.onDone(false);
 
-            GridFutureAdapter<Void> transitionFut = transitionFuts.remove(discoClusterState.transitionRequestId());
+            GridFutureAdapter<Void> transitionFut = transitionFuts.get(discoClusterState.transitionRequestId());
 
             if (transitionFut != null) {
                 discoClusterState.setTransitionResult(msg.requestId(), msg.state());
+
+                transitionFuts.remove(discoClusterState.transitionRequestId());
 
                 transitionFut.onDone();
             }
@@ -1734,7 +1736,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /**
      * @return Status of baseline auto-adjust.
      */
-    public BaselineAutoAdjustStatus baselineAutoAdjustStatus(){
+    public BaselineAutoAdjustStatus baselineAutoAdjustStatus() {
         return changeTopologyWatcher.getStatus();
     }
 
@@ -1795,7 +1797,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 try {
                     val = field.getBoolean(cfg);
                 }
-                catch (IllegalAccessException | IllegalArgumentException | NullPointerException  e) {
+                catch (IllegalAccessException | IllegalArgumentException | NullPointerException e) {
                     log.error("Can't get value of field with name " + fieldName + " from config: " + cfg, e);
                 }
 

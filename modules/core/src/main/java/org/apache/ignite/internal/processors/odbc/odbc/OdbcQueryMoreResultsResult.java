@@ -37,7 +37,7 @@ public class OdbcQueryMoreResultsResult {
      * @param items Query result rows.
      * @param last Flag indicating the query has no unfetched results.
      */
-    public OdbcQueryMoreResultsResult(long queryId, Collection<?> items, boolean last){
+    public OdbcQueryMoreResultsResult(long queryId, Collection<?> items, boolean last) {
         this.queryId = queryId;
         this.items = items;
         this.last = last;

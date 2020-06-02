@@ -73,6 +73,9 @@ class KillCommandsTests {
     /** Page size. */
     public static final int PAGE_SZ = 5;
 
+    /** Number of pages to insert. */
+    public static final int PAGES_CNT = 1000;
+
     /** Operations timeout. */
     public static final int TIMEOUT = 10_000;
 
@@ -211,7 +214,8 @@ class KillCommandsTests {
     public static void doTestCancelTx(IgniteEx cli, List<IgniteEx> srvs, Consumer<String> txCanceler) {
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
-        int testKey = 42;
+        // See e.g. KillCommandsMxBeanTest
+        int testKey = (PAGES_CNT * PAGE_SZ) + 42;
 
         try (Transaction tx = cli.transactions().txStart()) {
             cache.put(testKey, 1);
@@ -297,7 +301,7 @@ class KillCommandsTests {
 
         qryCanceler.accept(qryId);
 
-        for (int i=0; i < PAGE_SZ - 2; i++)
+        for (int i = 0; i < PAGE_SZ - 2; i++)
             assertNotNull(iter.next());
 
         assertThrowsWithCause(iter::next, CacheException.class);

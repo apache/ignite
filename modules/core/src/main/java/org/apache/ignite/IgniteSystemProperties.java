@@ -974,6 +974,15 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISABLE_WAL_DURING_REBALANCING = "IGNITE_DISABLE_WAL_DURING_REBALANCING";
 
     /**
+     * When property is set {@code false} each next exchange will try to compare with previous.
+     * If last rebalance is equivalent with new possible one, new rebalance does not trigger.
+     * Set the property {@code true} and each exchange will try to trigger new rebalance.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION = "IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION";
+
+    /**
      * Sets timeout for TCP client recovery descriptor reservation.
      */
     public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
@@ -1310,6 +1319,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES = "IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES";
 
     /**
+     * When above zero, prints tx key collisions once per interval.
+     * Each transaction besides OPTIMISTIC SERIALIZABLE capture locks on all enlisted keys, for some reasons
+     * per key lock queue may rise. This property sets the interval during which statistics are collected.
+     * Default is 1000 ms.
+     */
+    public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
@@ -1347,7 +1364,12 @@ public final class IgniteSystemProperties {
         if (val == null)
             return dflt;
 
-        return Enum.valueOf(enumCls, val);
+        try {
+            return Enum.valueOf(enumCls, val);
+        }
+        catch (IllegalArgumentException ignore) {
+            return dflt;
+        }
     }
 
     /**

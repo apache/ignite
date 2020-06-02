@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.encryption;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
@@ -107,6 +108,8 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
             assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
+            grid(GRID_0).resetLostPartitions(Collections.singleton(ENCRYPTED_CACHE));
+
             checkEncryptedCaches(grids.get1(), ignite);
 
             stopGrid(GRID_1);
@@ -118,6 +121,8 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         IgniteEx grid1 = startGrid(GRID_1);
 
         assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
+
+        grid(GRID_0).resetLostPartitions(Collections.singleton(ENCRYPTED_CACHE));
 
         checkEncryptedCaches(grids.get1(), grid1);
     }
@@ -333,6 +338,8 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         IgniteEx grid = startGrid(GRID_0);
 
+        grid(GRID_1).resetLostPartitions(Collections.singleton(ENCRYPTED_CACHE));
+
         // 8. Check that restarted node recoveries keys from WAL. Check data.
         assertEquals(MASTER_KEY_NAME_2, grid(GRID_0).encryption().getMasterKeyName());
         assertEquals(MASTER_KEY_NAME_2, grid(GRID_1).encryption().getMasterKeyName());
@@ -396,7 +403,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         IgniteEx aliveNode = stopCrd ? grids.get2() : grids.get1();
 
-        IgniteFuture<Void> fut  = aliveNode.encryption().changeMasterKey(MASTER_KEY_NAME_2);
+        IgniteFuture<Void> fut = aliveNode.encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
         spi.waitForBlocked();
 

@@ -691,7 +691,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                 catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
 
-                    U.warn(log, "Failed to process fragmentizer communication message (thread was interrupted) "+
+                    U.warn(log, "Failed to process fragmentizer communication message (thread was interrupted) " +
                         "[nodeId=" + nodeId + ", msg=" + msg + ']');
                 }
             }

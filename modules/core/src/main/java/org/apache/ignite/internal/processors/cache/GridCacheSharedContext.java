@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -70,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
@@ -123,6 +126,9 @@ public class GridCacheSharedContext<K, V> {
 
     /** Page store manager. {@code Null} if persistence is not enabled. */
     @Nullable private IgnitePageStoreManager pageStoreMgr;
+
+    /** Snapshot manager for persistence caches. See {@link IgniteSnapshot}. */
+    private IgniteSnapshotManager snapshotMgr;
 
     /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
@@ -217,6 +223,7 @@ public class GridCacheSharedContext<K, V> {
         @Nullable IgniteWriteAheadLogManager walMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
+        IgniteSnapshotManager snapshotMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
@@ -242,6 +249,7 @@ public class GridCacheSharedContext<K, V> {
             walMgr,
             walStateMgr,
             dbMgr,
+            snapshotMgr,
             snpMgr,
             depMgr,
             exchMgr,
@@ -421,6 +429,7 @@ public class GridCacheSharedContext<K, V> {
             walMgr,
             walStateMgr,
             dbMgr,
+            snapshotMgr,
             snpMgr,
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
@@ -470,6 +479,7 @@ public class GridCacheSharedContext<K, V> {
         IgniteWriteAheadLogManager walMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
+        IgniteSnapshotManager snapshotMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
@@ -489,6 +499,7 @@ public class GridCacheSharedContext<K, V> {
         this.walMgr = add(mgrs, walMgr);
         this.walStateMgr = add(mgrs, walStateMgr);
         this.dbMgr = add(mgrs, dbMgr);
+        this.snapshotMgr = add(mgrs, snapshotMgr);
         this.snpMgr = add(mgrs, snpMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
@@ -740,6 +751,13 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return Page storage snapshot manager.
+     */
+    public IgniteSnapshotManager snapshotMgr() {
+        return snapshotMgr;
+    }
+
+    /**
      * @return Write ahead log manager.
      */
     public IgniteWriteAheadLogManager wal() {
@@ -854,7 +872,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Diagnostic manager.
      */
-    public CacheDiagnosticManager diagnostic(){
+    public CacheDiagnosticManager diagnostic() {
         return diagnosticMgr;
     }
 
@@ -943,7 +961,7 @@ public class GridCacheSharedContext<K, V> {
         f.add(mvcc().finishAtomicUpdates(topVer));
         f.add(mvcc().finishDataStreamerUpdates(topVer));
 
-        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer, null);
+        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer);
         // To properly track progress of finishing local tx updates we explicitly add this future to compound set.
         f.add(finishLocalTxsFuture);
         f.add(tm().finishAllTxs(finishLocalTxsFuture, topVer));
@@ -962,10 +980,12 @@ public class GridCacheSharedContext<K, V> {
      *
      * @param topVer Topology version.
      * @param node Failed node.
+     * @param filter Recovery filter.
      * @return {@code true} if waiting was successful.
      */
-    public IgniteInternalFuture<?> partitionRecoveryFuture(AffinityTopologyVersion topVer, ClusterNode node) {
-        return tm().finishLocalTxs(topVer, node);
+    public IgniteInternalFuture<?> partitionRecoveryFuture(AffinityTopologyVersion topVer, ClusterNode node,
+        IgnitePredicate<IgniteInternalTx> filter) {
+        return tm().recoverLocalTxs(topVer, node, filter);
     }
 
     /**

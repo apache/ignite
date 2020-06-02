@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.AllPermission;
 import java.security.Permissions;
+import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
@@ -32,11 +35,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -186,6 +191,20 @@ public class SecurityUtils {
     }
 
     /**
+     * @return True if current thread runs inside the Ignite Sandbox.
+     */
+    public static boolean isInsideSandbox() {
+        if (!IgniteSecurityProcessor.hasSandboxedNodes())
+            return false;
+
+        final AccessControlContext ctx = AccessController.getContext();
+
+        return AccessController.doPrivileged((PrivilegedAction<Boolean>)
+            () -> ctx.getDomainCombiner() instanceof IgniteDomainCombiner
+        );
+    }
+
+    /**
      * @return Proxy of {@code instance} if the sandbox is enabled and class of {@code instance} is not a system type
      * otherwise {@code instance}.
      */
@@ -238,7 +257,14 @@ public class SecurityUtils {
                 // Ignore.
             }
 
-            return sandbox.execute(() -> (T)mtd.invoke(original, args));
+            return sandbox.execute(() -> {
+                try {
+                    return (T)mtd.invoke(original, args);
+                }
+                catch (InvocationTargetException e) {
+                    throw new IgniteException(e.getTargetException());
+                }
+            });
         }
     }
 }

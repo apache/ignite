@@ -26,7 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryHistoryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryViewWalker;
@@ -97,7 +97,7 @@ public class RunningQueryManager {
     public RunningQueryManager(GridKernalContext ctx) {
         localNodeId = ctx.localNodeId();
 
-        histSz = ctx.config().getSqlQueryHistorySize();
+        histSz = ctx.config().getSqlConfiguration().getSqlQueryHistorySize();
 
         qryHistTracker = new QueryHistoryTracker(histSz);
 
@@ -215,7 +215,7 @@ public class RunningQueryManager {
      * @param runningQryInfo Running query info object.
      * @return {@code true} For SQL or SQL_FIELDS query type.
      */
-    private boolean isSqlQuery(GridRunningQueryInfo runningQryInfo){
+    private boolean isSqlQuery(GridRunningQueryInfo runningQryInfo) {
         return runningQryInfo.queryType() == SQL_FIELDS || runningQryInfo.queryType() == SQL;
     }
 
@@ -272,7 +272,7 @@ public class RunningQueryManager {
 
     /**
      * Gets query history statistics. Size of history could be configured via {@link
-     * IgniteConfiguration#setSqlQueryHistorySize(int)}
+     * SqlConfiguration#setSqlQueryHistorySize(int)}
      *
      * @return Queries history statistics aggregated by query text, schema and local flag.
      */

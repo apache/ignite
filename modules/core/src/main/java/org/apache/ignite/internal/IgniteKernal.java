@@ -84,6 +84,7 @@ import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
@@ -233,7 +234,6 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
@@ -246,7 +246,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.IgniteSystemProperties.snapshot;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.internal.GridKernalState.STARTED;
 import static org.apache.ignite.internal.GridKernalState.STARTING;
@@ -414,13 +413,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask metricsLogTask;
-
-    /**
-     * The instance of scheduled long operation checker. {@code null} means that the operations checker is disabled
-     * by the value of {@link IgniteSystemProperties#IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT} system property.
-     */
-    @GridToStringExclude
-    private GridTimeoutProcessor.CancelableTask longOpDumpTask;
 
     /** {@code true} if an error occurs at Ignite instance stop. */
     @GridToStringExclude
@@ -1272,7 +1264,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                     provider.start(ctx.plugins().pluginContextForProvider(provider));
 
-                    startTimer.finishGlobalStage("Start '"+ provider.name() + "' plugin");
+                    startTimer.finishGlobalStage("Start '" + provider.name() + "' plugin");
                 }
 
                 // Start platform plugins.
@@ -1525,8 +1517,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }, metricsLogFreq, metricsLogFreq);
         }
 
-        scheduleLongOperationsDumpTask(ctx.cache().context().tm().longOperationsDumpTimeout());
-
         ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());
 
         ctx.performance().logSuggestions(log, igniteInstanceName);
@@ -1548,36 +1538,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     private static DecimalFormat doubleFormat() {
         return new DecimalFormat("#.##", DecimalFormatSymbols.getInstance(Locale.US));
-    }
-
-    /**
-     * Scheduling tasks for dumping long operations. Closes current task
-     * (if any) and if the {@code longOpDumpTimeout > 0} schedules a new task
-     * with a new timeout, delay and start period equal to
-     * {@code longOpDumpTimeout}, otherwise task is deleted.
-     *
-     * @param longOpDumpTimeout Long operations dump timeout.
-     */
-    public void scheduleLongOperationsDumpTask(long longOpDumpTimeout) {
-        if (isStopping())
-            return;
-
-        synchronized (this) {
-            GridTimeoutProcessor.CancelableTask task = longOpDumpTask;
-
-            if (nonNull(task))
-                task.close();
-
-            if (longOpDumpTimeout > 0) {
-                longOpDumpTask = ctx.timeout().schedule(
-                    () -> ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout),
-                    longOpDumpTimeout,
-                    longOpDumpTimeout
-                );
-            }
-            else
-                longOpDumpTask = null;
-        }
     }
 
     /**
@@ -1820,7 +1780,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             // Stick all system properties into node's attributes overwriting any
             // identical names from environment properties.
-            for (Map.Entry<Object, Object> e : snapshot().entrySet()) {
+            for (Map.Entry<Object, Object> e : IgniteSystemProperties.snapshot().entrySet()) {
                 String key = (String)e.getKey();
 
                 if (incProps == null || U.containsStringArray(incProps, key, true) ||
@@ -2639,9 +2599,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (metricsLogTask != null)
                 metricsLogTask.close();
 
-            if (longOpDumpTask != null)
-                longOpDumpTask.close();
-
             if (longJVMPauseDetector != null)
                 longJVMPauseDetector.stop();
 
@@ -2829,7 +2786,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert log != null;
 
         if (log.isDebugEnabled() && S.includeSensitive())
-            for (Map.Entry<Object, Object> entry : snapshot().entrySet())
+            for (Map.Entry<Object, Object> entry : IgniteSystemProperties.snapshot().entrySet())
                 log.debug("System property [" + entry.getKey() + '=' + entry.getValue() + ']');
     }
 
@@ -4042,6 +3999,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteSnapshot snapshot() {
+        return ctx.cache().context().snapshotMgr();
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<MemoryMetrics> memoryMetrics() {
         return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }
@@ -4469,7 +4431,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (cls.equals(IGridClusterStateProcessor.class))
             return (T)new GridClusterStateProcessor(ctx);
 
-        if(cls.equals(GridSecurityProcessor.class))
+        if (cls.equals(GridSecurityProcessor.class))
             return null;
 
         if (cls.equals(IgniteRestProcessor.class))

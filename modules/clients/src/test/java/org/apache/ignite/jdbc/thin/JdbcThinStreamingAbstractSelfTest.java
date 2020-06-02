@@ -19,12 +19,14 @@ package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
@@ -40,6 +42,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -108,7 +111,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
 
             try (PreparedStatement stmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?), " +
                 "(?, ?)")) {
-                for (int i = 1; i <= 100; i+= 2) {
+                for (int i = 1; i <= 100; i += 2) {
                     stmt.setInt(1, i);
                     stmt.setString(2, nameForId(i));
                     stmt.setInt(3, i + 1);
@@ -399,6 +402,58 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     }
 
     /**
+     * Ensure custom object can be serialized in streaming mode
+     *      - start grid
+     *      - create table such one of the columns was user's object
+     *      - enable streaming and fill the table
+     *      - disable streaming and query random row such it should be presented in the table
+     *      - verify returned object
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testCustomObject() throws Exception {
+        try (Connection conn = createOrdinaryConnection()) {
+            execute(conn, "CREATE TABLE t2(id INT PRIMARY KEY, val OTHER)");
+        }
+
+        try (Connection conn = createStreamedConnection(false, 10000)) {
+            assertStreamingState(true);
+
+            int testInd = 1 + new Random().nextInt(1000);
+
+            try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO t2 values (?, ?)")) {
+                for (int i = 1; i <= 1000; i++) {
+                    stmt.setInt(1, i);
+                    stmt.setObject(2, i == testInd ? new Foo(testInd) : null);
+
+                    stmt.executeUpdate();
+                }
+            }
+
+            assertCacheEmpty();
+
+            execute(conn, "set streaming 0");
+
+            assertStreamingState(false);
+
+            U.sleep(500);
+
+            try (PreparedStatement stmt = conn.prepareStatement("SELECT val FROM t2 WHERE id = ?")) {
+                stmt.setInt(1, testInd);
+
+                ResultSet rs = stmt.executeQuery();
+
+                Assert.assertTrue("Result should not be empty", rs.next());
+
+                Foo foo = rs.getObject(1, Foo.class);
+
+                Assert.assertEquals("Stored value not equals the expected one", testInd, foo.val);
+            }
+        }
+    }
+
+    /**
      * @throws SQLException if failed.
      */
     @Test
@@ -591,6 +646,19 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
                 failOnMultipleStmts,
                 cancel
             );
+        }
+    }
+
+    /**
+     * Dummy class to use as custom object field.
+     */
+    static class Foo {
+        /** */
+        int val;
+
+        /** */
+        public Foo(int val) {
+            this.val = val;
         }
     }
 }
