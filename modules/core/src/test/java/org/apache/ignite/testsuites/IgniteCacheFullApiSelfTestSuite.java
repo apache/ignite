@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.cache.GridCacheClearSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheClusterReadOnlyModeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeClusterReadOnlyModeSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheStoreClusterReadOnlyModeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteNearCacheClusterReadOnlyModeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteNearCacheInvokeClusterReadOnlyModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicFullApiSelfTest;
@@ -172,6 +173,7 @@ import org.junit.runners.Suite;
     IgniteNearCacheClusterReadOnlyModeSelfTest.class,
     IgniteCacheInvokeClusterReadOnlyModeSelfTest.class,
     IgniteNearCacheInvokeClusterReadOnlyModeSelfTest.class,
+    IgniteCacheStoreClusterReadOnlyModeSelfTest.class,
 
     //suite.addTest(new JUnit4TestAdapter(GridActivateExtensionTest.class));
 })

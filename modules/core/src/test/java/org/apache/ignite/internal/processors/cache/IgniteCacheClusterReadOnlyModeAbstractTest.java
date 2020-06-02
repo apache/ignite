@@ -133,6 +133,11 @@ public abstract class IgniteCacheClusterReadOnlyModeAbstractTest extends GridCom
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        stopAllGrids();
+
+        cacheNames = null;
+        cacheConfigurations = null;
+
         startGrids(2);
         startClientGridsMultiThreaded(3, 2);
 
@@ -150,6 +155,9 @@ public abstract class IgniteCacheClusterReadOnlyModeAbstractTest extends GridCom
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        cacheNames = null;
+        cacheConfigurations = null;
 
         super.afterTestsStopped();
     }
