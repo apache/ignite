@@ -273,8 +273,22 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 
                 return futures.Length == 1 && !taskFutures.Contains(futures[0]);
             }, message: "Unexpected number of active tasks: " + GetActiveTaskFutures().Length);
+        }
 
-            // TODO: Test cancel after finish.
+        /// <summary>
+        /// Tests that cancellation does not affect finished tasks.
+        /// </summary>
+        [Test]
+        public void TestExecuteJavaTaskAsyncCancelAfterFinish()
+        {
+            const long delayMs = 1;
+            var cts = new CancellationTokenSource();
+            var task = GetComputeForDefaultServer().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
+
+            task.Wait(cts.Token);
+            cts.Cancel();
+
+            Assert.IsTrue(task.IsCompletedSuccessfully);
         }
 
         /// <summary>
