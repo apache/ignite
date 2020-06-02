@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -600,6 +601,18 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             // TODO: Check scenarios - async and sync
             // Check threads by name
+
+            var logger = new ListLogger {EnabledLevels = new[] {LogLevel.Info}};
+
+            var cfg = new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                Logger = logger
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+
+            }
         }
 
         /// <summary>
