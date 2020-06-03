@@ -22,16 +22,22 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -88,9 +94,135 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     /** */
     private int connectionRecoveryTimeout = -1;
 
+    /** */
+    private int failureDetectionTimeout = 2_000;
+
+    /** */
+    private int metricsUpdateFreq = 1_000;
+
     /** {@inheritDoc} */
     @Override protected void afterTest() {
         stopAllGrids();
+    }
+
+    /** Checks node failure is detected within failure detection timeout. */
+    @Test
+    public void testNodeFailureDetectedWithinConfiguredTimeout() throws Exception {
+        // We won't try recovering connection. We'll remove node from the grid asap.
+        connectionRecoveryTimeout = 0;
+
+        // Makes test faster.
+        failureDetectionTimeout = 1000;
+
+        // A message traffic.
+        metricsUpdateFreq = 750;
+
+        // Running several times to be sure.
+        for (int i = 0; i < 15; ++i) {
+            // Holder of falure detection delay. Also is test start and end regulator.
+            final AtomicLong timer = new AtomicLong();
+
+            // SPI of node 0 detects the failure.
+            specialSpi = new TcpDiscoverySpi() {
+                /** */
+                private AtomicBoolean detected = new AtomicBoolean();
+
+                @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+                    long timeout) throws IOException, IgniteCheckedException {
+
+                    if (msg instanceof TcpDiscoveryNodeFailedMessage && detected.compareAndSet(false, true)) {
+                        synchronized (timer) {
+                            timer.set(System.nanoTime() - timer.get());
+
+                            // Failure detected. Stop the test.
+                            timer.notifyAll();
+                        }
+                    }
+
+                    super.writeToSocket(sock, out, msg, timeout);
+                }
+            };
+
+            IgniteEx grid0 = startGrid(0);
+
+            assert ((TcpDiscoverySpi)grid0.configuration().getDiscoverySpi()).failureDetectionTimeoutEnabled() :
+                "Failure detection timeout is not active.";
+
+            long nodeDelay = failureDetectionTimeout * 2;
+
+            // SPI of node 1 simulates node failure.
+            specialSpi = new TcpDiscoverySpi() {
+                /** {@inheritDoc} */
+                @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+                    long timeout) throws IOException, IgniteCheckedException {
+                    simulateUnacceptableDelay();
+
+                    super.writeToSocket(sock, out, msg, timeout);
+                }
+
+                /** {@inheritDoc} */
+                @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
+                    long timeout) throws IOException {
+
+                    simulateUnacceptableDelay();
+
+                    super.writeToSocket(msg, sock, res, timeout);
+                }
+
+                /** {@inheritDoc} */
+                @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
+                    long timeout) throws IOException {
+
+                    simulateUnacceptableDelay();
+
+                    super.writeToSocket(sock, msg, data, timeout);
+                }
+
+                /** Simulates node delay like GC or unknown network issues.  */
+                private void simulateUnacceptableDelay() {
+                    if (timer.get() > 0) {
+                        try {
+                            Thread.sleep(nodeDelay);
+                        }
+                        catch (InterruptedException e) {
+                            // No-op.
+                        }
+                    }
+                }
+            };
+
+            startGrid(1);
+
+            specialSpi = null;
+
+            // Other node to send TcpDiscoveryNodeFailedMessage to.
+            startGrid(2);
+
+            // Wait for exchanging various frequent messages like TcpDiscoveryCustomEventMessage.
+            awaitPartitionMapExchange();
+
+            // Randimizes failure time since cluster start.
+            Thread.sleep(new Random().nextInt(2000));
+
+            synchronized (timer) {
+                // Failure simulated.
+                timer.set(System.nanoTime());
+
+                // Wait until failure is detected.
+                timer.wait(getTestTimeout());
+            }
+
+            long failureDetectionDelay = U.nanosToMillis(timer.get());
+
+            if (log.isDebugEnabled())
+                log.debug("Failure detection delay: " + failureDetectionDelay);
+
+            assertTrue("Too long failure detection delay: " + failureDetectionDelay +
+                    "ms. Failure detection timeout is: " + failureDetectionTimeout + "ms",
+                failureDetectionDelay <= failureDetectionTimeout);
+
+            stopAllGrids(true);
+        }
     }
 
     /** {@inheritDoc} */
@@ -107,7 +239,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         if (connectionRecoveryTimeout >= 0)
             spi.setConnectionRecoveryTimeout(connectionRecoveryTimeout);
 
-        cfg.setFailureDetectionTimeout(2_000);
+        cfg.setFailureDetectionTimeout(failureDetectionTimeout);
+
+        cfg.setMetricsUpdateFrequency(metricsUpdateFreq);
 
         cfg.setDiscoverySpi(spi);
 
