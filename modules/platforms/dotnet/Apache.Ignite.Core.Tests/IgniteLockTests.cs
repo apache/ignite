@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
@@ -31,27 +32,29 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStateChanges()
         {
-            using (var lck = Ignite.GetOrCreateLock("my-lock"))
-            {
-                var cfg = lck.Configuration;
-                
-                Assert.IsFalse(cfg.IsFailoverSafe);
-                Assert.IsFalse(cfg.IsFair);
-                Assert.AreEqual("my-lock", cfg.Name);
-                
-                Assert.False(lck.IsEntered());
-                Assert.False(lck.IsBroken());
-                
-                Assert.IsTrue(lck.TryEnter());
-                
-                Assert.IsTrue(lck.IsEntered());
-                Assert.False(lck.IsBroken());
-                
-                lck.Exit();
-                
-                Assert.False(lck.IsEntered());
-                Assert.False(lck.IsBroken());
-            }
+            var lck = Ignite.GetOrCreateLock("my-lock");
+            var cfg = lck.Configuration;
+
+            Assert.IsFalse(cfg.IsFailoverSafe);
+            Assert.IsFalse(cfg.IsFair);
+            Assert.AreEqual("my-lock", cfg.Name);
+
+            Assert.False(lck.IsEntered());
+            Assert.False(lck.IsBroken());
+
+            Assert.IsTrue(lck.TryEnter());
+
+            Assert.IsTrue(lck.IsEntered());
+            Assert.False(lck.IsBroken());
+
+            lck.Exit();
+
+            Assert.False(lck.IsEntered());
+            Assert.False(lck.IsBroken());
+            
+            lck.Dispose();
+            
+            Assert.IsTrue(lck.IsDisposed);
         }
 
         /// <summary>

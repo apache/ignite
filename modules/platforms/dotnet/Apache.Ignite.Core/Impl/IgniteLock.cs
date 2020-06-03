@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Diagnostics;
+    using System.Threading;
     using Apache.Ignite.Core.Configuration;
 
     /// <summary>
@@ -45,6 +46,9 @@ namespace Apache.Ignite.Core.Impl
         /** */
         private readonly LockConfiguration _cfg;
 
+        /** */
+        private long _disposed;
+
         /// <summary>
         /// Initializes a new instance of <see cref="IgniteLock"/>.
         /// </summary>
@@ -60,6 +64,12 @@ namespace Apache.Ignite.Core.Impl
         public LockConfiguration Configuration
         {
             get { return new LockConfiguration(_cfg); }
+        }
+
+        /** <inheritDoc /> */
+        public bool IsDisposed
+        {
+            get { return Interlocked.Read(ref _disposed) != 0; }
         }
 
         /** <inheritDoc /> */
@@ -101,7 +111,10 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritDoc /> */
         public void Dispose()
         {
-            Target.InLongOutLong((int) Op.Close, 0);
+            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
+            {
+                Target.InLongOutLong((int) Op.Close, 0);
+            }
         }
     }
 }

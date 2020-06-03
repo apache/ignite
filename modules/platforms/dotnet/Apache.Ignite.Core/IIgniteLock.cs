@@ -34,6 +34,11 @@ namespace Apache.Ignite.Core
         /// Gets the lock configuration.
         /// </summary>
         LockConfiguration Configuration { get; }
+        
+        /// <summary>
+        /// Gets a value indicating whether current instance has been disposed.
+        /// </summary>
+        bool IsDisposed { get; }
 
         void Enter(); // TODO: Rename to Enter, TryEnter - like CacheLock, Monitor, etc?
 

@@ -731,7 +731,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                 boolean create = reader.readBoolean();
 
                 IgniteLock lock = ctx.grid().reentrantLock(name, failoverSafe, fair, create);
-                
+
                 return lock == null ? null : new PlatformLock(platformCtx, lock);
             }
         }
