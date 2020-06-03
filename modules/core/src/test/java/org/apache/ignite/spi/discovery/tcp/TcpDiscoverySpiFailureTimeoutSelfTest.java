@@ -28,6 +28,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.AbstractDiscoverySelfTest;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -159,6 +160,54 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         }
         finally {
             firstSpi().resetState();
+        }
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testConnectionCheckMessage() throws Exception {
+        TestTcpDiscoverySpi nextSpi = null;
+
+        try {
+            assert firstSpi().connCheckStatusMsgCntSent == 0;
+
+            TcpDiscoveryNode nextNode = ((ServerImpl)(firstSpi().impl)).ring().nextNode();
+
+            assertNotNull(nextNode);
+
+            nextSpi = null;
+
+            for (int i = 1; i < spis.size(); i++)
+                if (spis.get(i).getLocalNode().id().equals(nextNode.id())) {
+                    nextSpi = (TestTcpDiscoverySpi)spis.get(i);
+                    break;
+                }
+
+            assertNotNull(nextSpi);
+
+            assert nextSpi.connCheckStatusMsgCntReceived == 0;
+
+            firstSpi().cntConnCheckMsg = true;
+            nextSpi.cntConnCheckMsg = true;
+
+            Thread.sleep(firstSpi().failureDetectionTimeout());
+
+            firstSpi().cntConnCheckMsg = false;
+            nextSpi.cntConnCheckMsg = false;
+
+            int sent = firstSpi().connCheckStatusMsgCntSent;
+            int received = nextSpi.connCheckStatusMsgCntReceived;
+
+            assert sent >= 15 && sent < 25 : "messages sent: " + sent;
+            assert received >= 15 && received < 25 : "messages received: " + received;
+        }
+        finally {
+            firstSpi().resetState();
+
+            if (nextSpi != null)
+                nextSpi.resetState();
         }
     }
 
