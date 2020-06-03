@@ -70,7 +70,14 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestDisposedLockThrowsIgniteException()
         {
-            // TODO: Close from same thread, from another thread, from another node.
+            const string lockName = "lock";
+            
+            var lock1 = Ignite.GetOrCreateLock(lockName);
+            var lock2 = Ignite2.GetOrCreateLock(lockName);
+            
+            lock1.Dispose();
+            
+            lock2.Enter();
         }
 
         /// <summary>
