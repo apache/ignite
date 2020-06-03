@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.platform;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLock;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Platform wrapper for {@link IgniteLock}.
  */
@@ -66,7 +68,11 @@ class PlatformLock extends PlatformAbstractTarget {
             }
 
             case OP_TRY_LOCK: {
-                return lock.tryLock() ? TRUE : FALSE;
+                boolean locked = val < 0
+                        ? lock.tryLock()
+                        : lock.tryLock(val, TimeUnit.MILLISECONDS);
+
+                return locked ? TRUE : FALSE;
             }
 
             case OP_UNLOCK: {

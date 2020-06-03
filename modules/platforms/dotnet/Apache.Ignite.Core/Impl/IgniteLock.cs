@@ -38,6 +38,9 @@ namespace Apache.Ignite.Core.Impl
             IsBroken = 5,
             IsLocked = 6
         }
+
+        /** */
+        private const long TimeoutInfinite = -1;
         
         /** */
         private readonly LockConfiguration _cfg;
@@ -68,12 +71,12 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritDoc /> */
         public bool TryEnter()
         {
-            return Target.InLongOutLong((int) Op.TryLock, 0) == True;
+            return Target.InLongOutLong((int) Op.TryLock, TimeoutInfinite) == True;
         }
 
         public bool TryEnter(TimeSpan timeout)
         {
-            throw new NotImplementedException();
+            return Target.InLongOutLong((int) Op.TryLock, (long) timeout.TotalMilliseconds) == True;
         }
 
         /** <inheritDoc /> */
