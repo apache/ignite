@@ -52,6 +52,10 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Tests that it is not necessary to call <see cref="IIgniteLock.Exit"/>
+        /// before <see cref="IIgniteLock.Dispose"/>.
+        /// </summary>
         [Test]
         public void TestDisposeExitsLock()
         {
@@ -63,15 +67,10 @@ namespace Apache.Ignite.Core.Tests
             using (var lck = Ignite.GetOrCreateLock(cfg, true))
             {
                 lck.Enter();
+                Assert.IsTrue(lck.IsEntered());
             }
 
-            Task.Factory.StartNew(() =>
-            {
-                using (var lck2 = Ignite.GetOrCreateLock(cfg, false))
-                {
-                    lck2.Enter();
-                }
-            }).Wait();
+            Assert.IsNull(Ignite.GetOrCreateLock(cfg, false));
         }
 
         [Test]
