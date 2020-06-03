@@ -34,5 +34,17 @@ namespace Apache.Ignite.Core.Tests
                 lck.Unlock();
             }
         }
+
+        [Test]
+        public void TestNonFailoverSafeLockThrowsExceptionOnAllNodesWhenOwnerLeaves()
+        {
+            // TODO
+        }
+
+        [Test]
+        public void TestFailoverSafeLockIsReleasedWhenOwnerLeaves()
+        {
+            // TODO
+        }
     }
 }

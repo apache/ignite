@@ -77,6 +77,10 @@ class PlatformLock extends PlatformAbstractTarget {
 
                 return TRUE;
             }
+
+            case OP_IS_BROKEN: {
+                return lock.isBroken() ? TRUE : FALSE;
+            }
         }
 
         return super.processInLongOutLong(type, val);
