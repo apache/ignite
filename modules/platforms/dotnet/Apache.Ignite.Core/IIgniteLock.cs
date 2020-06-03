@@ -58,5 +58,8 @@ namespace Apache.Ignite.Core
         bool IsBroken();
         
         bool IsLocked();
+        
+        // TODO: IgniteCondition is like Monitor.Wait / Pulse
+        // TODO: Understand why getOrCreateCondition has name arg - what does this achieve? Ask on dev list?
     }
 }
