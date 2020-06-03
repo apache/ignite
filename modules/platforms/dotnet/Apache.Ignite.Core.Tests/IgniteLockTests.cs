@@ -61,5 +61,11 @@ namespace Apache.Ignite.Core.Tests
         {
             // TODO
         }
+
+        [Test]
+        public void TestGetOrCreateLockThrowsOnMissingLockWhenCreateFlagIsNotSet()
+        {
+            // TODO
+        }
     }
 }

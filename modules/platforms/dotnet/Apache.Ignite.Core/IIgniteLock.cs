@@ -48,6 +48,5 @@ namespace Apache.Ignite.Core
         bool IsEntered();
         
         // TODO: IgniteCondition is like Monitor.Wait / Pulse
-        // TODO: Understand why getOrCreateCondition has name arg - what does this achieve? Ask on dev list?
     }
 }
