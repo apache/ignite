@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,6 +25,7 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 import static org.apache.ignite.compatibility.sql.model.City.Factory.CITY_CNT;
+import static org.apache.ignite.compatibility.sql.model.Department.Factory.DEPS_CNT;
 import static org.apache.ignite.compatibility.sql.model.ModelUtil.randomString;
 
 /**
@@ -36,7 +38,7 @@ public class Person {
 
     /** */
     @QuerySqlField
-    private final String depCode;
+    private final int depId;
 
     /**  */
     @QuerySqlField
@@ -51,36 +53,36 @@ public class Person {
     private final String position;
 
     /**  */
-    public Person(String name, String depCode, int age, int cityId, String position) {
+    public Person(String name, int depId, int age, int cityId, String position) {
         this.name = name;
-        this.depCode = depCode;
+        this.depId = depId;
         this.age = age;
         this.cityId = cityId;
         this.position = position;
     }
 
     /**  */
-    public String Name() {
+    public String name() {
         return name;
     }
 
     /**  */
-    public String DepCode() {
-        return depCode;
+    public int depId() {
+        return depId;
     }
 
     /**  */
-    public int Age() {
+    public int age() {
         return age;
     }
 
     /**  */
-    public int CityId() {
+    public int cityId() {
         return cityId;
     }
 
     /**  */
-    public String Position() {
+    public String position() {
         return position;
     }
 
@@ -104,7 +106,7 @@ public class Person {
             QueryEntity entity = new QueryEntity(Long.class, Person.class);
             entity.setKeyFieldName("id");
             entity.addQueryField("id", Long.class.getName(), null);
-            Set<QueryIndex> indices = Collections.singleton(new QueryIndex("depCode", QueryIndexType.SORTED));
+            Set<QueryIndex> indices = Collections.singleton(new QueryIndex("depId", QueryIndexType.SORTED));
 
             entity.setIndexes(indices);
             entity.setTableName(TABLE_NAME);
@@ -115,7 +117,7 @@ public class Person {
         @Override public Person createRandom() {
             return new Person(
                 randomString(rnd, 1, 10), // name
-                randomString(rnd, 1, 1), // depCode == 1 char
+                rnd.nextInt(DEPS_CNT), // depId
                 rnd.nextInt(60), // age
                 rnd.nextInt(CITY_CNT), // cityId
                 randomString(rnd, 0, 10) // position

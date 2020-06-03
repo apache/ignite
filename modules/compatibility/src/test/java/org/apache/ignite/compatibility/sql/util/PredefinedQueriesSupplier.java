@@ -14,17 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.compatibility.sql.model;
+package org.apache.ignite.compatibility.sql.util;
 
-import org.apache.ignite.cache.QueryEntity;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.function.Supplier;
 
 /**
- * TODO: Add class description.
+ * Simple factory of SQL queries. Just returns preconfigured queries one by one.
  */
-public interface ModelFactory {
+public class PredefinedQueriesSupplier implements Supplier<String> {
+    /** */
+    private final Collection<String> qrys;
 
-    Object createRandom();
-    QueryEntity queryEntity();
-    String tableName();
-    int count();
+    /** */
+    private Iterator<String> it;
+
+    /** */
+    public PredefinedQueriesSupplier(Collection<String> qrys) {
+        assert !qrys.isEmpty();
+        this.qrys = qrys;
+        it = qrys.iterator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized String get() {
+        if (!it.hasNext())
+            it = qrys.iterator();
+
+        return it.next();
+    }
 }
