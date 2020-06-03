@@ -59,44 +59,43 @@ namespace Apache.Ignite.Core.Tests
             Assert.False(lck.IsEntered());
             Assert.False(lck.IsBroken());
             
-            lck.Dispose();
+            lck.Remove();
             
-            Assert.IsTrue(lck.IsDisposed);
+            Assert.IsTrue(lck.IsRemoved());
         }
 
         /// <summary>
         /// Tests that disposed lock throws correct exception.
         /// </summary>
         [Test]
-        public void TestDisposedLockThrowsIgniteException()
+        public void TestRemovedLockThrowsIgniteException()
         {
             const string lockName = "lock";
             
             var lock1 = Ignite.GetOrCreateLock(lockName);
             var lock2 = Ignite2.GetOrCreateLock(lockName);
             
+            lock1.Remove();
             lock2.Enter();
-            lock1.Dispose();
-            
         }
 
         /// <summary>
-        /// Tests that it is not necessary to call <see cref="IIgniteLock.Exit"/>
-        /// before <see cref="IIgniteLock.Dispose"/>.
+        /// Tests that it entered lock can't be removed.
         /// </summary>
         [Test]
-        public void TestDisposeExitsLock()
+        public void TestEnteredLockThrowsOnRemove()
         {
             var cfg = new LockConfiguration
             {
                 Name = "my-lock"
             };
             
-            using (var lck = Ignite.GetOrCreateLock(cfg, true))
-            {
-                lck.Enter();
-                Assert.IsTrue(lck.IsEntered());
-            }
+            var lck = Ignite.GetOrCreateLock(cfg, true);
+            
+            lck.Enter();
+            Assert.IsTrue(lck.IsEntered());
+            
+            lck.Remove();
 
             Assert.IsNull(Ignite.GetOrCreateLock(cfg, false));
         }
@@ -114,23 +113,22 @@ namespace Apache.Ignite.Core.Tests
                 IsFailoverSafe = true
             };
 
-            using (var lck = Ignite.GetOrCreateLock(cfg, true))
-            {
-                // Change original instance.
-                cfg.Name = "y";
-                cfg.IsFair = false;
-                cfg.IsFailoverSafe = false;
-                
-                // Change returned instance.
-                lck.Configuration.Name = "y";
-                lck.Configuration.IsFair = false;
-                lck.Configuration.IsFailoverSafe = false;
-                
-                // Verify: actual config has not changed.
-                Assert.AreEqual("x", lck.Configuration.Name);
-                Assert.IsTrue(lck.Configuration.IsFair);
-                Assert.IsTrue(lck.Configuration.IsFailoverSafe);
-            }
+            var lck = Ignite.GetOrCreateLock(cfg, true);
+            
+            // Change original instance.
+            cfg.Name = "y";
+            cfg.IsFair = false;
+            cfg.IsFailoverSafe = false;
+
+            // Change returned instance.
+            lck.Configuration.Name = "y";
+            lck.Configuration.IsFair = false;
+            lck.Configuration.IsFailoverSafe = false;
+
+            // Verify: actual config has not changed.
+            Assert.AreEqual("x", lck.Configuration.Name);
+            Assert.IsTrue(lck.Configuration.IsFair);
+            Assert.IsTrue(lck.Configuration.IsFailoverSafe);
         }
 
         [Test]

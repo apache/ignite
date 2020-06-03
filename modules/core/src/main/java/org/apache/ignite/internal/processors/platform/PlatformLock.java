@@ -85,9 +85,6 @@ class PlatformLock extends PlatformAbstractTarget {
             }
 
             case OP_REMOVE: {
-                if (lock.isHeldByCurrentThread())
-                    lock.unlock();
-
                 lock.close();
 
                 return TRUE;
