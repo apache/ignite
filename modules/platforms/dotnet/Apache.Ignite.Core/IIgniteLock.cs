@@ -56,5 +56,7 @@ namespace Apache.Ignite.Core
         void Unlock();
 
         bool IsBroken();
+        
+        bool IsLocked();
     }
 }

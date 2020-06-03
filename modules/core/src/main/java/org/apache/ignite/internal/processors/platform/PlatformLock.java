@@ -39,6 +39,9 @@ class PlatformLock extends PlatformAbstractTarget {
     /** */
     private static final int OP_IS_BROKEN = 5;
 
+    /** */
+    private static final int OP_IS_LOCKED = 6;
+
     /** Wrapped lock. */
     private final IgniteLock lock;
 
@@ -80,6 +83,10 @@ class PlatformLock extends PlatformAbstractTarget {
 
             case OP_IS_BROKEN: {
                 return lock.isBroken() ? TRUE : FALSE;
+            }
+
+            case OP_IS_LOCKED: {
+                return lock.isLocked() ? TRUE : FALSE;
             }
         }
 
