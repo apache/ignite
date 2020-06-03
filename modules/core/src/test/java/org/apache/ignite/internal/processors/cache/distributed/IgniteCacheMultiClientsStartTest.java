@@ -43,7 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  *
  */
-public class IgniteCache15ClientsTest extends GridCommonAbstractTest {
+public class IgniteCacheMultiClientsStartTest extends GridCommonAbstractTest {
     /** */
     private static final int CACHES = 10;
 
