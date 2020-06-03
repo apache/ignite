@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteLock;
 /**
  * Platform wrapper for {@link IgniteLock}.
  */
-class PlatformReentrantLock extends PlatformAbstractTarget {
+class PlatformLock extends PlatformAbstractTarget {
     /** */
     private static final int OP_LOCK = 1;
 
@@ -36,6 +36,9 @@ class PlatformReentrantLock extends PlatformAbstractTarget {
     /** */
     private static final int OP_CLOSE = 4;
 
+    /** */
+    private static final int OP_IS_BROKEN = 5;
+
     /** Wrapped lock. */
     private final IgniteLock lock;
 
@@ -44,7 +47,7 @@ class PlatformReentrantLock extends PlatformAbstractTarget {
      * @param ctx Context.
      * @param lock Lock to wrap.
      */
-    PlatformReentrantLock(PlatformContext ctx, IgniteLock lock) {
+    PlatformLock(PlatformContext ctx, IgniteLock lock) {
         super(ctx);
 
         this.lock = lock;

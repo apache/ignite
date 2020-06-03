@@ -33,7 +33,8 @@ namespace Apache.Ignite.Core.Impl
             Lock = 1,
             TryLock = 2,
             Unlock = 3,
-            Close = 4
+            Close = 4,
+            IsBroken = 5
         }
         
         /** */
@@ -101,6 +102,12 @@ namespace Apache.Ignite.Core.Impl
         public void Unlock()
         {
             Target.InLongOutLong((int) Op.Unlock, 0);
+        }
+
+        /** <inheritDoc /> */
+        public bool IsBroken()
+        {
+            return Target.InLongOutLong((int) Op.IsBroken, 0) == True;
         }
 
         /** <inheritDoc /> */

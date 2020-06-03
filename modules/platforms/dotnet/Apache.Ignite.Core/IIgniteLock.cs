@@ -54,5 +54,7 @@ namespace Apache.Ignite.Core
         bool TryLock(TimeSpan timeout);
 
         void Unlock();
+
+        bool IsBroken();
     }
 }
