@@ -207,7 +207,7 @@ public class CacheContinuousQueryEventBuffer {
                 if (batch.endCntr < ackedUpdCntr)
                     batch.tryRollOver(entry.topologyVersion());
 
-                if (pending.size() > MAX_PENDING_BUFF_SIZE) {
+                if (pending.size() > MAX_PENDING_BUFF_SIZE && curBatch.get() == batch) {
                     LT.warn(log, "Buffer for pending events reached max of its size " +
                         "[cacheId=" + entry.cacheId() + ", maxSize=" + MAX_PENDING_BUFF_SIZE +
                         ", partId=" + entry.partition() + ']');
