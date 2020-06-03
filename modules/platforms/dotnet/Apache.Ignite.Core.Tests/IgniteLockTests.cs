@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System.Threading.Tasks;
+    using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
     /// <summary>
@@ -48,6 +50,28 @@ namespace Apache.Ignite.Core.Tests
                 Assert.False(lck.IsEntered());
                 Assert.False(lck.IsBroken());
             }
+        }
+
+        [Test]
+        public void TestDisposeExitsLock()
+        {
+            var cfg = new LockConfiguration
+            {
+                Name = "my-lock"
+            };
+            
+            using (var lck = Ignite.GetOrCreateLock(cfg, true))
+            {
+                lck.Enter();
+            }
+
+            Task.Factory.StartNew(() =>
+            {
+                using (var lck2 = Ignite.GetOrCreateLock(cfg, false))
+                {
+                    lck2.Enter();
+                }
+            }).Wait();
         }
 
         [Test]
