@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
-        /// Tests that client can't start multiple transactions in one thread.
+        /// Tests that different clients can start transactions in one thread.
         /// </summary>
         [Test]
         public void TestDifferentClientsCanStartTransactions()
