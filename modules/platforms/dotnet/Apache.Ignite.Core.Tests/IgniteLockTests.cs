@@ -40,12 +40,12 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStateChanges()
         {
-            var lck = Ignite.GetOrCreateLock("my-lock");
+            var lck = Ignite.GetOrCreateLock(TestUtils.TestName);
             var cfg = lck.Configuration;
 
             Assert.IsFalse(cfg.IsFailoverSafe);
             Assert.IsFalse(cfg.IsFair);
-            Assert.AreEqual("my-lock", cfg.Name);
+            Assert.AreEqual(TestUtils.TestName, cfg.Name);
 
             Assert.False(lck.IsEntered());
             Assert.False(lck.IsBroken());
@@ -71,17 +71,15 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestRemovedLockThrowsIgniteException()
         {
-            const string lockName = "lock";
-            
-            var lock1 = Ignite.GetOrCreateLock(lockName);
-            var lock2 = Ignite2.GetOrCreateLock(lockName);
+            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
+            var lock2 = Ignite2.GetOrCreateLock(TestUtils.TestName);
             
             lock1.Remove();
             lock2.Enter();
         }
 
         /// <summary>
-        /// Tests that it entered lock can't be removed.
+        /// Tests that entered lock can't be removed.
         /// </summary>
         [Test]
         public void TestEnteredLockThrowsOnRemove()
