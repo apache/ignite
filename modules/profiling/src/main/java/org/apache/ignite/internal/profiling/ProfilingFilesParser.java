@@ -89,45 +89,45 @@ public class ProfilingFilesParser {
     private static UUID curNodeId;
 
     /**
-     * @param args Only one argument: profiling logs directory to parse or '-h' to get usage help.
+     * @param args Only one argument: profiling files directory to parse or '-h' to get usage help.
      */
     public static void main(String[] args) throws Exception {
         long startTime = System.currentTimeMillis();
 
-        String logDir = getLogDir(args);
+        String filesDir = parseArguments(args);
 
-        HashMap<UUID, File> logs = findLogs(logDir);
+        HashMap<UUID, File> files = findFiles(filesDir);
 
-        if (logs.isEmpty())
-            throw new Exception("Unable to find profiling logs.");
+        if (files.isEmpty())
+            throw new Exception("Unable to find profiling files.");
 
-        String resDir = createResultDir(logDir);
+        String resDir = createResultDir(filesDir);
 
-        parseLogs(logs, resDir);
+        parseFiles(files, resDir);
 
         copyReportSources(resDir);
 
-        System.out.println(U.nl() + "Logs parsed successfully [totalTime=" +
+        System.out.println(U.nl() + "Profiling files parsed successfully [totalTime=" +
             MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime) + " s]" + U.nl() + U.nl() +
             "Report created [dir=" + resDir + "]" + U.nl() +
             "Open '" + resDir + "/index.html' in browser to see the report.");
     }
 
     /**
-     * Extracts log directory from arguments and checks it existing.
+     * Parses arguments and print help or extracts files directory from arguments and checks it existing.
      *
      * @param args Arguments to parse.
-     * @return Log directory. {@code Null} in case of help required.
+     * @return Profiling files directory.
      */
-    private static String getLogDir(String[] args) {
+    private static String parseArguments(String[] args) {
         if (args.length == 0 || "--help".equalsIgnoreCase(args[0]) || "-h".equalsIgnoreCase(args[0])) {
             System.out.println(
-                "The script is used to create a performance report from profiling logs." + U.nl() + U.nl() +
-                    "Usage: profiling.sh path_to_profiling_logs" + U.nl() + U.nl() +
-                    "The path should contain profiling logs collected from the cluster." + U.nl() +
-                    "Profiling log file name mask: profiling-${sys:nodeId}.log" + U.nl() +
-                    "The report will be created at logs path with new directory: " +
-                    "path_to_profiling_logs/report_yyyy-MM-dd_HH-mm-ss/" + U.nl() +
+                "The script is used to create a performance report from profiling files." + U.nl() + U.nl() +
+                    "Usage: profiling.sh path_to_profiling_files" + U.nl() + U.nl() +
+                    "The path should contain profiling files collected from the cluster." + U.nl() +
+                    "Profiling file name mask: node-${sys:nodeId}.prf" + U.nl() +
+                    "The report will be created at files path with new directory: " +
+                    "path_to_profiling_files/report_yyyy-MM-dd_HH-mm-ss/" + U.nl() +
                     "Open 'report_yyyy-MM-dd_HH-mm-ss/index.html' in browser to see the report.");
 
             System.exit(0);
@@ -135,28 +135,28 @@ public class ProfilingFilesParser {
 
         A.ensure(args.length <= 1, "Too much arguments [args=" + Arrays.toString(args) + ']');
 
-        String logDir = args[0];
+        String filesDir = args[0];
 
-        File dir = new File(logDir);
+        File dir = new File(filesDir);
 
-        A.ensure(dir.exists(), "Log directory does not exists.");
-        A.ensure(dir.isDirectory(), "Log directory is not a directory.");
+        A.ensure(dir.exists(), "Profiling files directory does not exists.");
+        A.ensure(dir.isDirectory(), "Profiling files directory is not a directory.");
 
-        return logDir;
+        return filesDir;
     }
 
     /**
-     * Finds logs to parse.
+     * Finds profiling files to parse.
      *
-     * @param logDir Logs directory.
-     * @return Map of found logs: nodeId -> log file path.
+     * @param filesPath Profiling files directory.
+     * @return Map of found files: nodeId -> profiling file path.
      */
-    private static HashMap<UUID, File> findLogs(String logDir) throws IOException {
+    private static HashMap<UUID, File> findFiles(String filesPath) throws IOException {
         HashMap<UUID, File> res = new HashMap<>();
 
-        File logsDir = new File(logDir);
+        File filesDir = new File(filesPath);
 
-        DirectoryStream<Path> files = Files.newDirectoryStream(logsDir.toPath());
+        DirectoryStream<Path> files = Files.newDirectoryStream(filesDir.toPath());
 
         for (Path file : files) {
             Matcher matcher = PROFILING_FILE_PATTERN.matcher(file.toString());
@@ -168,20 +168,20 @@ public class ProfilingFilesParser {
 
             res.put(nodeId, file.toFile());
 
-            System.out.println("Found log to parse [path=" + file.toAbsolutePath() + ", nodeId=" + nodeId + ']');
+            System.out.println("Found file to parse [path=" + file.toAbsolutePath() + ", nodeId=" + nodeId + ']');
         }
 
         return res;
     }
 
     /**
-     * @param logDir Parent directory of report results.
+     * @param filesDir Parent directory of report results.
      * @return Created result directory.
      */
-    private static String createResultDir(String logDir) throws IOException {
+    private static String createResultDir(String filesDir) throws IOException {
         String postfix = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
 
-        String dir = Files.createDirectory(new File(logDir + "/report_" + postfix).toPath())
+        String dir = Files.createDirectory(new File(filesDir + "/report_" + postfix).toPath())
             .toAbsolutePath().toString();
 
         // Data directory.
@@ -193,12 +193,12 @@ public class ProfilingFilesParser {
     }
 
     /**
-     * Parses logs.
+     * Parses profiling files.
      *
-     * @param logs Profiling logs.
+     * @param files Profiling files.
      * @param resDir Results directory.
      */
-    private static void parseLogs(HashMap<UUID, File> logs, String resDir) throws Exception {
+    private static void parseFiles(HashMap<UUID, File> files, String resDir) throws Exception {
         IgniteProfilingHandler[] handlers = new IgniteProfilingHandler[] {
             new QueryHandler(),
             new CacheOperationsHandler(),
@@ -207,21 +207,21 @@ public class ProfilingFilesParser {
             new ClusterInfoHandler()
         };
 
-        int currLog = 1;
+        int currFileNum = 1;
 
-        for (Map.Entry<UUID, File> entry : logs.entrySet()) {
+        for (Map.Entry<UUID, File> entry : files.entrySet()) {
             UUID nodeId = entry.getKey();
-            File log = entry.getValue();
+            File currFile = entry.getValue();
 
-            String progressMsg = "[" + currLog + '/' + logs.size() + " log]";
+            String progressMsg = "[" + currFileNum + '/' + files.size() + " files]";
 
             curNodeId = nodeId;
 
-            parseLog(handlers, nodeId, log, progressMsg);
+            parseFile(handlers, nodeId, currFile, progressMsg);
 
             curNodeId = null;
 
-            currLog++;
+            currFileNum++;
         }
 
         ObjectNode dataJson = MAPPER.createObjectNode();
@@ -235,17 +235,17 @@ public class ProfilingFilesParser {
     }
 
     /**
-     * Parses node's profiling log.
+     * Parses node's profiling file.
      *
      * @param handlers Parsers.
      * @param nodeId Node id.
-     * @param log Log to parse.
+     * @param file File to parse.
      * @param msg Progress message to log.
      */
-    private static void parseLog(IgniteProfilingHandler[] handlers, UUID nodeId, File log, String msg)
+    private static void parseFile(IgniteProfilingHandler[] handlers, UUID nodeId, File file, String msg)
         throws Exception {
-        System.out.println("Starting parse log [file=" + log.getAbsolutePath() +
-            ", size=" + FileUtils.byteCountToDisplaySize(log.length()) + ", nodeId=" + nodeId + ']');
+        System.out.println("Starting parse profiling file [file=" + file.getAbsolutePath() +
+            ", size=" + FileUtils.byteCountToDisplaySize(file.length()) + ", nodeId=" + nodeId + ']');
 
         int infoFrequency = 1_000_000;
         long ts = System.currentTimeMillis();
@@ -253,7 +253,7 @@ public class ProfilingFilesParser {
         long parsedBytes = 0;
 
         try (
-            FileIO io = ioFactory.create(log);
+            FileIO io = ioFactory.create(file);
             ProfilingDeserializer des = new ProfilingDeserializer(handlers)
         ) {
             readBuf.clear();
@@ -282,7 +282,7 @@ public class ProfilingFilesParser {
                         long memoryUsage = (runtime.totalMemory() - runtime.freeMemory()) * 100 / runtime.maxMemory();
 
                         System.out.println(msg +
-                            " progress: " + parsedBytes * 100 / log.length() + " %," +
+                            " progress: " + parsedBytes * 100 / file.length() + " %," +
                             " speed: " + speed + " ops/sec," +
                             " memory usage: " + memoryUsage + "% of " + sizeInMegabytes(runtime.totalMemory()) + " MB");
 
@@ -294,10 +294,10 @@ public class ProfilingFilesParser {
             }
         }
 
-        System.out.println("Log parsed successfully [nodeId=" + nodeId + ']');
+        System.out.println("File parsed successfully [nodeId=" + nodeId + ']');
     }
 
-    /** @return Node id of current parsed log. */
+    /** @return Node id of current parsed file. */
     public static UUID currentNodeId() {
         return curNodeId;
     }

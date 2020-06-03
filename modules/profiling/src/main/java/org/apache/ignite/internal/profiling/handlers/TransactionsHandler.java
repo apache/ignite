@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.profiling.util.Utils.createArrayIfAbsen
 import static org.apache.ignite.internal.profiling.util.Utils.createObjectIfAbsent;
 
 /**
- * Builds JSON with aggregated transaction statistics.
+ * Builds JSON with aggregated transaction statistics and durations histogram.
  *
  * Example:
  * <pre>
@@ -57,7 +57,7 @@ public class TransactionsHandler implements IgniteProfilingHandler {
     /** Transaction durations histogram buckets in milliseconds. */
     public static final long[] HISTOGRAM_BUCKETS = new long[] {1, 10, 100, 250, 1000};
 
-    /** Aggregated results: nodeId -> cacheId -> opType -> aggregatedResults. */
+    /** Aggregated results: nodeId -> cacheId -> txState -> aggregatedResults. */
     private final Map<UUID, Map<Integer, Map<TransactionState, Map<Long, Integer>>>> res = new HashMap<>();
 
     /** Transaction durations histogram data: nodeId -> cacheId -> histogram. */
