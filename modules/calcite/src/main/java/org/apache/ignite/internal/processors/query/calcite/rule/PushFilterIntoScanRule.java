@@ -16,12 +16,12 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.Arrays;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLocalRef;
@@ -30,6 +30,7 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Rule that pushes filter into the scan. This might be useful for index range scans.
@@ -37,7 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 public class PushFilterIntoScanRule extends RelOptRule {
 
     public static final PushFilterIntoScanRule FILTER_INTO_SCAN =
-        new PushFilterIntoScanRule(Filter.class, "IgniteFilterIntoScanRule");
+        new PushFilterIntoScanRule(LogicalFilter.class, "IgniteFilterIntoScanRule");
 
     private PushFilterIntoScanRule(Class<? extends RelNode> clazz, String desc) {
         super(operand(clazz,
@@ -48,22 +49,25 @@ public class PushFilterIntoScanRule extends RelOptRule {
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
+        LogicalFilter filter = call.rel(0);
         IgniteTableScan scan = call.rel(1);
-        Filter filter = call.rel(0);
 
-        RexNode oldCond = scan.condition();
-
-        RexNode cond;
-        if (oldCond != null) {
-            RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-            cond = RexUtil.composeConjunction(rexBuilder, Arrays.asList(filter.getCondition(), oldCond));
-        }
-        else
-            cond = filter.getCondition();
+        RexNode cond = filter.getCondition();
 
         // We need to replace RexInputRef with RexLocalRef because TableScan doesn't have inputs.
         RexVisitor<RexNode> inputRefReplacer = new InputRefReplacer();
         cond = cond.accept(inputRefReplacer);
+
+        RexNode cond0 = scan.condition();
+
+        if (cond0 != null) {
+            ImmutableList<RexNode> nodes = RexUtil.flattenAnd(ImmutableList.of(cond0));
+            if (nodes.contains(cond))
+                return;
+
+            RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
+            cond = RexUtil.composeConjunction(rexBuilder, F.concat(true, cond, nodes));
+        }
 
         call.transformTo(
             new IgniteTableScan(scan.getCluster(), scan.getTraitSet(), scan.getTable(), scan.indexName(), cond));

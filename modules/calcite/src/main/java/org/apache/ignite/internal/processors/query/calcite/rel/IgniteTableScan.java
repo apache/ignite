@@ -265,14 +265,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         if (dnf.isA(OR) && dnf.getOperands().size() > 1) // OR conditions are not supported yet.
             return false;
 
-        if (igniteTbl.collations().isEmpty())
-            return false;
-
-        if (igniteTbl.collations().size() > 1) {
-            throw new UnsupportedOperationException("At most one table collation is currently supported: " +
-                "[collations=" + igniteTbl.collations() + ", table=" + igniteTbl + ']');
-        }
-        return true;
+        return !collation.getFieldCollations().isEmpty();
     }
 
     /** */

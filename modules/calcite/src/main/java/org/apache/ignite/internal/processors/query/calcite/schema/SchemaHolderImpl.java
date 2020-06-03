@@ -111,17 +111,19 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         TableDescriptorImpl desc =
             new TableDescriptorImpl(cacheInfo.cacheContext(), typeDesc, affinityIdentity(cacheInfo));
 
-        IgniteTable tbl = new IgniteTableImpl(desc, RelCollations.EMPTY);
+        RelCollation pkCollation = RelCollations.EMPTY;
+
+        IgniteTable tbl = new IgniteTableImpl(desc, pkCollation);
         schema.addTable(tblName, tbl);
 
-        IgniteIndex pkIdx = new IgniteIndex(RelCollations.EMPTY,
-            IgniteTableImpl.PK_INDEX_NAME, (GridIndex<H2Row>)pk, tbl);
-
+        IgniteIndex pkIdx = new IgniteIndex(pkCollation, IgniteTableImpl.PK_INDEX_NAME, (GridIndex<H2Row>)pk, tbl);
         tbl.addIndex(pkIdx);
 
         if (desc.keyField() != QueryUtils.KEY_COL) {
-            IgniteIndex pkAliasIdx = new IgniteIndex(RelCollations.EMPTY,
-                IgniteTableImpl.PK_ALIAS_INDEX_NAME, (GridIndex<H2Row>) pk, tbl);
+            RelCollation pkAliasCollation = RelCollations.of(new RelFieldCollation(desc.keyField()));
+
+            IgniteIndex pkAliasIdx =
+                new IgniteIndex(pkAliasCollation, IgniteTableImpl.PK_ALIAS_INDEX_NAME,(GridIndex<H2Row>) pk, tbl);
 
             tbl.addIndex(pkAliasIdx);
         }

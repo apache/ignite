@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import com.google.common.collect.ImmutableList;
 import java.io.Reader;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
@@ -56,18 +55,12 @@ import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-
-import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl.PK_INDEX_NAME;
 
 /**
  * Query planer.
@@ -242,7 +235,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public RelNode transform(int programIdx, RelTraitSet targetTraits, RelNode rel) {
-        return programs.get(programIdx).run(planner(), rel, targetTraits.simplify(), materializations(rel), latices());
+        return programs.get(programIdx).run(planner(), rel, targetTraits.simplify(), materializations(), latices());
     }
 
     /**
@@ -254,7 +247,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @return The root of the new RelNode tree.
      */
     public <T extends RelNode> T transform(PlannerPhase phase, RelTraitSet targetTraits, RelNode rel) {
-        return (T) phase.getProgram(ctx).run(planner(), rel, targetTraits.simplify(), materializations(rel), latices());
+        return (T) phase.getProgram(ctx).run(planner(), rel, targetTraits.simplify(), materializations(), latices());
     }
 
     /** {@inheritDoc} */
@@ -302,34 +295,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /**
      * Returns all applicable materializations (i.e. secondary indexes) for the given rel node,
-     * @param root Rel node
      * @return Materializations.
      */
-    private List<RelOptMaterialization> materializations(RelNode root) {
-        RelOptCluster cluster = root.getCluster();
-
-        List<RelOptTable> tbls = RelOptUtil.findAllTables(root);
-
-        List<RelOptMaterialization> idxMaterializations = new ArrayList<>();
-
-        for (RelOptTable tbl : tbls) {
-            IgniteTable igniteTbl = tbl.unwrap(IgniteTable.class);
-
-            IgniteTableScan tblScan = igniteTbl.toRel(cluster, tbl, PK_INDEX_NAME);
-
-            for (IgniteIndex idx : igniteTbl.indexes().values()) {
-                ImmutableList<String> names = ImmutableList.<String>builder()
-                    .addAll(Util.skipLast(tbl.getQualifiedName()))
-                    .add(Util.last(tbl.getQualifiedName()) + "[" + idx.name() + "]")
-                    .build();
-
-                IgniteTableScan idxTblScan = igniteTbl.toRel(cluster, tbl, idx.name());
-
-                idxMaterializations.add(new RelOptMaterialization(idxTblScan, tblScan, null, names));
-            }
-        }
-
-        return idxMaterializations;
+    private List<RelOptMaterialization> materializations() {
+        return ImmutableList.of(); // TODO
     }
 
     /**
