@@ -19,12 +19,18 @@ package org.apache.ignite.compatibility.sql.model;
 import org.apache.ignite.cache.QueryEntity;
 
 /**
- * TODO: Add class description.
+ * Factory for model.
  */
 public interface ModelFactory {
-
+    /** Creates random model objects. */
     Object createRandom();
+
+    /** Returns model's query entity. */
     QueryEntity queryEntity();
+
+    /** Returns model's table name. */
     String tableName();
+
+    /** Returns number of model instances. */
     int count();
 }

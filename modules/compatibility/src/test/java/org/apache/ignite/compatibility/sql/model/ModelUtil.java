@@ -49,7 +49,4 @@ public class ModelUtil {
 
     private ModelUtil() {
     }
-
-
-
 }

@@ -18,7 +18,6 @@ package org.apache.ignite.compatibility.sql.util;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.function.Supplier;
@@ -31,7 +30,7 @@ public class QueryExecutionTimer implements Supplier<Long> {
     private final String qry;
 
     /** */
-    private final SimpleConnectionPool connPool; // TODO check query result.
+    private final SimpleConnectionPool connPool;
 
     /** */
     public QueryExecutionTimer(String qry, SimpleConnectionPool connPool) {
@@ -47,18 +46,8 @@ public class QueryExecutionTimer implements Supplier<Long> {
 
         try (Statement stmt = conn.createStatement()) {
             try (ResultSet rs = stmt.executeQuery(qry)) {
-                int cnt = 0;
-                while (rs.next()) { // TODO check for empty result
-                    cnt++;
-                }
-
-                ResultSetMetaData md = rs.getMetaData();
-                StringBuilder sb = new StringBuilder();
-                for (int i = 1; i <= md.getColumnCount(); i++) {
-                    if (i > 0)
-                        sb.append(", ");
-
-                    sb.append(md.getColumnName(i));
+                while (rs.next()) {
+                    // Just read the full result set.
                 }
             }
         }

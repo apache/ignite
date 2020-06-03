@@ -92,7 +92,7 @@ public class Person {
         private static final String TABLE_NAME = "person";
 
         /** Person count. */
-        private static final int PERSON_CNT = 10_000; // TODO scale
+        private static final int PERSON_CNT = 10_000;
 
         /**  */
         private final Random rnd;

@@ -22,6 +22,7 @@ import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest
 import org.apache.ignite.compatibility.persistence.MetaStorageCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.MigratingToWalV2SerializerWithCompactionTest;
 import org.apache.ignite.compatibility.persistence.PersistenceBasicCompatibilityTest;
+import org.apache.ignite.compatibility.sql.SqlQueryRegressionsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -34,7 +35,8 @@ import org.junit.runners.Suite;
     FoldersReuseCompatibilityTest.class,
     MigratingToWalV2SerializerWithCompactionTest.class,
     MetaStorageCompatibilityTest.class,
-    LocalCacheTest.class
+    LocalCacheTest.class,
+    SqlQueryRegressionsTest.class
 })
 public class IgniteCompatibilityBasicTestSuite {
 }

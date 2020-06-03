@@ -95,14 +95,6 @@ public class QueryDuelRunner implements Runnable {
                 oldQryExecTimes.add(oldRes);
                 newQryExecTimes.add(newRes);
 
-//                if (GridAbstractTest.log.isDebugEnabled()) {
-//                    GridAbstractTest.log.debug("Query running time: newVer" + newRes + ", oldVer=" + oldRes +
-//                        ", diff=" + (newRes - oldRes));
-//                }
-
-                System.out.println(("Query running time: newVer=" + newRes + ", oldVer=" + oldRes +
-                        ", diff=" + (newRes - oldRes)));
-
                 if (isSuccessfulRun(oldRes, newRes))
                     successCnt--;
 
@@ -130,7 +122,6 @@ public class QueryDuelRunner implements Runnable {
      * @return {@code True} if a query execution time in the new engine is not much longer than in the old one.
      */
     public boolean isSuccessfulRun(Long oldRes, Long newRes) {
-        // TODO move magic numbers to constants.
         final double epsilon = 10.0; // Let's say 10 ms is about statistical error.
 
         if (oldRes < newRes && (oldRes > epsilon || newRes > epsilon)) {

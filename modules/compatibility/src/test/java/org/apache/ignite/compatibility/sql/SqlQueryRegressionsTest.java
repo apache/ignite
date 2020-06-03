@@ -78,7 +78,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
     private static final int WORKERS_CNT = IgniteConfiguration.DFLT_QUERY_THREAD_POOL_SIZE / 2;
 
     /** */
-    private static final long TEST_TIMEOUT = 10_000;
+    private static final long TEST_TIMEOUT = 60_000;
 
     /** */
     private static final long WARM_UP_TIMEOUT = 5_000;
@@ -123,7 +123,6 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
         dependencies.add(new Dependency("indexing", "ignite-indexing", false));
 
-        // TODO add and exclude proper versions of h2
         dependencies.add(new Dependency("h2", "com.h2database", "h2", "1.4.195", false));
 
         return dependencies;
@@ -168,7 +167,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
                 // 1. Initial run.
                 Collection<QueryDuelResult> suspiciousQrys =
-                    benchmark.runBenchmark(WARM_UP_TIMEOUT, qrysSupplier, 1, 1);
+                    benchmark.runBenchmark(TEST_TIMEOUT, qrysSupplier, 1, 1);
 
                 if (suspiciousQrys.isEmpty())
                     return; // No suspicious queries - no problem.
@@ -317,5 +316,4 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
             }
         }
     }
-
 }

@@ -36,7 +36,7 @@ public class SimpleConnectionPool implements AutoCloseable {
     /** */
     public SimpleConnectionPool(String url, int port, int size) throws SQLException {
         connPool = new ArrayList<>(size);
-        usedConnections = new ArrayList<>(size); // "jdbc:ignite:thin://127.0.0.1:"
+        usedConnections = new ArrayList<>(size);
 
         for (int i = 0; i < size; i++) {
             Connection conn = DriverManager.getConnection(url + port);
