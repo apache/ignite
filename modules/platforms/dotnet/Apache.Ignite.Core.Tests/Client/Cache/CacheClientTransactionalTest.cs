@@ -65,8 +65,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests that rollback reverts cache changes.
         /// </summary>
         [Test]
-        public void TestTxRollback([Values(true /*, false*/)]
-            bool async)
+        public void TestTxRollback()
         {
             var cache = TransactionalCache();
 
@@ -107,21 +106,36 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
-        /// Tests that multiple transactions can not be started in one thread.
+        /// Tests that client can't start multiple transactions in one thread.
         /// </summary>
         [Test]
         public void TestThrowsIfMultipleStarted()
         {
             Assert.Throws<IgniteClientException>(() =>
             {
-                using (var tx = Client.Transactions.TxStart())
-                using (var tx1 = Client.Transactions.TxStart())
+                using (Client.Transactions.TxStart())
+                using (Client.Transactions.TxStart())
                 {
                     // No-op.
                 }
             });
         }
-        
+
+        /// <summary>
+        /// Tests that client can't start multiple transactions in one thread.
+        /// </summary>
+        [Test]
+        public void TestDifferentClientsCanStartTransactions()
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                using (Client.Transactions.TxStart())
+                using (GetClient().Transactions.TxStart())
+                {
+                    // No-op.
+                }
+            });
+        }
         /// <summary>
         /// Gets or creates transactional cache
         /// </summary>

@@ -18,6 +18,9 @@
 namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Threading;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Transactions;
@@ -25,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     /// <summary>
     /// Ignite Thin Client transactions facade.
     /// </summary>
-    internal class ClientTransactions : IClientTransactions
+    internal class ClientTransactions : IClientTransactions, IDisposable
     {
         /** Ignite. */
         private readonly IgniteClient _ignite;
@@ -42,6 +45,9 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** Default transaction timeout. */
         private readonly TimeSpan _dfltTimeout = TimeSpan.Zero;
 
+        /** Transaction for this thread and client. */
+        private readonly ThreadLocal<ClientTransaction> _currentTx = new ThreadLocal<ClientTransaction>();
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -51,6 +57,16 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         {
             _ignite = ignite;
             _label = label;
+        }
+
+        internal ClientTransaction CurrentTx
+        {
+            get { return _currentTx.Value; }
+        }
+
+        internal void ClearCurrentTx()
+        {
+            _currentTx.Value = null;
         }
 
         /** <inheritDoc /> */
@@ -69,6 +85,11 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         public IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
             TimeSpan timeout)
         {
+            if (CurrentTx != null)
+            {
+                throw new IgniteClientException("Already started tx in current thread");
+            }
+
             var txId = _ignite.Socket.DoOutInOp(
                 ClientOp.TxStart,
                 ctx =>
@@ -80,14 +101,24 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                 },
                 ctx => ctx.Reader.ReadInt()
             );
-            
-            return new ClientTransaction(txId, _ignite);
+
+            _currentTx.Value = new ClientTransaction(txId, _ignite, this);
+            return _currentTx.Value;
         }
 
         /** <inheritDoc /> */
         public IClientTransactions WithLabel(string label)
         {
             return new ClientTransactions(_ignite, _label); 
+        }
+
+        /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Usage",
+            "CA1816:CallGCSuppressFinalizeCorrectly",
+            Justification = "There is no finalizer.")]
+        public void Dispose()
+        {
+            _currentTx.Dispose();
         }
     }
 }

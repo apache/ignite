@@ -32,46 +32,23 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** Ignite. */
         private readonly IgniteClient _ignite;
 
+        /* Transactions. */
+        private readonly ClientTransactions _transactions;
+
         /** Transaction is closed. */
         private volatile bool _closed; 
-
-        // ReSharper disable once InconsistentNaming
-        /** Transaction for this thread. */
-        [ThreadStatic]
-        private static ClientTransaction THREAD_TX;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="id">ID.</param>
-        public ClientTransaction(int id, IgniteClient ignite)
+        /// <param name="ignite"></param>
+        /// <param name="transactions"></param>
+        public ClientTransaction(int id, IgniteClient ignite, ClientTransactions transactions)
         {
             _id = id;
             _ignite = ignite;
-            THREAD_TX = this;
-        }
-
-        /// <summary>
-        /// Transaction assigned to this thread.
-        /// </summary>
-        public static ClientTransaction Current
-        {
-            get
-            {
-                var tx = THREAD_TX;
-
-                if (tx == null)
-                    return null;
-
-                if (tx._closed)
-                {
-                    THREAD_TX = null;
-
-                    return null;
-                }
-
-                return tx;
-            }
+            _transactions = transactions;
         }
 
         public void Commit()
@@ -123,16 +100,16 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                     _ignite.Socket.DoOutInOp<object>(ClientOp.TxEnd,
                         ctx =>
                         {
-                            ctx.Writer.WriteInt(THREAD_TX._id);
+                            ctx.Writer.WriteInt(_id);
                             ctx.Writer.WriteBoolean(commit);
                         },
                         null);
                 }
                 finally
                 {
+                    _transactions.ClearCurrentTx();
                     _closed = true;
                 }
-
             }
         }
 

@@ -111,6 +111,7 @@ namespace Apache.Ignite.Core.Impl.Client
         public void Dispose()
         {
             _socket.Dispose();
+            _transactions.Dispose();
         }
 
         /** <inheritDoc /> */
@@ -197,7 +198,13 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        public IClientTransactions Transactions
+        IClientTransactions IIgniteClient.Transactions
+        {
+            get { return _transactions; }
+        }
+
+        /** Internal transactions representation. */
+        internal ClientTransactions Transactions
         {
             get { return _transactions; }
         }

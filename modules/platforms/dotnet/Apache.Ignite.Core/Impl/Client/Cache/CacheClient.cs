@@ -763,7 +763,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 flags = flags | ClientCacheRequestFlag.WithExpiryPolicy;
             }
 
-            var tx = ClientTransaction.Current;
+            var tx = _ignite.Transactions.CurrentTx;
             if (tx != null)
             {
                 flags |= ClientCacheRequestFlag.WithTransactional;
