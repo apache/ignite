@@ -67,7 +67,7 @@ public class QueryDuelBenchmark {
 
         while (System.currentTimeMillis() < end && !stop.get()) {
             QueryDuelRunner runner = new QueryDuelRunner(oldConnPool, newConnPool,
-                stop, qrySupplier , suspiciousQrys, successCnt, attemptsCnt);
+                stop, qrySupplier, suspiciousQrys, successCnt, attemptsCnt);
 
             exec.execute(runner);
         }

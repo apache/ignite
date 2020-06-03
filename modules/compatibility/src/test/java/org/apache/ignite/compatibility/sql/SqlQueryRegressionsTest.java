@@ -139,7 +139,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return  2 * TEST_TIMEOUT + WARM_UP_TIMEOUT + super.getTestTimeout();
+        return 2 * TEST_TIMEOUT + WARM_UP_TIMEOUT + super.getTestTimeout();
     }
 
     /**
