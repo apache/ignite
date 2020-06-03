@@ -85,7 +85,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
         if (!PERMS.containsKey(cred))
             return null;
 
-        return new TestSecurityContext(
+        SecurityContext res = new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(REMOTE_NODE)
                 .setId(node.id())
@@ -94,6 +94,10 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setPerms(PERMS.get(cred))
                 .sandboxPermissions(SANDBOX_PERMS.get(cred))
         );
+
+        SECURITY_CONTEXTS.put(res.subject().id(), res);
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -136,7 +140,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** {@inheritDoc} */
     @Override public SecuritySubject authenticatedSubject(UUID subjId) {
-        return null;
+        return securityContext(subjId).subject();
     }
 
     /** {@inheritDoc} */
