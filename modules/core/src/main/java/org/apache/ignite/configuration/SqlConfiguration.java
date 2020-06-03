@@ -45,6 +45,9 @@ public class SqlConfiguration {
     /** SQL query history size. */
     private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
 
+    /** Enable validation of key & values against sql schema. */
+    private boolean validationEnabled;
+
     /**
      * Defines the default query timeout.
      *
@@ -143,6 +146,26 @@ public class SqlConfiguration {
      */
     public SqlConfiguration setLongQueryWarningTimeout(long longQryWarnTimeout) {
         this.longQryWarnTimeout = longQryWarnTimeout;
+
+        return this;
+    }
+
+    /**
+     *
+     * @return {@code true} When key & value shall be validated against SQL schema.
+     */
+    public boolean isValidationEnabled() {
+        return validationEnabled;
+    }
+
+    /**
+     *
+     * @param validationEnabled {@code true} When key & value shall be validated against SQL schema.
+     * Default value is {@code false}.
+     * @return {@code this} for chaining.
+     */
+    public SqlConfiguration setValidationEnabled(boolean validationEnabled) {
+        this.validationEnabled = validationEnabled;
 
         return this;
     }

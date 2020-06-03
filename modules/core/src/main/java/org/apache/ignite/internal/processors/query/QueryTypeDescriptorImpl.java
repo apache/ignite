@@ -420,13 +420,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
             throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
 
-        if (prop.notNull()) {
-            if (validateProps == null)
-                validateProps = new ArrayList<>();
-
-            validateProps.add(prop);
-        }
-        else if (prop.precision() != -1) {
+        if (prop.notNull() || prop.precision() != -1 ||
+            coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled()) {
             if (validateProps == null)
                 validateProps = new ArrayList<>();
 
@@ -583,6 +578,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (F.isEmpty(validateProps))
             return;
 
+        final boolean validateTypes = coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled();
+
         for (int i = 0; i < validateProps.size(); ++i) {
             GridQueryProperty prop = validateProps.get(i);
 
@@ -605,6 +602,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             if (propVal == null && prop.notNull()) {
                 throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'",
                     isKey ? NULL_KEY : NULL_VALUE);
+            }
+
+            if (validateTypes && propVal != null && !prop.type().isAssignableFrom(propVal.getClass())) {
+                throw new IgniteSQLException("Type for a column '" + prop.name() +
+                        "' is not compatible with table definition. Expected '"
+                        + prop.type().getSimpleName() + "', actual type '" + propVal.getClass().getSimpleName() + "'");
             }
 
             if (propVal == null || prop.precision() == -1)
