@@ -75,9 +75,9 @@ namespace Apache.Ignite.Core.Tests
             var lock1 = Ignite.GetOrCreateLock(lockName);
             var lock2 = Ignite2.GetOrCreateLock(lockName);
             
+            lock2.Enter();
             lock1.Dispose();
             
-            lock2.Enter();
         }
 
         /// <summary>

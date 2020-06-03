@@ -35,9 +35,10 @@ namespace Apache.Ignite.Core.Impl
             Lock = 1,
             TryLock = 2,
             Unlock = 3,
-            Close = 4,
+            Remove = 4,
             IsBroken = 5,
-            IsLocked = 6
+            IsLocked = 6,
+            IsRemoved = 7
         }
 
         /** */
@@ -45,9 +46,6 @@ namespace Apache.Ignite.Core.Impl
         
         /** */
         private readonly LockConfiguration _cfg;
-
-        /** */
-        private long _disposed;
 
         /// <summary>
         /// Initializes a new instance of <see cref="IgniteLock"/>.
@@ -64,12 +62,6 @@ namespace Apache.Ignite.Core.Impl
         public LockConfiguration Configuration
         {
             get { return new LockConfiguration(_cfg); }
-        }
-
-        /** <inheritDoc /> */
-        public bool IsDisposed
-        {
-            get { return Interlocked.Read(ref _disposed) != 0; }
         }
 
         /** <inheritDoc /> */
@@ -109,12 +101,15 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritDoc /> */
-        public void Dispose()
+        public void Remove()
         {
-            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
-            {
-                Target.InLongOutLong((int) Op.Close, 0);
-            }
+            Target.InLongOutLong((int) Op.Remove, 0);
+        }
+
+        /** <inheritDoc /> */
+        public bool IsRemoved()
+        {
+            return Target.InLongOutLong((int) Op.IsRemoved, 0) == True;
         }
     }
 }

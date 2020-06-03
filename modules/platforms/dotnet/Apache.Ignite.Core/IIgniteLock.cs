@@ -28,17 +28,12 @@ namespace Apache.Ignite.Core
     /// <para />
     /// This API corresponds to <c>IgniteLock</c> in Java.
     /// </summary>
-    public interface IIgniteLock : IDisposable
+    public interface IIgniteLock
     {
         /// <summary>
         /// Gets the lock configuration.
         /// </summary>
         LockConfiguration Configuration { get; }
-        
-        /// <summary>
-        /// Gets a value indicating whether current instance has been disposed.
-        /// </summary>
-        bool IsDisposed { get; }
 
         void Enter(); // TODO: Rename to Enter, TryEnter - like CacheLock, Monitor, etc?
 
@@ -54,7 +49,17 @@ namespace Apache.Ignite.Core
         /// Determines whether the current thread holds the lock.
         /// </summary>
         bool IsEntered();
+
+        /// <summary>
+        /// Removes the lock from the cluster.
+        /// </summary>
+        void Remove();
         
+        /// <summary>
+        /// Gets a value indicating whether the lock has been removed from the cluster.
+        /// </summary>
+        bool IsRemoved();
+
         // TODO: IgniteCondition is like Monitor.Wait / Pulse
         // TODO: EnterInterruptedly? Likely no - interrupted state is not shared across .NET <-> Java boundary 
     }

@@ -36,13 +36,16 @@ class PlatformLock extends PlatformAbstractTarget {
     private static final int OP_UNLOCK = 3;
 
     /** */
-    private static final int OP_CLOSE = 4;
+    private static final int OP_REMOVE = 4;
 
     /** */
     private static final int OP_IS_BROKEN = 5;
 
     /** */
     private static final int OP_IS_LOCKED = 6;
+
+    /** */
+    private static final int OP_IS_REMOVED = 7;
 
     /** Wrapped lock. */
     private final IgniteLock lock;
@@ -81,7 +84,7 @@ class PlatformLock extends PlatformAbstractTarget {
                 return TRUE;
             }
 
-            case OP_CLOSE: {
+            case OP_REMOVE: {
                 if (lock.isHeldByCurrentThread())
                     lock.unlock();
 
@@ -96,6 +99,10 @@ class PlatformLock extends PlatformAbstractTarget {
 
             case OP_IS_LOCKED: {
                 return lock.isLocked() ? TRUE : FALSE;
+            }
+
+            case OP_IS_REMOVED: {
+                return lock.removed() ? TRUE : FALSE;
             }
         }
 
