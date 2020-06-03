@@ -25,13 +25,25 @@ namespace Apache.Ignite.Core.Tests
     public class IgniteLockTests : TestBase
     {
         [Test]
-        public void TestLockUnlock()
+        public void TestBasicLocking()
         {
-            using (var lck = Ignite.GetOrCreateLock("my-lock", true, false, true))
+            using (var lck = Ignite.GetOrCreateLock("my-lock", failoverSafe: true, fair: false, create: true))
             {
+                Assert.IsTrue(lck.IsFailoverSafe);
+                Assert.IsFalse(lck.IsFair);
+                
+                Assert.False(lck.IsLocked());
+                Assert.False(lck.IsBroken());
+                
                 Assert.IsTrue(lck.TryLock());
                 
+                Assert.IsTrue(lck.IsLocked());
+                Assert.False(lck.IsBroken());
+                
                 lck.Unlock();
+                
+                Assert.False(lck.IsLocked());
+                Assert.False(lck.IsBroken());
             }
         }
 

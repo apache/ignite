@@ -71,13 +71,13 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritDoc /> */
-        public bool FailoverSafe
+        public bool IsFailoverSafe
         {
             get { return _failoverSafe; }
         }
 
         /** <inheritDoc /> */
-        public bool Fair
+        public bool IsFair
         {
             get { return _fair; }
         }

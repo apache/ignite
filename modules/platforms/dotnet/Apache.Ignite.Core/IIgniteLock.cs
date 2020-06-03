@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core
         /// all locks already acquired by that node are silently released and become available for other nodes
         /// to acquire. When false, all threads on other nodes waiting to acquire the lock are interrupted.
         /// </summary>
-        bool FailoverSafe { get; }
+        bool IsFailoverSafe { get; }
         
         /// <summary>
         /// Gets a value indicating whether this lock is in fair mode.
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core
         /// Fair locks accessed by many threads may display lower overall throughput than those using the default
         /// setting, but have smaller variances in times to obtain locks and guarantee lack of starvation.
         /// </summary>
-        bool Fair { get; }
+        bool IsFair { get; }
 
         void Lock(); // TODO: Rename to Enter, TryEnter - like CacheLock, Monitor, etc?
 
