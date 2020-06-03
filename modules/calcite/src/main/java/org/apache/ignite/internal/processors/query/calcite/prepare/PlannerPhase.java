@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterR
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalFilterMergeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalFilterProjectTransposeRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.decorrelate;
@@ -89,6 +90,7 @@ public enum PlannerPhase {
                 TableModifyConverterRule.INSTANCE,
                 PushFilterIntoScanRule.FILTER_INTO_SCAN,
                 ProjectFilterTransposeRule.INSTANCE,
+                LogicalOrToUnionRule.INSTANCE,
                 UnionMergeRule.INSTANCE,
                 UnionConverterRule.INSTANCE,
                 UnionTraitsPropagationRule.INSTANCE,
