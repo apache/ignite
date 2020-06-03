@@ -184,7 +184,7 @@ public class CacheContinuousQueryEventBuffer {
         Object res = null;
 
         for (;;) {
-            // Init bach only if null (first attempt).
+            // Set bach only if batch is null (first attempt).
             batch = initBatch(entry.topologyVersion(), backup);
 
             if (batch == null || cntr < batch.startCntr) {

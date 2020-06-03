@@ -18,6 +18,10 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchForceServerModeAckTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBufferLimitPartitionedAtomicTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBufferLimitPartitionedTxTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBufferLimitReplicatedAtomicTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBufferLimitReplicatedTxTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryConcurrentPartitionUpdateTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryCounterPartitionedAtomicTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryCounterPartitionedTxTest;
@@ -73,7 +77,12 @@ import org.junit.runners.Suite;
     CacheContinuousQueryCounterPartitionedAtomicTest.class,
     CacheContinuousQueryCounterPartitionedTxTest.class,
     CacheContinuousQueryCounterReplicatedAtomicTest.class,
-    CacheContinuousQueryCounterReplicatedTxTest.class
+    CacheContinuousQueryCounterReplicatedTxTest.class,
+
+    CacheContinuousQueryBufferLimitPartitionedAtomicTest.class,
+    CacheContinuousQueryBufferLimitPartitionedTxTest.class,
+    CacheContinuousQueryBufferLimitReplicatedAtomicTest.class,
+    CacheContinuousQueryBufferLimitReplicatedTxTest.class
 })
 public class IgniteCacheQuerySelfTestSuite3 {
 }

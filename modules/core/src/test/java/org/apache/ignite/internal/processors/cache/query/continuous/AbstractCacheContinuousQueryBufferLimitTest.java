@@ -24,7 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -51,7 +53,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -60,7 +61,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  *
  */
-public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest {
+public abstract class AbstractCacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest {
     /** Cache partitions count. */
     private static final int PARTS = 1;
 
@@ -101,7 +102,8 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
         return super.getConfiguration(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                .setAtomicityMode(ATOMIC)
+                .setAtomicityMode(atomicityMode())
+                .setCacheMode(cacheMode())
                 .setBackups(1)
                 .setAffinity(new RendezvousAffinityFunction(false, PARTS)));
     }
@@ -117,6 +119,16 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     public void stopAllInstances() {
         stopAllGrids();
     }
+
+    /**
+     * @return Cache mode.
+     */
+    protected abstract CacheMode cacheMode();
+
+    /**
+     * @return Cache atomicity mode.
+     */
+    protected abstract CacheAtomicityMode atomicityMode();
 
     /**
      * @param locBlockPred Block predicate on local node to emulate message delivery issues.
@@ -138,7 +150,6 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             cache.put(i, i);
 
         assertEquals(PARTS, ccfg.getAffinity().partitions());
-        assertEquals(ATOMIC, ccfg.getAtomicityMode());
 
         AtomicLong lastAcked = new AtomicLong();
 
@@ -163,7 +174,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
             UUID routineId = rmtQryView.iterator().next().routineId();
 
-            // Partition Id, Update Counter, Continuous Entry
+            // Partition Id, Update Counter, Continuous Entry.
             ConcurrentMap<Long, CacheContinuousQueryEntry> pending =
                 getContinuousQueryPendingBuffer(rmtIgnite, routineId, CU.cacheId(DEFAULT_CACHE_NAME), 0);
 
@@ -177,7 +188,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
             assertNotNull("Partition remote buffers must be inited", pending);
 
-            log.warning("Waiting for pending buffer to being overflowed within " + OVERFLOW_TIMEOUT_MS + " ms.");
+            log.warning("Waiting for pending buffer being overflowed within " + OVERFLOW_TIMEOUT_MS + " ms.");
 
             boolean await = waitForCondition(() -> pending.size() > PENDING_LIMIT, OVERFLOW_TIMEOUT_MS);
 
@@ -191,8 +202,6 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             if (updFut != null)
                 updFut.cancel();
         }
-
-        stopAllGrids();
     }
 
     /**
