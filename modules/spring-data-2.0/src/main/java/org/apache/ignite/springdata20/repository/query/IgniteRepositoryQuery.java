@@ -121,7 +121,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     @Override public Object execute(Object[] prmtrs) {
         Query qry = prepareQuery(prmtrs);
 
-        try(QueryCursor qryCursor = cache.query(qry)) {
+        try (QueryCursor qryCursor = cache.query(qry)) {
             return transformQueryCursor(prmtrs, qryCursor);
         }
     }
