@@ -996,9 +996,17 @@ namespace Apache.Ignite.Core.Impl
                 s => configuration.Write(BinaryUtils.Marshaller.StartMarshal(s)));
         }
 
+        /** <inheritdoc /> */
         public IIgniteLock GetOrCreateLock(string name)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            var configuration = new LockConfiguration
+            {
+                Name = name
+            };
+            
+            return GetOrCreateLock(configuration, true);
         }
 
         /** <inheritdoc /> */

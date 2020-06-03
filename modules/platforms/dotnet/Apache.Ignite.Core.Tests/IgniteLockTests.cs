@@ -51,6 +51,12 @@ namespace Apache.Ignite.Core.Tests
         }
 
         [Test]
+        public void TestConfiguration()
+        {
+            
+        }
+
+        [Test]
         public void TestNonFailoverSafeLockThrowsExceptionOnAllNodesWhenOwnerLeaves()
         {
             // TODO
