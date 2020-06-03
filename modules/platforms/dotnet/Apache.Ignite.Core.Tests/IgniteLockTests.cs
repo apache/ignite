@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
@@ -87,16 +88,20 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new LockConfiguration
             {
-                Name = "my-lock"
+                Name = TestUtils.TestName
             };
             
             var lck = Ignite.GetOrCreateLock(cfg, true);
             
             lck.Enter();
             Assert.IsTrue(lck.IsEntered());
-            
-            lck.Remove();
 
+            var ex = Assert.Throws<IgniteException>(() => lck.Remove());
+            StringAssert.StartsWith("Failed to remove reentrant lock with blocked threads", ex.Message);
+            
+            lck.Exit();
+            lck.Remove();
+            
             Assert.IsNull(Ignite.GetOrCreateLock(cfg, false));
         }
 
