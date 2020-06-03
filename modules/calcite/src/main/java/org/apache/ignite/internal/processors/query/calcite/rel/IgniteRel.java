@@ -18,16 +18,17 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * A superinterface of all Ignite relational nodes.
  */
-public interface IgniteRel extends RelNode {
+public interface IgniteRel extends PhysicalNode {
     /**
      * Accepts a visit from a visitor.
      *
@@ -40,13 +41,25 @@ public interface IgniteRel extends RelNode {
      * @return Node distribution.
      */
     default IgniteDistribution distribution() {
-        return getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
+        return Commons.distribution(getTraitSet());
     }
 
     /**
      * @return Node collations.
      */
-    default List<RelCollation> collations() {
-        return getTraitSet().getTraits(RelCollationTraitDef.INSTANCE);
+    default RelCollation collation() {
+        return Commons.collation(getTraitSet());
+    }
+
+    /** {@inheritDoc} */
+    @Override default Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(
+        RelTraitSet required) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override default Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(
+        RelTraitSet childTraits, int childId) {
+        return null;
     }
 }

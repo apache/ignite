@@ -19,10 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.logical.LogicalExchange;
 
 /**
  *
@@ -43,16 +40,7 @@ public class DistributionTraitDef extends RelTraitDef<IgniteDistribution> {
 
     /** {@inheritDoc} */
     @Override public RelNode convert(RelOptPlanner planner, RelNode rel, IgniteDistribution toDist, boolean allowInfiniteCostConverters) {
-        if (toDist.getType() == RelDistribution.Type.ANY)
-            return null;
-
-        LogicalExchange exchange = LogicalExchange.create(rel, toDist);
-        RelNode newRel = planner.register(exchange, rel);
-        RelTraitSet newTraits = rel.getTraitSet().replace(toDist);
-        if (!newRel.getTraitSet().equals(newTraits))
-            newRel = planner.changeTraits(newRel, newTraits);
-
-        return newRel;
+        return TraitUtils.convertDistribution(planner, toDist, rel);
     }
 
     /** {@inheritDoc} */
@@ -62,6 +50,6 @@ public class DistributionTraitDef extends RelTraitDef<IgniteDistribution> {
 
     /** {@inheritDoc} */
     @Override public IgniteDistribution getDefault() {
-        return IgniteDistributions.any();
+        return IgniteDistributions.single();
     }
 }

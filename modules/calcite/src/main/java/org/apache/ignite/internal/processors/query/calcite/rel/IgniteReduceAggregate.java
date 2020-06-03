@@ -33,7 +33,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
@@ -54,7 +53,7 @@ public class IgniteReduceAggregate extends SingleRel implements IgniteRel {
 
         assert rowType != null;
         assert RelOptUtil.areRowTypesEqual(input.getRowType(),
-            Commons.aggregationDataRowType(getCluster().getTypeFactory()), true);
+            IgniteMapAggregate.rowType(getCluster().getTypeFactory()), true);
         this.groupSet = groupSet;
         if (groupSets == null)
             groupSets = ImmutableList.of(groupSet);

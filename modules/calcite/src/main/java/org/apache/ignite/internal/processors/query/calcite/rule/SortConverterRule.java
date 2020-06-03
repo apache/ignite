@@ -17,41 +17,35 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalSort;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 
 /**
  * Converter rule for sort operator.
  */
-public class SortConverterRule extends RelOptRule {
+public class SortConverterRule extends AbstractIgniteConverterRule<LogicalSort> {
     /** */
     public static final RelOptRule INSTANCE = new SortConverterRule();
 
     /** */
     public SortConverterRule() {
-        super(operand(LogicalSort.class, any()));
+        super(LogicalSort.class);
     }
 
     /** {@inheritDoc} */
-    @Override public void onMatch(RelOptRuleCall call) {
-        LogicalSort rel = call.rel(0);
-
+    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalSort rel) {
         RelOptCluster cluster = rel.getCluster();
-        RelTraitSet traits = cluster.traitSet()
-            .replace(IgniteConvention.INSTANCE)
-            .replace(rel.getCollation());
+        RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(rel.getCollation());
+        RelTraitSet inTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        RelNode input = convert(rel.getInput(), inTraits);
 
-        RelTraitSet inputTraits = cluster.traitSet()
-            .replace(IgniteConvention.INSTANCE);
-
-        RelNode input = convert(rel.getInput(), inputTraits);
-
-        RuleUtils.transformTo(call,
-            new IgniteSort(cluster, traits, input, rel.getCollation(), rel.offset, rel.fetch));
+        return new IgniteSort(cluster, outTraits, input, rel.getCollation(), rel.offset, rel.fetch);
     }
 }

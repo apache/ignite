@@ -265,11 +265,9 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Inbox<Row> inbox = (Inbox<Row>) mailboxRegistry.register(
             new Inbox<>(ctx, exchangeSvc, mailboxRegistry, rel.exchangeId(), rel.sourceFragmentId()));
 
-        RelCollation collation = F.isEmpty(rel.collations()) ? null : rel.collations().get(0);
-
         // here may be an already created (to consume rows from remote nodes) inbox
         // without proper context, we need to init it with a right one.
-        inbox.init(ctx, ctx.remoteSources(rel.exchangeId()), expressionFactory.comparator(collation));
+        inbox.init(ctx, ctx.remoteSources(rel.exchangeId()), expressionFactory.comparator(rel.collation()));
 
         return inbox;
     }

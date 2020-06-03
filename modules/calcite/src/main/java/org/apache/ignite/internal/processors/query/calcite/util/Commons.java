@@ -37,6 +37,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
@@ -55,11 +56,11 @@ import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -297,19 +298,6 @@ public final class Commons {
     }
 
     /** */
-    public static RelDataType aggregationDataRowType(RelDataTypeFactory typeFactory) {
-        assert typeFactory instanceof IgniteTypeFactory;
-
-        RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
-
-        builder.add("GROUP_ID", typeFactory.createJavaType(byte.class));
-        builder.add("GROUP_KEY", typeFactory.createJavaType(GroupKey.class));
-        builder.add("AGG_DATA", typeFactory.createArrayType(typeFactory.createJavaType(Accumulator.class), -1));
-
-        return builder.build();
-    }
-
-    /** */
     public static String toJson(RelNode rel) {
         RelJsonWriter writer = new RelJsonWriter();
         rel.explain(writer);
@@ -353,6 +341,14 @@ public final class Commons {
         } catch (Exception e) {
             throw new IgniteException(e);
         }
+    }
+
+    public static IgniteDistribution distribution(RelTraitSet traits) {
+        return traits.getTrait(DistributionTraitDef.INSTANCE);
+    }
+
+    public static RelCollation collation(RelTraitSet traits) {
+        return traits.getTrait(RelCollationTraitDef.INSTANCE);
     }
 
     /** */

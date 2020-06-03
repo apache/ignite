@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -26,7 +28,9 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
@@ -71,5 +75,27 @@ public class IgniteExchange extends Exchange implements IgniteRel {
         double bytesPerRow = getRowType().getFieldCount();
         return planner.getCostFactory().makeCost(
             rowCount, rowCount, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
+        IgniteDistribution distribution = Commons.distribution(required);
+
+        if (!distribution().satisfies(distribution))
+            return null;
+
+        return Pair.of(required.replace(distribution()), ImmutableList.of(required.replace(IgniteDistributions.any())));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
+        assert childId == 0;
+
+        return Pair.of(childTraits.replace(distribution()), ImmutableList.of(childTraits.replace(IgniteDistributions.any())));
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEnforcer() {
+        return true;
     }
 }

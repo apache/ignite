@@ -24,6 +24,8 @@ import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
@@ -70,7 +72,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 // case when they are read, and whether identifiers are matched case-sensitively.
                 .setLex(Lex.ORACLE)
 //                .setParserFactory(SqlDdlParserImpl.FACTORY) // Enables DDL support
+                .setConformance(SqlConformanceEnum.DEFAULT)
                 .build())
+            .sqlValidatorConfig(SqlValidator.Config.DEFAULT
+                .withIdentifierExpansion(true)
+                .withSqlConformance(SqlConformanceEnum.DEFAULT))
             // Dialects support.
             .operatorTable(SqlLibraryOperatorTableFactory.INSTANCE
                 .getOperatorTable(

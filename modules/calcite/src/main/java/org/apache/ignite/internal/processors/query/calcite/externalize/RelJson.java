@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
@@ -66,6 +67,7 @@ import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexVariable;
 import org.apache.calcite.rex.RexWindow;
 import org.apache.calcite.rex.RexWindowBound;
+import org.apache.calcite.rex.RexWindowBounds;
 import org.apache.calcite.sql.JoinConditionType;
 import org.apache.calcite.sql.JoinType;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -298,9 +300,13 @@ class RelJson {
 
     /** */
     RelCollation toCollation(List<Map<String, Object>> jsonFieldCollations) {
-        List<RelFieldCollation> fieldCollations = new ArrayList<>();
-        for (Map<String, Object> map : jsonFieldCollations)
-            fieldCollations.add(toFieldCollation(map));
+        if (jsonFieldCollations == null)
+            return RelCollations.EMPTY;
+
+        List<RelFieldCollation> fieldCollations = jsonFieldCollations.stream()
+            .map(this::toFieldCollation)
+            .collect(Collectors.toList());
+
         return RelCollations.of(fieldCollations);
     }
 
@@ -599,22 +605,22 @@ class RelJson {
         String type = (String)map.get("type");
         switch (type) {
             case "CURRENT_ROW":
-                return RexWindowBound.create(
+                return RexWindowBounds.create(
                     SqlWindow.createCurrentRow(SqlParserPos.ZERO), null);
             case "UNBOUNDED_PRECEDING":
-                return RexWindowBound.create(
+                return RexWindowBounds.create(
                     SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO), null);
             case "UNBOUNDED_FOLLOWING":
-                return RexWindowBound.create(
+                return RexWindowBounds.create(
                     SqlWindow.createUnboundedFollowing(SqlParserPos.ZERO), null);
             case "PRECEDING":
                 RexNode precedingOffset = toRex(input, map.get("offset"));
-                return RexWindowBound.create(null,
+                return RexWindowBounds.create(null,
                     input.getCluster().getRexBuilder().makeCall(
                         SqlWindow.PRECEDING_OPERATOR, precedingOffset));
             case "FOLLOWING":
                 RexNode followingOffset = toRex(input, map.get("offset"));
-                return RexWindowBound.create(null,
+                return RexWindowBounds.create(null,
                     input.getCluster().getRexBuilder().makeCall(
                         SqlWindow.FOLLOWING_OPERATOR, followingOffset));
             default:
@@ -840,7 +846,7 @@ class RelJson {
 
                 return map;
             default:
-                throw new AssertionError("Unexpected type: " + type);
+                throw new AssertionError("Unexpected distribution type.");
         }
     }
 

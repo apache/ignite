@@ -16,20 +16,26 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+
+import static org.apache.calcite.rel.RelDistribution.Type.ANY;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
 /**
  * Ignite sort operator.
  */
 public class IgniteSort extends Sort implements IgniteRel {
-
     /**
      * Constructor.
      *
@@ -64,7 +70,31 @@ public class IgniteSort extends Sort implements IgniteRel {
         return new IgniteSort(getCluster(), traitSet, newInput,newCollation, offset, fetch);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
+        if (Commons.distribution(required).getType() == ANY)
+            return passThroughTraits(required.replace(single()));
+
+        RelCollation collation = Commons.collation(required);
+
+        if (!collation().satisfies(collation))
+            return null;
+
+        return Pair.of(required.replace(collation()), ImmutableList.of(required.replace(RelCollations.EMPTY)));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
+        assert childId == 0;
+
+        if (Commons.distribution(childTraits).getType() == ANY)
+            return deriveTraits(childTraits.replace(single()), childId);
+
+        return Pair.of(childTraits.replace(collation()), ImmutableList.of(childTraits.replace(RelCollations.EMPTY)));
     }
 }

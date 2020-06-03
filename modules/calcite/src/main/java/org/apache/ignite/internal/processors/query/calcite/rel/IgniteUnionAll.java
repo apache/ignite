@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.apache.calcite.plan.DeriveMode;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Union;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
@@ -59,10 +62,40 @@ public class IgniteUnionAll extends Union implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        if (distribution().getType() == RelDistribution.Type.ANY)
-            return planner.getCostFactory().makeInfiniteCost();
+    @Override public RelNode passThrough(RelTraitSet required) {
+        IgniteDistribution toDistr = Commons.distribution(required);
 
-        return super.computeSelfCost(planner, mq);
+        RelTraitSet traits = getCluster().traitSetOf(IgniteConvention.INSTANCE)
+            .replace(toDistr);
+
+        List<RelNode> inputs0 = Commons.transform(inputs,
+            input -> RelOptRule.convert(input, traits));
+
+        return copy(traits, inputs0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<RelNode> derive(List<List<RelTraitSet>> inputTraits) {
+        RelOptCluster cluster = getCluster();
+
+        Set<RelTraitSet> traits = inputTraits.stream()
+            .flatMap(List::stream)
+            .map(Commons::distribution)
+            .map(distr -> cluster.traitSetOf(IgniteConvention.INSTANCE).replace(distr))
+            .collect(Collectors.toSet());
+
+        List<RelNode> res = new ArrayList<>(traits.size());
+        for (RelTraitSet traits0 : traits) {
+            List<RelNode> inputs0 = Commons.transform(inputs,
+                input -> RelOptRule.convert(input, traits0));
+            res.add(copy(traits0, inputs0));
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DeriveMode getDeriveMode() {
+        return DeriveMode.OMAKASE;
     }
 }

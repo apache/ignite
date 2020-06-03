@@ -1057,8 +1057,9 @@ public class PlannerTest extends GridCommonAbstractTest {
             "WHERE (d.projectId + 1) > ?";
 
         RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE,
+            DistributionTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()

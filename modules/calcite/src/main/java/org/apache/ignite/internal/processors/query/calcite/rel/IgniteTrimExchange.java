@@ -60,4 +60,9 @@ public class IgniteTrimExchange extends Exchange implements IgniteRel {
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEnforcer() {
+        return true;
+    }
 }
