@@ -1018,7 +1018,6 @@ namespace Apache.Ignite.Core.Impl
             // Create a copy to ignore modifications from outside.
             var cfg = new LockConfiguration(configuration);
 
-            // TODO: failoverSafe - what happens when .NET thread is interrupted from Java?
             var target = DoOutOpObject((int) Op.GetOrCreateLock, w =>
             {
                 w.WriteString(configuration.Name);
@@ -1027,7 +1026,7 @@ namespace Apache.Ignite.Core.Impl
                 w.WriteBoolean(create);
             });
             
-            return new IgniteLock(target, cfg);
+            return target == null ? null : new IgniteLock(target, cfg);
         }
 
         /// <summary>
