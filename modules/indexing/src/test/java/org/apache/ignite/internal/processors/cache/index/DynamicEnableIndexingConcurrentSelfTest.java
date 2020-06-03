@@ -18,17 +18,26 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -69,6 +78,12 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
     /** Latches to block certain index operations. */
     private static final ConcurrentHashMap<UUID, T2<CountDownLatch, CountDownLatch>> BLOCKS =
             new ConcurrentHashMap<>();
+
+    /** Name field index name. */
+    private static final String NAME_FIELD_IDX_NAME = "name_idx";
+
+    /** Large number of entries. */
+    private static final int LARGE_NUM_ENTRIES = 100_000;
 
     /** */
     @Parameter(0)
@@ -131,8 +146,11 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
         tblFut.get();
 
-        for (Ignite g: G.allGrids())
-            performQueryingIntegrityCheck((IgniteEx)g);
+        for (Ignite g: G.allGrids()) {
+            assertTrue(query(g, SELECT_ALL_QUERY).size() >= 3 * NUM_ENTRIES / 4 );
+
+            performQueryingIntegrityCheck(g);
+        }
     }
 
     /** */
@@ -160,6 +178,8 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
                 throw new IgniteException("Failed to enable indexing", e);
             }
         });
+
+        assertEquals(NUM_ENTRIES, query(cli, SELECT_ALL_QUERY).size());
 
         performQueryingIntegrityCheck(cli);
     }
@@ -194,13 +214,182 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
         U.await(finishLatch);
 
-        for (Ignite g: G.allGrids())
-            performQueryingIntegrityCheck((IgniteEx)g);
+        for (Ignite g: G.allGrids()) {
+            assertEquals(NUM_ENTRIES, query(g, SELECT_ALL_QUERY).size());
+
+            performQueryingIntegrityCheck(g);
+        }
+    }
+
+    /** Test chaining schema operation with enable indexing. */
+    @Test
+    public void testOperationChaining() throws Exception {
+        IgniteEx srv1 = ignitionStart(serverConfiguration(1));
+
+        ignitionStart(serverConfiguration(2));
+        ignitionStart(serverConfiguration(3, true));
+        ignitionStart(clientConfiguration(4));
+
+        srv1.cluster().state(ClusterState.ACTIVE);
+
+        createCache(srv1);
+        loadData(srv1, 0, NUM_ENTRIES);
+
+        CountDownLatch idxLatch = blockIndexing(srv1);
+
+        IgniteInternalFuture<?> tblFut = enableIndexing(srv1);
+
+        QueryIndex idx = new QueryIndex();
+        idx.setName(NAME_FIELD_IDX_NAME.toUpperCase());
+        idx.setFieldNames(Collections.singletonList(NAME_FIELD_NAME.toUpperCase()), true);
+
+        IgniteInternalFuture<?> idxFut1 = srv1.context().query().dynamicIndexCreate(POI_CACHE_NAME, POI_SCHEMA_NAME,
+                POI_TABLE_NAME, idx, false, 0);
+
+        idxLatch.await();
+
+        // Add more nodes.
+        ignitionStart(serverConfiguration(5));
+        ignitionStart(serverConfiguration(6, true));
+        ignitionStart(clientConfiguration(7));
+
+        assertFalse(tblFut.isDone());
+        assertFalse(idxFut1.isDone());
+
+        unblockIndexing(srv1);
+
+        idxFut1.get();
+
+        for (Ignite g: G.allGrids()) {
+            assertEquals(NUM_ENTRIES, query(g, SELECT_ALL_QUERY).size());
+
+            performQueryingIntegrityCheck(g);
+
+            IgniteCache<Object, Object> cache = g.cache(POI_CACHE_NAME);
+
+            assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE name = 'POI_100'", NAME_FIELD_IDX_NAME);
+
+            List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT " + ID_FIELD_NAME + " FROM " + POI_TABLE_NAME +
+                    " WHERE name = 'POI_100'").setSchema(POI_SCHEMA_NAME)).getAll();
+
+            assertEquals(1, res.size());
+            assertEquals(100, res.get(0).get(0));
+        }
+    }
+
+    /** Enable indexing on ongoing rebalance. */
+    @Test
+    public void testConcurrentRebalance() throws Exception {
+        // Start cache and populate it with data.
+        IgniteEx srv1 = ignitionStart(serverConfiguration(1));
+        Ignite srv2 = ignitionStart(serverConfiguration(2));
+        srv1.cluster().state(ClusterState.ACTIVE);
+
+        createCache(srv1);
+        loadData(srv1, 0, LARGE_NUM_ENTRIES);
+
+        // Start index operation in blocked state.
+        CountDownLatch idxLatch1 = blockIndexing(srv1);
+        CountDownLatch idxLatch2 = blockIndexing(srv2);
+
+        IgniteInternalFuture<?> tblFut = enableIndexing(srv1);
+
+        U.await(idxLatch1);
+        U.await(idxLatch2);
+
+        // Start two more nodes and unblock index operation in the middle.
+        ignitionStart(serverConfiguration(3));
+
+        unblockIndexing(srv1);
+        unblockIndexing(srv2);
+
+        ignitionStart(serverConfiguration(4));
+
+        awaitPartitionMapExchange();
+
+        tblFut.get();
+
+        for (Ignite g: G.allGrids()) {
+            assertEquals(LARGE_NUM_ENTRIES, query(g, SELECT_ALL_QUERY).size());
+
+            performQueryingIntegrityCheck(g);
+        }
+    }
+
+    /** Test concurrent put remove when enabling indexing. */
+    @Test
+    public void testConcurrentPutRemove() throws Exception {
+        CountDownLatch finishLatch = new CountDownLatch(4);
+
+        // Start several nodes.
+        IgniteEx srv1 = ignitionStart(serverConfiguration(1), finishLatch);
+        ignitionStart(serverConfiguration(2), finishLatch);
+        ignitionStart(serverConfiguration(3), finishLatch);
+        ignitionStart(serverConfiguration(4), finishLatch);
+
+        srv1.cluster().state(ClusterState.ACTIVE);
+
+        createCache(srv1);
+        loadData(srv1, 0, LARGE_NUM_ENTRIES);
+
+        // Start data change operations from several threads.
+        final AtomicBoolean stopped = new AtomicBoolean();
+
+        IgniteInternalFuture<?> task = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() {
+                while (!stopped.get()) {
+                    Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
+
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    int i = rnd.nextInt(0, LARGE_NUM_ENTRIES);
+
+                    BinaryObject val = node.binary().builder(POI_CLASS_NAME)
+                            .setField(NAME_FIELD_NAME, "POI_" + i, String.class)
+                            .setField(LATITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
+                            .setField(LONGITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
+                            .build();
+
+                    IgniteCache<Object, BinaryObject> cache = node.cache(POI_CACHE_NAME).withKeepBinary();
+
+                    if (ThreadLocalRandom.current().nextBoolean())
+                        cache.put(i, val);
+                    else
+                        cache.remove(i);
+                }
+
+                return null;
+            }
+        }, 4);
+
+        // Do some work.
+        Thread.sleep(2_000L);
+
+        enableIndexing(srv1).get();
+
+        // Stop updates once index is ready.
+        stopped.set(true);
+        task.get();
+
+        finishLatch.await();
+
+        // Perform integrity check.
+        IgniteCache<Object, Object> cache = srv1.cache(POI_CACHE_NAME).withKeepBinary();
+
+        query(srv1, SELECT_ALL_QUERY).forEach(res -> {
+            BinaryObject val = (BinaryObject)cache.get(res.get(0));
+
+            assertNotNull(val);
+
+            assertEquals(val.field(NAME_FIELD_NAME), res.get(1));
+            assertEquals(val.field(LATITUDE_FIELD_NAME), res.get(2));
+            assertEquals(val.field(LONGITUDE_FIELD_NAME), res.get(3));
+        });
     }
 
     /** */
     private IgniteInternalFuture<?> enableIndexing(IgniteEx node) {
-       return node.context().query().dynamicAddQueryEntity(POI_CACHE_NAME, POI_SCHEMA_NAME, queryEntity(), false);
+       return node.context().query().dynamicAddQueryEntity(POI_CACHE_NAME, POI_SCHEMA_NAME, queryEntity(), null, false);
     }
 
     /** */

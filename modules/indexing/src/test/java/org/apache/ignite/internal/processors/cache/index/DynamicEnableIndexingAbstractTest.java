@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -44,7 +45,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- *
+ * Base class for enable indexing tests.
  */
 public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
     /** Node index for regular server (coordinator). */
@@ -94,6 +95,9 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
 
     /** */
     protected static final String LONGITUDE_FIELD_NAME = "longitude";
+
+    /** */
+    protected static final String SELECT_ALL_QUERY = String.format("SELECT * FROM %s", POI_TABLE_NAME);
 
     /** */
     protected void createTable(IgniteCache<?, ?> cache) {
@@ -193,39 +197,46 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void performQueryingIntegrityCheck(IgniteEx ig) throws Exception {
+    protected void performQueryingIntegrityCheck(Ignite ig) throws Exception {
+        performQueryingIntegrityCheck(ig, 100);
+    }
+
+    /** */
+    protected List<List<?>> query(Ignite ig, String sql) throws Exception {
         IgniteCache<Object, Object> cache = ig.cache(POI_CACHE_NAME).withKeepBinary();
 
-        List<List<?>> res = cache.query(new SqlFieldsQuery(String.format("SELECT * FROM %s", POI_TABLE_NAME))
-                .setSchema(POI_SCHEMA_NAME)).getAll();
+        return cache.query(new SqlFieldsQuery(sql).setSchema(POI_SCHEMA_NAME)).getAll();
+    }
 
-        //assertEquals(NUM_ENTRIES, res.size());
-        assertTrue(res.size() > NUM_ENTRIES / 2);
+    /** */
+    protected void performQueryingIntegrityCheck(Ignite ig, int key) throws Exception {
+        IgniteCache<Object, Object> cache = ig.cache(POI_CACHE_NAME).withKeepBinary();
 
-        res = cache.query(new SqlFieldsQuery(String.format("DELETE FROM %s WHERE %s = %d", POI_TABLE_NAME, ID_FIELD_NAME, 100))
+        List<List<?>> res = cache.query(new SqlFieldsQuery(
+                    String.format("DELETE FROM %s WHERE %s = %d", POI_TABLE_NAME, ID_FIELD_NAME, key))
                 .setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertEquals(1, res.size());
-        assertNull(cache.get(100));
+        assertNull(cache.get(key));
 
         res = cache.query(new SqlFieldsQuery(
                 String.format(
                         "INSERT INTO %s(%s) VALUES (%s)",
                         POI_TABLE_NAME,
                         String.join(",", ID_FIELD_NAME, NAME_FIELD_NAME),
-                        String.join(",", "100","'test'"))
+                        String.join(",", String.valueOf(key),"'test'"))
         ).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertEquals(1, res.size());
-        assertNotNull(cache.get(100));
+        assertNotNull(cache.get(key));
 
-        res = cache.query(new SqlFieldsQuery(String.format("UPDATE %s SET %s = '%s' WHERE ID = 100",
-                POI_TABLE_NAME, NAME_FIELD_NAME, "POI_100")).setSchema(POI_SCHEMA_NAME)).getAll();
+        res = cache.query(new SqlFieldsQuery(String.format("UPDATE %s SET %s = '%s' WHERE ID = %d",
+                POI_TABLE_NAME, NAME_FIELD_NAME, "POI_" + key, key)).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertEquals(1, res.size());
-        assertEquals("POI_100", ((BinaryObject)cache.get(100)).field(NAME_FIELD_NAME));
+        assertEquals("POI_" + key, ((BinaryObject)cache.get(key)).field(NAME_FIELD_NAME));
 
-        assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE ID = 100", KEY_PK_IDX_NAME);
+        assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE ID = " + key, KEY_PK_IDX_NAME);
     }
 
     /** */

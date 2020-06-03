@@ -371,6 +371,8 @@ public class DynamicCacheDescriptor {
                 CacheConfiguration cacheCfg0 = new CacheConfiguration(cacheCfg);
                 cacheCfg0.setQueryEntities(Collections.singletonList(op.entity()));
                 cacheCfg0.setSqlSchema(op.schemaName());
+                cacheCfg0.setSqlEscapeAll(op.isSqlEscape());
+                cacheCfg0.setQueryParallelism(op.queryParallelism());
 
                 cacheCfg = cacheCfg0;
             }

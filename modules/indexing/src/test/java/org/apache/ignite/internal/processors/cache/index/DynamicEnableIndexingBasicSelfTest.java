@@ -35,7 +35,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
- *
+ * Tests basic functionality of enabling indexing.
  */
 @RunWith(Parameterized.class)
 public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbstractTest {
@@ -122,8 +122,11 @@ public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbs
 
         loadData(node(), NUM_ENTRIES / 2, NUM_ENTRIES);
 
-        for (Ignite ig: G.allGrids())
-            performQueryingIntegrityCheck((IgniteEx)ig);
+        for (Ignite ig : G.allGrids()) {
+            assertEquals(NUM_ENTRIES, query(ig, SELECT_ALL_QUERY).size());
+
+            performQueryingIntegrityCheck(ig);
+        }
     }
 
     /** */

@@ -935,14 +935,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                                     opEnableIdx.schemaName(),
                                                     cacheInfo.config(),
                                                     Collections.singletonList(opEnableIdx.entity()),
-                                                    true
+                                                    opEnableIdx.isSqlEscape()
                                                 ).get1();
 
                                         schemaName = opEnableIdx.schemaName();
 
                                         cacheInfo.config().setSqlSchema(opEnableIdx.schemaName());
                                         cacheInfo.config().setQueryEntities(Collections.singletonList(opEnableIdx.entity()));
-                                        cacheInfo.config().setSqlEscapeAll(true);
+                                        cacheInfo.config().setQueryParallelism(opEnableIdx.queryParallelism());
+                                        cacheInfo.config().setSqlEscapeAll(opEnableIdx.isSqlEscape());
 
                                         cachesToEnableIndexing.remove(opEnableIdx.cacheName());
                                     }
@@ -1864,11 +1865,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
                     candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo.config(),
-                        Collections.singletonList(op0.entity()), true);
+                        Collections.singletonList(op0.entity()), op0.isSqlEscape());
 
                 cacheInfo.config().setSqlSchema(op0.schemaName());
                 cacheInfo.config().setQueryEntities(Collections.singletonList(op0.entity()));
-                cacheInfo.config().setSqlEscapeAll(true);
+                cacheInfo.config().setSqlEscapeAll(op0.isSqlEscape());
+                cacheInfo.config().setQueryParallelism(op0.queryParallelism());
 
                 registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
 
@@ -3003,18 +3005,27 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name
      * @param schemaName Target schema name.
      * @param entity Instance of {@code QueryEntity}.
-     * @param escape Escape flag, see{@link QueryUtils#normalizeQueryEntity}.
+     * @param qryParallelism Query parallelism.
+     * @param sqlEscape Escape flag, see{@link QueryUtils#normalizeQueryEntity}.
      */
     public IgniteInternalFuture<?> dynamicAddQueryEntity(
             String cacheName,
             String schemaName,
             QueryEntity entity,
-            boolean escape
+            Integer qryParallelism,
+            boolean sqlEscape
     ) {
-        QueryEntity entity0 = QueryUtils.normalizeQueryEntity(entity, escape);
+        assert qryParallelism == null || qryParallelism > 0;
 
-        SchemaAddQueryEntitiesOperation op = new SchemaAddQueryEntitiesOperation(UUID.randomUUID(), cacheName,
-                schemaName, entity0);
+        QueryEntity entity0 = QueryUtils.normalizeQueryEntity(entity, sqlEscape);
+
+        SchemaAddQueryEntitiesOperation op = new SchemaAddQueryEntitiesOperation(
+                UUID.randomUUID(),
+                cacheName,
+                schemaName,
+                entity0,
+                qryParallelism != null ? qryParallelism : CacheConfiguration.DFLT_QUERY_PARALLELISM,
+                sqlEscape);
 
         return startIndexOperationDistributed(op);
     }

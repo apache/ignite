@@ -30,20 +30,32 @@ public class SchemaAddQueryEntitiesOperation extends SchemaAbstractOperation {
     /** */
     private final QueryEntity entity;
 
+    /** */
+    private final int qryParallelism;
+
+    /** */
+    private final boolean sqlEscape;
+
     /**
      * @param opId    Operation ID.
      * @param cacheName Cache name.
      * @param schemaName Schema name.
      * @param entity QueryEntity.
+     * @param qryParallelism Query parallelism.
+     * @param sqlEscape Sql escape flag.
      */
     public SchemaAddQueryEntitiesOperation(
             UUID opId,
             String cacheName,
             String schemaName,
-            QueryEntity entity
+            QueryEntity entity,
+            int qryParallelism,
+            boolean sqlEscape
     ) {
         super(opId, cacheName, schemaName);
         this.entity = entity;
+        this.qryParallelism = qryParallelism;
+        this.sqlEscape = sqlEscape;
     }
 
     /**
@@ -51,5 +63,19 @@ public class SchemaAddQueryEntitiesOperation extends SchemaAbstractOperation {
      */
     public QueryEntity entity() {
         return entity;
+    }
+
+    /**
+     * @return Query parallelism.
+     */
+    public int queryParallelism() {
+        return qryParallelism;
+    }
+
+    /**
+     * @return Sql escape flag.
+     */
+    public boolean isSqlEscape() {
+        return sqlEscape;
     }
 }
