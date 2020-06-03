@@ -391,7 +391,7 @@ namespace ignite
          * @param sec Sec.
          * @return Date.
          */
-        Date MakeDateGmt(int year = 1900, int month = 1,
+        IGNITE_FRIEND_EXPORT Date MakeDateGmt(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0);
 
         /**
@@ -407,7 +407,7 @@ namespace ignite
          * @param sec Sec.
          * @return Date.
          */
-        Date MakeDateLocal(int year = 1900, int month = 1,
+        IGNITE_FRIEND_EXPORT Date MakeDateLocal(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0);
 
         /**
@@ -420,7 +420,7 @@ namespace ignite
          * @param sec Second.
          * @return Time.
          */
-        Time MakeTimeGmt(int hour = 0, int min = 0, int sec = 0);
+        IGNITE_FRIEND_EXPORT Time MakeTimeGmt(int hour = 0, int min = 0, int sec = 0);
 
         /**
          * Make Time in human understandable way.
@@ -432,7 +432,7 @@ namespace ignite
          * @param sec Second.
          * @return Time.
          */
-        Time MakeTimeLocal(int hour = 0, int min = 0, int sec = 0);
+        IGNITE_FRIEND_EXPORT Time MakeTimeLocal(int hour = 0, int min = 0, int sec = 0);
 
         /**
          * Make Timestamp in human understandable way.
@@ -448,7 +448,7 @@ namespace ignite
          * @param ns Nanosecond.
          * @return Timestamp.
          */
-        Timestamp MakeTimestampGmt(int year = 1900, int month = 1,
+        IGNITE_FRIEND_EXPORT Timestamp MakeTimestampGmt(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
 
         /**
@@ -465,7 +465,7 @@ namespace ignite
          * @param ns Nanosecond.
          * @return Timestamp.
          */
-        Timestamp MakeTimestampLocal(int year = 1900, int month = 1,
+        IGNITE_FRIEND_EXPORT Timestamp MakeTimestampLocal(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
 
         /**

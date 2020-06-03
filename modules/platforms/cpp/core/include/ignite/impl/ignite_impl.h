@@ -84,7 +84,7 @@ namespace ignite
              *
              * @return JNI context for this instance.
              */
-            jni::java::JniContext* GetContext();
+            IGNITE_IMPORT_EXPORT jni::java::JniContext* GetContext();
 
             /**
              * Get cache.
