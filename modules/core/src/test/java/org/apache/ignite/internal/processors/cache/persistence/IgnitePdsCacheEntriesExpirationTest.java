@@ -72,7 +72,7 @@ public class IgnitePdsCacheEntriesExpirationTest extends GridCommonAbstractTest 
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setAffinity(new RendezvousAffinityFunction(false, 2))
-            .setBackups(0)
+            .setBackups(1)
             .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 350)));
 
         cfg.setCacheConfiguration(ccfg);
