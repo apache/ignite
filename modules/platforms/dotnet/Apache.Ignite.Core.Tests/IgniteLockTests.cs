@@ -74,6 +74,9 @@ namespace Apache.Ignite.Core.Tests
             var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
             var lock2 = Ignite2.GetOrCreateLock(TestUtils.TestName);
             
+            // TODO: NPE disappears if I add this:
+            // Assert.IsFalse(lock2.IsEntered());
+            
             lock1.Remove();
             lock2.Enter();
         }
