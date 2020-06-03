@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests
 {
-    using System.Threading.Tasks;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
@@ -73,10 +72,36 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNull(Ignite.GetOrCreateLock(cfg, false));
         }
 
+        /// <summary>
+        /// Tests configuration propagation.
+        /// </summary>
         [Test]
-        public void TestConfiguration()
+        public void TestLockConfigurationCantBeModifiedAfterLockCreation()
         {
-            
+            var cfg = new LockConfiguration
+            {
+                Name = "x",
+                IsFair = true,
+                IsFailoverSafe = true
+            };
+
+            using (var lck = Ignite.GetOrCreateLock(cfg, true))
+            {
+                // Change original instance.
+                cfg.Name = "y";
+                cfg.IsFair = false;
+                cfg.IsFailoverSafe = false;
+                
+                // Change returned instance.
+                lck.Configuration.Name = "y";
+                lck.Configuration.IsFair = false;
+                lck.Configuration.IsFailoverSafe = false;
+                
+                // Verify: actual config has not changed.
+                Assert.AreEqual("x", lck.Configuration.Name);
+                Assert.IsTrue(lck.Configuration.IsFair);
+                Assert.IsTrue(lck.Configuration.IsFailoverSafe);
+            }
         }
 
         [Test]
@@ -92,9 +117,9 @@ namespace Apache.Ignite.Core.Tests
         }
 
         [Test]
-        public void TestGetOrCreateLockThrowsOnMissingLockWhenCreateFlagIsNotSet()
+        public void TestGetOrCreateLockReturnsNullOnMissingLockWhenCreateFlagIsNotSet()
         {
-            // TODO
+            Assert.IsNull(Ignite.GetOrCreateLock(new LockConfiguration {Name = "x"}, false));
         }
     }
 }
