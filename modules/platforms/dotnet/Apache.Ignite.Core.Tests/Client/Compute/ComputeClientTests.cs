@@ -259,7 +259,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 
             // Start a long-running task and verify that 2 futures are active.
             var cts = new CancellationTokenSource();
-            var task = GetComputeForDefaultServer().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
+            var task = Client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
 
             var taskFutures = GetActiveTaskFutures();
             TestUtils.WaitForTrueCondition(() =>
@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             const long delayMs = 1;
             var cts = new CancellationTokenSource();
-            var task = GetComputeForDefaultServer().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
+            var task = Client.GetCompute().ExecuteJavaTaskAsync<object>(TestTask, delayMs, cts.Token);
 
             task.Wait(cts.Token);
             cts.Cancel();
@@ -516,23 +516,11 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         }
 
         /// <summary>
-        /// Gets client compute with a projection to the single default server.
-        /// </summary>
-        private IComputeClient GetComputeForDefaultServer()
-        {
-            var nodeId = Ignition.GetAll().First().GetCluster().GetLocalNode().Id;
-
-            var clientCluster = Client.GetCluster().ForPredicate(n => n.Id == nodeId);
-
-            return clientCluster.GetCompute();
-        }
-
-        /// <summary>
         /// Gets active task futures from all server nodes.
         /// </summary>
         private IgniteGuid[] GetActiveTaskFutures()
         {
-            return GetComputeForDefaultServer().ExecuteJavaTask<IgniteGuid[]>(ActiveTaskFuturesTask, null);
+            return Client.GetCompute().ExecuteJavaTask<IgniteGuid[]>(ActiveTaskFuturesTask, null);
         }
     }
 }
