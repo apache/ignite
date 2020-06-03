@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests
 {
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
@@ -26,6 +25,14 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class IgniteLockTests : TestBase
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="IgniteLockTests"/> class.
+        /// </summary>
+        public IgniteLockTests() : base(2)
+        {
+            // No-op.
+        }
+
         /// <summary>
         /// Tests state changes: unlocked -> locked -> disposed.
         /// </summary>
