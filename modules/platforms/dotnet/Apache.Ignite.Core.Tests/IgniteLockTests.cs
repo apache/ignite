@@ -58,6 +58,15 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that disposed lock throws correct exception.
+        /// </summary>
+        [Test]
+        public void TestDisposedLockThrowsIgniteException()
+        {
+            // TODO: Close from same thread, from another thread, from another node.
+        }
+
+        /// <summary>
         /// Tests that it is not necessary to call <see cref="IIgniteLock.Exit"/>
         /// before <see cref="IIgniteLock.Dispose"/>.
         /// </summary>
