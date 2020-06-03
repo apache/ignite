@@ -61,10 +61,10 @@ public class IgniteCacheStoreClusterReadOnlyModeSelfTest extends GridCommonAbstr
     private static final Map<String, TestCacheStore> cacheStores = new ConcurrentHashMap<>();
 
     /** Started cache configurations. */
-    protected Collection<CacheConfiguration<?, ?>> cacheConfigurations;
+    private Collection<CacheConfiguration<?, ?>> cacheConfigurations;
 
     /** Started cache names. */
-    protected Collection<String> cacheNames;
+    private Collection<String> cacheNames;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
