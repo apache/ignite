@@ -74,6 +74,7 @@ namespace Apache.Ignite.Core.Impl
             return Target.InLongOutLong((int) Op.TryLock, TimeoutInfinite) == True;
         }
 
+        /** <inheritDoc /> */
         public bool TryEnter(TimeSpan timeout)
         {
             return Target.InLongOutLong((int) Op.TryLock, (long) timeout.TotalMilliseconds) == True;
