@@ -14,42 +14,56 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 
 /**
- * Converter rule for sort operator.
+ * Rule to convert an {@link IgniteSort} that has {@code offset} or {@code fetch} set to an {@link IgniteLimit} on top
+ * of a "pure" {@code Sort} that has no offset or fetch.
  */
-public class SortConverterRule extends RelOptRule {
+public class LimitConverterRule extends RelOptRule {
     /** */
-    public static final RelOptRule INSTANCE = new SortConverterRule();
+    public static final RelOptRule INSTANCE = new LimitConverterRule();
 
     /** */
-    public SortConverterRule() {
-        super(operand(LogicalSort.class, any()));
+    LimitConverterRule() {
+        super(
+            operand(LogicalSort.class, any()),
+            "IgniteLimitRule");
     }
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        LogicalSort sort = call.rel(0);
+        final Sort sort = call.rel(0);
 
-        if (sort.offset != null || sort.fetch != null)
+        if (sort.offset == null && sort.fetch == null)
             return;
 
-        RelOptCluster cluster = sort.getCluster();
-        RelTraitSet traits = cluster.traitSet()
-            .replace(IgniteConvention.INSTANCE);
-        RelNode input = convert(sort.getInput(), traits);
+        RelNode input = sort.getInput();
 
-        RuleUtils.transformTo(call,
-            new IgniteSort(cluster, sort.getTraitSet().plus(IgniteConvention.INSTANCE), input, sort.collation, null, null));
+        if (!sort.getCollation().getFieldCollations().isEmpty()) {
+            // Create a sort with the same sort key, but no offset or fetch.
+            input = sort.copy(
+                sort.getTraitSet(),
+                input,
+                sort.getCollation(),
+                null,
+                null);
+        }
+
+        call.transformTo(
+            IgniteLimit.create(
+                convert(input, input.getTraitSet().replace(IgniteConvention.INSTANCE)),
+                sort.offset,
+                sort.fetch));
     }
 }

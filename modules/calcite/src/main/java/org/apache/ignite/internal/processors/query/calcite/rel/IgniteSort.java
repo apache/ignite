@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  * Ignite sort operator.
  */
 public class IgniteSort extends Sort implements IgniteRel {
-
     /**
      * Constructor.
      *
@@ -50,10 +49,6 @@ public class IgniteSort extends Sort implements IgniteRel {
         super(cluster, traits, child, collation, offset, fetch);
     }
 
-    public IgniteSort(RelInput input) {
-        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
-    }
-
     /** {@inheritDoc} */
     @Override public Sort copy(
         RelTraitSet traitSet,
@@ -64,6 +59,7 @@ public class IgniteSort extends Sort implements IgniteRel {
         return new IgniteSort(getCluster(), traitSet, newInput,newCollation, offset, fetch);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }

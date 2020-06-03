@@ -20,36 +20,40 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.logical.LogicalSort;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 
 /**
- * Converter rule for sort operator.
+ *
  */
-public class SortConverterRule extends RelOptRule {
+public class LimitTraitsPropagationRule extends RelOptRule {
     /** */
-    public static final RelOptRule INSTANCE = new SortConverterRule();
+    public static final RelOptRule INSTANCE = new LimitTraitsPropagationRule();
 
     /** */
-    public SortConverterRule() {
-        super(operand(LogicalSort.class, any()));
+    public LimitTraitsPropagationRule() {
+        super(RuleUtils.traitPropagationOperand(IgniteLimit.class));
     }
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        LogicalSort sort = call.rel(0);
+        IgniteLimit limit = call.rel(0);
+        RelNode input = call.rel(1);
 
-        if (sort.offset != null || sort.fetch != null)
-            return;
+        RelOptCluster cluster = limit.getCluster();
+        RelMetadataQuery mq = cluster.getMetadataQuery();
 
-        RelOptCluster cluster = sort.getCluster();
-        RelTraitSet traits = cluster.traitSet()
-            .replace(IgniteConvention.INSTANCE);
-        RelNode input = convert(sort.getInput(), traits);
+        RelTraitSet traits = limit.getTraitSet()
+            .replace(IgniteMdDistribution._distribution(input, mq))
+            .replaceIf(RelCollationTraitDef.INSTANCE,
+                () -> input.getTraitSet().getTrait(RelCollationTraitDef.INSTANCE));
 
         RuleUtils.transformTo(call,
-            new IgniteSort(cluster, sort.getTraitSet().plus(IgniteConvention.INSTANCE), input, sort.collation, null, null));
+            new IgniteLimit(cluster, traits, input, limit.offset, limit.fetch));
     }
 }
