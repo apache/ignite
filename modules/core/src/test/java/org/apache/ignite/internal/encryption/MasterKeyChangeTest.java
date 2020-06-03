@@ -422,7 +422,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testUnicodeMasterKeyNameWalRecovery() throws Exception {
+    public void testMultiByteMasterKeyNameWalRecovery() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
         IgniteEx grid1 = grids.get1();
@@ -437,16 +437,19 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         dbMgr.enableCheckpoints(false).get();
 
-        grid1.encryption().changeMasterKey(MASTER_KEY_NAME_UNICODE).get();
+        grid1.encryption().changeMasterKey(MASTER_KEY_NAME_MULTIBYTE_ENCODED).get();
 
-        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_UNICODE));
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_MULTIBYTE_ENCODED));
 
         dbMgr.checkpointReadLock();
 
-        // Simulate key name write error to check recovery from WAL.
-        dbMgr.metaStorage().write(MASTER_KEY_NAME_PREFIX, "wrongKeyName");
-
-        dbMgr.checkpointReadUnlock();
+        try {
+            // Simulate key name write error to check recovery from WAL.
+            dbMgr.metaStorage().write(MASTER_KEY_NAME_PREFIX, "wrongKeyName");
+        }
+        finally {
+            dbMgr.checkpointReadUnlock();
+        }
 
         stopGrid(GRID_0, true);
 
@@ -454,7 +457,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         grid(GRID_1).resetLostPartitions(Collections.singleton(ENCRYPTED_CACHE));
 
-        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_UNICODE));
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_MULTIBYTE_ENCODED));
 
         checkEncryptedCaches(grid1, grids.get2());
     }
