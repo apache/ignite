@@ -136,7 +136,7 @@ public class IgniteCacheStoreClusterReadOnlyModeSelfTest extends GridCommonAbstr
 
         for (String name : cacheNames) {
             for (Ignite node : G.allGrids()) {
-                for (int i=0; i< NODES_CNT; i++)
+                for (int i = 0; i < NODES_CNT; i++)
                     assertEquals(name, i, node.cache(name).get(i));
             }
         }
@@ -153,7 +153,7 @@ public class IgniteCacheStoreClusterReadOnlyModeSelfTest extends GridCommonAbstr
 
         for (String name : cacheNames) {
             for (Ignite node : G.allGrids()) {
-                for (int i=0; i< NODES_CNT; i++) {
+                for (int i = 0; i < NODES_CNT; i++) {
                     int j = i;
 
                     node.cache(name).loadCache((k, v) -> ((int)k) % NODES_CNT == j);
@@ -173,7 +173,7 @@ public class IgniteCacheStoreClusterReadOnlyModeSelfTest extends GridCommonAbstr
 
         for (String name : cacheNames) {
             for (Ignite node : G.allGrids()) {
-                for (int i=0; i< NODES_CNT; i++) {
+                for (int i = 0; i < NODES_CNT; i++) {
                     int j = i;
 
                     node.cache(name).loadCacheAsync((k, v) -> ((int)k) % NODES_CNT == j).get();
@@ -193,7 +193,7 @@ public class IgniteCacheStoreClusterReadOnlyModeSelfTest extends GridCommonAbstr
 
         for (String name : cacheNames) {
             for (Ignite node : G.allGrids()) {
-                for (int i=0; i< NODES_CNT; i++)
+                for (int i = 0; i < NODES_CNT; i++)
                     node.cache(name).localLoadCache(null);
             }
         }
@@ -210,7 +210,7 @@ public class IgniteCacheStoreClusterReadOnlyModeSelfTest extends GridCommonAbstr
 
         for (String name : cacheNames) {
             for (Ignite node : G.allGrids()) {
-                for (int i=0; i< NODES_CNT; i++)
+                for (int i = 0; i < NODES_CNT; i++)
                     node.cache(name).localLoadCacheAsync(null).get();
             }
         }
