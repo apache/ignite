@@ -107,26 +107,24 @@ public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteR
      * @return Collection transformed to set.
      */
     private Set<ID> toSet(Iterable<ID> ids) {
-        Set<ID> keys = emptySet();
-
         if (ids instanceof Set)
-            keys = (Set<ID>)ids;
-        else {
-            Iterator<ID> itr = ids.iterator();
+            return (Set<ID>)ids;
 
-            if (itr.hasNext()) {
-                ID key = itr.next();
+        Iterator<ID> itr = ids.iterator();
 
-                keys = key instanceof Comparable ? new TreeSet<>() : new HashSet<>();
+        if (!itr.hasNext())
+            return emptySet();
 
-                keys.add(key);
+        ID key = itr.next();
 
-                while (itr.hasNext()) {
-                    key = itr.next();
+        Set<ID> keys = key instanceof Comparable ? new TreeSet<>() : new HashSet<>();
 
-                    keys.add(key);
-                }
-            }
+        keys.add(key);
+
+        while (itr.hasNext()) {
+            key = itr.next();
+
+            keys.add(key);
         }
 
         return keys;
