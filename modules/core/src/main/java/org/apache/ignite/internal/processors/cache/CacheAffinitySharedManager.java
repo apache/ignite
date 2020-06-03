@@ -89,6 +89,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withContextIfNeed;
 
 /**
  *
@@ -858,7 +859,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         fut.timeBag().finishGlobalStage("Update caches registry");
 
-        processCacheStartRequests(fut, crd, exchActions);
+        withContextIfNeed(exchActions.securitySubjectId(), cctx.kernalContext(),
+            () -> processCacheStartRequests(fut, crd, exchActions));
 
         Set<Integer> stoppedGrps = processCacheStopRequests(fut, crd, exchActions, false);
 

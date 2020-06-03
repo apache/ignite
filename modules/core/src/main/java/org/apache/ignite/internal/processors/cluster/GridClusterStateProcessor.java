@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1145,6 +1146,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             forceChangeBaselineTopology,
             System.currentTimeMillis()
         );
+
+        msg.securitySubjectId(SecurityUtils.securitySubjectId(ctx));
 
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 
