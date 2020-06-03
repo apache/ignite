@@ -45,6 +45,9 @@ namespace Apache.Ignite.Core
 
         bool IsBroken();
         
+        /// <summary>
+        /// Determines whether the current thread holds the lock.
+        /// </summary>
         bool IsEntered();
         
         // TODO: IgniteCondition is like Monitor.Wait / Pulse
