@@ -406,12 +406,14 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         Ignite srv = startGrids(SRVS);
 
-        srv.cluster().state(state);
+        srv.cluster().state(ACTIVE);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         srv.createCache(ccfg);
+
+        srv.cluster().state(state);
 
         stopAllGrids();
 
