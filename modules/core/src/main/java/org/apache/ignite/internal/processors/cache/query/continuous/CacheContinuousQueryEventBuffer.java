@@ -39,11 +39,11 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class CacheContinuousQueryEventBuffer {
-    /** */
+    /** Batch buffer size. */
     private static final int BUF_SIZE =
         IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE", 1000);
 
-    /** Maximum size of buffer for pending event processing. */
+    /** Maximum size of buffer for pending events. */
     private static final int MAX_PENDING_BUFF_SIZE = CacheContinuousQueryHandler.LSNR_MAX_BUF_SIZE;
 
     /** */
@@ -62,13 +62,13 @@ public class CacheContinuousQueryEventBuffer {
     /** Batch of entries currently being collected to send to the remote. */
     private final AtomicReference<Batch> curBatch = new AtomicReference<>();
 
-    /** Queue for keeping entries which partition counter less the counter processing by current batch. */
+    /** Queue for keeping backup entries which partition counter less the counter processing by current batch. */
     private final FastSizeDeque<CacheContinuousQueryEntry> backupQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
     /** Entries which are waiting for being processed. */
     private final ConcurrentSkipListMap<Long, CacheContinuousQueryEntry> pending = new ConcurrentSkipListMap<>();
 
-    /** Last seen ack partition counter from primary. */
+    /** Last seen ack partition counter tracked by the CQ handler partition recovery queue. */
     private volatile long ackedUpdCntr;
 
     /**
