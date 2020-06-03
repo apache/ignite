@@ -57,6 +57,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -982,24 +983,33 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 intLsnrCnt.incrementAndGet();
         }
         else {
-            cctx.group().listenerLock().writeLock().lock();
+            lsnr.onBeforeRegister();
 
             try {
-                added = lsnrs.putIfAbsent(lsnrId, lsnr) == null;
+                CacheGroupContext grp = cctx.group();
 
-                if (added) {
-                    lsnrCnt.incrementAndGet();
+                grp.listenerLock().writeLock().lock();
 
-                    lsnr.onRegister();
+                try {
+                    added = lsnrs.putIfAbsent(lsnrId, lsnr) == null;
 
-                    if (lsnrCnt.get() == 1) {
-                        if (cctx.group().sharedGroup() && !cctx.isLocal())
-                            cctx.group().addCacheWithContinuousQuery(cctx);
+                    if (added) {
+                        lsnrCnt.incrementAndGet();
+
+                        lsnr.onRegister();
+
+                        if (lsnrCnt.get() == 1) {
+                            if (grp.sharedGroup() && !cctx.isLocal())
+                                grp.addCacheWithContinuousQuery(cctx);
+                        }
                     }
+                }
+                finally {
+                    grp.listenerLock().writeLock().unlock();
                 }
             }
             finally {
-                cctx.group().listenerLock().writeLock().unlock();
+                lsnr.onAfterRegister();
             }
         }
 
