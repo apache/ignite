@@ -54,6 +54,9 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
 @GridToStringExclude
 class GridDeploymentCommunication {
     /** */
+    private static final String CLASS_FILE_EXTENSION = ".class";
+
+    /** */
     private final IgniteLogger log;
 
     /** */
@@ -208,10 +211,8 @@ class GridDeploymentCommunication {
                 String clsName = req.resourceName().replace('/', '.');
 
                 try {
-                    int idx = clsName.lastIndexOf(".class");
-
-                    if (idx >= 0)
-                        clsName = clsName.substring(0, idx);
+                    if (clsName.endsWith(CLASS_FILE_EXTENSION))
+                        clsName = clsName.substring(0, clsName.length() - CLASS_FILE_EXTENSION.length());
 
                     Class<?> cls = Class.forName(clsName, true, ldr);
 
