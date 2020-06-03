@@ -43,12 +43,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  *
  */
-public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
+public class IgniteCache15ClientsTest extends GridCommonAbstractTest {
     /** */
     private static final int CACHES = 10;
 
     /** */
-    private static final int CLIENTS = 150;
+    private static final int CLIENTS = 15;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
