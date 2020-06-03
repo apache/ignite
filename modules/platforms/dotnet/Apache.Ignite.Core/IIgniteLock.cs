@@ -18,9 +18,12 @@
 namespace Apache.Ignite.Core
 {
     using System;
+    using System.Threading;
 
     /// <summary>
     /// Distributed re-entrant lock.
+    /// <para />
+    /// The functionality is similar to the standard <see cref="Monitor"/> class, but works across all cluster nodes.
     /// </summary>
     public interface IIgniteLock : IDisposable
     {
@@ -47,17 +50,17 @@ namespace Apache.Ignite.Core
         /// </summary>
         bool IsFair { get; }
 
-        void Lock(); // TODO: Rename to Enter, TryEnter - like CacheLock, Monitor, etc?
+        void Enter(); // TODO: Rename to Enter, TryEnter - like CacheLock, Monitor, etc?
 
-        bool TryLock();
+        bool TryEnter();
         
-        bool TryLock(TimeSpan timeout);
+        bool TryEnter(TimeSpan timeout);
 
-        void Unlock();
+        void Exit();
 
         bool IsBroken();
         
-        bool IsLocked();
+        bool IsEntered();
         
         // TODO: IgniteCondition is like Monitor.Wait / Pulse
         // TODO: Understand why getOrCreateCondition has name arg - what does this achieve? Ask on dev list?

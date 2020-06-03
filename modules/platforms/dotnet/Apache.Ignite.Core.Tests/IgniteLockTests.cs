@@ -32,17 +32,17 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(lck.IsFailoverSafe);
                 Assert.IsFalse(lck.IsFair);
                 
-                Assert.False(lck.IsLocked());
+                Assert.False(lck.IsEntered());
                 Assert.False(lck.IsBroken());
                 
-                Assert.IsTrue(lck.TryLock());
+                Assert.IsTrue(lck.TryEnter());
                 
-                Assert.IsTrue(lck.IsLocked());
+                Assert.IsTrue(lck.IsEntered());
                 Assert.False(lck.IsBroken());
                 
-                lck.Unlock();
+                lck.Exit();
                 
-                Assert.False(lck.IsLocked());
+                Assert.False(lck.IsEntered());
                 Assert.False(lck.IsBroken());
             }
         }

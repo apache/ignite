@@ -83,24 +83,24 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritDoc /> */
-        public void Lock()
+        public void Enter()
         {
             Target.InLongOutLong((int) Op.Lock, 0);
         }
 
         /** <inheritDoc /> */
-        public bool TryLock()
+        public bool TryEnter()
         {
             return Target.InLongOutLong((int) Op.TryLock, 0) == True;
         }
 
-        public bool TryLock(TimeSpan timeout)
+        public bool TryEnter(TimeSpan timeout)
         {
             throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */
-        public void Unlock()
+        public void Exit()
         {
             Target.InLongOutLong((int) Op.Unlock, 0);
         }
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritDoc /> */
-        public bool IsLocked()
+        public bool IsEntered()
         {
             return Target.InLongOutLong((int) Op.IsLocked, 0) == True;
         }
