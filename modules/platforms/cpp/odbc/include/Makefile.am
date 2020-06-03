@@ -57,7 +57,11 @@ noinst_HEADERS = \
     ignite/odbc/common_types.h \
     ignite/odbc/result_page.h \
     ignite/odbc/type_traits.h \
-    ignite/odbc/log.h
+    ignite/odbc/log.h \
+    ignite/odbc/config/config_tools.h \
+    ignite/odbc/config/connection_string_parser.h \
+    ignite/odbc/config/settable_value.h \
+    ignite/odbc/end_point.h
 
 uninstall-hook:
 	if [ -d ${includedir}/ignite ]; then find ${includedir}/ignite -type d -empty -delete; fi
