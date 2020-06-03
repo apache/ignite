@@ -24,12 +24,14 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CANCEL;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CREATE;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.of;
 
@@ -77,20 +79,31 @@ public class SnapshotCommand implements Command<Object> {
         if (cmd == null)
             throw new IllegalArgumentException("Expected correct action.");
 
-        if (cmd == CREATE) {
-            String name = argIter.nextArg("Expected snapshot name.");
+        switch (cmd) {
+            case CREATE:
+                taskName = VisorSnapshotCreateTask.class.getName();
+                taskArgs = argIter.nextArg("Expected snapshot name.");
 
-            taskName = VisorSnapshotCreateTask.class.getName();
-            taskArgs = name;
+                break;
+
+            case CANCEL:
+                taskName = VisorSnapshotCancelTask.class.getName();
+                taskArgs = argIter.nextArg("Expected snapshot name.");
+
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unknown snapshot sub-command: " + cmd);
         }
-        else
-            throw new IllegalArgumentException("Unknown snapshot sub-command: " + cmd);
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
         Command.usage(log, "Create cluster snapshot:", SNAPSHOT, singletonMap("snapshot_name", "Snapshot name."),
             CREATE.toString(), "snapshot_name");
+
+        Command.usage(log, "Cancel running snapshot:", SNAPSHOT, singletonMap("snapshot_name", "Snapshot name."),
+            CANCEL.toString(), "snapshot_name");
     }
 
     /** {@inheritDoc} */
