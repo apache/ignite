@@ -21,7 +21,10 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.tracing.Scope;
+import org.apache.ignite.spi.tracing.Scope;
+import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

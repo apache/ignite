@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.tracing;
 
-import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
+import org.apache.ignite.spi.tracing.Scope;
+import org.apache.ignite.spi.tracing.SpanStatus;
+import org.apache.ignite.spi.tracing.SpiSpecificSpan;
 
 /**
  * Implementation of a {@link Span}
@@ -49,30 +52,14 @@ public class SpanImpl implements Span {
         this.includedScopes = includedScopes;
     }
 
-    /** {@inheritDoc} */
-    @Override public Span addTag(String tagName, String tagVal) {
-        spiSpecificSpan.addTag(tagName, tagVal);
+    @Override public Span addTag(String tagName, Supplier<String> tagValSupplier) {
+        spiSpecificSpan.addTag(tagName, tagValSupplier.get());
 
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public Span addTag(String tagName, long tagVal) {
-        spiSpecificSpan.addTag(tagName, tagVal);
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Span addLog(String logDesc) {
-        spiSpecificSpan.addLog(logDesc);
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Span addLog(String logDesc, Map<String, String> attrs) {
-        spiSpecificSpan.addLog(logDesc, attrs);
+    @Override public Span addLog(Supplier<String> logDescSupplier) {
+        spiSpecificSpan.addLog(logDescSupplier.get());
 
         return this;
     }

@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.tracing.configuration;
+package org.apache.ignite.spi.tracing;
 
-import org.apache.ignite.internal.processors.tracing.Scope;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

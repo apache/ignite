@@ -848,8 +848,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
 
             @Override public void onMessage(final GridNioSession ses, Message msg) {
-                MTC.span().addLog("Communication received");
-                MTC.span().addTag(SpanTags.MESSAGE, traceName(msg));
+                MTC.span().addLog(() -> "Communication received");
+                MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
 
                 ConnectionKey connKey = ses.meta(CONN_IDX_META);
 
@@ -4172,7 +4172,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     protected void notifyListener(UUID sndId, Message msg, IgniteRunnable msgC) {
         CommunicationListener<Message> lsnr = this.lsnr;
 
-        MTC.span().addLog("Communication listeners notified");
+        MTC.span().addLog(() -> "Communication listeners notified");
 
         if (lsnr != null)
             // Notify listener of a new message.

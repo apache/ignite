@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.tracing;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
+import org.apache.ignite.spi.tracing.Scope;
+import org.apache.ignite.spi.tracing.SpanStatus;
 
 /**
  * Noop and null-safe implementation of Span.
@@ -36,22 +38,12 @@ public class NoopSpan implements Span {
     }
 
     /** {@inheritDoc} */
-    @Override public Span addTag(String tagName, String tagVal) {
+    @Override public Span addTag(String tagName, Supplier<String> tagValSupplier) {
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public Span addTag(String tagName, long tagVal) {
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Span addLog(String logDesc) {
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Span addLog(String logDesc, Map<String, String> attrs) {
+    @Override public Span addLog(Supplier<String> logDescSupplier) {
         return this;
     }
 

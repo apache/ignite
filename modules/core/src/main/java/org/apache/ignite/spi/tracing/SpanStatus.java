@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.tracing;
+package org.apache.ignite.spi.tracing;
 
 /**
  * Various statuses for Spans execution.

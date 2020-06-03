@@ -1369,7 +1369,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Runnable c = new TraceRunnable(ctx.tracing(), COMMUNICATION_REGULAR_PROCESS) {
             @Override public void execute() {
                 try {
-                    MTC.span().addTag(SpanTags.MESSAGE, traceName(msg));
+                    MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
 
                     threadProcessingMessage(true, msgC);
 
@@ -1387,7 +1387,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         };
 
-        MTC.span().addLog("Regular process queued");
+        MTC.span().addLog(() -> "Regular process queued");
 
         if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
             IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message();
@@ -1790,7 +1790,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
 
         try {
-            MTC.span().addLog("Ordered process queued");
+            MTC.span().addLog(() -> "Ordered process queued");
 
             pools.poolForPolicy(plc).execute(c);
         }
@@ -1847,7 +1847,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param secSubjId Security subject that will be used to open a security session.
      */
     private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg, UUID secSubjId) {
-        MTC.span().addLog("Invoke listener");
+        MTC.span().addLog(() -> "Invoke listener");
 
         Byte oldPlc = CUR_PLC.get();
 
@@ -2022,7 +2022,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert topicOrd >= 0 || !(topic instanceof GridTopic) : msg;
 
         try (TraceSurroundings ignored = support(null)) {
-            MTC.span().addLog("Create communication msg - " + traceName(msg));
+            MTC.span().addLog(() -> "Create communication msg - " + traceName(msg));
 
             GridIoMessage ioMsg = createGridIoMessage(topic, topicOrd, msg, plc, ordered, timeout, skipOnTimeout);
 
@@ -3852,7 +3852,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 try (TraceSurroundings ignore = support(ctx.tracing().create(
                     COMMUNICATION_ORDERED_PROCESS, mc.parentSpan))) {
                     try {
-                        MTC.span().addTag(SpanTags.MESSAGE, traceName(mc.message));
+                        OrderedMessageContainer fmc = mc;
+
+                        MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(fmc.message));
 
                         invokeListener(plc, lsnr, nodeId, mc.message.message(), secSubjId(mc.message));
                     }

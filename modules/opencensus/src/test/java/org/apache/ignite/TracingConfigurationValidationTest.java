@@ -23,17 +23,17 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.apache.ignite.internal.processors.tracing.Scope;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationCoordinates;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters;
+import org.apache.ignite.spi.tracing.Scope;
+import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
+import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.tracing.Scope.COMMUNICATION;
-import static org.apache.ignite.internal.processors.tracing.Scope.DISCOVERY;
-import static org.apache.ignite.internal.processors.tracing.Scope.EXCHANGE;
-import static org.apache.ignite.internal.processors.tracing.Scope.TX;
+import static org.apache.ignite.spi.tracing.Scope.COMMUNICATION;
+import static org.apache.ignite.spi.tracing.Scope.DISCOVERY;
+import static org.apache.ignite.spi.tracing.Scope.EXCHANGE;
+import static org.apache.ignite.spi.tracing.Scope.TX;
 
 /**
  * Tests for tracing configuration validation rules.

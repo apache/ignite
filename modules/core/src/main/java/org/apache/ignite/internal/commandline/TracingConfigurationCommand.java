@@ -31,7 +31,7 @@ import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.TracingConfigurationCommandArg;
 import org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationArguments;
 import org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationSubcommand;
-import org.apache.ignite.internal.processors.tracing.Scope;
+import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTask;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskArg;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
@@ -46,8 +46,8 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByN
 import static org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationSubcommand.GET_ALL;
 import static org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationSubcommand.RESET_ALL;
 import static org.apache.ignite.internal.commandline.tracing.configuration.TracingConfigurationSubcommand.of;
-import static org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
-import static org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
 
 /**
  * Commands associated with tracing configuration functionality.

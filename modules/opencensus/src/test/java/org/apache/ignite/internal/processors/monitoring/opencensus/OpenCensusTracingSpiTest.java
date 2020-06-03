@@ -27,11 +27,11 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Scope;
+import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
-import org.apache.ignite.internal.processors.tracing.TracingSpi;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationCoordinates;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters;
+import org.apache.ignite.spi.tracing.TracingSpi;
+import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
+import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
 import org.junit.Assert;
 import org.junit.Test;
@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.DISCOVERY_N
 import static org.apache.ignite.internal.processors.tracing.SpanType.DISCOVERY_NODE_JOIN_REQUEST;
 import static org.apache.ignite.internal.processors.tracing.SpanType.DISCOVERY_NODE_LEFT;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
-import static org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
 
 /**
  * Tests to check correctness of OpenCensus Tracing SPI implementation.
@@ -249,7 +249,7 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
             List<SpanData> exchFutSpans = handler().spansReportedByNode(getTestIgniteInstanceName(i))
                 .filter(span -> EXCHANGE_FUTURE.spanName().equals(span.getName()))
                 .filter(span -> span.getStatus() == Status.OK)
-                .filter(span -> AttributeValue.longAttributeValue(EventType.EVT_NODE_LEFT).equals(
+                .filter(span -> AttributeValue.stringAttributeValue(String.valueOf(EventType.EVT_NODE_LEFT)).equals(
                     span.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT, SpanTags.TYPE))))
                 .filter(span -> stringAttributeValue(leftNodeId).equals(
                     span.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID))))
@@ -280,13 +280,13 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
                 );
                 Assert.assertEquals(
                     "Exchange future major topology version is invalid " + span,
-                    AttributeValue.longAttributeValue(curTopVer + 1),
+                    AttributeValue.stringAttributeValue(String.valueOf(curTopVer + 1)),
                     span.getAttributes().getAttributeMap().get(
                         SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MAJOR))
                 );
                 Assert.assertEquals(
                     "Exchange future minor version is invalid " + span,
-                    AttributeValue.longAttributeValue(0),
+                    AttributeValue.stringAttributeValue("0"),
                     span.getAttributes().getAttributeMap().get(
                         SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MINOR))
                 );

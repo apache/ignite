@@ -1570,7 +1570,7 @@ public class GridNioServer<T> {
             Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                MTC.span().addTag(SpanTags.MESSAGE, traceName(msg));
+                MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
 
                 assert msg != null;
 
@@ -1751,7 +1751,7 @@ public class GridNioServer<T> {
             Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                MTC.span().addTag(SpanTags.MESSAGE, traceName(msg));
+                MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
 
                 if (writer != null)
                     writer.setCurrentWriteClass(msg.getClass());

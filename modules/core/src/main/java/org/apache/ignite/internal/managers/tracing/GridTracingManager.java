@@ -29,25 +29,26 @@ import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.SpanImpl;
 import org.apache.ignite.internal.processors.tracing.configuration.GridTracingConfigurationManager;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
-import org.apache.ignite.internal.processors.tracing.NoopTracingSpi;
-import org.apache.ignite.internal.processors.tracing.Scope;
+import org.apache.ignite.spi.tracing.NoopTracingSpi;
+import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.SpanType;
 import org.apache.ignite.internal.processors.tracing.Tracing;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationCoordinates;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationManager;
-import org.apache.ignite.internal.processors.tracing.TracingSpi;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters;
+import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.apache.ignite.spi.tracing.TracingSpi;
+import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesHandler;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.tracing.SpanTags.NODE;
-import static org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
-import static org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
 import static org.apache.ignite.internal.util.GridClientByteUtils.bytesToInt;
 import static org.apache.ignite.internal.util.GridClientByteUtils.bytesToShort;
 import static org.apache.ignite.internal.util.GridClientByteUtils.intToBytes;
@@ -102,6 +103,13 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
     /** Minor span serialization protocol version. */
     private static final byte MINOR_PROTOCOL_VERSION = 0;
 
+    /** Noop traceable message handler. */
+    private static final TraceableMessagesHandler NOOP_TRACEABLE_MSG_HANDLER =
+        new TraceableMessagesHandler(new NoopTracing(), new NullLogger());
+
+    /** Flag that indicates that noop tracing spi is used. */
+    private boolean noop = true;
+
     /**
      * Constructor.
      *
@@ -124,6 +132,8 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
     @Override public void start() throws IgniteCheckedException {
         try {
             startSpi();
+
+            noop = getSpi() instanceof NoopTracingSpi;
         }
         catch (IgniteSpiException e) {
             log.warning("Failed to start tracing processor with spi: " + getSpi().getName()
@@ -156,18 +166,21 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
         if (span == null)
             return null;
 
-        span.addTag(SpanTags.NODE_ID, ctx.localNodeId().toString());
-        span.addTag(SpanTags.tag(NODE, SpanTags.NAME), ctx.igniteInstanceName());
+        span.addTag(SpanTags.NODE_ID, () -> ctx.localNodeId().toString());
+        span.addTag(SpanTags.tag(NODE, SpanTags.NAME), ctx::igniteInstanceName);
 
         ClusterNode locNode = ctx.discovery().localNode();
         if (locNode != null && locNode.consistentId() != null)
-            span.addTag(SpanTags.tag(NODE, SpanTags.CONSISTENT_ID), locNode.consistentId().toString());
+            span.addTag(SpanTags.tag(NODE, SpanTags.CONSISTENT_ID), () -> locNode.consistentId().toString());
 
         return span;
     }
 
     /** {@inheritDoc} */
     @Override public Span create(@NotNull SpanType spanType, @Nullable Span parentSpan) {
+        if (noop)
+            return NoopSpan.INSTANCE;
+
         return enrichWithLocalNodeParameters(
             generateSpan(
                 parentSpan,
@@ -177,6 +190,9 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
 
     /** {@inheritDoc} */
     @Override public Span create(@NotNull SpanType spanType, @Nullable byte[] serializedParentSpan) {
+        if (noop)
+            return NoopSpan.INSTANCE;
+
         // 1 byte: special flags;
         // 1 bytes: spi type;
         // 2 bytes: major protocol version;
@@ -305,14 +321,21 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
         @Nullable Span parentSpan,
         @Nullable String lb
     ) {
-        return enrichWithLocalNodeParameters(generateSpan(
-            parentSpan,
-            spanType,
-            lb));
+        if (noop)
+            return NoopSpan.INSTANCE;
+
+        return enrichWithLocalNodeParameters(
+            generateSpan(
+                parentSpan,
+                spanType,
+                lb));
     }
 
     /** {@inheritDoc} */
     @Override public byte[] serialize(@NotNull Span span) {
+        if (noop)
+            return NoopTracing.NOOP_SERIALIZED_SPAN;
+
         // 1 byte: special flags;
         // 1 bytes: spi type;
         // 2 bytes: major protocol version;
@@ -465,6 +488,9 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
 
     /** {@inheritDoc} */
     @Override public TraceableMessagesHandler messages() {
+        if (noop)
+            return NOOP_TRACEABLE_MSG_HANDLER;
+
         return msgHnd;
     }
 
