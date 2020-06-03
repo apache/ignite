@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Ignite distributed re-entrant lock.
     /// </summary>
-    internal class IgniteLock : PlatformTargetAdapter, IIgniteLock
+    internal class IgniteMonitor : PlatformTargetAdapter, IIgniteMonitor
     {
         /// <summary>
         /// Lock operations.
@@ -48,13 +48,13 @@ namespace Apache.Ignite.Core.Impl
         private readonly bool _fair;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="IgniteLock"/>.
+        /// Initializes a new instance of <see cref="IgniteMonitor"/>.
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="name">Name.</param>
         /// <param name="failoverSafe">Failover-safe flag.</param>
         /// <param name="fair">Fair flag.</param>
-        public IgniteLock(IPlatformTargetInternal target, string name, bool failoverSafe, bool fair) 
+        public IgniteMonitor(IPlatformTargetInternal target, string name, bool failoverSafe, bool fair) 
             : base(target)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));

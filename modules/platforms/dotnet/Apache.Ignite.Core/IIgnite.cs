@@ -490,7 +490,7 @@ namespace Apache.Ignite.Core
         /// setting, but have smaller variances in times to obtain locks and guarantee lack of starvation.
         /// </param>
         /// <param name="create">Whether the lock should be created if it does not exist.</param>
-        /// <returns><see cref="IIgniteLock"/></returns>
-        IIgniteLock GetOrCreateLock(string name, bool failoverSafe, bool fair, bool create); // TODO: Use enums instead of booleans?
+        /// <returns><see cref="IIgniteMonitor"/></returns>
+        IIgniteMonitor GetOrCreateLock(string name, bool failoverSafe, bool fair, bool create); // TODO: Use enums instead of booleans?
     }
 }

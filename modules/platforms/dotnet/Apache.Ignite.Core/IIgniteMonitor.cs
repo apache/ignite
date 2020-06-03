@@ -21,11 +21,13 @@ namespace Apache.Ignite.Core
     using System.Threading;
 
     /// <summary>
-    /// Distributed re-entrant lock.
+    /// Distributed re-entrant monitor (lock).
     /// <para />
     /// The functionality is similar to the standard <see cref="Monitor"/> class, but works across all cluster nodes.
+    /// <para />
+    /// This API corresponds to <c>IgniteLock</c> in Java.
     /// </summary>
-    public interface IIgniteLock : IDisposable
+    public interface IIgniteMonitor : IDisposable
     {
         /// <summary>
         /// Gets the name of this lock.
