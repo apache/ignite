@@ -20,17 +20,20 @@ namespace Apache.Ignite.Core.Tests
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for <see cref="IIgnite.GetOrCreateMonitor"/> and <see cref="IIgniteLock"/>.
+    /// Tests for <see cref="IIgniteLock"/>.
     /// </summary>
     public class IgniteLockTests : TestBase
     {
         [Test]
         public void TestBasicLocking()
         {
-            using (var lck = Ignite.GetOrCreateLock("my-lock", failoverSafe: true, fair: false, create: true))
+            using (var lck = Ignite.GetOrCreateLock("my-lock"))
             {
-                Assert.IsTrue(lck.IsFailoverSafe);
-                Assert.IsFalse(lck.IsFair);
+                var cfg = lck.Configuration;
+                
+                Assert.IsFalse(cfg.IsFailoverSafe);
+                Assert.IsFalse(cfg.IsFair);
+                Assert.AreEqual("my-lock", cfg.Name);
                 
                 Assert.False(lck.IsEntered());
                 Assert.False(lck.IsBroken());

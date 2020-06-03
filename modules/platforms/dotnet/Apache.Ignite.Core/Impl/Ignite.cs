@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
@@ -995,21 +996,30 @@ namespace Apache.Ignite.Core.Impl
                 s => configuration.Write(BinaryUtils.Marshaller.StartMarshal(s)));
         }
 
-        /** <inheritdoc /> */
-        public IIgniteLock GetOrCreateLock(string name, bool failoverSafe, bool fair, bool create)
+        public IIgniteLock GetOrCreateLock(string name)
         {
-            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public IIgniteLock GetOrCreateLock(LockConfiguration configuration, bool create)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+            IgniteArgumentCheck.NotNullOrEmpty(configuration.Name, "configuration.Name");
+            
+            // Create a copy to ignore modifications from outside.
+            var cfg = new LockConfiguration(configuration);
 
             // TODO: failoverSafe - what happens when .NET thread is interrupted from Java?
             var target = DoOutOpObject((int) Op.GetOrCreateLock, w =>
             {
-                w.WriteString(name);
-                w.WriteBoolean(failoverSafe);
-                w.WriteBoolean(fair);
+                w.WriteString(configuration.Name);
+                w.WriteBoolean(configuration.IsFailoverSafe);
+                w.WriteBoolean(configuration.IsFair);
                 w.WriteBoolean(create);
             });
             
-            return new IgniteLock(target, name, failoverSafe, fair);
+            return new IgniteLock(target, cfg);
         }
 
         /// <summary>

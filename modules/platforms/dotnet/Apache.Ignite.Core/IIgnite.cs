@@ -475,22 +475,18 @@ namespace Apache.Ignite.Core
         void AddCacheConfiguration(CacheConfiguration configuration);
 
         /// <summary>
-        /// Gets or creates distributed re-entrant lock (monitor).
+        /// Gets or creates a distributed re-entrant lock (monitor) with default configuration.
         /// </summary>
         /// <param name="name">Lock name.</param>
-        /// <param name="failoverSafe">Whether the lock should be failover-safe: when true, if any node leaves topology,
-        /// all locks already acquired by that node are silently released and become available for other nodes
-        /// to acquire. When false, all threads on other nodes waiting to acquire the lock are interrupted.</param>
-        /// <param name="fair">Whether the lock should be in fair mode.
-        /// <para />
-        /// When true, under contention, locks favor granting access to the longest-waiting thread. Otherwise this
-        /// lock does not guarantee any particular access order.
-        /// <para />
-        /// Fair locks accessed by many threads may display lower overall throughput than those using the default
-        /// setting, but have smaller variances in times to obtain locks and guarantee lack of starvation.
-        /// </param>
+        /// <returns><see cref="IIgniteLock"/></returns>
+        IIgniteLock GetOrCreateLock(string name);
+
+        /// <summary>
+        /// Gets or creates a distributed re-entrant lock (monitor).
+        /// </summary>
+        /// <param name="configuration">Lock configuration.</param>
         /// <param name="create">Whether the lock should be created if it does not exist.</param>
         /// <returns><see cref="IIgniteLock"/></returns>
-        IIgniteLock GetOrCreateLock(string name, bool failoverSafe, bool fair, bool create); // TODO: Use enums instead of booleans?
+        IIgniteLock GetOrCreateLock(LockConfiguration configuration, bool create);
     }
 }

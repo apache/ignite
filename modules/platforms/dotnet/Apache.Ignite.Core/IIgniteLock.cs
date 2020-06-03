@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core
 {
     using System;
     using System.Threading;
+    using Apache.Ignite.Core.Configuration;
 
     /// <summary>
     /// Distributed re-entrant monitor (lock).
@@ -30,27 +31,9 @@ namespace Apache.Ignite.Core
     public interface IIgniteLock : IDisposable
     {
         /// <summary>
-        /// Gets the name of this lock.
+        /// Gets the lock configuration.
         /// </summary>
-        string Name { get; }
-        
-        /// <summary>
-        /// Gets a value indicating whether this lock is failover-safe: when true, if any node leaves topology,
-        /// all locks already acquired by that node are silently released and become available for other nodes
-        /// to acquire. When false, all threads on other nodes waiting to acquire the lock are interrupted.
-        /// </summary>
-        bool IsFailoverSafe { get; }
-        
-        /// <summary>
-        /// Gets a value indicating whether this lock is in fair mode.
-        /// <para />
-        /// When true, under contention, locks favor granting access to the longest-waiting thread.
-        /// Otherwise this lock does not guarantee any particular access order.
-        /// <para />
-        /// Fair locks accessed by many threads may display lower overall throughput than those using the default
-        /// setting, but have smaller variances in times to obtain locks and guarantee lack of starvation.
-        /// </summary>
-        bool IsFair { get; }
+        LockConfiguration Configuration { get; }
 
         void Enter(); // TODO: Rename to Enter, TryEnter - like CacheLock, Monitor, etc?
 

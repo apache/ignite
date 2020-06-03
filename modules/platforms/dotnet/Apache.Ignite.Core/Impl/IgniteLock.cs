@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Configuration;
 
     /// <summary>
     /// Ignite distributed re-entrant lock.
@@ -39,47 +40,23 @@ namespace Apache.Ignite.Core.Impl
         }
         
         /** */
-        private readonly string _name;
-
-        /** */
-        private readonly bool _failoverSafe;
-        
-        /** */
-        private readonly bool _fair;
+        private readonly LockConfiguration _cfg;
 
         /// <summary>
         /// Initializes a new instance of <see cref="IgniteLock"/>.
         /// </summary>
-        /// <param name="target">Target.</param>
-        /// <param name="name">Name.</param>
-        /// <param name="failoverSafe">Failover-safe flag.</param>
-        /// <param name="fair">Fair flag.</param>
-        public IgniteLock(IPlatformTargetInternal target, string name, bool failoverSafe, bool fair) 
+        public IgniteLock(IPlatformTargetInternal target, LockConfiguration cfg)
             : base(target)
         {
-            Debug.Assert(!string.IsNullOrEmpty(name));
+            Debug.Assert(cfg != null);
 
-            _name = name;
-            _failoverSafe = failoverSafe;
-            _fair = fair;
-        }
-        
-        /** <inheritDoc /> */
-        public string Name
-        {
-            get { return _name; }
+            _cfg = cfg;
         }
 
         /** <inheritDoc /> */
-        public bool IsFailoverSafe
+        public LockConfiguration Configuration
         {
-            get { return _failoverSafe; }
-        }
-
-        /** <inheritDoc /> */
-        public bool IsFair
-        {
-            get { return _fair; }
+            get { return new LockConfiguration(_cfg); }
         }
 
         /** <inheritDoc /> */
