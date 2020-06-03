@@ -25,8 +25,11 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class IgniteLockTests : TestBase
     {
+        /// <summary>
+        /// Tests state changes: unlocked -> locked -> disposed.
+        /// </summary>
         [Test]
-        public void TestBasicLocking()
+        public void TestStateChanges()
         {
             using (var lck = Ignite.GetOrCreateLock("my-lock"))
             {
