@@ -28,9 +28,10 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +43,9 @@ public class CacheContinuousQueryEventBuffer {
     private static final int BUF_SIZE =
         IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE", 1000);
 
+    /** Maximum size of buffer for pending event processing. */
+    private static final int MAX_PENDING_BUFF_SIZE = CacheContinuousQueryHandler.LSNR_MAX_BUF_SIZE;
+
     /** */
     private static final Object RETRY = new Object();
 
@@ -49,19 +53,19 @@ public class CacheContinuousQueryEventBuffer {
     private static final AtomicLongFieldUpdater<CacheContinuousQueryEventBuffer> ACKED_UPDATER =
         AtomicLongFieldUpdater.newUpdater(CacheContinuousQueryEventBuffer.class, "ackedUpdCntr");
 
+    /** Continuous query category logger. */
+    private final IgniteLogger log;
+
     /** */
     private final int part;
 
-    /** Partition counter resolver. */
-    private final Function<Boolean, Long> startingCntr;
-
-    /** */
+    /** Batch of entries currently being collected to send to the remote. */
     private final AtomicReference<Batch> curBatch = new AtomicReference<>();
 
-    /** */
+    /** Queue for keeping entries which partition counter less the counter processing by current batch. */
     private final FastSizeDeque<CacheContinuousQueryEntry> backupQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
-    /** */
+    /** Entries which are waiting for being processed. */
     private final ConcurrentSkipListMap<Long, CacheContinuousQueryEntry> pending = new ConcurrentSkipListMap<>();
 
     /** Last seen ack partition counter from primary. */
@@ -69,18 +73,18 @@ public class CacheContinuousQueryEventBuffer {
 
     /**
      * @param part Partition number.
+     * @param log Continuous query category logger.
      */
-    CacheContinuousQueryEventBuffer(int part) {
-        this(part, b -> 0L);
+    CacheContinuousQueryEventBuffer(int part, IgniteLogger log) {
+        this.part = part;
+        this.log = log;
     }
 
     /**
      * @param part Partition number.
-     * @param startingCntr Partition counter resolver.
      */
-    CacheContinuousQueryEventBuffer(int part, Function<Boolean, Long> startingCntr) {
-        this.part = part;
-        this.startingCntr = startingCntr;
+    CacheContinuousQueryEventBuffer(int part) {
+        this(part, null);
     }
 
     /**
@@ -140,6 +144,14 @@ public class CacheContinuousQueryEventBuffer {
     }
 
     /**
+     * @param backup {@code True} if backup context.
+     * @return Initial partition counter.
+     */
+    protected long currentPartitionCounter(boolean backup) {
+        return 0;
+    }
+
+    /**
      * For test purpose only.
      *
      * @return Current number of filtered events.
@@ -195,6 +207,28 @@ public class CacheContinuousQueryEventBuffer {
                 if (batch.endCntr < ackedUpdCntr)
                     batch.tryRollOver(entry.topologyVersion());
 
+                if (pending.size() > MAX_PENDING_BUFF_SIZE) {
+                    LT.warn(log, "Buffer for pending events reached max of its size " +
+                        "[cacheId=" + entry.cacheId() + ", maxSize=" + MAX_PENDING_BUFF_SIZE +
+                        ", partId=" + entry.partition() + ']');
+
+                    // Remove first BUFF_SIZE keys.
+                    int keysToRemove = BUF_SIZE;
+
+                    Iterator<Map.Entry<Long, CacheContinuousQueryEntry>> iter = pending.entrySet().iterator();
+
+                    res = new ArrayList<>();
+
+                    while (iter.hasNext() && keysToRemove > 0) {
+                        // Collecting results ignore backup flag due to batch may not be switched.
+                        res = addResult(res, iter.next().getValue(), false);
+
+                        iter.remove();
+
+                        keysToRemove--;
+                    }
+                }
+
                 pending.put(cntr, entry);
             }
 
@@ -230,7 +264,7 @@ public class CacheContinuousQueryEventBuffer {
             return batch;
 
         for (;;) {
-            long curCntr = startingCntr.apply(backup);
+            long curCntr = currentPartitionCounter(backup);
 
             if (curCntr == -1)
                 return null;

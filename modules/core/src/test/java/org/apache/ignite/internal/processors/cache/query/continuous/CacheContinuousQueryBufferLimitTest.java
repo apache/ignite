@@ -29,19 +29,26 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -61,17 +68,64 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     private static final int TOTAL_KEYS = 1024;
 
     /** Number of pending entries.  */
-    private static final int PENDING_LIMIT = 1000;
+    private static final int PENDING_LIMIT = 1010;
 
     /** Timeout to wait for pending buffer overflow. */
-    private static final long OVERFLOW_TIMEOUT_MS = 30_000L;
+    private static final long OVERFLOW_TIMEOUT_MS = 15_000L;
 
     /** Default remote no-op filter. */
     private static final CacheEntryEventSerializableFilter<Integer, Integer> RMT_FILTER = e -> true;
 
+    /** Counter of cache messages being send. */
+    private final AtomicInteger msgCntr = new AtomicInteger();
+
     /** @throws Exception If fails. */
     @Test
+    public void testContinuousQueryBatchSwitchOnAck() throws Exception {
+        doTestContinuousQueryPendingBufferLimit((n, msg) ->
+            msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 10);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    @WithSystemProperty(key = "IGNITE_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE", value = "1000")
     public void testContinuousQueryPendingBufferLimit() throws Exception {
+        doTestContinuousQueryPendingBufferLimit((n, msg) ->
+            (msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 10) ||
+                msg instanceof CacheContinuousQueryBatchAck);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi())
+            .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setAtomicityMode(ATOMIC)
+                .setBackups(1)
+                .setAffinity(new RendezvousAffinityFunction(false, PARTS)));
+    }
+
+    /** */
+    @Before
+    public void resetMessageCounter() {
+        msgCntr.set(0);
+    }
+
+    /** */
+    @After
+    public void stopAllInstances() {
+        stopAllGrids();
+    }
+
+    /**
+     * @param locBlockPred Block predicate on local node to emulate message delivery issues.
+     * @throws Exception If fails.
+     */
+    private void doTestContinuousQueryPendingBufferLimit(
+        IgniteBiPredicate<ClusterNode, Message> locBlockPred
+    ) throws Exception
+    {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         IgniteEx locIgnite = startGrid(0);
@@ -96,7 +150,6 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
                     Math.max(c, ((CacheQueryEntryEvent<?, ?>)e).getPartitionUpdateCounter()))));
         cq.setLocal(false);
 
-        AtomicInteger blockCnt = new AtomicInteger();
         IgniteInternalFuture<?> updFut = null;
 
         try (QueryCursor<?> qry = locIgnite.cache(DEFAULT_CACHE_NAME).query(cq)) {
@@ -114,8 +167,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             ConcurrentMap<Long, CacheContinuousQueryEntry> pending =
                 getContinuousQueryPendingBuffer(rmtIgnite, routineId, CU.cacheId(DEFAULT_CACHE_NAME), 0);
 
-            spi(locIgnite).blockMessages((n, msg) -> msg instanceof GridDhtAtomicSingleUpdateRequest
-                    && blockCnt.getAndIncrement() == 10);
+            spi(locIgnite).blockMessages(locBlockPred);
 
             updFut = GridTestUtils.runMultiThreadedAsync(() -> {
                 while (!Thread.currentThread().isInterrupted()) {
@@ -125,18 +177,22 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
             assertNotNull("Partition remote buffers must be inited", pending);
 
+            log.warning("Waiting for pending buffer to being overflowed within " + OVERFLOW_TIMEOUT_MS + " ms.");
+
             boolean await = waitForCondition(() -> pending.size() > PENDING_LIMIT, OVERFLOW_TIMEOUT_MS);
 
             spi(locIgnite).stopBlock();
 
             assertFalse("Pending buffer exceeded the limit despite entries have been acked " +
-                "[lastAcked=" + lastAcked + ", pending=" + pending.keySet() + ']',
+                    "[lastAcked=" + lastAcked + ", pending=" + S.compact(pending.keySet(), i -> i + 1) + ']',
                 await);
         }
         finally {
             if (updFut != null)
                 updFut.cancel();
         }
+
+        stopAllGrids();
     }
 
     /**
@@ -183,15 +239,5 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
         CacheContinuousQueryEventBuffer buff = hnd.partitionBuffer(cctx, partId);
 
         return getFieldValue(buff, CacheContinuousQueryEventBuffer.class, "pending");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setCommunicationSpi(new TestRecordingCommunicationSpi())
-            .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                .setAtomicityMode(ATOMIC)
-                .setBackups(1)
-                .setAffinity(new RendezvousAffinityFunction(false, PARTS)));
     }
 }
