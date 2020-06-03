@@ -48,5 +48,6 @@ namespace Apache.Ignite.Core
         bool IsEntered();
         
         // TODO: IgniteCondition is like Monitor.Wait / Pulse
+        // TODO: EnterInterruptedly? Likely no - interrupted state is not shared across .NET <-> Java boundary 
     }
 }
