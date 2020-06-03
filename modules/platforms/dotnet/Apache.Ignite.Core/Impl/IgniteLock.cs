@@ -120,6 +120,8 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritDoc /> */
         public void Dispose()
         {
+            // TODO: Should we call Exit from here?
+            // It throws an exception if not exited, but this does not make sense?
             Target.InLongOutLong((int) Op.Close, 0);
         }
     }
