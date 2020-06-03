@@ -126,7 +126,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         this.idxName = idxName;
         this.cond = cond;
         igniteTbl = tbl.unwrap(IgniteTable.class);
-        RelCollation coll = traits.getTrait(RelCollationTraitDef.INSTANCE);
+        RelCollation coll = Commons.collation(traits);
         collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
         lowerIdxCond = new ArrayList<>(getRowType().getFieldCount());
         upperIdxCond = new ArrayList<>(getRowType().getFieldCount());

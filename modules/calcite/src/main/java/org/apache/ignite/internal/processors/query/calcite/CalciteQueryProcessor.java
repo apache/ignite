@@ -64,7 +64,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
             .sqlToRelConverterConfig(SqlToRelConverter.configBuilder()
-                .withTrimUnusedFields(false)
+                .withTrimUnusedFields(true)
                 .withDecorrelationEnabled(true)
                 .build())
             .parserConfig(SqlParser.configBuilder()

@@ -289,10 +289,10 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * @return New cluster based on a planner and its configuration.
+     * @return Cluster based on a planner and its configuration.
      */
-    public RelOptCluster createCluster() {
-        return planner().createCluster();
+    public RelOptCluster cluster() {
+        return planner().cluster();
     }
 
     /** {@inheritDoc} */

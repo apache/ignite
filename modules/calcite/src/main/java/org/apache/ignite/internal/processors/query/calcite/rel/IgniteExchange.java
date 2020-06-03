@@ -72,9 +72,8 @@ public class IgniteExchange extends Exchange implements IgniteRel {
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCount = mq.getRowCount(this);
-        double bytesPerRow = getRowType().getFieldCount();
-        return planner.getCostFactory().makeCost(
-            rowCount, rowCount, 0);
+        double bytesPerRow = getRowType().getFieldCount() * 4;
+        return planner.getCostFactory().makeCost(rowCount * bytesPerRow, rowCount, 0);
     }
 
     /** {@inheritDoc} */

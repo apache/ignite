@@ -42,6 +42,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperatorTable;
@@ -118,6 +119,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private SqlValidator validator;
 
+    /** */
+    private RelOptCluster cluster;
+
     /**
      * @param ctx Planner context.
      */
@@ -154,6 +158,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     @Override public void reset() {
         planner = null;
         validator = null;
+        cluster = null;
     }
 
     /** {@inheritDoc} */
@@ -201,11 +206,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public RelRoot rel(SqlNode sql) {
-        SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(this,
-            validator, catalogReader, createCluster(), convertletTbl, sqlToRelConverterCfg);
-
+        SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator(), catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sql, false, true);
         root = root.withRel(sqlToRelConverter.decorrelate(sql, root.rel));
+        root = root.withRel(root.project());
+        root = trimUnusedFields(root);
 
         return root;
     }
@@ -228,10 +233,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
         CalciteCatalogReader catalogReader = this.catalogReader.withSchemaPath(schemaPath);
         SqlValidator validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg);
-
-        SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(this,
-            validator, catalogReader, createCluster(), convertletTbl, sqlToRelConverterCfg);
-
+        SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator, catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sqlNode, true, false);
         root = root.withRel(sqlToRelConverter.decorrelate(sqlNode, root.rel));
 
@@ -283,11 +285,12 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** Creates a cluster. */
-    RelOptCluster createCluster() {
-        RelOptCluster cluster = RelOptCluster.create(planner(), rexBuilder);
-
-        cluster.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner()));
-        cluster.setMetadataQuerySupplier(RelMetadataQueryEx::create);
+    RelOptCluster cluster() {
+        if (cluster == null) {
+            cluster = RelOptCluster.create(planner(), rexBuilder);
+            cluster.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner()));
+            cluster.setMetadataQuerySupplier(RelMetadataQueryEx::create);
+        }
 
         return cluster;
     }
@@ -327,6 +330,35 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         }
 
         return idxMaterializations;
+    }
+
+    /**
+     * Walks over a tree of relational expressions, replacing each
+     * {@link org.apache.calcite.rel.RelNode} with a 'slimmed down' relational
+     * expression that projects
+     * only the columns required by its consumer.
+     *
+     * @param root Root of relational expression tree
+     * @return Trimmed relational expression
+     */
+    protected RelRoot trimUnusedFields(RelRoot root) {
+        final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
+            .withConfig(sqlToRelConverterCfg)
+            // For now, don't trim if there are more than 3 joins. The projects
+            // near the leaves created by trim migrate past joins and seem to
+            // prevent join-reordering.
+            .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2)
+            .build();
+        SqlToRelConverter converter = sqlToRelConverter(validator(), catalogReader, config);
+        boolean ordered = !root.collation.getFieldCollations().isEmpty();
+        boolean dml = SqlKind.DML.contains(root.kind);
+        return root.withRel(converter.trimUnusedFields(dml || ordered, root.rel));
+    }
+
+    /** */
+    private SqlToRelConverter sqlToRelConverter(SqlValidator validator, CalciteCatalogReader reader,
+        SqlToRelConverter.Config config) {
+        return new SqlToRelConverter(this, validator, reader, cluster(), convertletTbl, config);
     }
 
     /** */

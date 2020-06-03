@@ -858,7 +858,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 mailboxRegistry(),
                 exchangeService(),
                 failureProcessor())
-                .go(Commons.fromJson(ctx.createCluster(), msg.root()));
+                .go(Commons.fromJson(ctx.cluster(), msg.root()));
 
             assert node instanceof Outbox : node;
 
