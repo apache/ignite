@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +35,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -63,8 +65,11 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -77,11 +82,12 @@ import org.junit.Before;
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Base snapshot tests.
@@ -118,13 +124,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             .setCacheConfiguration(dfltCacheCfg)
             .setClusterStateOnStart(INACTIVE)
             .setDiscoverySpi(discoSpi);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void cleanPersistenceDir() throws Exception {
-        super.cleanPersistenceDir();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
     }
 
     /** @throws Exception If fails. */
@@ -358,6 +357,65 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param grids Grids to block snapshot executors.
+     * @return Wrapped snapshot executor list.
+     */
+    protected static List<BlockingExecutor> setBlockingSnapshotExecutor(List<? extends Ignite> grids) {
+        List<BlockingExecutor> execs = new ArrayList<>();
+
+        for (Ignite grid : grids) {
+            IgniteSnapshotManager mgr = snp((IgniteEx)grid);
+            Function<String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
+
+            BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
+            execs.add(block);
+
+            mgr.localSnapshotSenderFactory((snpName) ->
+                new DelegateSnapshotSender(log, block, old.apply(snpName)));
+        }
+
+        return execs;
+    }
+
+    /**
+     * @param startCli Client node to start snapshot.
+     * @param srvs Server nodes.
+     * @param cache Persisted cache.
+     * @param snpCanceller Snapshot cancel closure.
+     */
+    public static void doSnapshotCancellationTest(
+        IgniteEx startCli,
+        List<IgniteEx> srvs,
+        IgniteCache<?, ?> cache,
+        Consumer<String> snpCanceller
+    ) {
+        IgniteEx srv = srvs.get(0);
+
+        CacheConfiguration<?, ?> ccfg = cache.getConfiguration(CacheConfiguration.class);
+
+        assertTrue(CU.isPersistenceEnabled(srv.configuration()));
+        assertTrue(CU.isPersistentCache(ccfg, srv.configuration().getDataStorageConfiguration()));
+
+        File snpDir = resolveSnapshotWorkDirectory(srv.configuration());
+
+        List<BlockingExecutor> execs = setBlockingSnapshotExecutor(srvs);
+
+        IgniteFuture<Void> fut = startCli.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        for (BlockingExecutor exec : execs)
+            exec.waitForBlocked(30_000L);
+
+        snpCanceller.accept(SNAPSHOT_NAME);
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            IgniteFutureCancelledException.class,
+            "Execution of snapshot tasks has been cancelled by external process");
+
+        assertEquals("Snapshot directory must be empty due to snapshot cancelled", 0, snpDir.list().length);
+    }
+
+    /**
      * @param ignite Ignite instance to resolve discovery spi to.
      * @return BlockingCustomMessageDiscoverySpi instance.
      */
@@ -536,6 +594,16 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 tasks.offer(cmd);
             else
                 delegate.execute(cmd);
+        }
+
+        /** @param timeout Timeout in milliseconds. */
+        public void waitForBlocked(long timeout) {
+            try {
+                assertTrue(waitForCondition(() -> !tasks.isEmpty(), timeout));
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /** Unblock and schedule tasks for execution. */

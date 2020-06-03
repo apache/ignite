@@ -325,6 +325,8 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         assertNull(ignite.cachex(getCacheName(0)));
 
+        ignite.resetLostPartitions(Arrays.asList(getCacheName(0), getCacheName(1), getCacheName(2)));
+
         awaitPartitionMapExchange();
 
         VisorFindAndDeleteGarbageInPersistenceTaskResult taskResult = doFindAndRemove.apply(ex1, false);

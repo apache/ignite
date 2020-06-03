@@ -30,11 +30,11 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -44,7 +44,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -558,6 +560,20 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 
+        if (!cctx.isLocal()) {
+            GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+
+            Set<Integer> lostParts = cacheAdapter.topology().lostPartitions();
+
+            if (!lostParts.isEmpty()) {
+                if (part == null || lostParts.contains(part)) {
+                    throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
+                        "has been lostParts [cacheName=" + cctx.name() +
+                        ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
+                }
+            }
+        }
+
         // Affinity nodes snapshot.
         Collection<ClusterNode> nodes = new ArrayList<>(nodes());
 
@@ -567,12 +583,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             if (part != null) {
                 if (forceLocal) {
                     throw new IgniteCheckedException("No queryable nodes for partition " + part
-                        + " [forced local query=" + this + "]");
-                }
-
-                if (isSafeLossPolicy()) {
-                    throw new IgniteCheckedException("Failed to execute scan query because cache partition has been " +
-                        "lost [cacheName=" + cctx.name() + ", part=" + part + "]");
+                            + " [forced local query=" + this + "]");
                 }
             }
 
@@ -620,16 +631,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             it = qryMgr.scanQueryDistributed(this, nodes);
 
         return mvccTracker != null ? new MvccTrackingIterator(it, mvccTracker) : it;
-    }
-
-    /**
-     * @return true if current PartitionLossPolicy corresponds to *_SAFE values.
-     */
-    private boolean isSafeLossPolicy() {
-        PartitionLossPolicy lossPlc = cctx.cache().configuration().getPartitionLossPolicy();
-
-        return lossPlc == PartitionLossPolicy.READ_ONLY_SAFE ||
-            lossPlc == PartitionLossPolicy.READ_WRITE_SAFE;
     }
 
     /**

@@ -71,6 +71,7 @@ import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -346,8 +347,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Adds historically rebalancing partitions to wait group.
-     * Not doing so could trigger late affinity switching before actual rebalancing will finish.
+     * Adds group partition to wait list.
+     * <p>
+     * Late affinity switch will be triggered as soons as wait list becomes empty.
      *
      * @param grpId Group id.
      * @param part Part.
@@ -500,7 +502,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     grp.topology().updateTopologyVersion(excFut, discoCache, -1, false);
 
                     // Exchange free cache creation, just replacing client topology with dht.
-                    // Topology shouild be initialized before the use.
+                    // Topology should be initialized before the use.
                     grp.topology().beforeExchange(excFut, true, false);
 
                     grpHolder = new CacheGroupAffNodeHolder(grp, grpHolder.affinity());
@@ -517,8 +519,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             Collections.<Integer>emptySet(),
                             null,
                             null,
-                            null
-                        );
+                            null,
+                            clientTop.lostPartitions());
                     }
 
                     assert grpHolder.affinity().lastVersion().equals(grp.affinity().lastVersion());
@@ -582,7 +584,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     -1,
                     false);
 
-                grp.topology().update(topVer, partMap, null, Collections.emptySet(), null, null, null);
+                grp.topology().update(topVer, partMap, null, Collections.emptySet(), null, null, null, null);
 
                 topFut.validate(grp, discoCache.allNodes());
             }
@@ -880,7 +882,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (notifyTopVer != null) {
                 final AffinityTopologyVersion topVer = notifyTopVer;
 
-                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                     @Override public void run() {
                         onCacheGroupStopped(topVer);
                     }
@@ -1115,8 +1117,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert assignment != null;
 
-        final Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
-
         forAllCacheGroups(new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) {
                 List<List<ClusterNode>> idealAssignment = aff.idealAssignmentRaw();
@@ -1350,6 +1350,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         Collection<DynamicCacheDescriptor> descs
     ) throws IgniteCheckedException {
         IgniteInternalFuture<?> res = cachesRegistry.addUnregistered(descs);
+
+        for (DynamicCacheDescriptor d: descs)
+            cctx.coordinators().validateCacheConfiguration(d.cacheConfiguration());
 
         if (fut.context().mergeExchanges())
             return res;
@@ -2214,14 +2217,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param evts Discovery events processed during exchange.
      * @param addedOnExchnage {@code True} if cache group was added during this exchange.
      * @param grpHolder Group holder.
-     * @param rebalanceInfo Rebalance information.
+     * @param rebalanceInfo Rebalance information on coordinator or null on other nodes.
      * @param latePrimary If {@code true} delays primary assignment if it is not owner.
      */
     private void initAffinityOnNodeJoin(
         ExchangeDiscoveryEvents evts,
         boolean addedOnExchnage,
         CacheGroupHolder grpHolder,
-        WaitRebalanceInfo rebalanceInfo,
+        @Nullable WaitRebalanceInfo rebalanceInfo,
         boolean latePrimary
     ) {
         GridAffinityAssignmentCache aff = grpHolder.affinity();
@@ -2270,8 +2273,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 GridDhtPartitionTopology top = grpHolder.topology(evts.discoveryCache());
 
-                if (rebalanceInfo != null && !top.owners(p, evts.topologyVersion()).containsAll(idealAssignment.get(p)))
-                    rebalanceInfo.add(aff.groupId(), p, newNodes);
+                if (rebalanceInfo != null) {
+                    List<ClusterNode> owners = top.owners(p, evts.topologyVersion());
+
+                    // If current owners are empty no supplier can exist.
+                    // A group with lost partitions never gets rebalanced so should not be added to waitInfo.
+                    if (!owners.isEmpty() && !owners.containsAll(idealAssignment.get(p)) &&
+                        !top.lostPartitions().contains(p))
+                        rebalanceInfo.add(aff.groupId(), p, newNodes);
+                }
             }
         }
 
@@ -2294,7 +2304,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         int part,
         ClusterNode curPrimary,
         List<ClusterNode> newNodes,
-        WaitRebalanceInfo rebalance) {
+        @Nullable WaitRebalanceInfo rebalance
+    ) {
         assert curPrimary != null;
         assert !F.isEmpty(newNodes);
         assert !curPrimary.equals(newNodes.get(0));
@@ -2478,7 +2489,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         }
                     }
 
-                    if (!owners.isEmpty() && !owners.containsAll(newAssignment.get(p)))
+                    // This will happen if no primary is changed but some backups still need to be rebalanced.
+                    if (!owners.isEmpty() && !owners.containsAll(newNodes) && !top.lostPartitions().contains(p))
                         waitRebalanceInfo.add(grpHolder.groupId(), p, newNodes);
 
                     if (newNodes0 != null) {
@@ -2727,7 +2739,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * Created if cache is not started on coordinator.
      */
-    private class CacheGroupNoAffOrFiltredHolder extends CacheGroupHolder {
+    private class CacheGroupNoAffOrFilteredHolder extends CacheGroupHolder {
         /** */
         private final GridCacheSharedContext cctx;
 
@@ -2737,7 +2749,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param aff Affinity.
          * @param initAff Current affinity.
          */
-        CacheGroupNoAffOrFiltredHolder(
+        CacheGroupNoAffOrFilteredHolder(
             boolean rebalanceEnabled,
             GridCacheSharedContext cctx,
             GridAffinityAssignmentCache aff,
@@ -2755,7 +2767,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @return Cache holder.
          * @throws IgniteCheckedException If failed.
          */
-        CacheGroupNoAffOrFiltredHolder create(
+        CacheGroupNoAffOrFilteredHolder create(
             GridCacheSharedContext cctx,
             CacheGroupDescriptor grpDesc,
             AffinityTopologyVersion topVer
@@ -2771,7 +2783,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @return Cache holder.
          * @throws IgniteCheckedException If failed.
          */
-        CacheGroupNoAffOrFiltredHolder create(
+        CacheGroupNoAffOrFilteredHolder create(
             GridCacheSharedContext cctx,
             CacheGroupDescriptor grpDesc,
             AffinityTopologyVersion topVer,
@@ -2804,7 +2816,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 ccfg.getCacheMode() == LOCAL
             );
 
-            return new CacheGroupNoAffOrFiltredHolder(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
+            return new CacheGroupNoAffOrFilteredHolder(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
         }
 
         /** {@inheritDoc} */
@@ -2818,7 +2830,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
     }
 
-    private CacheGroupNoAffOrFiltredHolder createHolder(
+    private CacheGroupNoAffOrFilteredHolder createHolder(
         GridCacheSharedContext cctx,
         CacheGroupDescriptor grpDesc,
         AffinityTopologyVersion topVer,
@@ -2851,11 +2863,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             ccfg.getCacheMode() == LOCAL
         );
 
-        return new CacheGroupNoAffOrFiltredHolder(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
+        return new CacheGroupNoAffOrFilteredHolder(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
     }
 
     /**
-     *
+     * Tracks rebalance state on coordinator.
+     * After all partitions are rebalanced the current affinity is switched to ideal.
      */
     class WaitRebalanceInfo {
         /** */
@@ -2865,7 +2878,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         private final Map<Integer, Set<Integer>> waitGrps = new ConcurrentHashMap<>();
 
         /** */
-        private final Map<Integer, Map<Integer, List<ClusterNode>>> assignments = new ConcurrentHashMap<>();
+        private final Map<Integer /** Group id. */, Map<Integer /** Partition id. */, List<ClusterNode>>> assignments =
+            new ConcurrentHashMap<>();
 
         /** */
         private final Map<Integer, IgniteUuid> deploymentIds = new ConcurrentHashMap<>();
@@ -2893,6 +2907,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         /**
+         * Adds a partition to wait set.
+         *
          * @param grpId Group ID.
          * @param part Partition.
          * @param assignment New assignment.

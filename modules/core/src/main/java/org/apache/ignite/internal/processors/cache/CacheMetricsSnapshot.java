@@ -1020,6 +1020,11 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         return isValidForWriting;
     }
 
+    /** No need in snapshoting this metric, only local metric would be acceptable. */
+    @Override public String getTxKeyCollisions() {
+        return "";
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheMetricsSnapshot.class, this);

@@ -97,7 +97,9 @@ class ClientComputeTask implements ClientCloseableResource {
 
         GridTaskProcessor task = ctx.kernalContext().task();
 
-        IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? F.alwaysTrue() : F.nodeForNodeIds(nodeIds);
+        IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? node -> !node.isClient() :
+            F.nodeForNodeIds(nodeIds);
+
         UUID subjId = ctx.securityContext() == null ? null : ctx.securityContext().subject().id();
 
         task.setThreadContext(TC_SUBGRID_PREDICATE, nodePredicate);

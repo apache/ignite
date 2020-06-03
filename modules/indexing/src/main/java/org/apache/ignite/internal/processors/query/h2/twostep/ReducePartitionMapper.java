@@ -25,14 +25,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheServerNotFoundException;
-import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.F;
@@ -41,8 +42,6 @@ import org.h2.util.IntArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
-import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 
 /**
@@ -86,17 +85,15 @@ public class ReducePartitionMapper {
         for (int cacheId : cacheIds) {
             GridCacheContext<?, ?> cctx = cacheContext(cacheId);
 
-            PartitionLossPolicy plc = cctx.config().getPartitionLossPolicy();
-
-            if (plc != READ_ONLY_SAFE && plc != READ_WRITE_SAFE)
-                continue;
-
             Collection<Integer> lostParts = cctx.topology().lostPartitions();
 
-            for (int part : lostParts) {
-                if (parts == null || Arrays.binarySearch(parts, part) >= 0) {
-                    throw new CacheException("Failed to execute query because cache partition has been " +
-                        "lost [cacheName=" + cctx.name() + ", part=" + part + ']');
+            if (!lostParts.isEmpty()) {
+                int lostPart = parts == null ? lostParts.iterator().next() :
+                    IntStream.of(parts).filter(lostParts::contains).findFirst().orElse(-1);
+
+                if (lostPart >= 0) {
+                    throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache " +
+                        "partition has been lostPart [cacheName=" + cctx.name() + ", part=" + lostPart + ']'));
                 }
             }
         }
@@ -419,8 +416,8 @@ public class ReducePartitionMapper {
             List<ClusterNode> owners = cctx.topology().owners(p);
 
             if (F.isEmpty(owners)) {
-                // Handle special case: no mapping is configured for a partition.
-                if (F.isEmpty(cctx.affinity().assignment(NONE).get(p))) {
+                // Handle special case: no mapping is configured for a partition or a lost partition is found.
+                if (F.isEmpty(cctx.affinity().assignment(NONE).get(p)) || cctx.topology().lostPartitions().contains(p)) {
                     partLocs[p] = UNMAPPED_PARTS; // Mark unmapped partition.
 
                     continue;
