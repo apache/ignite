@@ -212,9 +212,11 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         Ignite srv = startGrids(srvs);
 
-        srv.cluster().state(activationMode);
+        srv.cluster().state(ACTIVE);
 
         srv.createCaches(Arrays.asList(cacheConfigurations1()));
+
+        srv.cluster().state(activationMode);
 
         Map<Integer, Integer> cacheData = new LinkedHashMap<>();
 
