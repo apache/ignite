@@ -996,7 +996,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IIgniteMonitor GetOrCreateLock(string name, bool failoverSafe, bool fair, bool create)
+        public IIgniteLock GetOrCreateLock(string name, bool failoverSafe, bool fair, bool create)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
@@ -1009,7 +1009,7 @@ namespace Apache.Ignite.Core.Impl
                 w.WriteBoolean(create);
             });
             
-            return new IgniteMonitor(target, name, failoverSafe, fair);
+            return new IgniteLock(target, name, failoverSafe, fair);
         }
 
         /// <summary>

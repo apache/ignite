@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core
     /// <para />
     /// This API corresponds to <c>IgniteLock</c> in Java.
     /// </summary>
-    public interface IIgniteMonitor : IDisposable
+    public interface IIgniteLock : IDisposable
     {
         /// <summary>
         /// Gets the name of this lock.

@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for <see cref="IIgnite.GetOrCreateLock"/> and <see cref="IIgniteMonitor"/>.
+    /// Tests for <see cref="IIgnite.GetOrCreateMonitor"/> and <see cref="IIgniteLock"/>.
     /// </summary>
     public class IgniteLockTests : TestBase
     {
