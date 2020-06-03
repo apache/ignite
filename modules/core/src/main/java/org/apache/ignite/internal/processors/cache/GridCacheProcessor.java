@@ -185,6 +185,7 @@ import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -220,6 +221,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withContextIfNeed;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -1762,7 +1764,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .map(desc -> new StartCacheInfo(desc, null, exchTopVer, false))
             .collect(toList());
 
-        prepareStartCaches(startCacheInfos);
+        withContextIfNeed(nodeId, ctx, () -> prepareStartCaches(startCacheInfos));
 
         return receivedCaches;
     }
@@ -1825,6 +1827,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<StartCacheInfo> startCacheInfos,
         StartCacheFailHandler<StartCacheInfo, Void> cacheStartFailHandler
     ) throws IgniteCheckedException {
+        final UUID secSubjId = ctx.security().enabled() ? ctx.security().securityContext().subject().id() : null;
+
         if (!IGNITE_ALLOW_START_CACHES_IN_PARALLEL || startCacheInfos.size() <= 1) {
             for (StartCacheInfo startCacheInfo : startCacheInfos) {
                 cacheStartFailHandler.handle(
@@ -1859,12 +1863,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cacheStartFailHandler.handle(
                         startCacheInfo,
                         cacheInfo -> {
-                            GridCacheContext cacheCtx = prepareCacheContext(
+                            GridCacheContext cacheCtx = withContextIfNeed(secSubjId, ctx, () -> prepareCacheContext(
                                 cacheInfo.getCacheDescriptor(),
                                 cacheInfo.getReqNearCfg(),
                                 cacheInfo.getExchangeTopVer(),
                                 cacheInfo.isDisabledAfterStart()
-                            );
+                            ));
                             cacheContexts.put(cacheInfo, cacheCtx);
 
                             context().exchange().exchangerUpdateHeartbeat();
@@ -1926,7 +1930,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             if (cacheContext.isRecoveryMode())
                                 finishRecovery(cacheInfo.getExchangeTopVer(), cacheContext);
                             else
-                                onCacheStarted(cacheCtxEntry.getValue());
+                                withContextIfNeed(secSubjId, ctx, () -> onCacheStarted(cacheCtxEntry.getValue()));
 
                             context().exchange().exchangerUpdateHeartbeat();
 
@@ -2812,10 +2816,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             try {
                                 boolean destroyCache = action.request().destroy();
 
-                                prepareCacheStop(cacheName, destroyCache);
+                                withContextIfNeed(exchActions.securitySubjectId(), ctx,
+                                    () -> {
+                                        prepareCacheStop(cacheName, destroyCache);
 
-                                if (destroyCache || grpIdToDestroy.contains(cachesToStopByGrp.getKey()))
-                                    ctx.query().completeRebuildIndexes(cacheName);
+                                        if (destroyCache || grpIdToDestroy.contains(cachesToStopByGrp.getKey()))
+                                            ctx.query().completeRebuildIndexes(cacheName);
+                                    });
                             }
                             finally {
                                 sharedCtx.database().checkpointReadUnlock();
@@ -4108,7 +4115,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!sndReqs.isEmpty()) {
             try {
-                ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs));
+                DynamicCacheChangeBatch batch = new DynamicCacheChangeBatch(sndReqs);
+
+                IgniteSecurity security = ctx.security();
+
+                if (security.enabled()) {
+                    SecuritySubject subj = security.securityContext().subject();
+
+                    batch.securitySubjectId(subj.id());
+                }
+
+                ctx.discovery().sendCustomEvent(batch);
 
                 err = checkNodeState();
             }
