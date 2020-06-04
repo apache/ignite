@@ -184,7 +184,7 @@ public abstract class AbstractCacheContinuousQueryBufferLimitTest extends GridCo
                 while (!Thread.currentThread().isInterrupted()) {
                     putX2Value(cache, rnd.nextInt(TOTAL_KEYS));
                 }
-            }, 1, "cq-put-");
+            }, 3, "cq-put-");
 
             assertNotNull("Partition remote buffers must be inited", pending);
 
@@ -197,10 +197,10 @@ public abstract class AbstractCacheContinuousQueryBufferLimitTest extends GridCo
                 await);
         }
         finally {
+            spi(locIgnite).stopBlock();
+
             if (updFut != null)
                 updFut.cancel();
-
-            spi(locIgnite).stopBlock();
         }
     }
 
