@@ -28,6 +28,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.util.Pair;
 
 /**
  * Relational expression that receives elements from remote {@link IgniteSender}
@@ -103,5 +104,19 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
             .item("exchangeId", exchangeId)
             .item("sourceFragmentId", sourceFragmentId)
             .itemIf("collation", collation, collation != null && collation != RelCollations.EMPTY);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(
+        RelTraitSet required) {
+        throw new RuntimeException(getClass().getName()
+            + "#passThroughTraits() is not implemented.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(
+        RelTraitSet childTraits, int childId) {
+        throw new RuntimeException(getClass().getName()
+            + "#deriveTraits() is not implemented.");
     }
 }

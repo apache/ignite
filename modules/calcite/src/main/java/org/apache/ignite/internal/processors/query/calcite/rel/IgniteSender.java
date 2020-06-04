@@ -26,6 +26,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
@@ -124,5 +125,19 @@ public class IgniteSender extends SingleRel implements IgniteRel {
             .item("exchangeId", exchangeId)
             .item("targetFragmentId", targetFragmentId)
             .item("distribution", distribution());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(
+        RelTraitSet required) {
+        throw new RuntimeException(getClass().getName()
+            + "#passThroughTraits() is not implemented.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(
+        RelTraitSet childTraits, int childId) {
+        throw new RuntimeException(getClass().getName()
+            + "#deriveTraits() is not implemented.");
     }
 }

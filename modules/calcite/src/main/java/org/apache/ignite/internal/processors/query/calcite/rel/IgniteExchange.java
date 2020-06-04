@@ -33,6 +33,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
+
 /**
  * Relational expression that imposes a particular distribution on its input
  * without otherwise changing its content.
@@ -78,6 +80,8 @@ public class IgniteExchange extends Exchange implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
+        required = fixTraits(required);
+
         IgniteDistribution distribution = Commons.distribution(required);
 
         if (!distribution().satisfies(distribution))
@@ -89,6 +93,8 @@ public class IgniteExchange extends Exchange implements IgniteRel {
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
         assert childId == 0;
+
+        childTraits = fixTraits(childTraits);
 
         return Pair.of(childTraits.replace(distribution()), ImmutableList.of(childTraits.replace(IgniteDistributions.any())));
     }

@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.calcite.rel.RelDistribution.Type.ANY;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
@@ -58,6 +57,7 @@ import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
  * Relational expression that combines two relational expressions according to
@@ -114,8 +114,7 @@ public class IgniteJoin extends Join implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelNode passThrough(RelTraitSet required) {
-        if (Commons.distribution(required).getType() == ANY)
-            return passThrough(required.replace(single()));
+        required = fixTraits(required);
 
         Pair<RelCollation, RelCollation> inCollations = inCollations(Commons.collation(required));
         if (inCollations == null)
@@ -344,11 +343,6 @@ public class IgniteJoin extends Join implements IgniteRel {
                 pairs.add(Pair.of(fixTraits(left), fixTraits(right)));
         }
         return pairs;
-    }
-
-    /** */
-    private RelTraitSet fixTraits(RelTraitSet left) {
-        return Commons.distribution(left).getType() == ANY ? left.replace(single()) : left;
     }
 
     /** */

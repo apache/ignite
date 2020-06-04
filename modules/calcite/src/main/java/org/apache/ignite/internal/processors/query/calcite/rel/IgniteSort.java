@@ -29,8 +29,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
-import static org.apache.calcite.rel.RelDistribution.Type.ANY;
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
  * Ignite sort operator.
@@ -77,8 +76,7 @@ public class IgniteSort extends Sort implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
-        if (Commons.distribution(required).getType() == ANY)
-            return passThroughTraits(required.replace(single()));
+        required = fixTraits(required);
 
         RelCollation collation = Commons.collation(required);
 
@@ -92,8 +90,7 @@ public class IgniteSort extends Sort implements IgniteRel {
     @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
         assert childId == 0;
 
-        if (Commons.distribution(childTraits).getType() == ANY)
-            return deriveTraits(childTraits.replace(single()), childId);
+        childTraits = fixTraits(childTraits);
 
         return Pair.of(childTraits.replace(collation()), ImmutableList.of(childTraits.replace(RelCollations.EMPTY)));
     }

@@ -40,14 +40,14 @@ import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.plan.RelOptRule.convert;
-import static org.apache.calcite.rel.RelDistribution.Type.ANY;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.calcite.util.ImmutableIntList.range;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.random;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
@@ -78,10 +78,12 @@ public class IgniteAggregate extends Aggregate implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelNode passThrough(RelTraitSet required) {
-        if (Commons.distribution(required).getType() == ANY)
-            return null;
-
         IgniteDistribution toDistr = Commons.distribution(required);
+
+        // Hash aggregate erases collation and only distribution trait can be passed through.
+        // So that, it's no use to pass ANY distribution.
+        if (toDistr == any())
+            return null;
 
         List<Pair<IgniteDistribution, IgniteDistribution>> distributions = new ArrayList<>();
         RelDistribution.Type distrType = toDistr.getType();
@@ -134,20 +136,24 @@ public class IgniteAggregate extends Aggregate implements IgniteRel {
 
         Set<IgniteDistribution> inDistrs = inputTraits.get(0).stream()
             .map(Commons::distribution)
-            .filter(d -> d.getType() != ANY)
+            // Hash aggregate erases collation and only distribution trait can be passed.
+            // So that, it's no use to pass ANY distribution.
+            .filter(d -> d != any())
             .collect(Collectors.toSet());
 
-        return createNodes(deriveDistributions(inDistrs));
-    }
-
-    /** {@inheritDoc} */
-    @Override public DeriveMode getDeriveMode() {
-        return DeriveMode.OMAKASE;
-    }
-
-    /** */
-    private Collection<Pair<IgniteDistribution, IgniteDistribution>> deriveDistributions(Collection<IgniteDistribution> inDistrs) {
         Set<Pair<IgniteDistribution, IgniteDistribution>> pairs = new HashSet<>();
+
+        if (inDistrs.contains(single()))
+            pairs.add(Pair.of(single(), single()));
+
+        if (inDistrs.contains(broadcast()))
+            pairs.add(Pair.of(broadcast(), broadcast()));
+
+        if (inDistrs.contains(random())) {
+            // Map-reduce cases
+            pairs.add(Pair.of(single(), random()));
+            pairs.add(Pair.of(broadcast(), random()));
+        }
 
         if (!groupSet.isEmpty() && isSimple(this)) {
             int cardinality = groupSet.cardinality();
@@ -175,14 +181,12 @@ public class IgniteAggregate extends Aggregate implements IgniteRel {
             pairs.add(Pair.of(out, in));
         }
 
-        pairs.add(Pair.of(single(), single()));
-        pairs.add(Pair.of(IgniteDistributions.broadcast(), IgniteDistributions.broadcast()));
+        return createNodes(pairs);
+    }
 
-        // Map-reduce cases
-        pairs.add(Pair.of(single(), random()));
-        pairs.add(Pair.of(IgniteDistributions.broadcast(), random()));
-
-        return pairs;
+    /** {@inheritDoc} */
+    @Override public DeriveMode getDeriveMode() {
+        return DeriveMode.OMAKASE;
     }
 
     /** */

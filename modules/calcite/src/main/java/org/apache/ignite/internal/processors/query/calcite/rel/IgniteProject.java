@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
-import static org.apache.calcite.rel.RelDistribution.Type.ANY;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
  * Relational expression that computes a set of
@@ -77,14 +77,15 @@ public class IgniteProject extends Project implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
-        IgniteDistribution distr = inDistribution(Commons.distribution(required));
+        required = fixTraits(required);
 
-        if (distr == null)
+        IgniteDistribution distr;
+        RelCollation collation;
+
+        if ((distr = inDistribution(Commons.distribution(required))) == null)
             return passThroughTraits(required.replace(IgniteDistributions.single()));
 
-        RelCollation collation = inCollation(Commons.collation(required));
-
-        if (collation == null)
+        if ((collation = inCollation(Commons.collation(required))) == null)
             return passThroughTraits(required.replace(RelCollations.EMPTY));
 
         return Pair.of(required, ImmutableList.of(required.replace(distr).replace(collation)));
@@ -94,6 +95,8 @@ public class IgniteProject extends Project implements IgniteRel {
     @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
         assert childId == 0;
 
+        childTraits = fixTraits(childTraits);
+
         IgniteDistribution distr = outDistribution(Commons.distribution(childTraits));
         RelCollation collation = outCollation(Commons.collation(childTraits));
 
@@ -102,9 +105,6 @@ public class IgniteProject extends Project implements IgniteRel {
 
     /** */
     private IgniteDistribution outDistribution(IgniteDistribution inDistr) {
-        if (inDistr.getType() == ANY)
-            return IgniteDistributions.single();
-
         if (inDistr.getType() == RelDistribution.Type.HASH_DISTRIBUTED) {
             Mappings.TargetMapping mapping = Project.getPartialMapping(
                 input.getRowType().getFieldCount(), getProjects());
@@ -117,9 +117,6 @@ public class IgniteProject extends Project implements IgniteRel {
 
     /** */
     private IgniteDistribution inDistribution(IgniteDistribution outDistr) {
-        if (outDistr.getType() == ANY)
-            return null;
-
         if (outDistr.getType() == RelDistribution.Type.HASH_DISTRIBUTED) {
             Mappings.TargetMapping mapping = Project.getPartialMapping(
                 input.getRowType().getFieldCount(), getProjects());

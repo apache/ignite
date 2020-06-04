@@ -26,6 +26,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
@@ -34,6 +35,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
 /**
  *
@@ -105,9 +108,17 @@ public class TraitUtils {
             result = new IgniteTrimExchange(rel.getCluster(), rel.getTraitSet().replace(toTrait), rel, toTrait);
         else {
             result = new IgniteExchange(rel.getCluster(), rel.getTraitSet().replace(toTrait),
-                RelOptRule.convert(rel, IgniteDistributions.any()), toTrait);
+                RelOptRule.convert(rel, any()), toTrait);
         }
 
         return planner.register(result, rel);
+    }
+
+    /** */
+    public static RelTraitSet fixTraits(RelTraitSet traits) {
+        if (Commons.distribution(traits) == any())
+            traits = traits.replace(single());
+
+        return traits.replace(IgniteConvention.INSTANCE);
     }
 }
