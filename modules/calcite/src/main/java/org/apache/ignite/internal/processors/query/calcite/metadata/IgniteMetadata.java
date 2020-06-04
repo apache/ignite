@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import com.google.common.collect.ImmutableList;
-import java.util.List;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
@@ -27,7 +26,6 @@ import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 /**
@@ -37,7 +35,6 @@ public class IgniteMetadata {
     public static final RelMetadataProvider METADATA_PROVIDER =
         ChainedRelMetadataProvider.of(
             ImmutableList.of(
-                IgniteMdDerivedDistribution.SOURCE,
                 IgniteMdDistribution.SOURCE,
                 IgniteMdNodesMapping.SOURCE,
                 DefaultRelMetadataProvider.INSTANCE));
@@ -52,18 +49,6 @@ public class IgniteMetadata {
         /** Handler API. */
         interface Handler extends MetadataHandler<NodesMappingMetadata> {
             NodesMapping nodesMapping(RelNode r, RelMetadataQuery mq);
-        }
-    }
-
-    public interface DerivedDistribution extends Metadata {
-        MetadataDef<DerivedDistribution> DEF = MetadataDef.of(DerivedDistribution.class,
-            DerivedDistribution.Handler.class, IgniteMethod.DERIVED_DISTRIBUTIONS.method());
-
-        List<IgniteDistribution> deriveDistributions();
-
-        /** Handler API. */
-        interface Handler extends MetadataHandler<DerivedDistribution> {
-            List<IgniteDistribution> deriveDistributions(RelNode r, RelMetadataQuery mq);
         }
     }
 }

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
@@ -32,10 +33,10 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.WrappersFactoryImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,7 +48,9 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
 /**
  *
  */
-@SuppressWarnings("TypeMayBeWeakened") public class ExecutionTest extends AbstractExecutionTest {
+@SuppressWarnings("TypeMayBeWeakened")
+@WithSystemProperty(key = "calcite.debug", value = "true")
+public class ExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
@@ -179,10 +182,10 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.DOUBLE),
             null);
 
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory(ctx, call, MAP, rowType), rowFactory());
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
@@ -225,10 +228,10 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory(ctx, call, MAP, rowType), rowFactory());
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
@@ -270,10 +273,10 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory(ctx, call, MAP, rowType), rowFactory());
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
@@ -282,12 +285,6 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
         assertTrue(root.hasNext());
         assertEquals(200, root.next()[0]);
         assertFalse(root.hasNext());
-    }
-
-    /** */
-    @NotNull private WrappersFactoryImpl<Object[]> factory(ExecutionContext<Object[]> ctx, AggregateCall call,
-        AggregateNode.AggregateType type, RelDataType rowType) {
-        return new WrappersFactoryImpl<>(ctx, type, F.asList(call), rowType);
     }
 
     /** */
@@ -321,10 +318,10 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory(ctx, call, MAP, rowType), rowFactory());
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
@@ -366,10 +363,10 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, factory(ctx, call, MAP, rowType), rowFactory());
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, factory(ctx, call, REDUCE, rowType), rowFactory());
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
         reduce.register(map);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
@@ -411,7 +408,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.DOUBLE),
             null);
 
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
@@ -455,7 +452,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
@@ -497,7 +494,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
@@ -539,7 +536,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
@@ -581,7 +578,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
@@ -624,7 +621,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
             typeFactory.createSqlType(SqlTypeName.INTEGER),
             null);
 
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, factory(ctx, call, SINGLE, rowType), rowFactory());
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
         RootNode<Object[]> root = new RootNode<>(ctx, c -> {});
@@ -640,6 +637,12 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
     /** */
     private Object[] row(Object... fields) {
         return fields;
+    }
+
+    /** */
+    private Supplier<List<AccumulatorWrapper<Object[]>>> accFactory(ExecutionContext<Object[]> ctx, AggregateCall call,
+        AggregateNode.AggregateType type, RelDataType rowType) {
+        return ctx.expressionFactory().accumulatorsFactory(type, F.asList(call), rowType);
     }
 
     /** */

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -26,8 +28,13 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
  * Relational expression that imposes a particular distribution on its input
@@ -47,7 +54,7 @@ public class IgniteExchange extends Exchange implements IgniteRel {
     }
 
     public IgniteExchange(RelInput input) {
-        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
+        super(changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */
@@ -68,8 +75,33 @@ public class IgniteExchange extends Exchange implements IgniteRel {
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCount = mq.getRowCount(this);
-        double bytesPerRow = getRowType().getFieldCount();
-        return planner.getCostFactory().makeCost(
-            rowCount, rowCount, 0);
+        double bytesPerRow = getRowType().getFieldCount() * 4;
+        return planner.getCostFactory().makeCost(rowCount * bytesPerRow, rowCount, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
+        required = fixTraits(required);
+
+        IgniteDistribution distribution = TraitUtils.distribution(required);
+
+        if (!distribution().satisfies(distribution))
+            return null;
+
+        return Pair.of(required.replace(distribution()), ImmutableList.of(required.replace(IgniteDistributions.any())));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
+        assert childId == 0;
+
+        childTraits = fixTraits(childTraits);
+
+        return Pair.of(childTraits.replace(distribution()), ImmutableList.of(childTraits.replace(IgniteDistributions.any())));
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEnforcer() {
+        return true;
     }
 }

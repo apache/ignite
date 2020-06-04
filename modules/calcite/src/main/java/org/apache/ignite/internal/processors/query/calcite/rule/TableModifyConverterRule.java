@@ -18,19 +18,20 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableModify;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 
 /**
  *
  */
-public class TableModifyConverterRule extends RelOptRule {
+public class TableModifyConverterRule extends AbstractIgniteConverterRule<LogicalTableModify> {
     /** */
     public static final RelOptRule INSTANCE = new TableModifyConverterRule();
 
@@ -38,25 +39,16 @@ public class TableModifyConverterRule extends RelOptRule {
      * Creates a ConverterRule.
      */
     public TableModifyConverterRule() {
-        super(operand(LogicalTableModify.class, any()));
+        super(LogicalTableModify.class);
     }
 
-    @Override public void onMatch(RelOptRuleCall call) {
-        LogicalTableModify rel = call.rel(0);
-
+    /** {@inheritDoc} */
+    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalTableModify rel) {
         RelOptCluster cluster = rel.getCluster();
-        RelTraitSet inputTraits = cluster.traitSet().plus(IgniteConvention.INSTANCE);
+        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        RelNode input = convert(rel.getInput(), traits);
 
-        RelNode input = convert(rel.getInput(), inputTraits);
-
-        input = RuleUtils.changeTraits(input, IgniteDistributions.single());
-
-        RelTraitSet traits = rel.getTraitSet()
-            .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteDistributions.single()); // TODO move to IgniteMdDistributions
-
-        RuleUtils.transformTo(call,
-            new IgniteTableModify(cluster, traits, rel.getTable(), input,
-            rel.getOperation(), rel.getUpdateColumnList(), rel.getSourceExpressionList(), rel.isFlattened()));
+        return new IgniteTableModify(cluster, traits, rel.getTable(), input,
+                rel.getOperation(), rel.getUpdateColumnList(), rel.getSourceExpressionList(), rel.isFlattened());
     }
 }

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import com.google.common.collect.ImmutableList;
-import java.util.List;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
@@ -33,7 +32,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
  * See {@link RelMetadataQuery}
@@ -59,14 +57,7 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         initialHandler(IgniteMetadata.NodesMappingMetadata.Handler.class);
 
     /** */
-    private static final IgniteMetadata.DerivedDistribution.Handler DERIVED_DISTRIBUTIONS_INITIAL_HANDLER =
-        initialHandler(IgniteMetadata.DerivedDistribution.Handler.class);
-
-    /** */
     private IgniteMetadata.NodesMappingMetadata.Handler sourceDistributionHandler;
-
-    /** */
-    private IgniteMetadata.DerivedDistribution.Handler derivedDistributionsHandler;
 
     /**
      * Factory method.
@@ -95,7 +86,6 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
     /** */
     private RelMetadataQueryEx() {
         sourceDistributionHandler = SOURCE_DISTRIBUTION_INITIAL_HANDLER;
-        derivedDistributionsHandler = DERIVED_DISTRIBUTIONS_INITIAL_HANDLER;
     }
 
     /**
@@ -110,21 +100,6 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
                 return sourceDistributionHandler.nodesMapping(rel, this);
             } catch (JaninoRelMetadataProvider.NoHandler e) {
                 sourceDistributionHandler = revise(e.relClass, IgniteMetadata.NodesMappingMetadata.DEF);
-            }
-        }
-    }
-
-    /**
-     * Requests possible distribution types of given relational node. In case the node is logical and
-     * @param rel Relational node.
-     * @return List of distribution types the given relational node may have.
-     */
-    public List<IgniteDistribution> derivedDistributions(RelNode rel) {
-        for (;;) {
-            try {
-                return derivedDistributionsHandler.deriveDistributions(rel, this);
-            } catch (JaninoRelMetadataProvider.NoHandler e) {
-                derivedDistributionsHandler = revise(e.relClass, IgniteMetadata.DerivedDistribution.DEF);
             }
         }
     }

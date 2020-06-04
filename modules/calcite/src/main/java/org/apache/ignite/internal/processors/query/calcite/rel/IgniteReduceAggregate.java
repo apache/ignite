@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
@@ -32,9 +33,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
@@ -55,10 +53,10 @@ public class IgniteReduceAggregate extends SingleRel implements IgniteRel {
 
         assert rowType != null;
         assert RelOptUtil.areRowTypesEqual(input.getRowType(),
-            Commons.aggregationDataRowType(getCluster().getTypeFactory()), true);
-        assert traits.getTrait(DistributionTraitDef.INSTANCE).satisfies(IgniteDistributions.single());
-
+            IgniteMapAggregate.rowType(getCluster().getTypeFactory()), true);
         this.groupSet = groupSet;
+        if (groupSets == null)
+            groupSets = ImmutableList.of(groupSet);
         this.groupSets = groupSets;
         this.aggCalls = aggCalls;
         this.rowType = rowType;

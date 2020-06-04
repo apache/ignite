@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
@@ -66,6 +67,7 @@ import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexVariable;
 import org.apache.calcite.rex.RexWindow;
 import org.apache.calcite.rex.RexWindowBound;
+import org.apache.calcite.rex.RexWindowBounds;
 import org.apache.calcite.sql.JoinConditionType;
 import org.apache.calcite.sql.JoinType;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -112,6 +114,18 @@ class RelJson {
         /** {@inheritDoc} */
         @Override RelNode apply(RelInput input);
     }
+
+    private static final Map<String,Class> PRIMITIVE_CLASSES = ImmutableMap.<String,Class>builder()
+        .put("int", Integer.TYPE)
+        .put("long", Long.TYPE)
+        .put("double", Double.TYPE)
+        .put("float", Float.TYPE)
+        .put("boolean", Boolean.TYPE)
+        .put("char", Character.TYPE)
+        .put("byte", Byte.TYPE)
+        .put("void", Void.TYPE)
+        .put("short", Short.TYPE)
+        .build();
 
     /** */
     private static final LoadingCache<String, RelFactory> FACTORIES_CACHE = CacheBuilder.newBuilder()
@@ -193,7 +207,11 @@ class RelJson {
     /** */
     private static Class<?> classForName(String typeName, boolean skipNotFound) {
         try {
-            return Class.forName(typeName);
+            Class aClass = PRIMITIVE_CLASSES.get(typeName);
+            if (aClass == null)
+                aClass = Class.forName(typeName);
+
+            return aClass;
         }
         catch (ClassNotFoundException e) {
             if (skipNotFound)
@@ -282,9 +300,13 @@ class RelJson {
 
     /** */
     RelCollation toCollation(List<Map<String, Object>> jsonFieldCollations) {
-        List<RelFieldCollation> fieldCollations = new ArrayList<>();
-        for (Map<String, Object> map : jsonFieldCollations)
-            fieldCollations.add(toFieldCollation(map));
+        if (jsonFieldCollations == null)
+            return RelCollations.EMPTY;
+
+        List<RelFieldCollation> fieldCollations = jsonFieldCollations.stream()
+            .map(this::toFieldCollation)
+            .collect(Collectors.toList());
+
         return RelCollations.of(fieldCollations);
     }
 
@@ -304,9 +326,6 @@ class RelJson {
         }
 
         Map<String, Object> map = (Map<String, Object>)distribution;
-
-        assert "hash".equals(map.get("type"));
-
         DistributionFunction function = DistributionFunction.HashDistribution.INSTANCE;
 
         Number cacheId = (Number)map.get("cacheId");
@@ -353,6 +372,8 @@ class RelJson {
                     return typeFactory.createSqlIntervalType(
                         new SqlIntervalQualifier(startUnit, endUnit, SqlParserPos.ZERO));
                 }
+                else if (sqlTypeName == SqlTypeName.ARRAY)
+                    return typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
                 RelDataType type;
                 if (precision == null)
                     type = typeFactory.createSqlType(sqlTypeName);
@@ -584,22 +605,22 @@ class RelJson {
         String type = (String)map.get("type");
         switch (type) {
             case "CURRENT_ROW":
-                return RexWindowBound.create(
+                return RexWindowBounds.create(
                     SqlWindow.createCurrentRow(SqlParserPos.ZERO), null);
             case "UNBOUNDED_PRECEDING":
-                return RexWindowBound.create(
+                return RexWindowBounds.create(
                     SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO), null);
             case "UNBOUNDED_FOLLOWING":
-                return RexWindowBound.create(
+                return RexWindowBounds.create(
                     SqlWindow.createUnboundedFollowing(SqlParserPos.ZERO), null);
             case "PRECEDING":
                 RexNode precedingOffset = toRex(input, map.get("offset"));
-                return RexWindowBound.create(null,
+                return RexWindowBounds.create(null,
                     input.getCluster().getRexBuilder().makeCall(
                         SqlWindow.PRECEDING_OPERATOR, precedingOffset));
             case "FOLLOWING":
                 RexNode followingOffset = toRex(input, map.get("offset"));
-                return RexWindowBound.create(null,
+                return RexWindowBounds.create(null,
                     input.getCluster().getRexBuilder().makeCall(
                         SqlWindow.FOLLOWING_OPERATOR, followingOffset));
             default:
@@ -654,6 +675,12 @@ class RelJson {
             for (RelDataTypeField field : node.getFieldList())
                 list.add(toJson(field));
             return list;
+        }
+        else if (node.getSqlTypeName() == SqlTypeName.ARRAY) {
+            Map<String, Object> map = map();
+            map.put("type", toJson(node.getSqlTypeName()));
+            map.put("elementType", toJson(node.getComponentType()));
+            return map;
         }
         else {
             Map<String, Object> map = map();
@@ -819,7 +846,7 @@ class RelJson {
 
                 return map;
             default:
-                throw new AssertionError("Unexpected type: " + type);
+                throw new AssertionError("Unexpected distribution type.");
         }
     }
 

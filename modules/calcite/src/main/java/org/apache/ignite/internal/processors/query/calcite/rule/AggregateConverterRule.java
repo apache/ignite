@@ -18,36 +18,37 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 
 /**
  *
  */
-public class AggregateConverterRule extends RelOptRule {
+public class AggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
     /** */
     public static final RelOptRule INSTANCE = new AggregateConverterRule();
 
     /** */
     public AggregateConverterRule() {
-        super(operand(LogicalAggregate.class, any()));
+        super(LogicalAggregate.class);
     }
 
     /** {@inheritDoc} */
-    @Override public void onMatch(RelOptRuleCall call) {
-        LogicalAggregate rel = call.rel(0);
-
+    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
+        LogicalAggregate rel) {
         RelOptCluster cluster = rel.getCluster();
-        RelNode input = convert(rel.getInput(), IgniteConvention.INSTANCE);
-        RelTraitSet traits = rel.getTraitSet()
-            .replace(IgniteConvention.INSTANCE);
+        RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        RelNode input = convert(rel.getInput(), inTrait);
 
-        RuleUtils.transformTo(call,
-            new IgniteAggregate(cluster, traits, input, rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList()));
+        return new IgniteAggregate(cluster, outTrait, input,
+            rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList());
     }
 }

@@ -18,18 +18,21 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.logical.LogicalValues;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
 
 /**
  *
  */
-public class ValuesConverterRule extends RelOptRule {
+public class ValuesConverterRule extends AbstractIgniteConverterRule<LogicalValues> {
     /** */
     public static final RelOptRule INSTANCE = new ValuesConverterRule();
 
@@ -37,19 +40,14 @@ public class ValuesConverterRule extends RelOptRule {
      * Creates a ConverterRule.
      */
     protected ValuesConverterRule() {
-        super(operand(LogicalValues.class, none()));
+        super(LogicalValues.class);
     }
 
-    @Override public void onMatch(RelOptRuleCall call) {
-        LogicalValues rel = call.rel(0);
-
+    /** {@inheritDoc} */
+    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalValues rel) {
         RelOptCluster cluster = rel.getCluster();
+        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(broadcast());
 
-        RelTraitSet traits = rel.getTraitSet()
-            .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteDistributions.values(rel.getRowType(), rel.getTuples()));
-
-        RuleUtils.transformTo(call,
-            new IgniteValues(cluster, rel.getRowType(), rel.getTuples(), traits));
+        return new IgniteValues(cluster, rel.getRowType(), rel.getTuples(), traits);
     }
 }

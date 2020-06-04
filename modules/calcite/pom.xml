@@ -25,7 +25,7 @@
 
     <!-- Module specific package versions -->
     <properties>
-        <calcite.version>1.22.0</calcite.version>
+        <calcite.version>1.23.0</calcite.version>
         <guava.version>19.0</guava.version>
         <janino.version>3.0.11</janino.version>
         <avatica.version>1.16.0</avatica.version>
