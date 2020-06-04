@@ -218,12 +218,15 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
             long failureDetectionDelay = U.nanosToMillis(timer.get());
 
-            if (log.isDebugEnabled())
-                log.debug("Failure detection delay: " + failureDetectionDelay);
-
-            // Sometimes delays like GC pauses, timer granunalion (10ms) hinders the detection be within the timeout.
-            if (failureDetectionDelay <= failureDetectionTimeout)
+            // 10ms is the timer granulation in IgniteUtils.
+            if (failureDetectionDelay <= failureDetectionTimeout + 10) {
                 ++sucessfullRunsCnt;
+
+                if (log.isDebugEnabled())
+                    log.debug("Failure detection delay: " + failureDetectionDelay);
+            }
+            else
+                log.warning("Long failure detection delay: " + failureDetectionDelay);
 
             stopAllGrids(true);
         }
