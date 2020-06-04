@@ -164,11 +164,23 @@ public class SecurityUtils {
      */
     public static void withContextIfNeed(UUID secSubjId, GridKernalContext ctx, RunnableX r)
         throws IgniteCheckedException {
-        withContextIfNeed(secSubjId, ctx, () -> {
-            r.run();
+        IgniteSecurity security = ctx.security();
 
-            return null;
-        });
+        try {
+            if (security.enabled() && secSubjId != null) {
+                try (OperationSecurityContext s = security.withContext(secSubjId)) {
+                    r.runx();
+                }
+            }
+            else
+                r.runx();
+        }
+        catch (Exception e) {
+            if (e instanceof IgniteCheckedException)
+                throw (IgniteCheckedException)e;
+
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**
