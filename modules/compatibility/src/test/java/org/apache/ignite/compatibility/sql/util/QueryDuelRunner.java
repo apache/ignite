@@ -75,6 +75,8 @@ public class QueryDuelRunner implements Runnable {
     /** {@inheritDoc} */
     @Override public void run() {
         String qry = qrySupplier.get();
+        if (qry == null)
+            return;
         List<Long> oldQryExecTimes = new ArrayList<>(attemptsCnt);
         List<Long> newQryExecTimes = new ArrayList<>(attemptsCnt);
         List<Exception> exceptions = new ArrayList<>(attemptsCnt);

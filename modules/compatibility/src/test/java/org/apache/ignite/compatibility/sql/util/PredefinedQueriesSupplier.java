@@ -28,19 +28,29 @@ public class PredefinedQueriesSupplier implements Supplier<String> {
     private final Collection<String> qrys;
 
     /** */
-    private Iterator<String> it;
+    private final boolean runOnce;
 
     /** */
-    public PredefinedQueriesSupplier(Collection<String> qrys) {
+    private Iterator<String> it;
+
+
+
+    /** */
+    public PredefinedQueriesSupplier(Collection<String> qrys, boolean runOnce) {
         assert !qrys.isEmpty();
         this.qrys = qrys;
+        this.runOnce = runOnce;
         it = qrys.iterator();
     }
 
     /** {@inheritDoc} */
     @Override public synchronized String get() {
-        if (!it.hasNext())
-            it = qrys.iterator();
+        if (!it.hasNext()) {
+            if (runOnce)
+                return null;
+            else
+                it = qrys.iterator();
+        }
 
         return it.next();
     }

@@ -115,7 +115,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
             "WHERE p.depId=d.id AND d.companyId = co.id AND co.cityId = ci.id AND d.companyId > 50 AND d.id < 80",
         "SELECT * FROM person p, department d, company co, city ci " +
             "WHERE p.depId=d.id AND d.companyId = co.id AND p.cityId = ci.id AND d.cityId > 10 AND co.headCnt < 20"
-    ));
+    ), false);
 
     /** {@inheritDoc} */
     @Override protected @NotNull Collection<Dependency> getDependencies(String igniteVer) {
@@ -179,11 +179,11 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
                 if (log.isInfoEnabled())
                     log.info("Problematic queries number: " + suspiciousQrysSet.size());
 
-                Supplier<String> problematicQrysSupplier = new PredefinedQueriesSupplier(suspiciousQrysSet);
+                Supplier<String> problematicQrysSupplier = new PredefinedQueriesSupplier(suspiciousQrysSet, true);
 
                 // 2. Rerun problematic queries to ensure they are not outliers.
                 Collection<QueryDuelResult> failedQueries =
-                    benchmark.runBenchmark(WARM_UP_TIMEOUT, problematicQrysSupplier, 3, 5);
+                    benchmark.runBenchmark(WARM_UP_TIMEOUT, problematicQrysSupplier, 7, 10);
 
                 assertTrue("Found SQL performance regression for queries: " + formatPretty(failedQueries),
                     failedQueries.isEmpty());
