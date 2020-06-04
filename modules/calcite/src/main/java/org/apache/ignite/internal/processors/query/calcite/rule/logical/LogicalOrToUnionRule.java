@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
@@ -26,13 +28,11 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalUnion;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.ignite.internal.processors.query.calcite.rule.RuleUtils;
 
 /**
  *
@@ -44,7 +44,7 @@ public class LogicalOrToUnionRule extends RelOptRule {
     /**
      * Constructor.
      */
-    public LogicalOrToUnionRule() {
+    private LogicalOrToUnionRule() {
         super(
             operand(LogicalFilter.class, any()),
             RelFactories.LOGICAL_BUILDER, null);
@@ -76,10 +76,12 @@ public class LogicalOrToUnionRule extends RelOptRule {
             LogicalUnion.create(Arrays.asList(
                 LogicalFilter.create(input, operands.get(1)),
                 LogicalFilter.create(input, RexUtil.andNot(rexBuilder, operands.get(0), operands.get(1)))), true);
-//
-//        RuleUtils.transformTo(call, Arrays.asList(RelOptUtil.createCastRel(union1, rel.getRowType(), false),
-//            RelOptUtil.createCastRel(union2, rel.getRowType(), false)));
 
-        RuleUtils.transformTo(call, RelOptUtil.createCastRel(union1, rel.getRowType(), false));
+        Map<RelNode, RelNode> equivMap = new HashMap<>();
+
+        equivMap.put(RelOptUtil.createCastRel(union1, rel.getRowType(), false), rel);
+        equivMap.put(RelOptUtil.createCastRel(union2, rel.getRowType(), false), rel);
+
+        call.transformTo(rel, equivMap);
     }
 }
