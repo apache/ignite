@@ -178,10 +178,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             assertNotNull(phys);
-            assertEquals("IgniteProject(DEPTNO=[$0], DEPTNO0=[$4])\n" +
-                    "  IgniteJoin(condition=[=(+($0, 10), *($4, 2))], joinType=[inner])\n" +
-                    "    IgniteTableScan(table=[[PUBLIC, DEPT]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n" +
-                    "    IgniteTableScan(table=[[PUBLIC, EMP]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n",
+            assertEquals("",
                 RelOptUtil.toString(phys));
         }
     }

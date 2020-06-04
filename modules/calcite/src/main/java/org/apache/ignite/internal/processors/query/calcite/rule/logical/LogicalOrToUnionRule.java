@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalUnion;
@@ -72,11 +73,18 @@ public class LogicalOrToUnionRule extends RelOptRule {
 
         final List<RexNode> operands = ((RexCall)dnf).getOperands();
 
-        final LogicalUnion union1 =
-            LogicalUnion.create(Arrays.asList(
-                LogicalFilter.create(rel.getInput(0), operands.get(0)),
-                LogicalFilter.create(rel.getInput(0), operands.get(1))), false);
+        final LogicalFilter filter1 = LogicalFilter.create(rel.getInput(), operands.get(0));
+        final LogicalFilter filter2 = LogicalFilter.create(rel.getInput(), operands.get(1));
 
-        call.transformTo(union1);
+        final LogicalUnion union = LogicalUnion.create(
+            Arrays.asList(
+                filter1,
+                filter2), false);
+
+        System.out.println("Filter 1: "+filter1.getRowType());
+        System.out.println("Filter 2: "+filter2.getRowType());
+        System.out.println("Union: "+union.getRowType());
+
+        RuleUtils.transformTo(call, union);
     }
 }
