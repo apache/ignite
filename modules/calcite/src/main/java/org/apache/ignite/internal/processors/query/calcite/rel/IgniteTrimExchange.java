@@ -29,10 +29,11 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
@@ -48,7 +49,7 @@ public class IgniteTrimExchange extends Exchange implements IgniteRel {
     }
 
     public IgniteTrimExchange(RelInput input) {
-        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
+        super(changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */
@@ -75,7 +76,7 @@ public class IgniteTrimExchange extends Exchange implements IgniteRel {
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
         required = fixTraits(required);
 
-        IgniteDistribution distribution = Commons.distribution(required);
+        IgniteDistribution distribution = TraitUtils.distribution(required);
 
         if (!distribution().satisfies(distribution))
             return null;

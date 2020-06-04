@@ -23,7 +23,7 @@ import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /**
  * A superinterface of all Ignite relational nodes.
@@ -41,14 +41,14 @@ public interface IgniteRel extends PhysicalNode {
      * @return Node distribution.
      */
     default IgniteDistribution distribution() {
-        return Commons.distribution(getTraitSet());
+        return TraitUtils.distribution(getTraitSet());
     }
 
     /**
      * @return Node collations.
      */
     default RelCollation collation() {
-        return Commons.collation(getTraitSet());
+        return TraitUtils.collation(getTraitSet());
     }
 
     /** {@inheritDoc} */

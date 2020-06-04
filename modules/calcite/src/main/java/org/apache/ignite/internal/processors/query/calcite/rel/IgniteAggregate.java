@@ -40,6 +40,7 @@ import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -51,6 +52,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.random;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
  *
@@ -63,7 +65,7 @@ public class IgniteAggregate extends Aggregate implements IgniteRel {
 
     /** {@inheritDoc} */
     public IgniteAggregate(RelInput input) {
-        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
+        super(changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */
@@ -78,7 +80,7 @@ public class IgniteAggregate extends Aggregate implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelNode passThrough(RelTraitSet required) {
-        IgniteDistribution toDistr = Commons.distribution(required);
+        IgniteDistribution toDistr = TraitUtils.distribution(required);
 
         // Hash aggregate erases collation and only distribution trait can be passed through.
         // So that, it's no use to pass ANY distribution.
@@ -135,7 +137,7 @@ public class IgniteAggregate extends Aggregate implements IgniteRel {
         assert inputTraits.size() == 1;
 
         Set<IgniteDistribution> inDistrs = inputTraits.get(0).stream()
-            .map(Commons::distribution)
+            .map(TraitUtils::distribution)
             // Hash aggregate erases collation and only distribution trait can be passed.
             // So that, it's no use to pass ANY distribution.
             .filter(d -> d != any())

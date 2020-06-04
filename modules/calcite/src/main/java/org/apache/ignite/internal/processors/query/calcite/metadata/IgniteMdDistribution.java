@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /**
  * Implementation class for {@link RelMetadataQuery#distribution(RelNode)} method call.
@@ -58,7 +58,7 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      * @return Distribution type of the given relational node.
      */
     public IgniteDistribution distribution(RelNode rel, RelMetadataQuery mq) {
-        return Commons.distribution(rel.getTraitSet());
+        return TraitUtils.distribution(rel.getTraitSet());
     }
 
     /**

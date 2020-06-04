@@ -31,8 +31,9 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
@@ -53,7 +54,7 @@ public class IgniteExchange extends Exchange implements IgniteRel {
     }
 
     public IgniteExchange(RelInput input) {
-        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
+        super(changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */
@@ -82,7 +83,7 @@ public class IgniteExchange extends Exchange implements IgniteRel {
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
         required = fixTraits(required);
 
-        IgniteDistribution distribution = Commons.distribution(required);
+        IgniteDistribution distribution = TraitUtils.distribution(required);
 
         if (!distribution().satisfies(distribution))
             return null;

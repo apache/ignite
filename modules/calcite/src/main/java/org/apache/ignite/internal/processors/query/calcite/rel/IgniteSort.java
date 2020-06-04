@@ -27,8 +27,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
@@ -56,7 +57,7 @@ public class IgniteSort extends Sort implements IgniteRel {
     }
 
     public IgniteSort(RelInput input) {
-        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
+        super(changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */
@@ -78,7 +79,7 @@ public class IgniteSort extends Sort implements IgniteRel {
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
         required = fixTraits(required);
 
-        RelCollation collation = Commons.collation(required);
+        RelCollation collation = TraitUtils.collation(required);
 
         if (!collation().satisfies(collation))
             return null;

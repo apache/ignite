@@ -46,7 +46,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -116,11 +116,11 @@ public class IgniteJoin extends Join implements IgniteRel {
     @Override public RelNode passThrough(RelTraitSet required) {
         required = fixTraits(required);
 
-        Pair<RelCollation, RelCollation> inCollations = inCollations(Commons.collation(required));
+        Pair<RelCollation, RelCollation> inCollations = inCollations(TraitUtils.collation(required));
         if (inCollations == null)
             return passThrough(required.replace(RelCollations.EMPTY));
 
-        IgniteDistribution toDistr = Commons.distribution(required);
+        IgniteDistribution toDistr = TraitUtils.distribution(required);
 
         Set<Pair<RelTraitSet, List<RelTraitSet>>> traits = new HashSet<>();
 
@@ -133,7 +133,7 @@ public class IgniteJoin extends Join implements IgniteRel {
             case SINGLETON:
                 outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
                     .replace(toDistr)
-                    .replace(Commons.collation(required));
+                    .replace(TraitUtils.collation(required));
 
                 leftTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
                     .replace(toDistr)
@@ -162,7 +162,7 @@ public class IgniteJoin extends Join implements IgniteRel {
 
                 outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
                     .replace(outDistr)
-                    .replace(Commons.collation(required));
+                    .replace(TraitUtils.collation(required));
 
                 leftTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
                     .replace(hash(joinInfo.leftKeys, function))
@@ -215,11 +215,11 @@ public class IgniteJoin extends Join implements IgniteRel {
         RelOptCluster cluster = getCluster();
 
         for (Pair<RelTraitSet, RelTraitSet> inTraits0 : inputTraits(inTraits)) {
-            RelCollation leftCollation = Commons.collation(inTraits0.left);
-            RelCollation rightCollation = Commons.collation(inTraits0.right);
+            RelCollation leftCollation = TraitUtils.collation(inTraits0.left);
+            RelCollation rightCollation = TraitUtils.collation(inTraits0.right);
 
-            IgniteDistribution leftDistr = Commons.distribution(inTraits0.left);
-            IgniteDistribution rightDistr = Commons.distribution(inTraits0.right);
+            IgniteDistribution leftDistr = TraitUtils.distribution(inTraits0.left);
+            IgniteDistribution rightDistr = TraitUtils.distribution(inTraits0.right);
 
             RelCollation outCollation = outCollation(leftCollation, rightCollation);
 

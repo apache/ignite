@@ -39,8 +39,9 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
@@ -62,7 +63,7 @@ public class IgniteProject extends Project implements IgniteRel {
     }
 
     public IgniteProject(RelInput input) {
-        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
+        super(changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */
@@ -82,10 +83,10 @@ public class IgniteProject extends Project implements IgniteRel {
         IgniteDistribution distr;
         RelCollation collation;
 
-        if ((distr = inDistribution(Commons.distribution(required))) == null)
+        if ((distr = inDistribution(TraitUtils.distribution(required))) == null)
             return passThroughTraits(required.replace(IgniteDistributions.single()));
 
-        if ((collation = inCollation(Commons.collation(required))) == null)
+        if ((collation = inCollation(TraitUtils.collation(required))) == null)
             return passThroughTraits(required.replace(RelCollations.EMPTY));
 
         return Pair.of(required, ImmutableList.of(required.replace(distr).replace(collation)));
@@ -97,8 +98,8 @@ public class IgniteProject extends Project implements IgniteRel {
 
         childTraits = fixTraits(childTraits);
 
-        IgniteDistribution distr = outDistribution(Commons.distribution(childTraits));
-        RelCollation collation = outCollation(Commons.collation(childTraits));
+        IgniteDistribution distr = outDistribution(TraitUtils.distribution(childTraits));
+        RelCollation collation = outCollation(TraitUtils.collation(childTraits));
 
         return Pair.of(childTraits.replace(distr).replace(collation), ImmutableList.of(childTraits));
     }

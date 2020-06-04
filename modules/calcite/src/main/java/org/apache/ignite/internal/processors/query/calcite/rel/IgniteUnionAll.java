@@ -30,6 +30,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Union;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
@@ -65,7 +66,7 @@ public class IgniteUnionAll extends Union implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelNode passThrough(RelTraitSet required) {
-        IgniteDistribution toDistr = Commons.distribution(required);
+        IgniteDistribution toDistr = TraitUtils.distribution(required);
 
         // Union erases collation and only distribution trait can be passed through.
         // So that, it's no use to pass ANY distribution.
@@ -87,7 +88,7 @@ public class IgniteUnionAll extends Union implements IgniteRel {
 
         Set<RelTraitSet> traits = inputTraits.stream()
             .flatMap(List::stream)
-            .map(Commons::distribution)
+            .map(TraitUtils::distribution)
             .filter(d -> d != any())
             .map(distr -> cluster.traitSetOf(IgniteConvention.INSTANCE).replace(distr))
             .collect(Collectors.toSet());

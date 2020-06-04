@@ -62,6 +62,14 @@ public class RelJsonWriter implements RelWriter {
     }
 
     /** */
+    public static String toJson(RelNode rel) {
+        RelJsonWriter writer = new RelJsonWriter();
+        rel.explain(writer);
+
+        return writer.asString();
+    }
+
+    /** */
     public RelJsonWriter(boolean pretty) {
         this.pretty = pretty;
     }

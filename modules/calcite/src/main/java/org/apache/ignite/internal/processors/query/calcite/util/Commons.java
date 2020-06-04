@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
-import com.google.common.collect.ImmutableList;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,21 +32,10 @@ import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelTrait;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelDistribution;
-import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
@@ -56,11 +44,7 @@ import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
-import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
-import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -298,20 +282,6 @@ public final class Commons {
     }
 
     /** */
-    public static String toJson(RelNode rel) {
-        RelJsonWriter writer = new RelJsonWriter();
-        rel.explain(writer);
-
-        return writer.asString();
-    }
-
-    public static <T extends RelNode> T fromJson(RelOptCluster cluster, String json) {
-        RelJsonReader reader = new RelJsonReader(cluster, context(cluster).catalogReader());
-
-        return (T)reader.read(json);
-    }
-
-    /** */
     public static <T> T compile(Class<T> interfaceType, String body) {
         final boolean debug = CalciteSystemProperty.DEBUG.value();
 
@@ -341,118 +311,5 @@ public final class Commons {
         } catch (Exception e) {
             throw new IgniteException(e);
         }
-    }
-
-    public static IgniteDistribution distribution(RelTraitSet traits) {
-        return traits.getTrait(DistributionTraitDef.INSTANCE);
-    }
-
-    public static RelCollation collation(RelTraitSet traits) {
-        return traits.getTrait(RelCollationTraitDef.INSTANCE);
-    }
-
-    /** */
-    public static RelInput changeTraits(RelInput input, RelTrait... traits) {
-        RelTraitSet traitSet = input.getTraitSet();
-
-        for (RelTrait trait : traits)
-            traitSet = traitSet.replace(trait);
-
-        RelTraitSet traitSet0 = traitSet;
-
-        return new RelInput() {
-            @Override public RelOptCluster getCluster() {
-                return input.getCluster();
-            }
-
-            @Override public RelTraitSet getTraitSet() {
-                return traitSet0;
-            }
-
-            @Override public RelOptTable getTable(String table) {
-                return input.getTable(table);
-            }
-
-            @Override public RelNode getInput() {
-                return input.getInput();
-            }
-
-            @Override public List<RelNode> getInputs() {
-                return input.getInputs();
-            }
-
-            @Override public RexNode getExpression(String tag) {
-                return input.getExpression(tag);
-            }
-
-            @Override public ImmutableBitSet getBitSet(String tag) {
-                return input.getBitSet(tag);
-            }
-
-            @Override public List<ImmutableBitSet> getBitSetList(String tag) {
-                return input.getBitSetList(tag);
-            }
-
-            @Override public List<AggregateCall> getAggregateCalls(String tag) {
-                return input.getAggregateCalls(tag);
-            }
-
-            @Override public Object get(String tag) {
-                return input.get(tag);
-            }
-
-            @Override public String getString(String tag) {
-                return input.getString(tag);
-            }
-
-            @Override public float getFloat(String tag) {
-                return input.getFloat(tag);
-            }
-
-            @Override public <E extends Enum<E>> E getEnum(String tag, Class<E> enumClass) {
-                return input.getEnum(tag, enumClass);
-            }
-
-            @Override public List<RexNode> getExpressionList(String tag) {
-                return input.getExpressionList(tag);
-            }
-
-            @Override public List<String> getStringList(String tag) {
-                return input.getStringList(tag);
-            }
-
-            @Override public List<Integer> getIntegerList(String tag) {
-                return input.getIntegerList(tag);
-            }
-
-            @Override public List<List<Integer>> getIntegerListList(String tag) {
-                return input.getIntegerListList(tag);
-            }
-
-            @Override public RelDataType getRowType(String tag) {
-                return input.getRowType(tag);
-            }
-
-            @Override public RelDataType getRowType(String expressionsTag, String fieldsTag) {
-                return input.getRowType(expressionsTag, fieldsTag);
-            }
-
-            @Override public RelCollation getCollation() {
-                return input.getCollation();
-            }
-
-            @Override public RelDistribution getDistribution() {
-                return input.getDistribution();
-            }
-
-            @Override public ImmutableList<ImmutableList<RexLiteral>> getTuples(
-                String tag) {
-                return input.getTuples(tag);
-            }
-
-            @Override public boolean getBoolean(String tag, boolean default_) {
-                return input.getBoolean(tag, default_);
-            }
-        };
     }
 }

@@ -47,7 +47,7 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,6 +58,7 @@ import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.OR;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
  * Relational operator that returns the contents of a table.
@@ -97,7 +98,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
      * @param input Serialized representation.
      */
     public IgniteTableScan(RelInput input) {
-        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
+        super(changeTraits(input, IgniteConvention.INSTANCE));
         idxName = input.getString("index");
         cond = input.getExpression("filters");
         lowerIdxCond = input.getExpressionList("lower");
@@ -126,7 +127,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         this.idxName = idxName;
         this.cond = cond;
         igniteTbl = tbl.unwrap(IgniteTable.class);
-        RelCollation coll = Commons.collation(traits);
+        RelCollation coll = TraitUtils.collation(traits);
         collation = coll == null ? RelCollationTraitDef.INSTANCE.getDefault() : coll;
         lowerIdxCond = new ArrayList<>(getRowType().getFieldCount());
         upperIdxCond = new ArrayList<>(getRowType().getFieldCount());
