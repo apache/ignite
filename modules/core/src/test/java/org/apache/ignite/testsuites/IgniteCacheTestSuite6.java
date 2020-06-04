@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLos
 import org.apache.ignite.internal.processors.cache.distributed.CacheTryLockMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStaleServerNodesTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheMultiClientsStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThreadLocalTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
@@ -115,7 +115,7 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, TxOnCachesStartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxOnCachesStopTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, IgniteCache150ClientsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheMultiClientsStartTest.class, ignoredTests);
 
 //        TODO enable this test after IGNITE-6753, now it takes too long
 //        GridTestUtils.addTestIfNeeded(suite, IgniteOutOfMemoryPropagationTest.class, ignoredTests);
