@@ -19,7 +19,7 @@ project(ignite-odbc-tests)
 
 set(TARGET ${PROJECT_NAME})
 
-find_package(Boost 1.56 REQUIRED COMPONENTS unit_test_framework chrono thread system)
+find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system)
 
 find_package(ODBC REQUIRED)
 

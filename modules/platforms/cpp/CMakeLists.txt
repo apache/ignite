@@ -57,18 +57,20 @@ add_subdirectory(ignite)
 if (${WITH_TESTS})
     enable_testing()
 
-    add_subdirectory(core-test)
+    if (EXISTS ${CMAKE_SOURCE_DIR}/core-test)
+        add_subdirectory(core-test)
+    endif()
 endif()
 
 
-if ((${WITH_THIN_CLIENT}) OR (${WITH_ODBC}))
+if (${WITH_THIN_CLIENT} OR ${WITH_ODBC})
     add_subdirectory(network)
 endif()
 
 if (${WITH_THIN_CLIENT})
     add_subdirectory(thin-client)
 
-    if (${WITH_TESTS})
+    if (${WITH_TESTS} AND EXISTS ${CMAKE_SOURCE_DIR}/thin-client-test)
         add_subdirectory(thin-client-test)
     endif()
 endif()
@@ -76,7 +78,7 @@ endif()
 if (${WITH_ODBC})
     add_subdirectory(odbc)
 
-    if (${WITH_TESTS})
+    if (${WITH_TESTS} AND EXISTS ${CMAKE_SOURCE_DIR}/odbc-test)
         add_subdirectory(odbc-test)
     endif()
 endif()

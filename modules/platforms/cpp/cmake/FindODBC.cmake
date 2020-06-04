@@ -28,7 +28,7 @@ endif()
 ### Try unixODBC or iODBC config program ######################################
 if (UNIX)
     find_program(ODBC_CONFIG
-            NAMES odbc_config
+            NAMES odbc_config iodbc-config
             DOC "Path to unixODBC config program")
     mark_as_advanced(ODBC_CONFIG)
 endif()
@@ -59,6 +59,9 @@ if (UNIX AND ODBC_CONFIG)
             string(REGEX MATCH "odbc" _is_odbc ${_lib_name})
             if(_is_odbc)
                 list(APPEND _odbc_lib_names ${_lib_name})
+                if (${_lib_name} STREQUAL odbc)
+                    list(APPEND _odbc_required_libs_names odbcinst)
+                endif()
             else()
                 list(APPEND _odbc_required_libs_names ${_lib_name})
             endif()
@@ -68,10 +71,10 @@ if (UNIX AND ODBC_CONFIG)
     unset(_libs)
 endif()
 
-### Try unixODBC in include/lib filesystems ##########################
+### Try unixODBC or iODBC in include/lib filesystems ##########################
 if (UNIX AND NOT ODBC_CONFIG)
     # List names of both ODBC libraries and unixODBC
-    set(_odbc_lib_names odbc;unixodbc;)
+    set(_odbc_lib_names odbc;odbcinst;iodbc;unixodbc;)
 endif()
 
 ### Find include directories ##################################################
@@ -93,7 +96,7 @@ if(NOT ODBC_LIBRARY)
     foreach(_lib IN LISTS _odbc_required_libs_names)
         find_library(_lib_path
                 NAMES ${_lib}
-                PATHS ${_odbc_lib_paths} # system parths or collected from ODBC_CONFIG
+                PATHS ${_odbc_lib_paths} # system paths or collected from ODBC_CONFIG
                 PATH_SUFFIXES odbc)
         if(_lib_path)
             list(APPEND _odbc_required_libs_paths ${_lib_path})
