@@ -67,18 +67,4 @@ public class IgniteSchema extends AbstractSchema {
     public void removeTable(String tblName) {
         tblMap.remove(tblName);
     }
-
-    /**
-     * @param tblName Table name.
-     * @param idxName Index name.
-     * @return Index.
-     */
-    public IgniteIndex getIndex(String tblName, String idxName) {
-        IgniteTable tbl = tblMap.get(tblName);
-
-        if (!(tbl instanceof IgniteTable))
-            return null;
-
-        return tbl == null ? null : tbl.getIndex(idxName);
-    }
 }

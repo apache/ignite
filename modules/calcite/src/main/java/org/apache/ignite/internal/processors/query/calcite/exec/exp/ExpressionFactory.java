@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNod
  */
 public interface ExpressionFactory<Row> {
     /** */
-    Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory(AggregateNode.AggregateType type, List<AggregateCall> calls, RelDataType rowType);
+    Supplier<List<AccumulatorWrapper<Row>>> accumulatorsFactory(AggregateNode.AggregateType type, List<AggregateCall> calls, RelDataType rowType);
 
     /**
      * Creates a comparator for given data type and collations. Mainly used for sorted exchange.

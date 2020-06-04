@@ -45,6 +45,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 
 /** */
 @SuppressWarnings({"rawtypes", "unchecked"})
@@ -67,6 +68,13 @@ public class RelJsonReader {
 
     /** */
     private RelNode lastRel;
+
+    /** */
+    public static <T extends RelNode> T fromJson(PlanningContext ctx, String json) {
+        RelJsonReader reader = new RelJsonReader(ctx.cluster(), ctx.catalogReader());
+
+        return (T)reader.read(json);
+    }
 
     /** */
     public RelJsonReader(RelOptCluster cluster, RelOptSchema relOptSchema) {

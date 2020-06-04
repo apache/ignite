@@ -39,7 +39,7 @@ import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SelectScope;
-import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -60,11 +60,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param opTab         Operator table
      * @param catalogReader Catalog reader
      * @param typeFactory   Type factory
-     * @param conformance   Compatibility mode
+     * @param config        Config
      */
     public IgniteSqlValidator(SqlOperatorTable opTab, CalciteCatalogReader catalogReader,
-        IgniteTypeFactory typeFactory, SqlConformance conformance) {
-        super(opTab, catalogReader, typeFactory, conformance);
+        IgniteTypeFactory typeFactory, SqlValidator.Config config) {
+        super(opTab, catalogReader, typeFactory, config);
     }
 
     /** {@inheritDoc} */

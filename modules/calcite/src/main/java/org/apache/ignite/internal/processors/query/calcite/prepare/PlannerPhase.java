@@ -25,18 +25,14 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.ignite.internal.processors.query.calcite.rule.AggregateConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.AggregateTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.FilterTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.JoinTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.ProjectTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.PushFilterIntoScanRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.RegisterIndexRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.UnionTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalFilterMergeRule;
@@ -44,9 +40,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalF
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
-import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.decorrelate;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.hep;
-import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.sequence;
 
 /**
  * Represents a planner phase with its description and a used rule set.
@@ -65,7 +59,7 @@ public enum PlannerPhase {
 
         /** {@inheritDoc} */
         @Override public Program getProgram(PlanningContext ctx) {
-            return sequence(hep(getRules(ctx)), decorrelate());
+            return hep(getRules(ctx));
         }
     },
 
@@ -74,26 +68,21 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
+                RegisterIndexRule.INSTANCE,
                 AggregateConverterRule.INSTANCE,
-                AggregateTraitsPropagationRule.INSTANCE,
                 JoinConverterRule.INSTANCE,
                 FilterJoinRule.PUSH_JOIN_CONDITION,
                 FilterJoinRule.FILTER_ON_JOIN,
-//                FilterJoinRule.JOIN,
-                JoinTraitsPropagationRule.INSTANCE,
                 ProjectConverterRule.INSTANCE,
-                ProjectTraitsPropagationRule.INSTANCE,
                 FilterConverterRule.INSTANCE,
                 LogicalFilterMergeRule.INSTANCE,
                 LogicalFilterProjectTransposeRule.INSTANCE,
-                FilterTraitsPropagationRule.INSTANCE,
                 TableModifyConverterRule.INSTANCE,
                 PushFilterIntoScanRule.FILTER_INTO_SCAN,
                 ProjectFilterTransposeRule.INSTANCE,
                 LogicalOrToUnionRule.INSTANCE,
                 UnionMergeRule.INSTANCE,
                 UnionConverterRule.INSTANCE,
-                UnionTraitsPropagationRule.INSTANCE,
                 SortConverterRule.INSTANCE,
                 SortRemoveRule.INSTANCE);
         }

@@ -18,18 +18,20 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalJoin;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 
 /**
  * Ignite Join converter.
  */
-public class JoinConverterRule extends RelOptRule {
+public class JoinConverterRule extends AbstractIgniteConverterRule<LogicalJoin> {
     /** */
     public static final RelOptRule INSTANCE = new JoinConverterRule();
 
@@ -37,20 +39,18 @@ public class JoinConverterRule extends RelOptRule {
      * Creates a converter.
      */
     public JoinConverterRule() {
-        super(operand(LogicalJoin.class, any()));
+        super(LogicalJoin.class);
     }
 
     /** {@inheritDoc} */
-    @Override public void onMatch(RelOptRuleCall call) {
-        LogicalJoin rel = call.rel(0);
-
+    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
         RelOptCluster cluster = rel.getCluster();
-        RelTraitSet traits = cluster.traitSet()
-            .replace(IgniteConvention.INSTANCE);
-        RelNode left = convert(rel.getLeft(), traits);
-        RelNode right = convert(rel.getRight(), traits);
+        RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        RelNode left = convert(rel.getLeft(), leftInTraits);
+        RelNode right = convert(rel.getRight(), rightInTraits);
 
-        RuleUtils.transformTo(call,
-            new IgniteJoin(cluster, traits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType()));
+        return new IgniteJoin(cluster, outTraits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
     }
 }

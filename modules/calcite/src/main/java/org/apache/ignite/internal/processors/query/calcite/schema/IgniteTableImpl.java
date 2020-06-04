@@ -86,7 +86,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
      */
     public IgniteTableImpl(TableDescriptor desc, RelCollation collation) {
         this.desc = desc;
-        collations = collation == null ? emptyList() : singletonList(collation);
+        collations = toCollations(collation);
         statistic = new StatisticsImpl();
     }
 
@@ -191,6 +191,11 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
             return aCls.cast(desc);
 
         return super.unwrap(aCls);
+    }
+
+    /** */
+    private List<RelCollation> toCollations(RelCollation collation) {
+        return collation == null || collation.getFieldCollations().isEmpty() ? emptyList() : singletonList(collation);
     }
 
     /** */

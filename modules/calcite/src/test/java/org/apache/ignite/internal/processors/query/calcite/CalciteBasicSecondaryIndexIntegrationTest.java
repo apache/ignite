@@ -408,7 +408,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition7() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=2")
-            .containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX)
+            .containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX)
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -417,7 +417,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition8() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId>=2 AND age>20")
-            .containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX)
+            .containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX)
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -426,7 +426,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition9() {
         assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId>=2 AND city>='Vienna'")
-            .containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX)
+            .containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX)
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -435,7 +435,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition10() {
         assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND city>='Vienna'")
-            .containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX)
+            .containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX)
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -631,6 +631,9 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         private List<String> subPlans = new ArrayList<>();
 
         /** */
+        private List<String[]> variativeSubPlans = new ArrayList<>();
+
+        /** */
         private List<String> excludedSubPlans = new ArrayList<>();
 
         /** */
@@ -653,6 +656,13 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         /** */
         public QueryChecker containsSubPlan(String subPlan) {
             subPlans.add(subPlan);
+
+            return this;
+        }
+
+        /** */
+        public QueryChecker containsAnySubPlan(String... subPlans) {
+            variativeSubPlans.add(subPlans);
 
             return this;
         }
@@ -693,6 +703,15 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         }
 
         /** */
+        public QueryChecker containsAnyScan(String schema, String tblName, String... idxNames) {
+            String[] idxScanNames = new String[idxNames.length];
+            for (int i = 0; i < idxNames.length; i++)
+                idxScanNames[i] = "IgniteTableScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxNames[i] + ']';
+
+            return containsAnySubPlan(idxScanNames);
+        }
+
+        /** */
         public QueryChecker planEquals(String plan) {
             exactPlan = plan;
 
@@ -714,6 +733,16 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             for (String subPlan : subPlans) {
                 assertTrue("\nExpected subPlan:\n" + subPlan + "\nactual plan:\n" + actualPlan,
                     actualPlan.contains(subPlan));
+            }
+
+            for (String[] subPlans : variativeSubPlans) {
+                boolean check = false;
+                for (String subPlan : subPlans) {
+                    if (check = actualPlan.contains(subPlan))
+                        break;
+                }
+
+                assertTrue("\nExpected one of subPlans:\n" + Arrays.toString(subPlans) + "\nactual plan:\n" + actualPlan, check);
             }
 
             for (String subPlan : excludedSubPlans) {

@@ -24,6 +24,8 @@ import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
@@ -57,22 +59,24 @@ import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Array-based query processor.
- */
+/** */
 public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
             .sqlToRelConverterConfig(SqlToRelConverter.configBuilder()
-                .withConvertTableAccess(true)
-                .withTrimUnusedFields(false)
+                .withTrimUnusedFields(true)
+                .withDecorrelationEnabled(true)
                 .build())
             .parserConfig(SqlParser.configBuilder()
                 // Lexical configuration defines how identifiers are quoted, whether they are converted to upper or lower
                 // case when they are read, and whether identifiers are matched case-sensitively.
                 .setLex(Lex.ORACLE)
 //                .setParserFactory(SqlDdlParserImpl.FACTORY) // Enables DDL support
+                .setConformance(SqlConformanceEnum.DEFAULT)
                 .build())
+            .sqlValidatorConfig(SqlValidator.Config.DEFAULT
+                .withIdentifierExpansion(true)
+                .withSqlConformance(SqlConformanceEnum.DEFAULT))
             // Dialects support.
             .operatorTable(SqlLibraryOperatorTableFactory.INSTANCE
                 .getOperatorTable(

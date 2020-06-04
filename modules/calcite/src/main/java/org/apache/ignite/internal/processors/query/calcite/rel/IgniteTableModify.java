@@ -23,7 +23,6 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -45,9 +44,9 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
      * @param input                Sub-query or filter condition
      * @param operation            Modify operation (INSERT, UPDATE, DELETE)
      * @param updateColumnList     List of column identifiers to be updated
-*                             (e.g. ident1, ident2); null if not UPDATE
+     *                             (e.g. ident1, ident2); null if not UPDATE
      * @param sourceExpressionList List of value expressions to be set
-*                             (e.g. exp1, exp2); null if not UPDATE
+     *                             (e.g. exp1, exp2); null if not UPDATE
      * @param flattened            Whether set flattens the input row type
      */
     public IgniteTableModify(RelOptCluster cluster,
@@ -85,10 +84,6 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
             getUpdateColumnList(),
             getSourceExpressionList(),
             isFlattened());
-    }
-
-    @Override public RelWriter explainTerms(RelWriter pw) {
-        return super.explainTerms(pw);
     }
 
     /** {@inheritDoc} */

@@ -84,6 +84,11 @@ public class Splitter implements IgniteRelVisitor<IgniteRel> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteSort rel) {
+        return processNode(rel);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteJoin rel) {
         return processNode(rel);
     }
@@ -125,11 +130,6 @@ public class Splitter implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteValues rel) {
-        return rel;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteSort rel) {
         return rel;
     }
 

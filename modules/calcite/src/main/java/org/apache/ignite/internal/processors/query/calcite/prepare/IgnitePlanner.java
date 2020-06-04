@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import com.google.common.collect.ImmutableList;
 import java.io.Reader;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
@@ -33,18 +33,20 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -53,19 +55,12 @@ import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Util;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.util.typedef.F;
-
-import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl.PK_INDEX_NAME;
 
 /**
  * Query planer.
@@ -94,6 +89,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private final SqlToRelConverter.Config sqlToRelConverterCfg;
 
     /** */
+    private final SqlValidator.Config validatorCfg;
+
+    /** */
     private final SqlRexConvertletTable convertletTbl;
 
     /** */
@@ -106,9 +104,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private final IgniteTypeFactory typeFactory;
 
     /** */
-    private final SqlConformance conformance;
-
-    /** */
     private final CalciteCatalogReader catalogReader;
 
     /** */
@@ -116,6 +111,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** */
     private SqlValidator validator;
+
+    /** */
+    private RelOptCluster cluster;
 
     /**
      * @param ctx Planner context.
@@ -126,12 +124,12 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         typeFactory = ctx.typeFactory();
         catalogReader = ctx.catalogReader();
         operatorTbl = ctx.opTable();
-        conformance = ctx.conformance();
         frameworkCfg = ctx.config();
 
         programs = frameworkCfg.getPrograms();
         parserCfg = frameworkCfg.getParserConfig();
         sqlToRelConverterCfg = frameworkCfg.getSqlToRelConverterConfig();
+        validatorCfg = frameworkCfg.getSqlValidatorConfig();
         convertletTbl = frameworkCfg.getConvertletTable();
         rexExecutor = frameworkCfg.getExecutor();
         traitDefs = frameworkCfg.getTraitDefs();
@@ -153,6 +151,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     @Override public void reset() {
         planner = null;
         validator = null;
+        cluster = null;
     }
 
     /** {@inheritDoc} */
@@ -200,10 +199,13 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public RelRoot rel(SqlNode sql) {
-        SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(this,
-            validator, catalogReader, createCluster(), convertletTbl, sqlToRelConverterCfg);
+        SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator(), catalogReader, sqlToRelConverterCfg);
+        RelRoot root = sqlToRelConverter.convertQuery(sql, false, true);
+        root = root.withRel(sqlToRelConverter.decorrelate(sql, root.rel));
+        root = root.withRel(root.project());
+        root = trimUnusedFields(root);
 
-        return sqlToRelConverter.convertQuery(sql, false, true);
+        return root;
     }
 
     /** {@inheritDoc} */
@@ -222,20 +224,18 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             throw new IgniteSQLException("parse failed", IgniteQueryErrorCode.PARSING, e);
         }
 
-        SqlConformance conformance = this.conformance;
         CalciteCatalogReader catalogReader = this.catalogReader.withSchemaPath(schemaPath);
-        SqlValidator validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, conformance);
-        validator.setIdentifierExpansion(true);
+        SqlValidator validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg);
+        SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator, catalogReader, sqlToRelConverterCfg);
+        RelRoot root = sqlToRelConverter.convertQuery(sqlNode, true, false);
+        root = root.withRel(sqlToRelConverter.decorrelate(sqlNode, root.rel));
 
-        SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(this,
-            validator, catalogReader, createCluster(), convertletTbl, sqlToRelConverterCfg);
-
-        return sqlToRelConverter.convertQuery(sqlNode, true, false);
+        return root;
     }
 
     /** {@inheritDoc} */
     @Override public RelNode transform(int programIdx, RelTraitSet targetTraits, RelNode rel) {
-        return programs.get(programIdx).run(planner(), rel, targetTraits.simplify(), materializations(rel), latices());
+        return programs.get(programIdx).run(planner(), rel, targetTraits.simplify(), materializations(), latices());
     }
 
     /**
@@ -247,7 +247,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @return The root of the new RelNode tree.
      */
     public <T extends RelNode> T transform(PlannerPhase phase, RelTraitSet targetTraits, RelNode rel) {
-        return (T) phase.getProgram(ctx).run(planner(), rel, targetTraits.simplify(), materializations(rel), latices());
+        return (T) phase.getProgram(ctx).run(planner(), rel, targetTraits.simplify(), materializations(), latices());
     }
 
     /** {@inheritDoc} */
@@ -258,11 +258,12 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private RelOptPlanner planner() {
         if (planner == null) {
-            planner = new VolcanoPlannerExt(frameworkCfg.getCostFactory(), ctx);
+            VolcanoPlannerExt planner = new VolcanoPlannerExt(frameworkCfg.getCostFactory(), ctx);
             planner.setExecutor(rexExecutor);
+            this.planner = planner;
 
             for (RelTraitDef<?> def : traitDefs)
-                planner.addRelTraitDef(def);
+                this.planner.addRelTraitDef(def);
         }
 
         return planner;
@@ -271,17 +272,18 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private SqlValidator validator() {
         if (validator == null)
-            validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, conformance);
+            validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg);
 
         return validator;
     }
 
     /** Creates a cluster. */
-    RelOptCluster createCluster() {
-        RelOptCluster cluster = RelOptCluster.create(planner(), rexBuilder);
-
-        cluster.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner()));
-        cluster.setMetadataQuerySupplier(RelMetadataQueryEx::create);
+    RelOptCluster cluster() {
+        if (cluster == null) {
+            cluster = RelOptCluster.create(planner(), rexBuilder);
+            cluster.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner()));
+            cluster.setMetadataQuerySupplier(RelMetadataQueryEx::create);
+        }
 
         return cluster;
     }
@@ -293,50 +295,55 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /**
      * Returns all applicable materializations (i.e. secondary indexes) for the given rel node,
-     * @param root Rel node
      * @return Materializations.
      */
-    private List<RelOptMaterialization> materializations(RelNode root) {
-        RelOptCluster cluster = root.getCluster();
+    private List<RelOptMaterialization> materializations() {
+        return ImmutableList.of(); // TODO
+    }
 
-        List<RelOptTable> tbls = RelOptUtil.findAllTables(root);
+    /**
+     * Walks over a tree of relational expressions, replacing each
+     * {@link org.apache.calcite.rel.RelNode} with a 'slimmed down' relational
+     * expression that projects
+     * only the columns required by its consumer.
+     *
+     * @param root Root of relational expression tree
+     * @return Trimmed relational expression
+     */
+    protected RelRoot trimUnusedFields(RelRoot root) {
+        final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
+            .withConfig(sqlToRelConverterCfg)
+            // For now, don't trim if there are more than 3 joins. The projects
+            // near the leaves created by trim migrate past joins and seem to
+            // prevent join-reordering.
+            .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2)
+            .build();
+        SqlToRelConverter converter = sqlToRelConverter(validator(), catalogReader, config);
+        boolean ordered = !root.collation.getFieldCollations().isEmpty();
+        boolean dml = SqlKind.DML.contains(root.kind);
+        return root.withRel(converter.trimUnusedFields(dml || ordered, root.rel));
+    }
 
-        List<RelOptMaterialization> idxMaterializations = new ArrayList<>();
-
-        for (RelOptTable tbl : tbls) {
-            IgniteTable igniteTbl = tbl.unwrap(IgniteTable.class);
-
-            IgniteTableScan tblScan = igniteTbl.toRel(cluster, tbl, PK_INDEX_NAME);
-
-            for (IgniteIndex idx : igniteTbl.indexes().values()) {
-                ImmutableList<String> names = ImmutableList.<String>builder()
-                    .addAll(Util.skipLast(tbl.getQualifiedName()))
-                    .add(F.last(tbl.getQualifiedName()) + "[" + idx.name() + "]")
-                    .build();
-
-                IgniteTableScan idxTblScan = igniteTbl.toRel(cluster, tbl, idx.name());
-
-                idxMaterializations.add(new RelOptMaterialization(idxTblScan, tblScan, null, names));
-            }
-        }
-
-        return idxMaterializations;
+    /** */
+    private SqlToRelConverter sqlToRelConverter(SqlValidator validator, CalciteCatalogReader reader,
+        SqlToRelConverter.Config config) {
+        return new SqlToRelConverter(this, validator, reader, cluster(), convertletTbl, config);
     }
 
     /** */
     private static class VolcanoPlannerExt extends VolcanoPlanner {
         /** */
-        private static final Boolean IMPATIENT = IgniteSystemProperties.getBoolean("IGNITE_CALCITE_PLANER_IMPATIENT", true);
-
-        /** */
-        private static final Boolean AMBITIOUS = IgniteSystemProperties.getBoolean("IGNITE_CALCITE_PLANER_AMBITIOUS", true);
-
-        /** */
         protected VolcanoPlannerExt(RelOptCostFactory costFactory, Context externalCtx) {
             super(costFactory, externalCtx);
+            setTopDownOpt(true);
+        }
 
-            impatient = IMPATIENT;
-            ambitious = AMBITIOUS;
+        /** {@inheritDoc} */
+        @Override public RelOptCost getCost(RelNode rel, RelMetadataQuery mq) {
+            if (rel instanceof IgniteRel && ((IgniteRel)rel).distribution().getType() == RelDistribution.Type.ANY)
+                return getCostFactory().makeInfiniteCost(); // force certain distributions
+
+            return super.getCost(rel, mq);
         }
     }
 }
