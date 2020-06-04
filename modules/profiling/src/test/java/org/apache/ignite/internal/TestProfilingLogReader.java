@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -66,7 +67,7 @@ public class TestProfilingLogReader implements IgniteProfiling {
     }
 
     /** Starts read profiling file to the configured log until node stoped. */
-    public void startRead() {
+    public void startRead() throws IgniteCheckedException {
         ignite.context().metric().startProfiling(DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, 0);
 
         GridTestUtils.runAsync(() -> {
