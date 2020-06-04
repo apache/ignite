@@ -76,7 +76,7 @@ class IgniteDataStructuresTestUtils {
         for (int backups : Arrays.asList(0, 1)) {
             for (CacheMode cacheMode : CacheMode.values()) {
                 if (cacheMode == CacheMode.LOCAL) {
-                    // FIXME: https://issues.apache.org/jira/browse/IGNITE-13071
+                    // TODO: https://issues.apache.org/jira/browse/IGNITE-13076
                     continue;
                 }
 
@@ -105,7 +105,7 @@ class IgniteDataStructuresTestUtils {
                 for (int backups : Arrays.asList(0, 1)) {
                     for (CacheMode cacheMode : CacheMode.values()) {
                         if (cacheMode == CacheMode.LOCAL) {
-                            // FIXME: https://issues.apache.org/jira/browse/IGNITE-13071
+                            // TODO: https://issues.apache.org/jira/browse/IGNITE-13076
                             continue;
                         }
 
