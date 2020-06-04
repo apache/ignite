@@ -48,7 +48,7 @@ public interface IgniteProfilingMBean {
     @MXBeanDescription("Stop profiling in the cluster.")
     public void stopProfiling() throws IgniteCheckedException;
 
-    /** @return {@code True} if profiling enabled for the local node. */
-    @MXBeanDescription("True if profiling enabled for the local node.")
+    /** @return {@code True} if profiling enabled. */
+    @MXBeanDescription("True if profiling enabled.")
     public boolean profilingEnabled();
 }

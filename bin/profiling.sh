@@ -26,7 +26,11 @@ fi
 #
 
 #
-# Grid cluster control.
+# The script is used to create a performance report from profiling files.
+# Usage: profiling.sh path_to_profiling_files
+# The path should contain profiling files collected from the cluster.
+# Profiling file name mask: node-${sys:nodeId}.prf
+# The report will be created at files path with new directory: path_to_profiling_files/report_yyyy-MM-dd_HH-mm-ss/
 #
 
 #
@@ -79,7 +83,7 @@ if [ -z "${JVM_OPTS:-}" ] ; then
 fi
 
 #
-# Set main class to start service (grid node by default).
+# Set main class to run script.
 #
 if [ "${MAIN_CLASS:-}" = "" ]; then
     MAIN_CLASS=org.apache.ignite.internal.profiling.ProfilingFilesParser

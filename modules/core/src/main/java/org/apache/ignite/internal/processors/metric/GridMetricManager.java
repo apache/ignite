@@ -39,6 +39,8 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -48,15 +50,18 @@ import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.profiling.IgniteProfiling;
 import org.apache.ignite.internal.profiling.LogFileProfiling;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
@@ -764,18 +769,20 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param bufferSize Off heap buffer size in bytes.
      * @param flushBatchSize Minimal batch size to flush in bytes.
      */
-    public void startProfiling(long maxFileSize, int bufferSize, int flushBatchSize) {
-        profiling.startProfiling(maxFileSize, bufferSize, flushBatchSize);
+    public void startProfiling(long maxFileSize, int bufferSize, int flushBatchSize) throws IgniteCheckedException {
+        ctx.closure().broadcast(new ProfilingJob(),
+            new T4<>(true, maxFileSize, bufferSize, flushBatchSize),
+            ctx.discovery().allNodes(), null).get();
     }
 
-    /** Stops profiling. */
-    public void stopProfiling() {
-        try {
-            profiling.stopProfiling().get();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+    /**
+     * Stops profiling.
+     *
+     * @return Future to be completed on profiling stopped.s
+     */
+    public IgniteInternalFuture<?> stopProfiling() {
+        return ctx.closure().broadcast(new ProfilingJob(), new T4<>(false, 0L, 0, 0),
+            ctx.discovery().allNodes(), null);
     }
 
     /** @return {@code True} if profiling enabled. */
@@ -784,7 +791,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /** @return Profiling. */
-    public IgniteProfiling profiling() {
+    public LogFileProfiling profiling() {
         return profiling;
     }
 
@@ -914,6 +921,27 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             used.value(usage.getUsed());
             committed.value(usage.getCommitted());
             max.value(usage.getMax());
+        }
+    }
+
+    /** Job to start/stop profiling. */
+    @GridInternal
+    private static class ProfilingJob implements IgniteClosure<T4<Boolean, Long, Integer, Integer>, Void> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /** @param t Tuple with settings. */
+        @Override public Void apply(T4<Boolean, Long, Integer, Integer> t) {
+            if (t.get1())
+                ignite.context().metric().profiling().startProfiling(t.get2(), t.get3(), t.get4());
+            else
+                ignite.context().metric().profiling().stopProfiling();
+
+            return null;
         }
     }
 }

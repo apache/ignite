@@ -474,8 +474,7 @@ public class LogFileProfiling implements IgniteProfiling {
             if (!fileWriter.isCancelled()) {
                 log.warning("The profiling file maximum size is reached. Profiling will be stopped.");
 
-                // TODO Stop on all nodes.
-                stopProfiling();
+                ctx.metric().stopProfiling();
             }
 
             return null;
