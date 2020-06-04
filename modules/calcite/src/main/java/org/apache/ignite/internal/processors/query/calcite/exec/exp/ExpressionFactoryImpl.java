@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -44,11 +46,14 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexExecutable;
+import org.apache.calcite.rex.RexExecutorImpl;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexProgramBuilder;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -184,6 +189,23 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** {@inheritDoc} */
     @Override public Scalar scalar(List<RexNode> nodes, RelDataType type) {
         return SCALAR_CACHE.computeIfAbsent(digest(nodes, type), k -> compile(nodes, type));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> Supplier<Future<T>> execute(RexNode node) {
+        Supplier<Future<T>> sup = () -> {
+            RexExecutable exec = RexExecutorImpl.getExecutable(
+                rexBuilder,
+                ImmutableList.of(node),
+                typeFactory.createSqlType(SqlTypeName.INTEGER));
+
+            CompletableFuture<T> f = new CompletableFuture<>();
+
+            exec.execute();
+
+            return f;
+        }
+        return null;
     }
 
     /** */

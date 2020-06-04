@@ -16,19 +16,17 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelDistributionTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
-import org.apache.calcite.rel.metadata.RelMdCollation;
-import org.apache.calcite.rel.metadata.RelMdDistribution;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.Pair;
+
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
  * Relational expression that applies a limit and/or offset to its input.
@@ -60,21 +58,6 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
         this.fetch = fetch;
     }
 
-    /** Creates an EnumerableLimit. */
-    public static IgniteLimit create(final RelNode input, RexNode offset,
-        RexNode fetch) {
-        final RelOptCluster cluster = input.getCluster();
-        final RelMetadataQuery mq = cluster.getMetadataQuery();
-        final RelTraitSet traitSet =
-            cluster.traitSetOf(IgniteConvention.INSTANCE)
-                .replaceIfs(
-                    RelCollationTraitDef.INSTANCE,
-                    () -> RelMdCollation.limit(mq, input))
-                .replaceIf(RelDistributionTraitDef.INSTANCE,
-                    () -> RelMdDistribution.limit(mq, input));
-        return new IgniteLimit(cluster, traitSet, input, offset, fetch);
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteLimit copy(
         RelTraitSet traitSet,
@@ -97,5 +80,21 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
+        required = fixTraits(required);
+
+        return Pair.of(required, ImmutableList.of(required));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
+        assert childId == 0;
+
+        childTraits = fixTraits(childTraits);
+
+        return Pair.of(childTraits, ImmutableList.of(childTraits));
     }
 }

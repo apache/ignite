@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 import com.google.common.collect.ImmutableList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -99,4 +100,13 @@ public interface ExpressionFactory<Row> {
      * @return Scalar.
      */
     Scalar scalar(List<RexNode> nodes, RelDataType type);
+
+    /**
+     * Executes expression.
+     *
+     * @param node
+     * @param <T>
+     * @return
+     */
+    <T> Supplier<Future<T>> execute(RexNode node);
 }
