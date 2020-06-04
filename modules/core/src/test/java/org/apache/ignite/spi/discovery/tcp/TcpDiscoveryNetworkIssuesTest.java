@@ -218,8 +218,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
             long failureDetectionDelay = U.nanosToMillis(timer.get());
 
-            // 10ms is the timer granulation in IgniteUtils.
-            if (failureDetectionDelay <= failureDetectionTimeout + 10) {
+            // 20ms is the timer granulation in IgniteUtils (10ms). Considered time lag between 2 nodes.
+            // So, the  worst case is 2 * 10ms.
+            if (failureDetectionDelay <= failureDetectionTimeout + 20) {
                 ++sucessfullRunsCnt;
 
                 if (log.isDebugEnabled())
@@ -231,10 +232,10 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             stopAllGrids(true);
         }
 
-        // Let's consider 80% of sucessfull runs. Other 20% we can spare to GC delays.
+        // Let's consider 80% of sucessfull runs. Other 20% we can spare to GC/platform delays.
         if (sucessfullRunsCnt < 0.8 * runsCnt) {
-            fail("Few sucessfull runs: " + sucessfullRunsCnt + " of " + runsCnt + ". Expected: 80% ("
-                + (0.8 * runsCnt) + ").");
+            fail("Few sucessfull runs: " + sucessfullRunsCnt + '/' + runsCnt + ". Expected: "
+                + (0.8 * runsCnt) + " (80%).");
         }
     }
 
