@@ -231,6 +231,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             stopAllGrids(true);
         }
 
+        // Let's consider 80% of sucessfull runs. Other 20% we can spare to GC delays.
         if (sucessfullRunsCnt < 0.8 * runsCnt) {
             fail("Few sucessfull runs: " + sucessfullRunsCnt + " of " + runsCnt + ". Expected: 80% ("
                 + (0.8 * runsCnt) + ").");
