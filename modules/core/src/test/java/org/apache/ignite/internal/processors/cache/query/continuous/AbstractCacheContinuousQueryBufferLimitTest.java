@@ -192,7 +192,7 @@ public abstract class AbstractCacheContinuousQueryBufferLimitTest extends GridCo
 
             boolean await = waitForCondition(() -> pending.size() > PENDING_LIMIT, OVERFLOW_TIMEOUT_MS);
 
-            spi(locIgnite).stopBlock();
+            spi(locIgnite).stopBlock(false, null, true, true);
 
             assertFalse("Pending buffer exceeded the limit despite entries have been acked " +
                     "[lastAcked=" + lastAcked + ", pending=" + S.compact(pending.keySet(), i -> i + 1) + ']',
