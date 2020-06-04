@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
@@ -67,6 +68,12 @@ public class CacheContinuousQueryEventBuffer {
 
     /** Entries which are waiting for being processed. */
     private final ConcurrentSkipListMap<Long, CacheContinuousQueryEntry> pending = new ConcurrentSkipListMap<>();
+
+    /**
+     * The size method of the pending ConcurrentSkipListMap is not a constant-time operation. Since each
+     * entry processed under the GridCacheMapEntry lock it's necessary to maintain the size of map explicitly.
+     */
+    private final AtomicInteger pendingSize = new AtomicInteger();
 
     /** Last seen ack partition counter tracked by the CQ handler partition recovery queue. */
     private volatile long ackedUpdCntr;
@@ -207,7 +214,7 @@ public class CacheContinuousQueryEventBuffer {
                 if (batch.endCntr < ackedUpdCntr)
                     batch.tryRollOver(entry.topologyVersion());
 
-                if (pending.size() > MAX_PENDING_BUFF_SIZE && curBatch.get() == batch) {
+                if (pendingSize.get() > MAX_PENDING_BUFF_SIZE && curBatch.get() == batch) {
                     LT.warn(log, "Buffer for pending events reached max of its size " +
                         "[cacheId=" + entry.cacheId() + ", maxSize=" + MAX_PENDING_BUFF_SIZE +
                         ", partId=" + entry.partition() + ']');
@@ -224,11 +231,13 @@ public class CacheContinuousQueryEventBuffer {
                         res = addResult(res, iter.next().getValue(), false);
 
                         iter.remove();
+                        pendingSize.decrementAndGet();
 
                         keysToRemove--;
                     }
                 }
 
+                pendingSize.incrementAndGet();
                 pending.put(cntr, entry);
             }
 
@@ -295,6 +304,8 @@ public class CacheContinuousQueryEventBuffer {
                 assert cntr <= batch.endCntr;
 
                 if (pending.remove(p.getKey()) != null) {
+                    pendingSize.decrementAndGet();
+
                     if (cntr < batch.startCntr)
                         res = addResult(res, p.getValue(), backup);
                     else

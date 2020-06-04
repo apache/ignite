@@ -51,7 +51,11 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    // Continuous queries 1.
+    CacheContinuousQueryBufferLimitPartitionedAtomicTest.class,
+    CacheContinuousQueryBufferLimitPartitionedTxTest.class,
+    CacheContinuousQueryBufferLimitReplicatedAtomicTest.class,
+    CacheContinuousQueryBufferLimitReplicatedTxTest.class,
+
     GridCacheContinuousQueryNodesFilteringTest.class,
     GridCacheContinuousQueryPartitionTxOneNodeTest.class,
     CacheContinuousWithTransformerReplicatedSelfTest.class,
@@ -77,12 +81,7 @@ import org.junit.runners.Suite;
     CacheContinuousQueryCounterPartitionedAtomicTest.class,
     CacheContinuousQueryCounterPartitionedTxTest.class,
     CacheContinuousQueryCounterReplicatedAtomicTest.class,
-    CacheContinuousQueryCounterReplicatedTxTest.class,
-
-    CacheContinuousQueryBufferLimitPartitionedAtomicTest.class,
-    CacheContinuousQueryBufferLimitPartitionedTxTest.class,
-    CacheContinuousQueryBufferLimitReplicatedAtomicTest.class,
-    CacheContinuousQueryBufferLimitReplicatedTxTest.class
+    CacheContinuousQueryCounterReplicatedTxTest.class
 })
 public class IgniteCacheQuerySelfTestSuite3 {
 }
