@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalUnion;
-import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -32,33 +36,27 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /**
  *
  */
-public class UnionConverterRule extends RelOptRule {
+public class UnionConverterRule extends AbstractIgniteConverterRule<LogicalUnion> {
     /** */
     public static final RelOptRule INSTANCE = new UnionConverterRule();
 
     /** */
     public UnionConverterRule() {
-        super(operand(LogicalUnion.class, any()));
+        super(LogicalUnion.class);
     }
 
     /** {@inheritDoc} */
-    @Override public void onMatch(RelOptRuleCall call) {
-        LogicalUnion rel = call.rel(0);
-
+    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalUnion rel) {
         RelOptCluster cluster = rel.getCluster();
-        List<RelNode> inputs = Commons.transform(rel.getInputs(),
-            rel0 -> convert(rel0, IgniteConvention.INSTANCE));
-        RelTraitSet traits = rel.getTraitSet()
-            .replace(IgniteConvention.INSTANCE);
+        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        List<RelNode> inputs = Commons.transform(rel.getInputs(), input -> convert(input, traits));
 
-        RelNode res = new IgniteUnionAll(cluster, traits, inputs);
+        PhysicalNode res = new IgniteUnionAll(cluster, traits, inputs);
 
-        if (!rel.all) {
-            RelBuilder b = relBuilderFactory.create(rel.getCluster(), null);
+        if (!rel.all)
+            res = new IgniteAggregate(cluster, traits, res,
+                ImmutableBitSet.range(rel.getRowType().getFieldCount()), null, ImmutableList.of());
 
-            res = b.push(res).aggregate(b.groupKey(b.fields())).build();
-        }
-
-        RuleUtils.transformTo(call, res);
+        return res;
     }
 }

@@ -17,18 +17,24 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
  *
@@ -43,7 +49,7 @@ public class IgniteTrimExchange extends Exchange implements IgniteRel {
     }
 
     public IgniteTrimExchange(RelInput input) {
-        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
+        super(changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */
@@ -59,5 +65,31 @@ public class IgniteTrimExchange extends Exchange implements IgniteRel {
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEnforcer() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
+        required = fixTraits(required);
+
+        IgniteDistribution distribution = TraitUtils.distribution(required);
+
+        if (!distribution().satisfies(distribution))
+            return null;
+
+        return Pair.of(required.replace(distribution()), ImmutableList.of(required.replace(IgniteDistributions.broadcast())));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
+        assert childId == 0;
+
+        childTraits = fixTraits(childTraits);
+
+        return Pair.of(childTraits.replace(distribution()), ImmutableList.of(childTraits.replace(IgniteDistributions.broadcast())));
     }
 }

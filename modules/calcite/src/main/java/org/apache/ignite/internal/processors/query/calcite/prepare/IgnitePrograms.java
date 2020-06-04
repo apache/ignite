@@ -22,8 +22,6 @@ import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
-import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RuleSet;
@@ -69,24 +67,5 @@ public class IgnitePrograms {
      */
     public static Program cbo(RuleSet rules) {
         return Programs.of(rules);
-    }
-
-    /**
-     * @return Query decorrelate program.
-     */
-    public static Program decorrelate() {
-        return (planner, rel, traits, materializations, lattices) -> {
-            if (Commons.context(rel).connectionConfig().forceDecorrelate())
-                return RelDecorrelator.decorrelateQuery(rel, RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null));
-
-            return rel;
-        };
-    }
-
-    /**
-     * @return A program that executes a sequence of programs.
-     */
-    public static Program sequence(Program... programs) {
-        return Programs.sequence(programs);
     }
 }

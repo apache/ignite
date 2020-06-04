@@ -26,7 +26,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
  *
@@ -51,7 +52,7 @@ public class IgniteValues extends Values implements IgniteRel {
 
     /** */
     public IgniteValues(RelInput input) {
-        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
+        super(changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */

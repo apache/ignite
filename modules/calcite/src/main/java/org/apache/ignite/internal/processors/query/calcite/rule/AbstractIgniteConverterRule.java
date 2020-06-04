@@ -17,35 +17,33 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 
-/**
- *
- */
-public class ProjectConverterRule extends AbstractIgniteConverterRule<LogicalProject> {
+/** */
+public abstract class AbstractIgniteConverterRule<T extends RelNode> extends ConverterRule {
     /** */
-    public static final RelOptRule INSTANCE = new ProjectConverterRule();
-
-    /** */
-    public ProjectConverterRule() {
-        super(LogicalProject.class);
+    protected AbstractIgniteConverterRule(Class<T> clazz) {
+        super(clazz, Convention.NONE, IgniteConvention.INSTANCE, clazz.getName() + "Converter");
     }
 
     /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalProject rel) {
-        RelOptCluster cluster = rel.getCluster();
-        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelNode input = convert(rel.getInput(), traits);
-
-        return new IgniteProject(cluster, traits, input, rel.getProjects(), rel.getRowType());
+    @Override public final RelNode convert(RelNode rel) {
+        return convert(rel.getCluster().getPlanner(), rel.getCluster().getMetadataQuery(), (T)rel);
     }
+
+    /**
+     * Converts given rel to physical node.
+     *
+     * @param planner Planner.
+     * @param mq Metadata query.
+     * @param rel Rel node.
+     * @return Physical rel.
+     */
+    protected abstract PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, T rel);
 }

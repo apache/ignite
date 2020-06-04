@@ -44,7 +44,7 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
     private final AggregateType type;
 
     /** */
-    private final Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory;
+    private final Supplier<List<AccumulatorWrapper<Row>>> accFactory;
 
     /** */
     private final RowFactory<Row> rowFactory;
@@ -68,11 +68,11 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
      * @param ctx Execution context.
      */
     public AggregateNode(ExecutionContext<Row> ctx, AggregateType type, List<ImmutableBitSet> grpSets,
-        Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory, RowFactory<Row> rowFactory) {
+        Supplier<List<AccumulatorWrapper<Row>>> accFactory, RowFactory<Row> rowFactory) {
         super(ctx);
 
         this.type = type;
-        this.wrappersFactory = wrappersFactory;
+        this.accFactory = accFactory;
         this.rowFactory = rowFactory;
 
         ImmutableBitSet.Builder b = ImmutableBitSet.builder();
@@ -363,7 +363,7 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
 
         /** */
         private List<AccumulatorWrapper<Row>> create(GroupKey key) {
-            return wrappersFactory.get();
+            return accFactory.get();
         }
 
         /** */

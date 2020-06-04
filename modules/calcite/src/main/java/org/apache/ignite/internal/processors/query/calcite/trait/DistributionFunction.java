@@ -186,7 +186,8 @@ public abstract class DistributionFunction implements Serializable {
 
         /** {@inheritDoc} */
         @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
-            assert m != null && m.nodes() != null && m.nodes().size() == 1;
+            if (m == null || m.nodes() == null || m.nodes().size() != 1)
+                throw new AssertionError();
 
             return new AllNodes(Collections
                 .singletonList(Objects

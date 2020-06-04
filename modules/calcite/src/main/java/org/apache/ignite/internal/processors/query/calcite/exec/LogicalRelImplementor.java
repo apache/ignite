@@ -265,11 +265,9 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Inbox<Row> inbox = (Inbox<Row>) mailboxRegistry.register(
             new Inbox<>(ctx, exchangeSvc, mailboxRegistry, rel.exchangeId(), rel.sourceFragmentId()));
 
-        RelCollation collation = F.isEmpty(rel.collations()) ? null : rel.collations().get(0);
-
         // here may be an already created (to consume rows from remote nodes) inbox
         // without proper context, we need to init it with a right one.
-        inbox.init(ctx, ctx.remoteSources(rel.exchangeId()), expressionFactory.comparator(collation));
+        inbox.init(ctx, ctx.remoteSources(rel.exchangeId()), expressionFactory.comparator(rel.collation()));
 
         return inbox;
     }
@@ -278,11 +276,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteAggregate rel) {
         AggregateNode.AggregateType type = AggregateNode.AggregateType.SINGLE;
 
-        Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory = expressionFactory.wrappersFactory(
+        Supplier<List<AccumulatorWrapper<Row>>> accFactory = expressionFactory.accumulatorsFactory(
             type, rel.getAggCallList(), rel.getInput().getRowType());
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType());
 
-        AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), wrappersFactory, rowFactory);
+        AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), accFactory, rowFactory);
 
         Node<Row> input = visit(rel.getInput());
 
@@ -295,11 +293,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteMapAggregate rel) {
         AggregateNode.AggregateType type = AggregateNode.AggregateType.MAP;
 
-        Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory = expressionFactory.wrappersFactory(
+        Supplier<List<AccumulatorWrapper<Row>>> accFactory = expressionFactory.accumulatorsFactory(
             type, rel.getAggCallList(), rel.getInput().getRowType());
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType());
 
-        AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), wrappersFactory, rowFactory);
+        AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), accFactory, rowFactory);
 
         Node<Row> input = visit(rel.getInput());
 
@@ -312,11 +310,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteReduceAggregate rel) {
         AggregateNode.AggregateType type = AggregateNode.AggregateType.REDUCE;
 
-        Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory = expressionFactory.wrappersFactory(
+        Supplier<List<AccumulatorWrapper<Row>>> accFactory = expressionFactory.accumulatorsFactory(
             type, rel.aggregateCalls(), null);
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType());
 
-        AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.groupSets(), wrappersFactory, rowFactory);
+        AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.groupSets(), accFactory, rowFactory);
 
         Node<Row> input = visit(rel.getInput());
 

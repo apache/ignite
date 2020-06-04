@@ -111,7 +111,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         TableDescriptorImpl desc =
             new TableDescriptorImpl(cacheInfo.cacheContext(), typeDesc, affinityIdentity(cacheInfo));
 
-        RelCollation pkCollation = RelCollations.of(new RelFieldCollation(QueryUtils.KEY_COL));
+        RelCollation pkCollation = RelCollations.EMPTY;
 
         IgniteTable tbl = new IgniteTableImpl(desc, pkCollation);
         schema.addTable(tblName, tbl);

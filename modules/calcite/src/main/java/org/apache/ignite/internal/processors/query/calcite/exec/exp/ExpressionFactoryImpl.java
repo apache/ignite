@@ -54,7 +54,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.WrappersFactoryImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorsFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -96,11 +96,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Supplier<List<AccumulatorWrapper<Row>>> wrappersFactory(
-        AggregateNode.AggregateType type,
-        List<AggregateCall> calls,
-        RelDataType rowType) {
-        return new WrappersFactoryImpl<>(ctx, type, calls, rowType);
+    @Override public Supplier<List<AccumulatorWrapper<Row>>> accumulatorsFactory(AggregateNode.AggregateType type,
+        List<AggregateCall> calls, RelDataType rowType) {
+        return new AccumulatorsFactory<>(ctx, type, calls, rowType);
     }
 
     /** {@inheritDoc} */
