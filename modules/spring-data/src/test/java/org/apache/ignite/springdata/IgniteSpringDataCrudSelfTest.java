@@ -34,7 +34,7 @@ import org.junit.rules.ExpectedException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
- * CRUID tests.
+ * CRUD tests.
  */
 public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /** Number of entries to store. */
