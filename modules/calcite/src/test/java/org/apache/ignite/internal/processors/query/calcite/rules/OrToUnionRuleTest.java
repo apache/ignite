@@ -19,10 +19,11 @@ package org.apache.ignite.internal.processors.query.calcite.rules;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.Enumerable;
@@ -35,6 +36,7 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
@@ -84,7 +86,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
     public void setup() {
         nodes = new ArrayList<>(4);
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 1; i++)
             nodes.add(UUID.randomUUID());
     }
 
@@ -108,6 +110,10 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             }
         };
 
+        products.addIndex(new IgniteIndex(RelCollations.of(1), "IDX_CATEGORY", null, null));
+        products.addIndex(new IgniteIndex(RelCollations.of(2), "IDX_SUBCATEGORY", null, null));
+        products.addIndex(new IgniteIndex(RelCollations.of(3), "IDX_CATALOG_ID", null, null));
+
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
         publicSchema.addTable("PRODUCTS", products);
@@ -115,10 +121,10 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
-            String sql = "SELECT *" +
-                "FROM products " +
-                "WHERE category = 'Photo' " +
-                "OR subcategory ='Camera Media'";
+        String sql = "SELECT *" +
+            "FROM products " +
+            "WHERE category = 'Photo' " +
+            "OR subcategory ='Camera Media'";
 //                "WHERE (category = 'Photo' OR category = ?)" +
 //                "AND (subcategory ='Camera Media' OR subcategory = ?)";
 
@@ -166,7 +172,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             assertNotNull(rel);
             assertEquals("LogicalProject(ID=[$0], CATEGORY=[$1], SUBCATEGORY=[$2], CATALOG_ID=[$3])\n" +
                     "  LogicalFilter(condition=[OR(=(CAST($1):VARCHAR, 'Photo'), =(CAST($2):VARCHAR, 'Camera Media'))])\n" +
-                    "    IgniteTableScan(table=[[PUBLIC, PRODUCTS]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n",
+                    "    IgniteTableScan(table=[[PUBLIC, PRODUCTS]], index=[PK], lower=[[]], upper=[[]], collation=[[0]])\n",
                 RelOptUtil.toString(rel));
 
             // Transformation chain
@@ -190,20 +196,21 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
         private final RelProtoDataType protoType;
 
         /** */
-        private final Map<String, IgniteIndex> indexes = new HashMap<>();
+        private final Map<String, IgniteIndex> indexes = new LinkedHashMap<>();
 
         /** */
         private TestTable(RelDataType type) {
             protoType = RelDataTypeImpl.proto(type);
 
-            addIndex(new IgniteIndex(null, "PK", null, this));
+            addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, this));
         }
 
         /** {@inheritDoc} */
         @Override public RelNode toRel(RelOptTable.ToRelContext ctx, RelOptTable relOptTbl) {
             RelOptCluster cluster = ctx.getCluster();
+
             RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
+                .replaceIf(RelCollationTraitDef.INSTANCE, () -> getIndex("PK").collation())
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
             return new IgniteTableScan(cluster, traitSet, relOptTbl, "PK", null);
@@ -211,11 +218,14 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
+            if (getIndex(idxName) == null)
+                return null;
+
             RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
+                .replaceIf(RelCollationTraitDef.INSTANCE, () -> getIndex(idxName).collation())
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-            return new IgniteTableScan(cluster, traitSet, relOptTbl, "PK", null);
+            return new IgniteTableScan(cluster, traitSet, relOptTbl, idxName, null);
         }
 
         /** {@inheritDoc} */
@@ -263,7 +273,6 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             throw new AssertionError();
         }
 
-
         /** {@inheritDoc} */
         @Override public Schema.TableType getJdbcTableType() {
             throw new AssertionError();
@@ -292,7 +301,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public List<RelCollation> collations() {
-            return Collections.emptyList();
+            return indexes.values().stream().map(IgniteIndex::collation).collect(Collectors.toList());
         }
 
         /** {@inheritDoc} */
