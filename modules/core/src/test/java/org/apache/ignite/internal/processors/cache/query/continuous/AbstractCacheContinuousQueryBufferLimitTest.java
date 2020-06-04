@@ -69,7 +69,7 @@ public abstract class AbstractCacheContinuousQueryBufferLimitTest extends GridCo
     private static final int TOTAL_KEYS = 1024;
 
     /** Number of pending entries.  */
-    private static final int PENDING_LIMIT = 1010;
+    private static final int PENDING_LIMIT = 1100;
 
     /** Timeout to wait for pending buffer overflow. */
     private static final long OVERFLOW_TIMEOUT_MS = 15_000L;
