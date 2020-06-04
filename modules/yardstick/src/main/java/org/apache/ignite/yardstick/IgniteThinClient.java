@@ -17,129 +17,194 @@
 
 package org.apache.ignite.yardstick;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.yardstick.io.FileUtils;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.io.UrlResource;
+import org.apache.ignite.yardstick.thin.cache.IgniteThinBenchmarkUtils;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Thin client.
  */
-public class IgniteThinClient {
-    /** Thin client. */
-    private IgniteClient client;
+@SuppressWarnings("ToArrayCallWithZeroLengthArrayArgument")
+public class IgniteThinClient implements AutoCloseable {
+    /** Thin client pool. */
+    private final ClientPool clientPool;
 
     /** */
-    public IgniteThinClient() {
-        // No-op.
-    }
-
-    /**
-     * @param client Use exist ignite client.
-     */
-    public IgniteThinClient(IgniteClient client) {
-        this.client = client;
-    }
-
-    /** */
-    public IgniteClient start(BenchmarkConfiguration cfg, String host) throws Exception {
-        IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
+    public IgniteThinClient(BenchmarkConfiguration cfg) {
+        IgniteThinBenchmarkArguments args = new IgniteThinBenchmarkArguments();
 
         BenchmarkUtils.jcommander(cfg.commandLineArguments(), args, "<ignite-node>");
 
-        IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> tup = loadConfiguration(args.configuration());
-
-        IgniteConfiguration c = tup.get1();
-
-        assert c != null;
-
-        if (args.cleanWorkDirectory())
-            FileUtils.cleanDirectory(U.workDirectory(c.getWorkDirectory(), c.getIgniteHome()));
-
         ClientConfiguration clCfg = new ClientConfiguration();
 
-        String hostPort = host + ":10800";
+        String[] hosts = IgniteThinBenchmarkUtils.servHostArr(cfg);
+        List<String> addrs = new ArrayList<>(hosts.length);
 
-        BenchmarkUtils.println(String.format("Using for connection address: %s", hostPort));
+        Arrays.sort(hosts);
 
-        clCfg.setAddresses(hostPort);
+        String prevHost = null;
+        int prevPort = 0;
 
-        client = Ignition.startClient(clCfg);
+        for (String host : hosts) {
+            int port = host.equals(prevHost) ? prevPort + 1 : ClientConnectorConfiguration.DFLT_PORT;
 
-        return client;
-    }
+            addrs.add(host + ':' + port);
 
-    /**
-     * @param springCfgPath Spring configuration file path.
-     * @return Tuple with grid configuration and Spring application context.
-     * @throws Exception If failed.
-     */
-    private static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
-        throws Exception {
-        URL url;
-
-        try {
-            url = new URL(springCfgPath);
-        }
-        catch (MalformedURLException e) {
-            url = IgniteUtils.resolveIgniteUrl(springCfgPath);
-
-            if (url == null) {
-                throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
-                    ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
-            }
+            prevHost = host;
+            prevPort = port;
         }
 
-        GenericApplicationContext springCtx;
+        BenchmarkUtils.println("Client parameters: " + args);
+        BenchmarkUtils.println("Using for connection addresses: " + addrs);
 
-        try {
-            springCtx = new GenericApplicationContext();
+        clCfg.setAddresses(addrs.toArray(new String[addrs.size()]));
+        clCfg.setPartitionAwarenessEnabled(args.clientPartitionsAware());
 
-            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(url));
+        ClientPool clientPool;
 
-            springCtx.refresh();
+        switch (args.clientPoolType()) {
+            case THREAD_LOCAL:
+                clientPool = new ThreadLocalClientPool(args.connectionTimeout(), clCfg);
+                break;
+
+            case SINGLE_CLIENT:
+                clientPool = new SingleClientPool(args.connectionTimeout(), clCfg);
+                break;
+
+            case ROUND_ROBIN:
+                clientPool = new RoundRobinClientPool(args.connectionTimeout(), clCfg, args.clientPoolSize());
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unexpected client pool type");
         }
-        catch (BeansException e) {
-            throw new Exception("Failed to instantiate Spring XML application context [springUrl=" +
-                url + ", err=" + e.getMessage() + ']', e);
-        }
 
-        Map<String, IgniteConfiguration> cfgMap;
-
-        try {
-            cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
-        }
-        catch (BeansException e) {
-            throw new Exception("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
-                e.getMessage() + ']', e);
-        }
-
-        if (cfgMap == null || cfgMap.isEmpty())
-            throw new Exception("Failed to find ignite configuration in: " + url);
-
-        return new IgniteBiTuple<>(cfgMap.values().iterator().next(), springCtx);
+        this.clientPool = clientPool;
     }
 
     /**
      * @return Thin client.
      */
-    public IgniteClient client() {
-        return client;
+    public IgniteClient get() {
+        return clientPool.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        clientPool.close();
+    }
+
+    /** Client pool */
+    private abstract static class ClientPool implements AutoCloseable {
+        /** Created time. */
+        private final long created = System.nanoTime();
+
+        /** Timeout to wait for servers startup. */
+        private final long timeout;
+
+        /** Clients. */
+        protected final List<IgniteClient> clients = new CopyOnWriteArrayList<>();
+
+        /** Client configuration. */
+        protected final ClientConfiguration cfg;
+
+        /** */
+        protected ClientPool(long timeout, ClientConfiguration cfg) {
+            this.timeout = timeout;
+            this.cfg = cfg;
+        }
+
+        /** */
+        protected IgniteClient startClient() {
+            ClientConnectionException err;
+
+            // Sometimes server-side client connector is not ready right after driver startup,
+            // try to reconnect until connection timeout is reached.
+            do {
+                try {
+                    IgniteClient client = Ignition.startClient(cfg);
+
+                    clients.add(client);
+
+                    return client;
+                } catch (ClientConnectionException e) {
+                    err = e;
+                }
+            } while (U.millisSinceNanos(created) < timeout);
+
+            throw err;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
+            for (IgniteClient client : clients)
+                client.close();
+        }
+
+        /** */
+        public abstract IgniteClient get();
+    }
+
+    /** */
+    private static class SingleClientPool extends ClientPool {
+        /** */
+        public SingleClientPool(long timeout, ClientConfiguration cfg) {
+            super(timeout, cfg);
+
+            startClient();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteClient get() {
+            return clients.get(0);
+        }
+    }
+
+    /** */
+    private static class ThreadLocalClientPool extends ClientPool {
+        /** Client thread local. */
+        private final ThreadLocal<IgniteClient> clientThreadLoc;
+
+        /** */
+        public ThreadLocalClientPool(long timeout, ClientConfiguration cfg) {
+            super(timeout, cfg);
+
+            clientThreadLoc = ThreadLocal.withInitial(this::startClient);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteClient get() {
+            return clientThreadLoc.get();
+        }
+    }
+
+    /** */
+    private static class RoundRobinClientPool extends ClientPool {
+        /** Current client index. */
+        private final AtomicInteger curIdx = new AtomicInteger();
+
+        /** */
+        public RoundRobinClientPool(long timeout, ClientConfiguration cfg, int totalCnt) {
+            super(timeout, cfg);
+
+            for (int i = 0; i < totalCnt; i++)
+                startClient();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteClient get() {
+            return clients.get((curIdx.incrementAndGet() & Integer.MAX_VALUE) % clients.size());
+        }
     }
 }

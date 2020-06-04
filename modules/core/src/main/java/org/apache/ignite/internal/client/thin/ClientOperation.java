@@ -76,7 +76,12 @@ enum ClientOperation {
     /** Execute compute task. */COMPUTE_TASK_EXECUTE(6000),
     /** Finished compute task notification. */COMPUTE_TASK_FINISHED(6001, true),
 
-    /** Invoke service. */SERVICE_INVOKE(7000);
+    /** Invoke service. */SERVICE_INVOKE(7000),
+
+    /** Create data streamer. */DATA_STREAMER_CREATE(8000),
+    /** Change data streamer flags. */DATA_STREAMER_FLAGS(8001),
+    /** Add data to streamer. */DATA_STREAMER_ADD(8002),
+    /** Flush data streamer. */DATA_STREAMER_FLUSH(8003);
 
     /** Code. */
     private final int code;

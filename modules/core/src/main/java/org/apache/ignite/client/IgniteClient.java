@@ -191,4 +191,14 @@ public interface IgniteClient extends AutoCloseable {
      * @return {@code Services} functionality over given cluster group.
      */
     public ClientServices services(ClientClusterGroup grp);
+
+    /**
+     * Gets a new instance of data streamer associated with given cache name. Data streamer
+     * is responsible for loading external data into data grid. For more information refer
+     * to {@link ClientDataStreamer} documentation.
+     *
+     * @param cacheName Cache name.
+     * @return Data streamer.
+     */
+    public <K, V> ClientDataStreamer<K, V> dataStreamer(String cacheName);
 }
