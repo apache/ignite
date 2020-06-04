@@ -538,9 +538,9 @@ public class CacheContinuousQueryEventBuffer {
                 }
                 else if (endCntr < ackedUpdCntr0)
                     rollOver(ackedUpdCntr0 + 1, 0, entry.topologyVersion());
-            }
 
-            return res;
+                return res;
+            }
         }
 
         /**
