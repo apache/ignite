@@ -27,23 +27,34 @@ import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
+import org.apache.ignite.springdata.misc.PersonKey;
 import org.apache.ignite.springdata.misc.PersonRepository;
+import org.apache.ignite.springdata.misc.PersonRepositoryWithCompoundKey;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
- *
+ * CRUD tests.
  */
 public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
-    /** Repository. */
-    private static PersonRepository repo;
+    /** Number of entries to store. */
+    private static final int CACHE_SIZE = 1000;
 
     /** Context. */
     private static AnnotationConfigApplicationContext ctx;
 
-    /** Number of entries to store */
-    private static int CACHE_SIZE = 1000;
+    /** Repository. */
+    private static PersonRepository repo;
+
+    /** Repository. */
+    private static PersonRepositoryWithCompoundKey repoWithCompoundKey;
+
+    /** */
+    @Rule
+    public final ExpectedException expected = ExpectedException.none();
 
     /** */
     private static IgniteEx ignite;
@@ -53,12 +64,11 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         ctx = new AnnotationConfigApplicationContext();
-
         ctx.register(ApplicationConfiguration.class);
-
         ctx.refresh();
 
         repo = ctx.getBean(PersonRepository.class);
+        repoWithCompoundKey = ctx.getBean(PersonRepositoryWithCompoundKey.class);
         ignite = ctx.getBean(IgniteEx.class);
     }
 
@@ -81,13 +91,11 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() {
         ctx.destroy();
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testPutGet() {
         Person person = new Person("some_name", "some_surname");
@@ -100,19 +108,12 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         assertEquals(person, repo.findOne(id));
 
-        try {
-            repo.save(person);
-
-            fail("Managed to save a Person without ID");
-        }
-        catch (UnsupportedOperationException e) {
-            //excepted
-        }
+        expected.expect(UnsupportedOperationException.class);
+        expected.expectMessage("Use IgniteRepository.save(key,value) method instead.");
+        repo.save(person);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testPutAllGetAll() {
         LinkedHashMap<Integer, Person> map = new LinkedHashMap<>();
@@ -129,14 +130,9 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         while (persons.hasNext())
             assertEquals(origPersons.next(), persons.next());
 
-        try {
-            repo.save(map.values());
-
-            fail("Managed to save a list of Persons with ids");
-        }
-        catch (UnsupportedOperationException e) {
-            //expected
-        }
+        expected.expect(UnsupportedOperationException.class);
+        expected.expectMessage("Use IgniteRepository.save(Map<keys,value>) method instead.");
+        repo.save(map.values());
 
         persons = repo.findAll(map.keySet()).iterator();
 
@@ -150,9 +146,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(map.size(), counter);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testGetAll() {
         assertEquals(CACHE_SIZE, repo.count());
@@ -169,9 +163,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(repo.count(), counter);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testDelete() {
         assertEquals(CACHE_SIZE, repo.count());
@@ -181,14 +173,9 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(CACHE_SIZE - 1, repo.count());
         assertNull(repo.findOne(0));
 
-        try {
-            repo.delete(new Person("", ""));
-
-            fail("Managed to delete a Person without id");
-        }
-        catch (UnsupportedOperationException e) {
-            //expected
-        }
+        expected.expect(UnsupportedOperationException.class);
+        expected.expectMessage("Use IgniteRepository.delete(key) method instead.");
+        repo.delete(new Person("", ""));
     }
 
     /**
@@ -203,23 +190,18 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_SIZE / 2; i++)
             ids.add(i);
 
+        expected.expect(UnsupportedOperationException.class);
+        expected.expectMessage("Use IgniteRepository.deleteAll(keys) method instead.");
         repo.deleteAll(ids);
 
         assertEquals(CACHE_SIZE / 2, repo.count());
 
-        try {
-            ArrayList<Person> persons = new ArrayList<>();
+        ArrayList<Person> persons = new ArrayList<>();
 
-            for (int i = 0; i < 3; i++)
-                persons.add(new Person(String.valueOf(i), String.valueOf(i)));
+        for (int i = 0; i < 3; i++)
+            persons.add(new Person(String.valueOf(i), String.valueOf(i)));
 
-            repo.delete(persons);
-
-            fail("Managed to delete Persons without ids");
-        }
-        catch (UnsupportedOperationException e) {
-            //expected
-        }
+        repo.delete(persons);
     }
 
     /**
@@ -234,13 +216,50 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(0, repo.count());
     }
 
-    /**
-     *
-     */
+    /** */
     private void fillInRepository() {
         for (int i = 0; i < CACHE_SIZE; i++)
             repo.save(i, new Person("person" + Integer.toHexString(i),
                 "lastName" + Integer.toHexString((i + 16) % 256)));
+    }
+
+    /** */
+    @Test
+    public void shouldDeleteAll() {
+        List<PersonKey> ids = prepareDataWithNonComparableKeys();
+
+        repoWithCompoundKey.deleteAll(ids);
+
+        assertEquals(0, repoWithCompoundKey.count());
+    }
+
+    /** */
+    @Test
+    public void shouldFindAll() {
+        List<PersonKey> ids = prepareDataWithNonComparableKeys();
+
+        Iterable<Person> res = repoWithCompoundKey.findAll(ids);
+
+        assertEquals(2, res.spliterator().estimateSize());
+    }
+
+    /** */
+    private List<PersonKey> prepareDataWithNonComparableKeys() {
+        List<PersonKey> ids = new ArrayList<>();
+
+        PersonKey key = new PersonKey(1, 1);
+        ids.add(key);
+
+        repoWithCompoundKey.save(key, new Person("test1", "test1"));
+
+        key = new PersonKey(2, 2);
+        ids.add(key);
+
+        repoWithCompoundKey.save(key, new Person("test2", "test2"));
+
+        assertEquals(2, repoWithCompoundKey.count());
+
+        return ids;
     }
 
     /** */
