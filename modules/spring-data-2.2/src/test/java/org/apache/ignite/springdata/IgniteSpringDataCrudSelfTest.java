@@ -319,7 +319,27 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private List<PersonKey> fillData() {
+    @Test
+    public void shouldDeleteAllById() {
+        List<PersonKey> ids = prepareDataWithNonComparableKeys();
+
+        repoWithCompoundKey.deleteAllById(ids);
+
+        assertEquals(0, repoWithCompoundKey.count());
+    }
+
+    /** */
+    @Test
+    public void shouldFindAllById() {
+        List<PersonKey> ids = prepareDataWithNonComparableKeys();
+
+        Iterable<Person> res = repoWithCompoundKey.findAllById(ids);
+
+        assertEquals(2, res.spliterator().estimateSize());
+    }
+
+    /** */
+    private List<PersonKey> prepareDataWithNonComparableKeys() {
         List<PersonKey> ids = new ArrayList<>();
 
         PersonKey key = new PersonKey(1, 1);
@@ -335,25 +355,5 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(2, repoWithCompoundKey.count());
 
         return ids;
-    }
-
-    /** */
-    @Test
-    public void shouldDeleteAllById() {
-        List<PersonKey> ids = fillData();
-
-        repoWithCompoundKey.deleteAllById(ids);
-
-        assertEquals(0, repoWithCompoundKey.count());
-    }
-
-    /** */
-    @Test
-    public void shouldFindAllById() {
-        List<PersonKey> ids = fillData();
-
-        Iterable<Person> res = repoWithCompoundKey.findAllById(ids);
-
-        assertEquals(2, res.spliterator().estimateSize());
     }
 }
