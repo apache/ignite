@@ -107,7 +107,6 @@ public abstract class AbstractSecurityCacheEventTest extends AbstractSecurityTes
             // Waiting for events.
             evtsLatch.await(10, TimeUnit.SECONDS);
 
-            // Check results.
             checkResult(expLogin, rmtLogins, expTimes, "Remote filter.");
             // For the EVT_CACHE_STOPPED event expected times of calling local listener should be 0 (ignored)
             // due to IGNITE-13010.

@@ -162,25 +162,16 @@ public class SecurityUtils {
      * @param ctx Grid kernal context.
      * @param r Runnable.
      */
-    public static void withContextIfNeed(UUID secSubjId, GridKernalContext ctx, RunnableX r)
-        throws IgniteCheckedException {
+    public static void withContextIfNeed(UUID secSubjId, GridKernalContext ctx, RunnableX r) {
         IgniteSecurity security = ctx.security();
 
-        try {
-            if (security.enabled() && secSubjId != null) {
-                try (OperationSecurityContext s = security.withContext(secSubjId)) {
-                    r.runx();
-                }
+        if (security.enabled() && secSubjId != null) {
+            try (OperationSecurityContext s = security.withContext(secSubjId)) {
+                r.run();
             }
-            else
-                r.runx();
         }
-        catch (Exception e) {
-            if (e instanceof IgniteCheckedException)
-                throw (IgniteCheckedException)e;
-
-            throw new IgniteCheckedException(e);
-        }
+        else
+            r.run();
     }
 
     /**
