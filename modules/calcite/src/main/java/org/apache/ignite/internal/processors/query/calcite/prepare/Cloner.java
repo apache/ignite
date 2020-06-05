@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
@@ -144,6 +145,13 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteLimit rel) {
+        RelNode input = visit((IgniteRel) rel.getInput());
+
+        return new IgniteLimit(cluster, rel.getTraitSet(), input, rel.offset, rel.fetch);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteReceiver rel) {
         IgniteReceiver receiver = new IgniteReceiver(cluster, rel.getTraitSet(), rel.getRowType(),
             rel.exchangeId(), rel.sourceFragmentId());
@@ -206,6 +214,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
             this.root = root;
         }
 
+        /** */
         Fragment build() {
             return new Fragment(id, root, remotes.build());
         }

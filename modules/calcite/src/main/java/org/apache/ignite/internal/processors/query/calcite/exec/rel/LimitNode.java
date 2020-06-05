@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -27,13 +27,18 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
-    private Supplier<Future<Integer>> offsetSup;
+    private Supplier<CompletableFuture<Integer>> offsetSup;
+
+    private long offset = -1;
 
     /** */
-    private Supplier<Future<Integer>> fetchSup;
+    private Supplier<CompletableFuture<Integer>> fetchSup;
 
     /** */
-    private int requested;
+    private long fetch = -1;
+
+    /** */
+    private long requested;
 
     /** */
     private int waiting;
@@ -41,17 +46,29 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /** */
     private boolean inLoop;
 
+    /** */
+    private int processed;
+
+    /** */
+    private CompletableFuture<Void> futLimitsReady;
+
     /**
      * @param ctx Execution context.
      */
     public LimitNode(
         ExecutionContext<Row> ctx,
-        Supplier<Future<Integer>> offsetSup,
-        Supplier<Future<Integer>> fetchSup) {
+        Supplier<CompletableFuture<Integer>> offsetSup,
+        Supplier<CompletableFuture<Integer>> fetchSup) {
         super(ctx);
 
         this.offsetSup = offsetSup;
         this.fetchSup = fetchSup;
+
+        if (offsetSup == null)
+            offset = 0;
+
+        if (fetchSup == null)
+            fetch = 0;
     }
 
     /** {@inheritDoc} */
@@ -61,7 +78,54 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         assert !F.isEmpty(sources) && sources.size() == 1;
         assert rowsCnt > 0;
 
-        F.first(sources).request(rowsCnt);
+        requested += rowsCnt;
+
+        if (futLimitsReady == null) {
+            CompletableFuture<Integer> offFut = null;
+            CompletableFuture<Integer> fetchFut = null;
+
+            if (offset < 0 && offsetSup != null) {
+                offFut = offsetSup.get();
+
+                offFut.thenAccept(n -> offset = n);
+            }
+
+            if (fetch < 0 && fetchSup != null) {
+                fetchFut = offsetSup.get();
+
+                fetchFut.thenAccept(n -> fetch = n);
+            }
+
+            if (offFut != null && fetchFut != null)
+                futLimitsReady = CompletableFuture.allOf(offFut, fetchFut);
+            else if (offFut != null)
+                futLimitsReady = CompletableFuture.allOf(offFut);
+            else {
+                assert fetchFut != null;
+
+                futLimitsReady = CompletableFuture.allOf(fetchFut);
+            }
+
+            futLimitsReady.thenAccept((v) -> {
+                System.out.println(Thread.currentThread().getName() + " +++ OFF/FETCH DONE: off=" + offset + ", fetch=" + fetch);
+
+                fetch += offset;
+
+                requestAfterLimitsReady();
+            });
+        }
+        else {
+            if (futLimitsReady.isDone())
+                requestAfterLimitsReady();
+        }
+    }
+
+    /**
+     * Requests next bunch of rows when offset / fetched fave been calculated.
+     */
+    private void requestAfterLimitsReady() {
+        System.out.println(Thread.currentThread().getName() + "+++ req: " + Math.min(fetch, requested - processed));
+        F.first(sources).request((int)Math.min(fetch, requested - processed));
     }
 
     /** {@inheritDoc} */
@@ -69,6 +133,14 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         checkThread();
 
         assert downstream != null;
+
+        if (processed > offset)
+            downstream.push(row);
+
+        processed++;
+
+        if (processed > fetch)
+            downstream.end();
     }
 
     /** {@inheritDoc} */

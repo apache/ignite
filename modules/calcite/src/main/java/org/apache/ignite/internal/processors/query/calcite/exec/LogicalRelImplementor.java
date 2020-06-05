@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -30,6 +31,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexExecutorImpl;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -330,10 +332,12 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteLimit rel) {
-        Supplier<Future<Integer>> offsetSup = expressionFactory.execute(rel.offset);
-        Supplier<Future<Integer>> fetchSup = expressionFactory.execute(rel.fetch);
+        Supplier<CompletableFuture<Integer>> offsetSup = expressionFactory.execute(
+            rel.offset, rel.offset.getType(), (r) -> (Integer)r[0]);
+        Supplier<CompletableFuture<Integer>> fetchSup = expressionFactory.execute(
+            rel.offset, rel.offset.getType(), (r) -> (Integer)r[0]);
 
-        LimitNode<Row> node = new LimitNode<>(ctx, pred);
+        LimitNode<Row> node = new LimitNode<>(ctx, offsetSup, offsetSup);
 
         Node<Row> input = visit(rel.getInput());
 

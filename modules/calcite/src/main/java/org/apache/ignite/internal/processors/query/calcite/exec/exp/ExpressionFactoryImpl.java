@@ -192,21 +192,47 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> Supplier<Future<T>> execute(RexNode node) {
-        Supplier<Future<T>> sup = () -> {
+    @Override public Supplier<CompletableFuture<Object[]>> execute(RexNode node, RelDataType rowType) {
+        return () -> {
             RexExecutable exec = RexExecutorImpl.getExecutable(
                 rexBuilder,
                 ImmutableList.of(node),
-                typeFactory.createSqlType(SqlTypeName.INTEGER));
+                rowType);
 
-            CompletableFuture<T> f = new CompletableFuture<>();
+            typeFactory.createSqlType(SqlTypeName.INTEGER);
 
-            exec.execute();
+            final CompletableFuture<Object[]> f = new CompletableFuture<>();
+
+            ctx.execute(() -> {
+                try {
+                    Object[] res = exec.execute();
+
+                    f.complete(res);
+                }
+                catch (Exception e) {
+                    f.completeExceptionally(e);
+                }
+            });
 
             return f;
-        }
-        return null;
+        };
     }
+
+    /** {@inheritDoc} */
+    public <T> Supplier<CompletableFuture<T>> execute(RexNode node, RelDataType rowType, Function<Object[], T> resProj) {
+        Supplier<CompletableFuture<T>> res = () -> {
+            final CompletableFuture<T> fPrj = new CompletableFuture<>();
+
+            CompletableFuture<Object[]> f = execute(node, rowType).get();
+
+            f.thenAccept((row) -> fPrj.complete(resProj.apply(row)));
+
+            return fPrj;
+        };
+
+        return res;
+    }
+
 
     /** */
     private Scalar compile(Iterable<RexNode> nodes, RelDataType type) {

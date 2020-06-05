@@ -77,7 +77,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
         // Check result.
         List<FieldsQueryCursor<List<?>>> cursors =
             engine.query(null, "PUBLIC", "SELECT * FROM TEST " +
-                "OFFSET 10 ROWS FETCH FIRST 10 ROWS ONLY", X.EMPTY_OBJECT_ARRAY);
+                "OFFSET 10 ROWS FETCH FIRST ? ROWS ONLY", 10);
 
         FieldsQueryCursor<List<?>> cur = cursors.get(0);
 
