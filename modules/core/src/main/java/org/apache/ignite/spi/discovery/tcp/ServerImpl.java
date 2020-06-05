@@ -373,7 +373,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
             0,
-            max(8, Runtime.getRuntime().availableProcessors() * 2),
+            max(4, Runtime.getRuntime().availableProcessors() * 2),
             2000,
             new LinkedBlockingQueue<>());
 
@@ -6577,7 +6577,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         long now = U.currentTimeMillis();
 
                         // We got message from previous in less than double connection check interval.
-                        boolean ok = rcvdTime + effectiveExchangeTimeout() >= now;
+                        boolean ok = rcvdTime + CON_CHECK_INTERVAL + effectiveExchangeTimeout() >= now;
                         TcpDiscoveryNode previous = null;
 
                         if (ok) {
@@ -6597,7 +6597,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
                                 Collection<InetSocketAddress> nodeAddrs = spi.getNodeAddresses(previous, false);
 
-                                liveAddr = checkConnection(nodeAddrs, (int)effectiveExchangeTimeout());
+                                // The connecting node is waiting for the response for the configured timeout.
+                                // Some time is already spent on new connection, request ant other operations.
+                                // No reason to wait for full timeout. Also, connection checking should be quick.
+                                liveAddr = checkConnection(nodeAddrs, (int)effectiveExchangeTimeout() / 2);
 
                                 if (log.isInfoEnabled())
                                     log.info("Connection check done [liveAddr=" + liveAddr
@@ -7061,7 +7064,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * @return Alive address if was able to connected to. {@code Null otherwise}.
+         * @return Alive address if was able to connected to. {@code Null} otherwise.
          */
         private InetSocketAddress checkConnection(Collection<InetSocketAddress> addrs, int timeout) {
             List<Socket> sockets = new ArrayList<>(addrs.size());
