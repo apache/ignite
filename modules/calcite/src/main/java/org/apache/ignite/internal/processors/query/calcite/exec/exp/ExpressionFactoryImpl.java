@@ -56,6 +56,7 @@ import org.apache.calcite.rex.RexProgramBuilder;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.ignite.internal.processors.query.calcite.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -193,74 +194,27 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Supplier<CompletableFuture<Object[]>> execute(RexNode node, RelDataType rowType) {
+    @Override public <T> Supplier<CompletableFuture<T>> execute(RexNode node) {
         return () -> {
-            final CompletableFuture<Object[]> f = new CompletableFuture<>();
+            final CompletableFuture<T> f = new CompletableFuture<>();
+                Scalar s = scalar(node, null);
 
-            if (node instanceof RexLiteral) {
-                //  cannot convert DECIMAL literal to int
-//                f.complete(new Object[] {((RexLiteral)node).getValueAs((Class<?>)typeFactory.getJavaClass(rowType))});
-                f.complete(new Object[] {((RexLiteral)node).getValue()});
-
-                return f;
-            }
-            else if (node instanceof RexDynamicParam) {
-                String name = ((RexDynamicParam)node).getName();
-
-                f.complete(new Object[] {ctx.get(name)});
-
-                return f;
-            }
-            else {
-                RexExecutable exec = RexExecutorImpl.getExecutable(
-                    rexBuilder,
-                    ImmutableList.of(node),
-                    rowType);
-
-                typeFactory.createSqlType(SqlTypeName.INTEGER);
-
+                final Row r = ctx.rowHandler().factory(typeFactory.getJavaClass(node.getType())).create();
 
                 ctx.execute(() -> {
                     try {
-                        Object[] res = exec.execute();
+                        s.execute(ctx, null, r);
 
-                        f.complete(res);
+                        f.complete((T)ctx.rowHandler().get(0, r));
                     }
-                    catch (Exception e) {
-                        f.completeExceptionally(e);
+                    catch (Throwable t) {
+                        f.completeExceptionally(t);
                     }
                 });
 
                 return f;
-            }
         };
-
     }
-
-    /** {@inheritDoc} */
-    public <T> Supplier<CompletableFuture<T>> execute(RexNode node, RelDataType rowType, Function<Object[], T> resProj) {
-        Supplier<CompletableFuture<T>> res = () -> {
-            final CompletableFuture<T> fPrj = new CompletableFuture<>();
-
-            CompletableFuture<Object[]> f = execute(node, rowType).get();
-
-            f.thenAccept((row) -> {
-                try {
-                    T t = resProj.apply(row);
-
-                    fPrj.complete(t);
-                }
-                catch (Throwable t) {
-                    fPrj.completeExceptionally(t);
-                }
-            });
-
-            return fPrj;
-        };
-
-        return res;
-    }
-
 
     /** */
     private Scalar compile(Iterable<RexNode> nodes, RelDataType type) {

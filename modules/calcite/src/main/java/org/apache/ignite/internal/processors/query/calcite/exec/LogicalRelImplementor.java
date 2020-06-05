@@ -333,13 +333,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteLimit rel) {
-        Supplier<CompletableFuture<Integer>> offsetSup = expressionFactory.execute(
-//            rel.offset, rel.offset.getType(), (r) -> (Integer)r[0]);
-          rel.offset, rel.offset.getType(), (r) -> ((BigDecimal)r[0]).intValue());
-        Supplier<CompletableFuture<Integer>> fetchSup = expressionFactory.execute(
-            rel.fetch, rel.fetch.getType(), (r) -> ((BigDecimal)r[0]).intValue());
+        Supplier<CompletableFuture<Integer>> offsetSup = (rel.offset == null) ? null : expressionFactory.execute(rel.offset);
+        Supplier<CompletableFuture<Integer>> fetchSup = (rel.fetch == null) ? null : expressionFactory.execute(rel.fetch);
 
-        LimitNode<Row> node = new LimitNode<>(ctx, offsetSup, offsetSup);
+        LimitNode<Row> node = new LimitNode<>(ctx, offsetSup, fetchSup);
 
         Node<Row> input = visit(rel.getInput());
 

@@ -68,21 +68,87 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
             .setSqlSchema("PUBLIC");
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
-    public void test() {
-        // Check plan.
+    public void testNotOrderedLimitOffsetByLiteral() {
+        int[] limits = {-1, 0, 10, ROWS / 2 - 1, ROWS / 2, ROWS / 2 + 1, ROWS - 1, ROWS};
+        int[] offsets = {-1, 0, 10, ROWS / 2 - 1, ROWS / 2, ROWS / 2 + 1, ROWS - 1, ROWS};
+
+        for (int lim : limits) {
+            for (int off : offsets) {
+                log.info("+++ Check [limit=" + lim + ", off=" + off + ']');
+
+                checkQuery(lim, off, false, false);
+                checkQuery(lim, off, true, false);
+                checkQuery(lim, off, false, true);
+                checkQuery(lim, off, true, true);
+            }
+        }
+    }
+
+    /**
+     * Check query with specified limit and offset (or without its when the arguments are negative),
+     *
+     * @param lim Limit.
+     * @param off Offset.
+     * @param param If {@code false} place limit/offset as literals. Otherwise they are plase as parameters.
+     * @param sorted Use sorted query (adds ORDER BY).
+     */
+    void checkQuery(int lim, int off, boolean param, boolean sorted) {
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
-        // Check result.
+        String sql = createSql(lim, off, false, false);
+
+        log.info("SQL: " + sql);
+
         List<FieldsQueryCursor<List<?>>> cursors =
-            engine.query(null, "PUBLIC", "SELECT * FROM TEST ORDER BY ID " +
-                "OFFSET 10 ROWS FETCH FIRST ? ROWS ONLY", 10);
+            engine.query(null, "PUBLIC", sql, param ? new Object[]{off, lim} : X.EMPTY_OBJECT_ARRAY);
 
-        FieldsQueryCursor<List<?>> cur = cursors.get(0);
+        List<List<?>> res = cursors.get(0).getAll();
 
-        List<List<?>> res = cur.getAll();
+        assertEquals("Invalid results size. [limit=" + lim + ", off=" + off + ", res=" + res.size() + ']',
+            expectedSize(lim, off), res.size());
+    }
 
-        res.forEach(System.out::println);
+    /**
+     * Calculates expected result set size by limit and offset.
+     */
+    private int expectedSize(int lim, int off) {
+        if (off < 0)
+            off = 0;
+
+        if (lim == 0)
+            return 0;
+        else if (lim < 0)
+            return ROWS - off;
+        else if (lim + off < ROWS)
+            return  lim;
+        else if (off > ROWS)
+            return  0;
+        else
+            return  ROWS - off;
+    }
+
+    /**
+     * @param lim Limit.
+     * @param off Offset.
+     * @param param Flag to place limit/offset  by parameter or literal.
+     * @return SQL query string.
+     */
+    private String createSql(int lim, int off, boolean param, boolean sorted) {
+        StringBuilder sb = new StringBuilder("SELECT * FROM TEST ");
+
+        if (sorted)
+            sb.append("ORDER BY ID ");
+
+        if (off >= 0)
+            sb.append("OFFSET ").append(param ? "?" : Integer.toString(off)).append(" ROWS ");
+
+        if (lim >= 0)
+            sb.append("FETCH FIRST ").append(param ? "?" : Integer.toString(lim)).append(" ROWS ONLY");
+
+        return sb.toString();
     }
 }

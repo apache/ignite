@@ -27,111 +27,150 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
-    private Supplier<CompletableFuture<Integer>> offsetSup;
-
-    private long offset = -1;
+    private final static int NOT_READY = -1;
 
     /** */
-    private Supplier<CompletableFuture<Integer>> fetchSup;
+    private final static int NOT_SET = -2;
 
     /** */
-    private long fetch = -1;
+    final private Supplier<CompletableFuture<Integer>> offsetSup;
+
+    /** */
+    final private Supplier<CompletableFuture<Integer>> limitSup;
+
+    /** */
+    private long offset = NOT_READY;
+
+    /** */
+    private long limit = NOT_READY;
 
     /** */
     private long requested;
 
     /** */
-    private int waiting;
-
-    /** */
-    private boolean inLoop;
-
-    /** */
     private int processed;
-
-    /** */
-    private CompletableFuture<Void> futLimitsReady;
 
     /**
      * @param ctx Execution context.
+     * @param offsetSup Offset parameter supplier.
+     * @param limitSup Limit parameter supplier.
      */
     public LimitNode(
         ExecutionContext<Row> ctx,
         Supplier<CompletableFuture<Integer>> offsetSup,
-        Supplier<CompletableFuture<Integer>> fetchSup) {
+        Supplier<CompletableFuture<Integer>> limitSup) {
         super(ctx);
 
         this.offsetSup = offsetSup;
-        this.fetchSup = fetchSup;
+        this.limitSup = limitSup;
 
         if (offsetSup == null)
             offset = 0;
 
-        if (fetchSup == null)
-            fetch = 0;
+        if (limitSup == null)
+            limit = NOT_SET;
     }
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
         checkThread();
-        System.out.println(Thread.currentThread().getName() + "+++ request " + rowsCnt);
 
         assert !F.isEmpty(sources) && sources.size() == 1;
         assert rowsCnt > 0;
 
         requested += rowsCnt;
 
-        if (futLimitsReady == null) {
-            CompletableFuture<Integer> offFut = null;
-            CompletableFuture<Integer> fetchFut = null;
-
-            if (offset < 0 && offsetSup != null) {
-                offFut = offsetSup.get();
-
-                offFut.thenAccept(n -> offset = n);
-            }
-
-            if (fetch < 0 && fetchSup != null) {
-                fetchFut = offsetSup.get();
-
-                fetchFut.thenAccept(n -> fetch = n);
-            }
-
-            if (offFut != null && fetchFut != null)
-                futLimitsReady = CompletableFuture.allOf(offFut, fetchFut);
-            else if (offFut != null)
-                futLimitsReady = CompletableFuture.allOf(offFut);
-            else {
-                assert fetchFut != null;
-
-                futLimitsReady = CompletableFuture.allOf(fetchFut);
-            }
-
-            futLimitsReady.thenAccept((v) -> {
-                System.out.println(Thread.currentThread().getName() + " +++ OFF/FETCH DONE: off=" + offset + ", fetch=" + fetch);
-                fetch += offset;
-
-                requestAfterLimitsReady();
-            });
-
-            futLimitsReady.exceptionally(t -> {
-                onError(t);
-
-                return null;
-            });
-        }
-        else {
-            if (futLimitsReady.isDone())
-                requestAfterLimitsReady();
-        }
+        request0();
     }
 
     /**
-     * Requests next bunch of rows when offset / fetched fave been calculated.
+     * Process request (some parameters may not yet be calculated).
      */
-    private void requestAfterLimitsReady() {
-        System.out.println(Thread.currentThread().getName() + "+++ req: " + Math.min(fetch, requested - processed));
-        F.first(sources).request((int)Math.min(fetch, requested - processed));
+    private void request0() {
+        if (limit == NOT_READY) {
+            limitNotReady();
+
+            return;
+        }
+
+        if (offset == NOT_READY) {
+            offsetNotReady();
+
+            return;
+        }
+
+        requestAllReady();
+    }
+
+    /**
+     *  Calculate limit.
+     */
+    private void limitNotReady() {
+        CompletableFuture<Integer> fetchFut = limitSup.get();
+
+        fetchFut.thenAccept(n -> {
+            limit = n;
+
+            if (limit == 0) {
+                downstream.end();
+
+                return;
+            }
+
+            if (offset > 0)
+                limit += offset;
+
+            request0();
+        });
+
+        fetchFut.exceptionally(t -> {
+            onError(t);
+
+            return null;
+        });
+    }
+
+    /**
+     *  Calculate offset.
+     */
+    private void offsetNotReady() {
+        CompletableFuture<Integer> offFut = offsetSup.get();
+
+        offFut.thenAccept(n -> {
+            offset = n;
+
+            if (limit > 0)
+                limit += offset;
+
+            request0();
+        });
+
+        offFut.exceptionally(t -> {
+            onError(t);
+
+            return null;
+        });
+    }
+
+    /**
+     * Requests next bunch of rows when offset / limit have been calculated.
+     */
+    private void requestAllReady() {
+        assert limit != NOT_READY;
+        assert offset != NOT_READY;
+
+        if (limit > 0 && processed >= limit) {
+            downstream.end();
+
+            return;
+        }
+
+        int req = (int)(requested - processed);
+
+        if (limit > 0)
+            req = (int)Math.min(limit, req);
+
+        F.first(sources).request(req);
     }
 
     /** {@inheritDoc} */
@@ -140,20 +179,13 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
         assert downstream != null;
 
-        if (processed >= offset) {
-            System.out.println(Thread.currentThread().getName() + "+++ push down");
+        if (processed >= offset)
             downstream.push(row);
-        }
 
         processed++;
 
-        if (processed >= fetch) {
-            System.out.println(Thread.currentThread().getName() + "+++ push: end");
-
+        if (limit > 0 && processed >= limit && processed < requested)
             downstream.end();
-        }
-
-        System.out.println(Thread.currentThread().getName() + "+++ push: processed=" + processed);
     }
 
     /** {@inheritDoc} */
