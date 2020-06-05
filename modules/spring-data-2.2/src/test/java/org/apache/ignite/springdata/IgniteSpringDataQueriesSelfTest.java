@@ -22,8 +22,8 @@ import java.util.Iterator;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
-import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.springdata.misc.Person;
+import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.springdata.misc.PersonSecondRepository;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -36,6 +36,9 @@ import org.springframework.data.domain.Sort;
  *
  */
 public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
+    /** Number of entries to store */
+    private static final int CACHE_SIZE = 1000;
+
     /** Repository. */
     private static PersonRepository repo;
 
@@ -45,9 +48,6 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     /** Context. */
     private static AnnotationConfigApplicationContext ctx;
 
-    /** Number of entries to store */
-    private static int CACHE_SIZE = 1000;
-
     /**
      * Performs context initialization before tests.
      */
@@ -55,9 +55,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         ctx = new AnnotationConfigApplicationContext();
-
         ctx.register(ApplicationConfiguration.class);
-
         ctx.refresh();
 
         repo = ctx.getBean(PersonRepository.class);
@@ -72,8 +70,8 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     /**
      * Performs context destroy after tests.
      */
-    @Override protected void afterTestsStopped() throws Exception {
-        ctx.destroy();
+    @Override protected void afterTestsStopped() {
+        ctx.close();
     }
 
     /** */
@@ -160,11 +158,11 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     public void testPageable() {
         PageRequest pageable = PageRequest.of(1, 5, Sort.Direction.DESC, "firstName");
 
-        HashSet<String> firstNames = new HashSet<>();
-
         List<Person> pageable1 = repo.findByFirstNameRegex("^[a-z]+$", pageable);
 
         assertEquals(5, pageable1.size());
+
+        HashSet<String> firstNames = new HashSet<>();
 
         for (Person person : pageable1) {
             firstNames.add(person.getFirstName());

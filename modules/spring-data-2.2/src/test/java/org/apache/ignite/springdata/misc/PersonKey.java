@@ -17,24 +17,38 @@
 
 package org.apache.ignite.springdata.misc;
 
-import java.util.List;
-import javax.cache.Cache;
-import org.apache.ignite.springdata20.repository.IgniteRepository;
-import org.apache.ignite.springdata20.repository.config.Query;
-import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
-import org.springframework.data.domain.AbstractPageRequest;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Slice;
+import java.io.Serializable;
 
 /**
- * Test repository.
+ * Compound key.
  */
-@RepositoryConfig(cacheName = "PersonCache")
-public interface PersonSecondRepository extends IgniteRepository<Person, Integer> {
+public class PersonKey implements Serializable {
     /** */
-    public Slice<Cache.Entry<Integer, Person>> findBySecondNameIsNot(String val, PageRequest pageReq);
+    private int id1;
 
     /** */
-    @Query("SELECT _key, secondName FROM Person WHERE firstName REGEXP ?")
-    public Slice<List> querySliceOfList(String val, AbstractPageRequest pageReq);
+    private int id2;
+
+    /**
+     * @param id1 ID1.
+     * @param id2 ID2.
+     */
+    public PersonKey(int id1, int id2) {
+        this.id1 = id1;
+        this.id2 = id2;
+    }
+
+    /**
+     * @return ID1
+     */
+    public int getId1() {
+        return id1;
+    }
+
+    /**
+     * @return ID1
+     */
+    public int getId2() {
+        return id1;
+    }
 }
