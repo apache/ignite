@@ -72,7 +72,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testNotOrderedLimitOffsetByLiteral() {
+    public void testLimitOffset() {
         int[] limits = {-1, 0, 10, ROWS / 2 - 1, ROWS / 2, ROWS / 2 + 1, ROWS - 1, ROWS};
         int[] offsets = {-1, 0, 10, ROWS / 2 - 1, ROWS / 2, ROWS / 2 + 1, ROWS - 1, ROWS};
 
