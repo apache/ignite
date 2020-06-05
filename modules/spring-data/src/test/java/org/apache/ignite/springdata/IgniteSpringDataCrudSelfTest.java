@@ -22,6 +22,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TreeSet;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonKey;
@@ -53,6 +56,9 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     @Rule
     public final ExpectedException expected = ExpectedException.none();
 
+    /** */
+    private static IgniteEx ignite;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -63,6 +69,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         repo = ctx.getBean(PersonRepository.class);
         repoWithCompoundKey = ctx.getBean(PersonRepositoryWithCompoundKey.class);
+        ignite = ctx.getBean(IgniteEx.class);
     }
 
     /** {@inheritDoc} */
@@ -253,5 +260,31 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(2, repoWithCompoundKey.count());
 
         return ids;
+    }
+
+    /** */
+    @Test
+    public void shouldNotLeakCursorsInRunningQueryManager() {
+        RunningQueryManager runningQryMgr = ((IgniteH2Indexing)ignite.context().query().getIndexing()).runningQueryManager();
+
+        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
+
+        List<Person> res = repo.simpleQuery("person0");
+
+        assertEquals(1, res.size());
+
+        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
+
+        Person person = repo.findTopBySecondNameStartingWith("lastName");
+
+        assertNotNull(person);
+
+        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
+
+        long cnt = repo.countByFirstName("person0");
+
+        assertEquals(1, cnt);
+
+        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
     }
 }
