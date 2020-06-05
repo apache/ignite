@@ -37,7 +37,7 @@ public class GridCacheContextInfo<K, V> {
     private final IgniteUuid dynamicDeploymentId;
 
     /** Cache configuration. */
-    private final CacheConfiguration config;
+    private volatile CacheConfiguration config;
 
     /** Cache group ID. */
     private final int groupId;
@@ -192,14 +192,23 @@ public class GridCacheContextInfo<K, V> {
      *
      * @param op Add query entity schema operation.
      */
-    public void onAddQueryEntity(SchemaAddQueryEntityOperation op) {
-        config.setSqlSchema(op.schemaName());
-        config.setQueryEntities(Collections.singletonList(op.entity()));
-        config.setSqlEscapeAll(op.isSqlEscape());
-        config.setQueryParallelism(op.queryParallelism());
+    public void onSchemaAddQueryEntity(SchemaAddQueryEntityOperation op) {
+        if (cctx != null) {
+            cctx.onSchemaAddQueryEntity(op);
 
-        if (cctx != null)
-            cctx.onAddQueryEntity(op);
+            config = cctx.config();
+        }
+        else {
+            CacheConfiguration oldCfg = config;
+
+            CacheConfiguration newCfg = new CacheConfiguration(oldCfg);
+            newCfg.setQueryEntities(Collections.singletonList(op.entity()));
+            newCfg.setSqlSchema(op.schemaName());
+            newCfg.setSqlEscapeAll(op.isSqlEscape());
+            newCfg.setQueryParallelism(op.queryParallelism());
+
+            config = newCfg;
+        }
     }
 
     /** {@inheritDoc} */

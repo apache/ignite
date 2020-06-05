@@ -2357,17 +2357,22 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param op Add query entity schema operation.
      */
-    public void onAddQueryEntity(SchemaAddQueryEntityOperation op) {
-        CacheConfiguration cacheCfg0 = new CacheConfiguration(cacheCfg);
+    public void onSchemaAddQueryEntity(SchemaAddQueryEntityOperation op) {
+        CacheConfiguration oldCfg = cacheCfg;
 
-        cacheCfg0.setQueryEntities(Collections.singletonList(op.entity()));
-        cacheCfg0.setSqlSchema(op.schemaName());
-        cacheCfg0.setSqlEscapeAll(op.isSqlEscape());
-        cacheCfg0.setQueryParallelism(op.queryParallelism());
+        if (oldCfg != null) {
+            CacheConfiguration newCfg = new CacheConfiguration(oldCfg);
 
-        cacheCfg = cacheCfg0;
+            newCfg.setQueryEntities(Collections.singletonList(op.entity()));
+            newCfg.setSqlSchema(op.schemaName());
+            newCfg.setSqlEscapeAll(op.isSqlEscape());
+            newCfg.setQueryParallelism(op.queryParallelism());
 
-        qryMgr.enable();
+            cacheCfg = newCfg;
+        }
+
+        if (qryMgr != null)
+            qryMgr.enable();
     }
 
     /**

@@ -930,7 +930,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                         SchemaAddQueryEntityOperation opEnableIdx =
                                                 (SchemaAddQueryEntityOperation)op0;
 
-                                        cacheInfo.onAddQueryEntity(opEnableIdx);
+                                        cacheInfo.onSchemaAddQueryEntity(opEnableIdx);
 
                                         cands = createQueryCandidates(
                                                     opEnableIdx.cacheName(),
@@ -1857,7 +1857,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else if (op instanceof SchemaAddQueryEntityOperation) {
                 SchemaAddQueryEntityOperation op0 = (SchemaAddQueryEntityOperation)op;
 
-                cacheInfo.onAddQueryEntity(op0);
+                cacheInfo.onSchemaAddQueryEntity(op0);
 
                 T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
                     candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo.config(),
