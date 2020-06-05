@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Cac
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -176,6 +177,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ((GridCacheDatabaseSharedManager) ctx.database()).cancelOrWaitPartitionDestroy(grp.groupId(), p);
 
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
+
+        CacheDefragmentationContext defrgCtx = ctx.database().defragmentationContext();
+
+        if (defrgCtx != null) {
+            defrgCtx.onCacheStoreCreated(grp, p, busyLock);
+        }
 
         return new GridCacheDataStore(grp, p, exists, busyLock, log);
     }

@@ -137,6 +137,8 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.PartitionDestroyQueue;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.PartitionDestroyRequest;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -240,6 +242,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** MemoryPolicyConfiguration name reserved for meta store. */
     public static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
+
+    /** */
+    public static final String DEFRAGMENTATION_DATA_REGION_NAME = "defrgMemPlc";
 
     /**
      * Threshold to calculate limit for pages list on-heap caches.
@@ -430,6 +435,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Lock for releasing history for preloading. */
     private ReentrantLock releaseHistForPreloadingLock = new ReentrantLock();
 
+    /** */
+    private volatile CacheDefragmentationContext defrgCtx;
+
+    /** */
+    private CachePartitionDefragmentationManager defrgMgr;
+
     /**
      * @param ctx Kernal context.
      */
@@ -575,6 +586,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         cfg.setName(METASTORE_DATA_REGION_NAME);
         cfg.setInitialSize(storageCfg.getSystemRegionInitialSize());
         cfg.setMaxSize(storageCfg.getSystemRegionMaxSize());
+        cfg.setPersistenceEnabled(true);
+        cfg.setLazyMemoryAllocation(false);
+
+        return cfg;
+    }
+
+    private DataRegionConfiguration createDefragmentationDataRegionConfig(DataStorageConfiguration storageCfg) {
+        DataRegionConfiguration cfg = new DataRegionConfiguration();
+
+        DataRegionConfiguration dfltDataRegionCfg = storageCfg.getDefaultDataRegionConfiguration();
+
+        cfg.setName(DEFRAGMENTATION_DATA_REGION_NAME);
+        cfg.setInitialSize(dfltDataRegionCfg.getInitialSize());
+        cfg.setMaxSize(dfltDataRegionCfg.getMaxSize());
         cfg.setPersistenceEnabled(true);
         cfg.setLazyMemoryAllocation(false);
 
@@ -829,6 +854,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** */
+    private void prepareCacheDefragmentation() throws IgniteCheckedException {
+        DataStorageConfiguration dsCfg = cctx.kernalContext().config().getDataStorageConfiguration();
+
+        addDataRegion(dsCfg, createDefragmentationDataRegionConfig(dsCfg), false);
+
+        defrgCtx = new CacheDefragmentationContext(dataRegion(DEFRAGMENTATION_DATA_REGION_NAME), log);
+        defrgMgr = new CachePartitionDefragmentationManager(cctx);
+    }
+
+    /** */
     private void readMetastore() throws IgniteCheckedException {
         try {
             CheckpointStatus status = readCheckpointStatus();
@@ -849,6 +884,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cpHistory.initialize(retreiveHistory());
 
                 notifyMetastorageReadyForRead();
+
+                if (IgniteSystemProperties.getBoolean("DEFRAGMENTATION", false))
+                    prepareCacheDefragmentation();
             }
             finally {
                 metaStorage = null;
@@ -1801,6 +1839,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
+    @Override public CacheDefragmentationContext defragmentationContext() {
+        return defrgCtx;
+    }
+
+    /** {@inheritDoc} */
     @Override public synchronized Map<Integer, Map<Integer, Long>> reserveHistoryForExchange() {
         assert reservedForExchange == null : reservedForExchange;
 
@@ -2104,6 +2147,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 logicalRecords(),
                 true
             );
+
+            if (defrgMgr != null)
+                defrgMgr.executeDefragmentation();
 
             if (recoveryVerboseLogging && log.isInfoEnabled()) {
                 log.info("Partition states information after LOGICAL RECOVERY phase:");

@@ -138,7 +138,7 @@ public class GridCacheDataStore implements IgniteCacheOffheapManager.CacheDataSt
      * @param partId Partition.
      * @param exists {@code True} if store exists.
      */
-    GridCacheDataStore(CacheGroupContext grpCtx, int partId, boolean exists,
+    public GridCacheDataStore(CacheGroupContext grpCtx, int partId, boolean exists,
                        GridSpinBusyLock busyLock,
                        IgniteLogger log) {
         this.grpCtx = grpCtx;
