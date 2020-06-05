@@ -54,9 +54,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocket;
@@ -151,6 +151,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Math.max;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
@@ -201,9 +203,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** When this interval pass connection check will be performed. */
     private static final int CON_CHECK_INTERVAL = 500;
-
-    /** Minimal timeout on checking of connection aliveness. */
-    private static final int MIN_CONN_CHECK_TIMEOUT = 50;
 
     /** */
     private IgniteThreadPoolExecutor utilityPool;
@@ -374,7 +373,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
             0,
-            1,
+            max(8, Runtime.getRuntime().availableProcessors() * 2),
             2000,
             new LinkedBlockingQueue<>());
 
@@ -6190,7 +6189,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (lastTimeStatusMsgSentNanos < locNode.lastUpdateTimeNanos())
                 lastTimeStatusMsgSentNanos = locNode.lastUpdateTimeNanos();
 
-            long updateTimeNanos = Math.max(lastTimeStatusMsgSentNanos, lastRingMsgTimeNanos);
+            long updateTimeNanos = max(lastTimeStatusMsgSentNanos, lastRingMsgTimeNanos);
 
             if (U.millisSinceNanos(updateTimeNanos) < metricsCheckFreq)
                 return;
@@ -6596,22 +6595,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             if (previous != null && !previous.id().equals(nodeId) &&
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
-                                Collection<InetSocketAddress> nodeAddrs =
-                                    spi.getNodeAddresses(previous, false);
+                                Collection<InetSocketAddress> nodeAddrs = spi.getNodeAddresses(previous, false);
 
-                                // Peer node is waiting for the handshake response for the configured timeout.
-                                // Duration of connection checking should be considerably shorter that timeout.
-                                // We provide half of the time for the other operations.
-                                int addrCheckTimeout = (int)Math.max(MIN_CONN_CHECK_TIMEOUT,
-                                    (effectiveExchangeTimeout() / 2) / nodeAddrs.size());
-
-                                for (InetSocketAddress addr : nodeAddrs) {
-                                    if (isConnectionAlive(addr, addrCheckTimeout)) {
-                                        liveAddr = addr;
-
-                                        break;
-                                    }
-                                }
+                                liveAddr = checkConnection(nodeAddrs, (int)effectiveExchangeTimeout());
 
                                 if (log.isInfoEnabled())
                                     log.info("Connection check done [liveAddr=" + liveAddr
@@ -7075,19 +7061,58 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * @param addr Address to check.
-         * @param timeout Timeout to check connection.
-         * @return {@code True} if connection is avive. {@code False} otherwise.
+         * @return Alive address if was able to connected to. {@code Null otherwise}.
          */
-        private boolean isConnectionAlive(SocketAddress addr, int timeout) {
-            try (Socket sock = new Socket()) {
-                sock.connect(addr, timeout);
-            }
-            catch (Exception e) {
-                return false;
+        private InetSocketAddress checkConnection(Collection<InetSocketAddress> addrs, int timeout) {
+            List<Socket> sockets = new ArrayList<>(addrs.size());
+
+            AtomicReference<InetSocketAddress> liveAddrHolder = new AtomicReference<>();
+
+            CountDownLatch latch = new CountDownLatch(1);
+
+            for (InetSocketAddress addr : addrs) {
+                if (latch.getCount() == 0)
+                    break;
+
+                utilityPool.execute(() -> {
+                    if (latch.getCount() == 0)
+                        return;
+
+                    try (Socket sock = new Socket()) {
+                        synchronized (sockets) {
+                            sockets.add(sock);
+                        }
+
+                        sock.connect(addr, timeout);
+
+                        if (liveAddrHolder.compareAndSet(null, addr))
+                            latch.countDown();
+                    }
+                    catch (Exception e) {
+                        // No-op.
+                    }
+                });
             }
 
-            return true;
+            try {
+                latch.await(timeout, MILLISECONDS);
+            }
+            catch (InterruptedException e) {
+                // No-op.
+            }
+
+            synchronized (sockets) {
+                for (Socket socket : sockets) {
+                    try {
+                        socket.close();
+                    }
+                    catch (Exception e) {
+                        // No-op.
+                    }
+                }
+            }
+
+            return liveAddrHolder.get();
         }
 
         /**
@@ -7391,7 +7416,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private ClientMessageWorker(Socket sock, UUID clientNodeId, IgniteLogger log) {
             super("tcp-disco-client-message-worker-[" + U.id8(clientNodeId)
                 + ' ' + sock.getInetAddress().getHostAddress()
-                + ":" + sock.getPort() + ']', log, Math.max(spi.metricsUpdateFreq, 10), null);
+                + ":" + sock.getPort() + ']', log, max(spi.metricsUpdateFreq, 10), null);
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
@@ -7577,7 +7602,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             try {
                 return fut.get(timeoutHelper.nextTimeoutChunk(spi.getAckTimeout()),
-                    TimeUnit.MILLISECONDS);
+                    MILLISECONDS);
             }
             catch (IgniteInterruptedCheckedException ignored) {
                 throw new InterruptedException();
@@ -7748,7 +7773,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (beforeEachPoll != null)
                     beforeEachPoll.run();
 
-                T msg = queue.poll(pollingTimeout, TimeUnit.MILLISECONDS);
+                T msg = queue.poll(pollingTimeout, MILLISECONDS);
 
                 if (msg == null)
                     noMessageLoop();
