@@ -118,7 +118,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         metricsUpdateFreq = 750;
 
         // Running several times to be sure.
-        for (int i = 0; i < 20; ++i) {
+        for (int i = 0; i < 10; ++i) {
             // Holder of falure detection delay. Also is test start and end regulator.
             final AtomicLong timer = new AtomicLong();
 
@@ -202,7 +202,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             awaitPartitionMapExchange();
 
             // Randimizes failure time since cluster start.
-            Thread.sleep(new Random().nextInt(2000));
+            Thread.sleep(new Random().nextInt(1000));
 
             synchronized (timer) {
                 // Failure simulated.
