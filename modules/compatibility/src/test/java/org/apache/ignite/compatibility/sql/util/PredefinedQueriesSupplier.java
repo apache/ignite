@@ -33,8 +33,6 @@ public class PredefinedQueriesSupplier implements Supplier<String> {
     /** */
     private Iterator<String> it;
 
-
-
     /** */
     public PredefinedQueriesSupplier(Collection<String> qrys, boolean runOnce) {
         assert !qrys.isEmpty();
