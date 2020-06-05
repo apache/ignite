@@ -159,8 +159,12 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     private void fillCache(IgniteCache<Integer,Integer> cache) {
         Map kvs = new HashMap(ADDED_KEYS_COUNT);
 
-        for (int i = 0; i < ADDED_KEYS_COUNT; i++)
-            kvs.put(i, new byte[8192]);
+        for (int i = 0; i < ADDED_KEYS_COUNT; i++) {
+            byte[] val = new byte[8192];
+            new Random().nextBytes(val);
+
+            kvs.put(i, val);
+        }
 
         cache.putAll(kvs);
 

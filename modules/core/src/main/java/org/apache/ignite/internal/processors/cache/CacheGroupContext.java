@@ -200,7 +200,7 @@ public class CacheGroupContext {
      * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled Wal enabled flag.
      */
-    CacheGroupContext(
+    public CacheGroupContext(
         GridCacheSharedContext ctx,
         int grpId,
         UUID rcvdFrom,

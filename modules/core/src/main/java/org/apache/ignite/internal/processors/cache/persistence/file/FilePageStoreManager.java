@@ -70,9 +70,9 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.DefragmentationEventsListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -190,9 +190,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
     /** */
-    private final DefragmentationEventsListener derfgEventLsnr;
-
-    /** */
     private final GridStripedReadWriteLock initDirLock =
         new GridStripedReadWriteLock(Math.max(Runtime.getRuntime().availableProcessors(), 8));
 
@@ -216,8 +213,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         pageStoreV1FileIoFactory = pageStoreFileIoFactory = dsCfg.getFileIOFactory();
 
         marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
-
-        derfgEventLsnr = ctx.internalSubscriptionProcessor().getDefragmentationListener();
     }
 
     /** {@inheritDoc} */
@@ -763,6 +758,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             PageStore[] partStores = new PageStore[partitions];
 
+            CacheDefragmentationContext defrgCtx = cctx.database().defragmentationContext();
+
             for (int partId = 0; partId < partStores.length; partId++) {
                 final int p = partId;
 
@@ -774,8 +771,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                     partStores[partId] = partStore;
 
-                    if (partStore.exists())
-                        derfgEventLsnr.onPageStoreCreated(pageStoreFactory, cacheWorkDir, p);
+                    if (defrgCtx != null) {
+                        if (partStore.exists())
+                            defrgCtx.onPageStoreCreated(grpId, cacheWorkDir, p);
+                    }
             }
 
             return new CacheStoreHolder(idxStore, partStores);
