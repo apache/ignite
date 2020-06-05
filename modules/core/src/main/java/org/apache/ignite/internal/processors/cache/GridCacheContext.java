@@ -27,6 +27,7 @@ import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +96,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.GridFunc;
@@ -157,7 +159,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private IgniteLogger log;
 
     /** Cache configuration. */
-    private CacheConfiguration cacheCfg;
+    private volatile CacheConfiguration cacheCfg;
 
     /** Affinity manager. */
     private GridCacheAffinityManager affMgr;
@@ -2348,6 +2350,24 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean hasContinuousQueryListeners(@Nullable IgniteInternalTx tx) {
         return grp.sharedGroup() ? grp.hasContinuousQueryCaches() :
             contQryMgr.notifyContinuousQueries(tx) && !F.isEmpty(contQryMgr.updateListeners(false, false));
+    }
+
+    /**
+     * Apply changes from {@link SchemaAddQueryEntityOperation}
+     *
+     * @param op Add query entity schema operation.
+     */
+    public void onAddQueryEntity(SchemaAddQueryEntityOperation op) {
+        CacheConfiguration cacheCfg0 = new CacheConfiguration(cacheCfg);
+
+        cacheCfg0.setQueryEntities(Collections.singletonList(op.entity()));
+        cacheCfg0.setSqlSchema(op.schemaName());
+        cacheCfg0.setSqlEscapeAll(op.isSqlEscape());
+        cacheCfg0.setQueryParallelism(op.queryParallelism());
+
+        cacheCfg = cacheCfg0;
+
+        qryMgr.enable();
     }
 
     /**

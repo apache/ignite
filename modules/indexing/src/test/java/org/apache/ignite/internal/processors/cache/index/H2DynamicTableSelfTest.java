@@ -326,7 +326,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that attempting to create a cache with a pre-existing name yields an error.
+     * Test creating table over existing cache (enabling query.)
      * @throws Exception if failed.
      */
     @Test
@@ -334,12 +334,15 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         client().getOrCreateCache("new");
 
         try {
+            doTestCustomNames("new", null, null);
+
             GridTestUtils.assertThrows(null, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     doTestCustomNames("new", null, null);
                     return null;
                 }
             }, IgniteSQLException.class, "Table already exists: NameTest");
+
         }
         finally {
             client().destroyCache("new");

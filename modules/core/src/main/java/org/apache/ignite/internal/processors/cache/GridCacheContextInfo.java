@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteUuid;
@@ -183,6 +185,21 @@ public class GridCacheContextInfo<K, V> {
      */
     public boolean isCacheContextInited() {
         return cctx != null;
+    }
+
+    /**
+     * Apply changes from {@link SchemaAddQueryEntityOperation}
+     *
+     * @param op Add query entity schema operation.
+     */
+    public void onAddQueryEntity(SchemaAddQueryEntityOperation op) {
+        config.setSqlSchema(op.schemaName());
+        config.setQueryEntities(Collections.singletonList(op.entity()));
+        config.setSqlEscapeAll(op.isSqlEscape());
+        config.setQueryParallelism(op.queryParallelism());
+
+        if (cctx != null)
+            cctx.onAddQueryEntity(op);
     }
 
     /** {@inheritDoc} */

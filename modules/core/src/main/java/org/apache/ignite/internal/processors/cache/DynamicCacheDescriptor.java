@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntitiesOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -365,8 +365,8 @@ public class DynamicCacheDescriptor {
      */
     public void schemaChangeFinish(SchemaFinishDiscoveryMessage msg) {
         synchronized (schemaMux) {
-            if (msg.operation() instanceof SchemaAddQueryEntitiesOperation) {
-                SchemaAddQueryEntitiesOperation op = (SchemaAddQueryEntitiesOperation)msg.operation();
+            if (msg.operation() instanceof SchemaAddQueryEntityOperation) {
+                SchemaAddQueryEntityOperation op = (SchemaAddQueryEntityOperation)msg.operation();
 
                 CacheConfiguration cacheCfg0 = new CacheConfiguration(cacheCfg);
                 cacheCfg0.setQueryEntities(Collections.singletonList(op.entity()));

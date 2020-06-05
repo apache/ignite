@@ -31,7 +31,7 @@ import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntitiesOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
@@ -317,11 +317,11 @@ public class QuerySchema implements Serializable {
                 }
             }
             else {
-                assert op instanceof SchemaAddQueryEntitiesOperation : "Unsupported schema operation [" + op.toString() + "]";
+                assert op instanceof SchemaAddQueryEntityOperation : "Unsupported schema operation [" + op.toString() + "]";
 
                 assert entities.isEmpty();
 
-                QueryEntity opEntity = ((SchemaAddQueryEntitiesOperation)op).entity();
+                QueryEntity opEntity = ((SchemaAddQueryEntityOperation)op).entity();
 
                 entities.add(QueryUtils.copy(opEntity));
             }

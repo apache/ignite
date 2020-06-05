@@ -95,7 +95,7 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDi
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntitiesOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
@@ -206,7 +206,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private ClusterNode crd;
 
     /** Registered cache names. */
-    private final Collection<String> cacheNames = newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    private final Collection<String> cacheNames = ConcurrentHashMap.newKeySet();
 
     /** ID history for index create/drop discovery messages. */
     private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> dscoMsgIdHist =
@@ -232,7 +232,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private boolean skipFieldLookup;
 
     /** Cache name - value typeId pairs for which type mismatch message was logged. */
-    private final Set<Long> missedCacheTypes = newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<Long> missedCacheTypes = ConcurrentHashMap.newKeySet();
 
     /**
      * @param ctx Kernal context.
@@ -416,8 +416,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (!F.isEmpty(activeProposals)) {
             synchronized (stateMux) {
                 for (SchemaProposeDiscoveryMessage activeProposal : activeProposals.values()) {
-                    if (activeProposal.operation() instanceof SchemaAddQueryEntitiesOperation) {
-                        SchemaAddQueryEntitiesOperation op = (SchemaAddQueryEntitiesOperation)activeProposal.operation();
+                    if (activeProposal.operation() instanceof SchemaAddQueryEntityOperation) {
+                        SchemaAddQueryEntityOperation op = (SchemaAddQueryEntityOperation)activeProposal.operation();
                         cachesToEnableIndexing.add(op.cacheName());
                     }
 
@@ -924,11 +924,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                                         processDynamicDropColumn(typeDesc, opDropCol.columns());
                                     }
-                                    else if (op0 instanceof SchemaAddQueryEntitiesOperation) {
+                                    else if (op0 instanceof SchemaAddQueryEntityOperation) {
                                         enableIndexing = true;
 
-                                        SchemaAddQueryEntitiesOperation opEnableIdx =
-                                                (SchemaAddQueryEntitiesOperation)op0;
+                                        SchemaAddQueryEntityOperation opEnableIdx =
+                                                (SchemaAddQueryEntityOperation)op0;
+
+                                        cacheInfo.onAddQueryEntity(opEnableIdx);
 
                                         cands = createQueryCandidates(
                                                     opEnableIdx.cacheName(),
@@ -939,11 +941,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                                 ).get1();
 
                                         schemaName = opEnableIdx.schemaName();
-
-                                        cacheInfo.config().setSqlSchema(opEnableIdx.schemaName());
-                                        cacheInfo.config().setQueryEntities(Collections.singletonList(opEnableIdx.entity()));
-                                        cacheInfo.config().setQueryParallelism(opEnableIdx.queryParallelism());
-                                        cacheInfo.config().setSqlEscapeAll(opEnableIdx.isSqlEscape());
 
                                         cachesToEnableIndexing.remove(opEnableIdx.cacheName());
                                     }
@@ -958,11 +955,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 // Ready to register at this point.
                 registerCache0(cacheName, schemaName, cacheInfo, cands, isSql);
 
-                if (enableIndexing) {
-                    cacheInfo.cacheContext().queries().enable();
-
+                if (enableIndexing)
                     rebuildIndexesFromHash0(cacheInfo.cacheContext(), true);
-                }
             }
         }
         finally {
@@ -1387,7 +1381,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
         }
-        else if (op instanceof SchemaAddQueryEntitiesOperation) {
+        else if (op instanceof SchemaAddQueryEntityOperation) {
             if (cacheNames.contains(op.cacheName()))
                 err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, op.cacheName());
         }
@@ -1436,7 +1430,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         boolean nop = false;
         SchemaOperationException err = null;
 
-        if (op instanceof SchemaAddQueryEntitiesOperation) {
+        if (op instanceof SchemaAddQueryEntityOperation) {
             if (cacheSupportSql(desc.cacheConfiguration()))
                 err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, desc.cacheName());
 
@@ -1711,7 +1705,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     idxs.remove(idxKey);
                 }
                 else {
-                    assert (op instanceof SchemaAddQueryEntitiesOperation || op instanceof SchemaAlterTableAddColumnOperation ||
+                    assert (op instanceof SchemaAddQueryEntityOperation || op instanceof SchemaAlterTableAddColumnOperation ||
                         op instanceof SchemaAlterTableDropColumnOperation);
 
                     // No-op - all processing is done at "local" stage
@@ -1772,7 +1766,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         GridCacheContextInfo<?, ?> cacheInfo = null;
 
-        if (op instanceof SchemaAddQueryEntitiesOperation) {
+        if (op instanceof SchemaAddQueryEntityOperation) {
             GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(CU.cacheId(cacheName));
 
             if (cctx != null)
@@ -1860,21 +1854,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 idx.dynamicDropColumn(op0.schemaName(), op0.tableName(), op0.columns(), op0.ifTableExists(),
                     op0.ifExists());
             }
-            else if (op instanceof SchemaAddQueryEntitiesOperation) {
-                SchemaAddQueryEntitiesOperation op0 = (SchemaAddQueryEntitiesOperation)op;
+            else if (op instanceof SchemaAddQueryEntityOperation) {
+                SchemaAddQueryEntityOperation op0 = (SchemaAddQueryEntityOperation)op;
+
+                cacheInfo.onAddQueryEntity(op0);
 
                 T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
                     candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo.config(),
                         Collections.singletonList(op0.entity()), op0.isSqlEscape());
 
-                cacheInfo.config().setSqlSchema(op0.schemaName());
-                cacheInfo.config().setQueryEntities(Collections.singletonList(op0.entity()));
-                cacheInfo.config().setSqlEscapeAll(op0.isSqlEscape());
-                cacheInfo.config().setQueryParallelism(op0.queryParallelism());
-
                 registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
-
-                cacheInfo.cacheContext().queries().enable();
 
                 rebuildIndexesFromHash0(cacheInfo.cacheContext(), true);
             }
@@ -2154,19 +2143,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return {@code true} If cache configuration support SQL, {@code false} otherwise.
      */
     private boolean cacheSupportSql(CacheConfiguration cfg) {
-        boolean res = !F.isEmpty(cfg.getQueryEntities())
+        return !F.isEmpty(cfg.getQueryEntities())
             || !F.isEmpty(cfg.getSqlSchema())
             || !F.isEmpty(cfg.getSqlFunctionClasses());
-
-        // Last chance to check entities in DynamicCacheDescriptors
-        if (!res) {
-           DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cfg.getName());
-
-           if (desc != null)
-               res = res || !desc.schema().isEmpty();
-        }
-
-        return res;
     }
 
     /**
@@ -2237,7 +2216,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return true;
 
         // No indexes to rebuild when there are no QueryEntities.
-        if (!cacheSupportSql(cctx.config()))
+        if (!cctx.isQueryEnabled())
             return true;
 
         return false;
@@ -3019,7 +2998,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         QueryEntity entity0 = QueryUtils.normalizeQueryEntity(entity, sqlEscape);
 
-        SchemaAddQueryEntitiesOperation op = new SchemaAddQueryEntitiesOperation(
+        SchemaAddQueryEntityOperation op = new SchemaAddQueryEntityOperation(
                 UUID.randomUUID(),
                 cacheName,
                 schemaName,

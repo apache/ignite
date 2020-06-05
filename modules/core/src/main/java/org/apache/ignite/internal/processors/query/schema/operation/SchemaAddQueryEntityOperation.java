@@ -23,7 +23,7 @@ import org.apache.ignite.cache.QueryEntity;
 /**
  * Enabling indexing on cache operation.
  */
-public class SchemaAddQueryEntitiesOperation extends SchemaAbstractOperation {
+public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +44,7 @@ public class SchemaAddQueryEntitiesOperation extends SchemaAbstractOperation {
      * @param qryParallelism Query parallelism.
      * @param sqlEscape Sql escape flag.
      */
-    public SchemaAddQueryEntitiesOperation(
+    public SchemaAddQueryEntityOperation(
             UUID opId,
             String cacheName,
             String schemaName,
