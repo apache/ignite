@@ -190,7 +190,8 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             fut.cancel(true);
 
-            assertTrue(((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty());
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> ((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty(), TIMEOUT));
 
             assertTrue(fut.isCancelled());
             assertTrue(fut.isDone());
@@ -341,7 +342,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             compute.execute(TestTask.class.getName(), null);
 
-            assertEquals(1, compute.activeTaskFutures().size());
+            assertTrue(GridTestUtils.waitForCondition(() -> compute.activeTaskFutures().size() == 1, TIMEOUT));
 
             assertTrue(fut1.isDone());
 
@@ -357,7 +358,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             fut3.get(TIMEOUT, TimeUnit.MILLISECONDS);
 
-            assertTrue(compute.activeTaskFutures().isEmpty());
+            assertTrue(GridTestUtils.waitForCondition(() -> compute.activeTaskFutures().isEmpty(), TIMEOUT));
         }
     }
 
@@ -529,7 +530,8 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
                 }, threadsCnt, "run-task-async");
 
-            assertTrue(((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty());
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> ((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty(), TIMEOUT));
         }
     }
 
