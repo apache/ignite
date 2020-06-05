@@ -28,9 +28,12 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -89,43 +92,54 @@ public class ClusterReadOnlyModeTestUtils {
      * @param cacheNames Checked cache names.
      */
     public static void assertCachesReadOnlyMode(boolean readOnly, Collection<String> cacheNames) {
+        for (Ignite node : G.allGrids())
+            assertCachesReadOnlyMode(node, readOnly, cacheNames);
+    }
+
+    /**
+     * Asserts that all caches in read-only or in read/write mode. All cache operations will be performed from the
+     * {@code node} node.
+     *
+     * @param node Node initiator cache operations.
+     * @param readOnly If {@code true} then cache must be in read only mode, else in read/write mode.
+     * @param cacheNames Checked cache names.
+     */
+    public static void assertCachesReadOnlyMode(Ignite node, boolean readOnly, Collection<String> cacheNames) {
         Random rnd = new Random();
 
-        for (Ignite ignite : G.allGrids()) {
-            for (String cacheName : cacheNames) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
+        for (String cacheName : cacheNames) {
+            IgniteCache<Integer, Integer> cache = node.cache(cacheName);
 
-                for (int i = 0; i < 10; i++) {
-                    cache.get(rnd.nextInt(100)); // All gets must succeed.
+            for (int i = 0; i < 10; i++) {
+                cache.get(rnd.nextInt(100)); // All gets must succeed.
 
-                    if (readOnly) {
-                        // All puts must fail.
-                        try {
-                            cache.put(rnd.nextInt(100), rnd.nextInt());
+                if (readOnly) {
+                    // All puts must fail.
+                    try {
+                        cache.put(rnd.nextInt(100), rnd.nextInt());
 
-                            fail("Put must fail for cache " + cacheName);
-                        }
-                        catch (Exception ignored) {
-                            // No-op.
-                        }
-
-                        // All removes must fail.
-                        try {
-                            cache.remove(rnd.nextInt(100));
-
-                            fail("Remove must fail for cache " + cacheName);
-                        }
-                        catch (Exception ignored) {
-                            // No-op.
-                        }
+                        fail("Put must fail for cache " + cacheName);
                     }
-                    else {
-                        int key = rnd.nextInt(100);
-
-                        cache.put(key, rnd.nextInt()); // All puts must succeed.
-
-                        cache.remove(key); // All removes must succeed.
+                    catch (Exception ignored) {
+                        // No-op.
                     }
+
+                    // All removes must fail.
+                    try {
+                        cache.remove(rnd.nextInt(100));
+
+                        fail("Remove must fail for cache " + cacheName);
+                    }
+                    catch (Exception ignored) {
+                        // No-op.
+                    }
+                }
+                else {
+                    int key = rnd.nextInt(100);
+
+                    cache.put(key, rnd.nextInt()); // All puts must succeed.
+
+                    cache.remove(key); // All removes must succeed.
                 }
             }
         }
@@ -161,6 +175,17 @@ public class ClusterReadOnlyModeTestUtils {
                     fail("Streaming to " + cacheName + " must " + (readOnly ? "fail" : "succeed"));
             }
         }
+    }
+
+    /**
+     * Checks that given {@code ex} exception has a cause of {@link IgniteClusterReadOnlyException}.
+     *
+     * @param ex Exception for the check.
+     * @param name Name of object (optional).
+     */
+    public static void checkRootCause(Throwable ex, @Nullable String name) {
+        if (!X.hasCause(ex, IgniteClusterReadOnlyException.class))
+            throw new AssertionError("IgniteClusterReadOnlyException not found on " + name, ex);
     }
 
     /**
