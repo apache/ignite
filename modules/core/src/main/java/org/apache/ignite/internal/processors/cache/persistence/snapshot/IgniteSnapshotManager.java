@@ -432,7 +432,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             File db = new File(snpDir, DB_DEFAULT_FOLDER);
 
-            if (!db.exists() || db.list() == null || db.list().length == 0) {
+            if (!db.exists() || F.isEmpty(db.list())) {
                 marshDir.delete();
                 db.delete();
                 U.delete(snpDir);
