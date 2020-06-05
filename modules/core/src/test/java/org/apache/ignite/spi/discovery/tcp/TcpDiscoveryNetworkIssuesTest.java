@@ -111,18 +111,14 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         // We won't try recovering connection. We'll remove node from the grid asap.
         connectionRecoveryTimeout = 0;
 
-        // Makes test faster.
+        // Makes test faster. Also the value is closer to previous fixed ping rate 500ms.
         failureDetectionTimeout = 1000;
 
         // A message traffic.
         metricsUpdateFreq = 750;
 
-        int runsCnt = 20;
-
-        int sucessfullRunsCnt = 0;
-
         // Running several times to be sure.
-        for (int i = 0; i < runsCnt; ++i) {
+        for (int i = 0; i < 20; ++i) {
             // Holder of falure detection delay. Also is test start and end regulator.
             final AtomicLong timer = new AtomicLong();
 
@@ -218,24 +214,13 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
             long failureDetectionDelay = U.nanosToMillis(timer.get());
 
-            // 20ms is the timer granulation in IgniteUtils (10ms). Considered time lag between 2 nodes.
-            // So, the  worst case is 2 * 10ms.
-            if (failureDetectionDelay <= failureDetectionTimeout + 20) {
-                ++sucessfullRunsCnt;
-
-                if (log.isDebugEnabled())
-                    log.debug("Failure detection delay: " + failureDetectionDelay);
-            }
-            else
-                log.warning("Long failure detection delay: " + failureDetectionDelay);
-
             stopAllGrids(true);
-        }
 
-        // Let's consider 80% of sucessfull runs. Other 20% we can spare to GC/platform delays.
-        if (sucessfullRunsCnt < 0.8 * runsCnt) {
-            fail("Few sucessfull runs: " + sucessfullRunsCnt + '/' + runsCnt + ". Expected: "
-                + (0.8 * runsCnt) + " (80%).");
+            // Previous delay is up to 'failure detection timeout + 500ms'. Where 500ms is fixed ping rate.
+            // To avoid flaky test, we give anoter 100ms to work with GC pauses, platform delays and the timer
+            // granulation in IgniteUtils.currentTimeMillis().
+            assertTrue("Long failure detection delay: " + failureDetectionDelay,
+                failureDetectionDelay <= failureDetectionTimeout + 100);
         }
     }
 
