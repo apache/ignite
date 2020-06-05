@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -333,9 +334,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteLimit rel) {
         Supplier<CompletableFuture<Integer>> offsetSup = expressionFactory.execute(
-            rel.offset, rel.offset.getType(), (r) -> (Integer)r[0]);
+//            rel.offset, rel.offset.getType(), (r) -> (Integer)r[0]);
+          rel.offset, rel.offset.getType(), (r) -> ((BigDecimal)r[0]).intValue());
         Supplier<CompletableFuture<Integer>> fetchSup = expressionFactory.execute(
-            rel.offset, rel.offset.getType(), (r) -> (Integer)r[0]);
+            rel.fetch, rel.fetch.getType(), (r) -> ((BigDecimal)r[0]).intValue());
 
         LimitNode<Row> node = new LimitNode<>(ctx, offsetSup, offsetSup);
 

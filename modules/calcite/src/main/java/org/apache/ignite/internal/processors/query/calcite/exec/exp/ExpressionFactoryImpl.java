@@ -46,6 +46,7 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexExecutable;
 import org.apache.calcite.rex.RexExecutorImpl;
 import org.apache.calcite.rex.RexLiteral;
@@ -194,28 +195,46 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** {@inheritDoc} */
     @Override public Supplier<CompletableFuture<Object[]>> execute(RexNode node, RelDataType rowType) {
         return () -> {
-            RexExecutable exec = RexExecutorImpl.getExecutable(
-                rexBuilder,
-                ImmutableList.of(node),
-                rowType);
-
-            typeFactory.createSqlType(SqlTypeName.INTEGER);
-
             final CompletableFuture<Object[]> f = new CompletableFuture<>();
 
-            ctx.execute(() -> {
-                try {
-                    Object[] res = exec.execute();
+            if (node instanceof RexLiteral) {
+                //  cannot convert DECIMAL literal to int
+//                f.complete(new Object[] {((RexLiteral)node).getValueAs((Class<?>)typeFactory.getJavaClass(rowType))});
+                f.complete(new Object[] {((RexLiteral)node).getValue()});
 
-                    f.complete(res);
-                }
-                catch (Exception e) {
-                    f.completeExceptionally(e);
-                }
-            });
+                return f;
+            }
+            else if (node instanceof RexDynamicParam) {
+                String name = ((RexDynamicParam)node).getName();
 
-            return f;
+                f.complete(new Object[] {ctx.get(name)});
+
+                return f;
+            }
+            else {
+                RexExecutable exec = RexExecutorImpl.getExecutable(
+                    rexBuilder,
+                    ImmutableList.of(node),
+                    rowType);
+
+                typeFactory.createSqlType(SqlTypeName.INTEGER);
+
+
+                ctx.execute(() -> {
+                    try {
+                        Object[] res = exec.execute();
+
+                        f.complete(res);
+                    }
+                    catch (Exception e) {
+                        f.completeExceptionally(e);
+                    }
+                });
+
+                return f;
+            }
         };
+
     }
 
     /** {@inheritDoc} */
@@ -225,7 +244,16 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
             CompletableFuture<Object[]> f = execute(node, rowType).get();
 
-            f.thenAccept((row) -> fPrj.complete(resProj.apply(row)));
+            f.thenAccept((row) -> {
+                try {
+                    T t = resProj.apply(row);
+
+                    fPrj.complete(t);
+                }
+                catch (Throwable t) {
+                    fPrj.completeExceptionally(t);
+                }
+            });
 
             return fPrj;
         };

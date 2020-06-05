@@ -56,7 +56,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
         IgniteCache<Integer, String> cache = grid.createCache(ccfg);
 
         for (int i = 0; i < ROWS; ++i)
-            cache.put(i, "val_" + 1);
+            cache.put(i, "val_" + i);
     }
 
     /** */
@@ -76,7 +76,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
 
         // Check result.
         List<FieldsQueryCursor<List<?>>> cursors =
-            engine.query(null, "PUBLIC", "SELECT * FROM TEST " +
+            engine.query(null, "PUBLIC", "SELECT * FROM TEST ORDER BY ID " +
                 "OFFSET 10 ROWS FETCH FIRST ? ROWS ONLY", 10);
 
         FieldsQueryCursor<List<?>> cur = cursors.get(0);

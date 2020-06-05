@@ -74,6 +74,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
         checkThread();
+        System.out.println(Thread.currentThread().getName() + "+++ request " + rowsCnt);
 
         assert !F.isEmpty(sources) && sources.size() == 1;
         assert rowsCnt > 0;
@@ -108,10 +109,15 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
             futLimitsReady.thenAccept((v) -> {
                 System.out.println(Thread.currentThread().getName() + " +++ OFF/FETCH DONE: off=" + offset + ", fetch=" + fetch);
-
                 fetch += offset;
 
                 requestAfterLimitsReady();
+            });
+
+            futLimitsReady.exceptionally(t -> {
+                onError(t);
+
+                return null;
             });
         }
         else {
@@ -134,13 +140,20 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
         assert downstream != null;
 
-        if (processed > offset)
+        if (processed >= offset) {
+            System.out.println(Thread.currentThread().getName() + "+++ push down");
             downstream.push(row);
+        }
 
         processed++;
 
-        if (processed > fetch)
+        if (processed >= fetch) {
+            System.out.println(Thread.currentThread().getName() + "+++ push: end");
+
             downstream.end();
+        }
+
+        System.out.println(Thread.currentThread().getName() + "+++ push: processed=" + processed);
     }
 
     /** {@inheritDoc} */
