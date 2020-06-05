@@ -48,6 +48,9 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     public Iterable<Person> findFirst10ByFirstNameLike(String val);
 
     /** */
+    public int countByFirstName(String val);
+
+    /** */
     public int countByFirstNameLike(String val);
 
     /** */
