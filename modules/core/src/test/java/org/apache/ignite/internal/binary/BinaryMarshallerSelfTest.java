@@ -3836,7 +3836,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param marsh Marshaller.
      * @return Binary object.
      */
-    private <T> BinaryObjectImpl marshal(T obj, BinaryMarshaller marsh) throws IgniteCheckedException {
+    <T> BinaryObjectImpl marshal(T obj, BinaryMarshaller marsh) throws IgniteCheckedException {
         byte[] bytes = marsh.marshal(obj);
 
         return new BinaryObjectImpl(U.<GridBinaryMarshaller>field(marsh, "impl").context(),
@@ -3851,9 +3851,16 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param marsh Marshaller.
-     * @return Binary context.
+     * @return  Whether to use null compaction or not.
      */
+    protected boolean compactNull() {
+        return false;
+    }
+
+        /**
+         * @param marsh Marshaller.
+         * @return Binary context.
+         */
     protected BinaryContext binaryContext(BinaryMarshaller marsh) {
         GridBinaryMarshaller impl = U.field(marsh, "impl");
 
@@ -3918,6 +3925,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         bCfg.setIdMapper(mapper);
         bCfg.setSerializer(serializer);
         bCfg.setCompactFooter(compactFooter());
+        bCfg.setCompactNulls(compactNull());
 
         bCfg.setTypeConfigurations(cfgs);
 

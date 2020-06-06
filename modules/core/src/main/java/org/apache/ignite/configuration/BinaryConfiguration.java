@@ -37,6 +37,9 @@ public class BinaryConfiguration implements Serializable {
     /** Default compact footer flag setting. */
     public static final boolean DFLT_COMPACT_FOOTER = true;
 
+    /** Default compact nulls in body and footer flag setting. */
+    public static final boolean DFLT_COMPACT_NULLS = false;
+
     /** ID mapper. */
     private BinaryIdMapper idMapper;
 
@@ -51,6 +54,9 @@ public class BinaryConfiguration implements Serializable {
 
     /** Compact footer flag. */
     private boolean compactFooter = DFLT_COMPACT_FOOTER;
+
+    /** Compact footer flag. */
+    private boolean compactNulls = DFLT_COMPACT_NULLS;
 
     /**
      * Sets class names of binary objects explicitly.
@@ -171,6 +177,24 @@ public class BinaryConfiguration implements Serializable {
     }
 
     /**
+     * Get whether to remove NULL indicators for the body 0x65 and whether to put the index of the nulls fields in the
+     * footer. When enable a mask which bits tells whether a field is null of not is added at the end of the footer.
+     * This increases serialization performance and memory impact.
+     * <p>
+     * <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external
+     * sources (e.g. cache store which stores data in binary form, data center replication, etc.). Otherwise binary
+     * objects without any associated metadata could appear in the cluster and Ignite will not be able to deserialize
+     * it.
+     * <p>
+     * Defaults to {@link #DFLT_COMPACT_NULLS}.
+     *
+     * @return Whether to write footers in compact form.
+     */
+     public boolean isCompactNulls() {
+         return compactNulls;
+     }
+
+    /**
      * Set whether to write footers in compact form. See {@link #isCompactFooter()} for more info.
      *
      * @param compactFooter Whether to write footers in compact form.
@@ -178,6 +202,18 @@ public class BinaryConfiguration implements Serializable {
      */
     public BinaryConfiguration setCompactFooter(boolean compactFooter) {
         this.compactFooter = compactFooter;
+
+        return this;
+    }
+
+    /**
+     * Set whether to compact nulls. See {@link #isCompactNulls()} for more info.
+     *
+     * @param compactNulls Whether to write footers in compact form.
+     * @return {@code this} for chaining.
+     */
+    public BinaryConfiguration setCompactNulls(boolean compactNulls) {
+        this.compactNulls = compactNulls;
 
         return this;
     }

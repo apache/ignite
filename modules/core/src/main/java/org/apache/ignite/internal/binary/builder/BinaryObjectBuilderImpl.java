@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary.builder;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
@@ -239,7 +241,16 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 IgniteBiTuple<Integer, Integer> footer = BinaryUtils.footerAbsolute(reader, start);
 
                 int footerPos = footer.get1();
-                int footerEnd = footer.get2();
+                int footerEnd = 0;
+                byte[] nullMask = null;
+
+                if (writer.canCompactNull()) {
+                    nullMask = BinaryClassDescriptor.createNullMask(schema.fieldIds().length);
+                    footerEnd = footer.get2() - nullMask.length;
+                    nullMask = Arrays.copyOfRange(reader.array(), footerEnd, footerEnd + nullMask.length);
+                } else {
+                    footerEnd = footer.get2();
+                }
 
                 // Get raw position.
                 int rawPos = BinaryUtils.rawOffsetAbsolute(reader, start);
@@ -250,6 +261,17 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 int idx = 0;
 
                 while (reader.position() < rawPos) {
+
+                    if (writer.canCompactNull()) {
+                        byte maskByteIndex = (byte) (idx / 8);
+                        byte maskByteBit = (byte) (1 << idx % 8);
+                        if (nullMask != null && (nullMask[maskByteIndex] & maskByteBit) == 0) {
+                            int fieldId = schema.fieldId(idx++);
+                            writer.writeFieldId(fieldId, true);
+                            continue;
+                        }
+                    }
+
                     int fieldId = schema.fieldId(idx++);
                     int fieldLen =
                         fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen).get2();

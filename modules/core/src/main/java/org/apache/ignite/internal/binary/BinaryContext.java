@@ -202,7 +202,8 @@ public class BinaryContext {
 
         // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
         sysClss.add(BinaryTreeMap.class.getName());
-
+        // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeSet at BinaryMetadata.
+        sysClss.add(BinaryTreeSet.class.getName());
         if (BinaryUtils.wrapTrees()) {
             sysClss.add(TreeMap.class.getName());
             sysClss.add(TreeSet.class.getName());
@@ -258,6 +259,9 @@ public class BinaryContext {
 
     /** Compact footer flag. */
     private boolean compactFooter;
+
+    /** Compact nulls flag. */
+    private boolean compactNulls;
 
     /** Object schemas. */
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
@@ -347,6 +351,7 @@ public class BinaryContext {
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
         registerPredefinedType(BinaryTreeMap.class, 0);
+        registerPredefinedType(BinaryTreeSet.class, 0);
 
         registerPredefinedType(PlatformDotNetSessionData.class, 0);
         registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
@@ -432,6 +437,7 @@ public class BinaryContext {
         );
 
         compactFooter = binaryCfg.isCompactFooter();
+        compactNulls = binaryCfg.isCompactNulls();
     }
 
     /**
@@ -1349,6 +1355,11 @@ public class BinaryContext {
     public boolean isCompactFooter() {
         return compactFooter;
     }
+
+    /**
+     * @return Whether nulls are removed from the body and the footer.
+     */
+    public boolean isCompactNulls() { return compactNulls; }
 
     /**
      * Get schema registry for type ID.

@@ -123,6 +123,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** Footer end. */
     private final int footerLen;
 
+    /** Bit mask that is true for every non-null field. */
+    private byte[] nullMask;
+
     /** Class descriptor. */
     private BinaryClassDescriptor desc;
 
@@ -152,6 +155,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** Whether stream is in raw mode. */
     private boolean raw;
+
+    /** Whether stream is nullCompacted */
+    private boolean nullCompacted;
 
     /**
      * Constructor.
@@ -234,6 +240,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             userType = BinaryUtils.isUserType(flags);
             fieldIdLen = BinaryUtils.fieldIdLength(flags);
             fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
+            nullCompacted = BinaryUtils.isCompactNull(flags);
 
             // Calculate footer borders and raw offset.
             if (BinaryUtils.hasSchema(flags)) {
@@ -285,6 +292,26 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             mapper = userType ? ctx.userTypeMapper(typeId) : BinaryContext.defaultMapper();
             schema = BinaryUtils.hasSchema(flags) ? getOrCreateSchema() : null;
+
+            if (this.canCompactNull() && schema != null && schema.fieldIds().length > 0) {
+                //Create a null mask of the right size
+                this.nullMask = BinaryClassDescriptor.createNullMask(schema.fieldIds().length);
+                //Current position in the stream
+                int oldPos = in.position();
+                //If this stream contains raw data data the address will be the last element and therefore we must take
+                //it into account when reading the null mask.
+                int rawOffSetLength = BinaryUtils.hasRaw(flags) ? 4 : 0;
+                //The null mask is the last element except if the is a raw data offset.
+                // header [24 bytes]--body--footer [offset not null field 0, ... offset no null field n,
+                // ... null mask, ...optionally raw offset]
+                in.position(start + len - this.nullMask.length - rawOffSetLength);
+                this.nullMask = in.readByteArray(this.nullMask.length);
+                in.position(oldPos);
+            }
+            else {
+                this.nullMask = null;
+            }
+
         }
         else {
             dataStart = 0;
@@ -301,6 +328,10 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         }
 
         streamPosition(start);
+    }
+
+    boolean canCompactNull() {
+        return userType && this.nullCompacted && !this.raw;
     }
 
     /**
@@ -1760,7 +1791,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 if (desc == null)
                     throw new BinaryInvalidTypeException("Unknown type ID: " + typeId);
-
                 obj = desc.read(this);
 
                 streamPosition(footerStart + footerLen);
@@ -2120,12 +2150,13 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                             if (expOrder == 0)
                                 streamPosition(dataStart);
-
-                            return true;
+                            if (canCompactNull()) {
+                                expOrder = computeOrderWithNullCompaction(this.nullMask, expOrder);
+                            }
+                            return expOrder != BinarySchema.ORDER_NOT_FOUND;
                         }
                         else {
                             // No match, stop further speculations.
-                            matching = false;
 
                             order = schema.order(id);
                         }
@@ -2135,6 +2166,10 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             }
             else
                 order = schema.order(fieldId(name));
+
+            if (canCompactNull()) {
+                order = computeOrderWithNullCompaction(this.nullMask, order);
+            }
 
             return trySetUserFieldPosition(order);
         }
@@ -2181,10 +2216,23 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             else
                 order = schema.order(id);
 
+            if (canCompactNull()) {
+                order = computeOrderWithNullCompaction(this.nullMask, order);
+            }
+
             return trySetUserFieldPosition(order);
         }
         else
             return trySetSystemFieldPosition(id);
+    }
+
+    private static int computeOrderWithNullCompaction(byte[] nullMask, int absolutePos) {
+        if (isFieldNull(nullMask, absolutePos)) {
+            // If field is null, simple report it as unknown
+            return BinarySchema.ORDER_NOT_FOUND;
+        } else {
+            return computeCountOfNotNullFields(nullMask, absolutePos);
+        }
     }
 
     /**
@@ -2237,6 +2285,59 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffLen;
         }
+    }
+
+    /**
+     * Tells whether a given field is null from the mask.
+     * @param nullMask
+     * @param absolutePos of the footer starting at 0, IF null compaction is disabled. Same position in the null mask.
+     *                   Starting at position 0
+     * @return whether the field at absolutePos is null.
+     */
+    static boolean isFieldNull(byte[] nullMask, int absolutePos) {
+        int lastNullByteToScan = (absolutePos / 8);
+        assert (lastNullByteToScan < nullMask.length);
+
+        byte bitMask = (byte) ((1 << ( (absolutePos % 8 ) )));
+        return (nullMask[lastNullByteToScan] & bitMask) == 0; // convert occurrences to boolean
+    }
+
+    /**
+     * Compute the number of non-null fields between from the fields to the current position.
+     * @param nullMask
+     * @param absolutePos of the footer starting at 0, IF null compaction is disabled. Same position in the null mask.
+     *                    Starting at position 0
+     * @return the new position in the footer applying null compaction, the is the position of non-null values before
+     * the one we are looking for.
+     */
+    static int computeCountOfNotNullFields(byte[] nullMask, int absolutePos) {
+        int notNullCount = 0;
+        int lastNullByteToScan = (absolutePos / 8);
+        assert (lastNullByteToScan < nullMask.length);
+        for (int i = 0; i < lastNullByteToScan; i++) {
+            notNullCount = (notNullCount + countEnableBitInByte(nullMask[i]));
+        }
+        byte bitMask = (byte) ((1 << ( (absolutePos % 8 ) + 1 )) - 1);
+        notNullCount = (notNullCount + countEnableBitInByte((byte) (nullMask[lastNullByteToScan] & bitMask)));
+        return notNullCount - 1; // convert occurrences in index
+    }
+
+    /**
+     *  Count the number of bit set in a byte
+     * @param mask to count the bits on
+     * @return the number of bits set
+     */
+    private static byte countEnableBitInByte(byte mask) {
+        byte order = mask;
+        byte mask1 = 0b01010101;
+        byte mask2 = 0b00110011;
+        byte mask3 = 0b00001111;
+
+        order = (byte) ((byte) (order & mask1) + (byte) (((byte) (order >> 1)) & mask1));
+        order = (byte) ((byte) (order & mask2) + (byte) (((byte) (order >> 2)) & mask2));
+        order = (byte) ((byte) (order & mask3) + (byte) (((byte) (order >> 4)) & mask3));
+
+        return order;
     }
 
     /**
@@ -2364,6 +2465,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     public BinaryContext context() {
         return ctx;
     }
+
+    /**
+     * @return the null mask for this reader
+     */
+    public byte[] getNullMask() { return this.nullMask; }
 
     /**
      * Flag.
