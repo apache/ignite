@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests
 
             lock1.Enter();
 
-            Task.Run(() =>
+            Task.Factory.StartNew(() =>
             {
                 Assert.IsFalse(lock2.TryEnter());
                 Assert.IsFalse(lock2.TryEnter(TimeSpan.Zero));
