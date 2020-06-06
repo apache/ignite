@@ -110,7 +110,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
-import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -628,26 +627,10 @@ public class IgniteTxHandler {
                                 return;
                             }
                             ctx.kernalContext().closure().runLocalWithThreadPolicy(thread, () -> {
-                                IgniteInternalFuture<GridNearTxPrepareResponse> fut = null;
-
-                                Throwable err = null;
-
                                 try {
-                                    for (IgniteTxEntry itm : F.concat(false, req.writes(), req.reads())) {
-                                        err = topFut.validateCache(itm.context(), req.recovery(), isEmpty(req.writes()),
-                                            null, null);
-
-                                        if (err != null)
-                                            break;
-                                    }
-
-                                    if (err == null)
-                                        fut = processNearTxPrepareRequest0(node, req);
+                                    processNearTxPrepareRequest0(node, req);
                                 }
                                 finally {
-                                    if (fut == null || fut.error() != null || err != null)
-                                        sendResponseOnTimeoutOrError(e, topFut, node, req);
-
                                     ctx.io().onMessageProcessed(req);
                                 }
                             });

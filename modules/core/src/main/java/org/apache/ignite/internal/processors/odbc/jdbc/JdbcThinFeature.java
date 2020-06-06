@@ -24,7 +24,13 @@ import org.apache.ignite.internal.ThinProtocolFeature;
  * Defines supported features for JDBC thin client.
  */
 public enum JdbcThinFeature implements ThinProtocolFeature {
-    RESERVED(0);
+    /** */
+    RESERVED(0),
+
+    /**
+     * Whether to allow sending custom object through Thin JDBC protocol.
+     */
+    CUSTOM_OBJECT(1);
 
     /** */
     private static final EnumSet<JdbcThinFeature> ALL_FEATURES_AS_ENUM_SET = EnumSet.allOf(JdbcThinFeature.class);

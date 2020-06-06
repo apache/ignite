@@ -211,6 +211,8 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
@@ -542,8 +544,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         int pagesNum = 0;
 
-        boolean hasUserDirtyPages = false;
-
         for (DataRegion reg : dataRegions()) {
             if (!reg.config().isPersistenceEnabled())
                 continue;
@@ -560,7 +560,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (progress != null)
             progress.currentCheckpointPagesCount(pagesNum);
 
-        return new CheckpointPagesInfoHolder(res, pagesNum, hasUserDirtyPages);
+        return new CheckpointPagesInfoHolder(res, pagesNum);
     }
 
     /**
@@ -1855,7 +1855,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 continue;
 
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
-                if (locPart.state() == GridDhtPartitionState.OWNING && locPart.fullSize() > walRebalanceThreshold)
+                if (locPart.state() == OWNING && locPart.fullSize() > walRebalanceThreshold)
                     res.computeIfAbsent(grp.groupId(), k -> new HashSet<>()).add(locPart.id());
             }
         }
@@ -2315,7 +2315,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 ", walArchive=" + persistenceCfg.getWalArchivePath() + "]");
         }
 
-        AtomicReference<IgniteCheckedException> applyError = new AtomicReference<>();
+        AtomicReference<Throwable> applyError = new AtomicReference<>();
 
         StripedExecutor exec = cctx.kernalContext().getStripedExecutorService();
 
@@ -2510,7 +2510,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void awaitApplyComplete(
         StripedExecutor exec,
-        AtomicReference<IgniteCheckedException> applyError
+        AtomicReference<Throwable> applyError
     ) throws IgniteCheckedException {
         try {
             // Await completion apply tasks in all stripes.
@@ -2521,8 +2521,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         // Checking error after all task applied.
-        if (applyError.get() != null)
-            throw applyError.get();
+        Throwable error = applyError.get();
+
+        if (error != null)
+            throw error instanceof IgniteCheckedException
+                ? (IgniteCheckedException)error : new IgniteCheckedException(error);
     }
 
     /**
@@ -2800,7 +2803,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long start = U.currentTimeMillis();
 
-        AtomicReference<IgniteCheckedException> applyError = new AtomicReference<>();
+        AtomicReference<Throwable> applyError = new AtomicReference<>();
 
         AtomicLong applied = new AtomicLong();
 
@@ -3102,7 +3105,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         AtomicInteger cpPagesCnt = new AtomicInteger();
 
         // Shared refernce for tracking exception during write pages.
-        AtomicReference<IgniteCheckedException> writePagesError = new AtomicReference<>();
+        AtomicReference<Throwable> writePagesError = new AtomicReference<>();
 
         for (int stripeIdx = 0; stripeIdx < exec.stripesCount(); stripeIdx++) {
             exec.execute(stripeIdx, () -> {
@@ -3145,10 +3148,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         pagesWritten++;
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (Throwable e) {
                     U.error(log, "Failed to write page to pageStore: " + res);
 
                     writePagesError.compareAndSet(null, e);
+
+                    if (e instanceof Error)
+                        throw (Error)e;
                 }
 
                 cpPagesCnt.addAndGet(pagesWritten);
@@ -4010,8 +4016,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 dirtyPagesCount = cpPagesHolder.pagesNum();
 
-                hasUserPages = !cpPagesHolder.onlySystemPages();
-
                 hasPartitionsToDestroy = !curr.getDestroyQueue().pendingReqs().isEmpty();
 
                 WALPointer cpPtr = null;
@@ -4042,7 +4046,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 tracker.onLockRelease();
             }
 
-            DbCheckpointListener.Context ctx = createOnCheckpointBeginContext(ctx0, hasUserPages);
+            DbCheckpointListener.Context ctx = createOnCheckpointBeginContext(ctx0, dirtyPagesCount > 0);
 
             curr.transitTo(LOCK_RELEASED);
 
@@ -4193,11 +4197,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     CacheState state = new CacheState(parts.size());
 
                     for (GridDhtLocalPartition part : parts) {
+                        GridDhtPartitionState partState = part.state();
+
+                        if (partState == LOST)
+                            partState = OWNING;
+
                         state.addPartitionState(
                             part.id(),
                             part.dataStore().fullSize(),
                             part.updateCounter(),
-                            (byte)part.state().ordinal()
+                            (byte)partState.ordinal()
                         );
                     }
 
@@ -5582,9 +5591,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Current checkpoint pages information. */
     private static class CheckpointPagesInfoHolder {
-        /** If {@code true} there are user pages in checkpoint. */
-        private final boolean hasUserDirtyPages;
-
         /** Total pages count in cp. */
         private final int pagesNum;
 
@@ -5594,16 +5600,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private CheckpointPagesInfoHolder(
             Collection<Map.Entry<PageMemoryEx, GridMultiCollectionWrapper<FullPageId>>> pages,
-            int num,
-            boolean hasUserPages) {
+            int num) {
             cpPages = pages;
             pagesNum = num;
-            hasUserDirtyPages = hasUserPages;
-        }
-
-        /** If {@code true} there are user pages in checkpoint. */
-        private boolean onlySystemPages() {
-            return !hasUserDirtyPages;
         }
 
         /** Total pages count in cp. */
