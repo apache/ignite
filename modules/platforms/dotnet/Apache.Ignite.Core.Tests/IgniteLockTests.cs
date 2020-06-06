@@ -262,5 +262,11 @@ namespace Apache.Ignite.Core.Tests
         {
             Assert.IsNull(Ignite.GetOrCreateLock(new LockConfiguration {Name = "x"}, false));
         }
+
+        [Test]
+        public void TestFairLockGuaranteesOrder()
+        {
+            // TODO
+        }
     }
 }
