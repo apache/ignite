@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Concurrent;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
@@ -70,6 +69,9 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(lck.IsRemoved());
         }
 
+        /// <summary>
+        /// Tests that thread blocks on Enter until lock is released.
+        /// </summary>
         [Test]
         public void TestEnterBlocksWhenLockedByAnotherThread()
         {
@@ -78,6 +80,7 @@ namespace Apache.Ignite.Core.Tests
             var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
             lock1.Enter();
 
+            // ReSharper disable once AccessToModifiedClosure
             var task = Task.Factory.StartNew(() =>
             {
                 var lock2 = Ignite.GetOrCreateLock(TestUtils.TestName);
