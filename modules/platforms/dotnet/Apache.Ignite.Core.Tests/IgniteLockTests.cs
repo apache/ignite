@@ -257,15 +257,39 @@ namespace Apache.Ignite.Core.Tests
             lck.Configuration.IsFailoverSafe = false;
 
             // Verify: actual config has not changed.
-            Assert.AreEqual("x", lck.Configuration.Name);
+            Assert.AreEqual(TestUtils.TestName, lck.Configuration.Name);
             Assert.IsTrue(lck.Configuration.IsFair);
             Assert.IsTrue(lck.Configuration.IsFailoverSafe);
         }
 
+        /// <summary>
+        /// Tests that "lock broken" exception is thrown when lock is not failover-safe and owner node leaves.
+        /// </summary>
         [Test]
         public void TestNonFailoverSafeLockThrowsExceptionOnAllNodesWhenOwnerLeaves()
         {
-            // TODO
+            var lockName = TestUtils.TestName;
+            var lock1 = Ignite.GetOrCreateLock(lockName);
+            var evt = new ManualResetEventSlim(false);
+
+            Task.Factory.StartNew(() =>
+            {
+                var ignite = Ignition.Start(new IgniteConfiguration(GetConfig()) {IgniteInstanceName = "_"});
+
+                var lock2 = ignite.GetOrCreateLock(lockName);
+                lock2.Enter();
+
+                evt.Set();
+                evt.Wait();
+
+                Ignition.Stop(ignite.Name, true);
+            });
+
+            evt.Wait();
+            evt.Set();
+
+            var ex = Assert.Throws<IgniteException>(() => lock1.Enter());
+            StringAssert.StartsWith("Lock broken", ex.Message);
         }
 
         [Test]
