@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
@@ -177,9 +178,12 @@ namespace Apache.Ignite.Core.Tests
         {
             var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
 
-            Assert.IsTrue(lock1.TryEnter());
-            Assert.IsTrue(lock1.TryEnter(TimeSpan.Zero));
-            Assert.IsTrue(lock1.TryEnter(TimeSpan.FromMilliseconds(50)));
+            Task.Run(() =>
+            {
+                Assert.IsTrue(lock1.TryEnter());
+                Assert.IsTrue(lock1.TryEnter(TimeSpan.Zero));
+                Assert.IsTrue(lock1.TryEnter(TimeSpan.FromMilliseconds(50)));
+            }).Wait();
 
             lock1.Exit();
         }
@@ -192,9 +196,14 @@ namespace Apache.Ignite.Core.Tests
 
             lock1.Enter();
 
-            Assert.IsFalse(lock2.TryEnter());
-            Assert.IsFalse(lock2.TryEnter(TimeSpan.Zero));
-            Assert.IsFalse(lock2.TryEnter(TimeSpan.FromMilliseconds(50)));
+            Task.Run(() =>
+            {
+                Assert.IsFalse(lock2.TryEnter());
+                Assert.IsFalse(lock2.TryEnter(TimeSpan.Zero));
+                Assert.IsFalse(lock2.TryEnter(TimeSpan.FromMilliseconds(50)));
+            }).Wait();
+
+            lock1.Exit();
         }
 
         [Test]
