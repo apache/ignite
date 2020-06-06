@@ -30,6 +30,10 @@ namespace Apache.Ignite.Core.Configuration
             // No-op.
         }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="LockConfiguration"/> class.
+        /// </summary>
+        /// <param name="other">Other configuration to copy.</param>
         public LockConfiguration(LockConfiguration other)
         {
             Name = other.Name;
@@ -41,7 +45,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the cluster-wide lock name.
         /// </summary>
         public string Name { get; set; }
-        
+
         /// <summary>
         /// Gets or sets a value indicating whether the lock should be in fair mode.
         /// <para />
@@ -52,7 +56,7 @@ namespace Apache.Ignite.Core.Configuration
         /// setting, but have smaller variances in times to obtain locks and guarantee lack of starvation.
         /// </summary>
         public bool IsFair { get; set; }
-        
+
         /// <summary>
         /// Gets or sets a value indicating whether the lock should be failover-safe: when true,
         /// if any node leaves topology, all locks already acquired by that node are silently released
