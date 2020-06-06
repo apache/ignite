@@ -59,26 +59,42 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.False(lck.IsEntered());
             Assert.False(lck.IsBroken());
-            
+
             lck.Remove();
-            
+
             Assert.IsTrue(lck.IsRemoved());
         }
 
         /// <summary>
-        /// Tests that disposed lock throws correct exception.
+        /// Tests that removed lock throws correct exception.
         /// </summary>
         [Test]
         public void TestRemovedLockThrowsIgniteException()
         {
             var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
             var lock2 = Ignite2.GetOrCreateLock(TestUtils.TestName);
-            
-            // TODO: NPE disappears if I add this:
-            // Assert.IsFalse(lock2.IsEntered());
-            
+
+            Assert.IsFalse(lock2.IsEntered());
             lock1.Remove();
-            lock2.Enter();
+
+            var ex = Assert.Throws<IgniteException>(() => lock2.Enter());
+            Assert.AreEqual("Failed to find reentrant lock with given name: " + lock2.Configuration.Name, ex.Message);
+        }
+
+        /// <summary>
+        /// Tests that removed lock throws correct exception.
+        /// </summary>
+        [Test]
+        [Ignore("IGNITE-13128")]
+        public void TestRemovedBeforeUseLockThrowsIgniteException()
+        {
+            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
+            var lock2 = Ignite2.GetOrCreateLock(TestUtils.TestName);
+
+            lock1.Remove();
+
+            var ex = Assert.Throws<IgniteException>(() => lock2.Enter());
+            Assert.AreEqual("Failed to find reentrant lock with given name: " + lock2.Configuration.Name, ex.Message);
         }
 
         /// <summary>
@@ -91,18 +107,18 @@ namespace Apache.Ignite.Core.Tests
             {
                 Name = TestUtils.TestName
             };
-            
+
             var lck = Ignite.GetOrCreateLock(cfg, true);
-            
+
             lck.Enter();
             Assert.IsTrue(lck.IsEntered());
 
             var ex = Assert.Throws<IgniteException>(() => lck.Remove());
             StringAssert.StartsWith("Failed to remove reentrant lock with blocked threads", ex.Message);
-            
+
             lck.Exit();
             lck.Remove();
-            
+
             Assert.IsNull(Ignite.GetOrCreateLock(cfg, false));
         }
 
@@ -120,7 +136,7 @@ namespace Apache.Ignite.Core.Tests
             };
 
             var lck = Ignite.GetOrCreateLock(cfg, true);
-            
+
             // Change original instance.
             cfg.Name = "y";
             cfg.IsFair = false;
