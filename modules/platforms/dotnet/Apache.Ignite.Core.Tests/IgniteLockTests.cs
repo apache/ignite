@@ -268,34 +268,21 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestNonFailoverSafeLockThrowsExceptionOnAllNodesWhenOwnerLeaves()
         {
-            var lockName = TestUtils.TestName;
-            var lock1 = Ignite.GetOrCreateLock(lockName);
-            var evt = new ManualResetEventSlim(false);
-
-            Task.Factory.StartNew(() =>
-            {
-                var ignite = Ignition.Start(new IgniteConfiguration(GetConfig()) {IgniteInstanceName = "_"});
-
-                var lock2 = ignite.GetOrCreateLock(lockName);
-                lock2.Enter();
-
-                evt.Set();
-                evt.Wait();
-
-                Ignition.Stop(ignite.Name, true);
-            });
-
-            evt.Wait();
-            evt.Set();
-
-            var ex = Assert.Throws<IgniteException>(() => lock1.Enter());
+            var ex = Assert.Throws<IgniteException>(() => TestFailover(false));
             StringAssert.StartsWith("Lock broken", ex.Message);
         }
 
+        /// <summary>
+        /// Tests that failover-safe lock releases when owner node leaves.
+        /// </summary>
         [Test]
         public void TestFailoverSafeLockIsReleasedWhenOwnerLeaves()
         {
-            // TODO
+            var lock1 = TestFailover(true);
+
+            Assert.IsTrue(lock1.IsEntered());
+
+            lock1.Exit();
         }
 
         /// <summary>
@@ -360,6 +347,41 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(count, locks.Count);
             CollectionAssert.IsOrdered(locks);
+        }
+
+        /// <summary>
+        /// Tests failover scenario when lock owner node leaves.
+        /// </summary>
+        private IIgniteLock TestFailover(bool isFailoverSafe)
+        {
+            var cfg = new LockConfiguration
+            {
+                Name = TestUtils.TestName,
+                IsFailoverSafe = isFailoverSafe
+            };
+
+            var lock1 = Ignite.GetOrCreateLock(cfg, true);
+            var evt = new ManualResetEventSlim(false);
+
+            Task.Factory.StartNew(() =>
+            {
+                var ignite = Ignition.Start(new IgniteConfiguration(GetConfig()) {IgniteInstanceName = "_"});
+
+                var lock2 = ignite.GetOrCreateLock(cfg, true);
+                lock2.Enter();
+
+                evt.Set();
+                evt.Wait();
+
+                Ignition.Stop(ignite.Name, true);
+            });
+
+            evt.Wait();
+            evt.Set();
+
+            lock1.Enter();
+
+            return lock1;
         }
     }
 }
