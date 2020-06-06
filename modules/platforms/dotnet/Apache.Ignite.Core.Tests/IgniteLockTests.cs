@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections.Concurrent;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
@@ -222,7 +224,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new LockConfiguration
             {
-                Name = "x",
+                Name = TestUtils.TestName,
                 IsFair = true,
                 IsFailoverSafe = true
             };
@@ -260,13 +262,59 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestGetOrCreateLockReturnsNullOnMissingLockWhenCreateFlagIsNotSet()
         {
-            Assert.IsNull(Ignite.GetOrCreateLock(new LockConfiguration {Name = "x"}, false));
+            Assert.IsNull(Ignite.GetOrCreateLock(new LockConfiguration {Name = TestUtils.TestName}, false));
         }
 
         [Test]
         public void TestFairLockGuaranteesOrder()
         {
-            // TODO
+            const int count = 50;
+
+            var cfg = new LockConfiguration
+            {
+                Name = TestUtils.TestName,
+                IsFair = true,
+                IsFailoverSafe = true
+            };
+
+            var lck = Ignite.GetOrCreateLock(cfg, true);
+            lck.Enter();
+
+            var locks = new ConcurrentQueue<int>();
+            var threads = new Thread[count];
+
+            var evt = new AutoResetEvent(false);
+
+            for (int i = 0; i < count; i++)
+            {
+                var id = i;
+
+                var thread = new Thread(() =>
+                {
+                    evt.Set();
+                    lck.Enter();
+                    locks.Enqueue(id);
+                    lck.Exit();
+                });
+
+                thread.Start();
+
+                evt.WaitOne();
+
+                Thread.Sleep(50);
+
+                threads[i] = thread;
+            }
+
+            lck.Exit();
+
+            foreach (var thread in threads)
+            {
+                thread.Join();
+            }
+
+            Assert.AreEqual(count, locks.Count);
+            CollectionAssert.IsOrdered(locks);
         }
     }
 }
