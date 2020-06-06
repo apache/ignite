@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -774,7 +775,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMergeServersFail1_1() throws Exception {
-        mergeServersFail1(false);
+        mergeServersFail1(false, false, 8);
     }
 
     /**
@@ -782,35 +783,117 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMergeServersFail1_2() throws Exception {
-        mergeServersFail1(true);
+        mergeServersFail1(true, false, 8);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMergeServersFail1_3() throws Exception {
+        mergeServersFail1(false, true, 8);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMergeServersFail1_4() throws Exception {
+        mergeServersFail1(true, true, 8);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMergeServersFail1_5() throws Exception {
+        mergeServersFail1(false, false, 7);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMergeServersFail1_6() throws Exception {
+        mergeServersFail1(true, false, 7);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMergeServersFail1_7() throws Exception {
+        mergeServersFail1(false, true, 7);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMergeServersFail1_8() throws Exception {
+        mergeServersFail1(true, true, 7);
     }
 
     /**
      * @param waitRebalance Wait for rebalance end before start tested topology change.
+     * @param delayRebalance Delay rebalancing before checking caches.
+     * @param mergeTopVer Merge topology version (7 or 8).
      * @throws Exception If failed.
      */
-    private void mergeServersFail1(boolean waitRebalance) throws Exception {
+    private void mergeServersFail1(boolean waitRebalance, boolean delayRebalance, int mergeTopVer) throws Exception {
+        testSpi = true;
+
         final Ignite srv0 = startGrids(5);
 
         if (waitRebalance)
             awaitPartitionMapExchange();
 
+        if (delayRebalance) {
+            for (Ignite allGrid : G.allGrids()) {
+                TestRecordingCommunicationSpi.spi(allGrid).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                    @Override public boolean apply(ClusterNode clusterNode, Message msg) {
+                        return msg instanceof GridDhtPartitionDemandMessage;
+                    }
+                });
+            }
+        }
+
         final List<DiscoveryEvent> mergedEvts = new ArrayList<>();
 
-        mergeExchangeWaitVersion(srv0, 8, mergedEvts);
+        mergeExchangeWaitVersion(srv0, mergeTopVer, mergedEvts);
 
         UUID grid3Id = grid(3).localNode().id();
         UUID grid2Id = grid(2).localNode().id();
 
         stopGrid(getTestIgniteInstanceName(4), true, false);
         stopGrid(getTestIgniteInstanceName(3), true, false);
+
+        if (mergeTopVer == 7) {
+            waitForReadyTopology(grid(0).cachex(cacheNames[0]).context().topology(),
+                    new AffinityTopologyVersion(7, 0));
+        }
+
         stopGrid(getTestIgniteInstanceName(2), true, false);
 
-        checkCaches();
+        checkAffinity();
+
+        checkCaches0();
+
+        checkAffinity();
+
+        if (delayRebalance) {
+            for (Ignite allGrid : G.allGrids())
+                TestRecordingCommunicationSpi.spi(allGrid).stopBlock();
+        }
 
         awaitPartitionMapExchange();
 
-        assertTrue("Unexpected number of merged disco events: " + mergedEvts.size(), mergedEvts.size() == 2);
+        checkTopologiesConsistency();
+
+        checkCaches0();
+
+        assertTrue("Unexpected number of merged disco events: " + mergedEvts.size(),
+                mergedEvts.size() == mergeTopVer - 6);
 
         for (DiscoveryEvent discoEvt : mergedEvts) {
             ClusterNode evtNode = discoEvt.eventNode();

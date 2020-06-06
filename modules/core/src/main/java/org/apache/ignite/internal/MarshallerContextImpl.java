@@ -59,6 +59,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+import static org.apache.ignite.internal.MarshallerPlatformIds.otherPlatforms;
+import static org.apache.ignite.internal.MarshallerPlatformIds.platformName;
 import static org.apache.ignite.marshaller.MarshallerUtils.CLS_NAMES_FILE;
 import static org.apache.ignite.marshaller.MarshallerUtils.JDK_CLS_NAMES_FILE;
 
@@ -189,7 +191,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      */
     public static void saveMappings(GridKernalContext ctx, List<Map<Integer, MappedName>> mappings, File dir) {
         MarshallerMappingFileStore writer = new MarshallerMappingFileStore(ctx,
-            mappingFileStoreWorkDir(dir.getAbsolutePath()));
+            resolveMappingFileStoreWorkDir(dir.getAbsolutePath()));
 
         addPlatformMappings(ctx.log(MarshallerContextImpl.class),
             mappings,
@@ -377,6 +379,24 @@ public class MarshallerContextImpl implements MarshallerContext {
             byte platformId,
             int typeId
     ) throws ClassNotFoundException, IgniteCheckedException {
+        return getClassName(platformId, typeId, false);
+    }
+
+    /**
+     * Gets class name for provided (platformId, typeId) pair.
+     *
+     * @param platformId id of a platform the class was registered for.
+     * @param typeId Type ID.
+     * @param skipOtherPlatforms Whether to skip other platforms check (recursion guard).
+     * @return Class name
+     * @throws ClassNotFoundException If class was not found.
+     * @throws IgniteCheckedException In case of any other error.
+     */
+    private String getClassName(
+            byte platformId,
+            int typeId,
+            boolean skipOtherPlatforms
+    ) throws ClassNotFoundException, IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
         MappedName mappedName = cache.get(typeId);
@@ -390,35 +410,56 @@ public class MarshallerContextImpl implements MarshallerContext {
 
             if (clsName != null)
                 cache.putIfAbsent(typeId, new MappedName(clsName, true));
-            else
-                if (clientNode) {
-                    mappedName = cache.get(typeId);
+            else if (clientNode) {
+                mappedName = cache.get(typeId);
 
-                    if (mappedName == null) {
-                        GridFutureAdapter<MappingExchangeResult> fut = transport.requestMapping(
-                                new MarshallerMappingItem(platformId, typeId, null),
-                                cache);
+                if (mappedName == null) {
+                    GridFutureAdapter<MappingExchangeResult> fut = transport.requestMapping(
+                            new MarshallerMappingItem(platformId, typeId, null),
+                            cache);
 
-                        clsName = fut.get().className();
-                    }
-                    else
-                        clsName = mappedName.className();
-
-                    if (clsName == null)
-                        throw new ClassNotFoundException(
-                                "Requesting mapping from grid failed for [platformId="
-                                        + platformId
-                                        + ", typeId="
-                                        + typeId + "]");
-
-                    return clsName;
+                    clsName = fut.get().className();
                 }
                 else
+                    clsName = mappedName.className();
+
+                if (clsName == null)
                     throw new ClassNotFoundException(
-                            "Unknown pair [platformId="
+                            "Requesting mapping from grid failed for [platformId="
                                     + platformId
                                     + ", typeId="
                                     + typeId + "]");
+
+                return clsName;
+            }
+            else {
+                String platformName = platformName(platformId);
+
+                if (!skipOtherPlatforms) {
+                    // Look for this class in other platforms to provide a better error message.
+                    for (byte otherPlatformId : otherPlatforms(platformId)) {
+                        try {
+                            clsName = getClassName(otherPlatformId, typeId, true);
+                        } catch (ClassNotFoundException ignored) {
+                            continue;
+                        }
+
+                        String otherPlatformName = platformName(otherPlatformId);
+
+                        throw new ClassNotFoundException(
+                                "Failed to resolve " + otherPlatformName + " class '" + clsName
+                                        + "' in " + platformName
+                                        + " [platformId=" + platformId
+                                        + ", typeId=" + typeId + "].");
+                    }
+                }
+
+                throw new ClassNotFoundException(
+                        "Failed to resolve class name [" +
+                                "platformId=" + platformId
+                                + ", platform=" + platformName
+                                + ", typeId=" + typeId + "]");
+            }
         }
 
         return clsName;
@@ -551,7 +592,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
 
         fileStore = marshallerMappingFileStoreDir == null ?
-            new MarshallerMappingFileStore(ctx, mappingFileStoreWorkDir(workDir)) :
+            new MarshallerMappingFileStore(ctx, resolveMappingFileStoreWorkDir(workDir)) :
             new MarshallerMappingFileStore(ctx, marshallerMappingFileStoreDir);
 
         this.transport = transport;
@@ -566,13 +607,24 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param igniteWorkDir Base ignite working directory.
      * @return Resolved directory.
      */
+    public static File resolveMappingFileStoreWorkDir(String igniteWorkDir) {
+        File dir = mappingFileStoreWorkDir(igniteWorkDir);
+
+        if (!U.mkdirs(dir))
+            throw new IgniteException("Could not create directory for marshaller mappings: " + dir);
+
+        return dir;
+    }
+
+    /**
+     * @param igniteWorkDir Base ignite working directory.
+     * @return Work directory for marshaller mappings.
+     */
     public static File mappingFileStoreWorkDir(String igniteWorkDir) {
-        try {
-            return U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        if (F.isEmpty(igniteWorkDir))
+            throw new IgniteException("Work directory has not been set: " + igniteWorkDir);
+
+        return new File(igniteWorkDir, "marshaller");
     }
 
     /**

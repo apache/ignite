@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -33,9 +32,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -44,12 +42,7 @@ import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.compute.ComputeJobResultPolicy;
-import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -60,10 +53,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -71,7 +62,6 @@ import org.junit.Test;
 /**
  * Checks compute grid funtionality of thin client.
  */
-@SuppressWarnings("ThrowableNotThrown")
 public class ComputeTaskTest extends GridCommonAbstractTest {
     /** Grids count. */
     private static final int GRIDS_CNT = 4;
@@ -83,14 +73,15 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     private static final long TIMEOUT = 1_000L;
 
     /** Test task name. */
-    private static final String TEST_TASK_NAME = "TestTask";
+    public static final String TEST_TASK_NAME = "TestTask";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setClientConnectorConfiguration(
             new ClientConnectorConfiguration().setThinClientConfiguration(
                 new ThinClientConfiguration().setMaxActiveComputeTasksPerConnection(
-                    getTestIgniteInstanceIndex(igniteInstanceName) <= 1 ? ACTIVE_TASKS_LIMIT : 0)));
+                    getTestIgniteInstanceIndex(igniteInstanceName) <= 1 ? ACTIVE_TASKS_LIMIT : 0)))
+            .setClientMode(getTestIgniteInstanceIndex(igniteInstanceName) == 3);
     }
 
     /**
@@ -128,7 +119,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             T2<UUID, Set<UUID>> val = client.compute().execute(TestTask.class.getName(), null);
 
             assertEquals(nodeId(0), val.get1());
-            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().nodes())), val.get2());
+            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
         }
     }
 
@@ -155,7 +146,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             T2<UUID, Set<UUID>> val = client.compute().execute(TEST_TASK_NAME, null);
 
             assertEquals(nodeId(0), val.get1());
-            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().nodes())), val.get2());
+            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
         }
     }
 
@@ -184,7 +175,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             assertTrue(fut.isDone());
             assertEquals(nodeId(0), val.get1());
-            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().nodes())), val.get2());
+            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
         }
     }
 
@@ -260,9 +251,24 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             assertEquals(nodeId(0), val.get1());
             assertEquals(nodeIds(1, 2), val.get2());
+
+            // Compute on client node defined explicitly.
+            grp = client.cluster().forNodeIds(nodeIds(3));
+
+            val = client.compute(grp).execute(TestTask.class.getName(), null);
+
+            assertEquals(nodeId(0), val.get1());
+            assertEquals(nodeIds(3), val.get2());
+
+            // Compute on all nodes (clients + servers).
+            grp = client.cluster();
+
+            val = client.compute(grp).execute(TestTask.class.getName(), null);
+
+            assertEquals(nodeId(0), val.get1());
+            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().nodes())), val.get2());
         }
     }
-
 
     /**
      *
@@ -552,60 +558,6 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Compute job which returns node id where it was executed.
-     */
-    private static class TestJob implements ComputeJob {
-        /** Ignite. */
-        @IgniteInstanceResource
-        Ignite ignite;
-
-        /** Sleep time. */
-        private final Long sleepTime;
-
-        /**
-         * @param sleepTime Sleep time.
-         */
-        private TestJob(Long sleepTime) {
-            this.sleepTime = sleepTime;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteException {
-            if (sleepTime != null)
-                doSleep(sleepTime);
-
-            return ignite.cluster().localNode().id();
-        }
-    }
-
-    /**
-     * Compute task which returns node id for routing node and list of node ids for each node was affected.
-     */
-    @ComputeTaskName(TEST_TASK_NAME)
-    private static class TestTask extends ComputeTaskAdapter<Long, T2<UUID, Set<UUID>>> {
-        /** Ignite. */
-        @IgniteInstanceResource
-        Ignite ignite;
-
-        /** {@inheritDoc} */
-        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Long arg) throws IgniteException {
-            return subgrid.stream().collect(Collectors.toMap(node -> new TestJob(arg), node -> node));
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public T2<UUID, Set<UUID>> reduce(List<ComputeJobResult> results) throws IgniteException {
-            return new T2<>(ignite.cluster().localNode().id(),
-                results.stream().map(res -> (UUID)res.getData()).collect(Collectors.toSet()));
-        }
-    }
-
-    /**
      * Compute task with latch on routing node.
      */
     @ComputeTaskName("TestLatchTask")
@@ -634,66 +586,6 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             }
 
             return super.reduce(results);
-        }
-    }
-
-    /**
-     * Task to test failover.
-     */
-    private static class TestFailoverTask implements ComputeTask<Long, Boolean> {
-        /** */
-        private final AtomicBoolean firstJobProcessed = new AtomicBoolean();
-
-        /** */
-        private volatile boolean failedOver;
-
-        /** {@inheritDoc} */
-        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Long arg) throws IgniteException {
-            return F.asMap(new TestJob(null), subgrid.get(0));
-        }
-
-        /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
-            if (firstJobProcessed.compareAndSet(false, true))
-                return ComputeJobResultPolicy.FAILOVER;
-            else {
-                failedOver = true;
-
-                return ComputeJobResultPolicy.WAIT;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
-            return failedOver;
-        }
-    }
-
-    /**
-     * Task to test "no result cache" flag.
-     */
-    private static class TestResultCacheTask implements ComputeTask<Long, Boolean> {
-        /** Is result cached. */
-        private volatile boolean cached;
-
-        /** {@inheritDoc} */
-        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Long arg) throws IgniteException {
-            return F.asMap(new TestJob(null), subgrid.get(0));
-        }
-
-        /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
-            if (!F.isEmpty(rcvd))
-                cached = true;
-
-            return ComputeJobResultPolicy.WAIT;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
-            return cached;
         }
     }
 }

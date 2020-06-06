@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             {
                 EnabledLevels = new[] {LogLevel.Error}
             };
-            
+
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 CacheConfiguration = new[]
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             };
 
             _grid = Ignition.Start(cfg);
-            
+
             var cfg2 = new IgniteConfiguration(cfg)
             {
                 IgniteInstanceName = "server2"
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             };
 
             _client = Ignition.Start(clientCfg);
-            
+
             WaitForRebalance();
         }
 
@@ -149,14 +149,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             var key = TestUtils.GetKey(_grid, cache.Name, primaryKey: primaryKey);
 
             var obj = new Foo(key);
-            
+
             cache[key] = obj;
             var res1 = cache[key];
             var res2 = cache[key];
 
             // Returned object is Equal to the initial.
             Assert.AreEqual(obj, res1);
-            
+
             // But not the same - new instance is stored in platform cache,
             // except primary on servers - thread-local optimization avoids extra deserialization there.
             if (primaryKey && mode == CacheTestMode.ServerLocal || !primaryKey && mode == CacheTestMode.ServerRemote)
@@ -196,14 +196,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 // Put through remote node: platform cache is updated only on Get.
                 var remoteCache = GetCache<int, Foo>(
                     mode == CacheTestMode.Client ? CacheTestMode.ServerRemote : CacheTestMode.Client);
-                
+
                 remoteCache[key] = obj;
             }
 
             Assert.AreEqual(3, cache[key].Bar);
             Assert.AreSame(cache[key], cache[key]);
         }
-        
+
         /// <summary>
         /// Tests that platform cache returns the same object on every get.
         /// </summary>
@@ -222,13 +222,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             {
                 Foo val;
 
-                return localCache.TryGet(key, out val) && 
+                return localCache.TryGet(key, out val) &&
                        ReferenceEquals(val, localCache.Get(key));
-            }, 300);
-            
+            });
+
             // Invalidate after get.
             remoteCache[key] = new Foo(1);
-            
+
             TestUtils.WaitForTrueCondition(() =>
             {
                 Foo val;
@@ -236,9 +236,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 return localCache.TryGet(key, out val) &&
                        val.Bar == 1 &&
                        ReferenceEquals(val, localCache.Get(key));
-            }, 300);
+            });
         }
-        
+
         /// <summary>
         /// Tests that platform cache is updated from remote node after being populated with local Put call.
         /// </summary>
@@ -278,7 +278,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         public void TestPlatformCacheRemoveFromRemoteNodeAfterLocalPut()
         {
             var localCache = _client.GetOrCreateNearCache<int, int>(CacheName, new NearCacheConfiguration());
-            
+
             var remoteCache = _grid.GetCache<int, int>(CacheName);
 
             localCache[1] = 1;
@@ -301,7 +301,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             clientCache[key] = 2;
             Assert.AreEqual(2, serverCache.LocalPeek(key, CachePeekMode.Platform));
-            
+
             clientCache[key] = 3;
             Assert.AreEqual(3, serverCache.LocalPeek(key, CachePeekMode.Platform));
 
@@ -320,7 +320,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 NearConfiguration = new NearCacheConfiguration(),
                 PlatformCacheConfiguration = new PlatformCacheConfiguration()
             };
-            
+
             var cache1 = _grid.CreateCache<int, int>(cfg);
             var cache2 = _grid.GetCache<string, string>(cfg.Name);
             var cache3 = _grid.GetCache<int, Foo>(cfg.Name);
@@ -346,16 +346,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 NearConfiguration = new NearCacheConfiguration(),
                 PlatformCacheConfiguration = new PlatformCacheConfiguration()
             };
-            
+
             var cache1 = _grid.CreateCache<int, Foo>(cfg);
             cache1[1] = new Foo(42);
             cache1[2] = new Foo(43);
-            
+
             // Use different type parameters.
             var cache2 = _grid.GetCache<int, string>(cfg.Name);
             cache2[1] = "x";
 
-            // Check that platform cache still works for old entries. 
+            // Check that platform cache still works for old entries.
             Assert.Throws<InvalidCastException>(() => cache1.Get(1));
             Assert.AreEqual(43, cache1[2].Bar);
             Assert.AreSame(cache1[2], cache1[2]);
@@ -400,13 +400,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 WriteThrough = true
             };
 
-            var cache = GetIgnite(mode).CreateCache<int, Foo>(cfg, new NearCacheConfiguration(), 
+            var cache = GetIgnite(mode).CreateCache<int, Foo>(cfg, new NearCacheConfiguration(),
                 new PlatformCacheConfiguration());
-            
+
             // First write succeeds.
             cache.Put(1, new Foo(1));
             Assert.AreEqual(1, cache.LocalPeek(1, CachePeekMode.Platform).Bar);
-            
+
             // Special value causes write failure. Platform cache value is still correct.
             Assert.Throws<CacheStoreException>(() => cache.Put(1, new Foo(FailingCacheStore.FailingValue)));
             Assert.AreEqual(1, cache.LocalPeek(1, CachePeekMode.Platform).Bar);
@@ -422,7 +422,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             var value = new Foo(5);
             cache[1] = value;
-            
+
             cache.Query(new SqlFieldsQuery("update Foo set Bar = 7 where Bar = 5"));
 
             var res = cache[1];
@@ -430,19 +430,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         }
 
         /// <summary>
-        /// Tests that eviction policy removes platform cache data for the key. 
+        /// Tests that eviction policy removes platform cache data for the key.
         /// </summary>
         [Test]
         public void TestFifoEvictionPolicyRemovesPlatformCacheValue(
             [Values(CacheTestMode.ServerLocal, CacheTestMode.ServerRemote, CacheTestMode.Client)] CacheTestMode mode)
         {
             var cache = GetCache<int, Foo>(mode);
-            
+
             TestEvictionPolicyRemovesPlatformCacheValue(mode, cache);
         }
 
         /// <summary>
-        /// Tests that eviction policy removes platform cache data for the key. 
+        /// Tests that eviction policy removes platform cache data for the key.
         /// </summary>
         [Test]
         public void TestLruEvictionPolicyRemovesPlatformCacheValue(
@@ -464,7 +464,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             var ignite = GetIgnite(mode);
             var cache = ignite.CreateCache<int, Foo>(cfg, cfg.NearConfiguration);
-            
+
             TestEvictionPolicyRemovesPlatformCacheValue(mode, cache);
         }
 
@@ -473,20 +473,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         /// </summary>
         [Test]
         public void TestEvictionPolicyKeepsLastEntriesInPlatformCache(
-            [Values(true, false)] bool lruOrFifo, 
+            [Values(true, false)] bool lruOrFifo,
             [Values(true, false)] bool getOrCreate)
         {
             const int maxSize = 30;
-            
+
             var serverCache = _grid.CreateCache<int, Foo>(TestUtils.TestName);
 
             var nearCfg = new NearCacheConfiguration
             {
-                EvictionPolicy = lruOrFifo 
+                EvictionPolicy = lruOrFifo
                     ? (IEvictionPolicy) new LruEvictionPolicy
                     {
                         MaxSize = maxSize
-                    } 
+                    }
                     : new FifoEvictionPolicy
                     {
                         MaxSize = maxSize
@@ -495,13 +495,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             var platformCfg = new PlatformCacheConfiguration();
 
-            var clientCache = getOrCreate 
+            var clientCache = getOrCreate
                 ? _client.GetOrCreateNearCache<int, Foo>(serverCache.Name, nearCfg, platformCfg)
                 : _client.CreateNearCache<int, Foo>(serverCache.Name, nearCfg, platformCfg);
 
             var keys = Enumerable.Range(1, maxSize * 5).ToList();
             var nearKeys = keys.AsEnumerable().Reverse().Take(maxSize).ToArray();
-            
+
             keys.ForEach(k => serverCache.Put(k, new Foo(k)));
 
             // Get from client to populate platform cache.
@@ -513,7 +513,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             {
                 Assert.AreSame(clientCache.LocalPeek(key, CachePeekMode.Platform), clientCache.Get(key));
             }
-            
+
             // Check that GetAll returns instances from platform cache.
             var all = clientCache.GetAll(nearKeys);
             foreach (var entry in all)
@@ -545,11 +545,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             var serverCache = _grid.CreateCache<int, int>(cfg);
             var clientCache = _client.GetOrCreateNearCache<int, int>(cfg.Name, cfg.NearConfiguration);
-            
+
             clientCache[1] = 1;
             clientCache[2] = 2;
             serverCache[1] = 11;
-            
+
             Assert.AreEqual(11, clientCache[1]);
         }
 
@@ -561,7 +561,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             [Values(CacheTestMode.ServerLocal, CacheTestMode.ServerRemote, CacheTestMode.Client)] CacheTestMode mode)
         {
             var cache = GetCache<int, Foo>(mode);
-            
+
             const int count = 100;
             cache.PutAll(Enumerable.Range(1, count).Select(x => new KeyValuePair<int, Foo>(x, new Foo(x))));
 
@@ -570,9 +570,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             {
                 CacheName = cache.Name
             };
-            
+
             var res = cache.Query(new ScanQuery<int, Foo>(filter));
-            
+
             Assert.AreEqual(count, res.Count());
         }
 
@@ -584,10 +584,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             [Values(CacheTestMode.ServerLocal, CacheTestMode.ServerRemote, CacheTestMode.Client)] CacheTestMode mode)
         {
             var cache = GetCache<int, Foo>(mode);
-            
+
             const int count = 100;
             var data = Enumerable.Range(1, count).ToDictionary(x=> x, x => new Foo(x));
-            
+
             cache.PutAll(data);
 
             // Filter will check that value does not come from native platform cache.
@@ -595,7 +595,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             {
                 CacheName = cache.Name
             };
-            
+
             // Clear platform cache using internal API.
             foreach (var ignite in Ignition.GetAll())
             {
@@ -606,14 +606,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     platformCache.Clear();
                 }
             }
-            
+
             var res = cache.Query(new ScanQuery<int, Foo>(filter));
-            
+
             Assert.AreEqual(count, res.Count());
         }
 
         /// <summary>
-        /// Tests that local scan query uses platform cache directly, avoiding Java roundtrip. 
+        /// Tests that local scan query uses platform cache directly, avoiding Java roundtrip.
         /// </summary>
         [Test]
         public void TestLocalScanQueryUsesKeysAndValuesFromPlatformCache([Values(true, false)] bool withFilter,
@@ -625,23 +625,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             var qry = new ScanQuery<int, Foo>
             {
                 Local = true,
-                Filter = withFilter 
+                Filter = withFilter
                     ? new ScanQueryPlatformCacheFilter
                     {
                         CacheName = cache.Name
                     }
                     : null,
-                Partition = withPartition 
-                    ? _grid.GetAffinity(cache.Name).GetPartition(TestUtils.GetPrimaryKey(_grid, cache.Name)) 
+                Partition = withPartition
+                    ? _grid.GetAffinity(cache.Name).GetPartition(TestUtils.GetPrimaryKey(_grid, cache.Name))
                     : (int?) null
             };
-            
+
             var res = cache.Query(qry);
 
             foreach (var entry in res)
             {
                 var localValue = cache.LocalPeek(entry.Key, CachePeekMode.Platform);
-                
+
                 if (withPartition)
                 {
                     // Local scan with partition works directly through platform cache.
@@ -661,18 +661,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         }
 
         /// <summary>
-        /// Tests that local scan query reserves the partition when <see cref="ScanQuery{TK,TV}.Partition"/> is set. 
+        /// Tests that local scan query reserves the partition when <see cref="ScanQuery{TK,TV}.Partition"/> is set.
         /// </summary>
         [Test]
         public void TestLocalScanQueryWithPartitionReservesPartitionAndReleasesItOnDispose()
         {
             var cache = GetCache<int, Foo>(CacheTestMode.ServerLocal);
-            
+
             var key = TestUtils.GetPrimaryKey(_grid, cache.Name);
             var part = _grid.GetAffinity(cache.Name).GetPartition(key);
 
             cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => new Foo(x)));
-            
+
             var qry = new ScanQuery<int, Foo>
             {
                 Local = true,
@@ -680,7 +680,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             };
 
             Func<bool> isReserved = () => TestUtils.IsPartitionReserved(_grid, cache.Name, part);
-            
+
             Assert.IsFalse(isReserved());
 
             // Full iteration.
@@ -691,20 +691,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 using (var enumerator = cursor.GetEnumerator())
                 {
                     Assert.IsTrue(isReserved());
-                    
+
                     while (enumerator.MoveNext())
                     {
                         Assert.IsTrue(isReserved());
                     }
-                    
+
                     Assert.IsFalse(isReserved());
                 }
-                
+
                 Assert.IsFalse(isReserved());
             }
-            
+
             Assert.IsFalse(isReserved());
-            
+
             // Partial iteration with LINQ.
             using (var cursor = cache.Query(qry))
             {
@@ -713,10 +713,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 var item = cursor.FirstOrDefault();
                 Assert.IsNotNull(item);
 
-                // Released because LINQ disposes the iterator. 
+                // Released because LINQ disposes the iterator.
                 Assert.IsFalse(isReserved());
             }
-            
+
             // Partial iteration.
             using (var cursor = cache.Query(qry))
             {
@@ -727,9 +727,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
                 Assert.IsTrue(isReserved());
             }
-            
+
             Assert.IsFalse(isReserved());
-            
+
             // GetAll without using block.
             using (var cursor = cache.Query(qry))
             {
@@ -740,10 +740,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
                 Assert.IsFalse(isReserved());
             }
-            
+
             // Exception in filter.
             qry.Filter = new ScanQueryPlatformCacheFilter {FailKey = key};
-            
+
             using (var cursor = cache.Query(qry))
             {
                 Assert.IsTrue(isReserved());
@@ -762,9 +762,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             var cache = GetCache<int, Foo>(CacheTestMode.ServerLocal);
             var qry = new ScanQuery<int, Foo> {Local = true, Partition = 1024};
-            
+
             var ex = Assert.Throws<IgniteException>(() => cache.Query(qry));
-            
+
             Assert.AreEqual("Invalid partition number: 1024", ex.Message);
         }
 
@@ -776,11 +776,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         public void TestLocalScanQueryWithPartitionThrowsOnRemoteKeys()
         {
             var cache = GetCache<int, Foo>(CacheTestMode.ServerLocal);
-            
+
             var partition = _grid2.GetAffinity(cache.Name)
                 .GetPrimaryPartitions(_grid2.GetCluster().GetLocalNode())
                 .First();
-            
+
             var qry = new ScanQuery<int, Foo>
             {
                 Local = true,
@@ -788,12 +788,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             };
 
             var ex = Assert.Throws<InvalidOperationException>(() => cache.Query(qry).GetAll());
-            
+
             Assert.AreEqual(
-                string.Format("Failed to reserve partition {0}, it does not belong to the local node.", partition), 
+                string.Format("Failed to reserve partition {0}, it does not belong to the local node.", partition),
                 ex.Message);
         }
-        
+
         /// <summary>
         /// Tests local scan query on client node.
         /// </summary>
@@ -805,10 +805,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             var clientCache = _client.CreateNearCache<int, Foo>(cache.Name, new NearCacheConfiguration(),
                 new PlatformCacheConfiguration());
-            
+
             // Promote key to near cache.
             clientCache.Get(2);
-            
+
             var res = clientCache.Query(new ScanQuery<int, Foo> {Local = true}).GetAll();
 
             // Local scan on client node returns empty collection.
@@ -826,9 +826,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             var cache = GetCache<int, Foo>(mode)
                 .WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(0.2), null, null));
-            
+
             cache[1] = new Foo(1);
-            
+
             Assert.AreEqual(1, cache[1].Bar);
             Assert.AreEqual(1, cache.LocalPeek(1, CachePeekMode.Platform).Bar);
             Assert.AreEqual(1, cache.Count());
@@ -853,14 +853,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     KeepBinary = true
                 }
             };
-            
+
             var clientCache = _client.CreateCache<int, Foo>(cfg);
             var serverCache = _grid2.GetCache<int, object>(cfg.Name);
             Assert.IsTrue(serverCache.GetConfiguration().PlatformCacheConfiguration.KeepBinary);
-            
+
             // Put non-binary from client. There is no platform cache on client.
             clientCache[1] = new Foo(2);
-            
+
             // Read from platform on server.
             var res = (IBinaryObject) serverCache.LocalPeek(1, CachePeekMode.Platform);
             Assert.AreEqual(2, res.GetField<int>("Bar"));
@@ -895,7 +895,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     remoteCache.Put(key, new Foo(id));
                 }
             });
-            
+
             var localReader = Task.Factory.StartNew(() =>
             {
                 // ReSharper disable once AccessToModifiedClosure
@@ -913,7 +913,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             // Get actual value with SQL to bypass caches.
             // Actual value may not be equal to the latest id because two threads compete in Put calls.
             var actualValue = (int) localCache.Query(new SqlFieldsQuery("select Bar from Foo")).GetAll()[0][0];
-            
+
             Assert.AreEqual(actualValue, localCache[key].Bar, "Local value");
             Assert.AreEqual(actualValue, remoteCache[key].Bar, "Remote value");
         }
@@ -932,8 +932,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             clientCache[1] = new Foo(1);
             serverCache[2] = new Foo(2);
 
-            var res = async 
-                ? clientCache.GetAllAsync(Enumerable.Range(1, 2)).Result 
+            var res = async
+                ? clientCache.GetAllAsync(Enumerable.Range(1, 2)).Result
                 : clientCache.GetAll(Enumerable.Range(1, 2));
 
             Assert.AreEqual(new[] {1, 2}, res.Select(x => x.Key));
@@ -959,20 +959,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             serverCache[2] = new Foo(2);
 
             Foo foo;
-            
+
             Assert.IsTrue(clientCache.TryLocalPeek(1, out foo, CachePeekMode.Platform));
             Assert.AreEqual(1, foo.Bar);
-            
+
             Assert.IsTrue(clientCache.TryLocalPeek(1, out foo, CachePeekMode.Platform | CachePeekMode.Near));
             Assert.AreEqual(1, foo.Bar);
-            
+
             Assert.IsFalse(clientCache.TryLocalPeek(2, out foo, CachePeekMode.Platform));
             Assert.IsFalse(clientCache.TryLocalPeek(2, out foo, CachePeekMode.Near));
             Assert.IsFalse(clientCache.TryLocalPeek(2, out foo, CachePeekMode.All));
-            
+
             Assert.AreEqual(2, serverCache.LocalPeek(2, CachePeekMode.Platform).Bar);
             Assert.AreEqual(2, serverCache.LocalPeek(2, CachePeekMode.Near).Bar);
-            
+
             Assert.AreSame(serverCache[2], serverCache.LocalPeek(2, CachePeekMode.Platform));
             Assert.AreNotSame(serverCache[2], serverCache.LocalPeek(2, CachePeekMode.Near));
         }
@@ -984,12 +984,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             var cache = GetCache<int, int>(mode);
             var cache2 = GetCache<int, int>(CacheTestMode.ServerLocal);
-            
+
             var data = Enumerable.Range(1, 100).ToDictionary(x => x, x => x);
             cache2.PutAll(data);
 
             var act = async
-                ? (Func<int, bool>) (k => cache.ContainsKeyAsync(k).Result) 
+                ? (Func<int, bool>) (k => cache.ContainsKeyAsync(k).Result)
                 : k => cache.ContainsKey(k);
 
             foreach (var key in data.Keys)
@@ -1006,12 +1006,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             var cache = GetCache<int, int>(mode);
             var cache2 = GetCache<int, int>(CacheTestMode.ServerLocal);
-            
+
             var data = Enumerable.Range(1, 100).ToDictionary(x => x, x => x);
             cache2.PutAll(data);
-            
+
             var act = async
-                ? (Func<IEnumerable<int>, bool>) (k => cache.ContainsKeysAsync(k).Result) 
+                ? (Func<IEnumerable<int>, bool>) (k => cache.ContainsKeysAsync(k).Result)
                 : k => cache.ContainsKeys(k);
 
             foreach (var key in data.Keys)
@@ -1019,13 +1019,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 Assert.IsTrue(act(new[] {key}));
                 Assert.IsFalse(act(new[] {-key}));
             }
-            
+
             Assert.IsTrue(act(data.Keys));
             Assert.IsTrue(act(data.Keys.Take(10)));
             Assert.IsTrue(act(data.Keys.Skip(10)));
             Assert.IsFalse(act(data.Keys.Concat(new[] {-1})));
         }
-        
+
         /// <summary>
         /// Tests local size on server node.
         /// </summary>
@@ -1057,7 +1057,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             var cache = GetCache<int, int>(CacheTestMode.Client, TestUtils.TestName);
             Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Platform));
             Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.All));
-            
+
             cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => x));
 
             Assert.AreEqual(0, cache.GetLocalSize());
@@ -1075,14 +1075,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         /// Tests that <see cref="CachePeekMode.Platform"/> works with distributed GetSize overloads.
         /// </summary>
         [Test]
-        public void TestGetSizeWithPlatform([Values(true, false)] bool longMode, 
+        public void TestGetSizeWithPlatform([Values(true, false)] bool longMode,
             [Values(true, false)] bool async)
         {
             var cache = GetCache<int, int>(CacheTestMode.Client, TestUtils.TestName);
             var primaryAndPlatform = new[] {CachePeekMode.Primary, CachePeekMode.Platform};
             var platform = new[] {CachePeekMode.Platform};
             var all = new[] {CachePeekMode.All};
-            
+
             var func =
                 longMode
                     ? async
@@ -1090,7 +1090,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                         : m => cache.GetSizeLong(m)
                     : async
                         ? (Func<CachePeekMode[], long>) (m => cache.GetSizeAsync(m).Result)
-                        : m => cache.GetSize(m); 
+                        : m => cache.GetSize(m);
 
             Assert.AreEqual(0, func(all));
             Assert.AreEqual(0, func(platform));
@@ -1132,7 +1132,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             Assert.AreEqual(1, func(part, platform));
             Assert.AreEqual(2, func(part, primaryAndPlatform));
             Assert.AreEqual(2, func(part, all));
-            
+
             Assert.AreEqual(0, func(part + 1, platform));
             Assert.AreEqual(0, func(part + 1, primaryAndPlatform));
             Assert.AreEqual(0, func(part + 1, all));
@@ -1154,14 +1154,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             cache.PutAll(keys.ToDictionary(x => x, x => new Foo(x)));
 
             var localEntries = cache.GetLocalEntries(CachePeekMode.Platform).ToArray();
-            
+
             // Same set of keys.
             CollectionAssert.AreEquivalent(keys, localEntries.Select(e => e.Key));
-            
+
             // Returns same instances every time.
             CollectionAssert.AreEqual(localEntries.Select(e => e.Value),
                 cache.GetLocalEntries(CachePeekMode.Platform).Select(e => e.Value));
-            
+
             // Every instance is from platform cache.
             foreach (var entry in localEntries)
             {
@@ -1187,7 +1187,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             var platform = getKeys(CachePeekMode.Platform);
             var all = getKeys(CachePeekMode.All);
             var all2 = getKeys(CachePeekMode.Primary | CachePeekMode.Near | CachePeekMode.Platform);
-            
+
             CollectionAssert.AreEqual(all, all2);
             CollectionAssert.AreEquivalent(all, platform.Concat(primary).Concat(near));
             CollectionAssert.AreEquivalent(platform, primary.Concat(near));
@@ -1212,10 +1212,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             const int count = 100;
             cache1.PutAll(Enumerable.Range(1, count).ToDictionary(x => x, x => x));
-            
+
             Assert.AreEqual(count, cache1.GetLocalSize(CachePeekMode.Platform));
             Assert.AreEqual(count, cache2.GetLocalSize(CachePeekMode.Platform));
-            
+
             Assert.AreEqual(42, cache1.LocalPeek(42, CachePeekMode.Platform));
             Assert.AreEqual(42, cache2.LocalPeek(42, CachePeekMode.Platform));
 
@@ -1242,10 +1242,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             const int count = 100;
             cache1.PutAll(Enumerable.Range(1, count).ToDictionary(x => x, x => x));
-            
+
             Assert.AreEqual(count, cache1.GetLocalSize(CachePeekMode.Platform));
             Assert.AreEqual(count, cache2.GetLocalSize(CachePeekMode.Platform));
-            
+
             Assert.AreEqual(42, cache1.LocalPeek(42, CachePeekMode.Platform));
             Assert.AreEqual(42, cache2.LocalPeek(42, CachePeekMode.Platform));
 
@@ -1271,7 +1271,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             cache[1] = new Foo(2);
             var foo = cache[1];
-            
+
             Assert.AreEqual(2, foo.Bar);
             Assert.AreSame(foo, cache[1]);
 
@@ -1279,7 +1279,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             {
                 Assert.AreNotSame(foo, cache[1]);
             }
-            
+
             Assert.AreSame(foo, cache[1]);
 
             using (new TransactionScope())
@@ -1287,9 +1287,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 cache[2] = new Foo(3);
                 Assert.AreNotSame(foo, cache[1]);
             }
-            
+
             Assert.AreSame(foo, cache[1]);
-        } 
+        }
 
         /// <summary>
         /// Tests platform cache misconfiguration / type mismatch.
@@ -1305,7 +1305,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     ValueTypeName = typeof(Guid).FullName
                 }
             };
-            
+
             var nearCfg = new NearCacheConfiguration();
 
             var clientCache = _client.CreateCache<int, Foo>(cfg, nearCfg);
@@ -1313,7 +1313,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             // Put Foo, but platform cache expects Guid.
             clientCache.GetAndPut(1, new Foo(2));
-            
+
             // Entry is not in platform cache.
             Assert.AreEqual(0, clientCache.GetLocalSize(CachePeekMode.Platform));
 
@@ -1322,8 +1322,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             Assert.AreEqual(2, clientCache[1].Bar);
 
             // Error is logged.
-            Func<ListLogger.Entry> getEntry = () => 
-                _logger.Entries.FirstOrDefault(e => e.Message == "Failure in Java callback");
+            Func<ListLogger.Entry> getEntry = () =>
+                _logger.Entries.FirstOrDefault(e => e.Message.StartsWith("Failure in Java callback"));
 
             var message = string.Join(" | ", _logger.Entries.Select(e => e.Message));
             TestUtils.WaitForTrueCondition(() => getEntry() != null, 3000, message);
@@ -1331,7 +1331,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
         /// <summary>
         /// <see cref="ICache{TK,TV}.LoadCache"/> uses same filter mechanism as <see cref="ScanQuery{TK,TV}"/>.
-        /// Platform cache should never be used for cache store load filters.  
+        /// Platform cache should never be used for cache store load filters.
         /// </summary>
         [Test]
         public void TestCacheStoreLoadFilterDoesNotUseNearCache()
@@ -1349,9 +1349,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             // Put a value to be overwritten from store.
             var foo = FailingCacheStore.Foo;
             var key = foo.Bar;
-            
+
             cache[key] = new Foo(1);
-            
+
             // Filter asserts that values do not come from platform cache.
             var filter = new StoreNoPlatformCacheFilter
             {
@@ -1369,7 +1369,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             const int serverMaxSize = 4;
             const int clientMaxSize = serverMaxSize * 3;
-            
+
             var serverCfg = new CacheConfiguration
             {
                 Name = TestUtils.TestName,
@@ -1381,7 +1381,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     }
                 }
             };
-            
+
             var clientCfg = new NearCacheConfiguration
             {
                 EvictionPolicy = new FifoEvictionPolicy
@@ -1389,23 +1389,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     MaxSize = clientMaxSize
                 }
             };
-            
+
             var platformCfg = new PlatformCacheConfiguration();
 
             var serverCache = _grid.CreateCache<int, int>(serverCfg);
             var clientCache = _client.CreateNearCache<int, int>(serverCache.Name, clientCfg, platformCfg);
 
             var keys = Enumerable.Range(1, 100).ToList();
-            
+
             keys.ForEach(k => clientCache.Put(k, k));
-            
+
             Assert.AreEqual(clientMaxSize, clientCache.GetLocalSize(CachePeekMode.Near));
             Assert.AreEqual(clientMaxSize, clientCache.GetLocalSize(CachePeekMode.Platform));
 
             var expectedKeys = keys.AsEnumerable().Reverse().Take(clientMaxSize).ToArray();
-            var nearKeys = 
+            var nearKeys =
                 clientCache.GetLocalEntries(CachePeekMode.Platform).Select(e => e.Key).ToArray();
-            
+
             CollectionAssert.AreEquivalent(expectedKeys, nearKeys);
         }
 
@@ -1416,7 +1416,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         public void TestDataStreamerUpdatesPlatformCache()
         {
             const int entryCount = 10000;
-            
+
             var serverCfg = new CacheConfiguration
             {
                 Name = TestUtils.TestName,
@@ -1429,7 +1429,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 },
                 PlatformCacheConfiguration = new PlatformCacheConfiguration()
             };
-            
+
             var clientCfg = new NearCacheConfiguration
             {
                 EvictionPolicy = new LruEvictionPolicy
@@ -1437,9 +1437,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     MaxSize = entryCount
                 }
             };
-            
+
             var platformCfg = new PlatformCacheConfiguration();
-            
+
             var serverCache = _grid.CreateCache<int, int>(serverCfg);
             var clientCache = _client.CreateNearCache<int, int>(serverCache.Name, clientCfg, platformCfg);
 
@@ -1449,7 +1449,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             // Get data on client.
             var res = clientCache.GetAll(data.Keys);
             Assert.AreEqual(entryCount, res.Count);
-            
+
             // Check that all entries are in platform cache on client.
             Assert.AreEqual(entryCount, clientCache.GetLocalSize(CachePeekMode.Near));
             Assert.AreEqual(entryCount, clientCache.GetLocalSize(CachePeekMode.Platform));
@@ -1458,23 +1458,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             using (var streamer = _grid2.GetDataStreamer<int, int>(serverCache.Name))
             {
                 streamer.AllowOverwrite = true;
-                
+
                 foreach (var entry in data)
                 {
                     streamer.AddData(entry.Key, entry.Value + 1);
                 }
             }
-            
+
             // Verify that platform cache contains updated entries.
             foreach (var entry in data)
             {
                 var key = entry.Key;
                 var val = entry.Value + 1;
 
-                TestUtils.WaitForTrueCondition(() => val == clientCache.LocalPeek(key, CachePeekMode.Platform), 
+                TestUtils.WaitForTrueCondition(() => val == clientCache.LocalPeek(key, CachePeekMode.Platform),
                     message: string.Format("{0} = {1}", key, val));
-                
-                TestUtils.WaitForTrueCondition(() => val == serverCache.LocalPeek(key, CachePeekMode.Platform), 
+
+                TestUtils.WaitForTrueCondition(() => val == serverCache.LocalPeek(key, CachePeekMode.Platform),
                     message: string.Format("{0} = {1}", key, val));
             }
         }
@@ -1487,7 +1487,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             var nearConfiguration = _grid.GetCache<TK, TV>(CacheName).GetConfiguration().NearConfiguration;
             var cacheConfiguration = new CacheConfiguration
             {
-                NearConfiguration = nearConfiguration, 
+                NearConfiguration = nearConfiguration,
                 Name = name,
                 PlatformCacheConfiguration = new PlatformCacheConfiguration()
             };
@@ -1504,7 +1504,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         }
 
         /// <summary>
-        /// Tests that eviction policy removes platform cache data for the key. 
+        /// Tests that eviction policy removes platform cache data for the key.
         /// </summary>
         private void TestEvictionPolicyRemovesPlatformCacheValue(CacheTestMode mode, ICache<int, Foo> cache)
         {
@@ -1522,7 +1522,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 cache[item.Bar] = item;
                 cachedItems.Add(cache[item.Bar]);
             }
-            
+
             // Recent items are in platform cache:
             Assert.AreEqual(NearCacheMaxSize, cache.GetLocalSize(CachePeekMode.Platform));
             foreach (var item in cachedItems.Skip(items.Length - NearCacheMaxSize))

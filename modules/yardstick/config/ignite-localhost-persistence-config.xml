@@ -21,13 +21,19 @@
     Ignite Spring configuration file to startup grid.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="
-        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="         http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/util
+    http://www.springframework.org/schema/util/spring-util.xsd">
     <import resource="ignite-base-config.xml"/>
-
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" parent="base-ignite.cfg">
         <property name="localHost" value="127.0.0.1"/>
+
+        <property name="includeEventTypes">
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_PAGE_REPLACEMENT_STARTED"/>
+        </property>
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -56,6 +62,7 @@
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 <property name="defaultDataRegionConfiguration">
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+			<property name="maxSize" value="#{300 * 1024 * 1024}"/>
                         <property name="persistenceEnabled" value="true"/>
                     </bean>
                 </property>
