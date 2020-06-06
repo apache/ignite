@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
@@ -65,6 +66,90 @@ namespace Apache.Ignite.Core.Tests
             lck.Remove();
 
             Assert.IsTrue(lck.IsRemoved());
+        }
+
+        [Test]
+        public void TestEnterBlocksWhenLockedByAnotherThread()
+        {
+            long state = 0;
+
+            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
+            lock1.Enter();
+
+            var task = Task.Factory.StartNew(() =>
+            {
+                var lock2 = Ignite.GetOrCreateLock(TestUtils.TestName);
+                Interlocked.Increment(ref state);
+                lock2.Enter();
+                Interlocked.Increment(ref state);
+                lock2.Exit();
+                Interlocked.Increment(ref state);
+            });
+
+            TestUtils.WaitForTrueCondition(() => Interlocked.Read(ref state) == 1);
+            Assert.AreEqual(1, Interlocked.Read(ref state));
+
+            lock1.Exit();
+            task.Wait();
+            Assert.AreEqual(3, Interlocked.Read(ref state));
+        }
+
+        [Test]
+        public void TestExitThrowsCorrectExceptionWhenNotEntered()
+        {
+            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
+            lock1.Exit();
+        }
+
+        [Test]
+        public void TestTryEnterReturnsTrueWhenUnlocked()
+        {
+            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
+
+            Assert.IsTrue(lock1.TryEnter());
+            Assert.IsTrue(lock1.TryEnter(TimeSpan.Zero));
+            Assert.IsTrue(lock1.TryEnter(TimeSpan.FromMilliseconds(50)));
+
+            lock1.Exit();
+        }
+
+        [Test]
+        public void TestTryEnterReturnsFalseWhenLocked()
+        {
+            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
+            var lock2 = Ignite.GetOrCreateLock(TestUtils.TestName);
+
+            lock1.Enter();
+
+            Task.Run(() =>
+            {
+                Assert.IsFalse(lock2.TryEnter());
+                Assert.IsFalse(lock2.TryEnter(TimeSpan.Zero));
+                Assert.IsFalse(lock2.TryEnter(TimeSpan.FromMilliseconds(50)));
+            }).Wait();
+
+            lock1.Exit();
+        }
+
+        [Test]
+        public void TestReentrancy()
+        {
+            const int count = 10;
+            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
+
+            for (var i = 0; i < count; i++)
+            {
+                lock1.Enter();
+                Assert.IsTrue(lock1.IsEntered());
+            }
+
+            for (var i = 0; i < count; i++)
+            {
+                Assert.IsTrue(lock1.IsEntered());
+                lock1.Exit();
+            }
+
+            Assert.IsFalse(lock1.IsEntered());
         }
 
         /// <summary>
@@ -171,57 +256,6 @@ namespace Apache.Ignite.Core.Tests
         public void TestGetOrCreateLockReturnsNullOnMissingLockWhenCreateFlagIsNotSet()
         {
             Assert.IsNull(Ignite.GetOrCreateLock(new LockConfiguration {Name = "x"}, false));
-        }
-
-        [Test]
-        public void TestTryEnterReturnsTrueWhenUnlocked()
-        {
-            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
-
-            Assert.IsTrue(lock1.TryEnter());
-            Assert.IsTrue(lock1.TryEnter(TimeSpan.Zero));
-            Assert.IsTrue(lock1.TryEnter(TimeSpan.FromMilliseconds(50)));
-
-            lock1.Exit();
-        }
-
-        [Test]
-        public void TestTryEnterReturnsFalseWhenLocked()
-        {
-            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
-            var lock2 = Ignite.GetOrCreateLock(TestUtils.TestName);
-
-            lock1.Enter();
-
-            Task.Run(() =>
-            {
-                Assert.IsFalse(lock2.TryEnter());
-                Assert.IsFalse(lock2.TryEnter(TimeSpan.Zero));
-                Assert.IsFalse(lock2.TryEnter(TimeSpan.FromMilliseconds(50)));
-            }).Wait();
-
-            lock1.Exit();
-        }
-
-        [Test]
-        public void TestReentrancy()
-        {
-            const int count = 10;
-            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
-
-            for (var i = 0; i < count; i++)
-            {
-                lock1.Enter();
-                Assert.IsTrue(lock1.IsEntered());
-            }
-
-            for (var i = 0; i < count; i++)
-            {
-                Assert.IsTrue(lock1.IsEntered());
-                lock1.Exit();
-            }
-
-            Assert.IsFalse(lock1.IsEntered());
         }
     }
 }
