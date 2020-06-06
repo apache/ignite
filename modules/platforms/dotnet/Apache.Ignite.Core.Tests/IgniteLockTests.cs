@@ -263,29 +263,6 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Tests that "lock broken" exception is thrown when lock is not failover-safe and owner node leaves.
-        /// </summary>
-        [Test]
-        public void TestNonFailoverSafeLockThrowsExceptionOnAllNodesWhenOwnerLeaves()
-        {
-            var ex = Assert.Throws<IgniteException>(() => TestFailover(false));
-            StringAssert.StartsWith("Lock broken", ex.Message);
-        }
-
-        /// <summary>
-        /// Tests that failover-safe lock releases when owner node leaves.
-        /// </summary>
-        [Test]
-        public void TestFailoverSafeLockIsReleasedWhenOwnerLeaves()
-        {
-            var lock1 = TestFailover(true);
-
-            Assert.IsTrue(lock1.IsEntered());
-
-            lock1.Exit();
-        }
-
-        /// <summary>
         /// Tests that null is returned when lock does not exist and create flag is false.
         /// </summary>
         [Test]
@@ -347,40 +324,6 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(count, locks.Count);
             CollectionAssert.IsOrdered(locks);
-        }
-
-        /// <summary>
-        /// Tests failover scenario when lock owner node leaves.
-        /// </summary>
-        private IIgniteLock TestFailover(bool isFailoverSafe)
-        {
-            var cfg = new LockConfiguration
-            {
-                Name = TestUtils.TestName,
-                IsFailoverSafe = isFailoverSafe
-            };
-
-            var lock1 = Ignite.GetOrCreateLock(cfg, true);
-            var evt = new ManualResetEventSlim(false);
-
-            Task.Factory.StartNew(() =>
-            {
-                var ignite = Ignition.Start(new IgniteConfiguration(GetConfig()) {IgniteInstanceName = cfg.Name});
-
-                var lock2 = ignite.GetOrCreateLock(cfg, true);
-                lock2.Enter();
-
-                evt.Set();
-                Thread.Sleep(100);
-
-                Ignition.Stop(cfg.Name, true);
-            });
-
-            evt.Wait();
-
-            lock1.Enter();
-
-            return lock1;
         }
     }
 }
