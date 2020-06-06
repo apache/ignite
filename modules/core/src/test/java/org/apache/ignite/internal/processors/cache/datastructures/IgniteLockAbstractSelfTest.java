@@ -1680,6 +1680,24 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         ignite.close();
     }
 
+    /**
+     * Tests that closed lock throws meaningful exception.
+     */
+    @Test
+    public void testClosedLockThrowsIgniteException() {
+        final String lockName = "testRemovedLockThrowsIgniteException";
+
+        Ignite srv = ignite(0);
+
+        IgniteLock lock1 = srv.reentrantLock(lockName, false, false, true);
+        IgniteLock lock2 = srv.reentrantLock(lockName, false, false, true);
+
+        lock1.close();
+
+        //noinspection ThrowableNotThrown
+        GridTestUtils.assertThrows(log, lock2::lock, IgniteException.class, "TODO");
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         // No-op.
