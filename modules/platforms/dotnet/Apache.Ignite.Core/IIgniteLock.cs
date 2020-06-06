@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Configuration;
 
     /// <summary>
-    /// Distributed re-entrant monitor (lock).
+    /// Distributed reentrant monitor (lock).
     /// <para />
     /// The functionality is similar to the standard <see cref="Monitor"/> class, but works across all cluster nodes.
     /// <para />
@@ -35,16 +35,34 @@ namespace Apache.Ignite.Core
         /// </summary>
         LockConfiguration Configuration { get; }
 
-        void Enter(); // TODO: Rename to Enter, TryEnter - like CacheLock, Monitor, etc?
+        /// <summary>
+        /// Acquires the distributed reentrant lock.
+        /// </summary>
+        void Enter();
 
+        /// <summary>
+        /// Acquires the lock only if it is free at the time of invocation.
+        /// </summary>
+        /// <returns>True if the lock was acquired; false otherwise.</returns>
         bool TryEnter();
-        
+
+        /// <summary>
+        /// Acquires the lock if it is not held by another thread within the given waiting time.
+        /// </summary>
+        /// <param name="timeout">Time to wait for the lock.</param>
+        /// <returns>True if the lock was acquired; false otherwise.</returns>
         bool TryEnter(TimeSpan timeout);
 
+        /// <summary>
+        /// Releases the lock.
+        /// </summary>
         void Exit();
 
+        /// <summary>
+        /// Returns a value indicating whether any node that owned the lock failed before releasing the lock.
+        /// </summary>
         bool IsBroken();
-        
+
         /// <summary>
         /// Determines whether the current thread holds the lock.
         /// </summary>
@@ -54,13 +72,10 @@ namespace Apache.Ignite.Core
         /// Removes the lock from the cluster.
         /// </summary>
         void Remove();
-        
+
         /// <summary>
         /// Gets a value indicating whether the lock has been removed from the cluster.
         /// </summary>
         bool IsRemoved();
-
-        // TODO: IgniteCondition is like Monitor.Wait / Pulse
-        // TODO: EnterInterruptedly? Likely no - interrupted state is not shared across .NET <-> Java boundary 
     }
 }

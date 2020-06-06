@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Configuration;
 
     /// <summary>
-    /// Ignite distributed re-entrant lock.
+    /// Ignite distributed reentrant lock.
     /// </summary>
     internal class IgniteLock : PlatformTargetAdapter, IIgniteLock
     {
