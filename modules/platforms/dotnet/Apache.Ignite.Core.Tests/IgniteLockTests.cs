@@ -98,7 +98,12 @@ namespace Apache.Ignite.Core.Tests
         public void TestExitThrowsCorrectExceptionWhenNotEntered()
         {
             var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
-            lock1.Exit();
+
+            var ex = Assert.Throws<SynchronizationLockException>(() => lock1.Exit());
+            var innerEx = ex.InnerException as JavaException;
+
+            Assert.IsNotNull(innerEx);
+            Assert.AreEqual("java.lang.IllegalMonitorStateException", innerEx.JavaClassName);
         }
 
         [Test]
