@@ -43,8 +43,11 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestNonFailoverSafeLockThrowsExceptionOnAllNodesWhenOwnerLeaves()
         {
-            var ex = Assert.Throws<IgniteException>(() => TestFailover(false));
+            var lock1 = TestFailover(false);
+            var ex = Assert.Throws<IgniteException>(() => lock1.Enter());
+
             StringAssert.StartsWith("Lock broken", ex.Message);
+            Assert.IsTrue(lock1.IsBroken());
         }
 
         /// <summary>
@@ -54,10 +57,10 @@ namespace Apache.Ignite.Core.Tests
         public void TestFailoverSafeLockIsReleasedWhenOwnerLeaves()
         {
             var lock1 = TestFailover(true);
+            lock1.Enter();
 
             Assert.IsTrue(lock1.IsEntered());
-
-            lock1.Exit();
+            Assert.IsFalse(lock1.IsBroken());
         }
 
         /// <summary>
@@ -95,8 +98,6 @@ namespace Apache.Ignite.Core.Tests
             });
 
             evt.Wait();
-
-            lock1.Enter();
 
             return lock1;
         }
