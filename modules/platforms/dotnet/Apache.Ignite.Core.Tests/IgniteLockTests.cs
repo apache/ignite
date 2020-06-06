@@ -96,6 +96,9 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(3, Interlocked.Read(ref state));
         }
 
+        /// <summary>
+        /// Tests that Exit throws a meaningful exception when lock in not entered.
+        /// </summary>
         [Test]
         public void TestExitThrowsCorrectExceptionWhenNotEntered()
         {
@@ -108,6 +111,9 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("java.lang.IllegalMonitorStateException", innerEx.JavaClassName);
         }
 
+        /// <summary>
+        /// Tests that TryEnter succeeds when lock is not taken.
+        /// </summary>
         [Test]
         public void TestTryEnterReturnsTrueWhenUnlocked()
         {
@@ -120,6 +126,9 @@ namespace Apache.Ignite.Core.Tests
             lock1.Exit();
         }
 
+        /// <summary>
+        /// Tests that TryEnter fails when lock is taken by another thread.
+        /// </summary>
         [Test]
         public void TestTryEnterReturnsFalseWhenLocked()
         {
@@ -138,6 +147,9 @@ namespace Apache.Ignite.Core.Tests
             lock1.Exit();
         }
 
+        /// <summary>
+        /// Tests that lock can be entered multiple times by the same thread.
+        /// </summary>
         [Test]
         public void TestReentrancy()
         {
@@ -259,12 +271,18 @@ namespace Apache.Ignite.Core.Tests
             // TODO
         }
 
+        /// <summary>
+        /// Tests that null is returned when lock does not exist and create flag is false.
+        /// </summary>
         [Test]
         public void TestGetOrCreateLockReturnsNullOnMissingLockWhenCreateFlagIsNotSet()
         {
             Assert.IsNull(Ignite.GetOrCreateLock(new LockConfiguration {Name = TestUtils.TestName}, false));
         }
 
+        /// <summary>
+        /// Tests that fair lock favors granting access to the longest-waiting thread
+        /// </summary>
         [Test]
         public void TestFairLockGuaranteesOrder()
         {
