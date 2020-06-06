@@ -120,6 +120,9 @@ public class BinaryUtils {
     /** Flag: compact footer, no field IDs. */
     public static final short FLAG_COMPACT_FOOTER = 0x0020;
 
+    /** Flag: compact null.     */
+    public static final short FLAG_COMPACT_NULLS = 0x0080;
+
     /** Flag: raw data contains .NET type information. Always 0 in Java. Keep it here for information only. */
     @SuppressWarnings("unused")
     public static final short FLAG_CUSTOM_DOTNET_TYPE = 0x0040;
@@ -322,6 +325,16 @@ public class BinaryUtils {
      */
     public static boolean isCompactFooter(short flags) {
         return isFlagSet(flags, FLAG_COMPACT_FOOTER);
+    }
+
+    /**
+     * Check if "null compaction" flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isCompactNull(short flags) {
+        return isFlagSet(flags, FLAG_COMPACT_NULLS);
     }
 
     /**

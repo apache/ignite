@@ -71,6 +71,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** Raw offset position. */
     private int rawOffPos;
 
+    /** If the writer is in raw mode. Important to not apply optimisations */
+    private boolean isRawModeEnabled;
+
     /** Handles. */
     private BinaryWriterHandles handles;
 
@@ -85,6 +88,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** */
     private boolean failIfUnregistered;
+
+    private  BinaryClassDescriptor desc;
 
     /**
      * @param ctx Context.
@@ -112,7 +117,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         this.out = out;
         this.schema = schema;
         this.handles = handles;
-
         start = out.position();
     }
 
@@ -161,6 +165,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         String newName = ctx.configuration().getIgniteInstanceName();
         String oldName = IgniteUtils.setCurrentIgniteName(newName);
 
+        if (this.ctx.isCompactNulls() && !this.ctx.isCompactFooter()) {
+           throw new BinaryObjectException("Null Compaction can only be used in conjunction with compact footer!");
+        }
+
         try {
             marshal0(obj, enableReplace);
         }
@@ -179,7 +187,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         Class<?> cls = obj.getClass();
 
-        BinaryClassDescriptor desc = ctx.descriptorForClass(cls);
+        this.desc = ctx.descriptorForClass(cls);
 
         if (!desc.registered()) {
             if (failIfUnregistered)
@@ -276,6 +284,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     public void postWrite(boolean userType, boolean registered) {
         short flags;
         boolean useCompactFooter;
+        boolean useCompactNulls;
 
         if (userType) {
             if (ctx.isCompactFooter()) {
@@ -286,10 +295,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 flags = BinaryUtils.FLAG_USR_TYP;
                 useCompactFooter = false;
             }
+
+            if (canCompactNull()) {
+                flags = (short) (flags | BinaryUtils.FLAG_COMPACT_NULLS);
+                useCompactNulls = true;
+            } else {
+                useCompactNulls = false;
+            }
         }
         else {
             flags = 0;
             useCompactFooter = false;
+            useCompactNulls = false;
         }
 
         int finalSchemaId;
@@ -302,7 +319,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             // Write the schema.
             flags |= BinaryUtils.FLAG_HAS_SCHEMA;
 
-            int offsetByteCnt = schema.write(out, fieldCnt, useCompactFooter);
+            int offsetByteCnt = schema.write(out, fieldCnt, useCompactFooter,  useCompactNulls);
 
             if (offsetByteCnt == BinaryUtils.OFFSET_1)
                 flags |= BinaryUtils.FLAG_OFFSET_ONE_BYTE;
@@ -514,9 +531,33 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public void doWriteObject(@Nullable Object obj) throws BinaryObjectException {
-        if (obj == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
-        else {
+        if (obj == null) {
+            if (!canApplyNullCompaction()) {
+                out.writeByte(GridBinaryMarshaller.NULL);
+            }
+        } else {
+            BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, out, schema, handles());
+
+            writer.failIfUnregistered(failIfUnregistered);
+
+            writer.marshal(obj);
+        }
+    }
+
+    private boolean canApplyNullCompaction() {
+        return this.desc.canApplyNullCompaction() && !isRawModeEnabled;
+    }
+
+    /**
+     * Write object as part of a collection so do not compact null otherwise it will mess with the order.
+     *
+     * @param obj Object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    public void doWriteObjectAsPartOfCollect(@Nullable Object obj) throws BinaryObjectException {
+        if (obj == null) {
+                out.writeByte(GridBinaryMarshaller.NULL);
+        } else {
             BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, out, schema, handles());
 
             writer.failIfUnregistered(failIfUnregistered);
@@ -771,7 +812,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.writeInt(val.length);
 
             for (Object obj : val)
-                doWriteObject(obj);
+                doWriteObjectAsPartOfCollect(obj);
         }
     }
 
@@ -792,7 +833,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.unsafeWriteByte(ctx.collectionType(col.getClass()));
 
             for (Object obj : col)
-                doWriteObject(obj);
+                doWriteObjectAsPartOfCollect(obj);
         }
     }
 
@@ -813,8 +854,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.unsafeWriteByte(ctx.mapType(map.getClass()));
 
             for (Map.Entry<?, ?> e : map.entrySet()) {
-                doWriteObject(e.getKey());
-                doWriteObject(e.getValue());
+                doWriteObjectAsPartOfCollect(e.getKey());
+                doWriteObjectAsPartOfCollect(e.getValue());
             }
         }
     }
@@ -963,9 +1004,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param po Binary object.
      */
     public void doWriteBinaryObject(@Nullable BinaryObjectImpl po) {
-        if (po == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
-        else {
+        if (po == null) {
+            if (canApplyNullCompaction()) {
+                out.writeByte(GridBinaryMarshaller.NULL);
+            }
+        } else {
             byte[] poArr = po.array();
 
             out.unsafeEnsure(1 + 4 + poArr.length + 4);
@@ -1494,7 +1537,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeObject(String fieldName, @Nullable Object obj) throws BinaryObjectException {
-        writeFieldId(fieldName);
+        writeFieldId(fieldName, obj==null);
         writeObjectField(obj);
     }
 
@@ -1505,9 +1548,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeObjectDetached(@Nullable Object obj) throws BinaryObjectException {
-        if (obj == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
-        else {
+        if (obj == null) {
+            if (canApplyNullCompaction()) {
+                out.writeByte(GridBinaryMarshaller.NULL);
+            }
+        } else {
             BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, out, schema, null);
 
             writer.failIfUnregistered(failIfUnregistered);
@@ -1735,7 +1780,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public BinaryRawWriter rawWriter() {
         if (rawOffPos == 0)
             rawOffPos = out.position();
-
+        this.isRawModeEnabled = true;
         return this;
     }
 
@@ -1813,6 +1858,14 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @throws org.apache.ignite.binary.BinaryObjectException If fields are not allowed.
      */
     private void writeFieldId(String fieldName) throws BinaryObjectException {
+        writeFieldId(fieldName, false);
+    }
+
+    /**
+     * @param fieldName Field name.
+     * @throws org.apache.ignite.binary.BinaryObjectException If fields are not allowed.
+     */
+    private void writeFieldId(String fieldName, boolean isNull) throws BinaryObjectException {
         A.notNull(fieldName, "fieldName");
 
         if (rawOffPos != 0)
@@ -1825,7 +1878,22 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         int id = mapper.fieldId(typeId, fieldName);
 
-        writeFieldId(id);
+        writeFieldId(id, isNull);
+    }
+
+    /**
+     * Write field ID.
+     * @param fieldId Field ID.
+     */
+    public void writeFieldId(int fieldId, boolean isNull) {
+        int fieldOff = out.position() - start;
+
+        // Advance schema hash.
+        schemaId = BinaryUtils.updateSchemaId(schemaId, fieldId);
+
+        schema.push(fieldId, fieldOff, isNull);
+
+        fieldCnt++;
     }
 
     /**
@@ -1833,12 +1901,19 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param fieldId Field ID.
      */
     public void writeFieldId(int fieldId) {
+        writeFieldId(fieldId, false);
+    }
+
+    /**
+     * Write field ID without schema ID update. This method should be used when schema ID is stable because class
+     * is seializable.
+     *
+     * @param fieldId Field ID.
+     */
+    public void writeFieldIdNoSchemaUpdate(int fieldId, boolean isNull) {
         int fieldOff = out.position() - start;
 
-        // Advance schema hash.
-        schemaId = BinaryUtils.updateSchemaId(schemaId, fieldId);
-
-        schema.push(fieldId, fieldOff);
+        schema.push(fieldId, fieldOff, isNull);
 
         fieldCnt++;
     }
@@ -1850,11 +1925,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param fieldId Field ID.
      */
     public void writeFieldIdNoSchemaUpdate(int fieldId) {
-        int fieldOff = out.position() - start;
-
-        schema.push(fieldId, fieldOff);
-
-        fieldCnt++;
+        writeFieldIdNoSchemaUpdate(fieldId, false);
     }
 
     /**
@@ -1944,5 +2015,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     public BinaryContext context() {
         return ctx;
+    }
+
+
+    public boolean canCompactNull () {
+        return this.context().isCompactNulls() && !this.isRawModeEnabled;
     }
 }

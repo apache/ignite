@@ -841,8 +841,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.inner.map, innerPo.field("map"));
         assertEquals(new Integer(obj.inner.enumVal.ordinal()),
             new Integer(((BinaryObject)innerPo.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.inner.enumArr), ordinals((BinaryObject[])innerPo.field("enumArr")));
         assertNull(innerPo.field("inner"));
+        assertArrayEquals(ordinals(obj.inner.enumArr), ordinals((BinaryObject[])innerPo.field("enumArr")));
         assertNull(innerPo.field("unknown"));
     }
 
@@ -857,11 +857,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         ));
 
         TestBinary obj = binaryObject();
-
         BinaryObject po = marshal(obj, marsh);
-
         assertEquals(obj, po.deserialize());
-
         assertEquals(obj.b, (byte)po.field("_b"));
         assertEquals(obj.s, (short)po.field("_s"));
         assertEquals(obj.i, (int)po.field("_i"));
@@ -2321,7 +2318,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param fields Fields.
      * @return Copy.
      */
-    private BinaryObject copy(BinaryObject po, Map<String, Object> fields) {
+     BinaryObject copy(BinaryObject po, Map<String, Object> fields) {
         BinaryObjectBuilder builder = BinaryObjectBuilderImpl.wrap(po);
 
         if (fields != null) {
@@ -3836,7 +3833,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param marsh Marshaller.
      * @return Binary object.
      */
-    private <T> BinaryObjectImpl marshal(T obj, BinaryMarshaller marsh) throws IgniteCheckedException {
+    <T> BinaryObjectImpl marshal(T obj, BinaryMarshaller marsh) throws IgniteCheckedException {
         byte[] bytes = marsh.marshal(obj);
 
         return new BinaryObjectImpl(U.<GridBinaryMarshaller>field(marsh, "impl").context(),
@@ -3850,6 +3847,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         return true;
     }
 
+    protected boolean compactNull() {
+        return false;
+    }
     /**
      * @param marsh Marshaller.
      * @return Binary context.
@@ -3918,6 +3918,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         bCfg.setIdMapper(mapper);
         bCfg.setSerializer(serializer);
         bCfg.setCompactFooter(compactFooter());
+        bCfg.setCompactNulls(compactNull());
 
         bCfg.setTypeConfigurations(cfgs);
 
@@ -3972,7 +3973,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @return Simple object.
      */
-    private static SimpleObject simpleObject() {
+    static SimpleObject simpleObject() {
         SimpleObject inner = new SimpleObject();
 
         inner.b = 1;
@@ -4060,7 +4061,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @return Binary object.
      */
-    private TestBinary binaryObject() {
+    TestBinary binaryObject() {
         SimpleObject innerSimple = new SimpleObject();
 
         innerSimple.b = 1;
@@ -4236,7 +4237,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         outer.enumArr = new TestEnum[] {TestEnum.D, TestEnum.E};
         outer.enumArrRaw = new TestEnum[] {TestEnum.E, TestEnum.A};
         outer.simpleRaw = innerSimple;
-        outer.binaryRaw = innerBinary;
+        //outer.binaryRaw = innerBinary;
 
         outer.col.add("str10");
         outer.col.add("str11");
@@ -4259,107 +4260,107 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private enum TestEnum {
+    enum TestEnum {
         A, B, C, D, E
     }
 
     /** */
-    private static class SimpleObject {
+    static class SimpleObject {
         /** */
-        private byte b;
+        byte b;
 
         /** */
-        private short s;
+         short s;
 
         /** */
-        private int i;
+         int i;
 
         /** */
-        private long l;
+         long l;
 
         /** */
-        private float f;
+         float f;
 
         /** */
-        private double d;
+         double d;
 
         /** */
-        private char c;
+         char c;
 
         /** */
-        private boolean bool;
+         boolean bool;
 
         /** */
-        private String str;
+         String str;
 
         /** */
-        private UUID uuid;
+         UUID uuid;
 
         /** */
-        private Date date;
+         Date date;
 
         /** */
-        private Timestamp ts;
+         Timestamp ts;
 
         /** */
-        private Time time;
+         Time time;
 
         /** */
-        private byte[] bArr;
+         byte[] bArr;
 
         /** */
-        private short[] sArr;
+         short[] sArr;
 
         /** */
-        private int[] iArr;
+         int[] iArr;
 
         /** */
-        private long[] lArr;
+         long[] lArr;
 
         /** */
-        private float[] fArr;
+         float[] fArr;
 
         /** */
-        private double[] dArr;
+         double[] dArr;
 
         /** */
-        private char[] cArr;
+         char[] cArr;
 
         /** */
-        private boolean[] boolArr;
+         boolean[] boolArr;
 
         /** */
-        private String[] strArr;
+         String[] strArr;
 
         /** */
-        private UUID[] uuidArr;
+         UUID[] uuidArr;
 
         /** */
-        private Date[] dateArr;
+         Date[] dateArr;
 
         /** */
-        private Time[] timeArr;
+         Time[] timeArr;
 
         /** */
-        private Object[] objArr;
+         Object[] objArr;
 
         /** */
-        private BigDecimal[] bdArr;
+         BigDecimal[] bdArr;
 
         /** */
-        private Collection<String> col;
+         Collection<String> col;
 
         /** */
-        private Map<Integer, String> map;
+         Map<Integer, String> map;
 
         /** */
-        private TestEnum enumVal;
+         TestEnum enumVal;
 
         /** */
-        private TestEnum[] enumArr;
+         TestEnum[] enumArr;
 
         /** */
-        private SimpleObject inner;
+         SimpleObject inner;
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object other) {
@@ -4381,7 +4382,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestBinary implements Binarylizable {
+    static class TestBinary implements Binarylizable {
         /** */
         private byte b;
 
@@ -4681,7 +4682,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             binary = reader.readObject("_binary");
 
             BinaryRawReader raw = reader.rawReader();
-
             bRaw = raw.readByte();
             sRaw = raw.readShort();
             iRaw = raw.readInt();
@@ -5466,7 +5466,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class DecimalReflective {
+    static class DecimalReflective {
         /** */
         public BigDecimal val;
 
@@ -5477,7 +5477,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class DecimalMarshalAware extends DecimalReflective implements Binarylizable {
+    static class DecimalMarshalAware extends DecimalReflective implements Binarylizable {
         /** */
         public BigDecimal rawVal;
 

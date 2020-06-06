@@ -884,8 +884,21 @@ public class BinaryClassDescriptor {
 
                     reader.setHandle(res);
 
-                    for (BinaryFieldAccessor info : fields)
-                        info.read(res, reader);
+                    byte[] nullMask =  reader.getNullMask();
+                    byte maskByteIndex = 0;
+                    byte maskByteBit = 0;
+                    int fieldIndex = 0;
+
+                    for (BinaryFieldAccessor info : fields) {
+                        if (canApplyNullCompaction()) {
+                            if (!BinaryReaderExImpl.isFieldNull(nullMask, fieldIndex)) {
+                                info.read(res, reader);
+                            }
+                            fieldIndex++;
+                        } else {
+                            info.read(res, reader);
+                        }
+                    }
 
                     break;
 
@@ -959,6 +972,18 @@ public class BinaryClassDescriptor {
             null,
             isEnum(),
             cls.isEnum() ? enumMap(cls) : null);
+    }
+
+    /**
+     * Create a byte array with bits enabled when the fields is null
+     * @param fieldCnt
+     * @return
+     */
+    public static byte[] createNullMask(int fieldCnt) {
+        // Compact nulls is only allowed in conjunction with compact footer
+        // Create a mask to hold the null status of the fields. 1 bit per field.
+        int maskLength = (fieldCnt / 8) + (fieldCnt % 8 != 0 ? 1 : 0);
+        return new byte[maskLength];
     }
 
     /**
@@ -1050,6 +1075,10 @@ public class BinaryClassDescriptor {
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to get constructor for class: " + cls.getName(), e);
         }
+    }
+
+    public boolean canApplyNullCompaction() {
+        return this.userType() && this.ctx.isCompactNulls()  && !this.isBinary();
     }
 
     /** {@inheritDoc} */
