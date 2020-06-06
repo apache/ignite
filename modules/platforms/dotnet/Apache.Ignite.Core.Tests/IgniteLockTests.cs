@@ -178,12 +178,9 @@ namespace Apache.Ignite.Core.Tests
         {
             var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
 
-            Task.Run(() =>
-            {
-                Assert.IsTrue(lock1.TryEnter());
-                Assert.IsTrue(lock1.TryEnter(TimeSpan.Zero));
-                Assert.IsTrue(lock1.TryEnter(TimeSpan.FromMilliseconds(50)));
-            }).Wait();
+            Assert.IsTrue(lock1.TryEnter());
+            Assert.IsTrue(lock1.TryEnter(TimeSpan.Zero));
+            Assert.IsTrue(lock1.TryEnter(TimeSpan.FromMilliseconds(50)));
 
             lock1.Exit();
         }
@@ -209,7 +206,22 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestReentrancy()
         {
+            const int count = 10;
+            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
 
+            for (var i = 0; i < count; i++)
+            {
+                lock1.Enter();
+                Assert.IsTrue(lock1.IsEntered());
+            }
+
+            for (var i = 0; i < count; i++)
+            {
+                Assert.IsTrue(lock1.IsEntered());
+                lock1.Exit();
+            }
+
+            Assert.IsFalse(lock1.IsEntered());
         }
     }
 }
