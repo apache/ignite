@@ -365,19 +365,18 @@ namespace Apache.Ignite.Core.Tests
 
             Task.Factory.StartNew(() =>
             {
-                var ignite = Ignition.Start(new IgniteConfiguration(GetConfig()) {IgniteInstanceName = "_"});
+                var ignite = Ignition.Start(new IgniteConfiguration(GetConfig()) {IgniteInstanceName = cfg.Name});
 
                 var lock2 = ignite.GetOrCreateLock(cfg, true);
                 lock2.Enter();
 
                 evt.Set();
-                evt.Wait();
+                Thread.Sleep(100);
 
-                Ignition.Stop(ignite.Name, true);
+                Ignition.Stop(cfg.Name, true);
             });
 
             evt.Wait();
-            evt.Set();
 
             lock1.Enter();
 
