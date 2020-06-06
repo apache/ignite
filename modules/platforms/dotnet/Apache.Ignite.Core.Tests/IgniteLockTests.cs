@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
@@ -169,6 +170,37 @@ namespace Apache.Ignite.Core.Tests
         public void TestGetOrCreateLockReturnsNullOnMissingLockWhenCreateFlagIsNotSet()
         {
             Assert.IsNull(Ignite.GetOrCreateLock(new LockConfiguration {Name = "x"}, false));
+        }
+
+        [Test]
+        public void TestTryEnterReturnsTrueWhenUnlocked()
+        {
+            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
+
+            Assert.IsTrue(lock1.TryEnter());
+            Assert.IsTrue(lock1.TryEnter(TimeSpan.Zero));
+            Assert.IsTrue(lock1.TryEnter(TimeSpan.FromMilliseconds(50)));
+
+            lock1.Exit();
+        }
+
+        [Test]
+        public void TestTryEnterReturnsFalseWhenLocked()
+        {
+            var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
+            var lock2 = Ignite.GetOrCreateLock(TestUtils.TestName);
+
+            lock1.Enter();
+
+            Assert.IsFalse(lock2.TryEnter());
+            Assert.IsFalse(lock2.TryEnter(TimeSpan.Zero));
+            Assert.IsFalse(lock2.TryEnter(TimeSpan.FromMilliseconds(50)));
+        }
+
+        [Test]
+        public void TestReentrancy()
+        {
+
         }
     }
 }

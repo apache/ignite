@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Diagnostics;
-    using System.Threading;
     using Apache.Ignite.Core.Configuration;
 
     /// <summary>
@@ -43,7 +42,7 @@ namespace Apache.Ignite.Core.Impl
 
         /** */
         private const long TimeoutInfinite = -1;
-        
+
         /** */
         private readonly LockConfiguration _cfg;
 
