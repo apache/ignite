@@ -285,6 +285,9 @@
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\EventsTestLocalListeners.cs" Link="Common\EventsTestLocalListeners.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\IgniteConfigurationTest.cs" Link="Common\IgniteConfigurationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\IgniteLockFailoverTests.cs">
+      <Link>Common\IgniteLockFailoverTests.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\IgniteLockTests.cs">
       <Link>Common\IgniteLockTests.cs</Link>
     </Compile>
