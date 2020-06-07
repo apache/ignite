@@ -973,9 +973,8 @@ public class BinaryClassDescriptor {
     }
 
     /**
-     * Create a byte array with bits enabled when the fields is null
-     * @param fieldCnt
-     * @return
+     * @param fieldCnt the number of fields to encore
+     * @return a byte array whose bits are enabled when the fields are not null
      */
     public static byte[] createNullMask(int fieldCnt) {
         // Compact nulls is only allowed in conjunction with compact footer
@@ -1075,6 +1074,10 @@ public class BinaryClassDescriptor {
         }
     }
 
+    /**
+     * @return whether the null compression can be applied. This depends of the current marshaller configuration but
+     * also whether the current descriptor relies on custom binary encoding (implementing Binarylizable).
+     */
     public boolean canApplyNullCompaction() {
         return this.userType() && this.ctx.isCompactNulls()  && !this.isBinary();
     }

@@ -186,7 +186,7 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
     @Test(expected = BinaryObjectException.class)
     public void testCompactFooterDisabledAndCompactNullDisabled() throws Exception {
         BinaryMarshaller marsh = createMarshaller(false, true);
-        byte[] boimpl = marsh.marshal(new SimpleObject());
+        byte[] boimpl = marsh.marshal(new VerySimpleObject());
     }
 
 
@@ -195,7 +195,7 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
         BinaryMarshaller marshCompactNullEnabled = createMarshaller(true, true);
         BinaryMarshaller marshCompactNullDisabled = createMarshaller(true, false);
 
-        Object[] objectsToTest = new Object[]{new SimpleObject(), new NestedComplexObject(), new StartingWithNull(),
+        Object[] objectsToTest = new Object[]{new VerySimpleObject(), new NestedComplexObject(), new StartingWithNull(),
                 new ComplexObject(), new LargeNestedComplexObject(), new MarshallerTestObjects.ObjectwithLotsOfNull()};
 
         for (Object o : objectsToTest) {

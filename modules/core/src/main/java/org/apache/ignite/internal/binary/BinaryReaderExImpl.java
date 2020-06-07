@@ -1562,7 +1562,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public Object[] readObjectArray() throws BinaryObjectException {
         switch (checkFlag(OBJ_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
+                return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
 
             case HANDLE:
                 return readHandleField();
@@ -1751,7 +1751,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         throws BinaryObjectException {
         switch (checkFlag(COL)) {
             case NORMAL:
-                return (Collection)BinaryUtils.doReadCollection(in, ctx, ldr, this, false, true, factory);
+                return (Collection)BinaryUtils.doReadCollection(in, ctx, ldr, this, true, factory);
 
             case HANDLE: {
                 int handlePos = BinaryUtils.positionForHandle(in) - in.readInt();
@@ -1837,7 +1837,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private Map readMap0(@Nullable BinaryMapFactory factory) throws BinaryObjectException {
         switch (checkFlag(MAP)) {
             case NORMAL:
-                return (Map)BinaryUtils.doReadMap(in, ctx, ldr, this, false, true, factory);
+                return (Map)BinaryUtils.doReadMap(in, ctx, ldr, this, true, factory);
 
             case HANDLE: {
                 int handlePos = BinaryUtils.positionForHandle(in) - in.readInt();
@@ -2136,17 +2136,17 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ_ARR:
-                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
+                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
 
                 break;
 
             case COL:
-                obj = BinaryUtils.doReadCollection(in, ctx, ldr, this, false, true, null);
+                obj = BinaryUtils.doReadCollection(in, ctx, ldr, this, true, null);
 
                 break;
 
             case MAP:
-                obj = BinaryUtils.doReadMap(in, ctx, ldr, this, false, true, null);
+                obj = BinaryUtils.doReadMap(in, ctx, ldr, this, true, null);
 
                 break;
 
