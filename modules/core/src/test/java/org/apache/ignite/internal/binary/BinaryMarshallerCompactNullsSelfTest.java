@@ -36,8 +36,6 @@ import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-
 @SuppressWarnings({"OverlyStrongTypeCast", "ConstantConditions"})
 public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTest {
 
@@ -219,7 +217,7 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
      * @throws Exception If failed.
      */
     protected BinaryMarshaller createMarshaller(boolean compactFooter, boolean compactNull) throws Exception {
-        return  createMarshaller(compactFooter, compactNull, null);
+        return createMarshaller(compactFooter, compactNull, null);
     }
 
     /**
@@ -314,7 +312,7 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
             if (BinaryUtils.isCompactNull(a[2])) {
                 int rawOffSetLength = BinaryUtils.hasRaw(a[2]) ? 4 : 0;
                 byte[] nullMask = Arrays.copyOfRange(a,
-                    a.length -rawOffSetLength - (nbFields / 8) + (nbFields % 8 != 0 ? 1 : 0),
+                    a.length - rawOffSetLength - (nbFields / 8) + (nbFields % 8 != 0 ? 1 : 0),
                     a.length - rawOffSetLength);
 
                 sb.append(indentString).append("Null Mask : ");
@@ -326,7 +324,7 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
                 int start = footerPosition;
                 int end = -1;
 
-                for (int i=0;i < nbFields ; i++) {
+                for (int i = 0; i < nbFields; i++) {
                     if (!BinaryReaderExImpl.isFieldNull(nullMask, i)) {
                         start = printBinaryField(a, bo, desc, sb, footerPosition,
                             fieldOffsetLength, start, i, level, nullMask.length);
@@ -339,7 +337,7 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
                 int startPosInFooter = footerPosition;
                 int end = -1;
 
-                for (int i=0; i < nbFields; i++) {
+                for (int i = 0; i < nbFields; i++) {
                     startPosInFooter = printBinaryField(a, bo, desc, sb, footerPosition,
                         fieldOffsetLength, startPosInFooter, i, level, 0);
                 }
@@ -354,7 +352,7 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
 
     @NotNull private static StringBuilder buildIndentString(int level) {
         StringBuilder indentString = new StringBuilder();
-        for (int i=0; i < level; i++) {indentString.append(INDENT_SUB_OBJECT); }
+        for (int i = 0; i < level; i++) { indentString.append(INDENT_SUB_OBJECT); }
         return indentString;
     }
 
@@ -375,17 +373,18 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
                 end = footerPosition;
             }
         }
-        sb.append(indentString).append(String.format("Field %d. from: %d to: %d ==> %s ", fieldPos, startAddress, end ,desc.fieldsMeta() != null?desc.fieldsMeta().keySet().toArray()[fieldPos] :""));
+        sb.append(indentString).append(String.format("Field %d. from: %d to: %d ==> %s ", fieldPos,
+            startAddress, end, desc.fieldsMeta() != null ? desc.fieldsMeta().keySet().toArray()[fieldPos] : ""));
         for (int j = startAddress; j < end; j++) {
             sb.append(String.format("0x%02x ", a[j]));
         }
-        if (a[startAddress]==0x67) {
+        if (a[startAddress] == 0x67) {
             sb.append("\n");
-            sb.append(byteArrayToHex(Arrays.copyOfRange(a, startAddress, end), bo, level +1));
+            sb.append(byteArrayToHex(Arrays.copyOfRange(a, startAddress, end), bo, level + 1));
         }
 
         sb.append("\n");
-        startPosInFooter = startPosInFooter  + fieldOffsetLength + offsetOfLongFooter;
+        startPosInFooter = startPosInFooter + fieldOffsetLength + offsetOfLongFooter;
         return startPosInFooter;
     }
 
