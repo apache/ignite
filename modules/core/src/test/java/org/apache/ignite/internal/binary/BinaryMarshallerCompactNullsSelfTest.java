@@ -18,22 +18,11 @@
 package org.apache.ignite.internal.binary;
 
 import com.sun.tools.javac.util.Pair;
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.TreeMap;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.MarshallerTestObjects.ComplexObject;
@@ -141,7 +130,6 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
         assertEquals(0, realPos);
     }
 
-
     @Test
     public void testIsNullFields() {
         int absolutePos = 10;
@@ -167,7 +155,6 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
         absolutePos = 3;
         nullMask = new byte[]{(byte) 0xE7};
         assertEquals(true, BinaryReaderExImpl.isFieldNull(nullMask, absolutePos));
-
 
         absolutePos = 7;
         nullMask = new byte[]{(byte) 0xF7};
@@ -206,7 +193,6 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
         byte[] boimpl = marsh.marshal(new VerySimpleObject());
     }
 
-
     @Test
     public void testCompressionFactorWithCompactNull() throws Exception {
         BinaryMarshaller marshCompactNullEnabled = createMarshaller(true, true);
@@ -235,6 +221,7 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
     protected BinaryMarshaller createMarshaller(boolean compactFooter, boolean compactNull) throws Exception {
         return  createMarshaller(compactFooter, compactNull, null);
     }
+
     /**
      * Create marshaller.
      *
@@ -266,7 +253,7 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
      */
     private static StringBuilder byteArrayToHex(BinaryObjectImpl bo) {
         byte[] a = bo.array();
-        return byteArrayToHex(a, bo,  0);
+        return byteArrayToHex(a, bo, 0);
     }
 
     /**
@@ -301,7 +288,7 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
             sb.append(indentString).append(String.format("0x%02x 0x%02x 0x%02x 0x%02x //SchemaId \n", a[16], a[17], a[18], a[19]));
             sb.append(indentString).append(String.format("0x%02x 0x%02x 0x%02x 0x%02x //Footer position = %d \n", a[20], a[21], a[22], a[23], footerPosition));
 
-            int typeId = (a[4]  & 0xff ) + ((a[5]& 0xff) << 8) + ((a[6]& 0xff) << 16) + ((a[7]& 0xff) << 24);
+            int typeId = (a[4] & 0xff ) + ((a[5] & 0xff) << 8) + ((a[6] & 0xff) << 16) + ((a[7] & 0xff) << 24);
             BinaryClassDescriptor desc = bo.context().descriptorForTypeId(BinaryUtils.isUserType(a[2]), typeId, null, false);
             sb.append(indentString).append(String.format("Class = %s\n", desc.typeName()));
             int nbFields = desc == null || desc.fieldsMeta() == null ? 0 : desc.fieldsMeta().size();
@@ -344,14 +331,15 @@ public class BinaryMarshallerCompactNullsSelfTest extends BinaryMarshallerSelfTe
                         start = printBinaryField(a, bo, desc, sb, footerPosition,
                             fieldOffsetLength, start, i, level, nullMask.length);
                     } else {
-                        sb.append(indentString).append(String.format("Field %d %s IS NULL \n",  i , desc.fieldsMeta() != null?desc.fieldsMeta().keySet().toArray()[i] :""));
+                        sb.append(indentString).append(String.format("Field %d %s IS NULL \n", i,
+                                desc.fieldsMeta() != null ? desc.fieldsMeta().keySet().toArray()[i] : ""));
                     };
                 }
             } else {
                 int startPosInFooter = footerPosition;
                 int end = -1;
 
-                for (int i=0;i < nbFields; i++) {
+                for (int i=0; i < nbFields; i++) {
                     startPosInFooter = printBinaryField(a, bo, desc, sb, footerPosition,
                         fieldOffsetLength, startPosInFooter, i, level, 0);
                 }

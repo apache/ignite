@@ -17,16 +17,10 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
 
 public class MarshallerTestObjects {
 
@@ -231,7 +225,6 @@ public class MarshallerTestObjects {
         }
     }
 
-
     static class LargeNestedComplexObject {
         int foo = 1;
 
@@ -322,11 +315,11 @@ public class MarshallerTestObjects {
 
         String baz3 = null;
 
-        VerySimpleObject simpleObject1 =  new VerySimpleObject(1,2,null, null,null,null,null);
+        VerySimpleObject simpleObject1 = new VerySimpleObject(1,2,null, null,null,null,null);
 
         List<Integer> fooList1 = new ArrayList<Integer>(Arrays.asList(new Integer[]{1, null, 3}));
 
-        VerySimpleObject simpleObject2 =  new VerySimpleObject(1,2,null, null,null,null,null);
+        VerySimpleObject simpleObject2 = new VerySimpleObject(1,2,null, null,null,null,null);
 
         List<Integer> fooList2 = null;
 

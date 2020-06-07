@@ -89,7 +89,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** */
     private boolean failIfUnregistered;
 
-    private  BinaryClassDescriptor desc;
+    private BinaryClassDescriptor desc;
 
     /**
      * @param ctx Context.
@@ -319,7 +319,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             // Write the schema.
             flags |= BinaryUtils.FLAG_HAS_SCHEMA;
 
-            int offsetByteCnt = schema.write(out, fieldCnt, useCompactFooter,  useCompactNulls);
+            int offsetByteCnt = schema.write(out, fieldCnt, useCompactFooter, useCompactNulls);
 
             if (offsetByteCnt == BinaryUtils.OFFSET_1)
                 flags |= BinaryUtils.FLAG_OFFSET_ONE_BYTE;
