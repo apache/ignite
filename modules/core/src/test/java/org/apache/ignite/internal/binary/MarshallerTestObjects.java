@@ -32,11 +32,17 @@ public class MarshallerTestObjects {
 
     static class VerySimpleObject {
         int foo = 1;
+
         int ba1 = 1;
+
         String baz1 = "abc";
+
         String baz2 = null;
+
         String baz3 = null;
+
         String baz4 = null;
+
         String baz5 = "abc";
 
         public VerySimpleObject() {
@@ -52,8 +58,7 @@ public class MarshallerTestObjects {
             this.baz5 = baz5;
         }
 
-        @Override
-        public boolean equals(Object o) {
+        @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             VerySimpleObject that = (VerySimpleObject) o;
@@ -66,13 +71,11 @@ public class MarshallerTestObjects {
                     Objects.equals(baz5, that.baz5);
         }
 
-        @Override
-        public int hashCode() {
+        @Override public int hashCode() {
             return Objects.hash(foo, ba1, baz1, baz2, baz3, baz4, baz5);
         }
 
-        @Override
-        public String toString() {
+        @Override public String toString() {
             return "VerySimpleObject{" +
                     "foo=" + foo +
                     ", ba1=" + ba1 +
@@ -87,15 +90,20 @@ public class MarshallerTestObjects {
 
     static class StartingWithNull {
         String baz2 = null;
+
         int foo = 1;
+
         int ba1 = 1;
+
         String baz1 = "abc";
+
         String baz3 = null;
+
         String baz4 = null;
+
         String baz5 = "abc";
 
-        @Override
-        public boolean equals(Object o) {
+        @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             StartingWithNull that = (StartingWithNull) o;
@@ -108,13 +116,11 @@ public class MarshallerTestObjects {
                     Objects.equals(baz5, that.baz5);
         }
 
-        @Override
-        public int hashCode() {
+        @Override public int hashCode() {
             return Objects.hash(baz2, foo, ba1, baz1, baz3, baz4, baz5);
         }
 
-        @Override
-        public String toString() {
+        @Override public String toString() {
             return "StartingWithNull{" +
                     "baz2='" + baz2 + '\'' +
                     ", foo=" + foo +
@@ -129,16 +135,22 @@ public class MarshallerTestObjects {
 
     static class NestedComplexObject {
         int foo = 1;
+
         int ba1 = 1;
+
         String baz1 = "abc";
+
         String baz2 = null;
+
         String baz3 = null;
+
         VerySimpleObject simpleObject = new VerySimpleObject();
+
         String baz4 = null;
+
         String baz5 = "abc";
 
-        @Override
-        public boolean equals(Object o) {
+        @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             NestedComplexObject that = (NestedComplexObject) o;
@@ -152,13 +164,11 @@ public class MarshallerTestObjects {
                     Objects.equals(baz5, that.baz5);
         }
 
-        @Override
-        public int hashCode() {
+        @Override public int hashCode() {
             return Objects.hash(foo, ba1, baz1, baz2, baz3, simpleObject, baz4, baz5);
         }
 
-        @Override
-        public String toString() {
+        @Override public String toString() {
             return "NestedComplexObject{" +
                     "foo=" + foo +
                     ", ba1=" + ba1 +
@@ -174,16 +184,22 @@ public class MarshallerTestObjects {
 
     static class ComplexObject {
         int foo = 1;
+
         int ba1 = 1;
+
         String baz1 = "abc";
+
         String baz2 = null;
+
         String baz3 = null;
+
         List<Integer> fooList = new ArrayList<Integer>(Arrays.asList(new Integer[]{1, null, 3}));
+
         String baz4 = null;
+
         String baz5 = "abc";
 
-        @Override
-        public boolean equals(Object o) {
+        @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             ComplexObject that = (ComplexObject) o;
@@ -197,13 +213,11 @@ public class MarshallerTestObjects {
                     Objects.equals(baz5, that.baz5);
         }
 
-        @Override
-        public int hashCode() {
+        @Override public int hashCode() {
             return Objects.hash(foo, ba1, baz1, baz2, baz3, fooList, baz4, baz5);
         }
 
-        @Override
-        public String toString() {
+        @Override public String toString() {
             return "ComplexObject{" +
                     "foo=" + foo +
                     ", ba1=" + ba1 +
@@ -220,19 +234,28 @@ public class MarshallerTestObjects {
 
     static class LargeNestedComplexObject {
         int foo = 1;
+
         int ba1 = 1;
+
         String baz1 = "abc";
+
         String baz2 = null;
+
         String baz3 = null;
+
         VerySimpleObject simpleObject1 = new VerySimpleObject();
+
         List<Integer> fooList1 = new ArrayList<Integer>(Arrays.asList(new Integer[]{1, null, 3}));
+
         VerySimpleObject simpleObject2 = new VerySimpleObject();
+
         List<Integer> fooList2 = new ArrayList<Integer>(Arrays.asList(new Integer[]{1, null, 3}));
+
         String baz4 = null;
+
         String baz5 = "abc......................................................................................abc";
 
-        @Override
-        public boolean equals(Object o) {
+        @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             LargeNestedComplexObject that = (LargeNestedComplexObject) o;
@@ -249,13 +272,11 @@ public class MarshallerTestObjects {
                     Objects.equals(baz5, that.baz5);
         }
 
-        @Override
-        public int hashCode() {
+        @Override public int hashCode() {
             return Objects.hash(foo, ba1, baz1, baz2, baz3, simpleObject1, fooList1, simpleObject2, fooList2, baz4, baz5);
         }
 
-        @Override
-        public String toString() {
+        @Override public String toString() {
             return "LargeNestedComplexObject{" +
                     "foo=" + foo +
                     ", ba1=" + ba1 +
@@ -273,8 +294,7 @@ public class MarshallerTestObjects {
     }
 
     static class EmptyObject {
-        @Override
-        public boolean equals(Object o) {
+        @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (o != null && getClass() == o.getClass())
                 return true;
@@ -282,48 +302,71 @@ public class MarshallerTestObjects {
                 return false;
         }
 
-        @Override
-        public int hashCode() {
+        @Override public int hashCode() {
             return this.getClass().hashCode();
         }
 
-        @Override
-        public String toString() {
+        @Override public String toString() {
             return super.toString();
         }
     }
 
     static class ObjectwithLotsOfNull {
         int foo = 1;
+
         int ba1 = 1;
+
         String baz1 = "abc";
+
         String baz2 = null;
+
         String baz3 = null;
+
         VerySimpleObject simpleObject1 =  new VerySimpleObject(1,2,null, null,null,null,null);
+
         List<Integer> fooList1 = new ArrayList<Integer>(Arrays.asList(new Integer[]{1, null, 3}));
+
         VerySimpleObject simpleObject2 =  new VerySimpleObject(1,2,null, null,null,null,null);
+
         List<Integer> fooList2 = null;
+
         String baz4 = null;
+
         String baz5 = "abc";
+
         String baz6 = null;
+
         String baz7 = null;
+
         String baz8 = "........................";
+
         String baz9 = null;
+
         String baz10 = null;
+
         VerySimpleObject simpleObject3 = new VerySimpleObject(1,2,null, null,null,null,null);
+
         String baz14 = null;
+
         String ba15 = "abc";
+
         String baz16 = null;
+
         String baz17 = null;
+
         String baz18 = null;
+
         String baz19 = null;
+
         String baz110 = null;
+
         String baz111 = null;
+
         String baz112 = null;
+
         VerySimpleObject simpleObject13 = new VerySimpleObject(1,2,null, null,null,null,null);
 
-        @Override
-        public boolean equals(Object o) {
+        @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (!(o instanceof ObjectwithLotsOfNull)) return false;
             ObjectwithLotsOfNull that = (ObjectwithLotsOfNull) o;
@@ -346,13 +389,11 @@ public class MarshallerTestObjects {
                     Objects.equals(simpleObject3, that.simpleObject3);
         }
 
-        @Override
-        public int hashCode() {
+        @Override public int hashCode() {
             return Objects.hash(foo, ba1, baz1, baz2, baz3, simpleObject1, fooList1, simpleObject2, fooList2, baz4, baz5, baz6, baz7, baz8, baz9, baz10, simpleObject3);
         }
 
-        @Override
-        public String toString() {
+        @Override public String toString() {
             return "ObjectwithLotsOfNull{" +
                     "foo=" + foo +
                     ", ba1=" + ba1 +
@@ -372,61 +413,6 @@ public class MarshallerTestObjects {
                     ", baz10='" + baz10 + '\'' +
                     ", simpleObject3=" + simpleObject3 +
                     '}';
-        }
-    }
-
-    static class DateObject {
-/*        Integer dateAsInteger = 20200201; */
-LocalDate date = LocalDate.of(2020,1,1);
-MyDate mydate = new MyDate(LocalDate.now());
-        LocalDateTime localDateTime = LocalDateTime.of(2020,1,1,0,0,0,0);
-   /*
-        LocalDate localDate =  LocalDate.now();
-        LocalTime time =  LocalTime.now();
-*/
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (!(o instanceof DateObject))
-                return false;
-            DateObject object = (DateObject)o;
-            return
-                /*Objects.equals(dateAsInteger, object.dateAsInteger) &&
-                Objects.equals(date, object.date) &&*/
-                Objects.equals(localDateTime, object.localDateTime)
-                /*&&
-                Objects.equals(localDate, object.localDate) &&
-                Objects.equals(time, object.time)*/
-                ;
-
-        }
-
-
-        @Override public int hashCode() {
-            return Objects.hash(/*dateAsInteger, date, */localDateTime/*, localDate, time*/);
-        }
-    }
-
-    static class MyDate implements Binarylizable {
-        LocalDate date;
-
-        MyDate(LocalDate date) {
-            this.date=date;
-        }
-        LocalDate get() {
-            return date;
-        }
-
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.rawWriter().writeShort( (short) date.getYear());
-            writer.rawWriter().writeByte( (byte) date.getMonthValue());
-            writer.rawWriter().writeShort( (byte) date.getDayOfMonth());
-        }
-
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            LocalDate.of(reader.rawReader().readShort(),
-                reader.rawReader().readByte(),
-                reader.rawReader().readByte());
         }
     }
 }

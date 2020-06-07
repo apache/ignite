@@ -884,7 +884,7 @@ public class BinaryClassDescriptor {
 
                     reader.setHandle(res);
 
-                    byte[] nullMask =  reader.getNullMask();
+                    byte[] nullMask = reader.getNullMask();
                     int fieldIndex = 0;
 
                     for (BinaryFieldAccessor info : fields) {
@@ -1079,7 +1079,7 @@ public class BinaryClassDescriptor {
      * also whether the current descriptor relies on custom binary encoding (implementing Binarylizable).
      */
     public boolean canApplyNullCompaction() {
-        return this.userType() && this.ctx.isCompactNulls()  && !this.isBinary();
+        return this.userType() && this.ctx.isCompactNulls() && !this.isBinary();
     }
 
     /** {@inheritDoc} */

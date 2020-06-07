@@ -65,9 +65,9 @@ public class BinaryWriterSchemaHolder {
         }
 
         data[idx] = id;
-        data[idx +  1] = off;
+        data[idx + 1] = off;
 
-        this.isFieldNull[idx/2] = isNull;
+        this.isFieldNull[idx / 2] = isNull;
 
         idx += 2;
 
@@ -123,7 +123,7 @@ public class BinaryWriterSchemaHolder {
                // meaning this is not a null field.
                // Warning: index does not start at zero as the frames as nested
                for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2) {
-                       int fieldIndex = ((curIdx - startIdx) / 2) ;
+                       int fieldIndex = ((curIdx - startIdx) / 2);
                        if (!isFieldNull[curIdx / 2]) {
                            // If the isFieldNull[curIdx / 2] != 0 then the field is not null
                            // Compute which mask byte and bit to update
@@ -132,7 +132,7 @@ public class BinaryWriterSchemaHolder {
                            nullMask[maskOffsetByte] = (byte) (nullMask[maskOffsetByte] | 1 << (maskOffsetBit));
 
                            writeOffset(out, lastOffset, curIdx, true);
-                       }// If the offset is 0 then the field is null and thus there is nothing to do
+                       } // If the offset is 0 then the field is null and thus there is nothing to do
                }
                // If compact null is enable, the null mask is appended at the end of the footer
                // Please note that when several bytes are required (fieldCnt>8) the first byte is written first

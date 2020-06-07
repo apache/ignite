@@ -505,7 +505,7 @@ public abstract class BinaryFieldAccessor {
 
             writer.writeFieldIdNoSchemaUpdate(id, val == null);
 
-            if(val != null || !writer.canCompactNull()) {
+            if (val != null || !writer.canCompactNull()) {
                 switch (mode(val)) {
                     case BYTE:
                         writer.writeByteField((Byte)val);

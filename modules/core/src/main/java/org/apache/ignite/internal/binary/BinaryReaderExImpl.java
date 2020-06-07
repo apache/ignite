@@ -2171,7 +2171,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 order = computeOrderWithNullCompaction(this.nullMask, order);
             }
 
-
             return trySetUserFieldPosition(order);
         }
         else
@@ -2228,7 +2227,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     private static int computeOrderWithNullCompaction(byte[] nullMask, int absolutePos) {
-        if(isFieldNull(nullMask, absolutePos)) {
+        if (isFieldNull(nullMask, absolutePos)) {
             // If field is null, simple report it as unknown
             return BinarySchema.ORDER_NOT_FOUND;
         } else {
@@ -2288,7 +2287,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         }
     }
 
-
     /**
      * Tells whether a given field is null from the mask.
      * @param nullMask
@@ -2301,7 +2299,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         assert (lastNullByteToScan < nullMask.length);
 
         byte bitMask = (byte) ((1 << ( (absolutePos % 8 ) )));
-        return  (nullMask[lastNullByteToScan] & bitMask) == 0; // convert occurrences to boolean
+        return (nullMask[lastNullByteToScan] & bitMask) == 0; // convert occurrences to boolean
     }
 
     /**
@@ -2319,7 +2317,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         for (int i = 0; i < lastNullByteToScan; i++) {
             notNullCount = (notNullCount + countEnableBitInByte(nullMask[i]));
         }
-        byte bitMask = (byte) ((1 << ( (absolutePos % 8 ) +1 )) - 1);
+        byte bitMask = (byte) ((1 << ( (absolutePos % 8 ) + 1 )) - 1);
         notNullCount = (notNullCount + countEnableBitInByte((byte) (nullMask[lastNullByteToScan] & bitMask)));
         return notNullCount - 1; // convert occurrences in index
     }

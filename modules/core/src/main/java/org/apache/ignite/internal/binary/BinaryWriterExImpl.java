@@ -1537,7 +1537,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeObject(String fieldName, @Nullable Object obj) throws BinaryObjectException {
-        writeFieldId(fieldName, obj==null);
+        writeFieldId(fieldName, obj == null);
         writeObjectField(obj);
     }
 
@@ -2017,8 +2017,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         return ctx;
     }
 
-
-    public boolean canCompactNull () {
+    public boolean canCompactNull() {
         return this.context().isCompactNulls() && !this.isRawModeEnabled;
     }
 }
