@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Transactions;
 
@@ -38,6 +39,9 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** Transaction is closed. */
         private volatile bool _closed; 
 
+        /** Owning thread ID. */
+        private readonly int _threadId;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -49,6 +53,15 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             _id = id;
             _ignite = ignite;
             _transactions = transactions;
+            _threadId = Thread.CurrentThread.ManagedThreadId;
+        }
+
+        /// <summary>
+        /// Gets the thread identifier.
+        /// </summary>
+        public long ThreadId
+        {
+            get { return _threadId; }
         }
 
         public void Commit()

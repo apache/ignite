@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -66,6 +67,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
         internal void ClearCurrentTx()
         {
+            // todo - check for thread id
             _currentTx.Value = null;
         }
 
@@ -87,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         {
             if (CurrentTx != null)
             {
-                throw new IgniteClientException("Already started tx in current thread");
+                throw new IgniteClientException("A transaction has already been started by the current thread.");
             }
 
             var txId = _ignite.Socket.DoOutInOp(
@@ -109,6 +111,8 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** <inheritDoc /> */
         public IClientTransactions WithLabel(string label)
         {
+            IgniteArgumentCheck.NotNullOrEmpty(label, "label");
+
             return new ClientTransactions(_ignite, _label); 
         }
 
