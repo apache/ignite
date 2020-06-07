@@ -338,9 +338,16 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             schema = BinaryUtils.hasSchema(flags) ? getOrCreateSchema() : null;
 
             if (this.canCompactNull() && schema != null && schema.fieldIds().length > 0) {
+                //Create a null mask of the right size
                 this.nullMask = BinaryClassDescriptor.createNullMask(schema.fieldIds().length);
+                //Current position in the stream
                 int oldPos = in.position();
+                //If this stream contains raw data data the address will be the last element and therefore we must take
+                //it into account when reading the null mask.
                 int rawOffSetLength = BinaryUtils.hasRaw(flags) ? 4 : 0;
+                //The null mask is the last element except if the is a raw data offset.
+                // header [24 bytes]--body--footer [offset not null field 0, ... offset no null field n,
+                // ... null mask, ...optionally raw offset]
                 in.position(start + len - this.nullMask.length - rawOffSetLength);
                 this.nullMask = in.readByteArray(this.nullMask.length);
                 in.position(oldPos);

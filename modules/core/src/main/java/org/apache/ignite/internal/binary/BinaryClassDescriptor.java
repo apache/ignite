@@ -885,8 +885,6 @@ public class BinaryClassDescriptor {
                     reader.setHandle(res);
 
                     byte[] nullMask =  reader.getNullMask();
-                    byte maskByteIndex = 0;
-                    byte maskByteBit = 0;
                     int fieldIndex = 0;
 
                     for (BinaryFieldAccessor info : fields) {
