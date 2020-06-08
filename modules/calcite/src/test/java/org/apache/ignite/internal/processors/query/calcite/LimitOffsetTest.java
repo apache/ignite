@@ -64,7 +64,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
     /** */
     private CacheConfiguration cacheConfiguration(QueryEntity ent) {
         return new CacheConfiguration<>(ent.getTableName())
-            .setCacheMode(CacheMode.PARTITIONED)
+            .setCacheMode(CacheMode.REPLICATED)
             .setBackups(1)
             .setQueryEntities(singletonList(ent))
             .setSqlSchema("PUBLIC");
@@ -143,7 +143,18 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDbg() {
-        checkQuery(-1, 0, true, false);
+        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+
+        {
+            List<FieldsQueryCursor<List<?>>> cursors =
+                engine.query(null, "PUBLIC",
+                    "SELECT * FROM TEST ORDER BY VAL", X.EMPTY_OBJECT_ARRAY);
+
+            cursors.get(0).getAll();
+        }
+
+//        checkQuery(10, 10, true, true);
+//        checkQuery(10, 10, true, true);
 
     }
 
@@ -217,7 +228,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
         else if (off > ROWS)
             return  0;
         else
-            return  ROWS - off;
+            return ROWS - off;
     }
 
     /**

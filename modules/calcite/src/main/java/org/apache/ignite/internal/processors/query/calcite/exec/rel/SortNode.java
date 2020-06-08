@@ -26,10 +26,13 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** How many rows are requested by downstream. */
-    private int requested;
+    private long requested;
 
     /** How many rows are we waiting for from the upstream. {@code -1} means end of stream. */
     private int waiting;
+
+    /** How many rows are we waiting for from the upstream. {@code -1} means end of stream. */
+    private long processed;
 
     /**  */
     private boolean inLoop;
@@ -62,14 +65,24 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         assert !F.isEmpty(sources) && sources.size() == 1;
         assert rowsCnt > 0 && requested == 0;
 
-        requested = rowsCnt;
+        requested += rowsCnt;
 
-        if (waiting == -1 && !inLoop)
-            context().execute(this::flushFromBuffer);
-        else if (waiting == 0)
-            F.first(sources).request(waiting = IN_BUFFER_SIZE);
-        else
-            throw new AssertionError();
+        if (waiting == -1 && rows.isEmpty()) {
+            downstream.end();
+
+            return;
+        }
+
+        if (!inLoop) {
+            assert waiting <= 0 : "Invalid state: [waiting=" + waiting + ", requested=" + requested;
+
+            if (waiting == -1)
+                context().execute(this::flushFromBuffer);
+            else if (waiting == 0)
+                F.first(sources).request(waiting = IN_BUFFER_SIZE);
+            else
+                throw new AssertionError();
+        }
     }
 
     /** {@inheritDoc} */
@@ -125,37 +138,19 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         inLoop = true;
 
         try {
-            int processed = 0;
+            while (requested > processed) {
+                if (rows.isEmpty()) {
+                    downstream.end();
 
-            while (requested > 0) {
-                int toSnd = Math.min(requested, IN_BUFFER_SIZE - processed);
-
-                for (int i = 0; i < toSnd; i++) {
-                    requested--;
-
-                    if (rows.isEmpty())
-                        break;
-
-                    Row row = rows.poll();
-
-                    downstream.push(row);
-
-                    processed++;
+                    break;
                 }
 
-                if (processed >= IN_BUFFER_SIZE && requested > 0) {
-                    // allow others to do their job
-                    context().execute(this::flushFromBuffer);
+                Row row = rows.poll();
 
-                    return;
-                }
+                downstream.push(row);
+
+                processed++;
             }
-
-            if (requested >= 0) {
-                downstream.end();
-                requested = 0;
-            }
-
         }
         finally {
             inLoop = false;

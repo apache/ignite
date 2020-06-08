@@ -108,13 +108,15 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         if (limit == 0 || limit > 0 && processed >= limit) {
             downstream.end();
 
+            sources.get(0).cancel();
+
             return;
         }
 
         int req = (int)(requested - processed);
 
         if (limit > 0)
-            req = (int)Math.min(limit, req);
+            req = (int)Math.min(limit - processed, req);
 
         F.first(sources).request(req);
     }
@@ -130,8 +132,11 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
         processed++;
 
-        if (limit > 0 && processed >= limit && processed < requested)
+        if (limit > 0 && processed >= limit && processed < requested) {
             downstream.end();
+
+            sources.get(0).cancel();
+        }
     }
 
     /** {@inheritDoc} */
