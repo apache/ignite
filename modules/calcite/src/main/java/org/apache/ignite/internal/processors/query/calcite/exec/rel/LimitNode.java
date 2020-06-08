@@ -111,7 +111,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
         fetchFut.thenAccept(n -> {
             if (n < 0)
-                throw new IgniteSQLException("Invalid query limit: " + n);
+                onError(new IgniteSQLException("Invalid query limit: " + n));
 
             limit = n;
 
@@ -136,7 +136,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
         offFut.thenAccept(n -> {
             if (n < 0)
-                throw new IgniteSQLException("Invalid query offset: " + n);
+                onError(new IgniteSQLException("Invalid query offset: " + n));
 
             offset = n;
 

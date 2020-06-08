@@ -23,9 +23,11 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -68,8 +70,73 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
             .setSqlSchema("PUBLIC");
     }
 
+    /**
+     *
+     */
     @Test
     public void testInvalidLimitOffset() {
+        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+
+        GridTestUtils.assertThrows(log, ()-> {
+            List<FieldsQueryCursor<List<?>>> cursors =
+                engine.query(null, "PUBLIC",
+                    "SELECT * FROM TEST OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY",
+                    X.EMPTY_OBJECT_ARRAY);
+            cursors.get(0).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Failed to parse query");
+
+        GridTestUtils.assertThrows(log, ()-> {
+            List<FieldsQueryCursor<List<?>>> cursors =
+                engine.query(null, "PUBLIC",
+                    "SELECT * FROM TEST OFFSET -1 ROWS",
+                    X.EMPTY_OBJECT_ARRAY);
+            cursors.get(0).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Failed to parse query");
+
+        GridTestUtils.assertThrows(log, ()-> {
+            List<FieldsQueryCursor<List<?>>> cursors =
+                engine.query(null, "PUBLIC",
+                    "SELECT * FROM TEST FETCH FIRST -1 ROWS ONLY",
+                    X.EMPTY_OBJECT_ARRAY);
+            cursors.get(0).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Failed to parse query");
+
+        // Check with parameters
+        GridTestUtils.assertThrowsAnyCause(log, ()-> {
+            List<FieldsQueryCursor<List<?>>> cursors =
+                engine.query(null, "PUBLIC",
+                    "SELECT * FROM TEST OFFSET ? ROWS FETCH FIRST ? ROWS ONLY",
+                    -1, -1);
+            cursors.get(0).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Invalid query limit: -1");
+
+        GridTestUtils.assertThrowsAnyCause(log, ()-> {
+            List<FieldsQueryCursor<List<?>>> cursors =
+                engine.query(null, "PUBLIC",
+                    "SELECT * FROM TEST OFFSET ? ROWS",
+                    -1);
+            cursors.get(0).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Invalid query offset: -1");
+
+        GridTestUtils.assertThrowsAnyCause(log, ()-> {
+            List<FieldsQueryCursor<List<?>>> cursors =
+                engine.query(null, "PUBLIC",
+                    "SELECT * FROM TEST FETCH FIRST ? ROWS ONLY",
+                    -1);
+            cursors.get(0).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Invalid query limit: -1");
     }
 
     /**
