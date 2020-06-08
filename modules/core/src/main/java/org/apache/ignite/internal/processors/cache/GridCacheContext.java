@@ -49,6 +49,7 @@ import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -2358,18 +2359,28 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param op Add query entity schema operation.
      */
     public void onSchemaAddQueryEntity(SchemaAddQueryEntityOperation op) {
+        onSchemaAddQueryEntity(Collections.singletonList(op.entity()), op.schemaName(), op.isSqlEscape(),
+                op.queryParallelism());
+    }
+
+    /**
+     * Apply changes on enable indexing.
+     *
+     * @param entities New query entities.
+     * @param sqlSchema Sql schema name,
+     * @param isSqlEscape Sql escape flag.
+     * @param qryParallelism Query parallelism parameter.
+     */
+    public void onSchemaAddQueryEntity(
+            Collection<QueryEntity> entities,
+            String sqlSchema,
+            boolean isSqlEscape,
+            int qryParallelism
+    ) {
         CacheConfiguration oldCfg = cacheCfg;
 
-        if (oldCfg != null) {
-            CacheConfiguration newCfg = new CacheConfiguration(oldCfg);
-
-            newCfg.setQueryEntities(Collections.singletonList(op.entity()));
-            newCfg.setSqlSchema(op.schemaName());
-            newCfg.setSqlEscapeAll(op.isSqlEscape());
-            newCfg.setQueryParallelism(op.queryParallelism());
-
-            cacheCfg = newCfg;
-        }
+        if (oldCfg != null)
+            cacheCfg = GridCacheUtils.patchCacheConfiguration(oldCfg, entities, sqlSchema, isSqlEscape, qryParallelism);
 
         if (qryMgr != null)
             qryMgr.enable();

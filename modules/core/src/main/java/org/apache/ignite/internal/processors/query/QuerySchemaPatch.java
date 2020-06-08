@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Query schema patch which contains {@link SchemaAbstractOperation} operations for changing query entities.
@@ -40,8 +43,7 @@ public class QuerySchemaPatch {
     /** Entities which should be added by whole. */
     private final Collection<QueryEntity> entityToAdd;
 
-    /** Schema name to apply, if previous is null. */
-    private final String schemaName;
+    private final CacheConfiguration<?, ?> cacheCfg;
 
     /**
      * Create schema patch.
@@ -49,18 +51,18 @@ public class QuerySchemaPatch {
      * @param patchOperations Patch operations.
      * @param entityToAdd Entity to add.
      * @param conflictsMessage Conflicts message.
-     * @param schemaName Schema name.
+     * @param cfg Cache configuration to patch.
      */
     public QuerySchemaPatch(
         Collection<SchemaAbstractOperation> patchOperations,
         Collection<QueryEntity> entityToAdd,
         String conflictsMessage,
-        String schemaName
+        CacheConfiguration<?, ?> cfg
     ) {
         this.patchOperations = patchOperations;
         this.entityToAdd = entityToAdd;
         this.conflictsMessage = conflictsMessage;
-        this.schemaName = schemaName;
+        cacheCfg = cfg != null ? new CacheConfiguration<>(cfg) : null;
     }
 
     /**
@@ -101,8 +103,8 @@ public class QuerySchemaPatch {
     /**
      * @return Schema name to apply, if previous is null.
      */
-    public String schemaName() {
-        return schemaName;
+    @Nullable public CacheConfiguration<?, ?> cacheConfiguration() {
+        return cacheCfg;
     }
 
     /** {@inheritDoc} */

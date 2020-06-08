@@ -130,6 +130,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.newSetFromMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
@@ -2995,6 +2996,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             boolean sqlEscape
     ) {
         assert qryParallelism == null || qryParallelism > 0;
+
+        CacheConfiguration cfg = ctx.cache().cacheConfiguration(cacheName);
+
+        if (qryParallelism != null && qryParallelism > 1 && cfg.getCacheMode() != PARTITIONED)
+            throw new IgniteSQLException("Segmented indices are supported for PARTITIONED mode only.");
 
         QueryEntity entity0 = QueryUtils.normalizeQueryEntity(entity, sqlEscape);
 

@@ -513,6 +513,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
         sqlIdxMaxInlineSize = cc.getSqlIndexMaxInlineSize();
+        qryParallelism = cc.getQueryParallelism();
         storeFactory = cc.getCacheStoreFactory();
         storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();

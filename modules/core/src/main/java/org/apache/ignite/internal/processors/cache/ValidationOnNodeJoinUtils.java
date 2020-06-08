@@ -222,10 +222,10 @@ public class ValidationOnNodeJoinUtils {
         // QuerySchema is empty and schema name is null (when indexing enabled dynamically).
         if (!F.eq(joinedSchema, locSchema)
             && (locSchema != null || !locDesc.schema().isEmpty())
-            && (joinedSchema != null || !F.isEmpty(joinedData.queryEntities()))
-        )
+            && (joinedSchema != null || !F.isEmpty(joinedData.queryEntities()))) {
             errorMsg.append(String.format(SQL_SCHEMA_CONFLICTS_MESSAGE, locDesc.cacheName(), joinedSchema,
-                locSchema));
+                    locSchema));
+        }
 
         QuerySchemaPatch schemaPatch = locDesc.makeSchemaPatch(joinedData.queryEntities());
 
@@ -233,9 +233,10 @@ public class ValidationOnNodeJoinUtils {
             if (errorMsg.length() > 0)
                 errorMsg.append("\n");
 
-            if (schemaPatch.hasConflicts())
-                errorMsg.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
-                    locDesc.cacheName(), schemaPatch.getConflictsMessage()));
+            if (schemaPatch.hasConflicts()) {
+                errorMsg.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE, locDesc.cacheName(),
+                        schemaPatch.getConflictsMessage()));
+            }
             else
                 errorMsg.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, locDesc.cacheName()));
         }

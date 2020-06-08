@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
@@ -368,13 +367,7 @@ public class DynamicCacheDescriptor {
             if (msg.operation() instanceof SchemaAddQueryEntityOperation) {
                 SchemaAddQueryEntityOperation op = (SchemaAddQueryEntityOperation)msg.operation();
 
-                CacheConfiguration cacheCfg0 = new CacheConfiguration(cacheCfg);
-                cacheCfg0.setQueryEntities(Collections.singletonList(op.entity()));
-                cacheCfg0.setSqlSchema(op.schemaName());
-                cacheCfg0.setSqlEscapeAll(op.isSqlEscape());
-                cacheCfg0.setQueryParallelism(op.queryParallelism());
-
-                cacheCfg = cacheCfg0;
+                cacheCfg = GridCacheUtils.patchCacheConfiguration(cacheCfg, op);
             }
 
             schema.finish(msg);
@@ -390,7 +383,7 @@ public class DynamicCacheDescriptor {
      */
     public QuerySchemaPatch makeSchemaPatch(StoredCacheData cacheData) {
         synchronized (schemaMux) {
-            return schema.makePatch(cacheData.config().getSqlSchema(), cacheData.queryEntities());
+            return schema.makePatch(cacheData.config(), cacheData.queryEntities());
         }
     }
 
@@ -419,15 +412,8 @@ public class DynamicCacheDescriptor {
 
             boolean res = schema.applyPatch(patch);
 
-            if (res && shouldUpdateConfig) {
-                CacheConfiguration newCfg = new CacheConfiguration(cacheCfg);
-
-                newCfg.setQueryEntities(schema.entities());
-
-                newCfg.setSqlSchema(patch.schemaName());
-
-                cacheCfg = newCfg;
-            }
+            if (res && shouldUpdateConfig)
+                cacheCfg = new CacheConfiguration<>(patch.cacheConfiguration());
 
             return res;
         }

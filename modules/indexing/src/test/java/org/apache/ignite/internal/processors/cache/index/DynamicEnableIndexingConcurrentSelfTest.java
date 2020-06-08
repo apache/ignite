@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -53,7 +54,9 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -66,13 +69,23 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexingAbstractTest {
     /** Test parameters. */
-    @Parameters(name = "cacheMode={0}, atomicityMode={1}")
+    @Parameters(name = "cacheMode={0},atomicityMode={1}")
     public static Iterable<Object[]> params() {
-        return Arrays.asList(
-                new Object[] {CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC},
-                new Object[] {CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL},
-                new Object[] {CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC},
-                new Object[] {CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL});
+        CacheMode[] cacheModes = new CacheMode[] {CacheMode.PARTITIONED, CacheMode.REPLICATED};
+
+        CacheAtomicityMode[] atomicityModes = new CacheAtomicityMode[] {
+                CacheAtomicityMode.ATOMIC,
+                CacheAtomicityMode.TRANSACTIONAL,
+                CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT
+        };
+
+        List<Object[]> res = new ArrayList<>();
+        for (CacheMode cacheMode : cacheModes) {
+            for (CacheAtomicityMode atomicityMode : atomicityModes)
+                res.add(new Object[] {cacheMode, atomicityMode});
+        }
+
+        return res;
     }
 
     /** Latches to block certain index operations. */
@@ -150,6 +163,8 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
             assertTrue(query(g, SELECT_ALL_QUERY).size() >= 3 * NUM_ENTRIES / 4 );
 
             performQueryingIntegrityCheck(g);
+
+            checkQueryParallelism((IgniteEx)g, cacheMode);
         }
     }
 
@@ -181,7 +196,13 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
         assertEquals(NUM_ENTRIES, query(cli, SELECT_ALL_QUERY).size());
 
-        performQueryingIntegrityCheck(cli);
+        for (Ignite g: G.allGrids()) {
+            assertEquals(NUM_ENTRIES, query(g, SELECT_ALL_QUERY).size());
+
+            performQueryingIntegrityCheck(g);
+
+            checkQueryParallelism((IgniteEx)g, cacheMode);
+        }
     }
 
     /** */
@@ -218,6 +239,8 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
             assertEquals(NUM_ENTRIES, query(g, SELECT_ALL_QUERY).size());
 
             performQueryingIntegrityCheck(g);
+
+            checkQueryParallelism((IgniteEx)g, cacheMode);
         }
     }
 
@@ -264,6 +287,8 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
             assertEquals(NUM_ENTRIES, query(g, SELECT_ALL_QUERY).size());
 
             performQueryingIntegrityCheck(g);
+
+            checkQueryParallelism((IgniteEx)g, cacheMode);
 
             IgniteCache<Object, Object> cache = g.cache(POI_CACHE_NAME);
 
@@ -313,6 +338,8 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
             assertEquals(LARGE_NUM_ENTRIES, query(g, SELECT_ALL_QUERY).size());
 
             performQueryingIntegrityCheck(g);
+
+            checkQueryParallelism((IgniteEx)g, cacheMode);
         }
     }
 
@@ -352,10 +379,16 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
                     IgniteCache<Object, BinaryObject> cache = node.cache(POI_CACHE_NAME).withKeepBinary();
 
-                    if (ThreadLocalRandom.current().nextBoolean())
-                        cache.put(i, val);
-                    else
-                        cache.remove(i);
+                    try {
+                        if (ThreadLocalRandom.current().nextBoolean())
+                            cache.put(i, val);
+                        else
+                            cache.remove(i);
+                    }
+                    catch (CacheException e) {
+                        if (!X.hasCause(e, TransactionSerializationException.class))
+                            throw e;
+                    }
                 }
 
                 return null;
@@ -389,7 +422,10 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
     /** */
     private IgniteInternalFuture<?> enableIndexing(IgniteEx node) {
-       return node.context().query().dynamicAddQueryEntity(POI_CACHE_NAME, POI_SCHEMA_NAME, queryEntity(), null, false);
+        Integer parallelism = cacheMode == CacheMode.PARTITIONED ? QUERY_PARALLELISM : null;
+
+        return node.context().query().dynamicAddQueryEntity(POI_CACHE_NAME, POI_SCHEMA_NAME, queryEntity(), parallelism,
+                false);
     }
 
     /** */

@@ -924,15 +924,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 reconnected.add(cache);
 
                 if (cache.context().userCache()) {
-                    DynamicCacheDescriptor desc = cacheDescriptor(cache.context().name());
+                    DynamicCacheDescriptor desc = cacheDescriptor(cache.name());
 
-                    assert desc != null : cache.context().name();
+                    assert desc != null : cache.name();
+
+                    if (cache.context().config().getQueryEntities().isEmpty()
+                            && !desc.cacheConfiguration().getQueryEntities().isEmpty()) {
+                        CacheConfiguration newCfg = desc.cacheConfiguration();
+
+                        cache.context().onSchemaAddQueryEntity(newCfg.getQueryEntities(), newCfg.getSqlSchema(),
+                                newCfg.isSqlEscapeAll(), newCfg.getQueryParallelism());
+                    }
 
                     boolean rmvIdx = !cache.context().group().persistenceEnabled();
 
                     // Re-create cache structures inside indexing in order to apply recent schema changes.
-                    GridCacheContextInfo cacheInfo =
-                            new GridCacheContextInfo(cache.context(), desc.cacheConfiguration(), false);
+                    GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cache.context(), false);
 
                     ctx.query().onCacheStop0(cacheInfo, rmvIdx);
                     ctx.query().onCacheStart0(cacheInfo, desc.schema(), desc.sql());

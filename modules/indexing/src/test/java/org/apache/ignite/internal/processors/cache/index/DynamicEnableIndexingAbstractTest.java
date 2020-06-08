@@ -39,6 +39,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.SchemaManager;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -88,7 +92,7 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
     protected static final String NAME_FIELD_NAME = "name";
 
     /** */
-    protected static final String KEY_PK_IDX_NAME = "_key_pk";
+    protected static final String KEY_PK_IDX_NAME = "_key_PK";
 
     /** */
     protected static final String LATITUDE_FIELD_NAME = "latitude";
@@ -100,7 +104,10 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
     protected static final String SELECT_ALL_QUERY = String.format("SELECT * FROM %s", POI_TABLE_NAME);
 
     /** */
-    protected void createTable(IgniteCache<?, ?> cache) {
+    protected static final int QUERY_PARALLELISM = 4;
+
+    /** */
+    protected void createTable(IgniteCache<?, ?> cache, int qryParallelism) {
         cache.query(new SqlFieldsQuery(
                 String.format("CREATE TABLE %s.%s " +
                                 "(%s INT, %s VARCHAR," +
@@ -108,10 +115,10 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
                                 " %s DOUBLE PRECISION," +
                                 " PRIMARY KEY (%s)" +
                                 ") WITH " +
-                                " \"CACHE_NAME=%s,VALUE_TYPE=%s\"",
+                                " \"CACHE_NAME=%s,VALUE_TYPE=%s,PARALLELISM=%d\"",
                         POI_SCHEMA_NAME, POI_TABLE_NAME, ID_FIELD_NAME, NAME_FIELD_NAME,
                         LATITUDE_FIELD_NAME, LONGITUDE_FIELD_NAME, ID_FIELD_NAME,
-                        POI_CACHE_NAME, POI_CLASS_NAME)
+                        POI_CACHE_NAME, POI_CLASS_NAME, qryParallelism)
         ));
     }
 
@@ -255,12 +262,38 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
 
                 currPlan.set(plan);
 
-                return plan.contains(idx);
+                return plan.contains(idx.toLowerCase());
             }
         }, 1_000);
 
         assertTrue("Query \"" + sql + "\" executed without usage of " + idx + ", see plan:\n\"" +
                 currPlan.get() + "\"", res);
+    }
+
+    /** */
+    protected void checkQueryParallelism(IgniteEx ig, CacheMode cacheMode) {
+        int expectedParallelism = cacheMode != CacheMode.REPLICATED ? QUERY_PARALLELISM :
+                CacheConfiguration.DFLT_QUERY_PARALLELISM;
+
+        IgniteH2Indexing indexing = (IgniteH2Indexing)ig.context().query().getIndexing();
+
+        SchemaManager schemaMgr = indexing.schemaManager();
+
+        H2TableDescriptor descr = schemaMgr.tableForType(POI_SCHEMA_NAME, POI_CACHE_NAME, POI_CLASS_NAME);
+
+        assertNotNull(descr);
+
+        if (descr.table().getIndex(KEY_PK_IDX_NAME) instanceof H2TreeIndex) {
+            H2TreeIndex pkIdx = (H2TreeIndex)descr.table().getIndex(KEY_PK_IDX_NAME);
+
+            assertNotNull(pkIdx);
+
+            assertEquals(expectedParallelism, pkIdx.segmentsCount());
+        }
+
+        CacheConfiguration<?, ?> cfg = ig.context().cache().cacheConfiguration(POI_CACHE_NAME);
+
+        assertEquals(expectedParallelism, cfg.getQueryParallelism());
     }
 
     /** */

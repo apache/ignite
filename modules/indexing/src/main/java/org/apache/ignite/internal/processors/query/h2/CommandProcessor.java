@@ -787,7 +787,7 @@ public class CommandProcessor {
                     if (err != null)
                         throw err;
 
-                    if (!F.isEmpty(cmd.cacheName()) && ctx.cache().cacheDescriptor(cmd.cacheName()) != null)
+                    if (!F.isEmpty(cmd.cacheName()) && ctx.cache().cacheDescriptor(cmd.cacheName()) != null) {
                         ctx.query().dynamicAddQueryEntity(
                                 cmd.cacheName(),
                                 cmd.schemaName(),
@@ -795,6 +795,7 @@ public class CommandProcessor {
                                 cmd.parallelism(),
                                 true
                         ).get();
+                    }
                     else {
                         ctx.query().dynamicTableCreate(
                             cmd.schemaName(),

@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -2119,6 +2120,43 @@ public class GridCacheUtils {
      */
     public static boolean isCacheTemplateName(String cacheName) {
         return cacheName.endsWith("*");
+    }
+
+    /**
+     * Patch cache configuration with {@link SchemaAddQueryEntityOperation}
+     *
+     * @param oldCfg Old cache config.
+     * @param op Schema add query entity operation.
+     */
+    public static <K, V> CacheConfiguration<K, V> patchCacheConfiguration(
+            CacheConfiguration<K, V> oldCfg,
+            SchemaAddQueryEntityOperation op
+    ) {
+        return patchCacheConfiguration(oldCfg, Collections.singletonList(op.entity()), op.schemaName(), op.isSqlEscape(),
+                op.queryParallelism());
+    }
+
+    /**
+     * Patch cache configuration with {@link SchemaAddQueryEntityOperation}
+     *
+     * @param oldCfg Old cache config.
+     * @param entities New query entities.
+     * @param sqlSchema Sql schema name,
+     * @param isSqlEscape Sql escape flag.
+     * @param qryParallelism Query parallelism parameter.
+     */
+    public static <K, V> CacheConfiguration<K, V> patchCacheConfiguration(
+            CacheConfiguration<K, V> oldCfg,
+            Collection<QueryEntity> entities,
+            String sqlSchema,
+            boolean isSqlEscape,
+            int qryParallelism
+    ) {
+        return new CacheConfiguration<>(oldCfg)
+                .setQueryEntities(entities)
+                .setSqlSchema(sqlSchema)
+                .setSqlEscapeAll(isSqlEscape)
+                .setQueryParallelism(qryParallelism);
     }
 
     /**

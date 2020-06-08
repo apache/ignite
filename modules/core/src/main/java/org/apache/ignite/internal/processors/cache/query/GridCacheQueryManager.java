@@ -297,7 +297,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     *
+     * Enable query manager.
      */
     public void enable() {
         qryProcEnabled = true;
@@ -433,7 +433,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     public void remove(KeyCacheObject key, @Nullable CacheDataRow prevRow)
         throws IgniteCheckedException {
-        if (!qryProcEnabled && !QueryUtils.isEnabled(cctx.config()))
+        if (!qryProcEnabled)
             return; // No-op.
 
         if (!enterBusy())

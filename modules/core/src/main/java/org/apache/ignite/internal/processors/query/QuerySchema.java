@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
@@ -101,12 +102,12 @@ public class QuerySchema implements Serializable {
     /**
      * Make query schema patch.
      *
-     * @param targetSchema Schema name when it should be changed (enabling indexing dynamically).
+     * @param targetCfg Cache configuration when it should be changed (enabling indexing dynamically).
      * @param target Query entity list to which current schema should be expanded.
      * @return Patch to achieve entity which is a result of merging current one and target.
      * @see QuerySchemaPatch
      */
-    public QuerySchemaPatch makePatch(String targetSchema, Collection<QueryEntity> target) {
+    public QuerySchemaPatch makePatch(CacheConfiguration<?, ?> targetCfg, Collection<QueryEntity> target) {
         synchronized (mux) {
             Map<String, QueryEntity> localEntities = new HashMap<>();
 
@@ -140,7 +141,7 @@ public class QuerySchema implements Serializable {
                     entityToAdd.add(QueryUtils.copy(queryEntity));
             }
 
-            return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts.toString(), targetSchema);
+            return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts.toString(), targetCfg);
         }
     }
 

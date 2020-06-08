@@ -330,7 +330,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     @Test
-    public void testDuplicateCustomCacheName() throws Exception {
+    public void testCreateTableOnExistingCache() throws Exception {
         client().getOrCreateCache("new");
 
         try {
@@ -346,6 +346,28 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         }
         finally {
             client().destroyCache("new");
+        }
+    }
+
+    /**
+     * Test creating table over existing LOCAL cache fails (enabling query.)
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testCreateTableOnExistingLocalCache() throws Exception {
+        client().getOrCreateCache(new CacheConfiguration<>("local").setCacheMode(CacheMode.LOCAL));
+
+        try {
+            GridTestUtils.assertThrows(null, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    doTestCustomNames("local", null, null);
+                    return null;
+                }
+            }, IgniteSQLException.class, "Schema changes are not supported for LOCAL cache");
+
+        }
+        finally {
+            client().destroyCache("local");
         }
     }
 

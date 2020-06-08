@@ -25,8 +25,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,6 +38,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
@@ -82,7 +87,6 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
 
     /** */
     public static final int NUM_ENTRIES = 500;
-
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -141,29 +145,27 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
     private void testMergeCacheConfig(int firstIdx, int secondIdx) throws Exception {
         prepareTestGrid();
 
-        {
-            IgniteEx ig = startGrid(firstIdx);
+        // Check when start from firstIdx node.
+        IgniteEx ig = startGrid(firstIdx);
 
-            startGrid(secondIdx);
+        startGrid(secondIdx);
 
-            ig.cluster().state(ClusterState.ACTIVE);
+        ig.cluster().state(ClusterState.ACTIVE);
 
-            awaitPartitionMapExchange();
+        awaitPartitionMapExchange();
 
-            performQueryingIntegrityCheck(ig);
+        performQueryingIntegrityCheck(ig);
 
-            stopAllGrids();
-        }
+        // Restart and start from the beginning.
+        stopAllGrids();
 
-        {
-            IgniteEx ig = startGrids(2);
+        ig = startGrids(2);
 
-            ig.cluster().state(ClusterState.ACTIVE);
+        ig.cluster().state(ClusterState.ACTIVE);
 
-            awaitPartitionMapExchange();
+        awaitPartitionMapExchange();
 
-            performQueryingIntegrityCheck(ig);
-        }
+        performQueryingIntegrityCheck(ig);
     }
 
     /**
@@ -209,7 +211,81 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
         }
     }
 
-    /** */
+    /**
+     * Check that client reconnects to restarted grid. Start grid from node with enabled indexing.
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testReconnectClient_RestartFromNodeWithEnabledIndexing() throws Exception {
+        testReconnectClient(true);
+    }
+
+    /**
+     *  Check that client reconnects to restarted grid. Start grid from node that stopped before enabled indexing.
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testReconnectClient_RestartFromNodeWithDisabledIndexing() throws Exception {
+        testReconnectClient(false);
+    }
+
+    /**
+     * @param startFromEnabledIndexing If @{code true}, start grid from node with enabled indexing.
+     *
+     * @throws Exception if failed.
+     */
+    private void testReconnectClient(boolean startFromEnabledIndexing) throws Exception {
+        IgniteEx srv0 = startGrids(2);
+
+        IgniteEx cli = startClientGrid(2);
+
+        cli.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<?, ?> cache = srv0.createCache(testCacheConfiguration(POI_CACHE_NAME));
+
+        fillTestData(srv0);
+
+        stopGrid(1);
+
+        createTable(cache, POI_SCHEMA_NAME);
+
+        performQueryingIntegrityCheck(srv0);
+
+        IgniteClientReconnectAbstractTest.reconnectClientNode(log, cli, srv0, () -> {
+            try {
+                stopGrid(0);
+
+                if (startFromEnabledIndexing)
+                    startGrid(0);
+                else
+                    startGrid(1);
+            }
+            catch (Exception e) {
+                throw new IgniteException("Failed to restart cluster", e);
+            }
+        });
+
+        assertEquals(2, cli.cluster().nodes().size());
+        cli.cluster().state(ClusterState.ACTIVE);
+
+        if (startFromEnabledIndexing) {
+            awaitPartitionMapExchange();
+
+            performQueryingIntegrityCheck(cli);
+        }
+        else
+            assertEquals(NUM_ENTRIES, cli.getOrCreateCache(POI_CACHE_NAME).size(CachePeekMode.PRIMARY));
+    }
+
+    /**
+     * Prepare test grid:
+     * 1) Start two nodes, start cache and fill it with data.
+     * 2) Stop second node.
+     * 3) Enable indexing on cache on first node.
+     * 4) Stop cluster.
+     */
     private void prepareTestGrid() throws Exception {
             IgniteEx ig = startGrids(2);
 
@@ -237,8 +313,9 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
 
         assertEquals(NUM_ENTRIES, res.size());
 
-        cache.query(new SqlFieldsQuery(String.format("DELETE FROM %s WHERE _key = %s", POI_TABLE_NAME, "100"))
-            .setSchema(POI_SCHEMA_NAME)).getAll();
+        cache.query(new SqlFieldsQuery(
+                    String.format("DELETE FROM %s WHERE %s = %s", POI_TABLE_NAME, ID_FIELD_NAME,  "100")
+                ).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertNull(cache.get(100));
 
@@ -252,12 +329,12 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
 
         assertNotNull(cache.get(100));
 
-        cache.query(new SqlFieldsQuery(String.format("UPDATE %s SET %s = '%s' WHERE _KEY = 100",
-            POI_TABLE_NAME, NAME_FIELD_NAME, "POI_100")).setSchema(POI_SCHEMA_NAME)).getAll();
+        cache.query(new SqlFieldsQuery(String.format("UPDATE %s SET %s = '%s' WHERE %s = 100",
+            POI_TABLE_NAME, NAME_FIELD_NAME, "POI_100", ID_FIELD_NAME)).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertEquals("POI_100", ((BinaryObject)cache.get(100)).field(NAME_FIELD_NAME));
 
-        assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE id = 10", PK_INDEX_NAME);
+        assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE " + ID_FIELD_NAME + " = 10", PK_INDEX_NAME);
     }
 
     /**
@@ -322,10 +399,10 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
 
     /** */
     private CacheConfiguration<?, ?> testCacheConfiguration(String name) {
-        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(name);
-
-        ccfg.setCacheMode(CacheMode.REPLICATED);
-
-        return ccfg;
+        return new CacheConfiguration<>(name)
+                    //Set transactional because of https://issues.apache.org/jira/browse/IGNITE-5564.
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                    .setCacheMode(CacheMode.REPLICATED)
+                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
     }
 }

@@ -49,25 +49,12 @@ public class H2RowCacheRegistry {
      *
      * @param cacheInfo Cache info context.
      */
-    public void onCacheRegistered(GridCacheContextInfo<?, ?> cacheInfo) {
+    public void onCacheRegistered(GridCacheContextInfo cacheInfo) {
         if (!cacheInfo.config().isSqlOnheapCacheEnabled())
             return;
 
-        GridCacheContext<?, ?> cacheCtx = cacheInfo.cacheContext();
-
-        assert cacheCtx != null;
-
-        onCacheRegistered(cacheCtx);
-    }
-
-    /**
-     * Callback invoked on cache registration within indexing.
-     *
-     * @param cctx Cache context.
-     */
-    void onCacheRegistered(GridCacheContext<?, ?> cctx) {
         synchronized (mux) {
-            int grpId = cctx.groupId();
+            int grpId = cacheInfo.groupId();
 
             if (caches != null) {
                 H2RowCache cache = caches.get(grpId);
@@ -81,8 +68,12 @@ public class H2RowCacheRegistry {
 
             HashMap<Integer, H2RowCache> caches0 = copy();
 
-            if (cctx.affinityNode()) {
-                H2RowCache rowCache = new H2RowCache(cctx.group(), cctx.config().getSqlOnheapCacheMaxSize());
+            if (cacheInfo.affinityNode()) {
+                GridCacheContext cacheCtx = cacheInfo.cacheContext();
+
+                assert cacheCtx != null;
+
+                H2RowCache rowCache = new H2RowCache(cacheCtx.group(), cacheInfo.config().getSqlOnheapCacheMaxSize());
 
                 caches0.put(grpId, rowCache);
 
@@ -91,7 +82,7 @@ public class H2RowCacheRegistry {
                 // Inject row cache cleaner into store on cache creation.
                 // Used in case the cache with enabled SqlOnheapCache is created in exists cache group
                 // and SqlOnheapCache is disbaled for the caches have been created before.
-                for (IgniteCacheOffheapManager.CacheDataStore ds : cctx.offheap().cacheDataStores())
+                for (IgniteCacheOffheapManager.CacheDataStore ds : cacheCtx.offheap().cacheDataStores())
                     ds.setRowCacheCleaner(rowCache);
             }
         }
