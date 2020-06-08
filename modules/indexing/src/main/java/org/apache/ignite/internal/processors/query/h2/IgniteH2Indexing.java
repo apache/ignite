@@ -1996,6 +1996,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
 
+        //to avoid possible data race
+        GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
+
         rebuildCacheIdxFut.listen(fut -> {
             Throwable err = fut.error();
 
@@ -2005,18 +2008,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
                 catch (Throwable t) {
                     err = t;
-
-                    rebuildCacheIdxFut.onDone(t);
                 }
             }
 
             if (nonNull(err))
                 U.error(log, "Failed to rebuild indexes for cache: " + cacheName, err);
+
+            outRebuildCacheIdxFut.onDone(err);
         });
 
         rebuildIndexesFromHash0(cctx, clo, rebuildCacheIdxFut);
 
-        return rebuildCacheIdxFut;
+        return outRebuildCacheIdxFut;
     }
 
     /**
