@@ -26,13 +26,13 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** How many rows are requested by downstream. */
-    private long requested;
+    private int requested;
 
     /** How many rows are we waiting for from the upstream. {@code -1} means end of stream. */
     private int waiting;
 
     /** How many rows are we waiting for from the upstream. {@code -1} means end of stream. */
-    private long processed;
+    private int processed;
 
     /**  */
     private boolean inLoop;
