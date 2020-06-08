@@ -16,6 +16,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -23,6 +24,8 @@ import org.junit.runners.Suite;
  * Test suite for control utility.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({})
+@Suite.SuiteClasses({
+    CommandHandlerParsingTest.class
+})
 public class IgniteControlUtilityTestSuite {
 }
