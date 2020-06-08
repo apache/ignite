@@ -780,10 +780,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             TestInitialQuery(new TextQuery(typeof(BinarizableEntry), "1*"), cur => cur.ToList());
             
             // Fields query, GetAll
-            TestInitialQuery(new SqlFieldsQuery(typeof(BinarizableEntry), "val < 33"), cur => cur.GetAll());
+            TestInitialQuery(new SqlFieldsQuery("select _key, _val from  where val < 33"), cur => cur.GetAll());
             
             // Fields query, iterator
-            TestInitialQuery(new SqlFieldsQuery(typeof(BinarizableEntry), "val < 33"), cur => cur.ToList());
+            TestInitialQuery(new SqlFieldsQuery("val < 33"), cur => cur.ToList());
+            
+            // TODO: Test fields query with wrong field types
+            // TODO: Can we allow LINQ as initial query?
 
             // Test exception: invalid initial query
             var ex = Assert.Throws<IgniteException>(

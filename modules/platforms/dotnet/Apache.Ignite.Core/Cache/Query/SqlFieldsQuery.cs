@@ -20,15 +20,14 @@ namespace Apache.Ignite.Core.Cache.Query
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache;
 
     /// <summary>
     /// SQL fields query.
     /// </summary>
-    public class SqlFieldsQuery
+    public class SqlFieldsQuery : QueryBase
     {
-        /// <summary> Default page size. </summary>
-        public const int DefaultPageSize = 1024;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -64,21 +63,6 @@ namespace Apache.Ignite.Core.Cache.Query
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public object[] Arguments { get; set; }
-
-        /// <summary>
-        /// Local flag. When set query will be executed only on local node, so only local 
-        /// entries will be returned as query result.
-        /// <para />
-        /// Defaults to <c>false</c>.
-        /// </summary>
-        public bool Local { get; set; }
-
-        /// <summary>
-        /// Optional page size.
-        /// <para />
-        /// Defaults to <see cref="DefaultPageSize"/>.
-        /// </summary>
-        public int PageSize { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether distributed joins should be enabled for this query.
@@ -166,6 +150,19 @@ namespace Apache.Ignite.Core.Cache.Query
                                  PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, ReplicatedOnly,
 #pragma warning restore 618
                                  Colocated, Schema, Lazy);
+        }
+
+        /** <inheritDoc /> */
+        internal override void Write(BinaryWriter writer, bool keepBinary)
+        {
+            // TODO
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        internal override CacheOp OpId
+        {
+            get { return CacheOp.QrySqlFields; }
         }
     }
 }
