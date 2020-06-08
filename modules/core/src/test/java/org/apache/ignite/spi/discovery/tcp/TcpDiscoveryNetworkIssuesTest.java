@@ -46,66 +46,106 @@ import org.junit.Test;
  *
  */
 public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
-    /** */
+    /**
+     *
+     */
     private static final int NODE_0_PORT = 47500;
 
-    /** */
+    /**
+     *
+     */
     private static final int NODE_1_PORT = 47501;
 
-    /** */
+    /**
+     *
+     */
     private static final int NODE_2_PORT = 47502;
 
-    /** */
+    /**
+     *
+     */
     private static final int NODE_3_PORT = 47503;
 
-    /** */
+    /**
+     *
+     */
     private static final int NODE_4_PORT = 47504;
 
-    /** */
+    /**
+     *
+     */
     private static final int NODE_5_PORT = 47505;
 
-    /** */
+    /**
+     *
+     */
     private static final String NODE_0_NAME = "node00-" + NODE_0_PORT;
 
-    /** */
+    /**
+     *
+     */
     private static final String NODE_1_NAME = "node01-" + NODE_1_PORT;
 
-    /** */
+    /**
+     *
+     */
     private static final String NODE_2_NAME = "node02-" + NODE_2_PORT;
 
-    /** */
+    /**
+     *
+     */
     private static final String NODE_3_NAME = "node03-" + NODE_3_PORT;
 
-    /** */
+    /**
+     *
+     */
     private static final String NODE_4_NAME = "node04-" + NODE_4_PORT;
 
-    /** */
+    /**
+     *
+     */
     private static final String NODE_5_NAME = "node05-" + NODE_5_PORT;
 
-    /** */
+    /**
+     *
+     */
     private TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
+    /**
+     *
+     */
     private TcpDiscoverySpi specialSpi;
 
-    /** */
+    /**
+     *
+     */
     private boolean usePortFromNodeName;
 
-    /** */
+    /**
+     *
+     */
     private int connectionRecoveryTimeout = -1;
 
-    /** */
+    /**
+     *
+     */
     private int failureDetectionTimeout = 2_000;
 
-    /** */
+    /**
+     *
+     */
     private int metricsUpdateFreq = 1_000;
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected void afterTest() {
         stopAllGrids();
     }
 
-    /** Checks node failure is detected within failure detection timeout. */
+    /**
+     * Checks node failure is detected within failure detection timeout.
+     */
     @Test
     public void testNodeFailureDetectedWithinConfiguredTimeout() throws Exception {
         // We won't try recovering connection. We'll remove node from the grid asap.
@@ -224,7 +264,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -244,16 +286,18 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
+        cfg.setSystemWorkerBlockedTimeout(20_000);
+
         return cfg;
     }
 
     /**
      * Test scenario: some node (lets call it IllN) in the middle experience network issues: its previous cannot see it,
      * and the node cannot see two nodes in front of it.
-     *
-     * IllN is considered failed by othen nodes in topology but IllN manages to connect to topology and
-     * sends StatusCheckMessage with non-empty failedNodes collection.
-     *
+     * <p>
+     * IllN is considered failed by othen nodes in topology but IllN manages to connect to topology and sends
+     * StatusCheckMessage with non-empty failedNodes collection.
+     * <p>
      * Expected outcome: IllN eventually segments from topology, other healthy nodes work normally.
      *
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-11364">IGNITE-11364</a>
@@ -295,7 +339,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             illNodeSegmented.set(true);
 
             return false;
-            }, EventType.EVT_NODE_SEGMENTED);
+        }, EventType.EVT_NODE_SEGMENTED, EventType.EVT_NODE_FAILED);
 
         specialSpi = null;
 
@@ -317,6 +361,138 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         assertTrue(String.format("Failed nodes is expected to be empty, but contains %s nodes.", failedNodes.size()),
             failedNodes.isEmpty());
+    }
+
+    /**
+     * Checks
+     */
+    @Test
+    public void testConnectionRecoveryTimeout() throws Exception {
+        for (failureDetectionTimeout = 200; failureDetectionTimeout <= 600; failureDetectionTimeout += 200) {
+            for (connectionRecoveryTimeout = 200; connectionRecoveryTimeout <= 600; connectionRecoveryTimeout += 200) {
+                AtomicLong timer = new AtomicLong();
+
+                startGrids(2);
+
+                specialSpi = new TcpDiscoverySpi() {
+                    /** {@inheritDoc} */
+                    @Override protected int readReceipt(Socket sock, long timeout) throws IOException {
+                        if (timer.get() > 0)
+                            simulateUnknowdDelay(timeout);
+
+                        return super.readReceipt(sock, timeout);
+                    }
+
+                    /** {@inheritDoc} */
+                    @Override protected Socket openSocket(InetSocketAddress sockAddr,
+                        IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
+
+                        if (timer.get() > 0)
+                            simulateUnknowdDelay(timeoutHelper.nextTimeoutChunk(getSocketTimeout()));
+
+                        return super.openSocket(sockAddr, timeoutHelper);
+                    }
+
+                    /** {@inheritDoc} */
+                    @Override protected void writeToSocket(Socket sock, OutputStream out,
+                        TcpDiscoveryAbstractMessage msg,
+                        long timeout) throws IOException, IgniteCheckedException {
+
+                        if (timer.get() > 0) {
+                            simulateUnknowdDelay(timeout);
+
+                            super.writeToSocket(sock, out, msg, 0);
+                        }
+                        else
+                            super.writeToSocket(sock, out, msg, timeout);
+                    }
+
+                    /** {@inheritDoc} */
+                    @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
+                        long timeout) throws IOException {
+                        if (timer.get() > 0) {
+                            simulateUnknowdDelay(timeout);
+
+                            super.writeToSocket(msg, sock, res, 0);
+                        }
+                        else
+                            super.writeToSocket(msg, sock, res, timeout);
+                    }
+
+                    /** {@inheritDoc} */
+                    @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
+                        long timeout) throws IOException {
+                        if (timer.get() > 0) {
+                            simulateUnknowdDelay(timeout);
+
+                            super.writeToSocket(sock, msg, data, 0);
+                        }
+                        else
+                            super.writeToSocket(sock, msg, data, timeout);
+                    }
+
+                    private void simulateUnknowdDelay(long delay) {
+                        try {
+                            Thread.sleep(delay);
+                        }
+                        catch (InterruptedException e) {
+                            // No-op.
+                        }
+                    }
+                };
+
+                IgniteEx failedGrid = startGrid(2);
+
+                failedGrid.events().localListen((e) -> {
+                    if (e.node().isLocal()) {
+                        timer.set(System.nanoTime() - timer.get());
+
+                        log.error("Wrong node failed: " + e.node().order() + ". Expected: " +
+                            failedGrid.localNode().order());
+                    }
+                    else
+                        timer.set(-1);
+
+                    synchronized (timer) {
+                        timer.notifyAll();
+                    }
+
+                    return false;
+                }, EventType.EVT_NODE_SEGMENTED);
+
+                specialSpi = null;
+
+                startGrid(3);
+
+                startGrid(4);
+
+                awaitPartitionMapExchange();
+
+                Thread.sleep(new Random().nextInt(1000));
+
+                synchronized (timer) {
+                    timer.set(System.nanoTime());
+
+                    timer.wait(getTestTimeout());
+                }
+
+                if (timer.get() < 0)
+                    fail("Wrong node failed. See the log above.");
+                else {
+                    timer.set(U.nanosToMillis(timer.get()));
+
+                    long expectedDelay = grid(0).configuration().getFailureDetectionTimeout() +
+                        connectionRecoveryTimeout + 100;
+
+                    assertTrue("Too long delay of connection recovery failure: " + timer.get() + ". Expected: " +
+                            expectedDelay + ". failureDetectionTimeout: " + failureDetectionTimeout +
+                            ", connectionRecoveryTimeout: " + connectionRecoveryTimeout,
+                        timer.get() < expectedDelay);
+                }
+
+                stopAllGrids(true);
+            }
+        }
     }
 
     /**

@@ -33,17 +33,17 @@ public class IgniteSpiOperationTimeoutHelper {
     // https://issues.apache.org/jira/browse/IGNITE-11221
     // We need to reuse new logic ExponentialBackoffTimeout logic in TcpDiscovery instead of this class.
 
-    /** */
-    private long lastOperStartNanos;
+    /** Time of last related operation in nanos. */
+    private long lastOperationTime;
 
-    /** */
-    private long timeout;
+    /** Flag whether to use timeout. */
+    private final boolean timeoutEnabled;
 
-    /** */
-    private final boolean failureDetectionTimeoutEnabled;
+    /** Timeout on operration. */
+    private final long timeout;
 
-    /** */
-    private final long failureDetectionTimeout;
+    /** Time left for the operation in nanos. */
+    private long timeLeft;
 
     /**
      * Constructor.
@@ -52,9 +52,10 @@ public class IgniteSpiOperationTimeoutHelper {
      * @param srvOp {@code True} if communicates with server node.
      */
     public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp) {
-        failureDetectionTimeoutEnabled = adapter.failureDetectionTimeoutEnabled();
-        failureDetectionTimeout = srvOp ? adapter.failureDetectionTimeout() :
-            adapter.clientFailureDetectionTimeout();
+        timeoutEnabled = adapter.failureDetectionTimeoutEnabled();
+
+        timeout = U.millisToNanos(srvOp ? adapter.failureDetectionTimeout() :
+            adapter.clientFailureDetectionTimeout());
     }
 
     /**
@@ -62,15 +63,33 @@ public class IgniteSpiOperationTimeoutHelper {
      *
      * @param adapter SPI adapter.
      * @param srvOp {@code True} if communicates with server node.
-     * @param lastOperStartNanos Time of last related operation in nanos.
+     * @param lastOperationNanos Time of last related operation in nanos.
      */
-    public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp, long lastOperStartNanos) {
+    public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp, long lastOperationNanos) {
         this(adapter, srvOp);
 
-        this.lastOperStartNanos = lastOperStartNanos;
+        lastOperationTime = lastOperationNanos;
 
-        if (lastOperStartNanos > 0)
-            timeout = failureDetectionTimeout;
+        if (lastOperationNanos > 0)
+            timeLeft = timeout;
+    }
+
+    /**
+     * Creates timeout helper based on time of last related operation and passed timeout.
+     *
+     * @param adapter SPI adapter.
+     * @param timeoutMills Timeout to use in mills.
+     * @param lastOperationNanos Time of last related operation in nanos.
+     */
+    public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, long timeoutMills, long lastOperationNanos) {
+        timeoutEnabled = true;
+
+        lastOperationTime = lastOperationNanos;
+
+        timeout = U.millisToNanos(timeoutMills);
+
+        if (lastOperationNanos > 0)
+            timeLeft = timeout;
     }
 
     /**
@@ -85,27 +104,28 @@ public class IgniteSpiOperationTimeoutHelper {
      * this {@code IgniteSpiOperationTimeoutController}.
      */
     public long nextTimeoutChunk(long dfltTimeout) throws IgniteSpiOperationTimeoutException {
-        if (!failureDetectionTimeoutEnabled)
+        if (!timeoutEnabled)
             return dfltTimeout;
 
-        if (lastOperStartNanos == 0) {
-            timeout = failureDetectionTimeout;
-            lastOperStartNanos = System.nanoTime();
+        if (lastOperationTime == 0) {
+            timeLeft = timeout;
+
+            lastOperationTime = System.nanoTime();
         }
         else {
             long curNanos = System.nanoTime();
 
-            timeout -= U.nanosToMillis(curNanos - lastOperStartNanos);
+            timeLeft -= curNanos - lastOperationTime;
 
-            lastOperStartNanos = curNanos;
+            lastOperationTime = curNanos;
 
-            if (timeout <= 0)
-                throw new IgniteSpiOperationTimeoutException("Network operation timed out. Increase " +
-                    "'failureDetectionTimeout' configuration property [failureDetectionTimeout="
-                    + failureDetectionTimeout + ']');
+            if (timeLeft <= 0) {
+                throw new IgniteSpiOperationTimeoutException("Network operation timed out. Timeout: " +
+                    U.nanosToMillis(timeout));
+            }
         }
-        
-        return timeout;
+
+        return U.nanosToMillis(timeLeft);
     }
 
     /**
@@ -115,12 +135,12 @@ public class IgniteSpiOperationTimeoutHelper {
      * @return {@code true} if failure detection timeout is reached, {@code false} otherwise.
      */
     public boolean checkFailureTimeoutReached(Exception e) {
-        if (!failureDetectionTimeoutEnabled)
+        if (!timeoutEnabled)
             return false;
 
         if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
             return true;
 
-        return (timeout - U.millisSinceNanos(lastOperStartNanos) <= 0);
+        return lastOperationTime + timeout < System.nanoTime();
     }
 }

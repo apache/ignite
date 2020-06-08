@@ -57,6 +57,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocket;
@@ -151,8 +152,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.Math.max;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
@@ -388,7 +387,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
             0,
-            max(4, Runtime.getRuntime().availableProcessors() * 2),
+            Math.max(4, Runtime.getRuntime().availableProcessors() * 2),
             2000,
             new LinkedBlockingQueue<>());
 
@@ -3343,8 +3342,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     while (true) {
                         if (sock == null) {
-                            if (timeoutHelper == null)
-                                timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
+                            if (timeoutHelper == null) {
+                                if (sndState == null)
+                                    timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
+                                else {
+                                    timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, sndState.timeoutMills(),
+                                        sndState.beginTimeNanos);
+                                }
+                            }
 
                             boolean success = false;
 
@@ -3383,6 +3388,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 // We should take previousNodeAlive flag into account only if we received the response from the correct node.
                                 if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
+                                    sndState.checkTimeout();
+
                                     // Remote node checked connection to it's previous and got success.
                                     boolean previousNode = sndState.markLastFailedNodeAlive();
 
@@ -3706,8 +3713,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
                         sndState = new CrossRingMessageSendState();
+                    } else if (sndState.checkTimeout()) {
+                        segmentLocalNodeOnSendFail(failedNodes);
+
+                        return; // Nothing to do here.
+                    }
 
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
 
@@ -3739,12 +3751,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             next = ring.nextNode(failedNodes);
                         }
-                    }
-
-                    if (sndState != null && sndState.isFailed()) {
-                        segmentLocalNodeOnSendFail(failedNodes);
-
-                        return; // Nothing to do here.
                     }
 
                     next = null;
@@ -6559,7 +6565,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         long now = U.currentTimeMillis();
 
                         // We got message from previous in less than double connection check interval.
-                        boolean ok = rcvdTime + CON_CHECK_INTERVAL + effectiveExchangeTimeout() >= now;
+                        boolean ok = rcvdTime + effectiveExchangeTimeout() >= now;
                         TcpDiscoveryNode previous = null;
 
                         if (ok) {
@@ -7080,7 +7086,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             try {
-                latch.await(timeout, MILLISECONDS);
+                latch.await(timeout, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException e) {
                 // No-op.
@@ -7874,11 +7880,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private final long failTimeNanos;
 
+        /** */
+        private final long beginTimeNanos;
+
         /**
          *
          */
         CrossRingMessageSendState() {
-            failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + System.nanoTime();
+            beginTimeNanos = System.nanoTime();
+
+            failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + beginTimeNanos;
         }
 
         /**
@@ -7919,6 +7930,22 @@ class ServerImpl extends TcpDiscoveryImpl {
             return false;
         }
 
+        /** TODO */
+        boolean checkTimeout(){
+            if (System.nanoTime() - failTimeNanos >= 0) {
+                state = RingMessageSendState.FAILED;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /** TODO */
+        long timeoutMills(){
+            return U.nanosToMillis(failTimeNanos-beginTimeNanos);
+        }
+
         /**
          * Marks last failed node as alive.
          *
@@ -7931,20 +7958,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (--failedNodes <= 0) {
                     failedNodes = 0;
 
-                    if (System.nanoTime() - failTimeNanos >= 0) {
-                        state = RingMessageSendState.FAILED;
-
-                        return false;
-                    }
-
                     state = RingMessageSendState.STARTING_POINT;
-
-                    try {
-                        Thread.sleep(200);
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
                 }
 
                 return true;
