@@ -52,7 +52,6 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
     /** */
     private static final int END_OF_PARTITION_META_V3 = GAPS_LINK + 8;
 
-
     /**
      * @param ver Version.
      */
