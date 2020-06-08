@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,6 +32,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -113,8 +115,12 @@ public class WalPreloadingConcurrentTest extends GridCommonAbstractTest {
             @Override public Object call() {
                 int randomPart = ThreadLocalRandom.current().nextInt(cache.configuration().getAffinity().partitions());
 
-                while (!stop.get())
-                    db.reserveHistoryForPreloading(cache.context().groupId(), randomPart, 0);
+                while (!stop.get()) {
+                    db.reserveHistoryForPreloading(Collections.singletonMap(
+                        new T2 <Integer, Integer>(cache.context().groupId(),randomPart),
+                        0L
+                    ));
+                }
 
                 return null;
             }
