@@ -148,7 +148,8 @@ public class SchemaManager {
 
     /**
      * Constructor.
-     *  @param ctx Kernal context.
+     *
+     * @param ctx Kernal context.
      * @param connMgr Connection manager.
      */
     public SchemaManager(GridKernalContext ctx, ConnectionManager connMgr) {
