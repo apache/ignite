@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -109,13 +110,10 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         CompletableFuture<Integer> fetchFut = limitSup.get();
 
         fetchFut.thenAccept(n -> {
+            if (n < 0)
+                throw new IgniteSQLException("Invalid query limit: " + n);
+
             limit = n;
-
-            if (limit == 0) {
-                downstream.end();
-
-                return;
-            }
 
             if (offset > 0)
                 limit += offset;
@@ -137,6 +135,9 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         CompletableFuture<Integer> offFut = offsetSup.get();
 
         offFut.thenAccept(n -> {
+            if (n < 0)
+                throw new IgniteSQLException("Invalid query offset: " + n);
+
             offset = n;
 
             if (limit > 0)
@@ -159,7 +160,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         assert limit != NOT_READY;
         assert offset != NOT_READY;
 
-        if (limit > 0 && processed >= limit) {
+        if (limit == 0 || limit > 0 && processed >= limit) {
             downstream.end();
 
             return;

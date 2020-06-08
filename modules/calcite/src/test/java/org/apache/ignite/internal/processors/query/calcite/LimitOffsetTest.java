@@ -68,6 +68,10 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
             .setSqlSchema("PUBLIC");
     }
 
+    @Test
+    public void testInvalidLimitOffset() {
+    }
+
     /**
      *
      */
@@ -99,12 +103,22 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
     void checkQuery(int lim, int off, boolean param, boolean sorted) {
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
-        String sql = createSql(lim, off, false, false);
+        String sql = createSql(lim, off, param, sorted);
 
         log.info("SQL: " + sql);
 
+        Object [] params;
+        if (lim >= 0 && off >= 0)
+            params = new Object[]{off, lim};
+        else if (lim >= 0)
+            params = new Object[]{lim};
+        else if (off >= 0)
+            params = new Object[]{off};
+        else
+            params = X.EMPTY_OBJECT_ARRAY;
+
         List<FieldsQueryCursor<List<?>>> cursors =
-            engine.query(null, "PUBLIC", sql, param ? new Object[]{off, lim} : X.EMPTY_OBJECT_ARRAY);
+            engine.query(null, "PUBLIC", sql, param ? params : X.EMPTY_OBJECT_ARRAY);
 
         List<List<?>> res = cursors.get(0).getAll();
 
