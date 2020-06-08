@@ -17,56 +17,77 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RelBuilder;
 
 /**
- *
+ * Converts OR to UNION ALL.
  */
 public class LogicalOrToUnionRule extends RelOptRule {
     /** Instance. */
-    public static final RelOptRule INSTANCE = new LogicalOrToUnionRule();
+    public static final RelOptRule INSTANCE = new LogicalOrToUnionRule(LogicalFilter.class, "LogicalOrToUnionRule");
 
     /**
      * Constructor.
+     *
+     * @param clazz Class of relational expression to match.
+     * @param desc  Description, or null to guess description
      */
-    private LogicalOrToUnionRule() {
+    private LogicalOrToUnionRule(Class<LogicalFilter> clazz, String desc) {
         super(
-            operand(LogicalFilter.class, any()),
-            RelFactories.LOGICAL_BUILDER, null);
+            operand(clazz, any()),
+            RelFactories.LOGICAL_BUILDER, desc);
     }
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
         final LogicalFilter rel = call.rel(0);
-        RexBuilder rexBuilder = rel.getCluster().getRexBuilder();
-        RexNode dnf = RexUtil.toDnf(rexBuilder, rel.getCondition());
+        final RelOptCluster cluster = rel.getCluster();
+
+        RexNode dnf = RexUtil.toDnf(cluster.getRexBuilder(), rel.getCondition());
 
         if (!dnf.isA(SqlKind.OR))
             return;
 
         List<RexNode> operands = RelOptUtil.disjunctions(dnf);
-        RelBuilder builder = relBuilderFactory.create(rel.getCluster(), null);
-        for (RexNode operand : operands) {
-            List<RexNode> others = operands.stream()
-                .filter(op -> op != operand)
-                .collect(Collectors.toList());
 
-            builder.push(rel.getInput()).filter(RexUtil.andNot(rexBuilder, operand, others));
-        }
+        if (operands.size() != 2)
+            return;
 
-        RelNode union = builder.union(true).build();
-        call.transformTo(union);
+        RelNode input = rel.getInput(0);
+
+        call.transformTo(rel, ImmutableMap.of(
+            createUnionAll(cluster, input, operands.get(0), operands.get(1)), rel,
+            createUnionAll(cluster, input, operands.get(1), operands.get(0)), rel
+        ));
+    }
+
+    /**
+     * Creates 'UnionAll' for conditions.
+     *
+     * @param cluster The cluster UnionAll expression will belongs to.
+     * @param input Input.
+     * @param op1 First filter condition.
+     * @param op2 Second filter condition.
+     * @return UnionAll expression.
+     */
+    private RelNode createUnionAll(RelOptCluster cluster, RelNode input, RexNode op1, RexNode op2) {
+        RelBuilder builder = relBuilderFactory.create(cluster, null);
+
+        builder.push(input).filter(op1);
+        builder.push(input).filter(RexUtil.andNot(cluster.getRexBuilder(), op2, op1));
+
+        return builder.union(true).build();
     }
 }

@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -77,32 +78,53 @@ import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
+/**
+ * Test OR -> UnionAll rewrite rule.
+ *
+ * Example:
+ * SELECT * FROM products
+ * WHERE category = 'Photo' OR subcategory ='Camera Media';
+ *
+ * A query above will be rewritten to next (or equivalient similar query)
+ *
+ * SELECT * FROM products
+ *      WHERE category = 'Photo'
+ * UNION ALL
+ * SELECT * FROM products
+ *      WHERE category != 'Photo' AND subcategory ='Camera Media';
+ */
 public class OrToUnionRuleTest extends GridCommonAbstractTest {
-    /** */
+    /** Node list. */
     private List<UUID> nodes;
 
-    /** */
+    /** Planning context. */
+    private PlanningContext ctx;
+
+    /** Setup. */
     @Before
     public void setup() {
         nodes = new ArrayList<>(4);
 
         for (int i = 0; i < 1; i++)
             nodes.add(UUID.randomUUID());
+
+        createPlanningContext();
     }
 
     /**
-     * @throws Exception If failed.
+     * Creates schema.
      */
-    @Test
-    public void testDistinctOrToUnionAllRewrite() throws Exception {
+    private SchemaPlus createSchema() {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable products = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("ID", f.createJavaType(Integer.class))
                 .add("CATEGORY", f.createJavaType(String.class))
+                .add("CAT_ID", f.createJavaType(Integer.class))
                 .add("SUBCATEGORY", f.createJavaType(String.class))
-                .add("CATALOG_ID", f.createJavaType(Integer.class)) // Affinity key.
+                .add("SUBCAT_ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
                 .build()) {
 
             @Override public IgniteDistribution distribution() {
@@ -111,69 +133,154 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
         };
 
         products.addIndex(new IgniteIndex(RelCollations.of(1), "IDX_CATEGORY", null, null));
-        products.addIndex(new IgniteIndex(RelCollations.of(2), "IDX_SUBCATEGORY", null, null));
-        products.addIndex(new IgniteIndex(RelCollations.of(3), "IDX_CATALOG_ID", null, null));
+        products.addIndex(new IgniteIndex(RelCollations.of(2), "IDX_CAT_ID", null, null));
+        products.addIndex(new IgniteIndex(RelCollations.of(3), "IDX_SUBCATEGORY", null, null));
+        products.addIndex(new IgniteIndex(RelCollations.of(4), "IDX_SUBCAT_ID", null, null));
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
         publicSchema.addTable("PRODUCTS", products);
 
-        SchemaPlus schema = createRootSchema(false)
+        return createRootSchema(false)
             .add("PUBLIC", publicSchema);
+    }
 
-        String sql = "SELECT *" +
+    /**
+     * Check 'OR -> UNION' rule is applied for equality conditions on indexed columns.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEqualityOrToUnionAllRewrite() throws Exception {
+        String qry = "SELECT ID " +
             "FROM products " +
             "WHERE category = 'Photo' " +
             "OR subcategory ='Camera Media'";
-//                "WHERE (category = 'Photo' OR category = ?)" +
-//                "AND (subcategory ='Camera Media' OR subcategory = ?)";
 
-        RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+        final PlanMatcher checker = new PlanMatcher(
+            CoreMatchers.allOf(
+                PlanMatcher.containsUnionAll(),
+                PlanMatcher.containsScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"),
+                PlanMatcher.containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY")
+            )
+        );
 
-        };
+        checkPlan(qry, checker);
+    }
 
-        PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .traitDefs(traitDefs)
-                .build())
-            .logger(log)
-            .query(sql)
-            .topologyVersion(AffinityTopologyVersion.NONE)
-            .build();
+    /**
+     * Check 'OR -> UNION' rule is applied for equality conditions on indexed columns.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNonDistinctOrToUnionAllRewrite() throws Exception {
+        String qry = "SELECT ID " +
+            "FROM products " +
+            "WHERE subcategory = 'Camera Lens' " +
+            "OR subcategory ='Camera Media'";
 
-        RelRoot relRoot;
+        final PlanMatcher checker = new PlanMatcher(
+            CoreMatchers.allOf(
+                PlanMatcher.containsUnionAll(),
+                PlanMatcher.containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"),
+                PlanMatcher.containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY")
+            )
+        );
 
+        checkPlan(qry, checker);
+    }
+
+    /**
+     * Check 'OR -> UNION' rule is applied for mixed conditions on indexed columns.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMixedOrToUnionAllRewrite() throws Exception {
+        String qry = "SELECT ID " +
+            "FROM products " +
+            "WHERE category = 'Photo' " +
+            "OR (subcat_id > 10 AND subcat_id < 15)";
+
+        final PlanMatcher checker = new PlanMatcher(
+            CoreMatchers.allOf(
+                PlanMatcher.containsUnionAll(),
+                PlanMatcher.containsScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"),
+                PlanMatcher.containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCAT_ID")
+            )
+        );
+
+        checkPlan(qry, checker);
+    }
+
+    /**
+     * Check 'OR -> UNION' rule is not applied for range conditions on indexed columns.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRangeOrToUnionAllRewrite() throws Exception {
+        String qry = "SELECT ID " +
+            "FROM products " +
+            "WHERE cat_id > 1 " +
+            "OR subcategory < 10";
+
+        final PlanMatcher checker = new PlanMatcher(
+            CoreMatchers.allOf(
+                CoreMatchers.not(PlanMatcher.containsUnionAll()),
+                PlanMatcher.containsScan("PUBLIC", "PRODUCTS", "PK")
+            )
+        );
+
+        checkPlan(qry, checker);
+    }
+
+    /**
+     * Check 'OR -> UNION' rule is not applied if (at least) one of column is not indexed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNonIndexedOrToUnionAllRewrite() throws Exception {
+        String qry = "SELECT ID " +
+            "FROM products " +
+            "WHERE name = 'Tesla Model S' " +
+            "OR category = 'Photo'";
+
+        final PlanMatcher checker = new PlanMatcher(
+            CoreMatchers.allOf(
+                CoreMatchers.not(PlanMatcher.containsUnionAll()),
+                PlanMatcher.containsScan("PUBLIC", "PRODUCTS", "PK")
+            )
+        );
+
+        checkPlan(qry, checker);
+    }
+
+    /**
+     * Check query plan.
+     *
+     * @param qry     Query.
+     * @param checker Plan checker.
+     * @throws Exception if failed.
+     */
+    private void checkPlan(String qry, PlanMatcher checker) throws Exception {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
-
-            String qry = ctx.query();
-
             assertNotNull(qry);
 
             // Parse
             SqlNode sqlNode = planner.parse(qry);
-
             // Validate
             sqlNode = planner.validate(sqlNode);
-
             // Convert to Relational operators graph
-            relRoot = planner.rel(sqlNode);
+            RelRoot relRoot = planner.rel(sqlNode);
 
             RelNode rel = relRoot.rel;
 
-            System.out.println(RelOptUtil.toString(rel));
             assertNotNull(rel);
-            assertEquals("LogicalProject(ID=[$0], CATEGORY=[$1], SUBCATEGORY=[$2], CATALOG_ID=[$3])\n" +
-                    "  LogicalFilter(condition=[OR(=(CAST($1):VARCHAR, 'Photo'), =(CAST($2):VARCHAR, 'Camera Media'))])\n" +
-                    "    IgniteTableScan(table=[[PUBLIC, PRODUCTS]], index=[PK], lower=[[]], upper=[[]], collation=[[0]])\n",
-                RelOptUtil.toString(rel));
+            log.info("Logical plan: " + RelOptUtil.toString(rel));
 
             // Transformation chain
             RelTraitSet desired = rel.getCluster().traitSet()
@@ -183,19 +290,47 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
 
             RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
-            assertNotNull(phys);
-            assertEquals("",
-                RelOptUtil.toString(phys));
+            final String actualPlan = RelOptUtil.toString(phys);
+            log.info("Execution plan: " + actualPlan);
+
+            checker.check(actualPlan);
         }
     }
 
+    /**
+     * Initialize planning context.
+     */
+    private void createPlanningContext() {
+        SchemaPlus schema = createSchema();
 
-    /** */
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
+
+        };
+
+        ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+    }
+
+    /**
+     *
+     */
     private abstract static class TestTable implements IgniteTable {
         /** */
         private final RelProtoDataType protoType;
 
-        /** */
+        /** Table indices. */
         private final Map<String, IgniteIndex> indexes = new LinkedHashMap<>();
 
         /** */
@@ -311,7 +446,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Map<String, IgniteIndex> indexes() {
-            return indexes;
+            return Collections.unmodifiableMap(indexes);
         }
 
         /** {@inheritDoc} */

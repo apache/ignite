@@ -36,12 +36,15 @@ import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteT
  *
  */
 public class RegisterIndexRule extends RelOptRule {
-    /** */
+    /** Instance. */
     public static final RelOptRule INSTANCE = new RegisterIndexRule();
 
-    /** */
-    public RegisterIndexRule() {
-        super(operandJ(IgniteTableScan.class, null, scan -> PK_INDEX_NAME.equals(scan.indexName()), any()));
+    /**
+     * Constructor.
+     */
+    private RegisterIndexRule() {
+        super(operandJ(IgniteTableScan.class, null,
+            scan -> PK_INDEX_NAME.equals(scan.indexName()) && scan.condition() == null, any()));
     }
 
     /** {@inheritDoc} */
@@ -50,6 +53,7 @@ public class RegisterIndexRule extends RelOptRule {
         RelOptCluster cluster = rel.getCluster();
         RelOptTable table = rel.getTable();
         IgniteTable igniteTable = rel.igniteTable();
+
         List<IgniteTableScan> indexes = igniteTable.indexes().keySet().stream()
             .filter(idxName -> !PK_INDEX_NAME.equals(idxName))
             .map(idxName -> igniteTable.toRel(cluster, table, idxName))
