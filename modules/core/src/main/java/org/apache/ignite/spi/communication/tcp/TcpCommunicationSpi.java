@@ -2950,7 +2950,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (stopping)
                     throw new IgniteSpiException("Node is stopping.", t);
 
-                log.error("Failed to send message to remote node [node=" + node + ", msg=" + msg + ']', t);
+                // NodeUnreachableException should not be explicitly logged. Error message will appear if inverse
+                // connection attempt fails as well.
+                if (!(t instanceof NodeUnreachableException))
+                    log.error("Failed to send message to remote node [node=" + node + ", msg=" + msg + ']', t);
 
                 if (t instanceof Error)
                     throw (Error)t;
@@ -3505,7 +3508,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (!(Thread.currentThread() instanceof IgniteDiscoveryThread) && locNodeIsSrv) {
             if (node.isClient() && startedInVirtualizedEnvironment(node)) {
                 String msg = "Failed to connect to node " + node.id() +
-                    " because it is started n virtualized environment; inverse connection will be requested.";
+                    " because it is started in virtualized environment; inverse connection will be requested.";
 
                 GridFutureAdapter<?> fut = clientFuts.get(new ConnectionKey(node.id(), connIdx, -1));
 

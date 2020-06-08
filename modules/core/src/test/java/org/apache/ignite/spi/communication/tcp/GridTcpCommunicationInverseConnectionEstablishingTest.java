@@ -19,10 +19,12 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -44,6 +47,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
 import org.junit.Test;
@@ -234,10 +239,18 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
      * @throws Exception If failed.
      */
     private void executeCacheTestWithUnreachableClient(EnvironmentType envType) throws Exception {
+        LogListener lsnr = LogListener.matches("Failed to send message to remote node").atMost(0).build();
+
         for (int i = 0; i < SRVS_NUM; i++) {
             ccfg = cacheConfiguration(CACHE_NAME, ATOMIC);
 
-            startGrid(i);
+            startGrid(i, cfg -> {
+                ListeningTestLogger log = new ListeningTestLogger(false, cfg.getGridLogger());
+
+                log.registerListener(lsnr);
+
+                return cfg.setGridLogger(log);
+            });
         }
 
         clientMode = true;
@@ -246,6 +259,8 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         startGrid(SRVS_NUM);
 
         putAndCheckKey();
+
+        assertTrue(lsnr.check());
     }
 
     /**
@@ -258,17 +273,54 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         UNREACHABLE_DESTINATION.set(UNRESOLVED_HOST);
         RESPOND_TO_INVERSE_REQUEST.set(false);
 
-        startGrids(SRVS_NUM);
+        startGrids(SRVS_NUM - 1);
+
+        LogListener lsnr = LogListener.matches(
+            "Failed to wait for establishing inverse communication connection"
+        ).build();
+
+        startGrid(SRVS_NUM - 1, cfg -> {
+            ListeningTestLogger log = new ListeningTestLogger(false, cfg.getGridLogger());
+
+            log.registerListener(lsnr);
+
+            return cfg.setGridLogger(log);
+        });
 
         clientMode = true;
         envType = EnvironmentType.STANDALONE;
 
-        startGrid(SRVS_NUM);
+        IgniteEx client = startGrid(SRVS_NUM);
+        ClusterNode clientNode = client.localNode();
+
+        IgniteEx srv = grid(SRVS_NUM - 1);
+
+        // We need to interrupt communication worker client nodes so that
+        // closed connection won't automatically reopen when we don't expect it.
+        // Server communication worker is interrupted for another reason - it can hang the test
+        // due to bug in inverse connection protocol & comm worker - it will be fixed later.
+        List<Thread> tcpCommWorkerThreads = Thread.getAllStackTraces().keySet().stream()
+            .filter(t -> t.getName().contains("tcp-comm-worker"))
+            .filter(t -> t.getName().contains(srv.name()) || t.getName().contains(client.name()))
+            .collect(Collectors.toList());
+
+        for (Thread tcpCommWorkerThread : tcpCommWorkerThreads) {
+            U.interrupt(tcpCommWorkerThread);
+
+            U.join(tcpCommWorkerThread, log);
+        }
+
+        TcpCommunicationSpi spi = (TcpCommunicationSpi)srv.configuration().getCommunicationSpi();
+
+        GridTestUtils.invoke(spi, "onNodeLeft", clientNode.consistentId(), clientNode.id());
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            grid(SRVS_NUM - 1).context().io().sendIoTest(grid(SRVS_NUM).localNode(), new byte[10], false));
+            srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
+        );
 
-        assertTrue(GridTestUtils.waitForCondition(fut::isDone, 20_000));
+        assertTrue(GridTestUtils.waitForCondition(fut::isDone, 30_000));
+
+        assertTrue(lsnr.check());
     }
 
     /**
