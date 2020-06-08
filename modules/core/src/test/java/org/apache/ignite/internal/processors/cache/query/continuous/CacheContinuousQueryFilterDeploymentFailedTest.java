@@ -54,9 +54,6 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        // Failure detection timeout > P2P class loading timeout which is set as network timeout.
-        cfg.setFailureDetectionTimeout(cfg.getNetworkTimeout() * 2);
-
         ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).discoveryHook(new DiscoveryHook() {
             @Override public void afterDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof StopRoutineDiscoveryMessage)
