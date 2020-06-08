@@ -415,6 +415,11 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         }
 
         /** {@inheritDoc} */
+        @Override public String getTxKeyCollisions() {
+            return "";
+        }
+
+        /** {@inheritDoc} */
         @Override public int getTotalPartitionsCount() {
             return 54;
         }

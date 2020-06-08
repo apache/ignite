@@ -23,9 +23,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
 
 /**
  *
@@ -33,7 +33,6 @@ import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories
 @Configuration
 @EnableIgniteRepositories
 public class ApplicationConfiguration {
-
     /**
      * The bean with cache names
      */
@@ -51,19 +50,13 @@ public class ApplicationConfiguration {
      */
     @Bean
     public Ignite igniteInstance() {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        CacheConfiguration ccfg = new CacheConfiguration("PersonCache");
-
-        ccfg.setIndexedTypes(Integer.class, Person.class);
-
-        cfg.setCacheConfiguration(ccfg);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
-
-        cfg.setDiscoverySpi(spi);
+        IgniteConfiguration cfg = new IgniteConfiguration()
+            .setCacheConfiguration(
+                new CacheConfiguration<Integer, Person>("PersonCache")
+                    .setIndexedTypes(Integer.class, Person.class),
+                new CacheConfiguration<PersonKey, Person>("PersonWithKeyCache")
+            )
+            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true)));
 
         return Ignition.start(cfg);
     }

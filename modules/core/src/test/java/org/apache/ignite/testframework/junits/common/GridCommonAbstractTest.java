@@ -140,6 +140,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVI
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -1929,6 +1930,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), BINARY_META_FOLDER, false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
     }
 
     /**
