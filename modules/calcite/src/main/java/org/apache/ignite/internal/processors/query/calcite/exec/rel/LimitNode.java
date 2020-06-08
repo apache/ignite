@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -34,10 +33,10 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     private final static int NOT_SET = -2;
 
     /** */
-    final private Supplier<CompletableFuture<Integer>> offsetSup;
+    final private Supplier<Integer> offsetSup;
 
     /** */
-    final private Supplier<CompletableFuture<Integer>> limitSup;
+    final private Supplier<Integer> limitSup;
 
     /** */
     private long offset = NOT_READY;
@@ -58,18 +57,12 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
      */
     public LimitNode(
         ExecutionContext<Row> ctx,
-        Supplier<CompletableFuture<Integer>> offsetSup,
-        Supplier<CompletableFuture<Integer>> limitSup) {
+        Supplier<Integer> offsetSup,
+        Supplier<Integer> limitSup) {
         super(ctx);
 
         this.offsetSup = offsetSup;
         this.limitSup = limitSup;
-
-        if (offsetSup == null)
-            offset = 0;
-
-        if (limitSup == null)
-            limit = NOT_SET;
     }
 
     /** {@inheritDoc} */
@@ -81,6 +74,30 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
         requested += rowsCnt;
 
+        // Initialize offset / limit.
+        if (offset == NOT_READY && limit == NOT_READY) {
+            if (offsetSup != null) {
+                offset = offsetSup.get();
+
+                if (offset < 0)
+                    onError(new IgniteSQLException("Invalid query offset: " + offset));
+            }
+            else
+                offset = 0;
+
+            if (limitSup != null) {
+                limit = limitSup.get();
+
+                if (limit < 0)
+                    onError(new IgniteSQLException("Invalid query limit: " + limit));
+
+                if (offset > 0)
+                    limit += offset;
+            }
+            else
+                limit = NOT_SET;
+        }
+
         request0();
     }
 
@@ -88,78 +105,6 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
      * Process request (some parameters may not yet be calculated).
      */
     private void request0() {
-        if (limit == NOT_READY) {
-            limitNotReady();
-
-            return;
-        }
-
-        if (offset == NOT_READY) {
-            offsetNotReady();
-
-            return;
-        }
-
-        requestAllReady();
-    }
-
-    /**
-     *  Calculate limit.
-     */
-    private void limitNotReady() {
-        CompletableFuture<Integer> fetchFut = limitSup.get();
-
-        fetchFut.thenAccept(n -> {
-            if (n < 0)
-                onError(new IgniteSQLException("Invalid query limit: " + n));
-
-            limit = n;
-
-            if (offset > 0)
-                limit += offset;
-
-            request0();
-        });
-
-        fetchFut.exceptionally(t -> {
-            onError(t);
-
-            return null;
-        });
-    }
-
-    /**
-     *  Calculate offset.
-     */
-    private void offsetNotReady() {
-        CompletableFuture<Integer> offFut = offsetSup.get();
-
-        offFut.thenAccept(n -> {
-            if (n < 0)
-                onError(new IgniteSQLException("Invalid query offset: " + n));
-
-            offset = n;
-
-            if (limit > 0)
-                limit += offset;
-
-            request0();
-        });
-
-        offFut.exceptionally(t -> {
-            onError(t);
-
-            return null;
-        });
-    }
-
-    /**
-     * Requests next bunch of rows when offset / limit have been calculated.
-     */
-    private void requestAllReady() {
-        assert limit != NOT_READY;
-        assert offset != NOT_READY;
-
         if (limit == 0 || limit > 0 && processed >= limit) {
             downstream.end();
 

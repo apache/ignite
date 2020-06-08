@@ -77,7 +77,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
     public void testInvalidLimitOffset() {
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
-        GridTestUtils.assertThrows(log, ()-> {
+        GridTestUtils.assertThrows(log, () -> {
             List<FieldsQueryCursor<List<?>>> cursors =
                 engine.query(null, "PUBLIC",
                     "SELECT * FROM TEST OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY",
@@ -87,7 +87,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
             return null;
         }, IgniteSQLException.class, "Failed to parse query");
 
-        GridTestUtils.assertThrows(log, ()-> {
+        GridTestUtils.assertThrows(log, () -> {
             List<FieldsQueryCursor<List<?>>> cursors =
                 engine.query(null, "PUBLIC",
                     "SELECT * FROM TEST OFFSET -1 ROWS",
@@ -97,7 +97,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
             return null;
         }, IgniteSQLException.class, "Failed to parse query");
 
-        GridTestUtils.assertThrows(log, ()-> {
+        GridTestUtils.assertThrows(log, () -> {
             List<FieldsQueryCursor<List<?>>> cursors =
                 engine.query(null, "PUBLIC",
                     "SELECT * FROM TEST FETCH FIRST -1 ROWS ONLY",
@@ -108,7 +108,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
         }, IgniteSQLException.class, "Failed to parse query");
 
         // Check with parameters
-        GridTestUtils.assertThrowsAnyCause(log, ()-> {
+        GridTestUtils.assertThrows(log, () -> {
             List<FieldsQueryCursor<List<?>>> cursors =
                 engine.query(null, "PUBLIC",
                     "SELECT * FROM TEST OFFSET ? ROWS FETCH FIRST ? ROWS ONLY",
@@ -116,9 +116,9 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
             cursors.get(0).getAll();
 
             return null;
-        }, IgniteSQLException.class, "Invalid query limit: -1");
+        }, IgniteSQLException.class, "Invalid query offset: -1");
 
-        GridTestUtils.assertThrowsAnyCause(log, ()-> {
+        GridTestUtils.assertThrows(log, () -> {
             List<FieldsQueryCursor<List<?>>> cursors =
                 engine.query(null, "PUBLIC",
                     "SELECT * FROM TEST OFFSET ? ROWS",
@@ -128,7 +128,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
             return null;
         }, IgniteSQLException.class, "Invalid query offset: -1");
 
-        GridTestUtils.assertThrowsAnyCause(log, ()-> {
+        GridTestUtils.assertThrows(log, () -> {
             List<FieldsQueryCursor<List<?>>> cursors =
                 engine.query(null, "PUBLIC",
                     "SELECT * FROM TEST FETCH FIRST ? ROWS ONLY",
@@ -137,6 +137,14 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
 
             return null;
         }, IgniteSQLException.class, "Invalid query limit: -1");
+    }
+    /**
+     *
+     */
+    @Test
+    public void testDbg() {
+        checkQuery(-1, 0, true, false);
+
     }
 
     /**

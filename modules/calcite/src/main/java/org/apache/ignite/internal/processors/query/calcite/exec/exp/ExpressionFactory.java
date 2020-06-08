@@ -105,5 +105,5 @@ public interface ExpressionFactory<Row> {
     /**
      * Executes expression.
      */
-    <T> Supplier<CompletableFuture<T>> execute(RexNode node);
+    <T> Supplier<T> execute(RexNode node);
 }

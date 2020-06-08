@@ -166,7 +166,10 @@ public class RootNode<Row> extends AbstractNode<Row>
     @Override public void onError(Throwable e) {
         checkThread();
 
-        ex = new IgniteSQLException("An error occurred while query executing.", IgniteQueryErrorCode.UNKNOWN, e);
+        if (e instanceof IgniteSQLException)
+            ex = (IgniteSQLException)e;
+        else
+            ex = new IgniteSQLException("An error occurred while query executing.", IgniteQueryErrorCode.UNKNOWN, e);
 
         cancel();
     }

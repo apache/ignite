@@ -328,8 +328,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteLimit rel) {
-        Supplier<CompletableFuture<Integer>> offsetSup = (rel.offset == null) ? null : expressionFactory.execute(rel.offset);
-        Supplier<CompletableFuture<Integer>> fetchSup = (rel.fetch == null) ? null : expressionFactory.execute(rel.fetch);
+        Supplier<Integer> offsetSup = (rel.offset == null) ? null : expressionFactory.execute(rel.offset);
+        Supplier<Integer> fetchSup = (rel.fetch == null) ? null : expressionFactory.execute(rel.fetch);
 
         LimitNode<Row> node = new LimitNode<>(ctx, offsetSup, fetchSup);
 
