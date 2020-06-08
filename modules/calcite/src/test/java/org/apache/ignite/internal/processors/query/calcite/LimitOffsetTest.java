@@ -138,25 +138,6 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
             return null;
         }, IgniteSQLException.class, "Invalid query limit: -1");
     }
-    /**
-     *
-     */
-    @Test
-    public void testDbg() {
-        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
-
-        {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST ORDER BY VAL", X.EMPTY_OBJECT_ARRAY);
-
-            cursors.get(0).getAll();
-        }
-
-//        checkQuery(10, 10, true, true);
-//        checkQuery(10, 10, true, true);
-
-    }
 
     /**
      *
