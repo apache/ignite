@@ -39,11 +39,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCl
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotMXBeanTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
-import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
-import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
-import org.apache.ignite.util.GridCommandHandlerSslTest;
-import org.apache.ignite.util.GridCommandHandlerTest;
-import org.apache.ignite.util.GridCommandHandlerWithSSLTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -61,11 +56,6 @@ import org.junit.runners.Suite;
     SystemWorkersBlockingTest.class,
     CheckpointReadLockFailureTest.class,
 
-    GridCommandHandlerTest.class,
-    GridCommandHandlerWithSSLTest.class,
-    GridCommandHandlerClusterByClassTest.class,
-    GridCommandHandlerClusterByClassWithSSLTest.class,
-    GridCommandHandlerSslTest.class,
     GridInternalTaskUnusedWalSegmentsTest.class,
 
     GridNodeMetricsLogPdsSelfTest.class,

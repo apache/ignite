@@ -17,6 +17,12 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
+import org.apache.ignite.internal.processors.security.GridCommandHandlerSslWithSecurityTest;
+import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
+import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
+import org.apache.ignite.util.GridCommandHandlerSslTest;
+import org.apache.ignite.util.GridCommandHandlerTest;
+import org.apache.ignite.util.GridCommandHandlerWithSSLTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -25,7 +31,15 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CommandHandlerParsingTest.class
+    CommandHandlerParsingTest.class,
+
+    GridCommandHandlerTest.class,
+    GridCommandHandlerWithSSLTest.class,
+    GridCommandHandlerClusterByClassTest.class,
+    GridCommandHandlerClusterByClassWithSSLTest.class,
+    GridCommandHandlerSslTest.class,
+
+    GridCommandHandlerSslWithSecurityTest.class,
 })
 public class IgniteControlUtilityTestSuite {
 }
