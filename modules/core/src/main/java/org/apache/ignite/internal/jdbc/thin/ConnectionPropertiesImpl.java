@@ -258,7 +258,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private BooleanProperty keepBinary = new BooleanProperty("keepBinary",
         "Whether to keep binary objects in binary form.", false, false);
 
-
     /** Whether an experimental SQL engine enabled for a connection. */
     private BooleanProperty useExperimentalQueryEngine = new BooleanProperty("useExperimentalQueryEngine",
         "Enables experimental query engine.", false, false);
