@@ -17,10 +17,20 @@
 
 package org.apache.ignite.internal.processors.security.events;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
@@ -30,153 +40,104 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  * Test that an event's local listener and an event's remote filter get correct subjectId
  * when a server (client) node create or destroy a cache.
  */
-@SuppressWarnings({"rawtypes", "unchecked", "ZeroLengthArrayAllocation"})
+@SuppressWarnings({"rawtypes", "unchecked"})
+@RunWith(Parameterized.class)
 public class CacheCreateDestroyEventsTest extends AbstractSecurityCacheEventTest {
-    /** Client node. */
-    private static final String CLNT = "client";
+    /** */
+    @Parameterized.Parameter()
+    public int cacheCnt;
 
-    /** Server node. */
-    private static final String SRV = "server";
+    /** */
+    @Parameterized.Parameter(1)
+    public String login;
+
+    /** */
+    @Parameterized.Parameter(2)
+    public int evtType;
+
+    /** */
+    @Parameterized.Parameter(3)
+    public int opNum;
+
+    /** Parameters. */
+    @Parameterized.Parameters(name = "cacheCnt={0},evtNode={1},evtType={2},opNum={3}")
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(
+            new Object[] {1, SRV, EVT_CACHE_STARTED, 0},
+            new Object[] {1, CLNT, EVT_CACHE_STARTED, 0},
+            new Object[] {1, SRV, EVT_CACHE_STARTED, 1},
+            new Object[] {1, CLNT, EVT_CACHE_STARTED, 1},
+            new Object[] {1, SRV, EVT_CACHE_STOPPED, 2},
+            new Object[] {1, CLNT, EVT_CACHE_STOPPED, 2},
+            new Object[] {2, SRV, EVT_CACHE_STARTED, 3},
+            new Object[] {2, CLNT, EVT_CACHE_STARTED, 3},
+            new Object[] {2, SRV, EVT_CACHE_STOPPED, 4},
+            new Object[] {2, CLNT, EVT_CACHE_STOPPED, 4},
+            new Object[] {1, "thin", EVT_CACHE_STARTED, 5},
+            new Object[] {1, "thin", EVT_CACHE_STARTED, 6},
+            new Object[] {1, "thin", EVT_CACHE_STOPPED, 7},
+            new Object[] {2, "new_client_node", EVT_CACHE_STARTED, 8},
+            new Object[] {2, "new_server_node", EVT_CACHE_STARTED, 8}
+        );
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGridAllowAll(SRV);
-
         startClientAllowAll(CLNT);
     }
 
-    /** */
-    @Test
-    public void testCreateCacheSrvEvt() throws Exception {
-        testDynamicCreateDestroyCache(2, SRV, EVT_CACHE_STARTED);
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopGrid("new_client_node");
+        stopGrid("new_server_node");
     }
 
-    /** */
-    @Test
-    public void testCreateCacheClntEvt() throws Exception {
-        testDynamicCreateDestroyCache(3, CLNT, EVT_CACHE_STARTED);
-    }
-
-    /** */
-    @Test
-    public void testGetOrCreateCacheSrvEvt() throws Exception {
-        testDynamicCreateDestroyCache(2, SRV, EVT_CACHE_STARTED, true);
-    }
-
-    /** */
-    @Test
-    public void testGetOrCreateCacheClntEvt() throws Exception {
-        testDynamicCreateDestroyCache(3, CLNT, EVT_CACHE_STARTED, true);
-    }
-
-    /** */
-    @Test
-    public void testCreateBatchCachesSrvEvt() throws Exception {
-        testDynamicCreateDestroyCacheBatch(4, SRV, EVT_CACHE_STARTED);
-    }
-
-    /** */
-    @Test
-    public void testCreateBatchCachesClntEvt() throws Exception {
-        testDynamicCreateDestroyCacheBatch(6, CLNT, EVT_CACHE_STARTED);
-    }
-
-    /** */
-    @Test
-    public void testDestroyCacheSrvEvt() throws Exception {
-        testDynamicCreateDestroyCache(2, SRV, EVT_CACHE_STOPPED);
-    }
-
-    /** */
-    @Test
-    public void testDestroyCacheClntEvt() throws Exception {
-        testDynamicCreateDestroyCache(2, CLNT, EVT_CACHE_STOPPED);
-    }
-
-    /** */
-    @Test
-    public void testDestroyBatchCachesSrvEvt() throws Exception {
-        testDynamicCreateDestroyCacheBatch(4, SRV, EVT_CACHE_STOPPED);
-    }
-
-    /** */
-    @Test
-    public void testDestroyBatchCachesClntEvt() throws Exception {
-        testDynamicCreateDestroyCacheBatch(4, CLNT, EVT_CACHE_STOPPED);
-    }
-
-    /** */
-    @Test
-    public void testCreateCacheOnNodeJoinAsServer() throws Exception {
-        testCreateCacheOnNodeJoin(false);
-    }
-
-    /** */
-    @Test
-    public void testCreateCacheOnNodeJoinAsClient() throws Exception {
-        testCreateCacheOnNodeJoin(true);
-    }
-
-    /** */
-    private void testCreateCacheOnNodeJoin(boolean isClient) throws Exception {
-        final String login = "new_node_" + COUNTER.incrementAndGet();
-
-        try {
-            testCacheEvents(6, login, EVT_CACHE_STARTED, cacheConfigurations(2, false),
-                ccfgs -> {
-                    try {
-                        startGrid(
-                            getConfiguration(login,
-                                new TestSecurityPluginProvider(login, "", ALLOW_ALL, globalAuth))
-                                .setClientMode(isClient)
-                                .setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[] {}))
-                        );
-                    }
-                    catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-        }
-        finally {
-            stopGrid(login);
-        }
-    }
-
-    /** */
-    private void testDynamicCreateDestroyCacheBatch(int expTimes, String evtNode, int evtType) throws Exception {
-        testCacheEvents(expTimes, evtNode, evtType, cacheConfigurations(2, evtType == EVT_CACHE_STOPPED),
+    private List<Consumer<Collection<CacheConfiguration>>> operations() {
+        return Arrays.asList(
+            ccfgs -> grid(login).getOrCreateCache(ccfgs.iterator().next()),
+            ccfgs -> grid(login).createCache(ccfgs.iterator().next()),
+            ccfgs -> grid(login).destroyCache(ccfgs.iterator().next().getName()),
+            ccfgs -> grid(login).createCaches(ccfgs),
+            ccfgs -> grid(login).destroyCaches(ccfgs.stream().map(CacheConfiguration::getName).collect(Collectors.toSet())),
+            ccfgs -> startClient().createCache(ccfgs.iterator().next().getName()),
+            ccfgs -> startClient().getOrCreateCache(ccfgs.iterator().next().getName()),
+            ccfgs -> startClient().destroyCache(ccfgs.iterator().next().getName()),
             ccfgs -> {
-                if (evtType == EVT_CACHE_STARTED)
-                    grid(evtNode).createCaches(ccfgs);
-                else {
-                    grid(evtNode).destroyCaches(ccfgs.stream().map(CacheConfiguration::getName)
-                        .collect(Collectors.toSet()));
+                try {
+                    startGrid(getConfiguration(login,
+                        new TestSecurityPluginProvider(login, "", ALLOW_ALL, false))
+                        .setClientMode(login.contains("client"))
+                        .setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[0]))
+                    );
                 }
-            });
+                catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        );
     }
 
     /** */
-    private void testDynamicCreateDestroyCache(int expTimes, String evtNode, int evtType) throws Exception {
-        testDynamicCreateDestroyCache(expTimes, evtNode, evtType, false);
+    @Test
+    public void testDynamicCreateDestroyCache() throws Exception {
+        int expTimes = cacheCnt*2 +
+            ((!login.equals(SRV) && !"thin".equals(login) && evtType == EVT_CACHE_STARTED) ? cacheCnt : 0);
+
+        testCacheEvents(expTimes, login, evtType, cacheConfigurations(cacheCnt, evtType == EVT_CACHE_STOPPED),
+            operations().get(opNum));
     }
 
-    /** */
-    private void testDynamicCreateDestroyCache(int expTimes, String evtNode, int evtType, boolean isGetOrCreate)
-        throws Exception {
-        testCacheEvents(expTimes, evtNode, evtType, cacheConfigurations(1, evtType == EVT_CACHE_STOPPED),
-            ccfgs -> {
-                CacheConfiguration cfg = ccfgs.stream().findFirst().orElseThrow(IllegalStateException::new);
-
-                if (evtType == EVT_CACHE_STARTED) {
-                    if (isGetOrCreate)
-                        grid(evtNode).getOrCreateCache(cfg);
-                    else
-                        grid(evtNode).createCache(cfg);
-                }
-                else
-                    grid(evtNode).destroyCache(cfg.getName());
-            });
+    /**
+     * @return Thin client for specified user.
+     */
+    private IgniteClient startClient() {
+        return Ignition.startClient(
+            new ClientConfiguration().setAddresses(Config.SERVER)
+                .setUserName(login)
+                .setUserPassword("")
+        );
     }
 }

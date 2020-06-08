@@ -17,19 +17,13 @@
 
 package org.apache.ignite.internal.processors.security.events;
 
-import com.google.common.collect.Iterators;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -56,14 +50,20 @@ public abstract class AbstractSecurityCacheEventTest extends AbstractSecurityTes
     /** Node that registers event listeners. */
     private static final String LISTENER_NODE = "listener_node";
 
+    /** Client node. */
+    static final String CLNT = "client";
+
+    /** Server node. */
+    static final String SRV = "server";
+
     /** Events latch. */
-    private static volatile CountDownLatch evtsLatch;
+    private static CountDownLatch evtsLatch;
 
-    /** Logins in remote filters. */
-    private static final Collection<String> rmtLogins = new ConcurrentLinkedQueue<>();
+    /** */
+    private static final AtomicInteger rmtLoginCnt = new AtomicInteger();
 
-    /** Logins in a local listener. */
-    private static final Collection<String> locLogins = new ConcurrentLinkedQueue<>();
+    /** */
+    private static final AtomicInteger locLoginCnt = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -80,25 +80,28 @@ public abstract class AbstractSecurityCacheEventTest extends AbstractSecurityTes
     /** */
     protected void testCacheEvents(int expTimes, String expLogin, int evtType, Collection<CacheConfiguration> ccfgs,
         Consumer<Collection<CacheConfiguration>> op) throws Exception {
+
+        locLoginCnt.set(0);
+        rmtLoginCnt.set(0);
+
         // For the EVT_CACHE_STOPPED event count of local listener should be 1 due to IGNITE-13010.
         evtsLatch = new CountDownLatch(expTimes + (evtType == EVT_CACHE_STOPPED ? 1 : expTimes));
 
-        rmtLogins.clear();
-        locLogins.clear();
+        UUID lsnrId = grid(LISTENER_NODE).events().remoteListen(new IgniteBiPredicate<UUID, Event>() {
+            @Override public boolean apply(UUID uuid, Event evt) {
+                if (onEvent((CacheEvent)evt, ccfgs, expLogin))
+                    locLoginCnt.incrementAndGet();
 
-        UUID lsnrId = grid(LISTENER_NODE)
-            .events()
-            .remoteListen(
-                new TestPredicate(ccfgs) {
-                    @Override void register(String login) {
-                        locLogins.add(login);
-                    }
-                },
-                new TestPredicate(ccfgs) {
-                    @Override void register(String login) {
-                        rmtLogins.add(login);
-                    }
-                }, evtType);
+                return true;
+            }
+        }, new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                if (onEvent((CacheEvent)evt, ccfgs, expLogin))
+                    rmtLoginCnt.incrementAndGet();
+
+                return true;
+            }
+        }, evtType);
 
         try {
             // Execute tested operation.
@@ -107,96 +110,53 @@ public abstract class AbstractSecurityCacheEventTest extends AbstractSecurityTes
             // Waiting for events.
             evtsLatch.await(10, TimeUnit.SECONDS);
 
-            checkResult(expLogin, rmtLogins, expTimes, "Remote filter.");
+            assertEquals("Remote filter.", expTimes, rmtLoginCnt.get());
             // For the EVT_CACHE_STOPPED event expected times of calling local listener should be 0 (ignored)
             // due to IGNITE-13010.
-            checkResult(expLogin, locLogins, evtType == EVT_CACHE_STOPPED ? 0 : expTimes, "Local listener.");
+            if (evtType != EVT_CACHE_STOPPED)
+                assertEquals("Local listener.", expTimes, locLoginCnt.get());
         }
         finally {
-            grid(LISTENER_NODE).events().stopRemoteListen(lsnrId);
+            grid(LISTENER_NODE).events().stopRemoteListenAsync(lsnrId).get();
         }
-    }
-
-    /** */
-    private void checkResult(String expLogin, Collection<String> logins, int expTimes, String msgPrefix) {
-        Set<String> set = new HashSet<>(logins);
-
-        if (set.size() != 1) {
-            fail(msgPrefix + " Expected subject: " + expLogin +
-                ". Actual subjects: " + Iterators.toString(set.iterator()));
-        }
-        else
-            assertEquals(msgPrefix, expLogin, logins.iterator().next());
-
-        if (expTimes > 0)
-            assertEquals(msgPrefix, expTimes, logins.size());
     }
 
     /** */
     protected Collection<CacheConfiguration> cacheConfigurations(int num, boolean needCreateCaches) {
-        Collection<CacheConfiguration> res;
+        return cacheConfigurations(num, needCreateCaches, LISTENER_NODE);
+    }
 
-        if (num == 1)
-            res = Collections.singletonList(new CacheConfiguration("test_cache_" + COUNTER.incrementAndGet()));
-        else {
-            res = new ArrayList<>(num);
+    /** */
+    protected Collection<CacheConfiguration> cacheConfigurations(int num, boolean needCreateCaches, String node) {
+        Collection<CacheConfiguration> res = new ArrayList<>(num);
 
-            for (int i = 0; i < num; i++)
-                res.add(new CacheConfiguration("test_cache_" + COUNTER.incrementAndGet()));
-        }
+        for (int i = 0; i < num; i++)
+            res.add(new CacheConfiguration("test_cache_" + COUNTER.incrementAndGet()));
 
         if (needCreateCaches)
-            res.forEach(c -> grid(LISTENER_NODE).createCache(c.getName()));
+            res.forEach(c -> grid(node).createCache(c.getName()));
 
         return res;
     }
 
-    /**
-     * Remote filter or local listener predicate.
-     */
-    private abstract static class TestPredicate implements IgniteBiPredicate<UUID, Event>, IgnitePredicate<Event> {
-        /** Expected cache names. */
-        private final Set<String> cacheNames;
+    public static boolean onEvent(CacheEvent evt, Collection<CacheConfiguration> ccfgs, String expLogin) {
+        if (ccfgs.stream().noneMatch(ccfg -> ccfg.getName().equals(evt.cacheName())))
+            return false;
 
-        /** */
-        private TestPredicate(Collection<CacheConfiguration> ccfgs) {
-            cacheNames = ccfgs.stream().map(CacheConfiguration::getName).collect(Collectors.toSet());
+        evtsLatch.countDown();
+
+        try {
+            SecuritySubject subj = IgnitionEx.localIgnite().context().security()
+                .authenticatedSubject(evt.subjectId());
+
+            String login = subj.login().toString();
+
+            assertEquals(expLogin, login);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
 
-        /** */
-        private void body(Event evt) {
-            try {
-                CacheEvent cacheEvt = (CacheEvent)evt;
-
-                if (cacheNames.contains(cacheEvt.cacheName())) {
-                    SecuritySubject subj = IgnitionEx.localIgnite().context().security()
-                        .authenticatedSubject(cacheEvt.subjectId());
-
-                    evtsLatch.countDown();
-
-                    register(subj.login().toString());
-                }
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        /** */
-        abstract void register(String login);
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(UUID uuid, Event evt) {
-            body(evt);
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(Event evt) {
-            body(evt);
-
-            return true;
-        }
+        return true;
     }
 }
