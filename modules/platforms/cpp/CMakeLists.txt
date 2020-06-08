@@ -62,7 +62,6 @@ if (${WITH_TESTS})
     endif()
 endif()
 
-
 if (${WITH_THIN_CLIENT} OR ${WITH_ODBC})
     add_subdirectory(network)
 endif()
