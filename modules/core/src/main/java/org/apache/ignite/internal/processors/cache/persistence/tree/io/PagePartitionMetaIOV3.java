@@ -23,12 +23,10 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
-/**
- * IO for partition metadata pages.
- */
-public class PagePartitionMetaIO extends PageMetaIO {
+/** */
+public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
     /** */
-    private static final int SIZE_OFF = PageMetaIO.END_OF_PAGE_META;
+    private static final int SIZE_OFF = PageMetaIO.END_OF_PAGE_META_V2;
 
     /** */
     private static final int UPDATE_CNTR_OFF = SIZE_OFF + 8;
@@ -42,15 +40,25 @@ public class PagePartitionMetaIO extends PageMetaIO {
     /** */
     private static final int NEXT_PART_META_PAGE_OFF = PARTITION_STATE_OFF + 1;
 
-    /** End of page partition meta. */
-    static final int END_OF_PARTITION_PAGE_META = NEXT_PART_META_PAGE_OFF + 8;
+    /** */
+    private static final int PENDING_TREE_ROOT_OFF = NEXT_PART_META_PAGE_OFF + 8;
 
     /** */
-    public static final IOVersions<PagePartitionMetaIO> VERSIONS = new IOVersions<>(
-        new PagePartitionMetaIO(1),
-        new PagePartitionMetaIOV2(2),
-        new PagePartitionMetaIOV3(3)
-    );
+    private static final int PART_META_REUSE_LIST_ROOT_OFF = PENDING_TREE_ROOT_OFF + 8;
+
+    /** */
+    private static final int GAPS_LINK = PART_META_REUSE_LIST_ROOT_OFF + 8;
+
+    /** */
+    private static final int END_OF_PARTITION_META_V3 = GAPS_LINK + 8;
+
+
+    /**
+     * @param ver Version.
+     */
+    public PagePartitionMetaIOV3(int ver) {
+        super(ver);
+    }
 
     /** {@inheritDoc} */
     @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
@@ -61,20 +69,16 @@ public class PagePartitionMetaIO extends PageMetaIO {
         setGlobalRemoveId(pageAddr, 0);
         setPartitionState(pageAddr, (byte)-1);
         setCountersPageId(pageAddr, 0);
-    }
-
-    /**
-     * @param ver Version.
-     */
-    public PagePartitionMetaIO(int ver) {
-        super(T_PART_META, ver);
+        setPendingTreeRoot(pageAddr, 0L);
+        setPartitionMetaStoreReuseListRoot(pageAddr, 0L);
+        setGapsLink(pageAddr, 0);
     }
 
     /**
      * @param pageAddr Page address.
      * @return Partition size.
      */
-    public long getSize(long pageAddr) {
+    @Override public long getSize(long pageAddr) {
         return PageUtils.getLong(pageAddr, SIZE_OFF);
     }
 
@@ -84,7 +88,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    public boolean setSize(long pageAddr, long size) {
+    @Override public boolean setSize(long pageAddr, long size) {
         if (getSize(pageAddr) == size)
             return false;
 
@@ -97,7 +101,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
      * @param pageAddr Page address.
      * @return Partition update counter.
      */
-    public long getUpdateCounter(long pageAddr) {
+    @Override public long getUpdateCounter(long pageAddr) {
         return PageUtils.getLong(pageAddr, UPDATE_CNTR_OFF);
     }
 
@@ -107,7 +111,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    public boolean setUpdateCounter(long pageAddr, long cntr) {
+    @Override public boolean setUpdateCounter(long pageAddr, long cntr) {
         if (getUpdateCounter(pageAddr) == cntr)
             return false;
 
@@ -120,7 +124,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
      * @param pageAddr Page address.
      * @return Global remove ID.
      */
-    public long getGlobalRemoveId(long pageAddr) {
+    @Override public long getGlobalRemoveId(long pageAddr) {
         return PageUtils.getLong(pageAddr, GLOBAL_RMV_ID_OFF);
     }
 
@@ -130,7 +134,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    public boolean setGlobalRemoveId(long pageAddr, long rmvId) {
+    @Override public boolean setGlobalRemoveId(long pageAddr, long rmvId) {
         if (getGlobalRemoveId(pageAddr) == rmvId)
             return false;
 
@@ -142,7 +146,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
     /**
      * @param pageAddr Page address.
      */
-    public byte getPartitionState(long pageAddr) {
+    @Override public byte getPartitionState(long pageAddr) {
         return PageUtils.getByte(pageAddr, PARTITION_STATE_OFF);
     }
 
@@ -152,7 +156,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    public boolean setPartitionState(long pageAddr, byte state) {
+    @Override public boolean setPartitionState(long pageAddr, byte state) {
         if (getPartitionState(pageAddr) == state)
             return false;
 
@@ -167,7 +171,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
      * @param pageAddr Partition metadata page address.
      * @return Next meta partial page ID or {@code 0} if it does not exist.
      */
-    public long getCountersPageId(long pageAddr) {
+    @Override public long getCountersPageId(long pageAddr) {
         return PageUtils.getLong(pageAddr, NEXT_PART_META_PAGE_OFF);
     }
 
@@ -177,55 +181,41 @@ public class PagePartitionMetaIO extends PageMetaIO {
      * @param pageAddr Partition metadata page address.
      * @param cntrsPageId New cache sizes page ID.
      */
-    public void setCountersPageId(long pageAddr, long cntrsPageId) {
+    @Override public void setCountersPageId(long pageAddr, long cntrsPageId) {
         PageUtils.putLong(pageAddr, NEXT_PART_META_PAGE_OFF, cntrsPageId);
     }
 
-    /**
-     * Returns partition pending tree root. Pending tree is used to tracking expiring entries.
-     *
-     * @param pageAddr Page address.
-     * @return Pending Tree root page.
-     */
-    public long getPendingTreeRoot(long pageAddr) {
-        throw new UnsupportedOperationException("Per partition pending tree is not supported by " +
-            "this PagePartitionMetaIO version: ver=" + getVersion());
+    /** {@inheritDoc} */
+    @Override public long getPendingTreeRoot(long pageAddr) {
+        return PageUtils.getLong(pageAddr, PENDING_TREE_ROOT_OFF);
     }
 
-    /**
-     * Sets new partition pending tree root.
-     *
-     * @param pageAddr Page address.
-     * @param treeRoot Pending Tree root
-     */
-    public void setPendingTreeRoot(long pageAddr, long treeRoot) {
-        throw new UnsupportedOperationException("Per partition pending tree is not supported by " +
-            "this PagePartitionMetaIO version: ver=" + getVersion());
+    /** {@inheritDoc} */
+    @Override public void setPendingTreeRoot(long pageAddr, long listRoot) {
+        PageUtils.putLong(pageAddr, PENDING_TREE_ROOT_OFF, listRoot);
     }
 
     /**
      * @param pageAddr Page address.
      */
-    public long getPartitionMetaStoreReuseListRoot(long pageAddr) {
-        throw new UnsupportedOperationException("Partition metastore is not supported by " +
-            "this PagePartitionMetaIO version: ver=" + getVersion());
+    @Override public long getPartitionMetaStoreReuseListRoot(long pageAddr) {
+        return PageUtils.getLong(pageAddr, PART_META_REUSE_LIST_ROOT_OFF);
     }
 
     /**
      * @param pageAddr Page address.
      * @param listRoot List root.
      */
-    public void setPartitionMetaStoreReuseListRoot(long pageAddr, long listRoot) {
-        throw new UnsupportedOperationException("Partition metastore is not supported by " +
-            "this PagePartitionMetaIO version: ver=" + getVersion());
+    @Override public void setPartitionMetaStoreReuseListRoot(long pageAddr, long listRoot) {
+        PageUtils.putLong(pageAddr, PART_META_REUSE_LIST_ROOT_OFF, listRoot);
     }
 
     /**
      * @param pageAddr Page address.
+     * @return Partition size.
      */
-    public long getGapsLink(long pageAddr) {
-        throw new UnsupportedOperationException("Gaps link is not supported by " +
-            "this PagePartitionMetaIO version: ver=" + getVersion());
+    @Override public long getGapsLink(long pageAddr) {
+        return PageUtils.getLong(pageAddr, GAPS_LINK);
     }
 
     /**
@@ -234,22 +224,54 @@ public class PagePartitionMetaIO extends PageMetaIO {
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    public boolean setGapsLink(long pageAddr, long link) {
-        throw new UnsupportedOperationException("Gaps link is not supported by " +
-            "this PagePartitionMetaIO version: ver=" + getVersion());
+    @Override public boolean setGapsLink(long pageAddr, long link) {
+        if (getGapsLink(pageAddr) == link)
+            return false;
+
+        PageUtils.putLong(pageAddr, GAPS_LINK, link);
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override protected void printPage(long pageAddr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
-        super.printPage(pageAddr, pageSize, sb);
-
         byte state = getPartitionState(pageAddr);
 
-        sb.a(",\nPagePartitionMeta[\n\tsize=").a(getSize(pageAddr))
-            .a(",\n\tupdateCounter=").a(getUpdateCounter(pageAddr))
-            .a(",\n\tglobalRemoveId=").a(getGlobalRemoveId(pageAddr))
-            .a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")")
-            .a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr))
-            .a("\n]");
+        sb.a("PagePartitionMeta[\n\ttreeRoot=").a(getReuseListRoot(pageAddr));
+        sb.a(",\n\tpendingTreeRoot=").a(getLastSuccessfulFullSnapshotId(pageAddr));
+        sb.a(",\n\tlastSuccessfulFullSnapshotId=").a(getLastSuccessfulFullSnapshotId(pageAddr));
+        sb.a(",\n\tlastSuccessfulSnapshotId=").a(getLastSuccessfulSnapshotId(pageAddr));
+        sb.a(",\n\tnextSnapshotTag=").a(getNextSnapshotTag(pageAddr));
+        sb.a(",\n\tlastSuccessfulSnapshotTag=").a(getLastSuccessfulSnapshotTag(pageAddr));
+        sb.a(",\n\tlastAllocatedPageCount=").a(getLastAllocatedPageCount(pageAddr));
+        sb.a(",\n\tcandidatePageCount=").a(getCandidatePageCount(pageAddr));
+        sb.a(",\n\tsize=").a(getSize(pageAddr));
+        sb.a(",\n\tupdateCounter=").a(getUpdateCounter(pageAddr));
+        sb.a(",\n\tglobalRemoveId=").a(getGlobalRemoveId(pageAddr));
+        sb.a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")");
+        sb.a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr));
+        sb.a(",\n\tcntrUpdDataPageId=").a(getGapsLink(pageAddr));
+        sb.a("\n]");
+    }
+
+    /**
+     * Upgrade page to PagePartitionMetaIOV2
+     *
+     * @param pageAddr Page address.
+     */
+    @Override public void upgradePage(long pageAddr) {
+        assert PageIO.getType(pageAddr) == getType();
+        assert PageIO.getVersion(pageAddr) < 3;
+
+        if (PageIO.getVersion(pageAddr) < 2)
+            super.upgradePage(pageAddr);
+
+        PageIO.setVersion(pageAddr, getVersion());
+
+        byte[] bytes = PageUtils.getBytes(pageAddr, END_OF_PAGE_META, END_OF_PARTITION_META_V3 - SIZE_OFF);
+
+        PageUtils.putBytes(pageAddr, END_OF_PAGE_META_V2, bytes);
+
+        setReserved(pageAddr, -1L);
     }
 }

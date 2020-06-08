@@ -54,6 +54,12 @@ public class PageMetaIO extends PageIO {
     /** End of page meta. */
     static final int END_OF_PAGE_META = CANDIDATE_PAGE_COUNT_OFF + 4;
 
+    /** End of page meta. */
+    static final int RESERVED_OFF = END_OF_PAGE_META;
+
+    /** End of page meta. */
+    static final int END_OF_PAGE_META_V2 = RESERVED_OFF + 8;
+
     /** */
     public static final IOVersions<PageMetaIO> VERSIONS = new IOVersions<>(
         new PageMetaIO(1)
@@ -86,6 +92,7 @@ public class PageMetaIO extends PageIO {
         setLastSuccessfulSnapshotTag(pageAddr, 0);
         setLastAllocatedPageCount(pageAddr, 0);
         setCandidatePageCount(pageAddr, 0);
+        setReserved(pageAddr, -1L);
     }
 
     /**
@@ -243,6 +250,21 @@ public class PageMetaIO extends PageIO {
      */
     public int getCandidatePageCount(long pageAddr) {
         return PageUtils.getInt(pageAddr, CANDIDATE_PAGE_COUNT_OFF);
+    }
+
+    /** */
+    public boolean setReserved(long pageAddr, long val) {
+        if (getReserved(pageAddr) == val)
+            return false;
+
+        PageUtils.putLong(pageAddr, RESERVED_OFF, val);
+
+        return true;
+    }
+
+    /** */
+    public long getReserved(long pageAddr) {
+        return PageUtils.getLong(pageAddr, RESERVED_OFF);
     }
 
     /** {@inheritDoc} */
