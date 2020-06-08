@@ -33,15 +33,20 @@ import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.core.support.AbstractEntityInformation;
+import org.springframework.data.repository.core.support.RepositoryComposition;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
+import org.springframework.data.repository.core.support.RepositoryFragment;
 import org.springframework.data.repository.query.EvaluationContextProvider;
 import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+
+import static org.springframework.data.querydsl.QuerydslUtils.QUERY_DSL_PRESENT;
 
 /**
  * Crucial for spring-data functionality class. Create proxies for repositories.
@@ -178,8 +183,16 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
                 if (key != QueryLookupStrategy.Key.CREATE && StringUtils.hasText(qryStr)) {
                     return new IgniteRepositoryQuery(metadata,
-                            new IgniteQuery(qryStr, isFieldQuery(qryStr), IgniteQueryGenerator.getOptions(mtd)),
-                            mtd, factory, ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
+                        new IgniteQuery(
+                            metadata.getDomainType(),
+                            qryStr,
+                            isFieldQuery(qryStr),
+                            IgniteQueryGenerator.getOptions(mtd.getParameterTypes())
+                        ),
+                        mtd,
+                        factory,
+                        ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface()))
+                    );
                 }
             }
 
@@ -191,6 +204,26 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
             return new IgniteRepositoryQuery(metadata, IgniteQueryGenerator.generateSql(mtd, metadata), mtd,
                 factory, ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override protected RepositoryComposition.RepositoryFragments getRepositoryFragments(RepositoryMetadata metadata) {
+        RepositoryComposition.RepositoryFragments fragments = RepositoryComposition.RepositoryFragments.empty();
+
+        boolean isQryDslRepo = QUERY_DSL_PRESENT
+                && QuerydslPredicateExecutor.class.isAssignableFrom(metadata.getRepositoryInterface());
+
+        if (isQryDslRepo) {
+            Object querydslFragment = getTargetRepositoryViaReflection(
+                    QueryPredicateExecutorImpl.class,
+                    ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())),
+                    metadata
+            );
+
+            fragments = fragments.append(RepositoryFragment.implemented(querydslFragment));
+        }
+
+        return fragments;
     }
 
     /**

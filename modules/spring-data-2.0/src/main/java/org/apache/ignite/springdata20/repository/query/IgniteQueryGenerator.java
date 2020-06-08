@@ -17,13 +17,15 @@
 
 package org.apache.ignite.springdata20.repository.query;
 
-import java.lang.reflect.Method;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.PartTree;
+
+import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /**
  * Ignite query generator for Spring Data framework.
@@ -87,7 +89,24 @@ public class IgniteQueryGenerator {
             sql.append(parts.getMaxResults().intValue());
         }
 
-        return new IgniteQuery(sql.toString(), isCountOrFieldQuery, getOptions(mtd));
+        return new IgniteQuery(
+            metadata.getDomainType(),
+            sql.toString(),
+            isCountOrFieldQuery,
+            getOptions(mtd.getParameterTypes())
+        );
+    }
+
+    /**
+     * @param type Result type.
+     * @param sql SQL string query.
+     * @param params Parameters.
+     * @return Prepared query for execution.
+     */
+    public static IgniteQuery prepareQuery(Class<?> type, String sql, Object[] params) {
+        Class<?>[] types = Arrays.stream(params).map(Object::getClass).toArray(Class<?>[]::new);
+
+        return new IgniteQuery(type, sql, false, getOptions(types));
     }
 
     /**
@@ -144,13 +163,12 @@ public class IgniteQueryGenerator {
     /**
      * Determines whether query is dynamic or not (by list of method parameters)
      *
-     * @param mtd Method.
+     * @param types Parameters types.
      * @return type of options
      */
-    public static IgniteQuery.Option getOptions(Method mtd) {
+    public static IgniteQuery.Option getOptions(Class<?>... types) {
         IgniteQuery.Option option = IgniteQuery.Option.NONE;
 
-        Class<?>[] types = mtd.getParameterTypes();
         if (types.length > 0) {
             Class<?> type = types[types.length - 1];
 

@@ -130,6 +130,7 @@
         <spring.data-2.2.version>2.2.3.RELEASE</spring.data-2.2.version> <!-- don't forget to update spring-5.2 version -->
         <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version><!-- don't forget to update spring-data-2.2 version -->
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
+        <querydsl.version>4.2.2</querydsl.version>
         <storm.version>1.1.1</storm.version>
         <tomcat.version>9.0.10</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
@@ -145,6 +146,7 @@
         <spark24.version>2.4.4</spark24.version>
 
         <!-- Maven plugins versions -->
+        <apt-maven-plugin.version>1.1.3</apt-maven-plugin.version>
         <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
 
         <!-- OSGI Manifest generation default property values -->

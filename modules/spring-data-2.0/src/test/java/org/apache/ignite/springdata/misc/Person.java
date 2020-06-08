@@ -17,12 +17,15 @@
 
 package org.apache.ignite.springdata.misc;
 
+import com.querydsl.core.annotations.QueryEntity;
 import java.util.Objects;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * DTO class.
  */
+@QueryEntity
 public class Person {
     /** First name. */
     @QuerySqlField(index = true)
@@ -32,13 +35,18 @@ public class Person {
     @QuerySqlField(index = true)
     private String secondName;
 
+    /** Age. **/
+    @QuerySqlField(index = true)
+    private int age;
+
     /**
      * @param firstName First name.
      * @param secondName Second name.
      */
-    public Person(String firstName, String secondName) {
+    public Person(String firstName, String secondName, int age) {
         this.firstName = firstName;
         this.secondName = secondName;
+        this.age = age;
     }
 
     /**
@@ -69,12 +77,23 @@ public class Person {
         this.secondName = secondName;
     }
 
+    /**
+     * @return Age.
+     */
+    public int getAge() {
+        return age;
+    }
+
+    /**
+     * @param age Age.
+     */
+    public void setAge(int age) {
+        this.age = age;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Person{" +
-            "firstName='" + firstName + '\'' +
-            ", secondName='" + secondName + '\'' +
-            '}';
+        return S.toString(Person.class, this);
     }
 
     /** {@inheritDoc} */
@@ -88,7 +107,8 @@ public class Person {
         Person person = (Person)o;
 
         return Objects.equals(firstName, person.firstName) &&
-            Objects.equals(secondName, person.secondName);
+            Objects.equals(secondName, person.secondName) &&
+            Objects.equals(age, person.age);
     }
 
     /** {@inheritDoc} */

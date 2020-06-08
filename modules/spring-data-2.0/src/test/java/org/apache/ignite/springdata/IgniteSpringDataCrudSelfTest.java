@@ -96,14 +96,14 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     private void fillInRepository() {
         for (int i = 0; i < CACHE_SIZE - 5; i++) {
             repo.save(i, new Person("person" + Integer.toHexString(i),
-                "lastName" + Integer.toHexString((i + 16) % 256)));
+                "lastName" + Integer.toHexString((i + 16) % 256), i));
         }
 
-        repo.save((int) repo.count(), new Person("uniquePerson", "uniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int) repo.count(), new Person("uniquePerson", "uniqueLastName", 996));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName", 997));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName", 998));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName", 999));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName", 1000));
     }
 
     /** {@inheritDoc} */
@@ -114,7 +114,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testPutGet() {
-        Person person = new Person("some_name", "some_surname");
+        Person person = new Person("some_name", "some_surname", 0);
 
         int id = CACHE_SIZE + 1;
 
@@ -135,7 +135,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         LinkedHashMap<Integer, Person> map = new LinkedHashMap<>();
 
         for (int i = CACHE_SIZE; i < CACHE_SIZE + 50; i++)
-            map.put(i, new Person("some_name" + i, "some_surname" + i));
+            map.put(i, new Person("some_name" + i, "some_surname" + i, i));
 
         Iterator<Person> persons = repo.save(map).iterator();
 
@@ -191,7 +191,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         expected.expect(UnsupportedOperationException.class);
         expected.expectMessage("Use IgniteRepository.deleteById(key) method instead.");
-        repo.delete(new Person("", ""));
+        repo.delete(new Person("", "", 0));
     }
 
     /** */
@@ -211,7 +211,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         ArrayList<Person> persons = new ArrayList<>();
 
         for (int i = 0; i < 3; i++)
-            persons.add(new Person(String.valueOf(i), String.valueOf(i)));
+            persons.add(new Person(String.valueOf(i), String.valueOf(i), i));
 
         expected.expect(UnsupportedOperationException.class);
         expected.expectMessage("Use IgniteRepository.deleteAllById(keys) method instead.");
@@ -352,12 +352,12 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         PersonKey key = new PersonKey(1, 1);
         ids.add(key);
 
-        repoWithCompoundKey.save(key, new Person("test1", "test1"));
+        repoWithCompoundKey.save(key, new Person("test1", "test1", 1));
 
         key = new PersonKey(2, 2);
         ids.add(key);
 
-        repoWithCompoundKey.save(key, new Person("test2", "test2"));
+        repoWithCompoundKey.save(key, new Person("test2", "test2", 2));
 
         assertEquals(2, repoWithCompoundKey.count());
 

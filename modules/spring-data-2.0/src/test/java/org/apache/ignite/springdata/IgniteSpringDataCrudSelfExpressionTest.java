@@ -75,16 +75,14 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
 
     /** */
     private void fillInRepository() {
-        for (int i = 0; i < CACHE_SIZE - 5; i++) {
-            repo.save(i, new Person("person" + Integer.toHexString(i),
-                "lastName" + Integer.toHexString((i + 16) % 256)));
-        }
+        for (int i = 0; i < 995; i++)
+            repo.save(i, new Person("person" + i, "lastName" + i, i));
 
-        repo.save((int) repo.count(), new Person("uniquePerson", "uniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int) repo.count(), new Person("uniquePerson", "uniqueLastName", 996));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName", 997));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName", 998));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName", 999));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName", 1000));
     }
 
     /** {@inheritDoc} */
@@ -97,7 +95,7 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
      */
     @Test
     public void testPutGet() {
-        Person person = new Person("some_name", "some_surname");
+        Person person = new Person("some_name", "some_surname", 0);
 
         int id = CACHE_SIZE + 1;
 
