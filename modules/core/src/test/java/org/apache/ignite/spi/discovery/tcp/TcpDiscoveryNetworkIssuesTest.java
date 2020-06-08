@@ -100,6 +100,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     /** */
     private int metricsUpdateFreq = 1_000;
 
+    /** */
+    private Long systemWorkerBlockedTimeout;
+
     /** {@inheritDoc} */
     @Override protected void afterTest() {
         stopAllGrids();
@@ -112,13 +115,16 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         connectionRecoveryTimeout = 0;
 
         // Makes test faster. Also the value is closer to previous fixed ping rate 500ms.
-        failureDetectionTimeout = 1000;
+        failureDetectionTimeout = 800;
 
         // A message traffic.
-        metricsUpdateFreq = 750;
+        metricsUpdateFreq = 700;
 
-        // Running several times to be sure.
-        for (int i = 0; i < 10; ++i) {
+        // Avoid useless arns. We do block threadf specually.
+        systemWorkerBlockedTimeout = 5000L;
+
+        // Running several times to be sure. Let's keep it within 1min.
+        for (int i = 0; i < 7; ++i) {
             // Holder of falure detection delay. Also is test start and end regulator.
             final AtomicLong timer = new AtomicLong();
 
@@ -202,7 +208,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             awaitPartitionMapExchange();
 
             // Randimizes failure time since cluster start.
-            Thread.sleep(new Random().nextInt(1000));
+            Thread.sleep(new Random().nextInt(500));
 
             synchronized (timer) {
                 // Failure simulated.
@@ -241,6 +247,8 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         cfg.setFailureDetectionTimeout(failureDetectionTimeout);
 
         cfg.setMetricsUpdateFrequency(metricsUpdateFreq);
+
+        cfg.setSystemWorkerBlockedTimeout(systemWorkerBlockedTimeout);
 
         cfg.setDiscoverySpi(spi);
 
