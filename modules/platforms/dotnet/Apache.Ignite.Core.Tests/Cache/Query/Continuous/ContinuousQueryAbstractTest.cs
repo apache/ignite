@@ -778,6 +778,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             
             // Text query, iterator
             TestInitialQuery(new TextQuery(typeof(BinarizableEntry), "1*"), cur => cur.ToList());
+            
+            // Fields query, GetAll
+            TestInitialQuery(new SqlFieldsQuery(typeof(BinarizableEntry), "val < 33"), cur => cur.GetAll());
+            
+            // Fields query, iterator
+            TestInitialQuery(new SqlFieldsQuery(typeof(BinarizableEntry), "val < 33"), cur => cur.ToList());
 
             // Test exception: invalid initial query
             var ex = Assert.Throws<IgniteException>(
