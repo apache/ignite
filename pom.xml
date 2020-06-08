@@ -94,6 +94,7 @@
         <module>modules/ml/xgboost-model-parser</module>
         <module>modules/ml/h2o-model-parser</module>
         <module>modules/opencensus</module>
+        <module>modules/control-utility</module>
     </modules>
 
     <profiles>
