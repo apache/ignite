@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AntiJoinNode;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ModifyNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RightJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SemiJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
@@ -181,7 +183,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         Predicate<Row> cond = expressionFactory.predicate(rel.getCondition(), rowType);
 
-        AbstractNode<Row> node;
+        AbstractJoinNode<Row> node;
         switch (rel.getJoinType()) {
             case INNER:
                 node = new InnerJoinNode<>(ctx, cond);
@@ -197,7 +199,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             case RIGHT: {
                 RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getLeft().getRowType());
-                node = new LeftJoinNode<>(ctx, cond, rowFactory);
+                node = new RightJoinNode<>(ctx, cond, rowFactory);
 
                 break;
             }

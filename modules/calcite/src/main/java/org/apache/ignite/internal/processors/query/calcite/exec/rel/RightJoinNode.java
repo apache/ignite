@@ -17,238 +17,85 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.util.typedef.F;
 
 /** */
-public class RightJoinNode<Row> extends AbstractNode<Row> {
+public class RightJoinNode<Row> extends AbstractJoinNode<Row> {
     /** Right row factory. */
     private final RowHandler.RowFactory<Row> leftRowFactory;
 
-    /** Whether current right row was matched or not. */
-    private boolean matched;
+    /** */
+    private final Set<Row> rightNotMatched = new HashSet<>();
 
     /** */
-    private final Predicate<Row> cond;
+    private Row left;
 
     /** */
-    private final RowHandler<Row> handler;
-
-    /** */
-    private int requested;
-
-    /** */
-    private int waitingLeft;
-
-    /** */
-    private int waitingRight;
-
-    /** */
-    private final List<Row> leftMaterialized = new ArrayList<>(IN_BUFFER_SIZE);
-
-    /** */
-    private final Deque<Row> rightInBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
-
-    /** */
-    private boolean inLoop;
-
-    /** */
-    private Row right;
-
-    /** */
-    private int leftIdx;
+    private int rightIdx;
 
     /**
      * @param ctx Execution context.
      * @param cond Join expression.
      */
     public RightJoinNode(ExecutionContext<Row> ctx, Predicate<Row> cond, RowHandler.RowFactory<Row> leftRowFactory) {
-        super(ctx);
+        super(ctx, cond);
 
-        this.cond = cond;
         this.leftRowFactory = leftRowFactory;
-        handler = ctx.rowHandler();
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) {
-        checkThread();
+    @Override protected void doJoin() {
+        if (waitingRight == -1) {
+            while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
+                if (left == null)
+                    left = leftInBuf.remove();
 
-        assert !F.isEmpty(sources) && sources.size() == 2;
-        assert rowsCnt > 0 && requested == 0;
+                while (requested > 0 && rightIdx < rightMaterialized.size()) {
+                    Row right = rightMaterialized.get(rightIdx++);
+                    Row joined = handler.concat(left, right);
 
-        requested = rowsCnt;
+                    if (!cond.test(joined))
+                        continue;
 
-        if (!inLoop)
-            context().execute(this::flushFromBuffer);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Downstream<Row> requestDownstream(int idx) {
-        if (idx == 0)
-            return new Downstream<Row>() {
-                /** {@inheritDoc} */
-                @Override public void push(Row row) {
-                    pushLeft(row);
+                    requested--;
+                    rightNotMatched.remove(right);
+                    downstream.push(joined);
                 }
 
-                /** {@inheritDoc} */
-                @Override public void end() {
-                    endLeft();
-                }
-
-                /** {@inheritDoc} */
-                @Override public void onError(Throwable e) {
-                    RightJoinNode.this.onError(e);
-                }
-            };
-        else if (idx == 1)
-            return new Downstream<Row>() {
-                /** {@inheritDoc} */
-                @Override public void push(Row row) {
-                    pushRight(row);
-                }
-
-                /** {@inheritDoc} */
-                @Override public void end() {
-                    endRight();
-                }
-
-                /** {@inheritDoc} */
-                @Override public void onError(Throwable e) {
-                    RightJoinNode.this.onError(e);
-                }
-            };
-
-        throw new IndexOutOfBoundsException();
-    }
-
-    /** */
-    private void pushLeft(Row row) {
-        checkThread();
-
-        assert downstream != null;
-        assert waitingLeft > 0;
-
-        waitingLeft--;
-
-        leftMaterialized.add(row);
-
-        if (waitingLeft == 0)
-            sources.get(1).request(waitingLeft = IN_BUFFER_SIZE);
-
-    }
-
-    /** */
-    private void pushRight(Row row) {
-        checkThread();
-
-        assert downstream != null;
-        assert waitingRight > 0;
-
-        waitingRight--;
-
-        rightInBuf.add(row);
-
-        flushFromBuffer();
-    }
-
-    /** */
-    private void endLeft() {
-        checkThread();
-
-        assert downstream != null;
-        assert waitingLeft > 0;
-
-        waitingLeft = -1;
-
-        flushFromBuffer();
-    }
-
-    /** */
-    private void endRight() {
-        checkThread();
-
-        assert downstream != null;
-        assert waitingRight > 0;
-
-        waitingRight = -1;
-
-        flushFromBuffer();
-    }
-
-    /** */
-    private void onError(Throwable e) {
-        checkThread();
-
-        assert downstream != null;
-
-        downstream.onError(e);
-    }
-
-    /** */
-    private void flushFromBuffer() {
-        inLoop = true;
-        try {
-            if (waitingLeft == -1) {
-                while (requested > 0 && (right != null || !rightInBuf.isEmpty())) {
-                    if (right == null) {
-                        right = rightInBuf.remove();
-                        
-                        matched = false;
-                    }
-
-                    while (requested > 0 && leftIdx < leftMaterialized.size()) {
-                        Row row = handler.concat(leftMaterialized.get(leftIdx++), right);
-
-                        if (!cond.test(row))
-                            continue;
-
-                        requested--;
-                        matched = true;
-                        downstream.push(row);
-                    }
-
-                    if (leftIdx == leftMaterialized.size()) {
-                        boolean wasPushed = false;
-
-                        if (!matched && requested > 0) {
-                            requested--;
-                            wasPushed = true;
-
-                            downstream.push(handler.concat(leftRowFactory.create(), right));
-                        }
-
-                        if (matched || wasPushed) {
-                            right = null;
-                            leftIdx = 0;
-                        }
-                    }
+                if (rightIdx == rightMaterialized.size()) {
+                    left = null;
+                    rightIdx = 0;
                 }
             }
+        }
 
-            if (waitingLeft == 0 && rightInBuf.isEmpty())
-                sources.get(0).request(waitingLeft = IN_BUFFER_SIZE);
+        if (waitingLeft == -1 && requested > 0 && !rightNotMatched.isEmpty()) {
+            Iterator<Row> it = rightNotMatched.iterator();
 
-            if (waitingRight == 0)
-                sources.get(1).request(waitingRight = IN_BUFFER_SIZE);
+            while (it.hasNext() && requested > 0) {
+                Row row = handler.concat(leftRowFactory.create(), it.next());
 
-            if (requested > 0 && waitingLeft == -1 && waitingRight == -1 && right == null && rightInBuf.isEmpty()) {
-                downstream.end();
-                requested = 0;
+                it.remove();
+
+                requested--;
+                downstream.push(row);
             }
         }
-        catch (Exception e) {
-            downstream.onError(e);
-        }
-        finally {
-            inLoop = false;
+
+        if (waitingRight == 0)
+            sources.get(1).request(waitingRight = IN_BUFFER_SIZE);
+
+        if (waitingLeft == 0 && leftInBuf.isEmpty())
+            sources.get(0).request(waitingLeft = IN_BUFFER_SIZE);
+
+        if (requested > 0 && waitingLeft == -1 && waitingRight == -1 && left == null && leftInBuf.isEmpty() && rightNotMatched.isEmpty()) {
+            downstream.end();
+            requested = 0;
         }
     }
 }
