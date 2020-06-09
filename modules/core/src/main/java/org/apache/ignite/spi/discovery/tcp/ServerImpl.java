@@ -207,6 +207,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private IgniteThreadPoolExecutor utilityPool;
 
+    /** */
+    private IgniteThreadPoolExecutor connCheckPool;
+
     /** Nodes ring. */
     @GridToStringExclude
     private final TcpDiscoveryNodesRing ring = new TcpDiscoveryNodesRing();
@@ -373,8 +376,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
             0,
-            max(4, Runtime.getRuntime().availableProcessors() * 2),
+            1,
             2000,
+            new LinkedBlockingQueue<>());
+
+        connCheckPool = new IgniteThreadPoolExecutor("disco-connCheck-pool",
+            spi.ignite().name(),
+            0,
+            max(4, Runtime.getRuntime().availableProcessors() * 2),
+            1000,
             new LinkedBlockingQueue<>());
 
         if (debugMode) {
@@ -535,6 +545,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         clientMsgWorkers.clear();
 
         IgniteUtils.shutdownNow(ServerImpl.class, utilityPool, log);
+
+        IgniteUtils.shutdownNow(ServerImpl.class, connCheckPool, log);
 
         U.interrupt(statsPrinter);
         U.join(statsPrinter, log);
@@ -7077,7 +7089,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (latch.getCount() == 0)
                     break;
 
-                utilityPool.execute(() -> {
+                connCheckPool.execute(() -> {
                     if (latch.getCount() == 0)
                         return;
 
