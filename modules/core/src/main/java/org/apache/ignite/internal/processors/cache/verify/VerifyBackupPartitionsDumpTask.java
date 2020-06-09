@@ -277,7 +277,6 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         };
     }
 
-
     /**
      * Passes idle_verify parsed arguments to given log consumer.
      *
