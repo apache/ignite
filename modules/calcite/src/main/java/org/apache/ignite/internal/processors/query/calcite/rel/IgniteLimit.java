@@ -19,10 +19,14 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 
@@ -96,5 +100,48 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
         childTraits = fixTraits(childTraits);
 
         return Pair.of(childTraits, ImmutableList.of(childTraits));
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        double rows = estimateRowCount(mq);
+
+        return planner.getCostFactory().makeCost(rows, 0, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public double estimateRowCount(RelMetadataQuery mq) {
+        Integer lim = intFromRex(fetch);
+        Integer off = intFromRex(offset);
+
+        if (off != null)
+            off *= 2;
+
+        double inRows = input.estimateRowCount(mq);
+
+        if (lim != null) {
+            lim *= 2;
+
+            return Math.min(lim, off != null ? inRows - off : inRows);
+        }
+        else if (off != null)
+            return inRows - off ;
+        else
+            return inRows;
+    }
+
+    /**
+     * @return Integer value of the literal expression.
+     */
+    private Integer intFromRex(RexNode n) {
+        try {
+            if (n instanceof RexLiteral)
+                return ((RexLiteral)n).getValueAs(Integer.class);
+            else
+                return null;
+        }
+        catch (Exception e) {
+            return null;
+        }
     }
 }
