@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Resource;
+    using Apache.Ignite.Linq;
     using NUnit.Framework;
 
     /// <summary>
@@ -780,7 +781,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             TestInitialQuery(new TextQuery(typeof(BinarizableEntry), "1*"), cur => cur.ToList());
             
             // Fields query, GetAll
-            TestInitialQuery(new SqlFieldsQuery("select _key, _val from  where val < 33"), cur => cur.GetAll());
+            // select _T0._KEY, _T0._VAL from "atomic_backup".BINARIZABLEENTRY as _T0 where (_T0.VAL < ?)
+            // var sql = cache1.AsCacheQueryable().Where(e => e.Value.val < 33).ToCacheQueryable().GetFieldsQuery().Sql;
+            TestInitialQuery(new SqlFieldsQuery("select _key, _val from BINARIZABLEENTRY where val < 33"), cur => cur.GetAll());
             
             // Fields query, iterator
             TestInitialQuery(new SqlFieldsQuery("val < 33"), cur => cur.ToList());
