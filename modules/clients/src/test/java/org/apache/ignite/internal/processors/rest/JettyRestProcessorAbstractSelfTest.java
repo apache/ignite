@@ -200,6 +200,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        grid(0).cluster().state(ACTIVE);
+
         grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
 
         if (memoryMetricsEnabled) {
@@ -207,6 +211,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
             restartGrid();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        grid(0).cluster().state(ACTIVE);
+
+        super.afterTest();
     }
 
     /**
