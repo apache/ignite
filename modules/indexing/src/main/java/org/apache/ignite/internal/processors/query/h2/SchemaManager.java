@@ -637,7 +637,7 @@ public class SchemaManager {
             throw e;
         }
 
-        GridQueryIndexDescriptor idxDesc =  desc.type().indexes().get(h2Idx.getName());
+        GridQueryIndexDescriptor idxDesc = desc.type().indexes().get(h2Idx.getName());
 
         lsnr.onIndexCreate(schemaName, desc.tableName(), h2Idx.getName(), idxDesc, h2Idx);
     }
