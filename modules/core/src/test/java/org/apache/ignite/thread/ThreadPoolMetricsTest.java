@@ -23,12 +23,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
-import org.apache.ignite.spi.IgniteSpiContext;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.spi.metric.log.LogExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -40,7 +41,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
- * Tests that thread pool metrics are registered before {@link GridMetricManager#onKernalStart} invocation.
+ * Tests that thread pool metrics are available before the start of all Ignite components happened.
  */
 public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
     /** Names of the general thread pools. */
@@ -67,32 +68,38 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         STREAM_POOL_QUEUE_VIEW
     );
 
-    /** Latch that indicates whether {@link GridMetricManager#onKernalStart} was invoked. */
-    public final CountDownLatch startInvokedLatch = new CountDownLatch(1);
+    /** Latch that indicates whether the start of Ignite components was launched. */
+    public final CountDownLatch startLaunchedLatch = new CountDownLatch(1);
 
-    /** Latch that indicates whether {@link GridMetricManager#onKernalStart} execution was unblocked. */
+    /** Latch that indicates whether the start of Ignite components was unblocked. */
     public final CountDownLatch startUnblockedLatch = new CountDownLatch(1);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setMetricExporterSpi(new JmxMetricExporterSpi() {
+            .setMetricExporterSpi(new LogExporterSpi())
+            .setPluginProviders(new AbstractTestPluginProvider() {
                 /** {@inheritDoc} */
-                @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
-                    startInvokedLatch.countDown();
+                @Override public String name() {
+                    return "test-stuck-plugin";
+                }
+
+                /** {@inheritDoc} */
+                @Override public void onIgniteStart() {
+                    startLaunchedLatch.countDown();
 
                     try {
                         startUnblockedLatch.await(getTestTimeout(), MILLISECONDS);
                     }
                     catch (InterruptedException e) {
-                        throw new IgniteSpiException(e);
+                        throw new IgniteException(e);
                     }
                 }
             });
     }
 
     /**
-     * Tests that thread pool metrics are registered before {@link GridMetricManager#onKernalStart} invocation.
+     * Tests that thread pool metrics are available before the start of all Ignite components happened.
      *
      * @throws Exception If failed.
      */
@@ -102,11 +109,13 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         try {
             runAsync(() -> startGrid());
 
-            assertTrue(startInvokedLatch.await(getTestTimeout(), MILLISECONDS));
+            assertTrue(startLaunchedLatch.await(getTestTimeout(), MILLISECONDS));
+
+            IgniteEx srv = gridx(getTestIgniteInstanceName());
 
             List<String> metrics = new ArrayList<>();
 
-            gridx(getTestIgniteInstanceName()).context().metric().forEach(metric -> metrics.add(metric.name()));
+            srv.context().metric().forEach(metric -> metrics.add(metric.name()));
 
             assertTrue(metrics.containsAll(THREAD_POOL_NAMES.stream()
                 .map(name -> metricName(GridMetricManager.THREAD_POOLS, name))
@@ -124,7 +133,7 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
 
             List<String> views = new ArrayList<>();
 
-            gridx(getTestIgniteInstanceName()).context().systemView().forEach(view -> views.add(view.name()));
+            srv.context().systemView().forEach(view -> views.add(view.name()));
 
             assertTrue(views.containsAll(THREAD_POOL_VIEWS));
         }
