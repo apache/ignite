@@ -606,17 +606,19 @@ class ServerImpl extends TcpDiscoveryImpl {
         if (!nodeAlive(nodeId))
             return false;
 
-        long start = U.currentTimeMillis();
-
         if (log.isInfoEnabled())
             log.info("Pinging node: " + nodeId);
 
+        long start = System.nanoTime();
+
         boolean res = pingNode(node);
 
-        long end = System.currentTimeMillis();
+        long end = System.nanoTime();
 
-        if (log.isInfoEnabled())
-            log.info("Finished node ping [nodeId=" + nodeId + ", res=" + res + ", time=" + (end - start) + "ms]");
+        if (log.isInfoEnabled()) {
+            log.info("Finished node ping [nodeId=" + nodeId + ", res=" + res + ", time=" +
+                U.nanosToMillis(end - start) + "ms]");
+        }
 
         if (!res && node.clientRouterNodeId() == null && nodeAlive(nodeId)) {
             LT.warn(log, "Failed to ping node (status check will be initiated): " + nodeId);
@@ -6213,7 +6215,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 lastTimeConnCheckMsgSent = 0;
             }
 
-            long elapsed = (lastTimeConnCheckMsgSent + CON_CHECK_INTERVAL) - U.currentTimeMillis();
+            long elapsed = (lastTimeConnCheckMsgSent + U.millisToNanos(CON_CHECK_INTERVAL)) - System.nanoTime();
 
             if (elapsed > 0)
                 return;
@@ -6224,7 +6226,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (hasRemoteSrvNodes) {
                 sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
 
-                lastTimeConnCheckMsgSent = U.currentTimeMillis();
+                lastTimeConnCheckMsgSent = System.nanoTime();
             }
         }
 
