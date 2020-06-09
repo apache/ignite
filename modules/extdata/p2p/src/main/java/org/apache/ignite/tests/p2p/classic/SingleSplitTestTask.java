@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.p2p;
+package org.apache.ignite.tests.p2p.classic;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -25,6 +25,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.tests.p2p.GridSingleSplitTestJobTarget;
 
 /**
  * Test task for P2P deployment tests.

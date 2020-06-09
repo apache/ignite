@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Compiles a generic ctor with arbitrary number of arguments.
         /// </summary>
         /// <typeparam name="T">Result func type.</typeparam>
-        /// <param name="ctor">Contructor info.</param>
+        /// <param name="ctor">Constructor info.</param>
         /// <param name="argTypes">Argument types.</param>
         /// <param name="convertResultToObject">
         /// Flag that indicates whether ctor return value should be converted to object.</param>
@@ -252,7 +252,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// that takes an uninitialized object as a first arguments.
         /// </summary>
         /// <typeparam name="T">Result func type.</typeparam>
-        /// <param name="ctor">Contructor info.</param>
+        /// <param name="ctor">Constructor info.</param>
         /// <param name="argTypes">Argument types.</param>
         /// <returns>
         /// Compiled generic constructor.
@@ -312,7 +312,7 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Compiles a contructor that reads all arguments from a binary reader.
+        /// Compiles a constructor that reads all arguments from a binary reader.
         /// </summary>
         /// <typeparam name="T">Result type</typeparam>
         /// <param name="ctor">The ctor.</param>
