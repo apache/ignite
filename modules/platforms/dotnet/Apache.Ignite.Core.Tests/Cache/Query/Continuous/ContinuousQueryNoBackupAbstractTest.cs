@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     /// <summary>
     /// Tests for ocntinuous query when there are no backups.
     /// </summary>
+    [TestFixture]
     public abstract class ContinuousQueryNoBackupAbstractTest : ContinuousQueryAbstractTest
     {
         /// <summary>

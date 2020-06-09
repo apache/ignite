@@ -17,9 +17,12 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
+    using NUnit.Framework;
+
     /// <summary>
     /// Continuous query tests for ATOMIC cache with backups.
     /// </summary>
+    [TestFixture]
     public class ContinuousQueryAtomiclBackupTest : ContinuousQueryAbstractTest
     {
         /// <summary>
