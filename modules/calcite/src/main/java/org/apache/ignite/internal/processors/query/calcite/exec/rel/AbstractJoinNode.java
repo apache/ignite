@@ -28,6 +28,9 @@ import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
+    /** Special value to highlights that all row were received and we are not waiting any more. */
+    protected static final int NOT_WAITING = -1;
+
     /** */
     protected final Predicate<Row> cond;
 
@@ -56,7 +59,7 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
      * @param ctx Execution context.
      * @param cond Join expression.
      */
-    public AbstractJoinNode(ExecutionContext<Row> ctx, Predicate<Row> cond) {
+    protected AbstractJoinNode(ExecutionContext<Row> ctx, Predicate<Row> cond) {
         super(ctx);
 
         this.cond = cond;
@@ -117,7 +120,7 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
-    protected void pushLeft(Row row) {
+    private void pushLeft(Row row) {
         checkThread();
 
         assert downstream != null;
@@ -131,7 +134,7 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
-    protected void pushRight(Row row) {
+    private void pushRight(Row row) {
         checkThread();
 
         assert downstream != null;
@@ -146,31 +149,31 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
-    protected void endLeft() {
+    private void endLeft() {
         checkThread();
 
         assert downstream != null;
         assert waitingLeft > 0;
 
-        waitingLeft = -1;
+        waitingLeft = NOT_WAITING;
 
         body();
     }
 
     /** */
-    protected void endRight() {
+    private void endRight() {
         checkThread();
 
         assert downstream != null;
         assert waitingRight > 0;
 
-        waitingRight = -1;
+        waitingRight = NOT_WAITING;
 
         body();
     }
 
     /** */
-    protected void onError(Throwable e) {
+    private void onError(Throwable e) {
         checkThread();
 
         assert downstream != null;

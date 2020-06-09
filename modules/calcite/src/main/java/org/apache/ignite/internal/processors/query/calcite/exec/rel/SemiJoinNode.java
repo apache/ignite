@@ -38,7 +38,7 @@ public class SemiJoinNode<Row> extends AbstractJoinNode<Row> {
 
     /** {@inheritDoc} */
     @Override protected void doJoin() {
-        if (waitingRight == -1) {
+        if (waitingRight == NOT_WAITING) {
             while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
                 if (left == null)
                     left = leftInBuf.remove();
@@ -69,7 +69,8 @@ public class SemiJoinNode<Row> extends AbstractJoinNode<Row> {
         if (waitingLeft == 0 && leftInBuf.isEmpty())
             sources.get(0).request(waitingLeft = IN_BUFFER_SIZE);
 
-        if (requested > 0 && waitingLeft == -1 && waitingRight == -1 && left == null && leftInBuf.isEmpty()) {
+        if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
+            && leftInBuf.isEmpty()) {
             downstream.end();
             requested = 0;
         }

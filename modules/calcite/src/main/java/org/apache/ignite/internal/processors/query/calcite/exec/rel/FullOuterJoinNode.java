@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.BitSet;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -36,7 +34,10 @@ public class FullOuterJoinNode<Row> extends AbstractJoinNode<Row> {
     private boolean leftMatched;
 
     /** */
-    private final Set<Row> rightNotMatched = new HashSet<>();
+    private BitSet rightNotMatchedIndexes;
+
+    /** */
+    private int lastPushedInd;
 
     /** */
     private Row left;
@@ -57,15 +58,14 @@ public class FullOuterJoinNode<Row> extends AbstractJoinNode<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void pushRight(Row row) {
-        super.pushRight(row);
-
-        rightNotMatched.add(row);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void doJoin() {
-        if (waitingRight == -1) {
+        if (waitingRight == NOT_WAITING) {
+            if (rightNotMatchedIndexes == null) {
+                rightNotMatchedIndexes = new BitSet(rightMaterialized.size());
+
+                rightNotMatchedIndexes.set(0, rightMaterialized.size());
+            }
+
             while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
                 if (left == null) {
                     left = leftInBuf.remove();
@@ -82,7 +82,7 @@ public class FullOuterJoinNode<Row> extends AbstractJoinNode<Row> {
 
                     requested--;
                     leftMatched = true;
-                    rightNotMatched.remove(right);
+                    rightNotMatchedIndexes.clear(rightIdx - 1);
                     downstream.push(joined);
                 }
 
@@ -104,16 +104,24 @@ public class FullOuterJoinNode<Row> extends AbstractJoinNode<Row> {
             }
         }
 
-        if (waitingLeft == -1 && requested > 0 && !rightNotMatched.isEmpty()) {
-            Iterator<Row> it = rightNotMatched.iterator();
+        if (waitingLeft == NOT_WAITING && requested > 0 && !rightNotMatchedIndexes.isEmpty()) {
+            assert lastPushedInd >= 0;
 
-            while (it.hasNext() && requested > 0) {
-                Row row = handler.concat(leftRowFactory.create(), it.next());
+            for (lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);;
+                lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1)
+            ) {
+                if (lastPushedInd < 0)
+                    break;
 
-                it.remove();
+                Row row = handler.concat(leftRowFactory.create(), rightMaterialized.get(lastPushedInd));
+
+                rightNotMatchedIndexes.clear(lastPushedInd);
 
                 requested--;
                 downstream.push(row);
+
+                if (lastPushedInd == Integer.MAX_VALUE || requested <= 0)
+                    break;
             }
         }
 
@@ -123,7 +131,8 @@ public class FullOuterJoinNode<Row> extends AbstractJoinNode<Row> {
         if (waitingLeft == 0 && leftInBuf.isEmpty())
             sources.get(0).request(waitingLeft = IN_BUFFER_SIZE);
 
-        if (requested > 0 && waitingLeft == -1 && waitingRight == -1 && left == null && leftInBuf.isEmpty() && rightNotMatched.isEmpty()) {
+        if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
+            && leftInBuf.isEmpty() && rightNotMatchedIndexes.isEmpty()) {
             downstream.end();
             requested = 0;
         }

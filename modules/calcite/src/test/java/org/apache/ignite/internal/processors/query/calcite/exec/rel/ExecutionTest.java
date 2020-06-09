@@ -229,7 +229,8 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         ScanNode<Object[]> deps = new ScanNode<>(ctx, Arrays.asList(
             new Object[]{1, "Core"},
-            new Object[]{2, "SQL"}
+            new Object[]{2, "SQL"},
+            new Object[]{3, "QA"}
         ));
 
         RightJoinNode<Object[]> join = new RightJoinNode<>(
@@ -263,9 +264,9 @@ public class ExecutionTest extends AbstractExecutionTest {
         assertEquals(4, rows.size());
 
         Assert.assertArrayEquals(new Object[]{0, "Igor", "Core"}, rows.get(0));
-        Assert.assertArrayEquals(new Object[]{1, "Roman", "SQL"}, rows.get(1));
-        Assert.assertArrayEquals(new Object[]{2, "Ivan", null}, rows.get(2));
-        Assert.assertArrayEquals(new Object[]{3, "Alexey", "Core"}, rows.get(3));
+        Assert.assertArrayEquals(new Object[]{3, "Alexey", "Core"}, rows.get(1));
+        Assert.assertArrayEquals(new Object[]{1, "Roman", "SQL"}, rows.get(2));
+        Assert.assertArrayEquals(new Object[]{2, "Ivan", null}, rows.get(3));
     }
 
     /** */
@@ -356,7 +357,8 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         ScanNode<Object[]> deps = new ScanNode<>(ctx, Arrays.asList(
             new Object[]{1, "Core"},
-            new Object[]{2, "SQL"}
+            new Object[]{2, "SQL"},
+            new Object[]{3, "QA"}
         ));
 
         SemiJoinNode<Object[]> join = new SemiJoinNode<>(
