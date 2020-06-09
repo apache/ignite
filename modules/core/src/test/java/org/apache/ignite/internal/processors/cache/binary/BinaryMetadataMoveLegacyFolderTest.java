@@ -38,7 +38,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Test for moving binary metadata folder to PDS
+ * Test for moving binary metadata and marshaller folders to PDS.
  */
 public class BinaryMetadataMoveLegacyFolderTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */

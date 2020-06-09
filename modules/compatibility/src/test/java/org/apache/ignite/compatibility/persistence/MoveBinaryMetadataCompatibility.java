@@ -28,7 +28,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.junit.Test;
 
 /**
- * Test for moving binary_meta and marshaller folders to PDS
+ * Test for moving binary_meta and marshaller folders to PDS.
  */
 public class MoveBinaryMetadataCompatibility extends IgnitePersistenceCompatibilityAbstractTest {
     /** Test Ignite version. */
