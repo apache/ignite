@@ -97,25 +97,33 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
     @Parameterized.Parameter(3)
     public int opNum;
 
+    /** */
+    @Parameterized.Parameter(4)
+    public boolean isClusterTest;
+
     /** Parameters. */
-    @Parameterized.Parameters(name = "cacheCnt={0},evtNode={1},evtType={2},opNum={3}")
+    @Parameterized.Parameters(name = "cacheCnt={0},evtNode={1},evtType={2},opNum={3},isClusterTest={4}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(
-            new Object[] {1, SRV, EVT_CACHE_STARTED, 0},
-            new Object[] {1, CLNT, EVT_CACHE_STARTED, 0},
-            new Object[] {1, SRV, EVT_CACHE_STARTED, 1},
-            new Object[] {1, CLNT, EVT_CACHE_STARTED, 1},
-            new Object[] {1, SRV, EVT_CACHE_STOPPED, 2},
-            new Object[] {1, CLNT, EVT_CACHE_STOPPED, 2},
-            new Object[] {2, SRV, EVT_CACHE_STARTED, 3},
-            new Object[] {2, CLNT, EVT_CACHE_STARTED, 3},
-            new Object[] {2, SRV, EVT_CACHE_STOPPED, 4},
-            new Object[] {2, CLNT, EVT_CACHE_STOPPED, 4},
-            new Object[] {1, "thin", EVT_CACHE_STARTED, 5},
-            new Object[] {1, "thin", EVT_CACHE_STARTED, 6},
-            new Object[] {1, "thin", EVT_CACHE_STOPPED, 7},
-            new Object[] {2, "new_client_node", EVT_CACHE_STARTED, 8},
-            new Object[] {2, "new_server_node", EVT_CACHE_STARTED, 8}
+            new Object[] {1, SRV, EVT_CACHE_STARTED, 0, false},
+            new Object[] {1, CLNT, EVT_CACHE_STARTED, 0, false},
+            new Object[] {1, SRV, EVT_CACHE_STARTED, 1, false},
+            new Object[] {1, CLNT, EVT_CACHE_STARTED, 1, false},
+            new Object[] {1, SRV, EVT_CACHE_STOPPED, 2, false},
+            new Object[] {1, CLNT, EVT_CACHE_STOPPED, 2, false},
+            new Object[] {2, SRV, EVT_CACHE_STARTED, 3, false},
+            new Object[] {2, CLNT, EVT_CACHE_STARTED, 3, false},
+            new Object[] {2, SRV, EVT_CACHE_STOPPED, 4, false},
+            new Object[] {2, CLNT, EVT_CACHE_STOPPED, 4, false},
+            new Object[] {1, "thin", EVT_CACHE_STARTED, 5, false},
+            new Object[] {1, "thin", EVT_CACHE_STARTED, 6, false},
+            new Object[] {1, "thin", EVT_CACHE_STOPPED, 7, false},
+            new Object[] {2, "new_client_node", EVT_CACHE_STARTED, 8, false},
+            new Object[] {2, "new_server_node", EVT_CACHE_STARTED, 8, false},
+            new Object[] {2, SRV, EVT_CACHE_STARTED, 9, true},
+            new Object[] {2, CLNT, EVT_CACHE_STARTED, 9, true},
+            new Object[] {2, SRV, EVT_CACHE_STOPPED, 9, true},
+            new Object[] {2, CLNT, EVT_CACHE_STOPPED, 9, true}
         );
     }
 
@@ -136,15 +144,15 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
 
     private List<Consumer<Collection<CacheConfiguration>>> operations() {
         return Arrays.asList(
-            ccfgs -> grid(login).getOrCreateCache(ccfgs.iterator().next()),
-            ccfgs -> grid(login).createCache(ccfgs.iterator().next()),
-            ccfgs -> grid(login).destroyCache(ccfgs.iterator().next().getName()),
-            ccfgs -> grid(login).createCaches(ccfgs),
-            ccfgs -> grid(login).destroyCaches(ccfgs.stream().map(CacheConfiguration::getName).collect(Collectors.toSet())),
-            ccfgs -> startClient().createCache(ccfgs.iterator().next().getName()),
-            ccfgs -> startClient().getOrCreateCache(ccfgs.iterator().next().getName()),
-            ccfgs -> startClient().destroyCache(ccfgs.iterator().next().getName()),
-            ccfgs -> {
+            ccfgs -> grid(login).getOrCreateCache(ccfgs.iterator().next()),//0
+            ccfgs -> grid(login).createCache(ccfgs.iterator().next()),//1
+            ccfgs -> grid(login).destroyCache(ccfgs.iterator().next().getName()),//2
+            ccfgs -> grid(login).createCaches(ccfgs),//3
+            ccfgs -> grid(login).destroyCaches(ccfgs.stream().map(CacheConfiguration::getName).collect(Collectors.toSet())),//4
+            ccfgs -> startClient().createCache(ccfgs.iterator().next().getName()),//5
+            ccfgs -> startClient().getOrCreateCache(ccfgs.iterator().next().getName()),//6
+            ccfgs -> startClient().destroyCache(ccfgs.iterator().next().getName()),//7
+            ccfgs -> {//8
                 try {
                     startGrid(getConfiguration(login,
                         new TestSecurityPluginProvider(login, "", ALLOW_ALL, false))
@@ -156,17 +164,10 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
                     throw new RuntimeException(e);
                 }
             },
-            ccfgs -> {
-                grid(SRV).cluster().state(ClusterState.INACTIVE);
-
-                grid(login).cluster().state(ClusterState.ACTIVE);
-            },
-            ccfgs -> {
-                ccfgs.forEach(c -> grid(CLNT).cache(c.getName()));
-
+            ccfgs -> {//9
                 grid(login).cluster().state(ClusterState.INACTIVE);
 
-                grid(SRV).cluster().state(ClusterState.ACTIVE);
+                grid(login).cluster().state(ClusterState.ACTIVE);
             }
         );
     }
@@ -174,11 +175,58 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testDynamicCreateDestroyCache() throws Exception {
-        int expTimes = cacheCnt * 2 +
+        int expTimes = isClusterTest ? cacheCnt * 3 : cacheCnt * 2 +
             ((!login.equals(SRV) && !"thin".equals(login) && evtType == EVT_CACHE_STARTED) ? cacheCnt : 0);
 
-        testCacheEvents(expTimes, login, evtType, cacheConfigurations(cacheCnt, evtType == EVT_CACHE_STOPPED),
-            operations().get(opNum));
+        Collection<CacheConfiguration> ccfgs = new ArrayList<>(cacheCnt);
+
+        for (int i = 0; i < cacheCnt; i++)
+            ccfgs.add(new CacheConfiguration("test_cache_" + COUNTER.incrementAndGet()));
+
+        if (evtType == EVT_CACHE_STOPPED || isClusterTest)
+            ccfgs.forEach(c -> grid(LISTENER_NODE).createCache(c.getName()));
+
+        if (isClusterTest)
+            ccfgs.forEach(c -> grid(CLNT).cache(c.getName()));
+
+        locLoginCnt.set(0);
+        rmtLoginCnt.set(0);
+
+        // For the EVT_CACHE_STOPPED event count of local listener should be 1 due to IGNITE-13010.
+        evtsLatch = new CountDownLatch(expTimes + (evtType == EVT_CACHE_STOPPED ? 1 : expTimes));
+
+        UUID lsnrId = grid(LISTENER_NODE).events().remoteListen(new IgniteBiPredicate<UUID, Event>() {
+            @Override public boolean apply(UUID uuid, Event evt) {
+                if (onEvent((CacheEvent)evt, ccfgs, login))
+                    locLoginCnt.incrementAndGet();
+
+                return true;
+            }
+        }, new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                if (onEvent((CacheEvent)evt, ccfgs, login))
+                    rmtLoginCnt.incrementAndGet();
+
+                return true;
+            }
+        }, evtType);
+
+        try {
+            // Execute tested operation.
+            operations().get(opNum).accept(ccfgs);
+
+            // Waiting for events.
+            evtsLatch.await(10, TimeUnit.SECONDS);
+
+            assertEquals("Remote filter.", expTimes, rmtLoginCnt.get());
+            // For the EVT_CACHE_STOPPED event expected times of calling local listener should be 0 (ignored)
+            // due to IGNITE-13010.
+            if (evtType != EVT_CACHE_STOPPED)
+                assertEquals("Local listener.", expTimes, locLoginCnt.get());
+        }
+        finally {
+            grid(LISTENER_NODE).events().stopRemoteListenAsync(lsnrId).get();
+        }
     }
 
     /**
@@ -198,67 +246,6 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
     }
 
     /** */
-    private void testCacheEvents(int expTimes, String expLogin, int evtType, Collection<CacheConfiguration> ccfgs,
-        Consumer<Collection<CacheConfiguration>> op) throws Exception {
-
-        locLoginCnt.set(0);
-        rmtLoginCnt.set(0);
-
-        // For the EVT_CACHE_STOPPED event count of local listener should be 1 due to IGNITE-13010.
-        evtsLatch = new CountDownLatch(expTimes + (evtType == EVT_CACHE_STOPPED ? 1 : expTimes));
-
-        UUID lsnrId = grid(LISTENER_NODE).events().remoteListen(new IgniteBiPredicate<UUID, Event>() {
-            @Override public boolean apply(UUID uuid, Event evt) {
-                if (onEvent((CacheEvent)evt, ccfgs, expLogin))
-                    locLoginCnt.incrementAndGet();
-
-                return true;
-            }
-        }, new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                if (onEvent((CacheEvent)evt, ccfgs, expLogin))
-                    rmtLoginCnt.incrementAndGet();
-
-                return true;
-            }
-        }, evtType);
-
-        try {
-            // Execute tested operation.
-            op.accept(ccfgs);
-
-            // Waiting for events.
-            evtsLatch.await(10, TimeUnit.SECONDS);
-
-            assertEquals("Remote filter.", expTimes, rmtLoginCnt.get());
-            // For the EVT_CACHE_STOPPED event expected times of calling local listener should be 0 (ignored)
-            // due to IGNITE-13010.
-            if (evtType != EVT_CACHE_STOPPED)
-                assertEquals("Local listener.", expTimes, locLoginCnt.get());
-        }
-        finally {
-            grid(LISTENER_NODE).events().stopRemoteListenAsync(lsnrId).get();
-        }
-    }
-
-    /** */
-    private Collection<CacheConfiguration> cacheConfigurations(int num, boolean needCreateCaches) {
-        return cacheConfigurations(num, needCreateCaches, LISTENER_NODE);
-    }
-
-    /** */
-    private Collection<CacheConfiguration> cacheConfigurations(int num, boolean needCreateCaches, String node) {
-        Collection<CacheConfiguration> res = new ArrayList<>(num);
-
-        for (int i = 0; i < num; i++)
-            res.add(new CacheConfiguration("test_cache_" + COUNTER.incrementAndGet()));
-
-        if (needCreateCaches)
-            res.forEach(c -> grid(node).createCache(c.getName()));
-
-        return res;
-    }
-
     private static boolean onEvent(CacheEvent evt, Collection<CacheConfiguration> ccfgs, String expLogin) {
         if (ccfgs.stream().noneMatch(ccfg -> ccfg.getName().equals(evt.cacheName())))
             return false;
