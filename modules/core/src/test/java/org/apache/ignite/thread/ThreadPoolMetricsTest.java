@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.mxbean.ThreadPoolMXBean;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.spi.metric.log.LogExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -104,7 +103,7 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @SuppressWarnings({"Convert2MethodRef", "deprecation"})
+    @SuppressWarnings("Convert2MethodRef")
     public void testThreadPoolMetrics() throws Exception {
         try {
             runAsync(() -> startGrid());
@@ -123,13 +122,6 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
             );
 
             assertTrue(metrics.contains(GridMetricManager.IGNITE_METRICS));
-
-            THREAD_POOL_NAMES.forEach(name -> getMxBean(
-                getTestIgniteInstanceName(),
-                "Thread Pools",
-                name,
-                ThreadPoolMXBean.class
-            ));
 
             List<String> views = new ArrayList<>();
 
