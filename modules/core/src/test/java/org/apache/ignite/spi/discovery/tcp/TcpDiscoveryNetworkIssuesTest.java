@@ -118,7 +118,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         failureDetectionTimeout = 700;
 
         // A message traffic.
-        metricsUpdateFreq = failureDetectionTimeout;
+        metricsUpdateFreq = 400;
 
         // Avoid useless arns. We do block threadf specually.
         systemWorkerBlockedTimeout = 5000L;
