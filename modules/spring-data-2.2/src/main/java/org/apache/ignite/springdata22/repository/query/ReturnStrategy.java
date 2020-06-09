@@ -15,24 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.springdata22.repository.query;
 
-import org.apache.ignite.springdata.IgniteSpringDataCrudSelfExpressionTest;
-import org.apache.ignite.springdata.IgniteSpringDataCrudSelfTest;
-import org.apache.ignite.springdata.IgniteSpringDataQueriesSelfTest;
-import org.apache.ignite.springdata.IgniteSpringDataQueryPredicateExecutorImplSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+/** Defines the way how to process query result */
+public enum ReturnStrategy {
+    /** Need to return only one value. */
+    ONE_VALUE,
 
-/**
- * Ignite Spring Data 2.2 test suite.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgniteSpringDataCrudSelfTest.class,
-    IgniteSpringDataQueriesSelfTest.class,
-    IgniteSpringDataCrudSelfExpressionTest.class,
-    IgniteSpringDataQueryPredicateExecutorImplSelfTest.class
-})
-public class IgniteSpringData22TestSuite {
+    /** Need to return one cache entry */
+    CACHE_ENTRY,
+
+    /** Need to return list of cache entries */
+    LIST_OF_CACHE_ENTRIES,
+
+    /** Need to return list of values */
+    LIST_OF_VALUES,
+
+    /** Need to return list of lists */
+    LIST_OF_LISTS,
+
+    /** Need to return slice */
+    SLICE_OF_VALUES,
+
+    /** Slice of cache entries. */
+    SLICE_OF_CACHE_ENTRIES,
+
+    /** Slice of lists. */
+    SLICE_OF_LISTS
 }

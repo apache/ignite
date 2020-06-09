@@ -25,12 +25,13 @@ import org.apache.ignite.springdata22.repository.config.Query;
 import org.apache.ignite.springdata22.repository.config.RepositoryConfig;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 
 /**
  * Test repository.
  */
 @RepositoryConfig(cacheName = "PersonCache")
-public interface PersonRepository extends IgniteRepository<Person, Integer> {
+public interface PersonRepository extends IgniteRepository<Person, Integer>, QuerydslPredicateExecutor<Person> {
     /** */
     public List<Person> findByFirstName(String val);
 

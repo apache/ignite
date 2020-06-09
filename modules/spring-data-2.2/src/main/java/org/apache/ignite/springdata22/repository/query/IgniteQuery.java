@@ -22,7 +22,7 @@ package org.apache.ignite.springdata22.repository.query;
  */
 public class IgniteQuery {
     /** */
-    enum Option {
+    public enum Option {
         /** Query will be used with Sort object. */
         SORTING,
 
@@ -32,6 +32,8 @@ public class IgniteQuery {
         /** No advanced option. */
         NONE
     }
+    /** Entity type */
+    private final Class<?> entityType;
 
     /** Sql query text string. */
     private final String sql;
@@ -47,10 +49,18 @@ public class IgniteQuery {
      * @param isFieldQuery Is field query.
      * @param option Option.
      */
-    public IgniteQuery(String sql, boolean isFieldQuery, Option option) {
+    public IgniteQuery(Class<?> entityType, String sql, boolean isFieldQuery, Option option) {
+        this.entityType = entityType;
         this.sql = sql;
         this.isFieldQuery = isFieldQuery;
         this.option = option;
+    }
+
+    /**
+     * @return Entity type class.
+     */
+    public Class<?> entityType() {
+        return entityType;
     }
 
     /**
