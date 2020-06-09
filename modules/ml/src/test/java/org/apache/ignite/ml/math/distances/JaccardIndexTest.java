@@ -16,33 +16,28 @@
  */
 package org.apache.ignite.ml.math.distances;
 
-import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.util.MatrixUtil;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.junit.Test;
 
-/**
- * Calculates the L<sub>1</sub> (sum of abs) distance between two points.
- */
-public class ManhattanDistance implements DistanceMeasure {
-    /** Serializable version identifier. */
-    private static final long serialVersionUID = 8989556319784040040L;
+import static org.junit.Assert.assertEquals;
 
-    /** {@inheritDoc} */
-    @Override public double compute(Vector a, Vector b)
-        throws CardinalityException {
-        return MatrixUtil.localCopyOf(a).minus(b).kNorm(1.0);
-    }
+/** Test for {@code JaccardIndex}. */
+public class JaccardIndexTest {
+    /** Precision. */
+    private static final double PRECISION = 0.0;
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
+    /** */
+    @Test
+    public void jaccardIndex() {
+        double expRes = 0.2;
+        double[] data2 = new double[] {2.0, 1.0, 0.0};
+        Vector v1 = new DenseVector(new double[] {0.0, 0.0, 0.0});
+        Vector v2 = new DenseVector(data2);
 
-        return obj != null && getClass() == obj.getClass();
-    }
+        DistanceMeasure distanceMeasure = new JaccardIndex();
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return getClass().hashCode();
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 }
