@@ -1270,29 +1270,36 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     @Test
     public void testClusterStateChange() throws Exception {
-        changeClusterState(CLUSTER_SET_STATE, ACTIVE, ACTIVE_READ_ONLY, false, true);
+        try {
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE, ACTIVE_READ_ONLY, false, true);
 
-        changeClusterState(CLUSTER_SET_STATE, ACTIVE_READ_ONLY, INACTIVE, false, false);
-        changeClusterState(CLUSTER_SET_STATE, ACTIVE_READ_ONLY, INACTIVE, true, true);
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE_READ_ONLY, INACTIVE, false, false);
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE_READ_ONLY, INACTIVE, true, true);
 
-        changeClusterState(CLUSTER_SET_STATE, INACTIVE, ACTIVE, false, true);
+            changeClusterState(CLUSTER_SET_STATE, INACTIVE, ACTIVE, false, true);
 
-        changeClusterState(CLUSTER_SET_STATE, ACTIVE, ACTIVE, false, true);
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE, ACTIVE, false, true);
 
-        changeClusterState(CLUSTER_SET_STATE, ACTIVE, INACTIVE, false, false);
-        changeClusterState(CLUSTER_SET_STATE, ACTIVE, INACTIVE, true, true);
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE, INACTIVE, false, false);
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE, INACTIVE, true, true);
 
-        changeClusterState(CLUSTER_SET_STATE, INACTIVE, INACTIVE, false, true);
-        changeClusterState(CLUSTER_SET_STATE, INACTIVE, INACTIVE, true, true);
+            changeClusterState(CLUSTER_SET_STATE, INACTIVE, INACTIVE, false, true);
+            changeClusterState(CLUSTER_SET_STATE, INACTIVE, INACTIVE, true, true);
 
-        changeClusterState(CLUSTER_SET_STATE, INACTIVE, ACTIVE_READ_ONLY, false, true);
+            changeClusterState(CLUSTER_SET_STATE, INACTIVE, ACTIVE_READ_ONLY, false, true);
 
-        changeClusterState(CLUSTER_SET_STATE, ACTIVE_READ_ONLY, ACTIVE_READ_ONLY, false, true);
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE_READ_ONLY, ACTIVE_READ_ONLY, false, true);
 
-        changeClusterState(CLUSTER_SET_STATE, ACTIVE_READ_ONLY, ACTIVE, false, true);
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE_READ_ONLY, ACTIVE, false, true);
 
-        changeClusterStateByDepricatedCommands(CLUSTER_ACTIVATE, CLUSTER_DEACTIVATE);
-        changeClusterStateByDepricatedCommands(CLUSTER_ACTIVE, CLUSTER_INACTIVE);
+            changeClusterStateByDepricatedCommands(CLUSTER_ACTIVATE, CLUSTER_DEACTIVATE);
+            changeClusterStateByDepricatedCommands(CLUSTER_ACTIVE, CLUSTER_INACTIVE);
+        }
+        finally {
+            grid(0).cluster().state(ACTIVE);
+
+            initCache();
+        }
     }
 
     /**
