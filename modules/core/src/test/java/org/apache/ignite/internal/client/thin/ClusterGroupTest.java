@@ -331,8 +331,8 @@ public class ClusterGroupTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNodeIds() {
-        // Check full projection.
-        assertNull(((ClientClusterGroupImpl)client.cluster()).nodeIds());
+        // Check default projection.
+        assertNull(((ClientClusterImpl)client.cluster()).defaultClusterGroup().nodeIds());
 
         // Check filter only by node id.
         Collection<UUID> nodeIds = ((ClientClusterGroupImpl)client.cluster().forNodeId(nodeId(0),
@@ -345,9 +345,9 @@ public class ClusterGroupTest extends GridCommonAbstractTest {
         assertFalse(nodeIds.contains(nodeId(4)));
 
         // Check server-side filter.
-        nodeIds = ((ClientClusterGroupImpl)client.cluster().forServers()).nodeIds();
+        nodeIds = ((ClientClusterGroupImpl)client.cluster().forClients()).nodeIds();
 
-        assertEquals(new HashSet<>(F.asList(nodeId(0), nodeId(1), nodeId(2))),
+        assertEquals(new HashSet<>(F.asList(nodeId(3), nodeId(4))),
             new HashSet<>(nodeIds));
 
         // Check client-side filters.

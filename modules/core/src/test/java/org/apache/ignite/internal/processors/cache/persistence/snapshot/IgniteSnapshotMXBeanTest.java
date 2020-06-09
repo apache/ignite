@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Collections;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
@@ -62,6 +63,22 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testCancelSnapshot() throws Exception {
+        IgniteEx srv = startGridsWithCache(1, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx startCli = startClientGrid(1);
+        IgniteEx killCli = startClientGrid(2);
+
+        SnapshotMXBean mxBean = getMxBean(killCli.name(), "Snapshot", SnapshotMXBeanImpl.class,
+            SnapshotMXBean.class);
+
+        doSnapshotCancellationTest(startCli,
+            Collections.singletonList(srv),
+            srv.cache(dfltCacheCfg.getName()),
+            mxBean::cancelSnapshot);
     }
 
     /**
