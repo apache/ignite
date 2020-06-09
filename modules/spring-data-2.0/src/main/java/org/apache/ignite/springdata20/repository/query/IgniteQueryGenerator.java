@@ -17,15 +17,14 @@
 
 package org.apache.ignite.springdata20.repository.query;
 
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.PartTree;
-
-import java.lang.reflect.Method;
-import java.util.Arrays;
 
 /**
  * Ignite query generator for Spring Data framework.

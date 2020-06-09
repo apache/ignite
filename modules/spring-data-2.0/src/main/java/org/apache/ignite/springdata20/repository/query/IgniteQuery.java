@@ -56,6 +56,9 @@ public class IgniteQuery {
         this.option = option;
     }
 
+    /**
+     * @return Entity type class.
+     */
     public Class<?> entityType() {
         return entityType;
     }

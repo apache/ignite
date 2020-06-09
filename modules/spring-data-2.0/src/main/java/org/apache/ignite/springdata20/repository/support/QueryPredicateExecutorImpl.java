@@ -67,48 +67,41 @@ public class QueryPredicateExecutorImpl<T> implements QuerydslPredicateExecutor<
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Optional<T> findOne(Predicate pred) {
+    @Override public Optional<T> findOne(Predicate pred) {
         return executeQuery(prepareSelectQuery(pred), PageRequest.of(0, 1)).stream().findFirst();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Iterable<T> findAll(Predicate pred) {
+    @Override public Iterable<T> findAll(Predicate pred) {
         return executeQuery(prepareSelectQuery(pred));
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Iterable<T> findAll(Predicate pred, Sort sort) {
+    @Override public Iterable<T> findAll(Predicate pred, Sort sort) {
         return executeQuery(prepareSelectQuery(pred), sort);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Iterable<T> findAll(Predicate pred, OrderSpecifier<?>... orders) {
+    @Override public Iterable<T> findAll(Predicate pred, OrderSpecifier<?>... orders) {
         Sort sort = Sort.by(mapQryDslOrderSpecifiersToOrders(orders));
 
         return executeQuery(prepareSelectQuery(pred), sort);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Iterable<T> findAll(OrderSpecifier<?>... orders) {
+    @Override public Iterable<T> findAll(OrderSpecifier<?>... orders) {
         Sort sort = Sort.by(mapQryDslOrderSpecifiersToOrders(orders));
 
         return executeQuery(prepareSqlQuery("SELECT * FROM " + type.getSimpleName()), sort);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Page<T> findAll(Predicate pred, Pageable pageable) {
+    @Override public Page<T> findAll(Predicate pred, Pageable pageable) {
         return new PageImpl<>(executeQuery(prepareSelectQuery(pred), pageable), pageable, 0);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public long count(Predicate pred) {
+    @Override public long count(Predicate pred) {
         SQLSerializer ser = prepareSqlQuery("SELECT COUNT(*) FROM " + type.getSimpleName() + " WHERE ", pred);
 
         SqlFieldsQuery qry = new SqlFieldsQuery(ser.toString());
@@ -120,8 +113,7 @@ public class QueryPredicateExecutorImpl<T> implements QuerydslPredicateExecutor<
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean exists(Predicate pred) {
+    @Override public boolean exists(Predicate pred) {
         return !executeQuery(prepareSelectQuery(pred), PageRequest.of(0, 1)).isEmpty();
     }
 

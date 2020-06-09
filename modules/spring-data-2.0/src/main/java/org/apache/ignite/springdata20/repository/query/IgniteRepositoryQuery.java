@@ -17,6 +17,7 @@
 
 package org.apache.ignite.springdata20.repository.query;
 
+import java.lang.reflect.Method;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -24,8 +25,6 @@ import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
-
-import java.lang.reflect.Method;
 
 import static org.apache.ignite.springdata20.repository.query.QueryUtils.calcReturnType;
 import static org.apache.ignite.springdata20.repository.query.QueryUtils.prepareQuery;

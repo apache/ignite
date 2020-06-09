@@ -17,6 +17,8 @@
 
 package org.apache.ignite.springdata;
 
+import java.util.List;
+import java.util.Optional;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
@@ -29,9 +31,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Tests for query predicate executor implementation.
