@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * TODO remove buffers.
  */
-public class JoinNode<Row> extends AbstractNode<Row> {
+public class InnerJoinNode<Row> extends AbstractNode<Row> {
     /** */
     private final Predicate<Row> cond;
 
@@ -64,7 +64,7 @@ public class JoinNode<Row> extends AbstractNode<Row> {
      * @param ctx Execution context.
      * @param cond Join expression.
      */
-    public JoinNode(ExecutionContext<Row> ctx, Predicate<Row> cond) {
+    public InnerJoinNode(ExecutionContext<Row> ctx, Predicate<Row> cond) {
         super(ctx);
 
         this.cond = cond;
@@ -100,7 +100,7 @@ public class JoinNode<Row> extends AbstractNode<Row> {
 
                 /** {@inheritDoc} */
                 @Override public void onError(Throwable e) {
-                    JoinNode.this.onError(e);
+                    InnerJoinNode.this.onError(e);
                 }
             };
         else if (idx == 1)
@@ -117,7 +117,7 @@ public class JoinNode<Row> extends AbstractNode<Row> {
 
                 /** {@inheritDoc} */
                 @Override public void onError(Throwable e) {
-                    JoinNode.this.onError(e);
+                    InnerJoinNode.this.onError(e);
                 }
             };
 
@@ -130,6 +130,8 @@ public class JoinNode<Row> extends AbstractNode<Row> {
 
         assert downstream != null;
         assert waitingLeft > 0;
+
+        waitingLeft--;
 
         leftInBuf.add(row);
 

@@ -34,15 +34,20 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AntiJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.FullOuterJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.JoinNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.InnerJoinNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.LeftJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ModifyNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.SemiJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
@@ -176,7 +181,49 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         Predicate<Row> cond = expressionFactory.predicate(rel.getCondition(), rowType);
 
-        JoinNode<Row> node = new JoinNode<>(ctx, cond);
+        AbstractNode<Row> node;
+        switch (rel.getJoinType()) {
+            case INNER:
+                node = new InnerJoinNode<>(ctx, cond);
+
+                break;
+
+            case LEFT: {
+                RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRight().getRowType());
+                node = new LeftJoinNode<>(ctx, cond, rowFactory);
+
+                break;
+            }
+
+            case RIGHT: {
+                RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getLeft().getRowType());
+                node = new LeftJoinNode<>(ctx, cond, rowFactory);
+
+                break;
+            }
+
+            case FULL: {
+                RowFactory<Row> leftRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getLeft().getRowType());
+                RowFactory<Row> rightRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRight().getRowType());
+
+                node = new FullOuterJoinNode<>(ctx, cond, leftRowFactory, rightRowFactory);
+
+                break;
+            }
+
+            case SEMI:
+                node = new SemiJoinNode<>(ctx, cond);
+
+                break;
+
+            case ANTI:
+                node = new AntiJoinNode<>(ctx, cond);
+
+                break;
+
+            default:
+                throw new IllegalStateException("Join type \"" + rel.getJoinType() + "\" is not supported yet");
+        }
 
         Node<Row> leftInput = visit(rel.getLeft());
         Node<Row> rightInput = visit(rel.getRight());

@@ -32,6 +32,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -85,7 +86,7 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[]{3, 0, "Core"}
         ));
 
-        JoinNode<Object[]> join = new JoinNode<>(ctx, r -> r[0] == r[4]);
+        InnerJoinNode<Object[]> join = new InnerJoinNode<>(ctx, r -> r[0] == r[4]);
         join.register(F.asList(persons, projects));
 
         ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[0], r[1], r[5]});
@@ -149,6 +150,285 @@ public class ExecutionTest extends AbstractExecutionTest {
             res.add(root.next());
 
         assertEquals(12, res.size());
+    }
+
+    /** */
+    @Test
+    public void testLeftJoin() {
+        //    select e.id, e.name, d.name as dep_name
+        //      from emp e
+        // left join dep d
+        //        on e.depno = d.depno
+
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        ScanNode<Object[]> persons = new ScanNode<>(ctx, Arrays.asList(
+            new Object[]{0, "Igor", 1},
+            new Object[]{1, "Roman", 2},
+            new Object[]{2, "Ivan", null},
+            new Object[]{3, "Alexey", 1}
+        ));
+
+        ScanNode<Object[]> deps = new ScanNode<>(ctx, Arrays.asList(
+            new Object[]{1, "Core"},
+            new Object[]{2, "SQL"}
+        ));
+
+        LeftJoinNode<Object[]> join = new LeftJoinNode<>(
+            ctx,
+            r -> r[2] == r[3],
+            new RowHandler.RowFactory<Object[]>() {
+                @Override public Object[] create() {
+                    return new Object[2];
+                }
+
+                @Override public Object[] create(Object... fields) {
+                    return create();
+                }
+            }
+        );
+        join.register(F.asList(persons, deps));
+
+        ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[0], r[1], r[4]});
+        project.register(join);
+
+        RootNode<Object[]> node = new RootNode<>(ctx, r -> {});
+        node.register(project);
+
+        assert node.hasNext();
+
+        ArrayList<Object[]> rows = new ArrayList<>();
+
+        while (node.hasNext())
+            rows.add(node.next());
+
+        assertEquals(4, rows.size());
+
+        Assert.assertArrayEquals(new Object[]{0, "Igor", "Core"}, rows.get(0));
+        Assert.assertArrayEquals(new Object[]{1, "Roman", "SQL"}, rows.get(1));
+        Assert.assertArrayEquals(new Object[]{2, "Ivan", null}, rows.get(2));
+        Assert.assertArrayEquals(new Object[]{3, "Alexey", "Core"}, rows.get(3));
+    }
+
+    /** */
+    @Test
+    public void testRightJoin() {
+        //     select e.id, e.name, d.name as dep_name
+        //       from dep d
+        // right join emp e
+        //         on e.depno = d.depno
+
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        ScanNode<Object[]> persons = new ScanNode<>(ctx, Arrays.asList(
+            new Object[]{0, "Igor", 1},
+            new Object[]{1, "Roman", 2},
+            new Object[]{2, "Ivan", null},
+            new Object[]{3, "Alexey", 1}
+        ));
+
+        ScanNode<Object[]> deps = new ScanNode<>(ctx, Arrays.asList(
+            new Object[]{1, "Core"},
+            new Object[]{2, "SQL"}
+        ));
+
+        RightJoinNode<Object[]> join = new RightJoinNode<>(
+            ctx,
+            r -> r[0] == r[4],
+            new RowHandler.RowFactory<Object[]>() {
+                @Override public Object[] create() {
+                    return new Object[2];
+                }
+
+                @Override public Object[] create(Object... fields) {
+                    return create();
+                }
+            }
+        );
+        join.register(F.asList(deps, persons));
+
+        ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[2], r[3], r[1]});
+        project.register(join);
+
+        RootNode<Object[]> node = new RootNode<>(ctx, r -> {});
+        node.register(project);
+
+        assert node.hasNext();
+
+        ArrayList<Object[]> rows = new ArrayList<>();
+
+        while (node.hasNext())
+            rows.add(node.next());
+
+        assertEquals(4, rows.size());
+
+        Assert.assertArrayEquals(new Object[]{0, "Igor", "Core"}, rows.get(0));
+        Assert.assertArrayEquals(new Object[]{1, "Roman", "SQL"}, rows.get(1));
+        Assert.assertArrayEquals(new Object[]{2, "Ivan", null}, rows.get(2));
+        Assert.assertArrayEquals(new Object[]{3, "Alexey", "Core"}, rows.get(3));
+    }
+
+    /** */
+    @Test
+    public void testFullOuterJoin() {
+        //          select e.id, e.name, d.name as dep_name
+        //            from emp e
+        // full outer join dep d
+        //              on e.depno = d.depno
+
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        ScanNode<Object[]> persons = new ScanNode<>(ctx, Arrays.asList(
+            new Object[]{0, "Igor", 1},
+            new Object[]{1, "Roman", 2},
+            new Object[]{2, "Ivan", null},
+            new Object[]{3, "Alexey", 1}
+        ));
+
+        ScanNode<Object[]> deps = new ScanNode<>(ctx, Arrays.asList(
+            new Object[]{1, "Core"},
+            new Object[]{2, "SQL"},
+            new Object[]{3, "QA"}
+        ));
+
+        FullOuterJoinNode<Object[]> join = new FullOuterJoinNode<>(
+            ctx,
+            r -> r[2] == r[3],
+            new RowHandler.RowFactory<Object[]>() {
+                @Override public Object[] create() {
+                    return new Object[3];
+                }
+
+                @Override public Object[] create(Object... fields) {
+                    return create();
+                }
+            },
+            new RowHandler.RowFactory<Object[]>() {
+                @Override public Object[] create() {
+                    return new Object[2];
+                }
+
+                @Override public Object[] create(Object... fields) {
+                    return create();
+                }
+            }
+        );
+        join.register(F.asList(persons, deps));
+
+        ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[0], r[1], r[4]});
+        project.register(join);
+
+        RootNode<Object[]> node = new RootNode<>(ctx, r -> {});
+        node.register(project);
+
+        assert node.hasNext();
+
+        ArrayList<Object[]> rows = new ArrayList<>();
+
+        while (node.hasNext())
+            rows.add(node.next());
+
+        assertEquals(5, rows.size());
+
+        Assert.assertArrayEquals(new Object[]{0, "Igor", "Core"}, rows.get(0));
+        Assert.assertArrayEquals(new Object[]{1, "Roman", "SQL"}, rows.get(1));
+        Assert.assertArrayEquals(new Object[]{2, "Ivan", null}, rows.get(2));
+        Assert.assertArrayEquals(new Object[]{3, "Alexey", "Core"}, rows.get(3));
+        Assert.assertArrayEquals(new Object[]{null, null, "QA"}, rows.get(4));
+    }
+
+    /** */
+    @Test
+    public void testSemiJoin() {
+        //    select d.name as dep_name
+        //      from dep d
+        // semi join emp e
+        //        on e.depno = d.depno
+
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        ScanNode<Object[]> persons = new ScanNode<>(ctx, Arrays.asList(
+            new Object[]{0, "Igor", 1},
+            new Object[]{1, "Roman", 2},
+            new Object[]{2, "Ivan", null},
+            new Object[]{3, "Alexey", 1}
+        ));
+
+        ScanNode<Object[]> deps = new ScanNode<>(ctx, Arrays.asList(
+            new Object[]{1, "Core"},
+            new Object[]{2, "SQL"}
+        ));
+
+        SemiJoinNode<Object[]> join = new SemiJoinNode<>(
+            ctx,
+            r -> r[0] == r[4]
+        );
+        join.register(F.asList(deps, persons));
+
+        ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[1]});
+        project.register(join);
+
+        RootNode<Object[]> node = new RootNode<>(ctx, r -> {});
+        node.register(project);
+
+        assert node.hasNext();
+
+        ArrayList<Object[]> rows = new ArrayList<>();
+
+        while (node.hasNext())
+            rows.add(node.next());
+
+        assertEquals(2, rows.size());
+
+        Assert.assertArrayEquals(new Object[]{"Core"}, rows.get(0));
+        Assert.assertArrayEquals(new Object[]{"SQL"}, rows.get(1));
+    }
+
+    /** */
+    @Test
+    public void testAntiJoin() {
+        //    select d.name as dep_name
+        //      from dep d
+        // anti join emp e
+        //        on e.depno = d.depno
+
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        ScanNode<Object[]> persons = new ScanNode<>(ctx, Arrays.asList(
+            new Object[]{0, "Igor", 1},
+            new Object[]{1, "Roman", 2},
+            new Object[]{2, "Ivan", null},
+            new Object[]{3, "Alexey", 1}
+        ));
+
+        ScanNode<Object[]> deps = new ScanNode<>(ctx, Arrays.asList(
+            new Object[]{1, "Core"},
+            new Object[]{2, "SQL"},
+            new Object[]{3, "QA"}
+        ));
+
+        AntiJoinNode<Object[]> join = new AntiJoinNode<>(
+            ctx,
+            r -> r[0] == r[4]
+        );
+        join.register(F.asList(deps, persons));
+
+        ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[1]});
+        project.register(join);
+
+        RootNode<Object[]> node = new RootNode<>(ctx, r -> {});
+        node.register(project);
+
+        assert node.hasNext();
+
+        ArrayList<Object[]> rows = new ArrayList<>();
+
+        while (node.hasNext())
+            rows.add(node.next());
+
+        assertEquals(1, rows.size());
+
+        Assert.assertArrayEquals(new Object[]{"QA"}, rows.get(0));
     }
 
     /** */
