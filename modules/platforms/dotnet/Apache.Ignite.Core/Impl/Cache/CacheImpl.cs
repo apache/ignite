@@ -1623,24 +1623,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (string.IsNullOrEmpty(qry.Sql))
                 throw new ArgumentException("Sql cannot be null or empty");
 
-            return DoOutOpObject((int) CacheOp.QrySqlFields, writer =>
-            {
-                writer.WriteBoolean(qry.Local);
-                writer.WriteString(qry.Sql);
-                writer.WriteInt(qry.PageSize);
-
-                QueryBase.WriteQueryArgs(writer, qry.Arguments);
-
-                writer.WriteBoolean(qry.EnableDistributedJoins);
-                writer.WriteBoolean(qry.EnforceJoinOrder);
-                writer.WriteBoolean(qry.Lazy); // Lazy flag.
-                writer.WriteInt((int) qry.Timeout.TotalMilliseconds);
-#pragma warning disable 618
-                writer.WriteBoolean(qry.ReplicatedOnly);
-#pragma warning restore 618
-                writer.WriteBoolean(qry.Colocated);
-                writer.WriteString(qry.Schema); // Schema
-            });
+            return DoOutOpObject((int) CacheOp.QrySqlFields, writer => qry.Write(writer, false));
         }
 
         /** <inheritDoc /> */

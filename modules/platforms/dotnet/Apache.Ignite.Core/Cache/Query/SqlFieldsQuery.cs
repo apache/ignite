@@ -155,8 +155,21 @@ namespace Apache.Ignite.Core.Cache.Query
         /** <inheritDoc /> */
         internal override void Write(BinaryWriter writer, bool keepBinary)
         {
-            // TODO
-            throw new NotImplementedException();
+            writer.WriteBoolean(Local);
+            writer.WriteString(Sql);
+            writer.WriteInt(PageSize);
+
+            WriteQueryArgs(writer, Arguments);
+
+            writer.WriteBoolean(EnableDistributedJoins);
+            writer.WriteBoolean(EnforceJoinOrder);
+            writer.WriteBoolean(Lazy); // Lazy flag.
+            writer.WriteInt((int) Timeout.TotalMilliseconds);
+#pragma warning disable 618
+            writer.WriteBoolean(ReplicatedOnly);
+#pragma warning restore 618
+            writer.WriteBoolean(Colocated);
+            writer.WriteString(Schema); // Schema
         }
 
         /** <inheritDoc /> */
