@@ -66,6 +66,7 @@ namespace Apache.Ignite.Core.Impl
             Exs["java.lang.IllegalStateException"] = (c, m, e, i) => new InvalidOperationException(m, e);
             Exs["java.lang.UnsupportedOperationException"] = (c, m, e, i) => new NotSupportedException(m, e);
             Exs["java.lang.InterruptedException"] = (c, m, e, i) => new ThreadInterruptedException(m, e);
+            Exs["java.lang.IllegalMonitorStateException"] = (c, m, e, i) => new SynchronizationLockException(m, e);
 
             // Generic Ignite exceptions.
             Exs["org.apache.ignite.IgniteException"] = (c, m, e, i) => new IgniteException(m, e);
@@ -156,7 +157,7 @@ namespace Apache.Ignite.Core.Impl
                 if (match.Success && Exs.TryGetValue(match.Groups[1].Value, out innerCtor))
                 {
                     return ctor(clsName, msg,
-                        innerCtor(match.Groups[1].Value, match.Groups[2].Value, innerException, ignite), 
+                        innerCtor(match.Groups[1].Value, match.Groups[2].Value, innerException, ignite),
                         ignite);
                 }
 
@@ -199,7 +200,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <returns>CachePartialUpdateException.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static Exception ProcessCachePartialUpdateException(IIgniteInternal ignite, string msg, 
+        private static Exception ProcessCachePartialUpdateException(IIgniteInternal ignite, string msg,
             string stackTrace, BinaryReader reader)
         {
             if (reader == null)
