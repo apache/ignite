@@ -23,12 +23,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     /// Continuous query tests for ATOMIC cache with backups.
     /// </summary>
     [TestFixture]
-    public class ContinuousQueryAtomiclBackupTest : ContinuousQueryAbstractTest
+    public class ContinuousQueryAtomicBackupTest : ContinuousQueryAbstractTest
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public ContinuousQueryAtomiclBackupTest() : base(CACHE_ATOMIC_BACKUP)
+        public ContinuousQueryAtomicBackupTest() : base(CACHE_ATOMIC_BACKUP)
         {
             // No-op.
         }

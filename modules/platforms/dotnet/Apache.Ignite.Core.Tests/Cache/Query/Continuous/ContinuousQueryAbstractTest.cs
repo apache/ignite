@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
@@ -103,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                         new BinaryTypeConfiguration(typeof(KeepBinaryFilter))
                     }
                 },
-                SpringConfigUrl = "config\\cache-query-continuous.xml",
+                SpringConfigUrl = Path.Combine("Config", "cache-query-continuous.xml"),
                 IgniteInstanceName = "grid-1"
             };
 
@@ -146,7 +147,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             Console.WriteLine("Test started: " + TestContext.CurrentContext.Test.Name);
         }
-        
+
         /// <summary>
         /// Test arguments validation.
         /// </summary>
@@ -203,7 +204,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             int key1 = PrimaryKey(cache1);
             int key2 = PrimaryKey(cache2);
-            
+
             ContinuousQuery<int, BinarizableEntry> qry = loc ?
                 new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>(), true) :
                 new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
@@ -248,8 +249,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             cache1.Put(key2, Entry(key2));
             CheckNoCallback(100);
-        } 
-        
+        }
+
         /// <summary>
         /// Test Ignite injection into callback.
         /// </summary>
@@ -265,7 +266,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.IsNotNull(cb.ignite);
             }
         }
-        
+
         /// <summary>
         /// Test binarizable filter logic.
         /// </summary>
@@ -309,8 +310,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             ICacheEntryEventFilter<int, BinarizableEntry> filter =
                 binarizable ? (AbstractFilter<BinarizableEntry>) new BinarizableFilter() : new SerializableFilter();
 
-            ContinuousQuery<int, BinarizableEntry> qry = loc ? 
-                new ContinuousQuery<int, BinarizableEntry>(lsnr, filter, true) : 
+            ContinuousQuery<int, BinarizableEntry> qry = loc ?
+                new ContinuousQuery<int, BinarizableEntry>(lsnr, filter, true) :
                 new ContinuousQuery<int, BinarizableEntry>(lsnr, filter);
 
             using (cache1.QueryContinuous(qry))
@@ -494,7 +495,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             CheckFilterUnmarshalError(true);
         }
-        
+
         /// <summary>
         /// Test serializable filter unmarshalling error.
         /// </summary>
@@ -525,7 +526,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 int key1 = PrimaryKey(cache1);
                 cache1.GetAndPut(key1, Entry(key1));
                 CheckFilterSingle(key1, null, Entry(key1));
-                
+
                 // Remote put must fail.
                 Assert.Throws<IgniteException>(() => cache1.GetAndPut(PrimaryKey(cache2), Entry(1)));
             }
@@ -681,9 +682,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 cache1.GetAndPut(rmtKeys[0], Entry(rmtKeys[0]));
 
                 CheckNoCallback(100);
-                
+
                 cache1.GetAndPut(rmtKeys[1], Entry(rmtKeys[1]));
-                
+
                 CallbackEvent evt;
 
                 Assert.IsTrue(CB_EVTS.TryTake(out evt, 1000));
@@ -770,24 +771,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             // Sql query, GetAll
             TestInitialQuery(new SqlQuery(typeof(BinarizableEntry), "val < 33"), cur => cur.GetAll());
-            
+
             // Sql query, iterator
             TestInitialQuery(new SqlQuery(typeof(BinarizableEntry), "val < 33"), cur => cur.ToList());
 
             // Text query, GetAll
             TestInitialQuery(new TextQuery(typeof(BinarizableEntry), "1*"), cur => cur.GetAll());
-            
+
             // Text query, iterator
             TestInitialQuery(new TextQuery(typeof(BinarizableEntry), "1*"), cur => cur.ToList());
-            
+
             // Fields query, GetAll
             // select _T0._KEY, _T0._VAL from "atomic_backup".BINARIZABLEENTRY as _T0 where (_T0.VAL < ?)
             // var sql = cache1.AsCacheQueryable().Where(e => e.Value.val < 33).ToCacheQueryable().GetFieldsQuery().Sql;
             TestInitialQuery(new SqlFieldsQuery("select _key, _val from BINARIZABLEENTRY where val < 33"), cur => cur.GetAll());
-            
+
             // Fields query, iterator
             TestInitialQuery(new SqlFieldsQuery("val < 33"), cur => cur.ToList());
-            
+
             // TODO: Test fields query with wrong field types
             // TODO: Can we allow LINQ as initial query?
 
@@ -801,7 +802,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Tests the initial query.
         /// </summary>
-        private void TestInitialQuery(QueryBase initialQry, Func<IQueryCursor<ICacheEntry<int, BinarizableEntry>>, 
+        private void TestInitialQuery(QueryBase initialQry, Func<IQueryCursor<ICacheEntry<int, BinarizableEntry>>,
             IEnumerable<ICacheEntry<int, BinarizableEntry>>> getAllFunc)
         {
             var qry = new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
@@ -813,7 +814,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             try
             {
                 IContinuousQueryHandle<ICacheEntry<int, BinarizableEntry>> contQry;
-                
+
                 using (contQry = cache1.QueryContinuous(qry, initialQry))
                 {
                     // Check initial query
@@ -1124,7 +1125,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             [InstanceResource]
             public IIgnite ignite;
-            
+
             /** <inheritDoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<int, V>> evts)
             {
