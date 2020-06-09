@@ -24,8 +24,10 @@ import java.util.TreeMap;
 import javax.cache.Cache;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.model.Person;
+import org.apache.ignite.examples.model.QPerson;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 /**
  * The example demonstrates how to interact with an Apache Ignite cluster by means of Spring Data API.
@@ -56,6 +58,8 @@ public class SpringDataExample {
         findPersons();
 
         queryRepository();
+
+        queryWithPredicates();
 
         System.out.println("\n>>> Cleaning out the repository...");
 
@@ -131,7 +135,7 @@ public class SpringDataExample {
      * Execute advanced queries over the repository.
      */
     private static void queryRepository() {
-        System.out.println("\n>>> Persons with name 'John':");
+        System.out.println("\n>>> Persons with name 'John' and 'Brad':");
 
         List<Person> persons = repo.findByFirstName("John");
 
@@ -148,5 +152,31 @@ public class SpringDataExample {
 
         for (Long id: ids)
             System.out.println("   >>>   [id=" + id + "]");
+    }
+
+    /**
+     * Execute queries with predicates over the repository.
+     */
+    private static void queryWithPredicates() {
+        System.out.println("\n>>> Persons with name 'John' or 'Brad':");
+
+        Iterable<Person> persons = repo.findAll(
+            QPerson.person.firstName.eq("John")
+                .or(
+                    QPerson.person.firstName.eq("Brad")
+                )
+        );
+
+        for (Person person: persons)
+            System.out.println("   >>>   " + person);
+
+        Iterable<Person> personsSortedBySalary = repo.findAll(
+            QPerson.person.salary.gt(15000), Sort.by(Sort.Order.desc("salary"))
+        );
+
+        System.out.println("\n>>> Person with with salary > 15000 and sorted by salary: ");
+
+        for (Person person: personsSortedBySalary)
+            System.out.println("   >>>   " + person);
     }
 }

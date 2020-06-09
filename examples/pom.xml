@@ -388,6 +388,24 @@
                     </additionalDependencies>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>com.mysema.maven</groupId>
+                <artifactId>apt-maven-plugin</artifactId>
+                <version>${apt-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>generate-source-entities</id>
+                        <goals>
+                            <goal>process</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>target/generated-sources/java</outputDirectory>
+                            <processor>com.querydsl.apt.QuerydslAnnotationProcessor</processor>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

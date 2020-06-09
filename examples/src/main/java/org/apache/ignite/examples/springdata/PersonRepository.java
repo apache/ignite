@@ -24,6 +24,7 @@ import org.apache.ignite.springdata20.repository.IgniteRepository;
 import org.apache.ignite.springdata20.repository.config.Query;
 import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 
 /**
  * Apache Ignite Spring Data repository backed by Ignite Person's cache.
@@ -31,7 +32,7 @@ import org.springframework.data.domain.Pageable;
  * To link the repository with an Ignite cache use {@link RepositoryConfig#cacheName()} annotation's parameter.
  */
 @RepositoryConfig(cacheName = "PersonCache")
-public interface PersonRepository extends IgniteRepository<Person, Long> {
+public interface PersonRepository extends IgniteRepository<Person, Long>, QuerydslPredicateExecutor<Person> {
     /**
      * Gets all the persons with the given name.
      * @param name Person name.

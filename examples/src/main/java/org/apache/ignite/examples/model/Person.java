@@ -19,6 +19,7 @@ package org.apache.ignite.examples.model;
 
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicLong;
+import com.querydsl.core.annotations.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
@@ -26,6 +27,7 @@ import org.apache.ignite.cache.query.annotations.QueryTextField;
 /**
  * Person class.
  */
+@QueryEntity
 public class Person implements Serializable {
     /** */
     private static final AtomicLong ID_GEN = new AtomicLong();
