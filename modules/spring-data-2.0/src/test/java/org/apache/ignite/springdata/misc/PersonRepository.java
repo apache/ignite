@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,14 +20,14 @@ package org.apache.ignite.springdata.misc;
 import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
+import org.apache.ignite.springdata20.repository.IgniteRepository;
 import org.apache.ignite.springdata20.repository.config.Query;
 import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.apache.ignite.springdata20.repository.IgniteRepository;
 
 /**
- *
+ * Test repository.
  */
 @RepositoryConfig(cacheName = "PersonCache")
 public interface PersonRepository extends IgniteRepository<Person, Integer> {

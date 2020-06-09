@@ -364,7 +364,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        public Object[] testBinarizableArray(Object[] arg) {
+        public Object[] testBinarizableArrayOfObjects(Object[] arg) {
             if (arg == null)
                 return null;
 
@@ -372,6 +372,22 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
                 arg[i] = arg[i] == null
                     ? null
                     : new PlatformComputeBinarizable(((PlatformComputeBinarizable)arg[i]).field + 1);
+
+            return arg;
+        }
+
+        /** */
+        public PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] arg) {
+            return (PlatformComputeBinarizable[])testBinarizableArrayOfObjects(arg);
+        }
+
+        /** */
+        public BinaryObject[] testBinaryObjectArray(BinaryObject[] arg) {
+            for (int i = 0; i < arg.length; i++) {
+                int field = arg[i].field("Field");
+
+                arg[i] = arg[i].toBuilder().setField("Field", field + 1).build();
+            }
 
             return arg;
         }

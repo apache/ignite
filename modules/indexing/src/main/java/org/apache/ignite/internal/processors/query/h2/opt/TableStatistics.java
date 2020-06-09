@@ -31,7 +31,7 @@ public class TableStatistics {
      * @param primaryRowCnt Primary parts row count.
      */
     public TableStatistics(long totalRowCnt, long primaryRowCnt) {
-        assert totalRowCnt >= 0 && primaryRowCnt >= 0;
+        assert totalRowCnt >= 0 && primaryRowCnt >= 0 : "totalRowCnt=" + totalRowCnt + ", primaryRowCnt=" + primaryRowCnt;
 
         this.totalRowCnt = totalRowCnt;
         this.primaryRowCnt = primaryRowCnt;
