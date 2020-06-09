@@ -115,10 +115,10 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         connectionRecoveryTimeout = 0;
 
         // Makes test faster. Also the value is closer to previous fixed ping rate 500ms.
-        failureDetectionTimeout = 800;
+        failureDetectionTimeout = 700;
 
         // A message traffic.
-        metricsUpdateFreq = 700;
+        metricsUpdateFreq = failureDetectionTimeout;
 
         // Avoid useless arns. We do block threadf specually.
         systemWorkerBlockedTimeout = 5000L;
