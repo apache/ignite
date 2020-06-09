@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.NoopConsole;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -108,5 +110,22 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
         assertEquals(EXIT_CODE_OK, cmd.execute(args));
         assertEquals(1, keyStorePwdCnt.get());
         assertEquals(1, trustStorePwdCnt.get());
+    }
+
+    /**
+     * Checks that control.sh script can connect to the cluster, that has SSL enabled.
+     */
+    @Test
+    public void testConnector() {
+        CommandHandler hnd = new CommandHandler();
+
+        int exitCode = hnd.execute(Arrays.asList(
+            "--state",
+            "--keystore", GridTestUtils.keyStorePath("connectorClient"),
+            "--keystore-password", GridTestUtils.keyStorePassword(),
+            "--truststore", GridTestUtils.keyStorePath("trustthree"),
+            "--truststore-password", GridTestUtils.keyStorePassword()));
+
+        assertEquals(EXIT_CODE_OK, exitCode);
     }
 }

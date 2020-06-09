@@ -2174,7 +2174,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Conflicts result.
      * @throws IgniteException If none caches or node found.
      */
-    protected IdleVerifyResultV2 idleVerify(Ignite ig, String... caches) {
+    protected IdleVerifyResultV2 idleVerify(Ignite ig, @Nullable String... caches) {
         IgniteEx ig0 = (IgniteEx)ig;
 
         Set<String> cacheNames = new HashSet<>();
