@@ -57,6 +57,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -1678,6 +1679,25 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         l.close();
 
         ignite.close();
+    }
+
+    /**
+     * Tests that closed lock throws meaningful exception.
+     */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13128")
+    public void testClosedLockThrowsIgniteException() {
+        final String lockName = "testRemovedLockThrowsIgniteException";
+
+        Ignite srv = ignite(0);
+
+        IgniteLock lock1 = srv.reentrantLock(lockName, false, false, true);
+        IgniteLock lock2 = srv.reentrantLock(lockName, false, false, true);
+
+        lock1.close();
+
+        //noinspection ThrowableNotThrown
+        GridTestUtils.assertThrows(log, lock2::lock, IgniteException.class, "TODO");
     }
 
     /** {@inheritDoc} */
