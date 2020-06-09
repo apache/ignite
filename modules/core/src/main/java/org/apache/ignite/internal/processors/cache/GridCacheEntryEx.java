@@ -1031,6 +1031,17 @@ public interface GridCacheEntryEx {
     public void unlockEntry();
 
     /**
+     * Locks entry to protect from concurrent access. Intended to be used instead of inherent java synchronization. This
+     * allows to separate locking from unlocking in time and/or code units.
+     *
+     * @param timeout period of waiting in millis;
+     * @return {@code true} if the lock was free and was acquired by the current thread, or the lock was already held by
+     * the current thread; and {@code false} if the waiting time elapsed before the lock could be acquired
+     * @see GridCacheEntryEx#unlockEntry().
+     */
+    public boolean tryLockEntry(long timeout);
+
+    /**
      * Tests whether the entry is locked currently.
      *
      * @see GridCacheEntryEx#lockEntry().

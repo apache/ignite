@@ -94,14 +94,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        lockEntry();
-
-        try {
-            return S.toString(GridDhtDetachedCacheEntry.class, this, "super", super.toString());
-        }
-        finally {
-            unlockEntry();
-        }
+        return toStringWithTryLock(() -> S.toString(GridDhtDetachedCacheEntry.class, this, "super", super.toString()));
     }
 
     /** {@inheritDoc} */
