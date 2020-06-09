@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
@@ -97,9 +96,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     private int failureDetectionTimeout = 2_000;
 
     /** */
-    private int metricsUpdateFreq = 1_000;
-
-    /** */
     private Long systemWorkerBlockedTimeout;
 
     /** {@inheritDoc} */
@@ -122,8 +118,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             spi.setConnectionRecoveryTimeout(connectionRecoveryTimeout);
 
         cfg.setFailureDetectionTimeout(failureDetectionTimeout);
-
-        cfg.setMetricsUpdateFrequency(metricsUpdateFreq);
 
         cfg.setSystemWorkerBlockedTimeout(systemWorkerBlockedTimeout);
 
@@ -204,14 +198,42 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             failedNodes.isEmpty());
     }
 
-    /** Checks node get failed, segmented within failureDetectionTimeout + connectionRecoveryTimeout. */
+    /**
+     * Checks node get failed, segmented within failureDetectionTimeout + connectionRecoveryTimeout with some small
+     * timeouts.
+     */
     @Test
-    public void testConnectionRecoveryTimeout() throws Exception {
+    public void testConnectionRecoveryTimeoutSmallValues() throws Exception {
+        checkConnectionRecoveryTimeout(200, 300, 100);
+    }
+
+    /**
+     * Checks node get failed, segmented within failureDetectionTimeout + connectionRecoveryTimeout with some medium
+     * timeouts.
+     */
+    @Test
+    public void testConnectionRecoveryTimeoutMediumValues() throws Exception {
+        checkConnectionRecoveryTimeout(400, 500, 100);
+    }
+
+    /**
+     * Checks node get failed, segmented within failureDetectionTimeout + connectionRecoveryTimeout with relatively
+     * long timeouts.
+     */
+    @Test
+    public void testConnectionRecoveryTimeoutLongValues() throws Exception {
+        checkConnectionRecoveryTimeout(1000, 1000, 100);
+    }
+
+    /** Checks node get failed, segmented within failureDetectionTimeout + connectionRecoveryTimeout. */
+    void checkConnectionRecoveryTimeout(int minTimeout, int maxTimeout, int step) throws Exception {
         // Avoid useless warnings. We do block threads specially.
         systemWorkerBlockedTimeout = 5_000L;
 
-        for (failureDetectionTimeout = 200; failureDetectionTimeout <= 200; failureDetectionTimeout += 200) {
-            for (connectionRecoveryTimeout = 200; connectionRecoveryTimeout <= 200; connectionRecoveryTimeout += 200) {
+        for (failureDetectionTimeout = minTimeout; failureDetectionTimeout <= maxTimeout;
+            failureDetectionTimeout += step) {
+            for (connectionRecoveryTimeout = minTimeout; connectionRecoveryTimeout <= maxTimeout;
+                connectionRecoveryTimeout += step) {
                 AtomicLong timer = new AtomicLong();
 
                 startGrids(2);

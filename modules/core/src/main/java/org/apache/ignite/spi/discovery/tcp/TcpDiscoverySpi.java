@@ -2483,13 +2483,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 // Close socket - timeout occurred.
                 U.closeQuiet(sock);
 
-                LT.warn(log, "Socket write has timed out (consider increasing " +
+                             LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
-                        "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
-                        "failureDetectionTimeout=" + failureDetectionTimeout() :
-                        "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout) +
-                    ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() +
-                    ", sockTimeout=" + sockTimeout + ']');
+                        "'IgniteConfiguration.failureDetectionTimeout' and 'connRecoveryTimeout' configuration " +
+                            "properties) [failureDetectionTimeout=" + failureDetectionTimeout() :
+                        "'sockTimeout' and 'connRecoveryTimeout' configuration properties) [sockTimeout="
+                            + sockTimeout) + ", connRecoveryTimeout=" + getConnectionRecoveryTimeout() + ", rmtAddr="
+                    + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ", sockTimeout=" + sockTimeout
+                    + ']');
 
                 stats.onSocketTimeout();
             }
