@@ -29,9 +29,9 @@ public interface IgniteProfilingMBean {
     /**
      * Start profiling in the cluster with default settings.
      *
-     * @see LogFileProfiling#DFLT_FILE_MAX_SIZE
-     * @see LogFileProfiling#DFLT_BUFFER_SIZE
-     * @see LogFileProfiling#DFLT_FLUSH_SIZE
+     * @see FileProfiling#DFLT_FILE_MAX_SIZE
+     * @see FileProfiling#DFLT_BUFFER_SIZE
+     * @see FileProfiling#DFLT_FLUSH_SIZE
      */
     @MXBeanDescription("Start profiling in the cluster.")
     public void startProfiling() throws IgniteCheckedException;

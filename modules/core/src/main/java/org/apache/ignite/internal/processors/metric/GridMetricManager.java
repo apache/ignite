@@ -52,15 +52,15 @@ import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.profiling.LogFileProfiling;
+import org.apache.ignite.internal.profiling.FileProfiling;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -242,7 +242,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private final MemoryUsageMetrics nonHeap;
 
     /** Profiling. */
-    private final LogFileProfiling profiling;
+    private final FileProfiling profiling;
 
     /**
      * @param ctx Kernal context.
@@ -282,7 +282,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
 
-        profiling = new LogFileProfiling(ctx);
+        profiling = new FileProfiling(ctx);
     }
 
     /** {@inheritDoc} */
@@ -791,7 +791,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /** @return Profiling. */
-    public LogFileProfiling profiling() {
+    public FileProfiling profiling() {
         return profiling;
     }
 
@@ -926,7 +926,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** Job to start/stop profiling. */
     @GridInternal
-    private static class ProfilingJob implements IgniteClosure<T4<Boolean, Long, Integer, Integer>, Void> {
+    private static class ProfilingJob extends CX1<T4<Boolean, Long, Integer, Integer>, Void> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -935,11 +935,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         private transient IgniteEx ignite;
 
         /** @param t Tuple with settings. */
-        @Override public Void apply(T4<Boolean, Long, Integer, Integer> t) {
+        @Override public Void applyx(T4<Boolean, Long, Integer, Integer> t) throws IgniteCheckedException {
             if (t.get1())
                 ignite.context().metric().profiling().startProfiling(t.get2(), t.get3(), t.get4());
             else
-                ignite.context().metric().profiling().stopProfiling();
+                ignite.context().metric().profiling().stopProfiling().get();
 
             return null;
         }

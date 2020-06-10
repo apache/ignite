@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.NonCollocatedRetry
 import org.apache.ignite.internal.processors.query.h2.twostep.NoneOrSinglePartitionsQueryOptimizationsTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
+import org.apache.ignite.internal.profiling.ProfilingQueryTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 

@@ -21,9 +21,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
-import static org.apache.ignite.internal.profiling.LogFileProfiling.DFLT_BUFFER_SIZE;
-import static org.apache.ignite.internal.profiling.LogFileProfiling.DFLT_FILE_MAX_SIZE;
-import static org.apache.ignite.internal.profiling.LogFileProfiling.DFLT_FLUSH_SIZE;
+import static org.apache.ignite.internal.profiling.FileProfiling.DFLT_BUFFER_SIZE;
+import static org.apache.ignite.internal.profiling.FileProfiling.DFLT_FILE_MAX_SIZE;
+import static org.apache.ignite.internal.profiling.FileProfiling.DFLT_FLUSH_SIZE;
 
 /**
  * {@link IgniteProfilingMBean} implementation.

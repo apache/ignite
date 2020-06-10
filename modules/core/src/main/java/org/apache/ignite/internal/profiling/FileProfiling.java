@@ -54,17 +54,9 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Each node collects statistics to a profiling file placed under {@link #PROFILING_DIR}.
  * <p>
- * To build the performance report follow:
- * <ol>
- *     <li>Start profiling. See {@link #startProfiling(long, int, int)}</li>
- *     <li>Collect workload statistics.</li>
- *     <li>Stop profiling. See {@link #stopProfiling()}</li>
- *     <li>Collect profiling files from all nodes under an empty directory.</li>
- *     <li>Run script {@code ./bin/profiling.sh path_to_files} to build the performance report.</li>
- * </ol>
  * <b>Note:</b> Start profiling again will erase previous profiling files.
  */
-public class LogFileProfiling implements IgniteProfiling {
+public class FileProfiling implements IgniteProfiling {
     /** Default Maximum file size in bytes. Profiling will be stopped when the size exceeded. */
     public static final long DFLT_FILE_MAX_SIZE = 16 * 1024 * 1024 * 1024L;
 
@@ -93,7 +85,7 @@ public class LogFileProfiling implements IgniteProfiling {
     private final IgniteLogger log;
 
     /** @param ctx Kernal context. */
-    public LogFileProfiling(GridKernalContext ctx) {
+    public FileProfiling(GridKernalContext ctx) {
         log = ctx.log(getClass());
 
         this.ctx = ctx;

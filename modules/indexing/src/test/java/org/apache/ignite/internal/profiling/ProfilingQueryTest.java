@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.profiling;
 
 import java.util.Collections;
 import org.apache.ignite.IgniteCache;
@@ -23,27 +23,21 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.regex.Pattern.compile;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.internal.profiling.LogFileProfiling.PROFILING_DIR;
 
-/** Tests profiling of query reads. */
-public class ProfilingQueryReadsTest extends GridCommonAbstractTest {
-    /** Log listen timeout. */
-    public static final long TIMEOUT = 30_000L;
-
+/** Tests query profiling. */
+public class ProfilingQueryTest extends AbstractProfilingTest {
     /** Cache entry count. */
     private static final int ENTRY_COUNT = 100;
 
@@ -107,19 +101,13 @@ public class ProfilingQueryReadsTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < ENTRY_COUNT; i++)
             cache.put(i, i);
-
-        new TestProfilingLogReader(grid(0), log0).startRead();
-        new TestProfilingLogReader(grid(1), log1).startRead();
-        new TestProfilingLogReader(client, clientLog).startRead();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids(true);
+        super.afterTestsStopped();
 
         cleanPersistenceDir();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PROFILING_DIR, false));
     }
 
     /** {@inheritDoc} */
@@ -134,47 +122,40 @@ public class ProfilingQueryReadsTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSqlFieldsQuery() throws Exception {
-        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM " + DEFAULT_CACHE_NAME)
+        String sql = "SELECT * FROM " + DEFAULT_CACHE_NAME;
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql)
             .setSchema(DEFAULT_CACHE_NAME);
 
-        checkQuery(qry);
+        checkQuery(qry, sql);
     }
 
     /** */
     @Test
     public void testScanQuery() throws Exception {
-        checkQuery(new ScanQuery<>());
-    }
-
-    /** */
-    @Test
-    public void testSqlQuery() throws Exception {
-        SqlQuery<Integer, Integer> qry = new SqlQuery<>(Integer.class, "_key >= 0");
-
-        // Deprecated SQL query executes as SQL_FIELDS query.
-        checkQuery(qry);
+        checkQuery(new ScanQuery<>(), DEFAULT_CACHE_NAME);
     }
 
     /** Check query. */
-    private void checkQuery(Query<?> qry) throws Exception {
+    private void checkQuery(Query<?> qry, String text) throws Exception {
         client.cluster().state(INACTIVE);
         client.cluster().state(ACTIVE);
 
         LogListener lsnr0 = readsListener(true, true);
         LogListener lsnr1 = readsListener(true, true);
-        LogListener clientLsnr = LogListener.matches("query ").times(1).build();
+        LogListener clientLsnr = LogListener.matches("query ").andMatches("text=" + text).times(1).build();
 
         log0.registerListener(lsnr0);
         log1.registerListener(lsnr1);
         clientLog.registerListener(clientLsnr);
 
+        startProfiling();
+
         int size = cache.query(qry).getAll().size();
 
         assertEquals(ENTRY_COUNT, size);
 
-        assertTrue(lsnr0.check(TIMEOUT));
-        assertTrue(lsnr1.check(TIMEOUT));
-        assertTrue(clientLsnr.check(TIMEOUT));
+        stopProfilingAndCheck(lsnr0, lsnr1, clientLsnr);
 
         lsnr0 = readsListener(true, false);
         lsnr1 = readsListener(true, false);
@@ -183,13 +164,13 @@ public class ProfilingQueryReadsTest extends GridCommonAbstractTest {
         log0.registerListener(lsnr0);
         log1.registerListener(lsnr1);
 
+        startProfiling();
+
         size = cache.query(qry).getAll().size();
 
         assertEquals(ENTRY_COUNT, size);
 
-        assertTrue(lsnr0.check(TIMEOUT));
-        assertTrue(lsnr1.check(TIMEOUT));
-        assertTrue(clientLsnr.check(TIMEOUT));
+        stopProfilingAndCheck(lsnr0, lsnr1, clientLsnr);
     }
 
     /** @return Log listener for given reads. */

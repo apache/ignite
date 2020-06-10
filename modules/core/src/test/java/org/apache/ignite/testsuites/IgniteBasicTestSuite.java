@@ -104,6 +104,8 @@ import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSel
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtilsTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.profiling.ProfilingMBeanSelfTest;
+import org.apache.ignite.internal.profiling.ProfilingSelfTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
 import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
@@ -296,7 +298,10 @@ import org.junit.runners.Suite;
 
     ClusterActivationStartedEventTest.class,
 
-    IgniteThreadGroupNodeRestartTest.class
+    IgniteThreadGroupNodeRestartTest.class,
+
+    ProfilingSelfTest.class,
+    ProfilingMBeanSelfTest.class
 })
 public class IgniteBasicTestSuite {
 }

@@ -17,7 +17,7 @@
 
 /**
  * <!-- Package description. -->
- * Profiling files parser.
+ * Ignite profiling tests.
  */
 
 package org.apache.ignite.internal.profiling;
