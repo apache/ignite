@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Cursor for fields query, but returns cache entries.
@@ -41,24 +42,21 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <summary>
         /// Reads the cache entry.
         /// </summary>
-        private static CacheEntry<TK, TV> ReadEntry(IBinaryRawReader r)
+        private static CacheEntry<TK, TV> ReadEntry(BinaryReader r)
         {
-            var arr = r.ReadArray<object>();
+            // Reading and skipping row size in bytes.
+            r.ReadInt();
 
-            if (arr == null)
-            {
-                // TODO: Better exception that explains what to do.
-                throw new IgniteException("Query is expected to return cache entry, but returned null");
-            }
+            var cnt = r.ReadInt();
 
-            if (arr.Length != 2)
+            if (cnt != 2)
             {
                 // TODO: Better exception that explains what to do.
                 throw new IgniteException(
-                    "Query is expected to return _key and _val, but returns " + arr.Length + "items");
+                    "Query is expected to return _key and _val, but returns " + cnt + "items");
             }
 
-            return new CacheEntry<TK, TV>((TK) arr[0], (TV) arr[1]);
+            return new CacheEntry<TK, TV>(r.ReadObject<TK>(), r.ReadObject<TV>());
         }
     }
 }
