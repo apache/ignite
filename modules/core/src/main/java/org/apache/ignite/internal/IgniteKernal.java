@@ -1460,7 +1460,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             if (longOpDumpTimeout > 0) {
                 longOpDumpTask = ctx.timeout().schedule(
-                    () -> ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout),
+                    () -> ctx.closure().runLocalSafe(
+                        () -> ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout)),
                     longOpDumpTimeout,
                     longOpDumpTimeout
                 );

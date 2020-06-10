@@ -300,26 +300,23 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     public void testDumpLongRunningOperationDoesntBlockTimeoutWorker() throws Exception {
         long longOpsDumpTimeout = 100;
 
+        withSystemProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,String.valueOf(longOpsDumpTimeout));
+
         IgniteEx ignite = startGrid(0);
 
         IgniteCache cache = ignite.createCache(new CacheConfiguration<>("txCache").
             setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-
-        ignite.transactions().txStart(PESSIMISTIC, SERIALIZABLE);
-
-        cache.put(1, 1);
-
-        // Wait for some time for transaction to be considered as long running.
-        Thread.sleep(longOpsDumpTimeout * 2);
 
         // That will allow to block dumpLongRunningTransaction on line
         // {@code ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);}
         ignite.context().gateway().writeLock();
 
         try {
-            ignite.context().cache().context().tm().longOperationsDumpTimeout(100);
+            ignite.transactions().txStart(PESSIMISTIC, SERIALIZABLE);
 
-            // Wait for some time to guarantee start dumping long running transaction.
+            cache.put(1, 1);
+
+            // Wait for some time for transaction to be considered as long running.
             Thread.sleep(longOpsDumpTimeout * 2);
 
             AtomicBoolean schedulerAssertionFlag = new AtomicBoolean(false);
