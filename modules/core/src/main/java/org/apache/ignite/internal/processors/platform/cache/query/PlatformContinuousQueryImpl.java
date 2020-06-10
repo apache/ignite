@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 /**
  * Interop continuous query handle.
  */
+@SuppressWarnings("rawtypes")
 public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     /** */
     private static final long serialVersionUID = 0L;
@@ -138,7 +139,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                 ContinuousQuery qry = new ContinuousQuery();
 
                 qry.setLocalListener(this);
+
+                //noinspection deprecation
                 qry.setRemoteFilter(this); // Filter must be set always for correct resource release.
+
                 qry.setPageSize(bufSize);
                 qry.setTimeInterval(timeInterval);
                 qry.setAutoUnsubscribe(autoUnsubscribe);
