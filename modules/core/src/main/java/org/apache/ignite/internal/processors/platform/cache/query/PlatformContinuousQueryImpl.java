@@ -293,10 +293,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
         if (ptr != 0) {
             long ptr0 = ptr;
 
+            ptr = 0;
+
             if (cursor != null)
                 cursor.close();
-
-            ptr = 0;
 
             platformCtx.gateway().continuousQueryFilterRelease(ptr0);
         }

@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <summary>
         /// Reads the cache entry.
         /// </summary>
-        private static CacheEntry<TK, TV> ReadEntry(BinaryReader r)
+        private static CacheEntry<TK, TV> ReadEntry(IBinaryRawReader r)
         {
             // Reading and skipping row size in bytes.
             r.ReadInt();
@@ -51,9 +51,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
             if (cnt != 2)
             {
-                // TODO: Better exception that explains what to do.
                 throw new IgniteException(
-                    "Query is expected to return _key and _val, but returns " + cnt + "items");
+                    "SqlFieldsQuery should return _key and _val fields ('select _key, _val from ...'), " +
+                    string.Format("but returns {0} field(s)", cnt));
             }
 
             return new CacheEntry<TK, TV>(r.ReadObject<TK>(), r.ReadObject<TV>());

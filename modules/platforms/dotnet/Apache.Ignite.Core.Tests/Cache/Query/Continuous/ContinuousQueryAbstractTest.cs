@@ -814,10 +814,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             // Valid SQL query that does not return _key and _val.
             ex = Assert.Throws<IgniteException>(() => TestInitialQuery(
-                new SqlFieldsQuery("select _key, _val, val from BINARIZABLEENTRY where val < 33"),
+                new SqlFieldsQuery("select val from BINARIZABLEENTRY where val < 33"),
                 cur => cur.GetAll()));
 
-            Assert.AreEqual("a", ex.Message);
+            Assert.AreEqual("SqlFieldsQuery should return _key and _val fields ('select _key, _val from ...'), " +
+                            "but returns 1 field(s)", ex.Message);
         }
 
         /// <summary>
