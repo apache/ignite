@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
@@ -196,6 +197,19 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** <inheritdoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> GetInitialQueryCursor()
         {
+            return GetInitialQueryCursorInternal<IQueryCursor<ICacheEntry<TK, TV>>>(cur =>
+            {
+                if (_initialQueryIsFields)
+                {
+                    return new FieldsCacheEntryQueryCursor<TK, TV>(cur, _keepBinary);
+                }
+
+                return new QueryCursor<TK, TV>(cur, _keepBinary);
+            });
+        }
+
+        private T GetInitialQueryCursorInternal<T>(Func<IPlatformTargetInternal, T> factory)
+        {
             lock (this)
             {
                 if (_disposed)
@@ -208,13 +222,19 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 
                 _nativeInitialQueryCursor = null;
 
-                if (_initialQueryIsFields)
-                {
-                    return new FieldsCacheEntryQueryCursor<TK, TV>(cur, _keepBinary);
-                }
-
-                return new QueryCursor<TK, TV>(cur, _keepBinary);
+                return factory(cur);
             }
+        }
+
+        public IFieldsQueryCursor GetInitialFieldsQueryCursor()
+        {
+            if (!_initialQueryIsFields)
+            {
+                throw new IgniteException("Initial query is not SqlFieldsQuery");
+            }
+
+            return GetInitialQueryCursorInternal<IFieldsQueryCursor>(
+                cur => new FieldsQueryCursor(cur, _keepBinary));
         }
 
         /** <inheritdoc /> */

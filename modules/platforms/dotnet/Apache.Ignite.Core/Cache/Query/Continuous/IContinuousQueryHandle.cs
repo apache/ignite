@@ -57,6 +57,6 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// <returns>Initial query cursor.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
             Justification = "Semantics: result differs from call to call.")]
-        IQueryCursor<IList> GetInitialFieldsQueryCursor();
+        IFieldsQueryCursor GetInitialFieldsQueryCursor();
     }
 }
