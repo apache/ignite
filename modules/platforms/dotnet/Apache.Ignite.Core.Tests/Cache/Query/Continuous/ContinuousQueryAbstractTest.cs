@@ -34,7 +34,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Resource;
-    using Apache.Ignite.Linq;
     using NUnit.Framework;
 
     /// <summary>
@@ -915,9 +914,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="timeout">Timeout.</param>
         private static void CheckNoFilter(int timeout)
         {
-            FilterEvent evt;
+            FilterEvent _;
 
-            Assert.IsFalse(FILTER_EVTS.TryTake(out evt, timeout));
+            Assert.IsFalse(FILTER_EVTS.TryTake(out _, timeout));
         }
 
         /// <summary>
@@ -950,9 +949,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="timeout">Timeout.</param>
         private void CheckNoCallback(int timeout)
         {
-            CallbackEvent evt;
+            CallbackEvent _;
 
-            Assert.IsFalse(CB_EVTS.TryTake(out evt, timeout));
+            Assert.IsFalse(CB_EVTS.TryTake(out _, timeout));
         }
 
         /// <summary>
