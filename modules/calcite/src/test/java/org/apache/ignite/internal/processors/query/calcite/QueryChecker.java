@@ -87,7 +87,6 @@ public abstract class QueryChecker {
             )).collect(Collectors.toList()));
     }
 
-
     /** */
     private final String qry;
 
@@ -164,7 +163,6 @@ public abstract class QueryChecker {
         FieldsQueryCursor<List<?>> explainCursor = explainCursors.get(0);
         List<List<?>> explainRes = explainCursor.getAll();
         String actualPlan = (String)explainRes.get(0).get(0);
-
 
         if (!F.isEmpty(planMatchers)) {
             Matcher<String> matcher = CoreMatchers.allOf(planMatchers.toArray(new Matcher[planMatchers.size()]));

@@ -616,8 +616,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     private QueryChecker assertQuery(String qry) {
         return new QueryChecker(qry) {
-            @Override
-            protected QueryEngine getEngine() {
+            @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(grid(0).context(), QueryEngine.class);
             }
         };
