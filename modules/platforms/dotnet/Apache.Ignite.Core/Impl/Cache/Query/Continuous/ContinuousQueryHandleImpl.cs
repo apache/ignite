@@ -137,9 +137,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 
                 // 4. Initial query.
                 var nativeInitialQryCur = _nativeQry.OutObjectInternal(0);
-                _initialQueryCursor = nativeInitialQryCur == null
-                    ? null
-                    : new QueryCursor<TK, TV>(nativeInitialQryCur, _keepBinary);
+                if (nativeInitialQryCur != null)
+                {
+                    _initialQueryCursor = initialQry is SqlFieldsQuery
+                        ? (IQueryCursor<ICacheEntry<TK, TV>>) new FieldsCacheEntryQueryCursor<TK, TV>(
+                            nativeInitialQryCur,
+                            _keepBinary)
+                        : new QueryCursor<TK, TV>(nativeInitialQryCur, _keepBinary);
+                }
             }
             catch (Exception)
             {
@@ -151,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 
                 if (_initialQueryCursor != null)
                     _initialQueryCursor.Dispose();
-                
+
                 throw;
             }
         }
@@ -161,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         {
             ICacheEntryEvent<TK, TV>[] evts = CQU.ReadEvents<TK, TV>(stream, _marsh, _keepBinary);
 
-            _lsnr.OnEvent(evts); 
+            _lsnr.OnEvent(evts);
         }
 
         /** <inheritdoc /> */
