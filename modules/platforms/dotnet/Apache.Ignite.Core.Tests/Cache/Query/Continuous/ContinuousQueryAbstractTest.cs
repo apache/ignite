@@ -781,6 +781,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             // Text query, iterator
             TestInitialQuery(new TextQuery(typeof(BinarizableEntry), "1*"), cur => cur.ToList());
 
+            // Test exception: invalid initial query
+            var ex = Assert.Throws<IgniteException>(
+                () => TestInitialQuery(new TextQuery(typeof (BinarizableEntry), "*"), cur => cur.GetAll()));
+
+            Assert.AreEqual("Cannot parse '*': '*' or '?' not allowed as first character in WildcardQuery", ex.Message);
+        }
+
+        /// <summary>
+        /// Tests the initial fields query.
+        /// </summary>
+        [Test]
+        public void TestInitialFieldQuery()
+        {
             // Fields query, GetAll
             // select _T0._KEY, _T0._VAL from "atomic_backup".BINARIZABLEENTRY as _T0 where (_T0.VAL < ?)
             // var sql = cache1.AsCacheQueryable().Where(e => e.Value.val < 33).ToCacheQueryable().GetFieldsQuery().Sql;
@@ -791,12 +804,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             // TODO: Test fields query with wrong field types
             // TODO: Can we allow LINQ as initial query?
-
-            // Test exception: invalid initial query
-            var ex = Assert.Throws<IgniteException>(
-                () => TestInitialQuery(new TextQuery(typeof (BinarizableEntry), "*"), cur => cur.GetAll()));
-
-            Assert.AreEqual("Cannot parse '*': '*' or '?' not allowed as first character in WildcardQuery", ex.Message);
         }
 
         /// <summary>

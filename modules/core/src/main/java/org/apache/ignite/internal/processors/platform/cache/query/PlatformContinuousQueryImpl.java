@@ -151,8 +151,8 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                 cursor = cache.query(qry.setLocal(loc));
 
                 if (initialQry != null)
-                    initialQryCur = new PlatformQueryCursor(platformCtx, new QueryCursorEx() {
-                        @Override public Iterator iterator() {
+                    initialQryCur = new PlatformQueryCursor(platformCtx, new QueryCursorEx<Cache.Entry>() {
+                        @Override public Iterator<Cache.Entry> iterator() {
                             return cursor.iterator();
                         }
 
@@ -164,8 +164,8 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                             // No-op: do not close whole continuous query when initial query cursor closes.
                         }
 
-                        @Override public void getAll(Consumer clo) throws IgniteCheckedException {
-                            for (Object t : this)
+                        @Override public void getAll(Consumer<Cache.Entry> clo) throws IgniteCheckedException {
+                            for (Cache.Entry t : this)
                                 clo.consume(t);
                         }
 
