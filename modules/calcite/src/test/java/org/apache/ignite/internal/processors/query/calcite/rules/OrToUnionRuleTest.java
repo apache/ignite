@@ -49,7 +49,7 @@ import static org.hamcrest.CoreMatchers.not;
  *      WHERE category = 'Photo'
  * UNION ALL
  * SELECT * FROM products
- *      WHERE subcategory ='Camera Media' AND category != 'Photo';
+ *      WHERE subcategory ='Camera Media' AND LNNVL(category, 'Photo');
  */
 public class OrToUnionRuleTest extends GridCommonAbstractTest {
     /** */
@@ -186,14 +186,17 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             "FROM products " +
             "WHERE cat_id > 1 " +
             "OR subcat_id < 10")
-            .and(containsUnion(true))
-            .and(containsScan("PUBLIC", "PRODUCTS", "IDX_CAT_ID"))
-            .and(containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCAT_ID"))
-        .check();
+            .and(not(containsUnion(true)))
+            .and(containsScan("PUBLIC", "PRODUCTS", "PK"))
+            .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
+            .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
+            .returns(7, "Video", 1, null, 0, "Canon")
+            .returns(9, null, 0, null, 0, null)
+            .check();
     }
 
     /**
-     * Check 'OR -> UNION' rule is not applied if (at least) one of column is not indexed.
+     * Check 'OR -> UNION' rule is applied if (at least) one of column is not indexed.
      *
      * @throws Exception If failed.
      */
@@ -202,9 +205,29 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE name = 'Canon' " +
-            "OR category = 'Photo'")
-//            .and(not(containsUnion(true)))
+            "OR category = 'Video'")
+            .and(not(containsUnion(true)))
             .and(containsScan("PUBLIC", "PRODUCTS", "PK"))
+            .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
+            .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
+            .returns(7, "Video", 1, null, 0, "Canon")
+            .check();
+    }
+
+    /**
+     * Check 'OR -> UNION' rule is applied if (at least) one of column is not indexed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAllNonIndexedOrToUnionAllRewrite() throws Exception {
+        checkQuery("SELECT * " +
+            "FROM products " +
+            "WHERE name = 'Canon' " +
+            "OR name = 'Sony'")
+            .and(not(containsUnion(true)))
+            .and(containsScan("PUBLIC", "PRODUCTS", "PK"))
+            .returns(7, "Video", 1, null, 0, "Canon")
             .check();
     }
 

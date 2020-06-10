@@ -81,7 +81,7 @@ public enum PlannerPhase {
                 PushFilterIntoScanRule.FILTER_INTO_SCAN,
                 ProjectFilterTransposeRule.INSTANCE,
                 LogicalOrToUnionRule.INSTANCE,
-                UnionMergeRule.INSTANCE,
+//                UnionMergeRule.INSTANCE,
                 UnionConverterRule.INSTANCE,
                 SortConverterRule.INSTANCE,
                 SortRemoveRule.INSTANCE);
