@@ -714,30 +714,38 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 keepBinary,
                 qry.isIncludeExpired());
 
-            final QueryCursor<Cache.Entry<K, V>> cur =
-                qry.getInitialQuery() != null ? query(qry.getInitialQuery()) : null;
+            try {
+                final QueryCursor<Cache.Entry<K, V>> cur =
+                        qry.getInitialQuery() != null ? query(qry.getInitialQuery()) : null;
 
-            return new QueryCursor<Cache.Entry<K, V>>() {
-                @Override public Iterator<Cache.Entry<K, V>> iterator() {
-                    return cur != null ? cur.iterator() : new GridEmptyIterator<Cache.Entry<K, V>>();
-                }
-
-                @Override public List<Cache.Entry<K, V>> getAll() {
-                    return cur != null ? cur.getAll() : Collections.<Cache.Entry<K, V>>emptyList();
-                }
-
-                @Override public void close() {
-                    if (cur != null)
-                        cur.close();
-
-                    try {
-                        ctx.kernalContext().continuous().stopRoutine(routineId).get();
+                return new QueryCursor<Cache.Entry<K, V>>() {
+                    @Override
+                    public Iterator<Cache.Entry<K, V>> iterator() {
+                        return cur != null ? cur.iterator() : new GridEmptyIterator<Cache.Entry<K, V>>();
                     }
-                    catch (IgniteCheckedException e) {
-                        throw U.convertException(e);
+
+                    @Override
+                    public List<Cache.Entry<K, V>> getAll() {
+                        return cur != null ? cur.getAll() : Collections.<Cache.Entry<K, V>>emptyList();
                     }
-                }
-            };
+
+                    @Override
+                    public void close() {
+                        if (cur != null)
+                            cur.close();
+
+                        try {
+                            ctx.kernalContext().continuous().stopRoutine(routineId).get();
+                        } catch (IgniteCheckedException e) {
+                            throw U.convertException(e);
+                        }
+                    }
+                };
+            } catch (Throwable t) {
+                ctx.kernalContext().continuous().stopRoutine(routineId).get();
+
+                throw t;
+            }
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
