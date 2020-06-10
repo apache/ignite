@@ -74,7 +74,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** Wrapped initial qry cursor. */
-    private PlatformQueryCursor initialQryCur;
+    private PlatformAbstractQueryCursor initialQryCur;
 
     /**
      * Constructor.
@@ -171,13 +171,35 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
         }
     }
 
-    private PlatformQueryCursor getInitialQryCur(Query initialQry) {
+    private PlatformAbstractQueryCursor getInitialQryCur(Query initialQry) {
         if (initialQry == null)
             return null;
 
-        if (initialQry instanceof SqlFieldsQuery) {
-            throw new IgniteException("TODO");
-        }
+        int batchSize = initialQry.getPageSize() > 0 ? initialQry.getPageSize() : Query.DFLT_PAGE_SIZE;
+
+        if (initialQry instanceof SqlFieldsQuery)
+            return new PlatformFieldsQueryCursor(platformCtx, new QueryCursorEx<List<?>>() {
+                @Override public Iterator<List<?>> iterator() {
+                    return cursor.iterator();
+                }
+
+                @Override public List<List<?>> getAll() {
+                    return cursor.getAll();
+                }
+
+                @Override public void close() {
+                    // No-op: do not close whole continuous query when initial query cursor closes.
+                }
+
+                @Override public void getAll(Consumer<List<?>> clo) throws IgniteCheckedException {
+                    for (List t : this)
+                        clo.consume(t);
+                }
+
+                @Override public List<GridQueryFieldMetadata> fieldsMeta() {
+                    return null;
+                }
+            }, batchSize);
 
         return new PlatformQueryCursor(platformCtx, new QueryCursorEx<Cache.Entry>() {
             @Override public Iterator<Cache.Entry> iterator() {
@@ -200,7 +222,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
             @Override public List<GridQueryFieldMetadata> fieldsMeta() {
                 return null;
             }
-        }, initialQry.getPageSize() > 0 ? initialQry.getPageSize() : Query.DFLT_PAGE_SIZE);
+        }, batchSize);
     }
 
     /** {@inheritDoc} */
