@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -196,10 +197,11 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check 'OR -> UNION' rule is applied if (at least) one of column is not indexed.
+     * Check 'OR -> UNION' rule is not applied if (at least) one of column is not indexed.
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12819")
     @Test
     public void testNonIndexedOrToUnionAllRewrite() throws Exception {
         checkQuery("SELECT * " +
@@ -215,7 +217,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check 'OR -> UNION' rule is applied if (at least) one of column is not indexed.
+     * Check 'OR -> UNION' rule is not applied if all columns are not indexed.
      *
      * @throws Exception If failed.
      */
@@ -244,13 +246,25 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      *
      */
     static class Product {
+        /** */
         long id;
+
+        /** */
         String category;
+
+        /** */
         int cat_Id;
+
+        /** */
         String subCategory;
+
+        /** */
         int subcat_Id;
+
+        /** */
         String name;
 
+        /** Constructor. */
         public Product(long id, String category, int cat_Id, String subCategory, int subcat_Id, String name) {
             this.id = id;
             this.category = category;
