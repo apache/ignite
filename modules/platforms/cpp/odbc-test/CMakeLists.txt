@@ -19,7 +19,11 @@ project(ignite-odbc-tests)
 
 set(TARGET ${PROJECT_NAME})
 
-find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system)
+find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system regex)
+
+if (WIN32)
+    set(Boost_USE_STATIC_LIBS ON)
+endif()
 
 find_package(ODBC REQUIRED)
 
@@ -87,7 +91,9 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET} ${Boost_LIBRARIES} ignite ${ODBC_LIBRARY})
 
-if (NOT WIN32)
+if (WIN32)
+    remove_definitions(-DUNICODE=1)
+else()
     add_definitions(-DBOOST_TEST_DYN_LINK)
 endif()
 

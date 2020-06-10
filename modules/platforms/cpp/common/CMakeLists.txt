@@ -48,17 +48,26 @@ endif()
 
 include_directories(${OS_INCLUDE})
 
-add_library(${TARGET} SHARED ${SOURCES})
+add_library(${TARGET}-objlib OBJECT ${SOURCES})
+add_library(${TARGET} SHARED $<TARGET_OBJECTS:${TARGET}-objlib>)
 
-if (NOT WIN32)
-    find_package(Threads REQUIRED)
+list(APPEND _target_libs ${TARGET} ${TARGET}-objlib)
+foreach(_target_lib IN LISTS _target_libs)
+    set_target_properties(${_target_lib} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 
-    target_link_libraries(${TARGET} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
-endif()
+    if (${_target_lib} STREQUAL ${TARGET}-objlib)
+        set_target_properties(${_target_lib} PROPERTIES POSITION_INDEPENDENT_CODE 1)
+    endif()
 
-set_target_properties(${TARGET} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
+    if (NOT WIN32)
+        find_package(Threads REQUIRED)
 
-target_include_directories(${TARGET} INTERFACE include ${OS_INCLUDE})
+        target_link_libraries(${_target_lib} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+    endif()
+
+    target_include_directories(${_target_lib} INTERFACE include ${OS_INCLUDE})
+endforeach()
+unset(_target_libs)
 
 install(TARGETS ${TARGET} LIBRARY DESTINATION lib)
 install(DIRECTORY include/ ${OS_INCLUDE}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")

@@ -23,8 +23,6 @@ find_package(ODBC REQUIRED)
 
 include_directories(include ${ODBC_INCLUDE_DIRS})
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
-
 set(SOURCES src/app/application_data_buffer.cpp
         src/app/parameter.cpp
         src/app/parameter_set.cpp
@@ -80,12 +78,25 @@ if (WIN32)
             os/win/src/system/ui/window.cpp)
 endif ()
 
-
 add_library(${TARGET} SHARED ${SOURCES})
 
 set_target_properties(${TARGET} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 
-target_link_libraries(${TARGET} ignite-binary ignite-network ${ODBC_LIBRARIES})
+target_link_libraries(${TARGET} ${ODBC_LIBRARIES})
+
+if (WIN32)
+    target_link_libraries(${TARGET} ignite-common-objlib ignite-binary-objlib ignite-network-objlib shlwapi)
+
+    remove_definitions(-DUNICODE=1)
+
+    add_definitions(-DTARGET_MODULE_FULL_NAME="${TARGET}")
+
+    if (MSVC_VERSION GREATER_EQUAL 1900)
+        target_link_libraries(${TARGET} legacy_stdio_definitions)
+    endif()
+else()
+    target_link_libraries(${TARGET} ignite-common ignite-binary ignite-network)
+endif()
 
 target_include_directories(${TARGET} INTERFACE include)
 

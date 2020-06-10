@@ -42,13 +42,22 @@ set(SOURCES src/binary/binary_containers.cpp
         src/impl/interop/interop_output_stream.cpp
         src/impl/interop/interop_input_stream.cpp)
 
-add_library(${TARGET} SHARED ${SOURCES})
+add_library(${TARGET}-objlib OBJECT ${SOURCES})
+add_library(${TARGET} SHARED $<TARGET_OBJECTS:${TARGET}-objlib>)
 
-set_target_properties(${TARGET} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
+list(APPEND _target_libs ${TARGET} ${TARGET}-objlib)
+foreach(_target_lib IN LISTS _target_libs)
+    set_target_properties(${_target_lib} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 
-target_link_libraries(${TARGET} ignite-common)
+    if (${_target_lib} STREQUAL ${TARGET}-objlib)
+        set_target_properties(${_target_lib} PROPERTIES POSITION_INDEPENDENT_CODE 1)
+    endif()
 
-target_include_directories(${TARGET} INTERFACE include)
+    target_link_libraries(${_target_lib} ignite-common)
+
+    target_include_directories(${_target_lib} INTERFACE include)
+endforeach()
+unset(_target_libs)
 
 install(TARGETS ${TARGET} LIBRARY DESTINATION lib)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")
