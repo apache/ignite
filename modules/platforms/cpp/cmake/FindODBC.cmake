@@ -9,12 +9,6 @@ set(_odbc_required_libs_names)
 
 ### Try Windows Kits ##########################################################
 if(WIN32)
-    # List names of ODBC libraries on Windows
-    if(NOT MINGW)
-        set(ODBC_LIBRARY odbc32.lib)
-    else()
-        set(ODBC_LIBRARY libodbc32.a)
-    endif()
     set(_odbc_lib_names odbc32;)
 
     # List additional libraries required to use ODBC library
