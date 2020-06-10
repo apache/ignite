@@ -32,6 +32,7 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -46,7 +47,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 /**
  * Interop continuous query handle.
  */
-@SuppressWarnings("rawtypes")
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     /** */
     private static final long serialVersionUID = 0L;
@@ -150,29 +151,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
 
                 cursor = cache.query(qry.setLocal(loc));
 
-                if (initialQry != null)
-                    initialQryCur = new PlatformQueryCursor(platformCtx, new QueryCursorEx<Cache.Entry>() {
-                        @Override public Iterator<Cache.Entry> iterator() {
-                            return cursor.iterator();
-                        }
-
-                        @Override public List<Cache.Entry> getAll() {
-                            return cursor.getAll();
-                        }
-
-                        @Override public void close() {
-                            // No-op: do not close whole continuous query when initial query cursor closes.
-                        }
-
-                        @Override public void getAll(Consumer<Cache.Entry> clo) throws IgniteCheckedException {
-                            for (Cache.Entry t : this)
-                                clo.consume(t);
-                        }
-
-                        @Override public List<GridQueryFieldMetadata> fieldsMeta() {
-                            return null;
-                        }
-                    }, initialQry.getPageSize() > 0 ? initialQry.getPageSize() : Query.DFLT_PAGE_SIZE);
+                initialQryCur = getInitialQryCur(initialQry);
             }
             catch (Exception e) {
                 try
@@ -192,8 +171,39 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
         }
     }
 
+    private PlatformQueryCursor getInitialQryCur(Query initialQry) {
+        if (initialQry == null)
+            return null;
+
+        if (initialQry instanceof SqlFieldsQuery) {
+            throw new IgniteException("TODO");
+        }
+
+        return new PlatformQueryCursor(platformCtx, new QueryCursorEx<Cache.Entry>() {
+            @Override public Iterator<Cache.Entry> iterator() {
+                return cursor.iterator();
+            }
+
+            @Override public List<Cache.Entry> getAll() {
+                return cursor.getAll();
+            }
+
+            @Override public void close() {
+                // No-op: do not close whole continuous query when initial query cursor closes.
+            }
+
+            @Override public void getAll(Consumer<Cache.Entry> clo) throws IgniteCheckedException {
+                for (Cache.Entry t : this)
+                    clo.consume(t);
+            }
+
+            @Override public List<GridQueryFieldMetadata> fieldsMeta() {
+                return null;
+            }
+        }, initialQry.getPageSize() > 0 ? initialQry.getPageSize() : Query.DFLT_PAGE_SIZE);
+    }
+
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onUpdated(Iterable evts) throws CacheEntryListenerException {
         lock.readLock().lock();
 
@@ -209,7 +219,6 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean evaluate(CacheEntryEvent evt) throws CacheEntryListenerException {
         if (javaFilter != null)
             return javaFilter.evaluate(evt);
