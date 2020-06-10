@@ -3335,14 +3335,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     while (true) {
                         if (sock == null) {
-                            if (timeoutHelper == null) {
-                                if (sndState == null)
-                                    timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
-                                else {
-                                    timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, sndState.timeoutMills(),
-                                        sndState.beginTimeNanos);
-                                }
-                            }
+                            if (timeoutHelper == null)
+                                timeoutHelper = srvOperationTimeoutHelper(sndState, spi, -1);
 
                             boolean success = false;
 
@@ -3557,10 +3551,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     addFailedNodes(pendingMsg, failedNodes);
 
-                                    if (timeoutHelper == null) {
-                                        timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true,
-                                            lastRingMsgSentTime);
-                                    }
+                                    if (timeoutHelper == null)
+                                        timeoutHelper = srvOperationTimeoutHelper(sndState, spi, lastRingMsgSentTime);
 
                                     try {
                                         spi.writeToSocket(sock, out, pendingMsg, timeoutHelper.nextTimeoutChunk(
@@ -3604,7 +3596,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 long tsNanos = System.nanoTime();
 
                                 if (timeoutHelper == null)
-                                    timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true, lastRingMsgSentTime);
+                                    timeoutHelper = srvOperationTimeoutHelper(sndState, spi, lastRingMsgSentTime);
 
                                 addFailedNodes(msg, failedNodes);
 
@@ -3713,6 +3705,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         return; // Nothing to do here.
                     }
+
+                    log.error("!sent, sndState="+sndState);
 
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
 
@@ -3834,6 +3828,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Segment local node on failed message send.
          */
         private void segmentLocalNodeOnSendFail(List<TcpDiscoveryNode> failedNodes) {
+            log.error("segmentLocalNodeOnSendFail");
+
             String failedNodesStr = failedNodes == null ? "" : (", failedNodes=" + failedNodes);
 
             synchronized (mux) {
@@ -3859,6 +3855,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
                 "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
                 + spi.getEffectiveConnectionRecoveryTimeout() + failedNodesStr + ']');
+
+            log.error("notifyDiscovery(EVT_NODE_SEGMENTED,");
 
             notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
         }
@@ -6218,6 +6216,19 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
+    /** Creates proper timeout helper taking in account current send state. */
+    private IgniteSpiOperationTimeoutHelper srvOperationTimeoutHelper(CrossRingMessageSendState sndState,
+        TcpDiscoverySpi spi, long lastOperationNanos) {
+
+        IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true,
+            lastOperationNanos);
+
+        if(sndState != null)
+            timeoutHelper.absolteTimeThreshold(sndState.failTimeNanos);
+
+        return timeoutHelper;
+    }
+
     /** Fixates time of last sent message. */
     private void updateLastSentMessageTime() {
         lastRingMsgSentTime = System.nanoTime();
@@ -7907,6 +7918,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         long timeoutMills() {
             return U.nanosToMillis(failTimeNanos - beginTimeNanos);
         }
+
+        long left(){ return U.nanosToMillis(failTimeNanos - System.nanoTime()); }
 
         /**
          * Marks last failed node as alive.
