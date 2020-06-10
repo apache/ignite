@@ -48,10 +48,18 @@ endif()
 
 include_directories(${OS_INCLUDE})
 
-add_library(${TARGET}-objlib OBJECT ${SOURCES})
-add_library(${TARGET} SHARED $<TARGET_OBJECTS:${TARGET}-objlib>)
+list(APPEND _target_libs ${TARGET})
 
-list(APPEND _target_libs ${TARGET} ${TARGET}-objlib)
+if (WIN32)
+    add_library(${TARGET}-objlib OBJECT ${SOURCES})
+
+    add_library(${TARGET} SHARED $<TARGET_OBJECTS:${TARGET}-objlib>)
+
+    list(APPEND _target_libs ${TARGET}-objlib)
+else()
+    add_library(${TARGET} SHARED ${SOURCES})
+endif()
+
 foreach(_target_lib IN LISTS _target_libs)
     set_target_properties(${_target_lib} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 

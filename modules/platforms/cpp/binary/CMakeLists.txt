@@ -42,18 +42,28 @@ set(SOURCES src/binary/binary_containers.cpp
         src/impl/interop/interop_output_stream.cpp
         src/impl/interop/interop_input_stream.cpp)
 
-add_library(${TARGET}-objlib OBJECT ${SOURCES})
-add_library(${TARGET} SHARED $<TARGET_OBJECTS:${TARGET}-objlib>)
+list(APPEND _target_libs ${TARGET})
 
-list(APPEND _target_libs ${TARGET} ${TARGET}-objlib)
+if (WIN32)
+    add_library(${TARGET}-objlib OBJECT ${SOURCES})
+
+    add_library(${TARGET} SHARED $<TARGET_OBJECTS:${TARGET}-objlib>)
+
+    list(APPEND _target_libs ${TARGET}-objlib)
+else()
+    add_library(${TARGET} SHARED ${SOURCES})
+endif()
+
 foreach(_target_lib IN LISTS _target_libs)
     set_target_properties(${_target_lib} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 
     if (${_target_lib} STREQUAL ${TARGET}-objlib)
         set_target_properties(${_target_lib} PROPERTIES POSITION_INDEPENDENT_CODE 1)
-    endif()
 
-    target_link_libraries(${_target_lib} ignite-common)
+        target_link_libraries(${_target_lib} ignite-common-objlib)
+    else()
+        target_link_libraries(${_target_lib} ignite-common)
+    endif()
 
     target_include_directories(${_target_lib} INTERFACE include)
 endforeach()
