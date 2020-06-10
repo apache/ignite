@@ -151,7 +151,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
 
                 cursor = cache.query(qry.setLocal(loc));
 
-                initialQryCur = getInitialQryCur(initialQry);
+                initialQryCur = getInitialQueryCursor(initialQry);
             }
             catch (Exception e) {
                 try
@@ -169,60 +169,6 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
         finally {
             lock.writeLock().unlock();
         }
-    }
-
-    private PlatformAbstractQueryCursor getInitialQryCur(Query initialQry) {
-        if (initialQry == null)
-            return null;
-
-        int batchSize = initialQry.getPageSize() > 0 ? initialQry.getPageSize() : Query.DFLT_PAGE_SIZE;
-
-        if (initialQry instanceof SqlFieldsQuery)
-            return new PlatformFieldsQueryCursor(platformCtx, new QueryCursorEx<List<?>>() {
-                @Override public Iterator<List<?>> iterator() {
-                    return cursor.iterator();
-                }
-
-                @Override public List<List<?>> getAll() {
-                    return cursor.getAll();
-                }
-
-                @Override public void close() {
-                    // No-op: do not close whole continuous query when initial query cursor closes.
-                }
-
-                @Override public void getAll(Consumer<List<?>> clo) throws IgniteCheckedException {
-                    for (List t : this)
-                        clo.consume(t);
-                }
-
-                @Override public List<GridQueryFieldMetadata> fieldsMeta() {
-                    return null;
-                }
-            }, batchSize);
-
-        return new PlatformQueryCursor(platformCtx, new QueryCursorEx<Cache.Entry>() {
-            @Override public Iterator<Cache.Entry> iterator() {
-                return cursor.iterator();
-            }
-
-            @Override public List<Cache.Entry> getAll() {
-                return cursor.getAll();
-            }
-
-            @Override public void close() {
-                // No-op: do not close whole continuous query when initial query cursor closes.
-            }
-
-            @Override public void getAll(Consumer<Cache.Entry> clo) throws IgniteCheckedException {
-                for (Cache.Entry t : this)
-                    clo.consume(t);
-            }
-
-            @Override public List<GridQueryFieldMetadata> fieldsMeta() {
-                return null;
-            }
-        }, batchSize);
     }
 
     /** {@inheritDoc} */
@@ -278,6 +224,66 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     /** {@inheritDoc} */
     @Override public PlatformTarget getInitialQueryCursor() {
         return initialQryCur;
+    }
+
+    /**
+     * Gets the initial query cursor.
+     *
+     * @param initialQry Initial query.
+     * @return Cursor.
+     */
+    private PlatformAbstractQueryCursor getInitialQueryCursor(Query initialQry) {
+        if (initialQry == null)
+            return null;
+
+        int batchSize = initialQry.getPageSize() > 0 ? initialQry.getPageSize() : Query.DFLT_PAGE_SIZE;
+
+        if (initialQry instanceof SqlFieldsQuery)
+            return new PlatformFieldsQueryCursor(platformCtx, new QueryCursorEx<List<?>>() {
+                @Override public Iterator<List<?>> iterator() {
+                    return cursor.iterator();
+                }
+
+                @Override public List<List<?>> getAll() {
+                    return cursor.getAll();
+                }
+
+                @Override public void close() {
+                    // No-op: do not close whole continuous query when initial query cursor closes.
+                }
+
+                @Override public void getAll(Consumer<List<?>> clo) throws IgniteCheckedException {
+                    for (List t : this)
+                        clo.consume(t);
+                }
+
+                @Override public List<GridQueryFieldMetadata> fieldsMeta() {
+                    return null;
+                }
+            }, batchSize);
+
+        return new PlatformQueryCursor(platformCtx, new QueryCursorEx<Cache.Entry>() {
+            @Override public Iterator<Cache.Entry> iterator() {
+                return cursor.iterator();
+            }
+
+            @Override public List<Cache.Entry> getAll() {
+                return cursor.getAll();
+            }
+
+            @Override public void close() {
+                // No-op: do not close whole continuous query when initial query cursor closes.
+            }
+
+            @Override public void getAll(Consumer<Cache.Entry> clo) throws IgniteCheckedException {
+                for (Cache.Entry t : this)
+                    clo.consume(t);
+            }
+
+            @Override public List<GridQueryFieldMetadata> fieldsMeta() {
+                return null;
+            }
+        }, batchSize);
     }
 
     /**
