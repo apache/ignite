@@ -800,6 +800,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
+        /// Tests the initial fields query with FieldsQueryCursor.
+        /// </summary>
+        [Test]
+        public void TestInitialFieldsQueryWithFieldsCursor()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests fields metadata in the initial fields query.
+        /// </summary>
+        [Test]
+        public void TestInitialFieldsQueryMetadata()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Tests the initial fields query with bad SQL.
         /// </summary>
         [Test]
