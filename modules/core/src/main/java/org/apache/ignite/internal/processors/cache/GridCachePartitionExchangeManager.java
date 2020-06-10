@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -271,6 +272,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** Delay before rebalancing code is start executing after exchange completion. For tests only. */
     private volatile long rebalanceDelay;
+
+    /** */
+    private final ReentrantLock dumpLongRunningOpsLock = new ReentrantLock();
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
@@ -2232,28 +2236,38 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (lastFut != null && !lastFut.isDone())
                 return;
 
-            if (U.currentTimeMillis() < nextLongRunningOpsDumpTime)
+            if (!dumpLongRunningOpsLock.tryLock())
                 return;
 
-            if (dumpLongRunningOperations0(timeout)) {
-                nextLongRunningOpsDumpTime = U.currentTimeMillis() + nextDumpTimeout(longRunningOpsDumpStep++, timeout);
+            try {
+                if (U.currentTimeMillis() < nextLongRunningOpsDumpTime)
+                    return;
 
-                if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false)) {
-                    U.warn(diagnosticLog, "Found long running cache operations, dump threads.");
+                if (dumpLongRunningOperations0(timeout)) {
+                    nextLongRunningOpsDumpTime = U.currentTimeMillis() +
+                        nextDumpTimeout(longRunningOpsDumpStep++, timeout);
 
-                    U.dumpThreads(diagnosticLog);
+                    if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false)) {
+                        U.warn(diagnosticLog, "Found long running cache operations, dump threads.");
+
+                        U.dumpThreads(diagnosticLog);
+                    }
+
+                    if (IgniteSystemProperties.getBoolean(IGNITE_IO_DUMP_ON_TIMEOUT, false)) {
+                        U.warn(diagnosticLog, "Found long running cache operations, dump IO statistics.");
+
+                        // Dump IO manager statistics.
+                        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT, false))
+                            cctx.gridIO().dumpStats();
+                    }
                 }
-
-                if (IgniteSystemProperties.getBoolean(IGNITE_IO_DUMP_ON_TIMEOUT, false)) {
-                    U.warn(diagnosticLog, "Found long running cache operations, dump IO statistics.");
-
-                // Dump IO manager statistics.
-                if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT, false))
-                    cctx.gridIO().dumpStats();}
+                else {
+                    nextLongRunningOpsDumpTime = 0;
+                    longRunningOpsDumpStep = 0;
+                }
             }
-            else {
-                nextLongRunningOpsDumpTime = 0;
-                longRunningOpsDumpStep = 0;
+            finally {
+                dumpLongRunningOpsLock.unlock();
             }
         }
         catch (Exception e) {
