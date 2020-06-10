@@ -3335,7 +3335,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     while (true) {
                         if (sock == null) {
-                            if (timeoutHelper == null)
+                            if (timeoutHelper == null || sndState != null)
                                 timeoutHelper = srvOperationTimeoutHelper(sndState, spi, -1);
 
                             boolean success = false;
@@ -3485,6 +3485,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         + ", err=" + e.getMessage() + ']', e);
 
                                 onException("Failed to connect to next node [msg=" + msg + ", err=" + e + ']', e);
+
+                                if (sndState != null && sndState.checkTimeout()) {
+                                    segmentLocalNodeOnSendFail(failedNodes);
+
+                                    return; // Nothing to do here.
+                                }
 
                                 if (!openSock)
                                     break; // Don't retry if we can not establish connection.

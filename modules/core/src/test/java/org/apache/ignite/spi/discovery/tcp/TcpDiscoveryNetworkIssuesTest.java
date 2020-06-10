@@ -230,9 +230,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         // Avoid useless warnings. We do block threads specially.
         systemWorkerBlockedTimeout = 5_000L;
 
-        for (failureDetectionTimeout = minTimeout; failureDetectionTimeout <= maxTimeout;
+        for (failureDetectionTimeout = 500; failureDetectionTimeout <= 500;
             failureDetectionTimeout += step) {
-            for (connectionRecoveryTimeout = minTimeout; connectionRecoveryTimeout <= maxTimeout;
+            for (connectionRecoveryTimeout = 300; connectionRecoveryTimeout <= 300;
                 connectionRecoveryTimeout += step) {
                 AtomicLong timer = new AtomicLong();
 
@@ -240,32 +240,14 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
                 specialSpi = new TcpDiscoverySpi() {
                     /** {@inheritDoc} */
-                    @Override protected int readReceipt(Socket sock, long timeout) throws IOException {
-                        if (timer.get() > 0)
-                            simulateUnknowdDelay(timeout);
-
-                        return super.readReceipt(sock, timeout);
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override protected Socket openSocket(InetSocketAddress sockAddr,
-                        IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
-
-                        if (timer.get() > 0)
-                            simulateUnknowdDelay(timeoutHelper.nextTimeoutChunk(getSocketTimeout()));
-
-                        return super.openSocket(sockAddr, timeoutHelper);
-                    }
-
-                    /** {@inheritDoc} */
                     @Override protected void writeToSocket(Socket sock, OutputStream out,
                         TcpDiscoveryAbstractMessage msg,
                         long timeout) throws IOException, IgniteCheckedException {
 
                         if (timer.get() > 0) {
-                            simulateUnknowdDelay(timeout);
+                            simulateUnknowdDelay(timeout, "writeToSocket(sock, out, msg, timeout)");
 
-                            super.writeToSocket(sock, out, msg, 0);
+                            super.writeToSocket(sock, out, msg, -10);
                         }
                         else
                             super.writeToSocket(sock, out, msg, timeout);
@@ -275,9 +257,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
                     @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
                         long timeout) throws IOException {
                         if (timer.get() > 0) {
-                            simulateUnknowdDelay(timeout);
+                            simulateUnknowdDelay(timeout, "writeToSocket(res)");
 
-                            super.writeToSocket(msg, sock, res, 0);
+                            super.writeToSocket(msg, sock, res, -10);
                         }
                         else
                             super.writeToSocket(msg, sock, res, timeout);
@@ -287,15 +269,17 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
                     @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
                         long timeout) throws IOException {
                         if (timer.get() > 0) {
-                            simulateUnknowdDelay(timeout);
+                            simulateUnknowdDelay(timeout, "writeToSocket(byte[] data)");
 
-                            super.writeToSocket(sock, msg, data, 0);
+                            super.writeToSocket(sock, msg, data, -10);
                         }
                         else
                             super.writeToSocket(sock, msg, data, timeout);
                     }
 
-                    private void simulateUnknowdDelay(long delay) {
+                    private void simulateUnknowdDelay(long delay, String txt) {
+                        log.error("Simulating delay: " + delay + " on " + txt);
+
                         try {
                             Thread.sleep(delay);
                         }
@@ -311,11 +295,13 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
                     if (e.node().isLocal()) {
                         timer.set(System.nanoTime() - timer.get());
 
+                        log.error("Failure detected.");
+                    } else {
                         log.error("Wrong node failed: " + e.node().order() + ". Expected: " +
                             failedGrid.localNode().order());
-                    }
-                    else
+
                         timer.set(-1);
+                    }
 
                     synchronized (timer) {
                         timer.notifyAll();
@@ -330,8 +316,14 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
                 startGrid(4);
 
+                awaitPartitionMapExchange();
+
+                Thread.sleep(1000);
+
                 synchronized (timer) {
                     timer.set(System.nanoTime());
+
+                    log.error("Failure simulated.");
 
                     timer.wait(getTestTimeout());
                 }
