@@ -796,15 +796,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             var sqlFieldsQuery = new SqlFieldsQuery("select _key, _val from BINARIZABLEENTRY where val < 33");
 
-            // Fields query, GetAll
             TestInitialQuery(sqlFieldsQuery, cur => cur.GetAll());
-
-            // Fields query, iterator
             TestInitialQuery(sqlFieldsQuery, cur => cur.ToList());
 
-            // TODO: Test fields query with wrong field types
-            // TODO: Test broken SQL to make sure the exception is ok
-            // TODO: Can we allow LINQ as initial query?
+            // Invalid SQL query.
+            var ex = Assert.Throws<IgniteException>(() => TestInitialQuery(
+                new SqlFieldsQuery("select FOO from BAR"), cur => cur.GetAll()));
+
+            StringAssert.StartsWith("Failed to parse query. Table \"BAR\" not found;", ex.Message);
+
+            // Valid SQL query that does not return _key and _val.
+            ex = Assert.Throws<IgniteException>(() => TestInitialQuery(
+                new SqlFieldsQuery("select _key, _val, val from BINARIZABLEENTRY where val < 33"),
+                cur => cur.GetAll()));
+
+            Assert.AreEqual("a", ex.Message);
         }
 
         /// <summary>
