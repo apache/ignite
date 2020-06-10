@@ -26,45 +26,40 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
 
-/**
- * TODO remove buffers.
- */
-public class JoinNode<Row> extends AbstractNode<Row> {
-    /** */
-    private final Predicate<Row> cond;
+/** */
+public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
+    /** Special value to highlights that all row were received and we are not waiting any more. */
+    protected static final int NOT_WAITING = -1;
 
     /** */
-    private final RowHandler<Row> handler;
+    protected final Predicate<Row> cond;
 
     /** */
-    private int requested;
+    protected final RowHandler<Row> handler;
 
     /** */
-    private int waitingLeft;
+    protected int requested;
 
     /** */
-    private int waitingRight;
+    protected int waitingLeft;
 
     /** */
-    private final List<Row> rightMaterialized = new ArrayList<>(IN_BUFFER_SIZE);
+    protected int waitingRight;
 
     /** */
-    private final Deque<Row> leftInBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
+    protected final List<Row> rightMaterialized = new ArrayList<>(IN_BUFFER_SIZE);
+
+    /** */
+    protected final Deque<Row> leftInBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
 
     /** */
     private boolean inLoop;
-
-    /** */
-    private Row left;
-
-    /** */
-    private int rightIdx;
 
     /**
      * @param ctx Execution context.
      * @param cond Join expression.
      */
-    public JoinNode(ExecutionContext<Row> ctx, Predicate<Row> cond) {
+    protected AbstractJoinNode(ExecutionContext<Row> ctx, Predicate<Row> cond) {
         super(ctx);
 
         this.cond = cond;
@@ -81,7 +76,7 @@ public class JoinNode<Row> extends AbstractNode<Row> {
         requested = rowsCnt;
 
         if (!inLoop)
-            context().execute(this::flushFromBuffer);
+            context().execute(this::body);
     }
 
     /** {@inheritDoc} */
@@ -100,7 +95,7 @@ public class JoinNode<Row> extends AbstractNode<Row> {
 
                 /** {@inheritDoc} */
                 @Override public void onError(Throwable e) {
-                    JoinNode.this.onError(e);
+                    AbstractJoinNode.this.onError(e);
                 }
             };
         else if (idx == 1)
@@ -117,7 +112,7 @@ public class JoinNode<Row> extends AbstractNode<Row> {
 
                 /** {@inheritDoc} */
                 @Override public void onError(Throwable e) {
-                    JoinNode.this.onError(e);
+                    AbstractJoinNode.this.onError(e);
                 }
             };
 
@@ -131,9 +126,11 @@ public class JoinNode<Row> extends AbstractNode<Row> {
         assert downstream != null;
         assert waitingLeft > 0;
 
+        waitingLeft--;
+
         leftInBuf.add(row);
 
-        flushFromBuffer();
+        body();
     }
 
     /** */
@@ -158,9 +155,9 @@ public class JoinNode<Row> extends AbstractNode<Row> {
         assert downstream != null;
         assert waitingLeft > 0;
 
-        waitingLeft = -1;
+        waitingLeft = NOT_WAITING;
 
-        flushFromBuffer();
+        body();
     }
 
     /** */
@@ -170,9 +167,9 @@ public class JoinNode<Row> extends AbstractNode<Row> {
         assert downstream != null;
         assert waitingRight > 0;
 
-        waitingRight = -1;
+        waitingRight = NOT_WAITING;
 
-        flushFromBuffer();
+        body();
     }
 
     /** */
@@ -185,41 +182,10 @@ public class JoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
-    private void flushFromBuffer() {
+    private void body() {
         inLoop = true;
         try {
-            if (waitingRight == -1) {
-                while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
-                    if (left == null)
-                        left = leftInBuf.remove();
-
-                    while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                        Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
-
-                        if (!cond.test(row))
-                            continue;
-
-                        requested--;
-                        downstream.push(row);
-                    }
-
-                    if (rightIdx == rightMaterialized.size()) {
-                        left = null;
-                        rightIdx = 0;
-                    }
-                }
-            }
-
-            if (waitingRight == 0)
-                sources.get(1).request(waitingRight = IN_BUFFER_SIZE);
-
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                sources.get(0).request(waitingLeft = IN_BUFFER_SIZE);
-
-            if (requested > 0 && waitingLeft == -1 && waitingRight == -1 && left == null && leftInBuf.isEmpty()) {
-                downstream.end();
-                requested = 0;
-            }
+            doJoin();
         }
         catch (Exception e) {
             downstream.onError(e);
@@ -228,4 +194,7 @@ public class JoinNode<Row> extends AbstractNode<Row> {
             inLoop = false;
         }
     }
+
+    /** */
+    protected abstract void doJoin();
 }
