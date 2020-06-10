@@ -67,8 +67,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** Native query. */
         private readonly IPlatformTargetInternal _nativeQry;
 
+        /** Indicates whether initial query is a Fields query. */
+        private readonly bool _initialQueryIsFields;
+
         /** Initial query cursor. */
-        private volatile IQueryCursor<ICacheEntry<TK, TV>> _initialQueryCursor;
+        private volatile IPlatformTargetInternal _nativeInitialQueryCursor;
 
         /** Disposed flag. */
         private bool _disposed;
@@ -136,15 +139,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 });
 
                 // 4. Initial query.
-                var nativeInitialQryCur = _nativeQry.OutObjectInternal(0);
-                if (nativeInitialQryCur != null)
-                {
-                    _initialQueryCursor = initialQry is SqlFieldsQuery
-                        ? (IQueryCursor<ICacheEntry<TK, TV>>) new FieldsCacheEntryQueryCursor<TK, TV>(
-                            nativeInitialQryCur,
-                            _keepBinary)
-                        : new QueryCursor<TK, TV>(nativeInitialQryCur, _keepBinary);
-                }
+                _nativeInitialQueryCursor = _nativeQry.OutObjectInternal(0);
+                _initialQueryIsFields = initialQry is SqlFieldsQuery;
             }
             catch (Exception)
             {
@@ -154,8 +150,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 if (_nativeQry != null)
                     _nativeQry.Dispose();
 
-                if (_initialQueryCursor != null)
-                    _initialQueryCursor.Dispose();
+                if (_nativeInitialQueryCursor != null)
+                    _nativeInitialQueryCursor.Dispose();
 
                 throw;
             }
@@ -205,14 +201,19 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 if (_disposed)
                     throw new ObjectDisposedException("Continuous query handle has been disposed.");
 
-                var cur = _initialQueryCursor;
+                var cur = _nativeInitialQueryCursor;
 
                 if (cur == null)
                     throw new InvalidOperationException("GetInitialQueryCursor() can be called only once.");
 
-                _initialQueryCursor = null;
+                _nativeInitialQueryCursor = null;
 
-                return cur;
+                if (_initialQueryIsFields)
+                {
+                    return new FieldsCacheEntryQueryCursor<TK, TV>(cur, _keepBinary);
+                }
+
+                return new QueryCursor<TK, TV>(cur, _keepBinary);
             }
         }
 
