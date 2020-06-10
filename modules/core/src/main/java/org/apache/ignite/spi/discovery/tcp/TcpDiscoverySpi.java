@@ -644,8 +644,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      */
     @IgniteSpiConfiguration(optional = true)
     public void setAddressResolver(AddressResolver addrRslvr) {
-        System.out.println("Set local adress: " + addrRslvr);
-
         // Injection should not override value already set by Spring or user.
         if (this.addrRslvr == null)
             this.addrRslvr = addrRslvr;
