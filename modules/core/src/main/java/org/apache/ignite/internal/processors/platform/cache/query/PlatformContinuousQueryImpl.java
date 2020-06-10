@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -67,7 +68,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     private long ptr;
 
     /** Cursor to handle filter close. */
-    private QueryCursorEx cursor;
+    private QueryCursor cursor;
 
     /** Lock for concurrency control. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -148,7 +149,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                 qry.setAutoUnsubscribe(autoUnsubscribe);
                 qry.setInitialQuery(initialQry);
 
-                cursor = (QueryCursorEx) cache.query(qry.setLocal(loc));
+                cursor = cache.query(qry.setLocal(loc));
 
                 initialQryCur = getInitialQueryCursor(initialQry);
             }
@@ -257,7 +258,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                 }
 
                 @Override public List<GridQueryFieldMetadata> fieldsMeta() {
-                    return cursor.fieldsMeta();
+                    return ((QueryCursorEx)cursor).fieldsMeta();
                 }
             }, batchSize);
 
