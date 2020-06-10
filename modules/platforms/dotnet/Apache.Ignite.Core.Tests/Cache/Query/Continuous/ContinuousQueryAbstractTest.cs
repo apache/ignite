@@ -792,13 +792,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// Tests the initial fields query.
         /// </summary>
         [Test]
-        public void TestInitialFieldQuery()
+        public void TestInitialFieldsQuery()
         {
             var sqlFieldsQuery = new SqlFieldsQuery("select _key, _val from BINARIZABLEENTRY where val < 33");
 
             TestInitialQuery(sqlFieldsQuery, cur => cur.GetAll());
             TestInitialQuery(sqlFieldsQuery, cur => cur.ToList());
+        }
 
+        /// <summary>
+        /// Tests the initial fields query with bad SQL.
+        /// </summary>
+        [Test]
+        public void TestInitialFieldsQueryWithBadSql()
+        {
             // Invalid SQL query.
             var ex = Assert.Throws<IgniteException>(() => TestInitialQuery(
                 new SqlFieldsQuery("select FOO from BAR"), cur => cur.GetAll()));
