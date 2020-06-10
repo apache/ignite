@@ -31,9 +31,6 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     /** How many rows are we waiting for from the upstream. {@code -1} means end of stream. */
     private int waiting;
 
-    /** How many rows are we waiting for from the upstream. {@code -1} means end of stream. */
-    private int processed;
-
     /**  */
     private boolean inLoop;
 
@@ -63,11 +60,14 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         checkThread();
 
         assert !F.isEmpty(sources) && sources.size() == 1;
-        assert rowsCnt > 0 && requested == 0;
+        assert rowsCnt > 0 && requested == 0 : "requested=" + requested + ", rowCnt=" + rowsCnt;
 
-        requested += rowsCnt;
+        requested = rowsCnt;
 
+        System.out.println("+++ r00 " + rowsCnt);
         if (waiting == -1 && rows.isEmpty()) {
+            System.out.println("+++ r0");
+
             downstream.end();
 
             return;
@@ -76,10 +76,15 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         if (!inLoop) {
             assert waiting <= 0 : "Invalid state: [waiting=" + waiting + ", requested=" + requested;
 
-            if (waiting == -1)
+            System.out.println("+++ r01");
+            if (waiting == -1) {
+                System.out.println("+++ r1");
                 context().execute(this::flushFromBuffer);
-            else if (waiting == 0)
+            }
+            else if (waiting == 0) {
+                System.out.println("+++ r2");
                 F.first(sources).request(waiting = IN_BUFFER_SIZE);
+            }
             else
                 throw new AssertionError();
         }
@@ -138,18 +143,25 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         inLoop = true;
 
         try {
-            while (requested > processed) {
-                if (rows.isEmpty()) {
-                    downstream.end();
+            if (requested > 0) {
+                int toSnd = Math.min(Math.min(requested, IN_BUFFER_SIZE), rows.size());
 
-                    break;
+                for (int i = 0; i < toSnd; i++) {
+                    Row row = rows.poll();
+
+                    requested--;
+
+                    downstream.push(row);
                 }
 
-                Row row = rows.poll();
-
-                downstream.push(row);
-
-                processed++;
+                if (rows.isEmpty() && requested > 0) {
+                    System.out.println("+++ end");
+                    downstream.end();
+                }
+                else if (requested > 0) {
+                    // allow others to do their job
+                    context().execute(this::flushFromBuffer);
+                }
             }
         }
         finally {

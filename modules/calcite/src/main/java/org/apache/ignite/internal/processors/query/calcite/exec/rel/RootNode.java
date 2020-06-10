@@ -26,6 +26,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -60,6 +61,8 @@ public class RootNode<Row> extends AbstractNode<Row>
     /** */
     private int waiting;
 
+    private final IgniteLogger log;
+
     /**
      * @param ctx Execution context.
      */
@@ -67,6 +70,8 @@ public class RootNode<Row> extends AbstractNode<Row>
         super(ctx);
 
         this.onClose = onClose;
+
+        log = ctx.planningContext().logger().getLogger(RootNode.class);
 
         // extra space for possible END marker
         buff = new ArrayDeque<>(IN_BUFFER_SIZE + 1);
@@ -122,7 +127,7 @@ public class RootNode<Row> extends AbstractNode<Row>
 
         lock.lock();
         try {
-            assert waiting > 0;
+            assert waiting > 0 : "waiting=" + waiting;
 
             waiting--;
 
@@ -148,7 +153,7 @@ public class RootNode<Row> extends AbstractNode<Row>
     @Override public void end() {
         lock.lock();
         try {
-            assert waiting > 0;
+            assert waiting > 0 : "waiting=" + waiting;
 
             waiting = -1;
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.function.Supplier;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -30,7 +31,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     private final static int NOT_READY = -1;
 
     /** */
-    private final static int NOT_SET = -2;
+    private final static int LIMIT_NOT_SET = -2;
 
     /** */
     final private Supplier<Integer> offsetSup;
@@ -39,16 +40,24 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     final private Supplier<Integer> limitSup;
 
     /** */
-    private long offset = NOT_READY;
+    private int offset = NOT_READY;
 
     /** */
-    private long limit = NOT_READY;
+    private int limit = NOT_READY;
 
     /** */
-    private long requested;
+    private int requested;
 
     /** */
-    private int processed;
+    private int rowNum;
+
+    /** */
+    private int waiting;
+
+    /** */
+    boolean ended;
+
+    private final IgniteLogger log;
 
     /**
      * @param ctx Execution context.
@@ -61,6 +70,8 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         Supplier<Integer> limitSup) {
         super(ctx);
 
+        log = ctx.planningContext().logger().getLogger(LimitNode.class);
+
         this.offsetSup = offsetSup;
         this.limitSup = limitSup;
     }
@@ -70,9 +81,10 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         checkThread();
 
         assert !F.isEmpty(sources) && sources.size() == 1;
-        assert rowsCnt > 0;
+        assert rowsCnt > 0 && requested == 0;
 
-        requested += rowsCnt;
+        requested = rowsCnt;
+        log.info("+++ req " + requested);
 
         // Initialize offset / limit.
         if (offset == NOT_READY && limit == NOT_READY) {
@@ -90,33 +102,38 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
                 if (limit < 0)
                     onError(new IgniteSQLException("Invalid query limit: " + limit));
-
-                if (offset > 0)
-                    limit += offset;
             }
             else
-                limit = NOT_SET;
+                limit = LIMIT_NOT_SET;
         }
 
-        request0();
+        request0(requested);
     }
 
     /**
      * Process request (some parameters may not yet be calculated).
      */
-    private void request0() {
-        if (limit == 0 || limit > 0 && processed >= limit) {
-            downstream.end();
+    private void request0(int rowsCnt) {
+        if (limit == 0 || limit > 0 && rowNum >= limit + offset) {
+            log.info("+++ request0.toend req=" + requested + ", row=" + rowNum + ", lim=" + limit + ", off=" + offset);
 
-            sources.get(0).cancel();
+            end();
 
             return;
         }
 
-        int req = (int)(requested - processed);
+        int req = rowsCnt;
 
-        if (limit > 0)
-            req = (int)Math.min(limit - processed, req);
+        if (rowNum == 0 && offset > 0)
+            req += offset;
+
+        if (limit > 0 && rowNum + req > limit + offset)
+            req = limit + offset - rowNum;
+
+        log.info("+++ request0.req " + req + ", req=" + requested +
+            ", row=" + rowNum + ", lim=" + limit + ", off=" + offset);
+
+        waiting = req;
 
         F.first(sources).request(req);
     }
@@ -124,24 +141,46 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /** {@inheritDoc} */
     @Override public void push(Row row) {
         checkThread();
+        log.info("+++ push >>");
 
         assert downstream != null;
 
-        if (processed >= offset)
+        waiting--;
+
+        if (rowNum >= offset) {
+            requested--;
+
+            log.info("+++ push.push  req=" + requested +
+                ", row=" + rowNum + ", lim=" + limit + ", off=" + offset);
+
             downstream.push(row);
-
-        processed++;
-
-        if (limit > 0 && processed >= limit && processed < requested) {
-            downstream.end();
-
-            sources.get(0).cancel();
         }
+
+        rowNum++;
+
+        if (requested > 0 && limit > 0 && rowNum >= limit + offset) {
+            log.info("+++ push.toend  req=" + requested +
+                ", rowNum=" + rowNum + ", lim=" + limit + ", off=" + offset);
+
+            end();
+        }
+
+        if (requested > 0 && waiting == 0)
+            request0(IN_BUFFER_SIZE);
+
+        log.info("+++ push <<");
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
         checkThread();
+
+        if (ended)
+            return;
+
+        log.info("+++ end ");
+
+        ended = true;
 
         assert downstream != null;
 

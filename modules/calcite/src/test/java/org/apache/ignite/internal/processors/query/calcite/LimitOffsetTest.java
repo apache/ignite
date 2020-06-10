@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -38,11 +37,11 @@ import static java.util.Collections.singletonList;
  */
 public class LimitOffsetTest extends GridCommonAbstractTest {
     /** */
-    private static final int ROWS = 100;
+    private static IgniteCache<Integer, String> cache;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Ignite grid = startGrids(2);
+        startGrids(2);
 
         QueryEntity e = new QueryEntity()
             .setTableName("Test")
@@ -55,10 +54,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(e);
 
-        IgniteCache<Integer, String> cache = grid.createCache(ccfg);
-
-        for (int i = 0; i < ROWS; ++i)
-            cache.put(i, "val_" + i);
+        cache = grid(0).createCache(ccfg);
     }
 
     /** */
@@ -143,31 +139,69 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
      *
      */
     @Test
+    public void testDbg() {
+        fillCache(512);
+
+        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+
+        for (int i = 0; i < 100; ++i) {
+            log.info("+++ ITER " + i);
+            List<FieldsQueryCursor<List<?>>> cursors =
+                engine.query(null, "PUBLIC",
+                    "SELECT * FROM TEST FETCH FIRST 512 ROWS ONLY",
+                    0);
+
+            cursors.get(0).getAll();
+        }
+
+    }
+
+    /**
+     *
+     */
+    @Test
     public void testLimitOffset() {
-        int[] limits = {-1, 0, 10, ROWS / 2 - 1, ROWS / 2, ROWS / 2 + 1, ROWS - 1, ROWS};
-        int[] offsets = {-1, 0, 10, ROWS / 2 - 1, ROWS / 2, ROWS / 2 + 1, ROWS - 1, ROWS};
+        int[] rowsArr = {10, 512, 2000};
 
-        for (int lim : limits) {
-            for (int off : offsets) {
-                log.info("+++ Check [limit=" + lim + ", off=" + off + ']');
+        for (int rows : rowsArr) {
+            fillCache(rows);
 
-                checkQuery(lim, off, false, false);
-                checkQuery(lim, off, true, false);
-                checkQuery(lim, off, false, true);
-                checkQuery(lim, off, true, true);
+            int[] limits = {-1, 0, 10, rows / 2 - 1, rows / 2, rows / 2 + 1, rows - 1, rows};
+            int[] offsets = {-1, 0, 10, rows / 2 - 1, rows / 2, rows / 2 + 1, rows - 1, rows};
+
+            for (int lim : limits) {
+                for (int off : offsets) {
+                    log.info("+++ Check [rows=" + rows + ", limit=" + lim + ", off=" + off + ']');
+
+                    checkQuery(rows, lim, off, false, false);
+                    checkQuery(rows, lim, off, true, false);
+                    checkQuery(rows, lim, off, false, true);
+                    checkQuery(rows, lim, off, true, true);
+                }
             }
         }
     }
 
     /**
+     * @param rows
+     */
+    private void fillCache(int rows) {
+        cache.clear();
+
+        for (int i = 0; i < rows; ++i)
+            cache.put(i, "val_" + i);
+    }
+
+    /**
      * Check query with specified limit and offset (or without its when the arguments are negative),
      *
+     * @param rows
      * @param lim Limit.
      * @param off Offset.
      * @param param If {@code false} place limit/offset as literals. Otherwise they are plase as parameters.
      * @param sorted Use sorted query (adds ORDER BY).
      */
-    void checkQuery(int lim, int off, boolean param, boolean sorted) {
+    void checkQuery(int rows, int lim, int off, boolean param, boolean sorted) {
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
         String sql = createSql(lim, off, param, sorted);
@@ -189,27 +223,27 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
 
         List<List<?>> res = cursors.get(0).getAll();
 
-        assertEquals("Invalid results size. [limit=" + lim + ", off=" + off + ", res=" + res.size() + ']',
-            expectedSize(lim, off), res.size());
+        assertEquals("Invalid results size. [rows=" + rows +", limit=" + lim + ", off=" + off + ", res=" + res.size() + ']',
+            expectedSize(rows, lim, off), res.size());
     }
 
     /**
      * Calculates expected result set size by limit and offset.
      */
-    private int expectedSize(int lim, int off) {
+    private int expectedSize(int rows, int lim, int off) {
         if (off < 0)
             off = 0;
 
         if (lim == 0)
             return 0;
         else if (lim < 0)
-            return ROWS - off;
-        else if (lim + off < ROWS)
+            return rows - off;
+        else if (lim + off < rows)
             return  lim;
-        else if (off > ROWS)
+        else if (off > rows)
             return  0;
         else
-            return ROWS - off;
+            return rows - off;
     }
 
     /**
