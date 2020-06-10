@@ -15,7 +15,9 @@
  */
 package org.apache.ignite.compatibility.sql.randomsql;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cache.QueryEntity;
 
@@ -28,13 +30,24 @@ public class Table {
 
     private final LinkedHashMap<String, Column> columns = new LinkedHashMap<>();
 
+    private final List<Column> colsList = new ArrayList<>();
+
     public Table(QueryEntity entity) {
         name = entity.getTableName();
 
         for (Map.Entry<String, String> f : entity.getFields().entrySet()) {
-            Column col = new Column(f.getKey(), f.getValue());
+            Column col = new Column(f.getKey(), f.getValue(), this);
 
             columns.put(col.name(), col);
+            colsList.add(col);
         }
+    }
+
+    public List<Column> columnsList() {
+        return colsList;
+    }
+
+    public String name() {
+        return name;
     }
 }

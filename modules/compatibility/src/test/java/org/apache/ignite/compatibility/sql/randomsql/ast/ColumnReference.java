@@ -15,27 +15,36 @@
  */
 package org.apache.ignite.compatibility.sql.randomsql.ast;
 
+import org.apache.ignite.compatibility.sql.randomsql.Column;
 import org.apache.ignite.compatibility.sql.randomsql.Scope;
 
 /**
  * TODO: Add class description.
  */
-public class Select extends Ast {
+public class ColumnReference extends Expression {
 
-    private Expression where; // TODO bool expr
+    private final Column col;
 
-    public Select(Ast parent) {
-        super(parent);
+    protected ColumnReference(Ast parent, Class<?> type, Column col) {
+        super(parent, type);
+        this.col = col;
     }
 
     @Override public void print(StringBuilder out) {
-        where.print(out);
+        out.append(" ")
+            .append(col.table().name())
+            .append(".")
+            .append(col.name())
+            .append(" ");
     }
 
-    public static Select createParentRandom(int seed, Scope scope) {
-        Select select = new Select(null);
-        select.init(seed, scope);
-        select.where = Expression.createRandom(select, Integer.class);
-        return select;
+    public static ColumnReference createRandom(Ast parent, Class<?> typeConstraint) {
+        Scope scope = parent.scope();
+
+        Column col = scope.pickRandomColumn(typeConstraint);
+
+        return new ColumnReference(parent, typeConstraint, col);
     }
+
+
 }

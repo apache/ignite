@@ -36,6 +36,7 @@ import org.apache.ignite.compatibility.sql.model.ModelFactory;
 import org.apache.ignite.compatibility.sql.model.Person;
 import org.apache.ignite.compatibility.sql.randomsql.Schema;
 import org.apache.ignite.compatibility.sql.randomsql.Scope;
+import org.apache.ignite.compatibility.sql.randomsql.ast.Select;
 import org.apache.ignite.compatibility.sql.runner.PredefinedQueriesSupplier;
 import org.apache.ignite.compatibility.sql.runner.QueryDuelBenchmark;
 import org.apache.ignite.compatibility.sql.runner.QueryDuelResult;
@@ -170,7 +171,14 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
         schema.fillScope(rootScope);
 
-        System.out.println("Schema=" + schema);
+
+
+        Select select = Select.createParentRandom((int)(System.currentTimeMillis() % 100), rootScope);
+
+        StringBuilder sb = new StringBuilder();
+        select.print(sb);
+
+        System.out.println("select=" + sb.toString());
     }
 
     /**

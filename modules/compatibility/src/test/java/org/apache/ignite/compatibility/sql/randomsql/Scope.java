@@ -18,6 +18,9 @@ package org.apache.ignite.compatibility.sql.randomsql;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
+
+import static org.apache.ignite.compatibility.sql.randomsql.ast.AstUtils.pickRandom;
 
 /**
  * Scope: visible tables and columns.
@@ -31,6 +34,9 @@ public class Scope {
 
     /** */
     private Schema schema;
+
+    /** */
+    private Random rnd;
 
     /**
      * @param parent Parent.
@@ -51,6 +57,11 @@ public class Scope {
     }
 
     /** */
+    public void setRandom(Random rnd) {
+        this.rnd = rnd;
+    }
+
+    /** */
     public Scope parentScope() {
         return parentScope;
     }
@@ -58,5 +69,26 @@ public class Scope {
     /** */
     public List<Table> tables() {
         return tbls;
+    }
+
+    public Table pickRandomTable() {
+        return pickRandom(tbls, rnd);
+    }
+
+    public Column pickRandomColumn(Class<?> type) {
+        if (type == null) {
+            Table tbl = pickRandomTable();
+            return pickRandom(tbl.columnsList(), rnd);
+        }
+        else {
+            List<Column> cols = new ArrayList<>();
+            for (Table tbl : tbls) {
+                for (Column col : tbl.columnsList()) {
+                    if (col.typeClass() == type)
+                        cols.add(col);
+                }
+            }
+            return pickRandom(cols, rnd);
+        }
     }
 }

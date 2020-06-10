@@ -15,27 +15,23 @@
  */
 package org.apache.ignite.compatibility.sql.randomsql.ast;
 
-import org.apache.ignite.compatibility.sql.randomsql.Scope;
+import java.util.List;
+import java.util.Random;
 
 /**
  * TODO: Add class description.
  */
-public class Select extends Ast {
+public class AstUtils {
 
-    private Expression where; // TODO bool expr
-
-    public Select(Ast parent) {
-        super(parent);
+    public static int r(Ast parent, int bound) {
+        return parent.random().nextInt(bound);
     }
 
-    @Override public void print(StringBuilder out) {
-        where.print(out);
+    public static String rAsString(Ast parent, int bound) {
+        return String.valueOf(parent.random().nextInt(bound));
     }
 
-    public static Select createParentRandom(int seed, Scope scope) {
-        Select select = new Select(null);
-        select.init(seed, scope);
-        select.where = Expression.createRandom(select, Integer.class);
-        return select;
+    public static <T> T pickRandom(List<T> list, Random rnd) {
+        return list.get(rnd.nextInt(list.size()));
     }
 }

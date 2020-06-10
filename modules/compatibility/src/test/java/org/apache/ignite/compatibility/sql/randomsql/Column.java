@@ -25,11 +25,15 @@ public class Column {
     private final String name;
 
     /** */
+    private final Table tbl;
+
+    /** */
     private final Class<?> typeCls;
 
     /** */
-    public Column(String name, String typeClsName) {
+    public Column(String name, String typeClsName, Table tbl) {
         this.name = name;
+        this.tbl = tbl;
         typeCls = U.classForName(typeClsName, null);
         assert typeCls != null;
     }
@@ -42,5 +46,10 @@ public class Column {
     /** */
     public Class<?> typeClass() {
         return typeCls;
+    }
+
+    /** */
+    public Table table() {
+        return tbl;
     }
 }

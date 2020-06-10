@@ -15,15 +15,30 @@
  */
 package org.apache.ignite.compatibility.sql.randomsql.ast;
 
-import org.apache.ignite.compatibility.sql.randomsql.Scope;
+import static org.apache.ignite.compatibility.sql.randomsql.ast.AstUtils.r;
+import static org.apache.ignite.compatibility.sql.randomsql.ast.AstUtils.rAsString;
 
 /**
  * TODO: Add class description.
  */
 public class ConstantExpression extends Expression {
-    String expr;
+    private final String constant;
 
-    public ConstantExpression(Ast parent, Scope scope, Class<?> type) {
-        super(parent, scope, type);
+    protected ConstantExpression(Ast parent, Class<?> type, String constant) {
+        super(parent, type);
+        this.constant = constant;
+    }
+
+    @Override public void print(StringBuilder out) {
+        out.append(" ").append(constant).append(" ");
+    }
+
+    public static ConstantExpression createRandom(Ast parent, Class<?> typeConstraint) {
+        if (typeConstraint == Integer.class)
+            return new ConstantExpression(parent, typeConstraint, rAsString(parent, 100));
+        else if (typeConstraint == Boolean.class)
+            return new ConstantExpression(parent, typeConstraint, r(parent, 2) == 0 ? "true" : "false");
+        else
+            throw new  AssertionError("Not supported type constraint:" + typeConstraint);
     }
 }

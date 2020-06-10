@@ -15,6 +15,7 @@
  */
 package org.apache.ignite.compatibility.sql.randomsql.ast;
 
+import java.util.Random;
 import org.apache.ignite.compatibility.sql.randomsql.Scope;
 
 /**
@@ -24,9 +25,11 @@ public abstract class Ast {
 
     private final Ast parent;
 
-    private final Scope scope;
+    private Scope scope;
 
     private final int level;
+
+    private Random rnd;
 
 
     public Ast(Ast parent) {
@@ -39,7 +42,23 @@ public abstract class Ast {
             this.parent = parent;
             level = parent.level + 1;
             scope = parent.scope;
+            rnd = parent.rnd;
         }
     }
 
+    public abstract void print(StringBuilder out);
+
+    public Random random() {
+        return rnd;
+    }
+
+    public void init(int seed, Scope scope) {
+        rnd = new Random(seed);
+        this.scope = scope;
+        this.scope.setRandom(rnd);
+    }
+
+    public Scope scope() {
+        return scope;
+    }
 }

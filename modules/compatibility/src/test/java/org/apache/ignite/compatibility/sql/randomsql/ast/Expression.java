@@ -15,7 +15,7 @@
  */
 package org.apache.ignite.compatibility.sql.randomsql.ast;
 
-import org.apache.ignite.compatibility.sql.randomsql.Scope;
+import static org.apache.ignite.compatibility.sql.randomsql.ast.AstUtils.r;
 
 /**
  * TODO: Add class description.
@@ -24,9 +24,16 @@ public abstract class Expression extends Ast {
 
     private final Class<?> type;
 
-    public Expression(Ast parent, Scope scope, Class<?> type) {
+    protected Expression(Ast parent, Class<?> type) {
         super(parent);
 
         this.type = type;
+    }
+
+    public static Expression createRandom(Ast parent, Class<?> typeConstraint) {
+        if (r(parent, 10) < 2)
+            return ConstantExpression.createRandom(parent, typeConstraint);
+        else
+            return ColumnReference.createRandom(parent, typeConstraint);
     }
 }
