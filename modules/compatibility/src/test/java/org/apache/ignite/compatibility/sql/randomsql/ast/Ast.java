@@ -13,32 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.compatibility.sql.randomsql;
+package org.apache.ignite.compatibility.sql.randomsql.ast;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.compatibility.sql.randomsql.Scope;
 
 /**
- * Schema.
+ * Base class for AST
  */
-public class Schema {
-    /** */
-    private final List<Table> tbls = new ArrayList<>();
+public abstract class Ast {
 
-    /** */
-    public void addTable(QueryEntity entity) {
-        tbls.add(new Table(entity));
+    private final Ast parent;
+
+    private final Scope scope;
+
+    private final int level;
+
+
+    public Ast(Ast parent) {
+        if (parent == null) {
+            this.parent = null;
+            level = 0;
+            scope = null;
+        }
+        else {
+            this.parent = parent;
+            level = parent.level + 1;
+            scope = parent.scope;
+        }
     }
 
-    /** */
-    public List<Table> tables() {
-        return tbls;
-    }
-
-    /** */
-    public void fillScope(Scope scope) {
-        scope.fillTables(tbls);
-        scope.setSchema(this);
-    }
 }

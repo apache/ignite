@@ -16,9 +16,11 @@
  */
 package org.apache.ignite.compatibility.sql;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
@@ -32,6 +34,8 @@ import org.apache.ignite.compatibility.sql.model.Country;
 import org.apache.ignite.compatibility.sql.model.Department;
 import org.apache.ignite.compatibility.sql.model.ModelFactory;
 import org.apache.ignite.compatibility.sql.model.Person;
+import org.apache.ignite.compatibility.sql.randomsql.Schema;
+import org.apache.ignite.compatibility.sql.randomsql.Scope;
 import org.apache.ignite.compatibility.sql.runner.PredefinedQueriesSupplier;
 import org.apache.ignite.compatibility.sql.runner.QueryDuelBenchmark;
 import org.apache.ignite.compatibility.sql.runner.QueryDuelResult;
@@ -96,6 +100,17 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
         setAddresses(Collections.singleton("127.0.0.1:47510..47519"));
     }};
 
+    /** Model factories. */
+    private static final List<ModelFactory> MODEL_FACTORIES = new ArrayList<ModelFactory>() {
+        {
+            add(new Person.Factory());
+            add(new Department.Factory());
+            add(new Country.Factory());
+            add(new City.Factory());
+            add(new Company.Factory());
+        }
+    };
+
     /** Default queries.. */
     private final Supplier<String> qrysSupplier = new PredefinedQueriesSupplier(Arrays.asList(
         "SELECT * FROM person p1 WHERE id > 0",
@@ -116,6 +131,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
         "SELECT * FROM person p, department d, company co, city ci " +
             "WHERE p.depId=d.id AND d.companyId = co.id AND p.cityId = ci.id AND d.cityId > 10 AND co.headCnt < 20"
     ), false);
+
 
     /** {@inheritDoc} */
     @Override protected @NotNull Collection<Dependency> getDependencies(String igniteVer) {
@@ -140,6 +156,21 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 2 * TEST_TIMEOUT + WARM_UP_TIMEOUT + super.getTestTimeout();
+    }
+
+    // TODO remove it.
+    @Test
+    public void test() {
+        Schema schema = new Schema();
+
+        for (ModelFactory factory : MODEL_FACTORIES)
+            schema.addTable(factory.queryEntity());
+
+        Scope rootScope = new Scope(null);
+
+        schema.fillScope(rootScope);
+
+        System.out.println("Schema=" + schema);
     }
 
     /**
@@ -242,16 +273,15 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
      * @param seed Random seed.
      */
     private static void createTablesAndPopulateData(Ignite ignite, int seed) {
-        createAndPopulateTable(ignite, new Person.Factory(seed));
-        createAndPopulateTable(ignite, new Department.Factory(seed));
-        createAndPopulateTable(ignite, new Country.Factory(seed));
-        createAndPopulateTable(ignite, new City.Factory(seed));
-        createAndPopulateTable(ignite, new Company.Factory(seed));
+        for (ModelFactory mdlFactory : MODEL_FACTORIES)
+            createAndPopulateTable(ignite, mdlFactory, seed);
     }
 
     /** */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private static void createAndPopulateTable(Ignite ignite, ModelFactory factory) {
+    private static void createAndPopulateTable(Ignite ignite, ModelFactory factory, int seed) {
+        factory.init(seed);
+
         QueryEntity qryEntity = factory.queryEntity();
         CacheConfiguration cacheCfg = new CacheConfiguration<>(factory.tableName())
             .setQueryEntities(Collections.singleton(qryEntity))

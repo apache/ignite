@@ -13,32 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.compatibility.sql.randomsql;
-
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.ignite.cache.QueryEntity;
+package org.apache.ignite.compatibility.sql.randomsql.ast;
 
 /**
- * Schema.
+ * TODO: Add class description.
  */
-public class Schema {
-    /** */
-    private final List<Table> tbls = new ArrayList<>();
+public class Select {
 
-    /** */
-    public void addTable(QueryEntity entity) {
-        tbls.add(new Table(entity));
-    }
 
-    /** */
-    public List<Table> tables() {
-        return tbls;
-    }
-
-    /** */
-    public void fillScope(Scope scope) {
-        scope.fillTables(tbls);
-        scope.setSchema(this);
-    }
 }

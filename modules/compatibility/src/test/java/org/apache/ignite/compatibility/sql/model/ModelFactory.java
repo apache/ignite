@@ -22,6 +22,9 @@ import org.apache.ignite.cache.QueryEntity;
  * Factory for model.
  */
 public interface ModelFactory {
+    /** Inits factory with a random seed. */
+    void init(int seed);
+
     /** Creates random model objects. */
     Object createRandom();
 

@@ -85,16 +85,13 @@ public class Department {
         public static final int DEPS_CNT = 1000;
 
         /** */
-        private final Random rnd;
+        private Random rnd;
 
         /** */
         private final QueryEntity qryEntity;
 
-        /**
-         * @param seed Seed.
-         */
-        public Factory(int seed) {
-            this.rnd = new Random(seed);
+        /** */
+        public Factory() {
             QueryEntity entity = new QueryEntity(Long.class, Department.class);
             entity.setKeyFieldName("id");
             entity.addQueryField("id", Long.class.getName(), null);
@@ -108,7 +105,17 @@ public class Department {
         }
 
         /** {@inheritDoc} */
+        @Override public void init(int seed) {
+            this.rnd = new Random(seed);
+        }
+
+        /** {@inheritDoc} */
         @Override public Department createRandom() {
+            if (rnd == null) {
+                throw new IllegalStateException("Factory is not initialized with a random seed. " +
+                    "Call Factory.iniFactory(int seed) before using this method.");
+            }
+
             return new Department(
                 randomString(rnd, 5, 10), // name
                 rnd.nextInt(20), // head count

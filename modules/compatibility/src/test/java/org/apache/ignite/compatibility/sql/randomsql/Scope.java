@@ -29,6 +29,9 @@ public class Scope {
     /** */
     private final List<Table> tbls;
 
+    /** */
+    private Schema schema;
+
     /**
      * @param parent Parent.
      */
@@ -40,6 +43,11 @@ public class Scope {
     /** */
     public void fillTables(Collection<Table> tbls) {
         this.tbls.addAll(tbls);
+    }
+
+    /** */
+    public void setSchema(Schema schema) {
+        this.schema = schema;
     }
 
     /** */

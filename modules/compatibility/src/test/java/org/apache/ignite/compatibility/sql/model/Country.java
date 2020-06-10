@@ -73,16 +73,13 @@ public class Country {
         public static final int COUNTRY_CNT = 50;
 
         /** */
-        private final Random rnd;
+        private Random rnd;
 
         /** */
         private final QueryEntity qryEntity;
 
-        /**
-         * @param seed Seed.
-         */
-        public Factory(int seed) {
-            this.rnd = new Random(seed);
+        /** */
+        public Factory() {
             QueryEntity entity = new QueryEntity(Long.class, Country.class);
             entity.setKeyFieldName("id");
             entity.addQueryField("id", Long.class.getName(), null);
@@ -94,8 +91,16 @@ public class Country {
             this.qryEntity = entity;
         }
 
+        @Override public void init(int seed) {
+            this.rnd = new Random(seed);
+        }
+
         /** {@inheritDoc} */
         @Override public Country createRandom() {
+            if (rnd == null) {
+                throw new IllegalStateException("Factory is not initialized with a random seed. " +
+                    "Call Factory.iniFactory(int seed) before using this method.");
+            }
             return new Country(
                 randomString(rnd, 5, 10), // name
                 randomString(rnd, 3, 3), // phone code

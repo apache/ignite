@@ -84,16 +84,13 @@ public class Company {
         public static final int COMPANY_CNT = 500;
 
         /** */
-        private final Random rnd;
+        private Random rnd;
 
         /** */
         private final QueryEntity qryEntity;
 
-        /**
-         * @param seed Seed.
-         */
-        public Factory(int seed) {
-            this.rnd = new Random(seed);
+        /** */
+        public Factory() {
             QueryEntity entity = new QueryEntity(Long.class, Company.class);
             entity.setKeyFieldName("id");
             entity.addQueryField("id", Long.class.getName(), null);
@@ -107,7 +104,17 @@ public class Company {
         }
 
         /** {@inheritDoc} */
+        @Override public void init(int seed) {
+            rnd = new Random(seed);
+        }
+
+        /** {@inheritDoc} */
         @Override public Company createRandom() {
+            if (rnd == null) {
+                throw new IllegalStateException("Factory is not initialized with a random seed. " +
+                    "Call Factory.iniFactory(int seed) before using this method.");
+            }
+
             return new Company(
                 randomString(rnd, 5, 10), // name
                 randomString(rnd, 10, 30), // address

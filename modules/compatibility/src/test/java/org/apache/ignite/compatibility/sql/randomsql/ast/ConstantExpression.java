@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.compatibility.sql.randomsql;
+package org.apache.ignite.compatibility.sql.randomsql.ast;
+
+import org.apache.ignite.compatibility.sql.randomsql.Scope;
 
 /**
  * TODO: Add class description.
  */
-public class Expression {
+public class ConstantExpression extends Expression {
+    String expr;
 
+    public ConstantExpression(Ast parent, Scope scope, Class<?> type) {
+        super(parent, scope, type);
+    }
 }

@@ -16,27 +16,19 @@
 package org.apache.ignite.compatibility.sql.randomsql;
 
 /**
- * Base class for AST
+ * TODO: Add class description.
  */
-public abstract class Ast {
+public class Operation {
 
-    private final Ast parent;
+    private final String name;
+    private final Class<?> left;
+    private final Class<?> right;
+    private final Class<?> result;
 
-    private final Scope scope;
-
-    private final int level;
-
-
-    public Ast(Ast parent, Scope scope) {
-        this.scope = scope;
-        if (parent == null) {
-            this.parent = null;
-            level = 0;
-        }
-        else {
-            this.parent = parent;
-            level = parent.level + 1;
-        }
+    public Operation(String name, Class<?> left, Class<?> right, Class<?> result) {
+        this.name = name;
+        this.left = left;
+        this.right = right;
+        this.result = result;
     }
-
 }

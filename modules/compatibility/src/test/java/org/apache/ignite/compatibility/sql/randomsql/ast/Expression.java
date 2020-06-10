@@ -13,12 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.compatibility.sql.randomsql;
+package org.apache.ignite.compatibility.sql.randomsql.ast;
+
+import org.apache.ignite.compatibility.sql.randomsql.Scope;
 
 /**
  * TODO: Add class description.
  */
-public class Select {
+public abstract class Expression extends Ast {
 
+    private final Class<?> type;
 
+    public Expression(Ast parent, Scope scope, Class<?> type) {
+        super(parent);
+
+        this.type = type;
+    }
 }
