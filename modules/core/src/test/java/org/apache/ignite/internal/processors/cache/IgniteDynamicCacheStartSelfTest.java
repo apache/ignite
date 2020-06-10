@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
@@ -819,6 +820,61 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < nodeCount(); i++)
             ignite(i).events().stopLocalListen(lsnrs[i]);
+    }
+
+    @Test
+    public void testRemoteListenShouldGetCacheEventFromEveryNode() throws Exception {
+        final CountDownLatch starts = new CountDownLatch(nodeCount());
+        final CountDownLatch stops = new CountDownLatch(nodeCount());
+
+        AtomicInteger counter = new AtomicInteger(0);
+
+        UUID lsnrId = ignite(0).events().remoteListen((uuid, evt) -> {
+            switch (evt.type()) {
+                case EventType.EVT_CACHE_STARTED:
+                    starts.countDown();
+
+                    counter.incrementAndGet();
+
+                    break;
+
+                case EventType.EVT_CACHE_STOPPED:
+                    stops.countDown();
+
+                    counter.incrementAndGet();
+
+                    break;
+
+                default:
+                    assert false;
+            }
+
+            assertEquals(DYNAMIC_CACHE_NAME, ((CacheEvent)evt).cacheName());
+
+            return true;
+        }, evt -> true, EventType.EVTS_CACHE_LIFECYCLE);
+
+        try {
+            IgniteCache<Object, Object> cache = ignite(0).createCache(DYNAMIC_CACHE_NAME);
+
+            starts.await(10, TimeUnit.SECONDS);
+
+            assertEquals("Cache start", nodeCount(), counter.get());
+
+            counter.set(0);
+
+            cache.destroy();
+
+            stops.await(10, TimeUnit.SECONDS);
+
+            assertEquals("Cache stop", nodeCount(), counter.get());
+        }
+        finally {
+            ignite(0).events().stopRemoteListen(lsnrId);
+
+            if (ignite(0).cache(DYNAMIC_CACHE_NAME) != null)
+                ignite(0).cache(DYNAMIC_CACHE_NAME).destroy();
+        }
     }
 
     /**

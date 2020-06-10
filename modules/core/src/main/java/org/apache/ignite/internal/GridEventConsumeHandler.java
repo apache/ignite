@@ -233,12 +233,12 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                                     if (node == null)
                                                         continue;
 
-                                                    if (ctx.config().isPeerClassLoadingEnabled()) {
+                                                    if (ctx.config().isPeerClassLoadingEnabled() &&
+                                                        ctx.discovery().cacheNode(node, cacheName)) {
                                                         GridCacheContext cctx =
                                                             ctx.cache().internalCache(cacheName).context();
 
-                                                        if (cctx.deploymentEnabled() &&
-                                                            ctx.discovery().cacheNode(node, cacheName)) {
+                                                        if (cctx.deploymentEnabled()) {
                                                             wrapper.p2pMarshal(ctx.config().getMarshaller());
 
                                                             wrapper.cacheName = cacheName;
