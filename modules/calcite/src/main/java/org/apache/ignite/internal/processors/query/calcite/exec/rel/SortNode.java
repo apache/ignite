@@ -64,10 +64,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         requested = rowsCnt;
 
-        System.out.println("+++ r00 " + rowsCnt);
         if (waiting == -1 && rows.isEmpty()) {
-            System.out.println("+++ r0");
-
             downstream.end();
 
             return;
@@ -76,15 +73,10 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         if (!inLoop) {
             assert waiting <= 0 : "Invalid state: [waiting=" + waiting + ", requested=" + requested;
 
-            System.out.println("+++ r01");
-            if (waiting == -1) {
-                System.out.println("+++ r1");
+            if (waiting == -1)
                 context().execute(this::flushFromBuffer);
-            }
-            else if (waiting == 0) {
-                System.out.println("+++ r2");
+            else if (waiting == 0)
                 F.first(sources).request(waiting = IN_BUFFER_SIZE);
-            }
             else
                 throw new AssertionError();
         }
@@ -154,10 +146,8 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
                     downstream.push(row);
                 }
 
-                if (rows.isEmpty() && requested > 0) {
-                    System.out.println("+++ end");
+                if (rows.isEmpty() && requested > 0)
                     downstream.end();
-                }
                 else if (requested > 0) {
                     // allow others to do their job
                     context().execute(this::flushFromBuffer);

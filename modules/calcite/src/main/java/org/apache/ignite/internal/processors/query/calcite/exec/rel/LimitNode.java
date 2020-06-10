@@ -57,8 +57,6 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /** */
     boolean ended;
 
-    private final IgniteLogger log;
-
     /**
      * @param ctx Execution context.
      * @param offsetSup Offset parameter supplier.
@@ -69,8 +67,6 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         Supplier<Integer> offsetSup,
         Supplier<Integer> limitSup) {
         super(ctx);
-
-        log = ctx.planningContext().logger().getLogger(LimitNode.class);
 
         this.offsetSup = offsetSup;
         this.limitSup = limitSup;
@@ -84,7 +80,6 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         assert rowsCnt > 0 && requested == 0;
 
         requested = rowsCnt;
-        log.info("+++ req " + requested);
 
         // Initialize offset / limit.
         if (offset == NOT_READY && limit == NOT_READY) {
@@ -115,8 +110,6 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
      */
     private void request0(int rowsCnt) {
         if (limit == 0 || limit > 0 && rowNum >= limit + offset) {
-            log.info("+++ request0.toend req=" + requested + ", row=" + rowNum + ", lim=" + limit + ", off=" + offset);
-
             end();
 
             return;
@@ -130,9 +123,6 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         if (limit > 0 && rowNum + req > limit + offset)
             req = limit + offset - rowNum;
 
-        log.info("+++ request0.req " + req + ", req=" + requested +
-            ", row=" + rowNum + ", lim=" + limit + ", off=" + offset);
-
         waiting = req;
 
         F.first(sources).request(req);
@@ -141,34 +131,24 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /** {@inheritDoc} */
     @Override public void push(Row row) {
         checkThread();
-        log.info("+++ push >>");
 
         assert downstream != null;
 
         waiting--;
 
-        if (rowNum >= offset) {
+        if (!ended && rowNum >= offset) {
             requested--;
-
-            log.info("+++ push.push  req=" + requested +
-                ", row=" + rowNum + ", lim=" + limit + ", off=" + offset);
 
             downstream.push(row);
         }
 
         rowNum++;
 
-        if (requested > 0 && limit > 0 && rowNum >= limit + offset) {
-            log.info("+++ push.toend  req=" + requested +
-                ", rowNum=" + rowNum + ", lim=" + limit + ", off=" + offset);
-
+        if (requested > 0 && limit > 0 && rowNum >= limit + offset)
             end();
-        }
 
         if (requested > 0 && waiting == 0)
             request0(IN_BUFFER_SIZE);
-
-        log.info("+++ push <<");
     }
 
     /** {@inheritDoc} */
@@ -177,8 +157,6 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
         if (ended)
             return;
-
-        log.info("+++ end ");
 
         ended = true;
 
