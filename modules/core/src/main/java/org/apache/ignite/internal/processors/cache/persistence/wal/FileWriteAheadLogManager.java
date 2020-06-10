@@ -2257,8 +2257,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (desc.file.exists() && !desc.file.delete())
                         U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                                 desc.file.getAbsolutePath() + ", exists: " + desc.file.exists());
-                    else
-                        log.info("File removed: " + desc.file);
                 }
             }
         }

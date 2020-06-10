@@ -312,7 +312,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         System.out.println("Max compressed index: " + maxIdx);
         assertTrue(maxIdx > emptyIdx);
 
-        if (true) {
+        if (!walSegment.exists()) {
             File[] list = nodeArchiveDir.listFiles();
 
             Arrays.sort(list);
@@ -323,10 +323,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
                 log.info(f.getAbsolutePath());
 
             // Failed to compress WAL segment shoudn't be deleted.
-            info("File " + walSegment.getAbsolutePath() + " does not exist.");
+            fail("File " + walSegment.getAbsolutePath() + " does not exist.");
         }
-
-        assertTrue(walSegment.exists()); // Failed to compress WAL segment shoudn't be deleted.
     }
 
     /**

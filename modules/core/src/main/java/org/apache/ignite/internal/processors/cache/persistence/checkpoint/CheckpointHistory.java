@@ -319,53 +319,34 @@ public class CheckpointHistory {
     }
 
     /**
-     * Removes checkpoints from history.
-     *
-     * @return List of checkpoint entries removed from history.
-     */
-    public List<CheckpointEntry> removeCheckpoints(int countToRemove) {
-        if (countToRemove == 0)
-            return Collections.emptyList();
-
-        List<CheckpointEntry> removed = new ArrayList<>();
-
-        for (Iterator<Map.Entry<Long, CheckpointEntry>> iterator = histMap.entrySet().iterator();
-            iterator.hasNext() && removed.size() < countToRemove; ) {
-            Map.Entry<Long, CheckpointEntry> entry = iterator.next();
-
-            CheckpointEntry checkpoint = entry.getValue();
-
-            if (!removeCheckpoint(checkpoint))
-                break;
-
-            removed.add(checkpoint);
-        }
-
-        return removed;
-    }
-
-    /**
      * Logs and clears checkpoint history after checkpoint finish.
      *
      * @return List of checkpoints removed from history.
      */
     public List<CheckpointEntry> onCheckpointFinished(GridCacheDatabaseSharedManager.Checkpoint chp, boolean truncateWal) {
+        List<CheckpointEntry> rmv = new ArrayList<>();
+
         chp.walSegsCoveredRange(calculateWalSegmentsCovered());
 
-        int removeCount = histMap.size() - maxCpHistMemSize;
+        int deleted = 0;
 
-        if (removeCount <= 0)
-            return Collections.emptyList();
+        while (histMap.size() > maxCpHistMemSize) {
+            Map.Entry<Long, CheckpointEntry> entry = histMap.firstEntry();
 
-        List<CheckpointEntry> deletedCheckpoints = removeCheckpoints(removeCount);
+            CheckpointEntry cpEntry = entry.getValue();
 
-        if (truncateWal) {
-            int deleted = cctx.wal().truncate(null, firstCheckpointPointer());
+            if (!removeCheckpoint(cpEntry))
+                break;
 
-            chp.walFilesDeleted(deleted);
+            if (truncateWal)
+                deleted += cctx.wal().truncate(null, cpEntry.checkpointMark());
+
+            rmv.add(cpEntry);
         }
 
-        return deletedCheckpoints;
+        chp.walFilesDeleted(deleted);
+
+        return rmv;
     }
 
     /**
