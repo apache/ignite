@@ -20,12 +20,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Cursor for fields query, but returns cache entries.
     /// </summary>
-    internal class FieldsCacheEntryQueryCursor<TK, TV> : PlatformQueryQursorBase<ICacheEntry<TK, TV>>
+    internal class FieldsCacheEntryQueryCursor<TK, TV> : FieldsQueryCursor<ICacheEntry<TK, TV>>
     {
         /// <summary>
         /// Constructor.
@@ -33,8 +32,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="target">Target.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
         public FieldsCacheEntryQueryCursor(IPlatformTargetInternal target, bool keepBinary)
-            : base(target, keepBinary,
-                r => ReadEntry(r))
+            : base(target, keepBinary, (r, cnt) => ReadEntry(r, cnt))
         {
             // No-op.
         }
@@ -42,21 +40,16 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <summary>
         /// Reads the cache entry.
         /// </summary>
-        private static CacheEntry<TK, TV> ReadEntry(IBinaryRawReader r)
+        private static CacheEntry<TK, TV> ReadEntry(IBinaryRawReader reader, int fieldCount)
         {
-            // Reading and skipping row size in bytes.
-            r.ReadInt();
-
-            var cnt = r.ReadInt();
-
-            if (cnt != 2)
+            if (fieldCount != 2)
             {
                 throw new IgniteException(
                     "SqlFieldsQuery should return _key and _val fields ('select _key, _val from ...'), " +
-                    string.Format("but returns {0} field(s)", cnt));
+                    string.Format("but returns {0} field(s)", fieldCount));
             }
 
-            return new CacheEntry<TK, TV>(r.ReadObject<TK>(), r.ReadObject<TV>());
+            return new CacheEntry<TK, TV>(reader.ReadObject<TK>(), reader.ReadObject<TV>());
         }
     }
 }
