@@ -80,6 +80,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -718,7 +720,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 final QueryCursor<Cache.Entry<K, V>> cur =
                         qry.getInitialQuery() != null ? query(qry.getInitialQuery()) : null;
 
-                return new QueryCursor<Cache.Entry<K, V>>() {
+                return new QueryCursorEx<Entry<K, V>>() {
                     @Override public Iterator<Cache.Entry<K, V>> iterator() {
                         return cur != null ? cur.iterator() : new GridEmptyIterator<Cache.Entry<K, V>>();
                     }
@@ -736,6 +738,15 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                         } catch (IgniteCheckedException e) {
                             throw U.convertException(e);
                         }
+                    }
+
+                    @Override public void getAll(Consumer<Entry<K, V>> c) {
+                        // No-op.
+                    }
+
+                    @Override public List<GridQueryFieldMetadata> fieldsMeta() {
+                        //noinspection rawtypes
+                        return cur instanceof QueryCursorEx ? ((QueryCursorEx)cur).fieldsMeta() : null;
                     }
                 };
             } catch (Throwable t) {

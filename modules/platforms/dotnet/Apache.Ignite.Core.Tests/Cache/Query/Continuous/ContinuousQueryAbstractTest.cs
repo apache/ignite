@@ -19,7 +19,6 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
     using System;
-    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
@@ -908,9 +907,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     // Check initial query
                     var initialQueryCursor = contQry.GetInitialQueryCursor();
                     var meta = initialQueryCursor.Fields;
-                    var keyIdx = meta.TakeWhile(f => f.Name != "_key").Count();
-
-                    var initialEntries = getAllFunc(initialQueryCursor).OrderBy(x => x[keyIdx]).ToList();
+                    var initialEntries = getAllFunc(initialQueryCursor).OrderBy(x => x[0]).ToList();
 
                     Assert.Throws<InvalidOperationException>(() => contQry.GetInitialQueryCursor());
 
@@ -918,7 +915,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
                     for (int i = 0; i < initialEntries.Count; i++)
                     {
-                        Assert.AreEqual(i + 11, initialEntries[i][keyIdx]);
+                        var key = (int) initialEntries[i][0];
+                        var val = (BinarizableEntry) initialEntries[i][1];
+
+                        Assert.AreEqual(i + 11, key);
+                        Assert.AreEqual(i + 11, val.val);
                     }
 
                     // Check continuous query
