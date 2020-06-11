@@ -126,7 +126,7 @@ public class IgniteSpiOperationTimeoutHelper {
      *
      * @param absolteTimeThreshold Maximum time threshold in nonos.
      */
-    public void absolteTimeThreshold(long absolteTimeThreshold){
+    public void absolteTimeThreshold(long absolteTimeThreshold) {
         absolteThreshold = absolteTimeThreshold;
     }
 

@@ -3712,7 +3712,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return; // Nothing to do here.
                     }
 
-                    log.error("!sent, sndState="+sndState);
+                    log.error("!sent, sndState=" + sndState);
 
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
 
@@ -6229,7 +6229,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true,
             lastOperationNanos);
 
-        if(sndState != null)
+        if (sndState != null)
             timeoutHelper.absolteTimeThreshold(sndState.failTimeNanos);
 
         return timeoutHelper;
@@ -7924,8 +7924,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         long timeoutMills() {
             return U.nanosToMillis(failTimeNanos - beginTimeNanos);
         }
-
-        long left(){ return U.nanosToMillis(failTimeNanos - System.nanoTime()); }
 
         /**
          * Marks last failed node as alive.
