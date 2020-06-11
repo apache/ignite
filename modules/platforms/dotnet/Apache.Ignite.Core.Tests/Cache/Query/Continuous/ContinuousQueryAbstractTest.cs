@@ -907,7 +907,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     Assert.Throws<InvalidOperationException>(() => contQry.GetInitialQueryCursor());
 
                     Assert.AreEqual(2, initialEntries.Count);
-                    Assert.AreEqual(2, initialQueryCursor.Fields.Count);
+                    Assert.GreaterOrEqual(initialQueryCursor.Fields.Count, 2);
 
                     for (int i = 0; i < initialEntries.Count; i++)
                     {
