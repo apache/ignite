@@ -197,18 +197,26 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** <inheritdoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> GetInitialQueryCursor()
         {
-            return GetInitialQueryCursorInternal<IQueryCursor<ICacheEntry<TK, TV>>>(cur =>
+            if (_initialQueryIsFields)
             {
-                if (_initialQueryIsFields)
-                {
-                    throw new IgniteException("Initial query is SqlFieldsQuery");
-                }
+                throw new IgniteException("Initial query is SqlFieldsQuery");
+            }
 
-                return new QueryCursor<TK, TV>(cur, _keepBinary);
-            });
+            return new QueryCursor<TK, TV>(GetInitialQueryCursorInternal(), _keepBinary);
         }
 
-        private T GetInitialQueryCursorInternal<T>(Func<IPlatformTargetInternal, T> factory)
+        /** <inheritdoc /> */
+        IFieldsQueryCursor IContinuousQueryHandleFields.GetInitialQueryCursor()
+        {
+            if (!_initialQueryIsFields)
+            {
+                throw new IgniteException("Initial query is not SqlFieldsQuery");
+            }
+
+            return new FieldsQueryCursor(GetInitialQueryCursorInternal(), _keepBinary);
+        }
+
+        private IPlatformTargetInternal GetInitialQueryCursorInternal()
         {
             lock (this)
             {
@@ -222,7 +230,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 
                 _nativeInitialQueryCursor = null;
 
-                return factory(cur);
+                return cur;
             }
         }
 
@@ -247,18 +255,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                     _disposed = true;
                 }
             }
-        }
-
-        /** <inheritdoc /> */
-        IFieldsQueryCursor IContinuousQueryHandleFields.GetInitialQueryCursor()
-        {
-            if (!_initialQueryIsFields)
-            {
-                throw new IgniteException("Initial query is not SqlFieldsQuery");
-            }
-
-            return GetInitialQueryCursorInternal<IFieldsQueryCursor>(
-                cur => new FieldsQueryCursor(cur, _keepBinary));
         }
     }
 }
