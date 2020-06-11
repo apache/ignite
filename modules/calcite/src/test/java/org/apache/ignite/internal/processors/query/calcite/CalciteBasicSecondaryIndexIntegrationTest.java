@@ -36,6 +36,8 @@ import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsAnyScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsUnion;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.not;
 
 /**
@@ -501,8 +503,13 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     /** */
     @Test
     public void testOrCondition1() {
-        assertQuery("SELECT * FROM Developer WHERE name='Mozart' OR depId=1")
-            .and(containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX))
+        assertQuery("SELECT * FROM Developer WHERE name='Mozart' OR age=55")
+            .and(containsUnion(true))
+            .and(anyOf(
+                containsScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX),
+                containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
+            )
+            .and(containsScan("PUBLIC", "DEVELOPER", PK))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .check();
@@ -512,7 +519,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrCondition2() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND (depId=1 OR depId=3)")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .and(containsUnion(true))
+            .and(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
@@ -521,8 +529,20 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrCondition3() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND (age > 22 AND (depId=1 OR depId=3))")
-            .and(containsScan("PUBLIC", "DEVELOPER", PK))
+            .and(containsUnion(true))
+            .and(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testOrCondition4() {
+        assertQuery("SELECT * FROM Developer WHERE depId=1 OR (name='Mozart' AND depId=3))")
+            .and(containsUnion(true))
+            .and(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
+            .returns(1, "Mozart", 3, "Vienna", 33)
+            .returns(3, "Bach", 1, "Leipzig", 55)
             .check();
     }
 
