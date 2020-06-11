@@ -17,32 +17,21 @@
 
 namespace Apache.Ignite.Core.Cache.Query.Continuous
 {
-    using System;
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Represents a continuous query handle.
+    /// Represents a continuous query handle for <see cref="SqlFieldsQuery"/> used as initial query.
     /// </summary>
-    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
-    public interface IContinuousQueryHandle : IDisposable
-    {
-        // No-op.
-    }
-
-    /// <summary>
-    /// Represents a continuous query handle.
-    /// </summary>
-    /// <typeparam name="T">Type of the initial query cursor.</typeparam>
-    public interface IContinuousQueryHandle<T> : IContinuousQueryHandle
+    public interface IContinuousQueryHandleFields : IContinuousQueryHandle
     {
         /// <summary>
-        /// Gets the cursor for initial query.
+        /// Gets the initial query cursor.
         /// <para />
         /// Can be called only once, throws exception on consequent calls.
         /// </summary>
         /// <returns>Initial query cursor.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
             Justification = "Semantics: result differs from call to call.")]
-        IQueryCursor<T> GetInitialQueryCursor();
+        IFieldsQueryCursor GetInitialQueryCursor();
     }
 }
