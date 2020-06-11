@@ -348,12 +348,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Register caches future. Initialized on exchange init. Must be waited on exchange end. */
     private IgniteInternalFuture<?> registerCachesFuture;
 
-    /** Partitions sent flag (for coordinator node). */
-    private volatile boolean partitionsSent;
-
-    /** Partitions received flag (for non-coordinator node). */
-    private volatile boolean partitionsReceived;
-
     /** Latest (by update sequences) full message with exchangeId == null, need to be processed right after future is done. */
     @GridToStringExclude
     private GridDhtPartitionsFullMessage delayedLatestMsg;
@@ -3822,8 +3816,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     mergedJoinExchMsgs0
                 );
 
-                partitionsSent = true;
-
                 if (!stateChangeExchange())
                     onDone(exchCtx.events().topologyVersion(), null);
 
@@ -4556,8 +4548,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             throw new IgniteException(e);
         }
 
-        partitionsReceived = true;
-
         timeBag.finishGlobalStage("Full map updating");
     }
 
@@ -5147,18 +5137,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return (e instanceof IgniteNeedReconnectException
             || X.hasCause(e, IOException.class, IgniteClientDisconnectedCheckedException.class))
             && cctx.discovery().reconnectSupported();
-    }
-
-    /**
-     * @return {@code True} If partition changes triggered by receiving Single/Full messages are not finished yet.
-     */
-    public boolean partitionChangesInProgress() {
-        ClusterNode crd0 = crd;
-
-        if (crd0 == null)
-            return false;
-
-        return crd0.equals(cctx.localNode()) ? !partitionsSent : !partitionsReceived;
     }
 
     /**

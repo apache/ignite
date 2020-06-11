@@ -317,8 +317,6 @@ public class GridDhtPartitionDemander {
 
                 ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
 
-                ctx.exchange().scheduleResendPartitions();
-
                 return null;
             }
 
