@@ -793,20 +793,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestInitialFieldsQuery()
         {
-            var sqlFieldsQuery = new SqlFieldsQuery("select _key, _val from BINARIZABLEENTRY where val < 33");
+            var sqlFieldsQuery = new SqlFieldsQuery("select _key, _val, val from BINARIZABLEENTRY where val < 33");
 
-            // TODO
             TestInitialQuery(sqlFieldsQuery, cur => cur.GetAll());
             TestInitialQuery(sqlFieldsQuery, cur => cur.ToList());
-        }
-
-        /// <summary>
-        /// Tests the initial fields query with FieldsQueryCursor.
-        /// </summary>
-        [Test]
-        public void TestInitialFieldsQueryWithFieldsCursor()
-        {
-            // TODO
         }
 
         /// <summary>
@@ -815,7 +805,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestInitialFieldsQueryMetadata()
         {
-            // TODO
+            var sqlFieldsQuery = new SqlFieldsQuery("select val, _val from BINARIZABLEENTRY where val < 33");
+            var qry = new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
+
+            using (var contQry = cache1.QueryContinuous(qry, sqlFieldsQuery))
+            {
+                var fields = contQry.GetInitialQueryCursor().Fields;
+
+                Assert.AreEqual(2, fields.Count);
+
+                Assert.AreEqual("VAL", fields[0].Name);
+                Assert.AreEqual(typeof(int), fields[0].Type);
+
+                Assert.AreEqual("_VAL", fields[1].Name);
+                Assert.AreEqual(typeof(object), fields[1].Type);
+            }
         }
 
         /// <summary>
@@ -829,14 +833,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 new SqlFieldsQuery("select FOO from BAR"), cur => cur.GetAll()));
 
             StringAssert.StartsWith("Failed to parse query. Table \"BAR\" not found;", ex.Message);
-
-            // Valid SQL query that does not return _key and _val.
-            ex = Assert.Throws<IgniteException>(() => TestInitialQuery(
-                new SqlFieldsQuery("select val from BINARIZABLEENTRY where val < 33"),
-                cur => cur.GetAll()));
-
-            Assert.AreEqual("SqlFieldsQuery should return _key and _val fields ('select _key, _val from ...'), " +
-                            "but returns 1 field(s)", ex.Message);
         }
 
         /// <summary>
