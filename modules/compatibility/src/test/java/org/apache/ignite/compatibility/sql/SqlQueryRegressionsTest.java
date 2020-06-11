@@ -17,7 +17,6 @@
 package org.apache.ignite.compatibility.sql;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -34,13 +33,10 @@ import org.apache.ignite.compatibility.sql.model.Country;
 import org.apache.ignite.compatibility.sql.model.Department;
 import org.apache.ignite.compatibility.sql.model.ModelFactory;
 import org.apache.ignite.compatibility.sql.model.Person;
-import org.apache.ignite.compatibility.sql.randomsql.Operator;
-import org.apache.ignite.compatibility.sql.randomsql.Schema;
-import org.apache.ignite.compatibility.sql.randomsql.Scope;
-import org.apache.ignite.compatibility.sql.randomsql.ast.Select;
 import org.apache.ignite.compatibility.sql.runner.PredefinedQueriesSupplier;
 import org.apache.ignite.compatibility.sql.runner.QueryDuelBenchmark;
 import org.apache.ignite.compatibility.sql.runner.QueryDuelResult;
+import org.apache.ignite.compatibility.sql.runner.RandomQuerySupplier;
 import org.apache.ignite.compatibility.sql.runner.SimpleConnectionPool;
 import org.apache.ignite.compatibility.testframework.junits.Dependency;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
@@ -84,7 +80,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
     private static final int WORKERS_CNT = IgniteConfiguration.DFLT_QUERY_THREAD_POOL_SIZE / 2;
 
     /** */
-    private static final long TEST_TIMEOUT = 60_000;
+    private static final long TEST_TIMEOUT = 300_000;
 
     /** */
     private static final long WARM_UP_TIMEOUT = 5_000;
@@ -114,26 +110,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
     };
 
     /** Default queries.. */
-    private final Supplier<String> qrysSupplier = new PredefinedQueriesSupplier(Arrays.asList(
-        "SELECT * FROM   company c1 ,  person p2 ,  city c3  WHERE  ( p2.age  >  c3.population )"
-//        "SELECT * FROM person p1 WHERE id > 0",
-//        "SELECT * FROM department d1 WHERE id > 0",
-//        "SELECT * FROM country c1",
-//        "SELECT * FROM city ci1",
-//        "SELECT * FROM company co1",
-//        "SELECT * FROM person p, department d, company co " +
-//            "WHERE p.depId=d.id AND d.companyId = co.id",
-//        "SELECT * FROM person p, department d, company co, city ci " +
-//                    "WHERE p.depId=d.id AND d.companyId = co.id AND co.cityId = ci.id",
-//        "SELECT * FROM person p, department d, company co, city ci " +
-//            "WHERE p.depId=d.id AND d.companyId = co.id AND p.cityId = ci.id",
-//        "SELECT * FROM person p, department d, company co " +
-//            "WHERE p.depId=d.id AND d.companyId = co.id AND d.companyId > 50",
-//        "SELECT * FROM person p, department d, company co, city ci " +
-//            "WHERE p.depId=d.id AND d.companyId = co.id AND co.cityId = ci.id AND d.companyId > 50 AND d.id < 80",
-//        "SELECT * FROM person p, department d, company co, city ci " +
-//            "WHERE p.depId=d.id AND d.companyId = co.id AND p.cityId = ci.id AND d.cityId > 10 AND co.headCnt < 20"
-    ), false);
+    private final Supplier<String> qrysSupplier = new RandomQuerySupplier(MODEL_FACTORIES);
 
 
     /** {@inheritDoc} */
@@ -159,36 +136,6 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 2 * TEST_TIMEOUT + WARM_UP_TIMEOUT + super.getTestTimeout();
-    }
-
-    // TODO remove it.
-    @Test
-    public void test() {
-        Schema schema = new Schema();
-
-        for (ModelFactory factory : MODEL_FACTORIES)
-            schema.addTable(factory.queryEntity());
-
-        schema.addOperator(new Operator(">", Integer.class, Integer.class, Boolean.class));
-        schema.addOperator(new Operator("<", Integer.class, Integer.class, Boolean.class));
-        schema.addOperator(new Operator("=", Integer.class, Integer.class, Boolean.class));
-        schema.addOperator(new Operator("AND", Boolean.class, Boolean.class, Boolean.class));
-        schema.addOperator(new Operator("OR", Boolean.class, Boolean.class, Boolean.class));
-
-        int seed = (int)(System.currentTimeMillis() % 100);
-
-        Scope rootScope = new Scope(schema, seed);
-
-        schema.fillScope(rootScope);
-
-
-
-        Select select = Select.createParentRandom(rootScope);
-
-        StringBuilder sb = new StringBuilder();
-        select.print(sb);
-
-        System.out.println("select=" + sb.toString());
     }
 
     /**

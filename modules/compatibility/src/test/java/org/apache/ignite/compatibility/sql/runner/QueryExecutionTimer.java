@@ -21,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.function.Supplier;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Query runner. Runs query and checks it's execution time.
@@ -46,12 +47,19 @@ public class QueryExecutionTimer implements Supplier<Long> {
 
         try (Statement stmt = conn.createStatement()) {
             try (ResultSet rs = stmt.executeQuery(qry)) {
+                int cnt = 0;
                 while (rs.next()) {
                     // Just read the full result set.
+
+                    if (cnt++ > 200_000)
+                        break; // result too big.
                 }
+
+                System.out.println("Rs.size=" + cnt + ", qry=" + qry);
             }
         }
         catch (SQLException e) {
+            System.out.println("qry ERRR=" + qry + "\nErrr!=" + X.getFullStackTrace(e));
             throw new RuntimeException(e);
         }
         finally {

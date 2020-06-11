@@ -40,11 +40,6 @@ public class Schema {
     }
 
     /** */
-    public void fillScope(Scope scope) {
-        scope.setSchema(this);
-    }
-
-    /** */
     public void addOperator(Operator operator) {
         ops.add(operator);
     }
