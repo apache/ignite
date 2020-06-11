@@ -15,36 +15,26 @@
  */
 package org.apache.ignite.compatibility.sql.randomsql.ast;
 
-import org.apache.ignite.compatibility.sql.randomsql.Scope;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.compatibility.sql.randomsql.Table;
 
 /**
  * TODO: Add class description.
  */
-public class Select extends Ast {
-    private Ast from;
+public class TableRef extends Ast {
+    private final static AtomicLong ALIAS_ID = new AtomicLong();
+    private final Table tbl;
+    private final String alias;
 
-    private Expression where; // TODO bool expr
-
-    public Select(Ast parent) {
+    public TableRef(Ast parent, Table tbl) {
         super(parent);
-    }
-
-    public Select(Scope scope, int seed) {
-        super(scope, seed);
+        this.tbl = tbl;
+        alias = tbl.name().substring(0, 1) + ALIAS_ID.incrementAndGet();
     }
 
     @Override public void print(StringBuilder out) {
-        out.append("SELECT * FROM ");
-        from.print(out);
-        out.append(" WHERE ");
-        where.print(out);
-    }
-
-    public static Select createParentRandom(Scope initScope, int seed) {
-        Scope selectScope = new Scope(initScope);
-        Select select = new Select(selectScope, seed);
-        select.from = new From(select);
-        select.where = Expression.createRandom(select, Integer.class);
-        return select;
+        out.append(" ")
+            .append(tbl.name()).append(" ")
+            .append(alias).append(" ");
     }
 }

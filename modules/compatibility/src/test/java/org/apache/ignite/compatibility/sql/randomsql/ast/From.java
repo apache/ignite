@@ -15,36 +15,35 @@
  */
 package org.apache.ignite.compatibility.sql.randomsql.ast;
 
-import org.apache.ignite.compatibility.sql.randomsql.Scope;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.compatibility.sql.randomsql.Table;
 
 /**
  * TODO: Add class description.
  */
-public class Select extends Ast {
-    private Ast from;
+public class From extends Ast {
+    private final List<TableRef> from = new ArrayList<>();
 
-    private Expression where; // TODO bool expr
-
-    public Select(Ast parent) {
+    public From(Ast parent) {
         super(parent);
-    }
 
-    public Select(Scope scope, int seed) {
-        super(scope, seed);
+        do {
+            Table t = scope.pickRandomTable();
+
+            from.add(new TableRef(this, t));
+
+            scope.addScopeTable(t);
+        } while (rnd.nextInt(100) > 20);
     }
 
     @Override public void print(StringBuilder out) {
-        out.append("SELECT * FROM ");
-        from.print(out);
-        out.append(" WHERE ");
-        where.print(out);
-    }
+        for (int i = 0; i < from.size(); i++) {
+            if (i != 0)
+                out.append(",");
 
-    public static Select createParentRandom(Scope initScope, int seed) {
-        Scope selectScope = new Scope(initScope);
-        Select select = new Select(selectScope, seed);
-        select.from = new From(select);
-        select.where = Expression.createRandom(select, Integer.class);
-        return select;
+            out.append(" ");
+            from.get(i).print(out);
+        }
     }
 }

@@ -29,8 +29,11 @@ public class Scope {
     /** */
     private final Scope parentScope;
 
-    /** */
-    private final List<Table> tbls;
+    /** All available tables. */
+    private final List<Table> allTbls;
+
+    /** Table available for column references. */
+    private final List<Table> scopeTbls;
 
     /** */
     private Schema schema;
@@ -43,12 +46,15 @@ public class Scope {
      */
     public Scope(Scope parent) {
         parentScope = parent;
-        tbls = parent == null ? new ArrayList<>() : parent.tbls;
+        allTbls = parent == null ? new ArrayList<>() : parent.allTbls;
+        schema = parent == null ? null : parent.schema;
+        rnd = parent == null ? null : parent.rnd; // TODO refactor
+        scopeTbls = new ArrayList<>();
     }
 
     /** */
     public void fillTables(Collection<Table> tbls) {
-        this.tbls.addAll(tbls);
+        this.allTbls.addAll(tbls);
     }
 
     /** */
@@ -67,12 +73,12 @@ public class Scope {
     }
 
     /** */
-    public List<Table> tables() {
-        return tbls;
+    public List<Table> allTables() {
+        return allTbls;
     }
 
     public Table pickRandomTable() {
-        return pickRandom(tbls, rnd);
+        return pickRandom(allTbls, rnd);
     }
 
     public Column pickRandomColumn(Class<?> type) {
@@ -82,7 +88,7 @@ public class Scope {
         }
         else {
             List<Column> cols = new ArrayList<>();
-            for (Table tbl : tbls) {
+            for (Table tbl : scopeTbls) {
                 for (Column col : tbl.columnsList()) {
                     if (col.typeClass() == type)
                         cols.add(col);
@@ -90,5 +96,9 @@ public class Scope {
             }
             return pickRandom(cols, rnd);
         }
+    }
+
+    public void addScopeTable(Table t) {
+        scopeTbls.add(t);
     }
 }

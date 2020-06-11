@@ -23,39 +23,40 @@ import org.apache.ignite.compatibility.sql.randomsql.Scope;
  */
 public abstract class Ast {
 
-    private final Ast parent;
+    protected final Ast parent;
 
-    private Scope scope;
+    protected final Scope scope;
 
-    private final int level;
+    protected final int level;
 
-    private Random rnd;
+    protected final Random rnd;
 
 
     public Ast(Ast parent) {
-        if (parent == null) {
-            this.parent = null;
-            level = 0;
-            scope = null;
-        }
-        else {
-            this.parent = parent;
-            level = parent.level + 1;
-            scope = parent.scope;
-            rnd = parent.rnd;
-        }
+        this.parent = parent;
+        level = parent.level + 1;
+        scope = parent.scope;
+        rnd = parent.rnd;
+    }
+
+    /**
+     * Constructor for root AST.
+     *
+     * @param scope Scope.
+     * @param seed Random seed.
+     */
+    public Ast(Scope scope, int seed) {
+        parent = null;
+        rnd = new Random(seed);
+        this.scope = scope;
+        this.scope.setRandom(rnd);
+        level = 0;
     }
 
     public abstract void print(StringBuilder out);
 
     public Random random() {
         return rnd;
-    }
-
-    public void init(int seed, Scope scope) {
-        rnd = new Random(seed);
-        this.scope = scope;
-        this.scope.setRandom(rnd);
     }
 
     public Scope scope() {

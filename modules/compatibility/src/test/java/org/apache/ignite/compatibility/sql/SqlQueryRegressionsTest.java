@@ -173,7 +173,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
 
 
-        Select select = Select.createParentRandom((int)(System.currentTimeMillis() % 100), rootScope);
+        Select select = Select.createParentRandom(rootScope, (int)(System.currentTimeMillis() % 100));
 
         StringBuilder sb = new StringBuilder();
         select.print(sb);
