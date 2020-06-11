@@ -35,7 +35,11 @@ import static java.nio.ByteOrder.nativeOrder;
 import static org.apache.ignite.internal.profiling.FileProfiling.readIgniteUuid;
 import static org.apache.ignite.internal.profiling.FileProfiling.readUuid;
 
-/** Walker over the profiling file. */
+/**
+ * Walker over the profiling file.
+ *
+ * @see FileProfiling
+ */
 public class FileProfilingWalker {
     /** File read buffer size. */
     private static final int READ_BUFFER_SIZE = 8 * 1024 * 1024;
@@ -47,7 +51,7 @@ public class FileProfilingWalker {
      * Walks over profiling file.
      *
      * @param file Profiling file.
-     * @param handlers Handlers.
+     * @param handlers Handlers to process deserialized operation.
      */
     public static void walkFile(Path file, IgniteProfiling... handlers) throws IOException {
         ByteBuffer buf = allocateDirect(READ_BUFFER_SIZE).order(nativeOrder());
@@ -56,8 +60,6 @@ public class FileProfilingWalker {
             FileIO io = ioFactory.create(file.toFile());
             ProfilingDeserializer des = new ProfilingDeserializer(handlers)
         ) {
-            buf.clear();
-
             while (true) {
                 int read = io.read(buf);
 

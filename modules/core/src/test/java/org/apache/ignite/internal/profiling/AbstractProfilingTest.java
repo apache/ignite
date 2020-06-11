@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.profiling.FileProfiling.profilingFile;
 /**
  * Ignite profiling abstract test.
  */
-public class AbstractProfilingTest extends GridCommonAbstractTest {
+public abstract class AbstractProfilingTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();

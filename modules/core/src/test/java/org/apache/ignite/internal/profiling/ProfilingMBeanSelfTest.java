@@ -18,11 +18,7 @@
 package org.apache.ignite.internal.profiling;
 
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.profiling.FileProfiling.PROFILING_DIR;
 
 /** Tests {@link IgniteProfilingMbeanImpl}. */
 public class ProfilingMBeanSelfTest extends AbstractProfilingTest {

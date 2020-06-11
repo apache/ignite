@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -42,7 +43,6 @@ import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
@@ -55,6 +55,8 @@ import org.jetbrains.annotations.Nullable;
  * Each node collects statistics to a profiling file placed under {@link #PROFILING_DIR}.
  * <p>
  * <b>Note:</b> Start profiling again will erase previous profiling files.
+ * <p>
+ * To iterate over records use {@link FileProfilingWalker}.
  */
 public class FileProfiling implements IgniteProfiling {
     /** Default Maximum file size in bytes. Profiling will be stopped when the size exceeded. */
@@ -454,7 +456,7 @@ public class FileProfiling implements IgniteProfiling {
         SegmentedRingByteBuffer.WriteSegment seg = fileWriter.writeSegment(size + /*type*/ 1);
 
         if (seg == null) {
-            LT.warn(log, "The profiling buffer size is too small. Some operations will not be profiled.");
+            fileWriter.logSmallBufferMessage();
 
             return null;
         }
@@ -538,6 +540,9 @@ public class FileProfiling implements IgniteProfiling {
 
         /** String id generator. */
         private final AtomicInteger idsGen = new AtomicInteger();
+
+        /** {@code True} if the small buffer warning message logged. */
+        private final AtomicBoolean smallBufLogged = new AtomicBoolean();
 
         /**
          * @param ctx Kernal context.
@@ -664,6 +669,12 @@ public class FileProfiling implements IgniteProfiling {
             }
 
             return stopFut;
+        }
+
+        /** Logs warning message about small buffer size if not logged yet. */
+        void logSmallBufferMessage() {
+            if (smallBufLogged.compareAndSet(false, true))
+                log.warning("The profiling buffer size is too small. Some operations will not be profiled.");
         }
     }
 
