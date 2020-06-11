@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -46,7 +45,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -71,7 +69,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
-import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -85,14 +82,11 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
@@ -1291,7 +1285,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
 
-        IgniteFuture<Void> fut = comp.runAsync(new ClientSetGlobalStateComputeRequest(state, forceDeactivation, blt,
+        IgniteFuture<Void> fut = comp.runAsync(new ClientSetClusterStateComputeRequest(state, forceDeactivation, blt,
             forceBlt));
 
         return ((IgniteFutureImpl<Void>)fut).internalFuture();
@@ -1317,7 +1311,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (F.isEmpty(clusterGroupAdapter.nodes()))
             return new IgniteFinishedFutureImpl<>(INACTIVE);
 
-        return clusterGroupAdapter.compute().callAsync(new GetClusterStateComputeRequest());
+        return clusterGroupAdapter.compute().callAsync(new ClientGetClusterStateComputeRequest());
     }
 
     /** {@inheritDoc} */
@@ -1980,82 +1974,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(GridChangeGlobalStateFuture.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    @GridInternal
-    private static class ClientSetGlobalStateComputeRequest implements IgniteRunnable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final ClusterState state;
-
-        /** If {@code true}, cluster deactivation will be forced. */
-        private final boolean forceDeactivation;
-
-        /** */
-        private final BaselineTopology baselineTopology;
-
-        /** */
-        private final boolean forceChangeBaselineTopology;
-
-        /** Ignite. */
-        @IgniteInstanceResource
-        private IgniteEx ig;
-
-        /**
-         * @param state New cluster state.
-         * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
-         * @param blt New baseline topology.
-         * @param forceBlt Force change cluster state.
-         */
-        private ClientSetGlobalStateComputeRequest(
-            ClusterState state,
-            boolean forceDeactivation,
-            BaselineTopology blt,
-            boolean forceBlt
-        ) {
-            this.state = state;
-            this.baselineTopology = blt;
-            this.forceChangeBaselineTopology = forceBlt;
-            this.forceDeactivation = forceDeactivation;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                ig.context().state().changeGlobalState(
-                    state,
-                    forceDeactivation,
-                    baselineTopology != null ? baselineTopology.currentBaseline() : null,
-                    forceChangeBaselineTopology
-                ).get();
-            }
-            catch (IgniteCheckedException ex) {
-                throw new IgniteException(ex);
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    @GridInternal
-    private static class GetClusterStateComputeRequest implements IgniteCallable<ClusterState> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Ignite. */
-        @IgniteInstanceResource
-        private Ignite ig;
-
-        /** {@inheritDoc} */
-        @Override public ClusterState call() throws Exception {
-            return ig.cluster().state();
         }
     }
 
