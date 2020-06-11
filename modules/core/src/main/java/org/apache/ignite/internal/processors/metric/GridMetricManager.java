@@ -338,7 +338,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         U.closeQuiet(metricsUpdateTask);
 
         if (profilingEnabled())
-            stopProfiling();
+            profiling.stopProfiling().get();
     }
 
     /**
