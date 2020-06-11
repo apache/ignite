@@ -565,7 +565,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         AffinityTopologyVersion affTopVer = new AffinityTopologyVersion(srvs + clients);
 
-        if (ClusterState.active(initialState)) {
+        if (initialState.active()) {
             ignite(0).cluster().state(initialState);
 
             awaitPartitionMapExchange();
@@ -717,7 +717,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         activeFut.get();
         startFut.get();
 
-        if (ClusterState.active(targetState))
+        if (targetState.active())
             checkCachesOnNode(nodesCnt - 1, DEFAULT_CACHES_COUNT);
         else {
             checkNoCaches(nodesCnt);
@@ -913,12 +913,12 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         startWithCaches1(srvs, clients);
 
-        if (persistenceEnabled() && ClusterState.active(initialState))
+        if (persistenceEnabled() && initialState.active())
             grid(0).cluster().state(initialState);
 
         checkClusterState(nodesCnt, initialState);
 
-        if (!ClusterState.active(initialState))
+        if (!initialState.active())
             checkNoCaches(nodesCnt);
 
         ignite(changeFrom).cluster().state(initialState); // Should be no-op.
@@ -929,7 +929,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         checkClusterState(nodesCnt, targetState);
 
-        if (ClusterState.active(targetState)) {
+        if (targetState.active()) {
             for (int i = 0; i < nodesCnt; i++)
                 checkCachesOnNode(i, DEFAULT_CACHES_COUNT);
 
@@ -941,7 +941,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         startNodeAndCheckCaches(nodesCnt++, false, DEFAULT_CACHES_COUNT);
         startNodeAndCheckCaches(nodesCnt++, true, DEFAULT_CACHES_COUNT);
 
-        if (!ClusterState.active(targetState)) {
+        if (!targetState.active()) {
             checkNoCaches(nodesCnt);
 
             checkClusterState(nodesCnt, targetState);

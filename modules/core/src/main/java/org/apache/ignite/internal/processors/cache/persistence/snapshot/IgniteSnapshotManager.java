@@ -111,7 +111,6 @@ import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
@@ -728,7 +727,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
                 throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
 
-            if (!active(cctx.kernalContext().state().clusterState().state()))
+            if (!cctx.kernalContext().state().clusterState().state().active())
                 throw new IgniteException("Snapshot operation has been rejected. The cluster is inactive.");
 
             DiscoveryDataClusterState clusterState = cctx.kernalContext().state().clusterState();

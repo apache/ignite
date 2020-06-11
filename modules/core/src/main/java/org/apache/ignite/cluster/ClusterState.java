@@ -29,13 +29,28 @@ public enum ClusterState {
      * <b>NOTE:</b>
      * Deactivation clears in-memory caches (without persistence) including the system caches.
      */
-    INACTIVE,
+    INACTIVE(false),
 
     /** Cluster activated. All cache operations are allowed. */
-    ACTIVE,
+    ACTIVE(true),
 
     /** Cluster activated. Cache read operation allowed, Cache data change operation aren't allowed. */
-    ACTIVE_READ_ONLY;
+    ACTIVE_READ_ONLY(true);
+
+    /** Cluster activated flag. */
+    private final boolean active;
+
+    /** */
+    ClusterState(boolean active) {
+        this.active = active;
+    }
+
+    /**
+     * @return {@code True} if cluster activated in this state and {@code false} otherwise.
+     */
+    public boolean active() {
+        return active;
+    }
 
     /** Enumerated values. */
     private static final ClusterState[] VALS = values();

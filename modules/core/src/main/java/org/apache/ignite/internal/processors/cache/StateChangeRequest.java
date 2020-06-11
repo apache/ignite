@@ -27,8 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cluster.ClusterState.active;
-
 /**
  *
  */
@@ -111,7 +109,7 @@ public class StateChangeRequest {
      * @return {@code True} if active state was changed.
      */
     public boolean activeChanged() {
-        return active(prevState) && !active(msg.state()) || !active(prevState) && active(msg.state());
+        return prevState.active() ^ msg.state().active();
     }
 
     /**
