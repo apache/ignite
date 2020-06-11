@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCluster
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -65,7 +66,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.cluster.ClusterState.lesserOf;
 import static org.apache.ignite.testframework.GridTestUtils.assertActive;
 import static org.apache.ignite.testframework.GridTestUtils.assertInactive;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -1188,7 +1188,10 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             assertTrue(client.context().state().clusterState().transition());
 
             // Public API method would block forever because we blocked the exchange message.
-            assertEquals(lesserOf(initialState, targetState), client.context().state().publicApiState(false));
+            assertEquals(
+                GridClusterStateProcessor.withMinimalFeatures(initialState, targetState),
+                client.context().state().publicApiState(false)
+            );
 
             spi1.waitForBlocked();
 

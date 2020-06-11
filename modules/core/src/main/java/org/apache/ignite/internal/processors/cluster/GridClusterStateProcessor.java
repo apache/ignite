@@ -100,7 +100,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.cluster.ClusterState.lesserOf;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_STATE_ON_START;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -238,7 +237,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         return new IgniteNodeValidationResult(
             node.id(),
             "Joining persistence node to in-memory cluster couldn't be allowed " +
-            "due to baseline auto-adjust is enabled and timeout equal to 0"
+                "due to baseline auto-adjust is enabled and timeout equal to 0"
         );
     }
 
@@ -283,7 +282,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                         }));
                     }
                     else
-                        return new IgniteFinishedFutureImpl<>(lesserOf(globalState.lastState(), globalState.state()));
+                        return new IgniteFinishedFutureImpl<>(withMinimalFeatures(globalState.lastState(), globalState.state()));
                 }
 
                 transitionRes = globalState.transitionResult();
@@ -314,7 +313,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
-        BaselineTopology blt = (BaselineTopology) metastorage.read(METASTORE_CURR_BLT_KEY);
+        BaselineTopology blt = (BaselineTopology)metastorage.read(METASTORE_CURR_BLT_KEY);
 
         if (blt != null) {
             if (log.isInfoEnabled())
@@ -361,7 +360,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /**
      * @param blt Blt.
      */
-    private void writeBaselineTopology(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
+    private void writeBaselineTopology(BaselineTopology blt,
+        BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
         assert metastorage != null;
 
         if (inMemoryMode)
@@ -461,8 +461,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             return joinFut;
         }
-        else
-        {
+        else {
             ClusterState targetState = ctx.config().getClusterStateOnStart();
 
             if (targetState == null)
@@ -908,7 +907,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 throw new IgniteException("Node with BaselineTopology cannot join" +
                     " mixed cluster running in compatibility mode");
 
-            globalState = (DiscoveryDataClusterState) data.commonData();
+            globalState = (DiscoveryDataClusterState)data.commonData();
 
             compatibilityMode = true;
 
@@ -966,7 +965,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             for (BaselineNode node : baselineNodes) {
                 if (node instanceof ClusterNode) {
-                    ClusterNode clusterNode = (ClusterNode) node;
+                    ClusterNode clusterNode = (ClusterNode)node;
 
                     if (!clusterNode.isClient() && !clusterNode.isDaemon())
                         baselineNodes0.add(node);
@@ -1073,7 +1072,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 return new GridFinishedFuture<>(
                     new IgniteCheckedException(
                         "Failed to " + prettyStr(state) +
-                        ", because another state change operation is currently in progress: " + prettyStr(fut.state)
+                            ", because another state change operation is currently in progress: " + prettyStr(fut.state)
                     )
                 );
             }
@@ -1090,7 +1089,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 if (!F.isEmpty(cfgs)) {
                     storedCfgs = new ArrayList<>(cfgs.values());
 
-                    IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+                    IgniteDiscoverySpi spi = (IgniteDiscoverySpi)ctx.discovery().getInjectedDiscoverySpi();
 
                     boolean splittedCacheCfgs = spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS);
 
@@ -1173,8 +1172,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         DiscoveryDataClusterState joiningNodeState;
 
         try {
-            joiningNodeState = marsh.unmarshal((byte[]) discoData.joiningNodeData(), Thread.currentThread().getContextClassLoader());
-        } catch (IgniteCheckedException e) {
+            joiningNodeState = marsh.unmarshal((byte[])discoData.joiningNodeData(), Thread.currentThread().getContextClassLoader());
+        }
+        catch (IgniteCheckedException e) {
             String msg = "Error on unmarshalling discovery data " +
                 "from node " + node.consistentId() + ": " + e.getMessage() +
                 "; node is not allowed to join";
@@ -1626,7 +1626,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public void onExchangeFinishedOnCoordinator(IgniteInternalFuture exchangeFuture, boolean hasMovingPartitions) {
+    @Override public void onExchangeFinishedOnCoordinator(IgniteInternalFuture exchangeFuture,
+        boolean hasMovingPartitions) {
         // no-op
     }
 
@@ -1795,6 +1796,36 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         return ctx.cache().cacheDescriptors().values().stream()
             .anyMatch(desc -> !isPersistentCache(desc.cacheConfiguration(), ctx.config().getDataStorageConfiguration())
                 && (!desc.cacheConfiguration().isWriteBehindEnabled() || !desc.cacheConfiguration().isReadThrough()));
+    }
+
+    /**
+     * Gets state of given two with minimal number of features.
+     * <p/>
+     * The order: {@link ClusterState#ACTIVE} > {@link ClusterState#ACTIVE_READ_ONLY} > {@link ClusterState#INACTIVE}.
+     * <p/>
+     * Explain:
+     * <br/>
+     * {@link ClusterState#INACTIVE} has the smallast number of available features. You can't use caches in this state.
+     * <br/>
+     * In {@link ClusterState#ACTIVE_READ_ONLY} you have more available features than {@link ClusterState#INACTIVE} state,
+     * such as reading from caches, but can't write into them.
+     * <br/> In {@link ClusterState#ACTIVE} you can update caches. It's a state with the biggest number of features.
+     *
+     * @param state1 First given state.
+     * @param state2 Second given state.
+     * @return State with minimal number of available features.
+     */
+    public static ClusterState withMinimalFeatures(ClusterState state1, ClusterState state2) {
+        if (state1 == state2)
+            return state1;
+
+        if (state1 == INACTIVE || state2 == INACTIVE)
+            return INACTIVE;
+
+        if (state1 == ACTIVE_READ_ONLY || state2 == ACTIVE_READ_ONLY)
+            return ACTIVE_READ_ONLY;
+
+        throw new IllegalArgumentException("Unknown cluster states. state1: " + state1 + ", state2: " + state2);
     }
 
     /** {@inheritDoc} */

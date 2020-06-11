@@ -64,22 +64,4 @@ public enum ClusterState {
     @Nullable public static ClusterState fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
-
-    /**
-     * @param state1 First given state.
-     * @param state2 Second given state.
-     * @return Lesser of given states. The order: {@link #ACTIVE} > {@link #ACTIVE_READ_ONLY} > {@link #INACTIVE}.
-     */
-    public static ClusterState lesserOf(ClusterState state1, ClusterState state2) {
-        if (state1 == state2)
-            return state1;
-
-        if (state1 == INACTIVE || state2 == INACTIVE)
-            return INACTIVE;
-
-        if (state1 == ACTIVE_READ_ONLY || state2 == ACTIVE_READ_ONLY)
-            return ACTIVE_READ_ONLY;
-
-        throw new IllegalArgumentException("Unknown cluster states. state1: " + state1 + ", state2: " + state2);
-    }
 }
