@@ -47,7 +47,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_GRP_STATE_LAZY_STORE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
@@ -56,7 +55,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
  * Tests if reservation of corrupted checkpoint works correctly, also checks correct behaviour for corrupted zip wal file
  * during PME.
  */
-@Ignore("https://ggsystems.atlassian.net/browse/GG-26123")
 public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -123,7 +121,9 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testCorruptedCheckpointReservation() throws Exception {
+    public void _testCorruptedCheckpointReservation() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-26123");
+
         walCompactionEnabled = false;
 
         startGrids(2);
@@ -144,7 +144,9 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testCorruptedCheckpointInCompressedWalReservation() throws Exception {
+    public void _testCorruptedCheckpointInCompressedWalReservation() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-26123");
+
         walCompactionEnabled = true;
 
         startGrids(2);
@@ -165,7 +167,9 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testCorruptedCompressedWalSegment() throws Exception {
+    public void _testCorruptedCompressedWalSegment() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-26123");
+
         walCompactionEnabled = true;
 
         startGrids(2);
