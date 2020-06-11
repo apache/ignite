@@ -19,6 +19,7 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
     using System;
+    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
@@ -796,10 +797,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             var sqlFieldsQuery = new SqlFieldsQuery("select _key, _val from BINARIZABLEENTRY where val < 33");
 
             // TODO
-            /*
             TestInitialQuery(sqlFieldsQuery, cur => cur.GetAll());
             TestInitialQuery(sqlFieldsQuery, cur => cur.ToList());
-            */
         }
 
         /// <summary>
@@ -826,8 +825,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestInitialFieldsQueryWithBadSql()
         {
-            // TODO
-            /*
             // Invalid SQL query.
             var ex = Assert.Throws<IgniteException>(() => TestInitialQuery(
                 new SqlFieldsQuery("select FOO from BAR"), cur => cur.GetAll()));
@@ -841,7 +838,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             Assert.AreEqual("SqlFieldsQuery should return _key and _val fields ('select _key, _val from ...'), " +
                             "but returns 1 field(s)", ex.Message);
-                            */
         }
 
         /// <summary>
@@ -874,6 +870,55 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     {
                         Assert.AreEqual(i + 11, initialEntries[i].Key);
                         Assert.AreEqual(i + 11, initialEntries[i].Value.val);
+                    }
+
+                    // Check continuous query
+                    cache1.Put(44, Entry(44));
+                    CheckCallbackSingle(44, null, Entry(44), CacheEntryEventType.Created);
+                }
+
+                Assert.Throws<ObjectDisposedException>(() => contQry.GetInitialQueryCursor());
+
+                contQry.Dispose();  // multiple dispose calls are ok
+            }
+            finally
+            {
+                cache1.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Tests the initial fields query.
+        /// </summary>
+        private void TestInitialQuery(SqlFieldsQuery initialQry,
+            Func<IFieldsQueryCursor, IEnumerable<IList<object>>> getAllFunc)
+        {
+            var qry = new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
+
+            cache1.Put(11, Entry(11));
+            cache1.Put(12, Entry(12));
+            cache1.Put(33, Entry(33));
+
+            try
+            {
+                IContinuousQueryHandleFields contQry;
+
+                using (contQry = cache1.QueryContinuous(qry, initialQry))
+                {
+                    // Check initial query
+                    var initialQueryCursor = contQry.GetInitialQueryCursor();
+                    var meta = initialQueryCursor.Fields;
+                    var keyIdx = meta.TakeWhile(f => f.Name != "_key").Count();
+
+                    var initialEntries = getAllFunc(initialQueryCursor).OrderBy(x => x[keyIdx]).ToList();
+
+                    Assert.Throws<InvalidOperationException>(() => contQry.GetInitialQueryCursor());
+
+                    Assert.AreEqual(2, initialEntries.Count);
+
+                    for (int i = 0; i < initialEntries.Count; i++)
+                    {
+                        Assert.AreEqual(i + 11, initialEntries[i][keyIdx]);
                     }
 
                     // Check continuous query
