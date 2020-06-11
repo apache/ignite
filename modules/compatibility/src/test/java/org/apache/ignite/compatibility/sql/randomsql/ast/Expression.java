@@ -31,9 +31,21 @@ public abstract class Expression extends Ast {
     }
 
     public static Expression createRandom(Ast parent, Class<?> typeConstraint) {
-        if (r(parent, 10) < 2)
-            return ConstantExpression.createRandom(parent, typeConstraint);
-        else
-            return ColumnRef.createRandom(parent, typeConstraint);
+        int attempts = 0;
+        while (true) {
+            try {
+                attempts++;
+                if (typeConstraint == Boolean.class)
+                    return BooleanExpression.createRandom(parent, typeConstraint);
+                if (r(parent, 10) < parent.level)
+                    return ConstantExpression.createRandom(parent, typeConstraint);
+                else
+                    return ColumnRef.createRandom(parent, typeConstraint);
+            }
+            catch (Exception e) {
+                if (attempts > 100)
+                    throw e;
+            }
+        }
     }
 }

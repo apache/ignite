@@ -17,6 +17,8 @@ package org.apache.ignite.compatibility.sql.randomsql.ast;
 
 import org.apache.ignite.compatibility.sql.randomsql.Operator;
 
+import static org.apache.ignite.compatibility.sql.randomsql.ast.AstUtils.r100;
+
 /**
  *
  */
@@ -34,14 +36,16 @@ public class Comparison extends BooleanExpression{
     protected Comparison(Ast parent) {
         super(parent);
 
-        left = Expression.createRandom(parent, Integer.class);
-        right = Expression.createRandom(parent, Integer.class);
-        op = parent.scope().pickRandomOp(Boolean.class);
+        Class<?> opsType = r100(parent, 50) ? Integer.class : Boolean.class;
+
+        left = Expression.createRandom(parent, opsType);
+        right = Expression.createRandom(parent, opsType);
+        op = parent.scope().pickRandomOp(opsType, opsType, Boolean.class);
     }
 
     /** {@inheritDoc} */
     @Override public void print(StringBuilder out) {
-        out.append(" (");
+        out.append("(");
         left.print(out);
         out.append(" ")
             .append(op.name())

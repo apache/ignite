@@ -172,6 +172,8 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
         schema.addOperator(new Operator(">", Integer.class, Integer.class, Boolean.class));
         schema.addOperator(new Operator("<", Integer.class, Integer.class, Boolean.class));
         schema.addOperator(new Operator("=", Integer.class, Integer.class, Boolean.class));
+        schema.addOperator(new Operator("AND", Boolean.class, Boolean.class, Boolean.class));
+        schema.addOperator(new Operator("OR", Boolean.class, Boolean.class, Boolean.class));
 
         int seed = (int)(System.currentTimeMillis() % 100);
 

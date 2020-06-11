@@ -110,9 +110,9 @@ public class Scope {
         }
     }
 
-    public Operator pickRandomOp(Class<?> resultType) {
+    public Operator pickRandomOp(Class<?> left, Class<?> right, Class<?> resultType) {
         List<Operator> matchedOps = schema.operators().stream()
-            .filter(op -> op.result() == resultType)
+            .filter(op -> op.left() == left && op.right() == right && op.result() == resultType )
             .collect(Collectors.toList());
 
         return pickRandom(matchedOps, rnd);
