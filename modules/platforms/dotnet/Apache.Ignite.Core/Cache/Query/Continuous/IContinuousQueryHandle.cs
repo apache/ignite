@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Cache.Query.Continuous
 {
     using System;
-    using System.Collections;
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
@@ -45,18 +44,21 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
             Justification = "Semantics: result differs from call to call.")]
         IQueryCursor<T> GetInitialQueryCursor();
+    }
 
+    /// <summary>
+    /// Represents a continuous query handle for <see cref="SqlFieldsQuery"/> used as initial query.
+    /// </summary>
+    public interface IContinuousQueryHandleFields : IContinuousQueryHandle
+    {
         /// <summary>
-        /// Gets the cursor for initial query when <see cref="SqlFieldsQuery"/> was used as initial query.
-        /// <para />
-        /// It is also possible to call <see cref="GetInitialQueryCursor"/> with <see cref="SqlFieldsQuery"/>
-        /// when the SQL query returns key and value: <code>select _key, _val from ...</code>.
+        /// Gets the initial query cursor.
         /// <para />
         /// Can be called only once, throws exception on consequent calls.
         /// </summary>
         /// <returns>Initial query cursor.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
             Justification = "Semantics: result differs from call to call.")]
-        IFieldsQueryCursor GetInitialFieldsQueryCursor();
+        IFieldsQueryCursor GetInitialQueryCursor();
     }
 }

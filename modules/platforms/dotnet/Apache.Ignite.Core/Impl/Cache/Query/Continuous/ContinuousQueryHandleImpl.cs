@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     /// Continuous query handle.
     /// </summary>
     internal class ContinuousQueryHandleImpl<TK, TV> : IContinuousQueryHandleImpl, IContinuousQueryFilter,
-        IContinuousQueryHandle<ICacheEntry<TK, TV>>
+        IContinuousQueryHandle<ICacheEntry<TK, TV>>, IContinuousQueryHandleFields
     {
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="createTargetCb">The initialization callback.</param>
         /// <param name="initialQry">The initial query.</param>
         public ContinuousQueryHandleImpl(ContinuousQuery<TK, TV> qry, Marshaller marsh, bool keepBinary,
-            Func<Action<BinaryWriter>, IPlatformTargetInternal> createTargetCb, QueryBase initialQry)
+            Func<Action<BinaryWriter>, IPlatformTargetInternal> createTargetCb, IQueryBaseInternal initialQry)
         {
             _marsh = marsh;
             _keepBinary = keepBinary;
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 
                     if (initialQry != null)
                     {
-                        writer.WriteInt((int)initialQry.OpId);
+                        writer.WriteInt((int) initialQry.OpId);
 
                         initialQry.Write(writer, _keepBinary);
                     }
@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             {
                 if (_initialQueryIsFields)
                 {
-                    return new FieldsCacheEntryQueryCursor<TK, TV>(cur, _keepBinary);
+                    throw new IgniteException("Initial query is SqlFieldsQuery");
                 }
 
                 return new QueryCursor<TK, TV>(cur, _keepBinary);
@@ -226,17 +226,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             }
         }
 
-        public IFieldsQueryCursor GetInitialFieldsQueryCursor()
-        {
-            if (!_initialQueryIsFields)
-            {
-                throw new IgniteException("Initial query is not SqlFieldsQuery");
-            }
-
-            return GetInitialQueryCursorInternal<IFieldsQueryCursor>(
-                cur => new FieldsQueryCursor(cur, _keepBinary));
-        }
-
         /** <inheritdoc /> */
         [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly",
             Justification = "There is no finalizer.")]
@@ -258,6 +247,18 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                     _disposed = true;
                 }
             }
+        }
+
+        /** <inheritdoc /> */
+        IFieldsQueryCursor IContinuousQueryHandleFields.GetInitialQueryCursor()
+        {
+            if (!_initialQueryIsFields)
+            {
+                throw new IgniteException("Initial query is not SqlFieldsQuery");
+            }
+
+            return GetInitialQueryCursorInternal<IFieldsQueryCursor>(
+                cur => new FieldsQueryCursor(cur, _keepBinary));
         }
     }
 }

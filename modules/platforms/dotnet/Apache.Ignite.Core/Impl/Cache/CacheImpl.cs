@@ -1653,6 +1653,15 @@ namespace Apache.Ignite.Core.Impl.Cache
             return QueryContinuousImpl(qry, initialQry);
         }
 
+        /** <inheritdoc /> */
+        public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> qry, SqlFieldsQuery initialQry)
+        {
+            qry.Validate();
+
+            return new ContinuousQueryHandleImpl<TK, TV>(qry, Marshaller, _flagKeepBinary,
+                writeAction => DoOutOpObject((int) CacheOp.QryContinuous, writeAction), initialQry);
+        }
+
         /// <summary>
         /// QueryContinuous implementation.
         /// </summary>
