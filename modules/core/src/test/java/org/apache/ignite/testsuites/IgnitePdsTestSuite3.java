@@ -86,7 +86,8 @@ public class IgnitePdsTestSuite3 extends TestSuite {
 
         suite.addTestSuite(IgniteWalFlushFsyncWithMmapBufferSelfTest.class);
 
-        suite.addTestSuite(CorruptedCheckpointReservationTest.class);
+//        https://ggsystems.atlassian.net/browse/GG-26123
+//        suite.addTestSuite(CorruptedCheckpointReservationTest.class);
 
         suite.addTestSuite(IgnitePdsNodeJoinWithCachesStopping.class);
     }
