@@ -750,6 +750,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                     }
                 };
             } catch (Throwable t) {
+                // Initial query failed: stop the routine.
                 ctx.kernalContext().continuous().stopRoutine(routineId).get();
 
                 throw t;

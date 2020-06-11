@@ -37,7 +37,6 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
     {
         /// <summary>
         /// Gets the cursor for initial query.
-        /// <para />
         /// Can be called only once, throws exception on consequent calls.
         /// </summary>
         /// <returns>Initial query cursor.</returns>
