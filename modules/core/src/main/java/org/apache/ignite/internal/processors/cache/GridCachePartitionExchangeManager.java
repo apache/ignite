@@ -2109,6 +2109,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * Force checking of rebalance state.
+     */
+    public void checkRebalanceState() {
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (!grp.isLocal()) {
+                GridDhtPartitionTopology top = grp.topology();
+
+                if (top != null)
+                    cctx.affinity().checkRebalanceState(top, grp.groupId());
+            }
+        }
+    }
+
+    /**
      * Builds warning string for long running transaction.
      *
      * @param tx Transaction.
