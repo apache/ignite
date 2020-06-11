@@ -45,7 +45,7 @@
         {
             "enableStatistics",  // IGNITE-7276
             "clearStatistics",  // IGNITE-9017
-            "state" // IGNITE-11863
+            "state", // IGNITE-11863
             "id",  // IGNITE-13141
             "tag"  // IGNITE-13141
         };
