@@ -66,14 +66,6 @@ public enum ClusterState {
     }
 
     /**
-     * @param state Cluster state
-     * @return {@code True} if cluster in given cluster {@code state} is activated and {@code False} otherwise.
-     */
-    public static boolean active(ClusterState state) {
-        return state != INACTIVE;
-    }
-
-    /**
      * @param state1 First given state.
      * @param state2 Second given state.
      * @return Lesser of given states. The order: {@link #ACTIVE} > {@link #ACTIVE_READ_ONLY} > {@link #INACTIVE}.

@@ -264,7 +264,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         assert globalState != null;
 
-        if (globalState.transition() && active(globalState)) {
+        if (globalState.transition() && globalState.state().active()) {
             ClusterState transitionRes = globalState.transitionResult();
 
             if (transitionRes != null)
@@ -304,7 +304,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> publicApiActiveStateAsync(boolean asyncWaitForTransition) {
-        return publicApiStateAsync(asyncWaitForTransition).chain(f -> ClusterState.active(f.get()));
+        return publicApiStateAsync(asyncWaitForTransition).chain(f -> f.get().active());
     }
 
     /** {@inheritDoc} */
@@ -453,7 +453,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     @Override @Nullable public IgniteInternalFuture<Boolean> onLocalJoin(DiscoCache discoCache) {
         final DiscoveryDataClusterState state = globalState;
 
-        if (active(state))
+        if (state.state().active())
             checkLocalNodeInBaseline(state.baselineTopology());
 
         if (state.transition()) {
@@ -468,14 +468,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (targetState == null)
                 targetState = ctx.config().isAutoActivationEnabled() ? ACTIVE : INACTIVE;
 
-            if (!ctx.clientNode()
-                && !ctx.isDaemon()
-                && !active(state)
-                && ClusterState.active(targetState)
-                && !inMemoryMode
-                && isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes())
-            )
-                changeGlobalState(targetState, true, state.baselineTopology().currentBaseline(), false);
+            boolean serverNode = !ctx.clientNode() && !ctx.isDaemon();
+            boolean activation = !state.state().active() && targetState.active();
+
+            if (serverNode && activation && !inMemoryMode) {
+                if (isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes()))
+                    changeGlobalState(targetState, true, state.baselineTopology().currentBaseline(), false);
+            }
         }
 
         return null;
@@ -551,12 +550,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             ctx.durableBackgroundTasksProcessor().onStateChangeFinish(msg);
 
-            if (readOnly(discoClusterState.lastState()) || readOnly(globalState.state()))
-                ctx.cache().context().readOnlyMode(readOnly(globalState.state()));
+            if (discoClusterState.lastState() == ACTIVE_READ_ONLY || globalState.state() == ACTIVE_READ_ONLY)
+                ctx.cache().context().readOnlyMode(globalState.state() == ACTIVE_READ_ONLY);
 
             log.info("Cluster state was changed from " + discoClusterState.lastState() + " to " + globalState.state());
 
-            if (!ClusterState.active(globalState.state()))
+            if (!globalState.state().active())
                 ctx.cache().context().readOnlyMode(false);
 
             TransitionOnJoinWaitFuture joinFut = this.joinFut;
@@ -734,21 +733,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /**
-     * Same behaviour as {@link ClusterState#active(ClusterState)}
-     */
-    private static boolean active(DiscoveryDataClusterState discoDataClusterState) {
-        return ClusterState.active(discoDataClusterState.state());
-    }
-
-    /**
-     * @param state Cluster state
-     * @return {@code True} passed {@code state} is {@link ClusterState#ACTIVE_READ_ONLY}, and {@code False} otherwise.
-     */
-    private static boolean readOnly(ClusterState state) {
-        return state == ACTIVE_READ_ONLY;
-    }
-
-    /**
      * @param msg State change message.
      * @param state Current cluster state.
      * @return {@code True} if state change from message can be applied to the current state.
@@ -776,7 +760,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     @Override public DiscoveryDataClusterState pendingState(ChangeGlobalStateMessage stateMsg) {
         ClusterState state;
 
-        if (ClusterState.active(stateMsg.state()))
+        if (stateMsg.state().active())
             state = stateMsg.state();
         else
             state = stateMsg.forceChangeBaselineTopology() ? ACTIVE : INACTIVE;
@@ -928,10 +912,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             compatibilityMode = true;
 
-            ctx.cache().context().readOnlyMode(readOnly(globalState.state()));
-
-            if (readOnly(globalState.state()))
-                ctx.cache().context().database().forceCheckpoint("Cluster read-only mode enabled");
+            ctx.cache().context().readOnlyMode(globalState.state() == ACTIVE_READ_ONLY);
 
             return;
         }
@@ -951,12 +932,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     bltHist.bufferHistoryItemForStore(item);
             }
 
-            final boolean readOnly = readOnly(globalState.state());
-
-            ctx.cache().context().readOnlyMode(readOnly);
-
-            if (readOnly)
-                ctx.cache().context().database().forceCheckpoint("Cluster read-only mode enabled");
+            ctx.cache().context().readOnlyMode(globalState.state() == ACTIVE_READ_ONLY);
         }
     }
 
@@ -983,7 +959,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         int newBltId = 0;
 
         if (currBlt != null)
-            newBltId = ClusterState.active(state) ? currBlt.id() + 1 : currBlt.id();
+            newBltId = state.active() ? currBlt.id() + 1 : currBlt.id();
 
         if (baselineNodes != null && !baselineNodes.isEmpty()) {
             List<BaselineNode> baselineNodes0 = new ArrayList<>();
@@ -1004,7 +980,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         if (forceChangeBaselineTopology)
             newBlt = BaselineTopology.build(baselineNodes, newBltId);
-        else if (ClusterState.active(state)) {
+        else if (state.active()) {
             if (baselineNodes == null)
                 baselineNodes = baselineNodes();
 
@@ -1072,7 +1048,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         DiscoveryDataClusterState curState = globalState;
 
         if (!curState.transition() && curState.state() == state) {
-            if (!ClusterState.active(state) || BaselineTopology.equals(curState.baselineTopology(), blt))
+            if (!state.active() || BaselineTopology.equals(curState.baselineTopology(), blt))
                 return new GridFinishedFuture<>();
         }
 
@@ -1428,7 +1404,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     @Override public void onStateChangeExchangeDone(StateChangeRequest req) {
         try {
             if (req.activeChanged()) {
-                if (ClusterState.active(req.state()))
+                if (req.state().active())
                     onFinalActivate(req);
 
                 globalState.setTransitionResult(req.requestId(), req.state());
@@ -1532,7 +1508,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private void onStateRestored(BaselineTopology blt) {
         DiscoveryDataClusterState state = globalState;
 
-        if (!ClusterState.active(state.state()) && !state.transition() && state.baselineTopology() == null)
+        if (!state.state().active() && !state.transition() && state.baselineTopology() == null)
             globalState = DiscoveryDataClusterState.createState(INACTIVE, blt);
     }
 
@@ -1564,7 +1540,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         );
 
         boolean autoAdjustBaseline = isInMemoryCluster
-            && ClusterState.active(oldState.state())
+            && oldState.state().active()
             && !oldState.transition()
             && cluster.isBaselineAutoAdjustEnabled()
             && cluster.baselineAutoAdjustTimeout() == 0L;
@@ -1626,7 +1602,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 UUID.randomUUID(),
                 ctx.localNodeId(),
                 null,
-                ClusterState.active(clusterState.state()) ? clusterState.state() : ACTIVE,
+                clusterState.state().active() ? clusterState.state() : ACTIVE,
                 true,
                 blt,
                 true,
@@ -1771,7 +1747,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         assert state != null;
         assert newState != null;
 
-        return state == INACTIVE && ClusterState.active(newState);
+        return state == INACTIVE && newState.active();
     }
 
     /**

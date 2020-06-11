@@ -965,7 +965,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         ClusterState state = grid(0).cluster().state();
 
-        if (ClusterState.active(state)) {
+        if (state.active()) {
             checkCachesOnNode(nodeIdx, cachesCount, !client);
 
             checkCaches(nodeIdx + 1, cachesCount);
@@ -1023,13 +1023,13 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         startWithCaches1(SRVS, CLIENTS);
 
-        if (persistenceEnabled() && ClusterState.active(initialState))
+        if (persistenceEnabled() && initialState.active())
             ignite(0).cluster().state(initialState);
 
         Ignite srv = ignite(0);
         Ignite client = ignite(SRVS);
 
-        if (ClusterState.active(initialState)) {
+        if (initialState.active()) {
             checkCache(client, CU.UTILITY_CACHE_NAME, true);
 
             checkCaches(nodesCnt);
@@ -1039,7 +1039,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         IgniteClientReconnectAbstractTest.reconnectClientNode(log, client, srv, null);
 
-        if (!ClusterState.active(initialState)) {
+        if (!initialState.active()) {
             checkNoCaches(nodesCnt);
 
             srv.cluster().state(ACTIVE);
@@ -1145,10 +1145,10 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         final Ignite srv = ignite(0);
         IgniteEx client = grid(SRVS);
 
-        if (persistenceEnabled() && ClusterState.active(initialState))
+        if (persistenceEnabled() && initialState.active())
             ignite(0).cluster().state(initialState);
 
-        if (ClusterState.active(initialState)) {
+        if (initialState.active()) {
             checkCache(client, CU.UTILITY_CACHE_NAME, true);
 
             checkCaches(nodesCnt);
@@ -1197,7 +1197,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             stateFut.get().get();
         }
 
-        if (!ClusterState.active(targetState)) {
+        if (!targetState.active()) {
             checkNoCaches(nodesCnt);
 
             ignite(0).cluster().state(initialState);
@@ -1479,7 +1479,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         for (int i = servers; i < nodesCnt; i++)
             assertEquals(ignite(i).name(), INACTIVE, ignite(i).cluster().state());
 
-        ignite(servers).cluster().state(ClusterState.active(initialState) ? initialState : targetState);
+        ignite(servers).cluster().state(initialState.active() ? initialState : targetState);
 
         doFinalChecks(servers, nodesCnt);
     }
@@ -1530,7 +1530,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         for (int idx : restartNodes)
             startGrid(idx, idx >= servers & idx < (servers + clients));
 
-        if (!ClusterState.active(targetState)) {
+        if (!targetState.active()) {
             checkNoCaches(nodesCnt);
 
             ignite(0).cluster().state(initialState);
@@ -1594,7 +1594,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             () -> {
                 DiscoveryDataClusterState clusterState = crd.context().state().clusterState();
 
-                return clusterState.transition() && !ClusterState.active(clusterState.state());
+                return clusterState.transition() && !clusterState.state().active();
             },
             getTestTimeout()
         ));
@@ -1734,7 +1734,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
     /** */
     private static void checkStatesAreDifferent(ClusterState state1, ClusterState state2) {
-        assertTrue(state1 + " " + state2, ClusterState.active(state1) != ClusterState.active(state2));
+        assertTrue(state1 + " " + state2, state1.active() != state2.active());
     }
 
     /** */
