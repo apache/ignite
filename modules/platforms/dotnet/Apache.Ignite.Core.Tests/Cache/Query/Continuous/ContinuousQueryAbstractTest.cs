@@ -902,12 +902,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 {
                     // Check initial query
                     var initialQueryCursor = contQry.GetInitialQueryCursor();
-                    var meta = initialQueryCursor.Fields;
                     var initialEntries = getAllFunc(initialQueryCursor).OrderBy(x => x[0]).ToList();
 
                     Assert.Throws<InvalidOperationException>(() => contQry.GetInitialQueryCursor());
 
                     Assert.AreEqual(2, initialEntries.Count);
+                    Assert.AreEqual(2, initialQueryCursor.Fields.Count);
 
                     for (int i = 0; i < initialEntries.Count; i++)
                     {
