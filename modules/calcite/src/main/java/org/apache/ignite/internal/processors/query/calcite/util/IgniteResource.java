@@ -38,4 +38,8 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("Illegal aggregate function. {0} is unsupported at the moment.")
     Resources.ExInst<SqlValidatorException> unsupportedAggregationFunction(String a0);
+
+    /** */
+    @Resources.BaseMessage("Illegal value of {0}. {0} is unsupported at the moment.")
+    Resources.ExInst<SqlValidatorException> tooBig(String a0);
 }

@@ -16,7 +16,9 @@
  */
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.math.BigDecimal;
 import java.util.List;
+import org.apache.calcite.linq4j.function.BigDecimalFunction1;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -73,6 +75,14 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
     public void testInvalidLimitOffset() {
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
+        String bigInt = BigDecimal.valueOf(10000000000L).toString();
+        {
+            List<FieldsQueryCursor<List<?>>> cursors =
+                engine.query(null, "PUBLIC",
+                    "SELECT * FROM TEST OFFSET " + bigInt + " ROWS FETCH FIRST " + bigInt + " ROWS ONLY",
+                    X.EMPTY_OBJECT_ARRAY);
+            cursors.get(0).getAll();
+        }
         GridTestUtils.assertThrows(log, () -> {
             List<FieldsQueryCursor<List<?>>> cursors =
                 engine.query(null, "PUBLIC",

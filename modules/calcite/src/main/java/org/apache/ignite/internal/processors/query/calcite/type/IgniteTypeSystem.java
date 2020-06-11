@@ -20,10 +20,15 @@ package org.apache.ignite.internal.processors.query.calcite.type;
 import java.io.Serializable;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
  * Ignite type system.
  */
 public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializable {
     public static final RelDataTypeSystem INSTANCE = new IgniteTypeSystem();
+
+    @Override public int getDefaultPrecision(SqlTypeName typeName) {
+        return super.getDefaultPrecision(typeName);
+    }
 }

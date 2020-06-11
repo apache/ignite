@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +32,7 @@ import org.apache.calcite.sql.SqlDelete;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperatorTable;
@@ -153,6 +155,25 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** {@inheritDoc} */
     @Override public boolean isSystemField(RelDataTypeField field) {
         return isSystemFieldName(field.getName());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
+        SqlNode fetch = select.getFetch();
+        SqlNode offset = select.getOffset();
+
+        if (fetch instanceof SqlLiteral) {
+            if (((SqlLiteral)fetch).bigDecimalValue().compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) > 0)
+                throw newValidationError(fetch, IgniteResource.INSTANCE.tooBig("fetch"));
+
+        }
+
+        if (offset instanceof SqlLiteral) {
+            if (((SqlLiteral)fetch).bigDecimalValue().compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) > 0)
+                throw newValidationError(offset, IgniteResource.INSTANCE.tooBig("offset"));
+        }
+
+        super.validateSelect(select, targetRowType);
     }
 
     /** */
