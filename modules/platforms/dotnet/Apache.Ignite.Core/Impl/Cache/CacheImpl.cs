@@ -1603,16 +1603,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             return new FieldsQueryCursor<T>(cursor, _flagKeepBinary, readerFunc);
         }
 
-        private IPlatformTargetInternal QueryFieldsInternal(SqlFieldsQuery qry)
-        {
-            IgniteArgumentCheck.NotNull(qry, "qry");
-
-            if (string.IsNullOrEmpty(qry.Sql))
-                throw new ArgumentException("Sql cannot be null or empty");
-
-            return DoOutOpObject((int) CacheOp.QrySqlFields, writer => qry.Write(writer, false));
-        }
-
         /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry)
         {
@@ -2089,6 +2079,19 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
 
             return new PlatformCacheQueryCursor<TK, TV>(_platformCache, filter, part, dispose);
+        }
+
+        /// <summary>
+        /// Executes fields query.
+        /// </summary>
+        private IPlatformTargetInternal QueryFieldsInternal(SqlFieldsQuery qry)
+        {
+            IgniteArgumentCheck.NotNull(qry, "qry");
+
+            if (string.IsNullOrEmpty(qry.Sql))
+                throw new ArgumentException("Sql cannot be null or empty");
+
+            return DoOutOpObject((int) CacheOp.QrySqlFields, writer => qry.Write(writer));
         }
     }
 }

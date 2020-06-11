@@ -171,15 +171,16 @@ namespace Apache.Ignite.Core.Cache.Query
                                  Colocated, Schema, Lazy);
         }
 
+        /** <inheritdoc /> */
         void IQueryBaseInternal.Write(BinaryWriter writer, bool keepBinary)
         {
-            Write(writer, keepBinary);
+            Write(writer);
         }
 
         /// <summary>
         /// Writes this query.
         /// </summary>
-        internal void Write(BinaryWriter writer, bool keepBinary)
+        internal void Write(BinaryWriter writer)
         {
             writer.WriteBoolean(Local);
             writer.WriteString(Sql);
@@ -198,9 +199,7 @@ namespace Apache.Ignite.Core.Cache.Query
             writer.WriteString(Schema); // Schema
         }
 
-        /// <summary>
-        /// Gets the op id.
-        /// </summary>
+        /** <inheritdoc /> */
         CacheOp IQueryBaseInternal.OpId
         {
             get { return CacheOp.QrySqlFields; }
