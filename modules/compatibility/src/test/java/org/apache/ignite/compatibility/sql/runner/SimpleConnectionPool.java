@@ -39,7 +39,7 @@ public class SimpleConnectionPool implements AutoCloseable {
         usedConnections = new ArrayList<>(size);
 
         for (int i = 0; i < size; i++) {
-            Connection conn = DriverManager.getConnection(url + port);
+            Connection conn = DriverManager.getConnection(url + port + "?lazy=true");
 
             conn.setSchema("PUBLIC");
 

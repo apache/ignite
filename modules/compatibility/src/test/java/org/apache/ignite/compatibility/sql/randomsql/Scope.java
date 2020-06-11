@@ -16,9 +16,11 @@
 package org.apache.ignite.compatibility.sql.randomsql;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
+import org.apache.ignite.compatibility.sql.randomsql.ast.ColumnRef;
+import org.apache.ignite.compatibility.sql.randomsql.ast.TableRef;
 
 import static org.apache.ignite.compatibility.sql.randomsql.ast.AstUtils.pickRandom;
 
@@ -29,11 +31,8 @@ public class Scope {
     /** */
     private final Scope parentScope;
 
-    /** All available tables. */
-    private final List<Table> allTbls;
-
     /** Table available for column references. */
-    private final List<Table> scopeTbls;
+    private final List<TableRef> scopeTbls;
 
     /** */
     private Schema schema;
@@ -42,19 +41,28 @@ public class Scope {
     private Random rnd;
 
     /**
+     * Constructor for child scope.
+     *
      * @param parent Parent.
      */
     public Scope(Scope parent) {
         parentScope = parent;
-        allTbls = parent == null ? new ArrayList<>() : parent.allTbls;
-        schema = parent == null ? null : parent.schema;
-        rnd = parent == null ? null : parent.rnd; // TODO refactor
+        schema = parent.schema;
+        rnd = parent.rnd;
         scopeTbls = new ArrayList<>();
     }
 
-    /** */
-    public void fillTables(Collection<Table> tbls) {
-        this.allTbls.addAll(tbls);
+    /**
+     * Constructor for root scope.
+     *
+     * @param schema Schema.
+     * @param seed Random seed.
+     */
+    public Scope(Schema schema, int seed) {
+        parentScope = null;
+        this.schema = schema;
+        rnd = new Random(seed);
+        scopeTbls = new ArrayList<>();
     }
 
     /** */
@@ -73,23 +81,27 @@ public class Scope {
     }
 
     /** */
-    public List<Table> allTables() {
-        return allTbls;
+    public Schema schema() {
+        return schema;
     }
 
     public Table pickRandomTable() {
-        return pickRandom(allTbls, rnd);
+        return pickRandom(schema.tables(), rnd);
     }
 
-    public Column pickRandomColumn(Class<?> type) {
+    public TableRef pickRandomTableRef() {
+        return pickRandom(scopeTbls, rnd);
+    }
+
+    public ColumnRef pickRandomColumn(Class<?> type) {
         if (type == null) {
-            Table tbl = pickRandomTable();
-            return pickRandom(tbl.columnsList(), rnd);
+            TableRef tbl = pickRandomTableRef();
+            return pickRandom(tbl.columnRefs(), rnd);
         }
         else {
-            List<Column> cols = new ArrayList<>();
-            for (Table tbl : scopeTbls) {
-                for (Column col : tbl.columnsList()) {
+            List<ColumnRef> cols = new ArrayList<>();
+            for (TableRef tbl : scopeTbls) {
+                for (ColumnRef col : tbl.columnRefs()) {
                     if (col.typeClass() == type)
                         cols.add(col);
                 }
@@ -98,7 +110,19 @@ public class Scope {
         }
     }
 
-    public void addScopeTable(Table t) {
+    public Operator pickRandomOp(Class<?> resultType) {
+        List<Operator> matchedOps = schema.operators().stream()
+            .filter(op -> op.result() == resultType)
+            .collect(Collectors.toList());
+
+        return pickRandom(matchedOps, rnd);
+    }
+
+    public void addScopeTable(TableRef t) {
         scopeTbls.add(t);
+    }
+
+    public Random random() {
+        return rnd;
     }
 }

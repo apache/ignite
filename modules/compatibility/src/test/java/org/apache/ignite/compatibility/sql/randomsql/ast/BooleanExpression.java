@@ -13,22 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.compatibility.sql.randomsql;
+package org.apache.ignite.compatibility.sql.randomsql.ast;
 
 /**
  * TODO: Add class description.
  */
-public class Operation {
+public abstract class BooleanExpression extends Expression {
 
-    private final String name;
-    private final Class<?> left;
-    private final Class<?> right;
-    private final Class<?> result;
+    protected BooleanExpression(Ast parent) {
+        super(parent, Boolean.class);
+    }
 
-    public Operation(String name, Class<?> left, Class<?> right, Class<?> result) {
-        this.name = name;
-        this.left = left;
-        this.right = right;
-        this.result = result;
+    public static BooleanExpression createRandom(Ast parent, Class<?> typeConstraint) {
+        return new Comparison(parent);
     }
 }

@@ -15,46 +15,45 @@
  */
 package org.apache.ignite.compatibility.sql.randomsql.ast;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.compatibility.sql.randomsql.Column;
-import org.apache.ignite.compatibility.sql.randomsql.Table;
+import org.apache.ignite.compatibility.sql.randomsql.Scope;
 
 /**
  *
  */
-public class TableRef extends Ast {
+public class ColumnRef extends Expression {
     /** */
-    private static final AtomicLong ALIAS_ID = new AtomicLong();
+    private final String tblAlias;
 
     /** */
-    private final Table tbl;
+    private final Column col;
 
     /** */
-    private final String alias;
+    private final Class<?> typeCls;
 
     /** */
-    private final List<ColumnRef> colRefs = new ArrayList<>();
-
-    /** */
-    public TableRef(Ast parent, Table tbl) {
-        super(parent);
-        this.tbl = tbl;
-        alias = tbl.name().substring(0, 1) + ALIAS_ID.incrementAndGet();
-        for (Column col : tbl.columnsList())
-            colRefs.add(new ColumnRef(parent, col, alias));
+    protected ColumnRef(Ast parent, Column col, String tblAlias) {
+        super(parent, col.typeClass());
+        this.col = col;
+        this.tblAlias = tblAlias;
+        this.typeCls = col.typeClass();
     }
 
-    /** {@inheritDoc} */
     @Override public void print(StringBuilder out) {
         out.append(" ")
-            .append(tbl.name()).append(" ")
-            .append(alias).append(" ");
+            .append(tblAlias)
+            .append(".")
+            .append(col.name())
+            .append(" ");
     }
 
-    /** */
-    public List<ColumnRef> columnRefs() {
-        return colRefs;
+    public static ColumnRef createRandom(Ast parent, Class<?> typeConstraint) {
+        Scope scope = parent.scope();
+
+        return scope.pickRandomColumn(typeConstraint);
+    }
+
+    public Class<?> typeClass() {
+        return typeCls;  // TODO: implement.
     }
 }

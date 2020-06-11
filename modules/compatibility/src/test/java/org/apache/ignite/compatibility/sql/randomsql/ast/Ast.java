@@ -29,37 +29,32 @@ public abstract class Ast {
 
     protected final int level;
 
-    protected final Random rnd;
-
-
     public Ast(Ast parent) {
         this.parent = parent;
         level = parent.level + 1;
         scope = parent.scope;
-        rnd = parent.rnd;
     }
 
     /**
      * Constructor for root AST.
      *
      * @param scope Scope.
-     * @param seed Random seed.
      */
-    public Ast(Scope scope, int seed) {
+    public Ast(Scope scope) {
         parent = null;
-        rnd = new Random(seed);
         this.scope = scope;
-        this.scope.setRandom(rnd);
         level = 0;
     }
 
     public abstract void print(StringBuilder out);
 
     public Random random() {
-        return rnd;
+        return scope.random();
     }
 
     public Scope scope() {
         return scope;
     }
+
+
 }

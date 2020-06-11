@@ -15,36 +15,38 @@
  */
 package org.apache.ignite.compatibility.sql.randomsql.ast;
 
-import org.apache.ignite.compatibility.sql.randomsql.Column;
-import org.apache.ignite.compatibility.sql.randomsql.Scope;
+import org.apache.ignite.compatibility.sql.randomsql.Operator;
 
 /**
- * TODO: Add class description.
+ *
  */
-public class ColumnReference extends Expression {
+public class Comparison extends BooleanExpression{
+    /** */
+    private final Expression left;
 
-    private final Column col;
+    /** */
+    private final Expression right;
 
-    protected ColumnReference(Ast parent, Class<?> type, Column col) {
-        super(parent, type);
-        this.col = col;
+    /** */
+    private final Operator op;
+
+    /** */
+    protected Comparison(Ast parent) {
+        super(parent);
+
+        left = Expression.createRandom(parent, Integer.class);
+        right = Expression.createRandom(parent, Integer.class);
+        op = parent.scope().pickRandomOp(Boolean.class);
     }
 
+    /** {@inheritDoc} */
     @Override public void print(StringBuilder out) {
+        out.append(" (");
+        left.print(out);
         out.append(" ")
-            .append(col.table().name())
-            .append(".")
-            .append(col.name())
+            .append(op.name())
             .append(" ");
+        right.print(out);
+        out.append(")");
     }
-
-    public static ColumnReference createRandom(Ast parent, Class<?> typeConstraint) {
-        Scope scope = parent.scope();
-
-        Column col = scope.pickRandomColumn(typeConstraint);
-
-        return new ColumnReference(parent, typeConstraint, col);
-    }
-
-
 }

@@ -19,24 +19,31 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.compatibility.sql.randomsql.Table;
 
+import static org.apache.ignite.compatibility.sql.randomsql.ast.AstUtils.r100;
+
 /**
- * TODO: Add class description.
+ *
  */
 public class From extends Ast {
+    /** */
     private final List<TableRef> from = new ArrayList<>();
 
+    /** */
     public From(Ast parent) {
         super(parent);
 
         do {
             Table t = scope.pickRandomTable();
 
-            from.add(new TableRef(this, t));
+            TableRef tblRef = new TableRef(this, t);
 
-            scope.addScopeTable(t);
-        } while (rnd.nextInt(100) > 20);
+            from.add(tblRef);
+
+            scope.addScopeTable(tblRef);
+        } while (r100(parent, 80) && from.size() < 7);
     }
 
+    /** {@inheritDoc} */
     @Override public void print(StringBuilder out) {
         for (int i = 0; i < from.size(); i++) {
             if (i != 0)

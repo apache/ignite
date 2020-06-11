@@ -13,29 +13,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.compatibility.sql.randomsql.ast;
-
-import java.util.List;
-import java.util.Random;
+package org.apache.ignite.compatibility.sql.randomsql;
 
 /**
- * TODO: Add class description.
+ *
  */
-public class AstUtils {
+public class Operator {
+    /** */
+    private final String name;
 
-    public static int r(Ast ast, int bound) {
-        return ast.random().nextInt(bound);
+    /** */
+    private final Class<?> left;
+
+    /** */
+    private final Class<?> right;
+
+    /** */
+    private final Class<?> result;
+
+    /** */
+    public Operator(String name, Class<?> left, Class<?> right, Class<?> result) {
+        this.name = name;
+        this.left = left;
+        this.right = right;
+        this.result = result;
     }
 
-    public static boolean r100(Ast parent, int percent) {
-        return parent.random().nextInt(100) < percent;
+    /** */
+    public String name() {
+        return name;
     }
 
-    public static String rAsString(Ast parent, int bound) {
-        return String.valueOf(parent.random().nextInt(bound));
+    /** */
+    public Class<?> left() {
+        return left;
     }
 
-    public static <T> T pickRandom(List<T> list, Random rnd) {
-        return list.get(rnd.nextInt(list.size()));
+    /** */
+    public Class<?> right() {
+        return right;
+    }
+
+    /** */
+    public Class<?> result() {
+        return result;
     }
 }

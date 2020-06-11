@@ -34,6 +34,6 @@ public abstract class Expression extends Ast {
         if (r(parent, 10) < 2)
             return ConstantExpression.createRandom(parent, typeConstraint);
         else
-            return ColumnReference.createRandom(parent, typeConstraint);
+            return ColumnRef.createRandom(parent, typeConstraint);
     }
 }

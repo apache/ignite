@@ -34,6 +34,7 @@ import org.apache.ignite.compatibility.sql.model.Country;
 import org.apache.ignite.compatibility.sql.model.Department;
 import org.apache.ignite.compatibility.sql.model.ModelFactory;
 import org.apache.ignite.compatibility.sql.model.Person;
+import org.apache.ignite.compatibility.sql.randomsql.Operator;
 import org.apache.ignite.compatibility.sql.randomsql.Schema;
 import org.apache.ignite.compatibility.sql.randomsql.Scope;
 import org.apache.ignite.compatibility.sql.randomsql.ast.Select;
@@ -114,23 +115,24 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
     /** Default queries.. */
     private final Supplier<String> qrysSupplier = new PredefinedQueriesSupplier(Arrays.asList(
-        "SELECT * FROM person p1 WHERE id > 0",
-        "SELECT * FROM department d1 WHERE id > 0",
-        "SELECT * FROM country c1",
-        "SELECT * FROM city ci1",
-        "SELECT * FROM company co1",
-        "SELECT * FROM person p, department d, company co " +
-            "WHERE p.depId=d.id AND d.companyId = co.id",
-        "SELECT * FROM person p, department d, company co, city ci " +
-                    "WHERE p.depId=d.id AND d.companyId = co.id AND co.cityId = ci.id",
-        "SELECT * FROM person p, department d, company co, city ci " +
-            "WHERE p.depId=d.id AND d.companyId = co.id AND p.cityId = ci.id",
-        "SELECT * FROM person p, department d, company co " +
-            "WHERE p.depId=d.id AND d.companyId = co.id AND d.companyId > 50",
-        "SELECT * FROM person p, department d, company co, city ci " +
-            "WHERE p.depId=d.id AND d.companyId = co.id AND co.cityId = ci.id AND d.companyId > 50 AND d.id < 80",
-        "SELECT * FROM person p, department d, company co, city ci " +
-            "WHERE p.depId=d.id AND d.companyId = co.id AND p.cityId = ci.id AND d.cityId > 10 AND co.headCnt < 20"
+        "SELECT * FROM   company c1 ,  person p2 ,  city c3  WHERE  ( p2.age  >  c3.population )"
+//        "SELECT * FROM person p1 WHERE id > 0",
+//        "SELECT * FROM department d1 WHERE id > 0",
+//        "SELECT * FROM country c1",
+//        "SELECT * FROM city ci1",
+//        "SELECT * FROM company co1",
+//        "SELECT * FROM person p, department d, company co " +
+//            "WHERE p.depId=d.id AND d.companyId = co.id",
+//        "SELECT * FROM person p, department d, company co, city ci " +
+//                    "WHERE p.depId=d.id AND d.companyId = co.id AND co.cityId = ci.id",
+//        "SELECT * FROM person p, department d, company co, city ci " +
+//            "WHERE p.depId=d.id AND d.companyId = co.id AND p.cityId = ci.id",
+//        "SELECT * FROM person p, department d, company co " +
+//            "WHERE p.depId=d.id AND d.companyId = co.id AND d.companyId > 50",
+//        "SELECT * FROM person p, department d, company co, city ci " +
+//            "WHERE p.depId=d.id AND d.companyId = co.id AND co.cityId = ci.id AND d.companyId > 50 AND d.id < 80",
+//        "SELECT * FROM person p, department d, company co, city ci " +
+//            "WHERE p.depId=d.id AND d.companyId = co.id AND p.cityId = ci.id AND d.cityId > 10 AND co.headCnt < 20"
     ), false);
 
 
@@ -167,13 +169,19 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
         for (ModelFactory factory : MODEL_FACTORIES)
             schema.addTable(factory.queryEntity());
 
-        Scope rootScope = new Scope(null);
+        schema.addOperator(new Operator(">", Integer.class, Integer.class, Boolean.class));
+        schema.addOperator(new Operator("<", Integer.class, Integer.class, Boolean.class));
+        schema.addOperator(new Operator("=", Integer.class, Integer.class, Boolean.class));
+
+        int seed = (int)(System.currentTimeMillis() % 100);
+
+        Scope rootScope = new Scope(schema, seed);
 
         schema.fillScope(rootScope);
 
 
 
-        Select select = Select.createParentRandom(rootScope, (int)(System.currentTimeMillis() % 100));
+        Select select = Select.createParentRandom(rootScope);
 
         StringBuilder sb = new StringBuilder();
         select.print(sb);

@@ -29,8 +29,8 @@ public class Select extends Ast {
         super(parent);
     }
 
-    public Select(Scope scope, int seed) {
-        super(scope, seed);
+    public Select(Scope scope) {
+        super(scope);
     }
 
     @Override public void print(StringBuilder out) {
@@ -40,11 +40,10 @@ public class Select extends Ast {
         where.print(out);
     }
 
-    public static Select createParentRandom(Scope initScope, int seed) {
-        Scope selectScope = new Scope(initScope);
-        Select select = new Select(selectScope, seed);
+    public static Select createParentRandom(Scope initScope) {
+        Select select = new Select(initScope);
         select.from = new From(select);
-        select.where = Expression.createRandom(select, Integer.class);
+        select.where = BooleanExpression.createRandom(select, Integer.class);
         return select;
     }
 }

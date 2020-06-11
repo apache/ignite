@@ -27,6 +27,9 @@ public class Schema {
     private final List<Table> tbls = new ArrayList<>();
 
     /** */
+    private final List<Operator> ops = new ArrayList<>();
+
+    /** */
     public void addTable(QueryEntity entity) {
         tbls.add(new Table(entity));
     }
@@ -38,7 +41,16 @@ public class Schema {
 
     /** */
     public void fillScope(Scope scope) {
-        scope.fillTables(tbls);
         scope.setSchema(this);
+    }
+
+    /** */
+    public void addOperator(Operator operator) {
+        ops.add(operator);
+    }
+
+    /** */
+    public List<Operator> operators() {
+        return ops;
     }
 }
