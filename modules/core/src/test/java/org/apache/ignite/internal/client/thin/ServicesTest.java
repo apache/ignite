@@ -78,7 +78,7 @@ public class ServicesTest extends AbstractThinClientTest {
     @Test
     public void testOverloadedMethods() throws Exception {
         try (IgniteClient client = startClient(0)) {
-            // Test local service calls (service deployed to each node) .
+            // Test local service calls (service deployed to each node).
             TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
                 TestServiceInterface.class);
 
@@ -123,7 +123,7 @@ public class ServicesTest extends AbstractThinClientTest {
     @Test
     public void testCollectionMethods() throws Exception {
         try (IgniteClient client = startClient(0)) {
-            // Test local service calls (service deployed to each node) .
+            // Test local service calls (service deployed to each node).
             TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
                 TestServiceInterface.class);
 
@@ -178,6 +178,27 @@ public class ServicesTest extends AbstractThinClientTest {
 
             GridTestUtils.assertThrowsAnyCause(log, () -> svc.testMethod(0), ClientException.class,
                 "Service not found");
+        }
+    }
+
+    /**
+     * Test that service exception message is propagated to client.
+     */
+    @Test
+    public void testServiceException() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            // Test local service calls (service deployed to each node).
+            TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
+                TestServiceInterface.class);
+
+            GridTestUtils.assertThrowsAnyCause(log, svc::testException, ClientException.class,
+                "testException()");
+
+            // Test remote service calls (client connected to grid(0) but service deployed to grid(1)).
+            client.services().serviceProxy(CLUSTER_SINGLTON_SERVICE_NAME, TestServiceInterface.class);
+
+            GridTestUtils.assertThrowsAnyCause(log, svc::testException, ClientException.class,
+                "testException()");
         }
     }
 
@@ -270,6 +291,9 @@ public class ServicesTest extends AbstractThinClientTest {
         public Map<Integer, Person> testMap(Map<Integer, Person> persons);
 
         /** */
+        public Object testException();
+
+        /** */
         public void sleep(long millis);
     }
 
@@ -335,6 +359,11 @@ public class ServicesTest extends AbstractThinClientTest {
         /** {@inheritDoc} */
         @Override public Map<Integer, Person> testMap(Map<Integer, Person> persons) {
             return persons;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object testException() {
+            throw new IllegalStateException("testException()");
         }
 
         /** {@inheritDoc} */

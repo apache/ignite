@@ -70,13 +70,8 @@ class ClientServicesImpl implements ClientServices {
         A.notNullOrEmpty(name, "name");
         A.notNull(svcItf, "svcItf");
 
-        Collection<UUID> nodeIds = grp.nodeIds();
-
-        if (nodeIds != null && nodeIds.isEmpty())
-            throw new ClientException("Cluster group is empty.");
-
         return (T)Proxy.newProxyInstance(svcItf.getClassLoader(), new Class[] {svcItf},
-            new ServiceInvocationHandler<>(name, timeout, nodeIds));
+            new ServiceInvocationHandler<>(name, timeout, grp));
     }
 
     /**
@@ -94,30 +89,38 @@ class ClientServicesImpl implements ClientServices {
      * Service invocation handler.
      */
     private class ServiceInvocationHandler<T> implements InvocationHandler {
+        /** Flag "Has parameter types" mask. */
+        private static final byte FLAG_PARAMETER_TYPES_MASK = 0x02;
+
         /** Service name. */
         private final String name;
 
         /** Timeout. */
         private final long timeout;
 
-        /** Node IDs. */
-        private final Collection<UUID> nodeIds;
+        /** Cluster group. */
+        private final ClientClusterGroupImpl grp;
 
         /**
          * @param name Service name.
          * @param timeout Timeout.
          */
-        private ServiceInvocationHandler(String name, long timeout, Collection<UUID> nodeIds) {
+        private ServiceInvocationHandler(String name, long timeout, ClientClusterGroupImpl grp) {
             this.name = name;
             this.timeout = timeout;
-            this.nodeIds = nodeIds;
+            this.grp = grp;
         }
 
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             try {
+                Collection<UUID> nodeIds = grp.nodeIds();
+
+                if (nodeIds != null && nodeIds.isEmpty())
+                    throw new ClientException("Cluster group is empty.");
+
                 return ch.service(ClientOperation.SERVICE_INVOKE,
-                    req -> writeServiceInvokeRequest(req, method, args),
+                    req -> writeServiceInvokeRequest(req, nodeIds, method, args),
                     res -> utils.readObject(res.in(), false)
                 );
             }
@@ -129,12 +132,17 @@ class ClientServicesImpl implements ClientServices {
         /**
          * @param ch Payload output channel.
          */
-        private void writeServiceInvokeRequest(PayloadOutputChannel ch, Method method, Object[] args) {
+        private void writeServiceInvokeRequest(
+            PayloadOutputChannel ch,
+            Collection<UUID> nodeIds,
+            Method method,
+            Object[] args
+        ) {
             ch.clientChannel().protocolCtx().checkFeatureSupported(ProtocolBitmaskFeature.SERVICE_INVOKE);
 
             try (BinaryRawWriterEx writer = utils.createBinaryWriter(ch.out())) {
                 writer.writeString(name);
-                writer.writeByte((byte)0); // Flags.
+                writer.writeByte(FLAG_PARAMETER_TYPES_MASK); // Flags.
                 writer.writeLong(timeout);
 
                 if (nodeIds == null)
@@ -151,20 +159,18 @@ class ClientServicesImpl implements ClientServices {
                 writer.writeString(ann != null ? ann.value() : method.getName());
 
                 Class<?>[] paramTypes = method.getParameterTypes();
-                int[] paramTypeIds = new int[paramTypes.length];
-
-                for (int i = 0; i < paramTypes.length; i++)
-                    paramTypeIds[i] = marsh.context().typeId(paramTypes[i].getName());
-
-                writer.writeIntArray(paramTypeIds);
 
                 if (F.isEmpty(args))
                     writer.writeInt(0);
                 else {
                     writer.writeInt(args.length);
 
-                    for (Object arg : args)
-                        writer.writeObject(arg);
+                    assert args.length == paramTypes.length : "args=" + args.length + ", types=" + paramTypes.length;
+
+                    for (int i = 0; i < args.length; i++) {
+                        writer.writeInt(marsh.context().typeId(paramTypes[i].getName()));
+                        writer.writeObject(args[i]);
+                    }
                 }
             }
         }

@@ -132,6 +132,9 @@ public interface IgniteClient extends AutoCloseable {
      * on the returned {@link ClientServices} instance will only include nodes from
      * the specified cluster group.
      *
+     * Note: In some cases there will be additional requests for each service invocation from client to server
+     * to resolve cluster group.
+     *
      * @param grp Cluster group.
      * @return {@code Services} functionality over given cluster group.
      */

@@ -51,6 +51,9 @@ public class ClientServiceInvokeRequest extends ClientRequest {
     /** Flag keep binary mask. */
     private static final byte FLAG_KEEP_BINARY_MASK = 0x01;
 
+    /** Flag "has parameter types", indicates that method arguments prefixed by typeId to help to resolve methods. */
+    private static final byte FLAG_PARAMETER_TYPES_MASK = 0x02;
+
     /** Methods cache. */
     private static final Map<MethodDescriptor, Method> methodsCache = new ConcurrentHashMap<>();
 
@@ -70,7 +73,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
     private final String methodName;
 
     /** Method parameter type IDs. */
-    private int[] paramTypeIds;
+    private final int[] paramTypeIds;
 
     /** Service arguments. */
     private final Object[] args;
@@ -101,9 +104,9 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
         methodName = reader.readString();
 
-        paramTypeIds = reader.readIntArray();
-
         int argCnt = reader.readInt();
+
+        paramTypeIds = hasParameterTypes() ? new int[argCnt] : null;
 
         args = new Object[argCnt];
 
@@ -117,8 +120,12 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
         int argsStartPos = reader.in().position();
 
-        for (int i = 0; i < argCnt; i++)
+        for (int i = 0; i < argCnt; i++) {
+            if (paramTypeIds != null)
+                paramTypeIds[i] = reader.readInt();
+
             args[i] = reader.readObjectDetached();
+        }
 
         reader.in().position(argsStartPos);
     }
@@ -131,18 +138,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
         if (F.isEmpty(methodName))
             throw new IgniteException("Method name can't be empty");
 
-        ServiceDescriptor desc = null;
-
-        for (ServiceDescriptor desc0 : ctx.kernalContext().service().serviceDescriptors()) {
-            if (name.equals(desc0.name())) {
-                desc = desc0;
-
-                break;
-            }
-        }
-
-        if (desc == null)
-            throw new IgniteException("Service not found: " + name);
+        ServiceDescriptor desc = findServiceDescriptor(ctx, name);
 
         Class<?> svcCls = desc.serviceClass();
 
@@ -156,8 +152,12 @@ public class ClientServiceInvokeRequest extends ClientRequest {
         IgniteServices services = grp.services();
 
         if (!keepBinary() && args.length > 0) {
-            for (int i = 0; i < args.length; i++)
+            for (int i = 0; i < args.length; i++) {
+                if (paramTypeIds != null)
+                    reader.readInt(); // Skip parameter typeId, we already read it in constructor.
+
                 args[i] = reader.readObject();
+            }
         }
 
         try {
@@ -194,6 +194,26 @@ public class ClientServiceInvokeRequest extends ClientRequest {
      */
     private boolean keepBinary() {
         return (flags & FLAG_KEEP_BINARY_MASK) != 0;
+    }
+
+    /**
+     * "Has parameter types" flag.
+     */
+    private boolean hasParameterTypes() {
+        return (flags & FLAG_PARAMETER_TYPES_MASK) != 0;
+    }
+
+    /**
+     * @param ctx Connection context.
+     * @param name Service name.
+     */
+    private static ServiceDescriptor findServiceDescriptor(ClientConnectionContext ctx, String name) {
+        for (ServiceDescriptor desc : ctx.kernalContext().service().serviceDescriptors()) {
+            if (name.equals(desc.name()))
+                return desc;
+        }
+
+        throw new IgniteException("Service not found: " + name);
     }
 
     /**
