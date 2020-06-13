@@ -2048,6 +2048,8 @@ public class IgnitionEx {
                 GridIoPolicy.UNDEFINED,
                 oomeHnd);
 
+            rebalanceExecSvc.allowCoreThreadTimeOut(true);
+
             if (!F.isEmpty(cfg.getExecutorConfiguration())) {
                 validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());
 

@@ -752,7 +752,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     public void init(boolean newCrd) throws IgniteInterruptedCheckedException {
-
         if (isDone())
             return;
 
