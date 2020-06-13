@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -70,6 +71,19 @@ namespace Apache.Ignite.Core.Impl.Services
                     for (var i = 0; i < arguments.Length; i++)
                     {
                         WriteArgForPlatforms(writer, mParams != null ? mParams[i].ParameterType : null, arguments[i]);
+                    }
+                    
+                    Type[] argTypes = arguments.Where(o => o != null).Select(o => o.GetType()).ToArray();
+                        
+                    MethodInfo methodInfo = method.ReflectedType.GetMethod(methodName, argTypes);
+
+                    // Register return type 
+                    if (methodInfo != null)
+                    {
+                        Type returnType = methodInfo.ReturnType;
+                        
+                        if (!(returnType == typeof(void) || JavaTypes.BasicTypes.Contains(returnType)))
+                            writer.Marshaller.GetDescriptor(methodInfo.ReturnType);
                     }
                 }
             }

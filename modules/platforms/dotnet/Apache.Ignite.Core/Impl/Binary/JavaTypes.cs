@@ -75,6 +75,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             {"double", "java.lang.Double"},
         };
 
+        /** */
+        public static readonly List<Type> BasicTypes = NetToJava.Select(x => x.Key).ToList();
+
         /// <summary>
         /// Gets the corresponding Java type name.
         /// </summary>

@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
+    using org.apache.ignite.platform;
 
     /// <summary>
     /// Services tests.
@@ -959,6 +960,8 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(new[] {11, 12, 13}, binSvc.testBinaryObjectArray(binArr)
                 .Select(x => x.GetField<int>("Field")));
 
+            Assert.AreEqual(6, svc.testMethod(new PlatformComputeBinarizable {Field = 6}).Field);
+
             Services.Cancel(javaSvcName);
         }
 
@@ -1631,6 +1634,9 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
 
+            /** */
+            PlatformCompute testMethod(PlatformComputeBinarizable p);
+            
             /** */
             object[] testBinarizableArrayOfObjects(object[] x);
 

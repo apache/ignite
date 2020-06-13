@@ -36,6 +36,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.test.Parameter;
+import org.apache.ignite.test.Result;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -361,6 +363,11 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         /** */
         public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable arg) {
             return arg == null ? null : new PlatformComputeBinarizable(arg.field + 1);
+        }
+
+        /** */
+        public PlatformCompute testMethod(PlatformComputeBinarizable arg) {
+            return new PlatformCompute(arg.field);
         }
 
         /** */

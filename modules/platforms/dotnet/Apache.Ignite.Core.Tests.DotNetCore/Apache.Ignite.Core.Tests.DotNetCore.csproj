@@ -320,6 +320,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServiceProxyTest.cs" Link="Services\ServiceProxyTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesAsyncWrapper.cs" Link="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTest.cs" Link="Services\ServicesTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Services\PlatformCompute.cs" Link="Services\PlatformCompute.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTestAsync.cs" Link="Services\ServicesTestAsync.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TaskExtensions.cs" Link="Common\TaskExtensions.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
