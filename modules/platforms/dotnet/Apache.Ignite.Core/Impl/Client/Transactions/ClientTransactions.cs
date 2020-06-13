@@ -62,14 +62,29 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
         internal ClientTransaction CurrentTx
         {
-            get { return _currentTx.Value; }
+            get
+            {
+                var tx = _currentTx.Value;
+
+                if (tx == null)
+                    return null;
+
+                if (tx.Closed)
+                {
+                    _currentTx.Value = null;
+
+                    return null;
+                }
+
+                return tx;
+            }
         }
 
-        internal void ClearCurrentTx()
-        {
-            // todo - check for thread id
-            _currentTx.Value = null;
-        }
+        // internal void ClearCurrentTx()
+        // {
+        //     // todo - check for thread id
+        //     _currentTx.Value = null;
+        // }
 
         /** <inheritDoc /> */
         public IClientTransaction TxStart()

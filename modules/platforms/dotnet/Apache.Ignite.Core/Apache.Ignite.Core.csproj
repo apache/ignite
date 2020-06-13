@@ -114,6 +114,7 @@
     <Compile Include="Impl\Client\Cluster\ClientClusterNode.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
+    <Compile Include="Impl\Client\Transactions\ClientCacheTransactionManager.cs" />
     <Compile Include="Impl\Common\PlatformType.cs" />
     <Compile Include="Impl\Client\Transactions\ClientTransaction.cs" />
     <Compile Include="Impl\Client\Transactions\ClientTransactions.cs" />

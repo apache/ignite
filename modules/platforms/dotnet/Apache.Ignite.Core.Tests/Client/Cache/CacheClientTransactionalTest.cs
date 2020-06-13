@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System.Transactions;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
@@ -136,6 +137,41 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 }
             });
         }
+
+        /// <summary>
+        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/>.
+        /// </summary>
+        [Test]
+        public void TestTransactionScopeSingleCache()
+        {
+            var cache = TransactionalCache();
+
+            cache[1] = 1;
+            cache[2] = 2;
+
+            // Commit.
+            using (var ts = new TransactionScope())
+            {
+                cache[1] = 10;
+                cache[2] = 20;
+
+                ts.Complete();
+            }
+
+            Assert.AreEqual(10, cache[1]);
+            Assert.AreEqual(20, cache[2]);
+
+            // Rollback.
+            using (new TransactionScope())
+            {
+                cache[1] = 100;
+                cache[2] = 200;
+            }
+
+            Assert.AreEqual(10, cache[1]);
+            Assert.AreEqual(20, cache[2]);
+        }
+
         /// <summary>
         /// Gets or creates transactional cache
         /// </summary>

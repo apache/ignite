@@ -103,6 +103,14 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         {
             get { return _id; }
         }
+        
+        /// <summary>
+        /// Closed.
+        /// </summary>
+        internal bool Closed
+        {
+            get { return _closed; }
+        }
 
         private void Close(bool commit)
         {
@@ -120,7 +128,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                 }
                 finally
                 {
-                    _transactions.ClearCurrentTx();
+                    // _transactions.ClearCurrentTx();
                     _closed = true;
                 }
             }
