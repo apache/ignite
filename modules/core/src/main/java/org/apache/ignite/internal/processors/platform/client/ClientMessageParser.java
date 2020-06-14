@@ -202,6 +202,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE = 2005;
 
+    /** */
+    private static final short OP_QUERY_CONTINUOUS = 2006;
+
     /* Binary metadata operations. */
     /** */
     private static final short OP_BINARY_TYPE_NAME_GET = 3000;
