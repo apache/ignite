@@ -199,8 +199,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static final TcpDiscoveryAbstractMessage WAKEUP = new TcpDiscoveryDummyWakeupMessage();
 
-    /** Minimal interval of connection check to next node in the ring. */
-    private static final long MIN_CON_CHECK_INTERVAL = 500;
+    /** Maximal interval of connection check to next node in the ring. */
+    private static final long MAX_CON_CHECK_INTERVAL = 500;
 
     /** Interval of checking connection to next node in the ring. */
     private long connCheckInterval;
@@ -381,7 +381,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
-        connCheckInterval = Math.min(msgExchangeTimeout / 4, MIN_CON_CHECK_INTERVAL);
+        connCheckInterval = Math.min(msgExchangeTimeout / 4, MAX_CON_CHECK_INTERVAL);
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
