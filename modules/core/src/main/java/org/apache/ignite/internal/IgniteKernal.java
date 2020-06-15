@@ -1266,7 +1266,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     GridKernalContext ctx = IgniteKernal.this.ctx;
 
                     if (ctx != null)
-                        ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout);
+                        ctx.closure().runLocalSafe(() -> ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout));
+
                 }
             }, longOpDumpTimeout, longOpDumpTimeout);
         }
