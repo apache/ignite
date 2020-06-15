@@ -182,7 +182,6 @@ public class FileProfilingWalker {
                     long duration = buf.getLong();
                     boolean success = buf.get() != 0;
 
-                    // TODO Delay deserealization.
                     if (str == null)
                         return true;
 
@@ -236,7 +235,6 @@ public class FileProfilingWalker {
                     long duration = buf.getLong();
                     int affPartId = buf.getInt();
 
-                    // TODO Delay deserealization.
                     if (taskName == null)
                         return true;
 

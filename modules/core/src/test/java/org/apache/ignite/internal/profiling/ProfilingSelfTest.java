@@ -36,6 +36,15 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.GET;
+import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.GET_ALL;
+import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.INVOKE;
+import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.INVOKE_ALL;
+import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.LOCK;
+import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.PUT;
+import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.PUT_ALL;
+import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.REMOVE;
+import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.REMOVE_ALL;
 import static org.apache.ignite.testframework.LogListener.matches;
 
 /**
@@ -100,8 +109,8 @@ public class ProfilingSelfTest extends AbstractProfilingTest {
     /** @throws Exception If failed. */
     @Test
     public void testCompute() throws Exception {
-        LogListener taskLsnr = matches("task ").build();
-        LogListener jobLsnr = matches("job ").build();
+        LogListener taskLsnr = matches("task ").andMatches("taskName=" + getClass().getName()).times(1).build();
+        LogListener jobLsnr = matches("job ").times(1).build();
 
         log.registerListener(taskLsnr);
         log.registerListener(jobLsnr);
@@ -120,57 +129,58 @@ public class ProfilingSelfTest extends AbstractProfilingTest {
     /** @throws Exception If failed. */
     @Test
     public void testCacheOperations() throws Exception {
-        checkCacheOp(CacheOperationType.PUT, cache -> cache.put(1, 1));
-        checkCacheOp(CacheOperationType.PUT, cache -> cache.putAsync(2, 2).get());
+        checkCacheOperation(PUT, cache -> cache.put(1, 1));
+        checkCacheOperation(PUT, cache -> cache.putAsync(2, 2).get());
 
-        checkCacheOp(CacheOperationType.PUT_ALL, cache -> cache.putAll(Collections.singletonMap(3, 3)));
-        checkCacheOp(CacheOperationType.PUT_ALL, cache -> cache.putAllAsync(Collections.singletonMap(4, 4)).get());
+        checkCacheOperation(PUT_ALL, cache -> cache.putAll(Collections.singletonMap(3, 3)));
+        checkCacheOperation(PUT_ALL, cache -> cache.putAllAsync(Collections.singletonMap(4, 4)).get());
 
-        checkCacheOp(CacheOperationType.GET, cache -> cache.get(1));
-        checkCacheOp(CacheOperationType.GET, cache -> cache.getAsync(2).get());
+        checkCacheOperation(GET, cache -> cache.get(1));
+        checkCacheOperation(GET, cache -> cache.getAsync(2).get());
 
-        checkCacheOp(CacheOperationType.GET_ALL, cache -> cache.getAll(Collections.singleton(1)));
-        checkCacheOp(CacheOperationType.GET_ALL, cache -> cache.getAllAsync(Collections.singleton(2)).get());
+        checkCacheOperation(GET_ALL, cache -> cache.getAll(Collections.singleton(1)));
+        checkCacheOperation(GET_ALL, cache -> cache.getAllAsync(Collections.singleton(2)).get());
 
-        checkCacheOp(CacheOperationType.REMOVE, cache -> cache.remove(1));
-        checkCacheOp(CacheOperationType.REMOVE, cache -> cache.removeAsync(2).get());
+        checkCacheOperation(REMOVE, cache -> cache.remove(1));
+        checkCacheOperation(REMOVE, cache -> cache.removeAsync(2).get());
 
-        checkCacheOp(CacheOperationType.REMOVE_ALL, cache -> cache.removeAll(Collections.singleton(3)));
-        checkCacheOp(CacheOperationType.REMOVE_ALL, cache -> cache.removeAllAsync(Collections.singleton(4)).get());
+        checkCacheOperation(REMOVE_ALL, cache -> cache.removeAll(Collections.singleton(3)));
+        checkCacheOperation(REMOVE_ALL, cache -> cache.removeAllAsync(Collections.singleton(4)).get());
 
-        checkCacheOp(CacheOperationType.LOCK, cache -> {
+        checkCacheOperation(LOCK, cache -> {
             Lock lock = cache.lock(5);
 
             lock.lock();
             lock.unlock();
         });
 
-        checkCacheOp(CacheOperationType.LOCK, cache -> {
+        checkCacheOperation(LOCK, cache -> {
             Lock lock = cache.lockAll(Collections.singleton(5));
 
             lock.lock();
             lock.unlock();
         });
 
-        checkCacheOp(CacheOperationType.INVOKE, cache -> cache.invoke(10, ENTRY_PROC));
-        checkCacheOp(CacheOperationType.INVOKE, cache -> cache.invokeAsync(10, ENTRY_PROC).get());
+        checkCacheOperation(INVOKE, cache -> cache.invoke(10, ENTRY_PROC));
+        checkCacheOperation(INVOKE, cache -> cache.invokeAsync(10, ENTRY_PROC).get());
 
-        checkCacheOp(CacheOperationType.INVOKE, cache -> cache.invoke(10, CACHE_ENTRY_PROC));
-        checkCacheOp(CacheOperationType.INVOKE, cache -> cache.invokeAsync(10, CACHE_ENTRY_PROC).get());
+        checkCacheOperation(INVOKE, cache -> cache.invoke(10, CACHE_ENTRY_PROC));
+        checkCacheOperation(INVOKE, cache -> cache.invokeAsync(10, CACHE_ENTRY_PROC).get());
 
-        checkCacheOp(CacheOperationType.INVOKE_ALL, cache -> cache.invokeAll(Collections.singleton(10), ENTRY_PROC));
-        checkCacheOp(CacheOperationType.INVOKE_ALL,
-            cache -> cache.invokeAllAsync(Collections.singleton(10), ENTRY_PROC).get());
+        checkCacheOperation(INVOKE_ALL, cache -> cache.invokeAll(Collections.singleton(10), ENTRY_PROC));
+        checkCacheOperation(INVOKE_ALL, cache -> cache.invokeAllAsync(Collections.singleton(10), ENTRY_PROC).get());
 
-        checkCacheOp(CacheOperationType.INVOKE_ALL,
-            cache -> cache.invokeAll(Collections.singleton(10), CACHE_ENTRY_PROC));
-        checkCacheOp(CacheOperationType.INVOKE_ALL,
+        checkCacheOperation(INVOKE_ALL, cache -> cache.invokeAll(Collections.singleton(10), CACHE_ENTRY_PROC));
+        checkCacheOperation(INVOKE_ALL,
             cache -> cache.invokeAllAsync(Collections.singleton(10), CACHE_ENTRY_PROC).get());
     }
 
     /** */
-    private void checkCacheOp(CacheOperationType op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
-        LogListener lsnr = matches("cacheOperation ").andMatches("type=" + op).build();
+    private void checkCacheOperation(CacheOperationType op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
+        LogListener lsnr = matches("cacheOperation ")
+            .andMatches("type=" + op)
+            .andMatches("cacheId=" + ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId())
+            .build();
 
         log.registerListener(lsnr);
 
@@ -193,7 +203,9 @@ public class ProfilingSelfTest extends AbstractProfilingTest {
     private void checkTx(boolean commit) throws Exception {
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        LogListener lsnr = matches("transaction ").andMatches("commit=" + commit).build();
+        LogListener lsnr = matches("transaction ")
+            .andMatches("cacheIds=[" + ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId() + ']')
+            .andMatches("commit=" + commit).build();
 
         log.registerListener(lsnr);
 
