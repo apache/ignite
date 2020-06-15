@@ -160,11 +160,11 @@ public enum GridRestCommand {
     /** Close query. */
     CLOSE_SQL_QUERY("qrycls"),
 
-    /** @deprecated Use {@link #CLUSTER_ACTIVATE} instead. */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#ACTIVE} instead. */
     @Deprecated
     CLUSTER_ACTIVE("active"),
 
-    /** @deprecated Use {@link #CLUSTER_DEACTIVATE} instead. */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#INACTIVE} instead. */
     @Deprecated
     CLUSTER_INACTIVE("inactive"),
 
