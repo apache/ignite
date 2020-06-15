@@ -194,7 +194,6 @@ namespace Apache.Ignite.Core.Tests
         /// Tests that removed lock throws correct exception.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-13128")]
         public void TestRemovedBeforeUseLockThrowsIgniteException()
         {
             var lock1 = Ignite.GetOrCreateLock(TestUtils.TestName);
