@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -43,6 +42,7 @@ public class QuerySchemaPatch {
     /** Entities which should be added by whole. */
     private final Collection<QueryEntity> entityToAdd;
 
+    /** Optional cache configuration if required to patch it (i.e. enable indexing). */
     private final CacheConfiguration<?, ?> cacheCfg;
 
     /**
@@ -101,7 +101,7 @@ public class QuerySchemaPatch {
     }
 
     /**
-     * @return Schema name to apply, if previous is null.
+     * @return Optional cache configuration if required (i.e. enable indexing).
      */
     @Nullable public CacheConfiguration<?, ?> cacheConfiguration() {
         return cacheCfg;

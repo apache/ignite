@@ -314,7 +314,7 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
         assertEquals(NUM_ENTRIES, res.size());
 
         cache.query(new SqlFieldsQuery(
-                    String.format("DELETE FROM %s WHERE %s = %s", POI_TABLE_NAME, ID_FIELD_NAME,  "100")
+                    String.format("DELETE FROM %s WHERE %s = %s", POI_TABLE_NAME, ID_FIELD_NAME, "100")
                 ).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertNull(cache.get(100));
