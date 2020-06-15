@@ -16,42 +16,26 @@
  */
 package org.apache.ignite.ml.math.distances;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
- * Calculates the L<sub>2</sub> (Euclidean) distance between two points.
+ * Calculates {@code J = |A \cap B| / |A \cup B| } (Jaccard index) distance between two points.
  */
-public class EuclideanDistance implements DistanceMeasure {
-    /** Serializable version identifier. */
-    private static final long serialVersionUID = 1717556319784040040L;
-
+public class JaccardIndex implements DistanceMeasure {
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b) throws CardinalityException {
-        return MatrixUtil.localCopyOf(a).minus(b).kNorm(2.0);
-    }
+        Set<Double> uniqueValues = new HashSet<>();
+        for (int i = 0; i < a.size(); i++)
+            uniqueValues.add(a.get(i));
 
-    /** {@inheritDoc} */
-    @Override public double compute(Vector a, double[] b) throws CardinalityException {
-        double res = 0.0;
+        double intersect = 0;
+        for (int i = 0; i < b.size(); i++)
+            if (uniqueValues.contains(b.get(i)))
+                ++intersect;
 
-        for (int i = 0; i < b.length; i++)
-            res += Math.pow(Math.abs(b[i] - a.get(i)), 2.0);
-
-        return Math.sqrt(res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-
-        return obj != null && getClass() == obj.getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return getClass().hashCode();
+        return intersect / (a.size() + b.size() - intersect);
     }
 }

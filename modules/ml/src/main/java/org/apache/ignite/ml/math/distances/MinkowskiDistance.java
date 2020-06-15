@@ -16,42 +16,48 @@
  */
 package org.apache.ignite.ml.math.distances;
 
+import java.util.Objects;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
+import static org.apache.ignite.ml.math.functions.Functions.PLUS;
+
 /**
- * Calculates the L<sub>2</sub> (Euclidean) distance between two points.
+ * Calculates the L<sub>p</sub> (Minkowski) distance between two points.
  */
-public class EuclideanDistance implements DistanceMeasure {
+public class MinkowskiDistance implements DistanceMeasure {
     /** Serializable version identifier. */
     private static final long serialVersionUID = 1717556319784040040L;
 
+    /** Distance paramenter. */
+    private final double p;
+
+    /** @param p norm */
+    public MinkowskiDistance(double p) {
+        this.p = p;
+    }
+
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b) throws CardinalityException {
-        return MatrixUtil.localCopyOf(a).minus(b).kNorm(2.0);
+        assert a.size() == b.size();
+        IgniteDoubleFunction<Double> fun = value -> Math.pow(Math.abs(value), p);
+
+        Double result = MatrixUtil.localCopyOf(a).minus(b).foldMap(PLUS, fun, 0d);
+        return Math.pow(result, 1 / p);
     }
 
-    /** {@inheritDoc} */
-    @Override public double compute(Vector a, double[] b) throws CardinalityException {
-        double res = 0.0;
-
-        for (int i = 0; i < b.length; i++)
-            res += Math.pow(Math.abs(b[i] - a.get(i)), 2.0);
-
-        return Math.sqrt(res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
+    @Override public boolean equals(Object o) {
+        if (this == o)
             return true;
-
-        return obj != null && getClass() == obj.getClass();
+        if (o == null || getClass() != o.getClass())
+            return false;
+        MinkowskiDistance that = (MinkowskiDistance)o;
+        return Double.compare(that.p, p) == 0;
     }
 
-    /** {@inheritDoc} */
     @Override public int hashCode() {
-        return getClass().hashCode();
+        return Objects.hash(p);
     }
 }

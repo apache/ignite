@@ -14,24 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.ml.math.distances;
 
-namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
-{
-    using NUnit.Framework;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.junit.Test;
 
-    /// <summary>
-    /// Continuous query tests for ATOMIC cache with no backups.
-    /// </summary>
-    [TestFixture]
-    public class ContinuousQueryAtomicNoBackupTest : ContinuousQueryNoBackupAbstractTest
-    {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public ContinuousQueryAtomicNoBackupTest()
-            : base(CACHE_ATOMIC_NO_BACKUP)
-        {
-            // No-op.
-        }
+import static org.junit.Assert.assertEquals;
+
+/** Test for {@code CosineSimilarity}. */
+public class CosineSimilarityTest {
+    /** Precision. */
+    private static final double PRECISION = 0.0;
+
+    /** */
+    @Test
+    public void cosineSimilarityDistance() {
+        double expRes = 0.9449111825230682d;
+        DenseVector a = new DenseVector(new double[] {1, 2, 3});
+        double[] b = {1, 1, 4};
+
+        DistanceMeasure distanceMeasure = new CosineSimilarity();
+
+        assertEquals(expRes, distanceMeasure.compute(a, b), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(a, new DenseVector(b)), PRECISION);
     }
 }

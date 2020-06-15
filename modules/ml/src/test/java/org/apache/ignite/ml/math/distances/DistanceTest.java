@@ -17,16 +17,30 @@
 
 package org.apache.ignite.ml.math.distances;
 
+import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.joining;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /** */
 public class DistanceTest {
     /** Precision. */
     private static final double PRECISION = 0.0;
+
+    /** All distace measures for distace properties tests. */
+    private static final List<DistanceMeasure> DISTANCE_MEASURES = asList(
+        new ChebyshevDistance(),
+        new EuclideanDistance(),
+        new HammingDistance(),
+        new ManhattanDistance(),
+        new MinkowskiDistance(Math.random()));
 
     /** */
     private Vector v1;
@@ -47,14 +61,49 @@ public class DistanceTest {
 
     /** */
     @Test
+    public void distanceFromPointToItselfIsZero() {
+        DISTANCE_MEASURES.forEach(distance -> {
+            Vector vector = randomVector(3);
+            String errorMessage = errorMessage(distance, vector, vector);
+
+            assertEquals(errorMessage, 0d, distance.compute(vector, vector), PRECISION);
+        });
+    }
+
+    /** */
+    @Test
+    public void distanceFromAToBIsTheSameAsDistanceFromBToA() {
+        DISTANCE_MEASURES.forEach(distance -> {
+            Vector vector1 = randomVector(3);
+            Vector vector2 = randomVector(3);
+            String errorMessage = errorMessage(distance, vector1, vector2);
+
+            assertEquals(errorMessage,
+                distance.compute(vector1, vector2), distance.compute(vector2, vector1), PRECISION);
+        });
+    }
+
+    /** */
+    @Test
+    public void distanceBetweenTwoDistinctPointsIsPositive() {
+        DISTANCE_MEASURES.forEach(distance -> {
+            Vector vector1 = randomVector(3);
+            Vector vector2 = randomVector(3);
+            String errorMessage = errorMessage(distance, vector1, vector2);
+
+            assertTrue(errorMessage, distance.compute(vector1, vector2) > 0);
+        });
+    }
+
+    /** */
+    @Test
     public void euclideanDistance() {
         double expRes = Math.pow(5, 0.5);
 
         DistanceMeasure distanceMeasure = new EuclideanDistance();
 
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
-
-        Assert.assertEquals(expRes, new EuclideanDistance().compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+        assertEquals(expRes, new EuclideanDistance().compute(v1, data2), PRECISION);
     }
 
     /** */
@@ -64,7 +113,8 @@ public class DistanceTest {
 
         DistanceMeasure distanceMeasure = new ManhattanDistance();
 
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
     /** */
@@ -74,18 +124,52 @@ public class DistanceTest {
 
         DistanceMeasure distanceMeasure = new HammingDistance();
 
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
     /** */
-    @Test(expected = UnsupportedOperationException.class)
-    public void manhattanDistance2() {
-        new ManhattanDistance().compute(v1, data2);
+    @Test
+    public void chebyshevDistance() {
+        double expRes = 2d;
+
+        DistanceMeasure distanceMeasure = new ChebyshevDistance();
+
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
     /** */
-    @Test(expected = UnsupportedOperationException.class)
-    public void hammingDistance2() {
-        new HammingDistance().compute(v1, data2);
+    @Test
+    public void minkowskiDistance() {
+        double expRes = Math.pow(5, 0.5);
+
+        DistanceMeasure distanceMeasure = new MinkowskiDistance(2d);
+
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+    }
+
+    /** Returns a random vector */
+    private static Vector randomVector(int length) {
+        double[] vec = new double[length];
+
+        for (int i = 0; i < vec.length; i++) {
+            vec[i] = Math.random();
+        }
+        return new DenseVector(vec);
+    }
+
+    /** Creates an assertion error message from a distsnce measure and params. */
+    private static String errorMessage(DistanceMeasure measure, Vector param1, Vector param2) {
+        return String.format("%s(%s, %s)", measure.getClass().getSimpleName(),
+            vectorToString(param1), vectorToString(param2));
+    }
+
+    /** Converts vector to string. */
+    private static String vectorToString(Vector vector) {
+        return "[" + Arrays.stream(vector.asArray()).boxed()
+            .map(Object::toString)
+            .collect(joining(",")) + "]";
     }
 }

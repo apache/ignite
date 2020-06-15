@@ -80,6 +80,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -714,30 +716,45 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 keepBinary,
                 qry.isIncludeExpired());
 
-            final QueryCursor<Cache.Entry<K, V>> cur =
-                qry.getInitialQuery() != null ? query(qry.getInitialQuery()) : null;
+            try {
+                final QueryCursor<Cache.Entry<K, V>> cur =
+                        qry.getInitialQuery() != null ? query(qry.getInitialQuery()) : null;
 
-            return new QueryCursor<Cache.Entry<K, V>>() {
-                @Override public Iterator<Cache.Entry<K, V>> iterator() {
-                    return cur != null ? cur.iterator() : new GridEmptyIterator<Cache.Entry<K, V>>();
-                }
-
-                @Override public List<Cache.Entry<K, V>> getAll() {
-                    return cur != null ? cur.getAll() : Collections.<Cache.Entry<K, V>>emptyList();
-                }
-
-                @Override public void close() {
-                    if (cur != null)
-                        cur.close();
-
-                    try {
-                        ctx.kernalContext().continuous().stopRoutine(routineId).get();
+                return new QueryCursorEx<Entry<K, V>>() {
+                    @Override public Iterator<Cache.Entry<K, V>> iterator() {
+                        return cur != null ? cur.iterator() : new GridEmptyIterator<Cache.Entry<K, V>>();
                     }
-                    catch (IgniteCheckedException e) {
-                        throw U.convertException(e);
+
+                    @Override public List<Cache.Entry<K, V>> getAll() {
+                        return cur != null ? cur.getAll() : Collections.<Cache.Entry<K, V>>emptyList();
                     }
-                }
-            };
+
+                    @Override public void close() {
+                        if (cur != null)
+                            cur.close();
+
+                        try {
+                            ctx.kernalContext().continuous().stopRoutine(routineId).get();
+                        } catch (IgniteCheckedException e) {
+                            throw U.convertException(e);
+                        }
+                    }
+
+                    @Override public void getAll(Consumer<Entry<K, V>> c) {
+                        // No-op.
+                    }
+
+                    @Override public List<GridQueryFieldMetadata> fieldsMeta() {
+                        //noinspection rawtypes
+                        return cur instanceof QueryCursorEx ? ((QueryCursorEx)cur).fieldsMeta() : null;
+                    }
+                };
+            } catch (Throwable t) {
+                // Initial query failed: stop the routine.
+                ctx.kernalContext().continuous().stopRoutine(routineId).get();
+
+                throw t;
+            }
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

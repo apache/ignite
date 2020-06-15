@@ -14,24 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.ml.math.distances;
 
-namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
-{
-    using NUnit.Framework;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 
-    /// <summary>
-    /// Continuous query tests for ATOMIC cache with no backups.
-    /// </summary>
-    [TestFixture]
-    public class ContinuousQueryAtomicNoBackupTest : ContinuousQueryNoBackupAbstractTest
-    {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public ContinuousQueryAtomicNoBackupTest()
-            : base(CACHE_ATOMIC_NO_BACKUP)
-        {
-            // No-op.
-        }
+/**
+ * Calculates the {@code max(x_i - y_i)} (Chebyshev) distance between two points.
+ */
+public class ChebyshevDistance implements DistanceMeasure {
+    /** {@inheritDoc} */
+    @Override public double compute(Vector a, Vector b) throws CardinalityException {
+        return MatrixUtil.localCopyOf(a).minus(b).foldMap(Math::max, Math::abs, 0d);
     }
 }
