@@ -58,7 +58,26 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         requested = rowsCnt;
 
         if (!inLoop)
-            context().execute(this::pushInternal);
+            context().execute(this::push);
+    }
+
+    /** */
+    private void push() {
+        try {
+            pushInternal();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
+    }
+
+    /** */
+    private void onError(Exception e) {
+        checkThread();
+
+        assert downstream != null;
+
+        downstream.onError(e);
     }
 
     /** {@inheritDoc} */
@@ -84,16 +103,16 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     }
 
     /** */
-    private void pushInternal() {
+    private void pushInternal() throws Exception {
+        if (it == null)
+            it = src.iterator();
+
+        int processed = 0;
+
+        Thread thread = Thread.currentThread();
+
         inLoop = true;
         try {
-            if (it == null)
-                it = src.iterator();
-
-            int processed = 0;
-
-            Thread thread = Thread.currentThread();
-
             while (requested > 0 && it.hasNext()) {
                 if (context().cancelled())
                     return;
@@ -106,26 +125,21 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
                 if (++processed == IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::pushInternal);
+                    context().execute(this::push);
 
                     return;
                 }
             }
-
-            if (requested > 0 && !it.hasNext()) {
-                downstream.end();
-                requested = 0;
-
-                close();
-            }
-        }
-        catch (Throwable e) {
-            close();
-
-            downstream.onError(e);
         }
         finally {
             inLoop = false;
+        }
+
+        if (requested > 0 && !it.hasNext()) {
+            downstream.end();
+            requested = 0;
+
+            close();
         }
     }
 }

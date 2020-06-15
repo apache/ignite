@@ -92,8 +92,20 @@ public abstract class AbstractNode<Row> implements Node<Row> {
             sources.forEach(Node::cancel);
     }
 
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        sources.forEach(Node::reset);
+
+        resetInternal();
+    }
+
     /** */
     protected abstract Downstream<Row> requestDownstream(int idx);
+
+    /** */
+    protected void resetInternal() {
+        throw new UnsupportedOperationException();
+    }
 
     /** */
     protected void checkThread() {

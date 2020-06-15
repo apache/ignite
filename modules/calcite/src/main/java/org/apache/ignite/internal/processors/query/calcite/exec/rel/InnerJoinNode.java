@@ -38,26 +38,32 @@ public class InnerJoinNode<Row> extends AbstractJoinNode<Row> {
 
     /** */
     @Override
-    protected void doJoin() {
+    protected void doJoinInternal() {
         if (waitingRight == NOT_WAITING) {
-            while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
-                if (left == null)
-                    left = leftInBuf.remove();
+            inLoop = true;
+            try {
+                while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
+                    if (left == null)
+                        left = leftInBuf.remove();
 
-                while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                    Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
+                    while (requested > 0 && rightIdx < rightMaterialized.size()) {
+                        Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
 
-                    if (!cond.test(row))
-                        continue;
+                        if (!cond.test(row))
+                            continue;
 
-                    requested--;
-                    downstream.push(row);
+                        requested--;
+                        downstream.push(row);
+                    }
+
+                    if (rightIdx == rightMaterialized.size()) {
+                        left = null;
+                        rightIdx = 0;
+                    }
                 }
-
-                if (rightIdx == rightMaterialized.size()) {
-                    left = null;
-                    rightIdx = 0;
-                }
+            }
+            finally {
+                inLoop = false;
             }
         }
 

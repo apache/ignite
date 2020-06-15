@@ -52,7 +52,12 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
         assert !F.isEmpty(sources);
         assert rowsCnt > 0 && waiting == 0;
 
-        source().request(waiting = rowsCnt);
+        try {
+            source().request(waiting = rowsCnt);
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -74,11 +79,16 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
         assert downstream != null;
         assert waiting > 0;
 
-        if (++curSrc < sources.size())
-            source().request(waiting);
-        else {
-            waiting = -1;
-            downstream.end();
+        try {
+            if (++curSrc < sources.size())
+                source().request(waiting);
+            else {
+                waiting = -1;
+                downstream.end();
+            }
+        }
+        catch (Exception e) {
+            onError(e);
         }
     }
 

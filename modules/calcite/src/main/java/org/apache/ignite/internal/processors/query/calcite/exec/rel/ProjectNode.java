@@ -45,7 +45,12 @@ public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
         assert !F.isEmpty(sources) && sources.size() == 1;
         assert rowsCnt > 0;
 
-        F.first(sources).request(rowsCnt);
+        try {
+            F.first(sources).request(rowsCnt);
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -58,7 +63,7 @@ public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
             downstream.push(prj.apply(row));
         }
         catch (Throwable e) {
-            downstream.onError(e);
+            onError(e);
         }
     }
 

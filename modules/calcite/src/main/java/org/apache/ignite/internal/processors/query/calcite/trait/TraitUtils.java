@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
  */
 public class TraitUtils {
     /** */
-    public static RelNode enforce(RelNode rel, RelTraitSet toTraits) {
+    @Nullable public static RelNode enforce(RelNode rel, RelTraitSet toTraits) {
         RelOptPlanner planner = rel.getCluster().getPlanner();
         RelTraitSet fromTraits = rel.getTraitSet();
         if (!fromTraits.satisfies(toTraits)) {
@@ -79,7 +79,7 @@ public class TraitUtils {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static RelNode convertTrait(RelOptPlanner planner, RelTrait fromTrait, RelTrait toTrait, RelNode rel) {
+    @Nullable private static RelNode convertTrait(RelOptPlanner planner, RelTrait fromTrait, RelTrait toTrait, RelNode rel) {
         assert fromTrait.getTraitDef() == toTrait.getTraitDef();
 
         RelTraitDef converter = fromTrait.getTraitDef();
@@ -88,8 +88,10 @@ public class TraitUtils {
             return convertCollation(planner, (RelCollation)toTrait, rel);
         else if (converter == DistributionTraitDef.INSTANCE)
             return convertDistribution(planner, (IgniteDistribution)toTrait, rel);
-        else
+        else if (converter.canConvert(planner, fromTrait, toTrait))
             return converter.convert(planner, rel, toTrait, true);
+
+        return null;
     }
 
     /** */

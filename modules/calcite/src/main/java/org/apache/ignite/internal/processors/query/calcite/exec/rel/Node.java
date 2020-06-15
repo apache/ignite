@@ -57,4 +57,9 @@ public interface Node<Row> {
      * Cancels execution.
      */
     void cancel();
+
+    /**
+     * Resets execution subtree. A reset execution subtree may be consummed once again.
+     */
+    void reset();
 }

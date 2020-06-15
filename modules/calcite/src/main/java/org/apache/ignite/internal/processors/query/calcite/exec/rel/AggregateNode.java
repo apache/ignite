@@ -98,15 +98,29 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
 
         assert !F.isEmpty(sources) && sources.size() == 1;
         assert rowsCnt > 0 && requested == 0;
+        assert waiting <= 0;
 
         requested = rowsCnt;
 
-        if (waiting == -1 && !inLoop)
-            context().execute(this::flushFromBuffer);
-        else if (waiting == 0)
-            F.first(sources).request(waiting = IN_BUFFER_SIZE);
-        else
-            throw new AssertionError();
+        try {
+            if (waiting == 0)
+                F.first(sources).request(waiting = IN_BUFFER_SIZE);
+            else if (!inLoop)
+                context().execute(this::flush);
+        }
+        catch (Exception e) {
+            onError(e);
+        }
+    }
+
+    /** */
+    private void flush() {
+        try {
+            flushInternal();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -126,7 +140,7 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
                 F.first(sources).request(waiting = IN_BUFFER_SIZE);
         }
         catch (Exception e) {
-            downstream.onError(e);
+            onError(e);
         }
     }
 
@@ -140,10 +154,10 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
         waiting = -1;
 
         try {
-            flushFromBuffer();
+            flushInternal();
         }
         catch (Exception e) {
-            downstream.onError(e);
+            onError(e);
         }
     }
 
@@ -165,15 +179,14 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
     }
 
     /** */
-    public void flushFromBuffer() {
+    public void flushInternal() {
         assert waiting == -1;
+
+        ArrayDeque<Grouping> groupingsQueue = groupingsQueue();
+        int processed = 0;
 
         inLoop = true;
         try {
-            int processed = 0;
-
-            ArrayDeque<Grouping> groupingsQueue = groupingsQueue();
-
             while (requested > 0 && !groupingsQueue.isEmpty()) {
                 Grouping grouping = groupingsQueue.peek();
 
@@ -188,7 +201,7 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
 
                 if (processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::flushFromBuffer);
+                    context().execute(this::flush);
 
                     return;
                 }
@@ -196,14 +209,14 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
                 if (grouping.isEmpty())
                     groupingsQueue.remove();
             }
-
-            if (requested > 0) {
-                downstream.end();
-                requested = 0;
-            }
         }
         finally {
             inLoop = false;
+        }
+
+        if (requested > 0) {
+            downstream.end();
+            requested = 0;
         }
     }
 

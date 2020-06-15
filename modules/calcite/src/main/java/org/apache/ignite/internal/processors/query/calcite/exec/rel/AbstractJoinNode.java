@@ -53,7 +53,7 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
     protected final Deque<Row> leftInBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
 
     /** */
-    private boolean inLoop;
+    protected boolean inLoop;
 
     /**
      * @param ctx Execution context.
@@ -76,7 +76,17 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
         requested = rowsCnt;
 
         if (!inLoop)
-            context().execute(this::body);
+            context().execute(this::doJoin);
+    }
+
+    /** */
+    private void doJoin() {
+        try {
+            doJoinInternal();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -130,7 +140,12 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
 
         leftInBuf.add(row);
 
-        body();
+        try {
+            doJoinInternal();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** */
@@ -142,10 +157,15 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
 
         waitingRight--;
 
-        rightMaterialized.add(row);
+        try {
+            rightMaterialized.add(row);
 
-        if (waitingRight == 0)
-            sources.get(1).request(waitingRight = IN_BUFFER_SIZE);
+            if (waitingRight == 0)
+                sources.get(1).request(waitingRight = IN_BUFFER_SIZE);
+        }
+        catch (Exception e){
+            onError(e);
+        }
     }
 
     /** */
@@ -157,7 +177,12 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
 
         waitingLeft = NOT_WAITING;
 
-        body();
+        try {
+            doJoinInternal();
+        }
+        catch (Exception e) {
+            downstream.onError(e);
+        }
     }
 
     /** */
@@ -169,7 +194,12 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
 
         waitingRight = NOT_WAITING;
 
-        body();
+        try {
+            doJoinInternal();
+        }
+        catch (Exception e) {
+            downstream.onError(e);
+        }
     }
 
     /** */
@@ -182,19 +212,5 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
-    private void body() {
-        inLoop = true;
-        try {
-            doJoin();
-        }
-        catch (Exception e) {
-            downstream.onError(e);
-        }
-        finally {
-            inLoop = false;
-        }
-    }
-
-    /** */
-    protected abstract void doJoin();
+    protected abstract void doJoinInternal();
 }

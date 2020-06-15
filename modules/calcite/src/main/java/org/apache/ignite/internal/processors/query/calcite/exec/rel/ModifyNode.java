@@ -99,6 +99,11 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** {@inheritDoc} */
+    @Override public void reset() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public void push(Row row) {
         checkThread();
 
@@ -124,7 +129,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
                 F.first(sources).request(waiting = MODIFY_BATCH_SIZE);
         }
         catch (Exception e) {
-            downstream.onError(e);
+            onError(e);
         }
     }
 
@@ -169,7 +174,6 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     private void tryEnd() {
         assert downstream != null;
 
-        inLoop = true;
         try {
             if (state == State.UPDATING && waiting == 0)
                 F.first(sources).request(waiting = MODIFY_BATCH_SIZE);
@@ -179,8 +183,14 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
                 state = State.END;
 
-                requested--;
-                downstream.push(ctx.rowHandler().factory(long.class).create(updatedRows));
+                inLoop = true;
+                try {
+                    requested--;
+                    downstream.push(ctx.rowHandler().factory(long.class).create(updatedRows));
+                }
+                finally {
+                    inLoop = false;
+                }
             }
 
             if (state == State.END && requested > 0) {
@@ -189,10 +199,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
             }
         }
         catch (Exception e) {
-            downstream.onError(e);
-        }
-        finally {
-            inLoop = false;
+            onError(e);
         }
     }
 

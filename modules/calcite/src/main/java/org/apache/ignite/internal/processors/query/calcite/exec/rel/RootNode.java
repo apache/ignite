@@ -118,47 +118,57 @@ public class RootNode<Row> extends AbstractNode<Row>
     @Override public void push(Row row) {
         checkThread();
 
-        int req = 0;
-
-        lock.lock();
         try {
-            assert waiting > 0;
+            int req = 0;
 
-            waiting--;
+            lock.lock();
+            try {
+                assert waiting > 0;
 
-            if (state != State.RUNNING)
-                return;
+                waiting--;
 
-            buff.offer(row);
+                if (state != State.RUNNING)
+                    return;
 
-            if (waiting == 0)
-                waiting = req = IN_BUFFER_SIZE - buff.size();
+                buff.offer(row);
 
-            cond.signalAll();
+                if (waiting == 0)
+                    waiting = req = IN_BUFFER_SIZE - buff.size();
+
+                cond.signalAll();
+            }
+            finally {
+                lock.unlock();
+            }
+
+            if (req > 0)
+                F.first(sources).request(req);
         }
-        finally {
-            lock.unlock();
+        catch (Exception e) {
+            onError(e);
         }
-
-        if (req > 0)
-            F.first(sources).request(req);
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
-        lock.lock();
         try {
-            assert waiting > 0;
+            lock.lock();
+            try {
+                assert waiting > 0;
 
-            waiting = -1;
+                waiting = -1;
 
-            if (state != State.RUNNING)
-                return;
+                if (state != State.RUNNING)
+                    return;
 
-            cond.signalAll();
+                cond.signalAll();
+            }
+            finally {
+                lock.unlock();
+            }
         }
-        finally {
-            lock.unlock();
+        catch (Exception e) {
+            onError(e);
         }
     }
 
@@ -210,6 +220,11 @@ public class RootNode<Row> extends AbstractNode<Row>
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        throw new UnsupportedOperationException();
+    }
+
     /** */
     private Row take() {
         assert !F.isEmpty(sources) && sources.size() == 1;
@@ -237,6 +252,7 @@ public class RootNode<Row> extends AbstractNode<Row>
 
             state = State.END;
         }
+        // TODO cancel execution on caller thread is interrupted
         catch (InterruptedException e) {
             throw new IgniteInterruptedException(e);
         }

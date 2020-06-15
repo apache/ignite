@@ -61,15 +61,24 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         assert !F.isEmpty(sources) && sources.size() == 1;
         assert rowsCnt > 0 && requested == 0;
+        assert waiting <= 0;
 
         requested = rowsCnt;
 
-        if (waiting == -1 && !inLoop)
-            context().execute(this::flushFromBuffer);
-        else if (waiting == 0)
+        if (waiting == 0)
             F.first(sources).request(waiting = IN_BUFFER_SIZE);
-        else
-            throw new AssertionError();
+        else if (!inLoop)
+            context().execute(this::flush);
+    }
+
+    /** */
+    private void flush() {
+        try {
+            flushInternal();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -102,7 +111,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         waiting = -1;
 
         try {
-            flushFromBuffer();
+            flushInternal();
         }
         catch (Exception e) {
             downstream.onError(e);
@@ -119,14 +128,13 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     }
 
     /** */
-    private void flushFromBuffer() {
+    private void flushInternal() {
         assert waiting == -1;
 
+        int processed = 0;
+
         inLoop = true;
-
         try {
-            int processed = 0;
-
             while (requested > 0) {
                 int toSnd = Math.min(requested, IN_BUFFER_SIZE - processed);
 
@@ -145,20 +153,19 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
                 if (processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
-                    context().execute(this::flushFromBuffer);
+                    context().execute(this::flush);
 
                     return;
                 }
             }
-
-            if (requested >= 0) {
-                downstream.end();
-                requested = 0;
-            }
-
         }
         finally {
             inLoop = false;
+        }
+
+        if (requested >= 0) {
+            downstream.end();
+            requested = 0;
         }
     }
 }

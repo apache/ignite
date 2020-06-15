@@ -37,28 +37,34 @@ public class AntiJoinNode<Row> extends AbstractJoinNode<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void doJoin() {
+    @Override protected void doJoinInternal() {
         if (waitingRight == NOT_WAITING) {
-            while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
-                if (left == null)
-                    left = leftInBuf.remove();
+            inLoop = true;
+            try {
+                while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
+                    if (left == null)
+                        left = leftInBuf.remove();
 
-                boolean matched = false;
+                    boolean matched = false;
 
-                while (!matched && rightIdx < rightMaterialized.size()) {
-                    Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
+                    while (!matched && rightIdx < rightMaterialized.size()) {
+                        Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
 
-                    if (cond.test(row))
-                        matched = true;
+                        if (cond.test(row))
+                            matched = true;
+                    }
+
+                    if (!matched) {
+                        requested--;
+                        downstream.push(left);
+                    }
+
+                    left = null;
+                    rightIdx = 0;
                 }
-
-                if (!matched) {
-                    requested--;
-                    downstream.push(left);
-                }
-
-                left = null;
-                rightIdx = 0;
+            }
+            finally {
+                inLoop = false;
             }
         }
 

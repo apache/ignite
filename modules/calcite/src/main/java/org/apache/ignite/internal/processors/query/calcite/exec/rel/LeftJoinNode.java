@@ -46,41 +46,47 @@ public class LeftJoinNode<Row> extends AbstractJoinNode<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void doJoin() {
+    @Override protected void doJoinInternal() {
         if (waitingRight == NOT_WAITING) {
-            while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
-                if (left == null) {
-                    left = leftInBuf.remove();
+            inLoop = true;
+            try {
+                while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
+                    if (left == null) {
+                        left = leftInBuf.remove();
 
-                    matched = false;
-                }
+                        matched = false;
+                    }
 
-                while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                    Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
+                    while (requested > 0 && rightIdx < rightMaterialized.size()) {
+                        Row row = handler.concat(left, rightMaterialized.get(rightIdx++));
 
-                    if (!cond.test(row))
-                        continue;
+                        if (!cond.test(row))
+                            continue;
 
-                    requested--;
-                    matched = true;
-                    downstream.push(row);
-                }
-
-                if (rightIdx == rightMaterialized.size()) {
-                    boolean wasPushed = false;
-
-                    if (!matched && requested > 0) {
                         requested--;
-                        wasPushed = true;
-
-                        downstream.push(handler.concat(left, rightRowFactory.create()));
+                        matched = true;
+                        downstream.push(row);
                     }
 
-                    if (matched || wasPushed) {
-                        left = null;
-                        rightIdx = 0;
+                    if (rightIdx == rightMaterialized.size()) {
+                        boolean wasPushed = false;
+
+                        if (!matched && requested > 0) {
+                            requested--;
+                            wasPushed = true;
+
+                            downstream.push(handler.concat(left, rightRowFactory.create()));
+                        }
+
+                        if (matched || wasPushed) {
+                            left = null;
+                            rightIdx = 0;
+                        }
                     }
                 }
+            }
+            finally {
+                inLoop = false;
             }
         }
 

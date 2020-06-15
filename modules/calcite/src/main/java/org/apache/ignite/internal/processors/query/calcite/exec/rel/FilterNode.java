@@ -62,7 +62,17 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         requested = rowsCnt;
 
         if (!inLoop)
-            context().execute(this::flushFromBuffer);
+            context().execute(this::filter);
+    }
+
+    /** */
+    private void filter() {
+        try {
+            filterInternal();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -78,10 +88,10 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
             if (pred.test(row))
                 inBuf.add(row);
 
-            flushFromBuffer();
+            filterInternal();
         }
         catch (Exception e) {
-            downstream.onError(e);
+            onError(e);
         }
     }
 
@@ -95,10 +105,10 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         waiting = -1;
 
         try {
-            flushFromBuffer();
+            filterInternal();
         }
         catch (Exception e) {
-            downstream.onError(e);
+            onError(e);
         }
     }
 
@@ -120,26 +130,26 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** */
-    public void flushFromBuffer() {
+    public void filterInternal() {
         inLoop = true;
         try {
             while (requested > 0 && !inBuf.isEmpty()) {
                 requested--;
                 downstream.push(inBuf.remove());
             }
-
-            if (inBuf.isEmpty() && waiting == 0)
-                F.first(sources).request(waiting = IN_BUFFER_SIZE);
-
-            if (waiting == -1 && requested > 0) {
-                assert inBuf.isEmpty();
-
-                downstream.end();
-                requested = 0;
-            }
         }
         finally {
             inLoop = false;
+        }
+
+        if (inBuf.isEmpty() && waiting == 0)
+            F.first(sources).request(waiting = IN_BUFFER_SIZE);
+
+        if (waiting == -1 && requested > 0) {
+            assert inBuf.isEmpty();
+
+            downstream.end();
+            requested = 0;
         }
     }
 }

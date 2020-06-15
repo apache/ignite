@@ -60,9 +60,6 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     private final Map<UUID, Buffer> nodeBuffers = new HashMap<>();
 
     /** */
-    private boolean cancelled;
-
-    /** */
     private int waiting;
 
     /**
@@ -115,9 +112,19 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
 
     /** */
     public void init() {
+        send();
+    }
+
+    /** */
+    private void send() {
         checkThread();
 
-        flushFromBuffer();
+        try {
+            sendInternal();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -128,9 +135,14 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
 
         waiting--;
 
-        inBuf.add(row);
+        try {
+            inBuf.add(row);
 
-        flushFromBuffer();
+            sendInternal();
+        }
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -162,20 +174,16 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        checkThread();
+        try {
+            checkThread();
+            context().markCancelled();
 
-        context().markCancelled();
-
-        if (cancelled)
-            return;
-
-        cancelled = true;
-
-        nodeBuffers.values().forEach(Buffer::cancel);
-
-        close();
-
-        super.cancel();
+            nodeBuffers.values().forEach(Buffer::cancel);
+            super.cancel();
+        }
+        finally {
+            close();
+        }
     }
 
     /** {@inheritDoc} */
@@ -185,6 +193,11 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
 
     /** {@inheritDoc} */
     @Override public void request(int rowCnt) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
         throw new UnsupportedOperationException();
     }
 
@@ -227,39 +240,31 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     }
 
     /** */
-    private void flushFromBuffer() {
-        try {
-            while (!inBuf.isEmpty()) {
-                Row row = inBuf.remove();
+    private void sendInternal() throws IgniteCheckedException {
+        while (!inBuf.isEmpty()) {
+            List<UUID> nodes = dest.targets(inBuf.peek());
 
-                List<UUID> nodes = dest.targets(row);
+            assert !F.isEmpty(nodes);
 
-                assert !F.isEmpty(nodes);
+            Collection<Buffer> buffers = new ArrayList<>(nodes.size());
 
-                Collection<Buffer> buffers = new ArrayList<>(nodes.size());
+            for (UUID node : nodes) {
+                Buffer dest = getOrCreateBuffer(node);
 
-                for (UUID node : nodes) {
-                    Buffer dest = getOrCreateBuffer(node);
+                if (!dest.ready())
+                    return;
 
-                    if (dest.ready())
-                        buffers.add(dest);
-                    else {
-                        inBuf.addFirst(row);
-
-                        return;
-                    }
-                }
-
-                for (Buffer dest : buffers)
-                    dest.add(row);
+                buffers.add(dest);
             }
 
-            if (waiting == 0)
-                F.first(sources).request(waiting = IN_BUFFER_SIZE);
+            Row row = inBuf.remove();
+
+            for (Buffer dest : buffers)
+                dest.add(row);
         }
-        catch (Exception e) {
-            onError(e);
-        }
+
+        if (waiting == 0)
+            F.first(sources).request(waiting = IN_BUFFER_SIZE);
     }
 
     /** */
@@ -354,7 +359,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
             lwm = id;
 
             if (!readyBefore && ready())
-                flushFromBuffer();
+                send();
         }
     }
 }

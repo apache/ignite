@@ -58,7 +58,7 @@ public class FullOuterJoinNode<Row> extends AbstractJoinNode<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void doJoin() {
+    @Override protected void doJoinInternal() {
         if (waitingRight == NOT_WAITING) {
             if (rightNotMatchedIndexes == null) {
                 rightNotMatchedIndexes = new BitSet(rightMaterialized.size());
@@ -66,62 +66,74 @@ public class FullOuterJoinNode<Row> extends AbstractJoinNode<Row> {
                 rightNotMatchedIndexes.set(0, rightMaterialized.size());
             }
 
-            while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
-                if (left == null) {
-                    left = leftInBuf.remove();
+            inLoop = true;
+            try {
+                while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
+                    if (left == null) {
+                        left = leftInBuf.remove();
 
-                    leftMatched = false;
-                }
+                        leftMatched = false;
+                    }
 
-                while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                    Row right = rightMaterialized.get(rightIdx++);
-                    Row joined = handler.concat(left, right);
+                    while (requested > 0 && rightIdx < rightMaterialized.size()) {
+                        Row right = rightMaterialized.get(rightIdx++);
+                        Row joined = handler.concat(left, right);
 
-                    if (!cond.test(joined))
-                        continue;
+                        if (!cond.test(joined))
+                            continue;
 
-                    requested--;
-                    leftMatched = true;
-                    rightNotMatchedIndexes.clear(rightIdx - 1);
-                    downstream.push(joined);
-                }
-
-                if (rightIdx == rightMaterialized.size()) {
-                    boolean wasPushed = false;
-
-                    if (!leftMatched && requested > 0) {
                         requested--;
-                        wasPushed = true;
-
-                        downstream.push(handler.concat(left, rightRowFactory.create()));
+                        leftMatched = true;
+                        rightNotMatchedIndexes.clear(rightIdx - 1);
+                        downstream.push(joined);
                     }
 
-                    if (leftMatched || wasPushed) {
-                        left = null;
-                        rightIdx = 0;
+                    if (rightIdx == rightMaterialized.size()) {
+                        boolean wasPushed = false;
+
+                        if (!leftMatched && requested > 0) {
+                            requested--;
+                            wasPushed = true;
+
+                            downstream.push(handler.concat(left, rightRowFactory.create()));
+                        }
+
+                        if (leftMatched || wasPushed) {
+                            left = null;
+                            rightIdx = 0;
+                        }
                     }
                 }
+            }
+            finally {
+                inLoop = false;
             }
         }
 
         if (waitingLeft == NOT_WAITING && requested > 0 && !rightNotMatchedIndexes.isEmpty()) {
             assert lastPushedInd >= 0;
 
-            for (lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);;
-                lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1)
-            ) {
-                if (lastPushedInd < 0)
-                    break;
+            inLoop = true;
+            try {
+                for (lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);;
+                    lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1)
+                ) {
+                    if (lastPushedInd < 0)
+                        break;
 
-                Row row = handler.concat(leftRowFactory.create(), rightMaterialized.get(lastPushedInd));
+                    Row row = handler.concat(leftRowFactory.create(), rightMaterialized.get(lastPushedInd));
 
-                rightNotMatchedIndexes.clear(lastPushedInd);
+                    rightNotMatchedIndexes.clear(lastPushedInd);
 
-                requested--;
-                downstream.push(row);
+                    requested--;
+                    downstream.push(row);
 
-                if (lastPushedInd == Integer.MAX_VALUE || requested <= 0)
-                    break;
+                    if (lastPushedInd == Integer.MAX_VALUE || requested <= 0)
+                        break;
+                }
+            }
+            finally {
+                inLoop = false;
             }
         }
 

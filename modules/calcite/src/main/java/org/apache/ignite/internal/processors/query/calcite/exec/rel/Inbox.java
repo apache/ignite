@@ -138,7 +138,12 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         }
 
         if (!inLoop)
-            context().execute(this::pushInternal);
+            context().execute(this::push);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -181,14 +186,13 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         buf.offer(batchId, last, rows);
 
         if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
-            pushInternal();
+            push();
     }
 
     /** */
-    private void pushInternal() {
+    private void push() {
         assert downstream != null;
 
-        inLoop = true;
         try {
             if (comp != null)
                 pushOrdered();
@@ -196,11 +200,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
                 pushUnordered();
         }
         catch (Exception e) {
-            downstream.onError(e);
-            close();
-        }
-        finally {
-            inLoop = false;
+            onError(e);
         }
     }
 
@@ -229,28 +229,34 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
             }
         }
 
-        while (requested > 0 && !heap.isEmpty()) {
-            if (context().cancelled())
-                return;
-
-            Buffer buf = heap.poll().right;
-
-            requested--;
-            downstream.push(buf.remove());
-
-            switch (buf.check()) {
-                case END:
-                    buffers.remove(buf);
-
-                    break;
-                case READY:
-                    heap.offer(Pair.of(buf.peek(), buf));
-
-                    break;
-                case WAITING:
-
+        inLoop = true;
+        try {
+            while (requested > 0 && !heap.isEmpty()) {
+                if (context().cancelled())
                     return;
+
+                Buffer buf = heap.poll().right;
+
+                requested--;
+                downstream.push(buf.remove());
+
+                switch (buf.check()) {
+                    case END:
+                        buffers.remove(buf);
+
+                        break;
+                    case READY:
+                        heap.offer(Pair.of(buf.peek(), buf));
+
+                        break;
+                    case WAITING:
+
+                        return;
+                }
             }
+        }
+        finally {
+            inLoop = false;
         }
 
         if (requested > 0 && heap.isEmpty()) {
@@ -267,38 +273,58 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
     private void pushUnordered() throws IgniteCheckedException {
         int idx = 0, noProgress = 0;
 
-        while (requested > 0 && !buffers.isEmpty()) {
-            if (context().cancelled())
-                return;
+        inLoop = true;
+        try {
+            while (requested > 0 && !buffers.isEmpty()) {
+                if (context().cancelled())
+                    return;
 
-            Buffer buf = buffers.get(idx);
+                Buffer buf = buffers.get(idx);
 
-            switch (buf.check()) {
-                case END:
-                    buffers.remove(idx--);
+                switch (buf.check()) {
+                    case END:
+                        buffers.remove(idx--);
 
-                    break;
-                case READY:
-                    noProgress = 0;
-                    requested--;
-                    downstream.push(buf.remove());
+                        break;
+                    case READY:
+                        noProgress = 0;
+                        requested--;
+                        downstream.push(buf.remove());
 
-                    break;
-                case WAITING:
-                    if (++noProgress >= buffers.size())
-                        return;
+                        break;
+                    case WAITING:
+                        if (++noProgress >= buffers.size())
+                            return;
 
-                    break;
+                        break;
+                }
+
+                if (++idx == buffers.size())
+                    idx = 0;
             }
-
-            if (++idx == buffers.size())
-                idx = 0;
+        }
+        finally {
+            inLoop = false;
         }
 
         if (requested > 0 && buffers.isEmpty()) {
             downstream.end();
             requested = 0;
 
+            close();
+        }
+    }
+
+    /** */
+    private void onError(Exception e) {
+        checkThread();
+
+        assert downstream != null;
+
+        try {
+            downstream.onError(e);
+        }
+        finally {
             close();
         }
     }
