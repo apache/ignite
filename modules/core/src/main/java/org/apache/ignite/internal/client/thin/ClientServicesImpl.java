@@ -150,8 +150,10 @@ class ClientServicesImpl implements ClientServices {
                 else {
                     writer.writeInt(nodeIds.size());
 
-                    for (UUID nodeId : nodeIds)
-                        writer.writeUuid(nodeId);
+                    for (UUID nodeId : nodeIds) {
+                        writer.writeLong(nodeId.getMostSignificantBits());
+                        writer.writeLong(nodeId.getLeastSignificantBits());
+                    }
                 }
 
                 PlatformServiceMethod ann = method.getDeclaredAnnotation(PlatformServiceMethod.class);
