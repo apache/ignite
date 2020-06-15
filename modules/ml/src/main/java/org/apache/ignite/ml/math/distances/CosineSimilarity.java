@@ -21,37 +21,11 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
- * Calculates the L<sub>2</sub> (Euclidean) distance between two points.
+ * Calculates the {@code A * B / (|A| * |B|)} (Cosine similarity) distance between two points.
  */
-public class EuclideanDistance implements DistanceMeasure {
-    /** Serializable version identifier. */
-    private static final long serialVersionUID = 1717556319784040040L;
-
+public class CosineSimilarity implements DistanceMeasure {
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b) throws CardinalityException {
-        return MatrixUtil.localCopyOf(a).minus(b).kNorm(2.0);
-    }
-
-    /** {@inheritDoc} */
-    @Override public double compute(Vector a, double[] b) throws CardinalityException {
-        double res = 0.0;
-
-        for (int i = 0; i < b.length; i++)
-            res += Math.pow(Math.abs(b[i] - a.get(i)), 2.0);
-
-        return Math.sqrt(res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-
-        return obj != null && getClass() == obj.getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return getClass().hashCode();
+        return MatrixUtil.localCopyOf(a).dot(b) / (a.kNorm(2d) * b.kNorm(2d));
     }
 }

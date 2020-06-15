@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLoc
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1021,12 +1022,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * Reserve update history for preloading.
-     * @param grpId Cache group ID.
-     * @param partId Partition Id.
-     * @param cntr Update counter.
+     *
+     * @param reservationMap Map contains of counters for partitions of groups.
      * @return True if successfully reserved.
      */
-    public boolean reserveHistoryForPreloading(int grpId, int partId, long cntr) {
+    public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, Long> reservationMap) {
         return false;
     }
 
