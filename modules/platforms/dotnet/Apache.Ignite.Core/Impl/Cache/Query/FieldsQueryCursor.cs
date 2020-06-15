@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="target">Target.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="readerFunc">The reader function.</param>
-        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
+        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary,
             Func<IBinaryRawReader, int, T> readerFunc)
             : base(target, keepBinary, r =>
             {
@@ -75,8 +75,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="target">Target.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="readerFunc">The reader function.</param>
-        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
-            Func<IBinaryRawReader, int, IList<object>> readerFunc) : base(target, keepBinary, readerFunc)
+        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary,
+            Func<IBinaryRawReader, int, IList<object>> readerFunc = null)
+            : base(target, keepBinary, readerFunc ?? ReadFieldsArrayList)
         {
             // No-op.
         }
@@ -109,6 +110,19 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
                 return _fieldsMeta;
             }
+        }
+
+        /// <summary>
+        /// Reads the fields array list.
+        /// </summary>
+        public static List<object> ReadFieldsArrayList(IBinaryRawReader reader, int count)
+        {
+            var res = new List<object>(count);
+
+            for (var i = 0; i < count; i++)
+                res.Add(reader.ReadObject<object>());
+
+            return res;
         }
     }
 }

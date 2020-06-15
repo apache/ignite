@@ -1399,6 +1399,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
             case OP_QRY_TXT:
                 return readTextQuery(reader);
+
+            case OP_QRY_SQL_FIELDS:
+                return readFieldsQuery(reader);
         }
 
         throw new IgniteCheckedException("Unsupported query type: " + typ);

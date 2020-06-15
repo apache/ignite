@@ -15,23 +15,25 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
+namespace Apache.Ignite.Core.Impl.Cache.Query
 {
-    using NUnit.Framework;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Continuous query tests for ATOMIC cache with no backups.
+    /// Internal base interface for queries.
     /// </summary>
-    [TestFixture]
-    public class ContinuousQueryAtomicNoBackupTest : ContinuousQueryNoBackupAbstractTest
+    internal interface IQueryBaseInternal
     {
         /// <summary>
-        /// Constructor.
+        /// Writes this instance to the specified writer.
         /// </summary>
-        public ContinuousQueryAtomicNoBackupTest()
-            : base(CACHE_ATOMIC_NO_BACKUP)
-        {
-            // No-op.
-        }
+        /// <param name="writer">Writer.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
+        void Write(BinaryWriter writer, bool keepBinary);
+
+        /// <summary>
+        /// Gets the interop op code.
+        /// </summary>
+        CacheOp OpId { get; }
     }
 }
