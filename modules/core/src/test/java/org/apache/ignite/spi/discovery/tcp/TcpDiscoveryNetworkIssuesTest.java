@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -101,7 +102,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     private int metricsUpdateFreq = 1_000;
 
     /** */
-    private Long systemWorkerBlockedTimeout;
+    private Long sysWorkerBlockedTimeout;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() {
@@ -120,8 +121,8 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         // A message traffic.
         metricsUpdateFreq = 400;
 
-        // Avoid useless arns. We do block threadf specually.
-        systemWorkerBlockedTimeout = 5000L;
+        // Avoid useless warnings. We do block threads specially.
+        sysWorkerBlockedTimeout = 5000L;
 
         // Running several times to be sure. Let's keep it within 1min.
         for (int i = 0; i < 7; ++i) {
@@ -151,7 +152,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
             IgniteEx grid0 = startGrid(0);
 
-            assert ((TcpDiscoverySpi)grid0.configuration().getDiscoverySpi()).failureDetectionTimeoutEnabled() :
+            assert ((IgniteSpiAdapter)grid0.configuration().getDiscoverySpi()).failureDetectionTimeoutEnabled() :
                 "Failure detection timeout is not active.";
 
             long nodeDelay = failureDetectionTimeout * 2;
@@ -190,7 +191,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
                         try {
                             Thread.sleep(nodeDelay);
                         }
-                        catch (InterruptedException e) {
+                        catch (InterruptedException ignored) {
                             // No-op.
                         }
                     }
@@ -248,7 +249,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         cfg.setMetricsUpdateFrequency(metricsUpdateFreq);
 
-        cfg.setSystemWorkerBlockedTimeout(systemWorkerBlockedTimeout);
+        cfg.setSystemWorkerBlockedTimeout(sysWorkerBlockedTimeout);
 
         cfg.setDiscoverySpi(spi);
 
