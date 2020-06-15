@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.CalciteBasicSecondaryIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
+import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.LimitOffsetTest;
 import org.apache.ignite.internal.processors.query.calcite.PlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
@@ -34,6 +35,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     PlannerTest.class,
+    OrToUnionRuleTest.class,
     ExecutionTest.class,
     ClosableIteratorsHolderTest.class,
     ContinuousExecutionTest.class,
