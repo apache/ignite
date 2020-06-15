@@ -69,11 +69,8 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     private static final String SUBDIR_PATTERN = NODE_PATTERN + UUID_STR_PATTERN;
 
     /** Database subfolders for new style filter. */
-    public static final FileFilter DB_SUBFOLDERS_NEW_STYLE_FILTER = new FileFilter() {
-        @Override public boolean accept(File pathname) {
-            return pathname.isDirectory() && pathname.getName().matches(SUBDIR_PATTERN);
-        }
-    };
+    public static final FileFilter DB_SUBFOLDERS_NEW_STYLE_FILTER =
+        (pathname) -> pathname.isDirectory() && pathname.getName().matches(SUBDIR_PATTERN);
 
     /** Database subfolders for old style filter. */
     private static final FileFilter DB_SUBFOLDERS_OLD_STYLE_FILTER = new FileFilter() {
@@ -116,19 +113,51 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * Prepares compatible PDS folder settings. No locking is performed, consistent ID is not overridden.
      *
      * @param pstStoreBasePath DB storage base path or null if persistence is not enabled.
-     * @param consistentId compatibility consistent ID
+     * @param consistentId compatibility consistent ID generated from IP/Port.
      * @return PDS folder settings compatible with previous versions.
      */
     private PdsFolderSettings compatibleResolve(
         @Nullable final File pstStoreBasePath,
-        @NotNull final Serializable consistentId) {
+        @NotNull final Serializable consistentId) throws IgniteCheckedException {
 
-        if (cfg.getConsistentId() != null) {
-            // compatible mode from configuration is used fot this case, no locking, no consitent id change
-            return new PdsFolderSettings(pstStoreBasePath, cfg.getConsistentId());
-        }
+        Serializable configuredConsistentId = cfg.getConsistentId();
+
+        if (configuredConsistentId != null)
+            return configuredConsIdResolve(pstStoreBasePath, configuredConsistentId);
 
         return new PdsFolderSettings(pstStoreBasePath, consistentId);
+    }
+
+    /**
+     * Prepares compatible PDS folder settings based on Conistent ID from the configuration.
+     *
+     * @param pstStoreBasePath Persistent store base path.
+     * @param configuredConsistentId Configured consistent id.
+     */
+    @NotNull private PdsFolderSettings configuredConsIdResolve(@Nullable File pstStoreBasePath,
+        Serializable configuredConsistentId) throws IgniteCheckedException {
+        if (configuredConsistentId instanceof UUID) {
+            UUID uuid = (UUID)configuredConsistentId;
+            String regexForCurrUuid = NODE_PATTERN + uuid.toString();
+
+            List<FolderCandidate> files = getFilteredPdsFiles(pstStoreBasePath,
+                (pathname) -> pathname.isDirectory() && pathname.getName().matches(regexForCurrUuid));
+
+            int nodeIdx = files.isEmpty() ? 0 : files.get(files.size() - 1).nodeIdx;
+
+            String consIdBasedFolder = genNewStyleSubfolderName(nodeIdx, uuid);
+            File existingUuidFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdBasedFolder, false); //mkdir here
+            GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(existingUuidFolder);
+
+            return new PdsFolderSettings(pstStoreBasePath,
+                consIdBasedFolder,
+                configuredConsistentId,
+                fileLockHolder,
+                true);
+        }
+
+        // compatible mode from configuration is used fot this case, no locking, no consitent id change
+        return new PdsFolderSettings(pstStoreBasePath, configuredConsistentId);
     }
 
     /** {@inheritDoc} */
@@ -144,6 +173,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
                 ctx.discovery().consistentId(settings.consistentId());
             }
         }
+
         return settings;
     }
 
@@ -170,8 +200,9 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         // compatible mode from configuration is used fot this case
         if (cfg.getConsistentId() != null) {
             // compatible mode from configuration is used fot this case, no locking, no consistent id change
-            return new PdsFolderSettings(pstStoreBasePath, cfg.getConsistentId());
+            return configuredConsIdResolve(pstStoreBasePath, cfg.getConsistentId());
         }
+
         // The node scans the work directory and checks if there is a folder matching the consistent ID.
         // If such a folder exists, we start up with this ID (compatibility mode)
         final String subFolder = U.maskForFileName(consistentId.toString());
@@ -381,7 +412,16 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * applicable new style files. Collection is sorted ascending according to node ID, 0 node index is coming first.
      */
     @Nullable private List<FolderCandidate> getNodeIndexSortedCandidates(File pstStoreBasePath) {
-        final File[] files = pstStoreBasePath.listFiles(DB_SUBFOLDERS_NEW_STYLE_FILTER);
+        return getFilteredPdsFiles(pstStoreBasePath, DB_SUBFOLDERS_NEW_STYLE_FILTER);
+    }
+
+    /**
+     * @param pstStoreBasePath persistent store store base path.
+     * @param filter Filter for files.
+     * @return matching files sored ascending according to node ID, 0 node index is coming first.
+     */
+    @NotNull private List<FolderCandidate> getFilteredPdsFiles(File pstStoreBasePath, FileFilter filter) {
+        final File[] files = pstStoreBasePath.listFiles(filter);
 
         if (files == null)
             return Collections.emptyList();
@@ -394,7 +434,8 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             if (candidate != null)
                 res.add(candidate);
         }
-        Collections.sort(res, new Comparator<FolderCandidate>() {
+
+        res.sort(new Comparator<FolderCandidate>() {
             @Override public int compare(FolderCandidate c1, FolderCandidate c2) {
                 return Integer.compare(c1.nodeIndex(), c2.nodeIndex());
             }
