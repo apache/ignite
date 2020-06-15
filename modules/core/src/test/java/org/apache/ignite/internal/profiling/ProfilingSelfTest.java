@@ -108,6 +108,45 @@ public class ProfilingSelfTest extends AbstractProfilingTest {
 
     /** @throws Exception If failed. */
     @Test
+    public void testProiflingStart() throws Exception {
+        LogListener lsnr = matches("profilingStart ")
+            .andMatches("nodeId=" + ignite.context().localNodeId())
+            .andMatches("igniteInstanceName=" + ignite.name())
+            .andMatches("igniteVersion=" + ignite.version())
+            .times(1)
+            .build();
+
+        log.registerListener(lsnr);
+
+        startProfiling();
+
+        stopProfilingAndCheck(lsnr);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCacheStart() throws Exception {
+        String cacheName = "test-profiling-cache";
+
+        startProfiling();
+
+        ignite.getOrCreateCache(cacheName);
+
+        LogListener lsnr = matches("cacheStart ")
+            .andMatches("cacheId=" + ignite.context().cache().cache(cacheName).context().cacheId())
+            .andMatches("cacheName=" + cacheName)
+            .andMatches("userCache=true")
+            .build();
+
+        log.registerListener(lsnr);
+
+        stopProfilingAndCheck(lsnr);
+
+        ignite.destroyCache(cacheName);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
     public void testCompute() throws Exception {
         LogListener taskLsnr = matches("task ").andMatches("taskName=" + getClass().getName()).times(1).build();
         LogListener jobLsnr = matches("job ").times(1).build();

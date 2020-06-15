@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -146,7 +145,8 @@ public class FileProfiling implements IgniteProfiling {
             throw new IgniteException("Failed to start profiling.", e);
         }
 
-        profilingStart(ctx.localNodeId(), ctx.igniteInstanceName(), IgniteVersionUtils.VER_STR, U.currentTimeMillis());
+        profilingStart(ctx.localNodeId(), ctx.igniteInstanceName(), ctx.discovery().localNode().version().toString(),
+            U.currentTimeMillis());
 
         ctx.cache().context().cacheContexts().stream()
             .filter(GridCacheContext::started)

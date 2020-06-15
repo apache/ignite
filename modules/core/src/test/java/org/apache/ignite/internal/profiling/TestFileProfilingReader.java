@@ -89,8 +89,8 @@ public class TestFileProfilingReader {
         /** {@inheritDoc} */
         @Override public void cacheStart(int cacheId, long startTime, String cacheName, @Nullable String groupName,
             boolean userCache) {
-            log("cacheStart", "startTime", startTime, "cacheName", cacheName, "groupName", groupName,
-                "userCache", userCache);
+            log("cacheStart", "cacheId", cacheId, "startTime", startTime, "cacheName", cacheName,
+                "groupName", groupName, "userCache", userCache);
         }
 
         /** {@inheritDoc} */
