@@ -38,11 +38,11 @@ public class RandomQuerySupplier implements Supplier<String> {
         for (ModelFactory factory : mdlFactories)
             schema.addTable(factory.queryEntity());
 
-        schema.addOperator(new Operator(">=", Integer.class, Integer.class, Boolean.class));
-        schema.addOperator(new Operator("<=", Integer.class, Integer.class, Boolean.class));
+//        schema.addOperator(new Operator(">=", Integer.class, Integer.class, Boolean.class));
+//        schema.addOperator(new Operator("<=", Integer.class, Integer.class, Boolean.class));
         schema.addOperator(new Operator("=", Integer.class, Integer.class, Boolean.class));
         schema.addOperator(new Operator("AND", Boolean.class, Boolean.class, Boolean.class));
-        schema.addOperator(new Operator("OR", Boolean.class, Boolean.class, Boolean.class));
+//        schema.addOperator(new Operator("OR", Boolean.class, Boolean.class, Boolean.class));
     }
 
     /** {@inheritDoc} */

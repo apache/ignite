@@ -36,7 +36,7 @@ public class Comparison extends BooleanExpression{
     protected Comparison(Ast parent) {
         super(parent);
 
-        Class<?> opsType = r100(parent, 50) ? Integer.class : Boolean.class;
+        Class<?> opsType = r100(parent, 80) ? Integer.class : Boolean.class;
 
         left = Expression.createRandom(parent, opsType);
         right = Expression.createRandom(parent, opsType);

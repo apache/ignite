@@ -19,6 +19,8 @@ package org.apache.ignite.compatibility.sql.runner;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -64,10 +66,11 @@ public class QueryDuelBenchmark {
         AtomicBoolean stop = new AtomicBoolean();
 
         BlockingExecutor exec = new BlockingExecutor(workersCnt);
+        Executor runnerExec = Executors.newCachedThreadPool();
 
         while (System.currentTimeMillis() < end && !stop.get()) {
             QueryDuelRunner runner = new QueryDuelRunner(oldConnPool, newConnPool,
-                stop, qrySupplier, suspiciousQrys, successCnt, attemptsCnt);
+                stop, qrySupplier, suspiciousQrys, successCnt, attemptsCnt, runnerExec);
 
             exec.execute(runner);
         }

@@ -118,6 +118,10 @@ public class Scope {
         return pickRandom(matchedOps, rnd);
     }
 
+    public List<TableRef> scopeTables() {
+        return scopeTbls;
+    }
+
     public void addScopeTable(TableRef t) {
         scopeTbls.add(t);
     }

@@ -44,18 +44,19 @@ public class QueryExecutionTimer implements Supplier<Long> {
         long start = System.currentTimeMillis();
 
         Connection conn = connPool.getConnection();
-
+        int cnt = 0;
         try (Statement stmt = conn.createStatement()) {
+            //System.out.println(Thread.currentThread().getName() + " Start query=" + qry);
+
             try (ResultSet rs = stmt.executeQuery(qry)) {
-                int cnt = 0;
+
                 while (rs.next()) {
                     // Just read the full result set.
 
-                    if (cnt++ > 200_000)
+                    if (cnt++ > 99_000)
                         break; // result too big.
                 }
 
-                System.out.println("Rs.size=" + cnt + ", qry=" + qry);
             }
         }
         catch (SQLException e) {
@@ -65,6 +66,8 @@ public class QueryExecutionTimer implements Supplier<Long> {
         finally {
             connPool.releaseConnection(conn);
         }
+
+        System.out.println(Thread.currentThread().getName() + " Rs.size=" + cnt + ", time=" + (System.currentTimeMillis() - start) + ", qry=" + qry);
 
         return System.currentTimeMillis() - start;
     }

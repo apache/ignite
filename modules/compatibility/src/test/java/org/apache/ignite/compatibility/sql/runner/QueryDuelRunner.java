@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -52,6 +53,9 @@ public class QueryDuelRunner implements Runnable {
     private int attemptsCnt;
 
     /** */
+    private final Executor exec;
+
+    /** */
     public QueryDuelRunner(
         SimpleConnectionPool oldConnPool,
         SimpleConnectionPool newConnPool,
@@ -59,8 +63,8 @@ public class QueryDuelRunner implements Runnable {
         Supplier<String> qrySupplier,
         Collection<QueryDuelResult> suspiciousQrs,
         int successCnt,
-        int attemptsCnt
-    ) {
+        int attemptsCnt,
+        Executor runnerExec) {
         assert successCnt <= attemptsCnt : "successCnt=" + successCnt + ", attemptsCnt=" + attemptsCnt;
 
         this.oldConnPool = oldConnPool;
@@ -70,6 +74,7 @@ public class QueryDuelRunner implements Runnable {
         this.stop = stop;
         this.successCnt = successCnt;
         this.attemptsCnt = attemptsCnt;
+        this.exec = runnerExec;
     }
 
     /** {@inheritDoc} */
@@ -81,13 +86,15 @@ public class QueryDuelRunner implements Runnable {
         List<Long> newQryExecTimes = new ArrayList<>(attemptsCnt);
         List<Exception> exceptions = new ArrayList<>(attemptsCnt);
 
+        System.out.println(Thread.currentThread() + " Starts query=" + qry);
+
         while (attemptsCnt-- > 0) {
             try {
                 QueryExecutionTimer oldVerRun = new QueryExecutionTimer(qry, oldConnPool);
                 QueryExecutionTimer newVerRun = new QueryExecutionTimer(qry, newConnPool);
 
-                CompletableFuture<Long> oldVerFut = CompletableFuture.supplyAsync(oldVerRun);
-                CompletableFuture<Long> newVerFut = CompletableFuture.supplyAsync(newVerRun);
+                CompletableFuture<Long> oldVerFut = CompletableFuture.supplyAsync(oldVerRun, exec);
+                CompletableFuture<Long> newVerFut = CompletableFuture.supplyAsync(newVerRun, exec);
 
                 CompletableFuture.allOf(oldVerFut, newVerFut).get();
 

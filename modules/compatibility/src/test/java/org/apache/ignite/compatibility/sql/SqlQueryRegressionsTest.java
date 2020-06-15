@@ -77,10 +77,10 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
     private static final int NEW_JDBC_PORT = 10802;
 
     /** Query workers count. */
-    private static final int WORKERS_CNT = IgniteConfiguration.DFLT_QUERY_THREAD_POOL_SIZE / 2;
+    private static final int WORKERS_CNT = 1; // IgniteConfiguration.DFLT_QUERY_THREAD_POOL_SIZE;
 
     /** */
-    private static final long TEST_TIMEOUT = 300_000;
+    private static final long TEST_TIMEOUT = 60_000;
 
     /** */
     private static final long WARM_UP_TIMEOUT = 5_000;
@@ -155,8 +155,8 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
             createTablesAndPopulateData(grid(0), seed);
 
-            try (SimpleConnectionPool oldConnPool = new SimpleConnectionPool(JDBC_URL, OLD_JDBC_PORT, WORKERS_CNT);
-                 SimpleConnectionPool newConnPool = new SimpleConnectionPool(JDBC_URL, NEW_JDBC_PORT, WORKERS_CNT)) {
+            try (SimpleConnectionPool oldConnPool = new SimpleConnectionPool(JDBC_URL, OLD_JDBC_PORT, WORKERS_CNT * 2);
+                 SimpleConnectionPool newConnPool = new SimpleConnectionPool(JDBC_URL, NEW_JDBC_PORT, WORKERS_CNT  * 2)) {
                 QueryDuelBenchmark benchmark = new QueryDuelBenchmark(WORKERS_CNT, oldConnPool, newConnPool);
                 // 0. Warm-up.
                 benchmark.runBenchmark(WARM_UP_TIMEOUT, qrysSupplier, 0, 1);

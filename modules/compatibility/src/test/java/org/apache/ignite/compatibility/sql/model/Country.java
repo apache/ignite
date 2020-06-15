@@ -104,7 +104,7 @@ public class Country {
             return new Country(
                 randomString(rnd, 5, 10), // name
                 randomString(rnd, 3, 3), // phone code
-                rnd.nextInt(1_000_000) // population
+                rnd.nextInt(1_000) // population
             );
         }
 

@@ -118,7 +118,7 @@ public class City {
                 randomString(rnd, 5, 10), // name
                 randomString(rnd, 5, 5), // zip code
                 rnd.nextInt(COUNTRY_CNT), // country id
-                rnd.nextInt(1_000_000) // population
+                rnd.nextInt(1_000) // population
             );
         }
 

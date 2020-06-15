@@ -40,7 +40,7 @@ public class From extends Ast {
             from.add(tblRef);
 
             scope.addScopeTable(tblRef);
-        } while (r100(parent, 80) && from.size() < 7);
+        } while (r100(parent, 80) && from.size() < 5);
     }
 
     /** {@inheritDoc} */
