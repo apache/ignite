@@ -1161,6 +1161,9 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         try {
             initializeReentrantLock();
 
+            if (sync == null)
+                throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
+
             sync.lock();
 
             sync.validate(false);
