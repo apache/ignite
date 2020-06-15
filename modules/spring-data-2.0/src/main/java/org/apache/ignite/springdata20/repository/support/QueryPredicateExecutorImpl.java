@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.ignite.springdata20.repository.query.QueryUtils.transformQueryCursor;
 
 /**
  * General Apache Ignite query predicate executor implementation.
@@ -164,9 +165,9 @@ public class QueryPredicateExecutorImpl<T> implements QuerydslPredicateExecutor<
 
         IgniteQuery qry = IgniteQueryGenerator.prepareQuery(type, ser.toString(), arrParams);
 
-        QueryCursor qryCursor = cache.query(QueryUtils.prepareQuery(qry, arrParams));
-
-        return (List<T>) QueryUtils.transformQueryCursor(qryCursor, arrParams, false, ReturnStrategy.LIST_OF_VALUES);
+        try(QueryCursor qryCursor = cache.query(QueryUtils.prepareQuery(qry, arrParams))) {
+            return (List<T>) transformQueryCursor(qryCursor, arrParams, false, ReturnStrategy.LIST_OF_VALUES);
+        }
     }
 
     /**

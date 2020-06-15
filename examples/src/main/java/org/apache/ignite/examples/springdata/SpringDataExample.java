@@ -135,11 +135,11 @@ public class SpringDataExample {
      * Execute advanced queries over the repository.
      */
     private static void queryRepository() {
-        System.out.println("\n>>> Persons with name 'John' and 'Brad':");
+        System.out.println("\n>>> Persons with name 'John':");
 
         List<Person> persons = repo.findByFirstName("John");
 
-        for (Person person: persons)
+        for (Person person : persons)
             System.out.println("   >>>   " + person);
 
         Cache.Entry<Long, Person> topPerson = repo.findTopByLastNameLike("Smith");
@@ -167,7 +167,7 @@ public class SpringDataExample {
                 )
         );
 
-        for (Person person: persons)
+        for (Person person : persons)
             System.out.println("   >>>   " + person);
 
         Iterable<Person> personsSortedBySalary = repo.findAll(

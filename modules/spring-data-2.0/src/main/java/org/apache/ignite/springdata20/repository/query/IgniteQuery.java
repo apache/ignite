@@ -32,6 +32,7 @@ public class IgniteQuery {
         /** No advanced option. */
         NONE
     }
+
     /** Entity type */
     private final Class<?> entityType;
 
