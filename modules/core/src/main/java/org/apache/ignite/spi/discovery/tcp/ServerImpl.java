@@ -3706,13 +3706,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!sent) {
                     if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
-                    else if (sndState.checkTimeout()) {
+                    else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
                         return; // Nothing to do here.
                     }
-
-                    log.error("!sent, sndState=" + sndState);
 
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
 
@@ -3834,8 +3832,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Segment local node on failed message send.
          */
         private void segmentLocalNodeOnSendFail(List<TcpDiscoveryNode> failedNodes) {
-            log.error("segmentLocalNodeOnSendFail");
-
             String failedNodesStr = failedNodes == null ? "" : (", failedNodes=" + failedNodes);
 
             synchronized (mux) {
@@ -3861,8 +3857,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
                 "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
                 + spi.getEffectiveConnectionRecoveryTimeout() + failedNodesStr + ']');
-
-            log.error("notifyDiscovery(EVT_NODE_SEGMENTED,");
 
             notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
         }
@@ -7911,7 +7905,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** @return {@code True} if passed timeout is reached. {@code False} otherwise. */
         boolean checkTimeout() {
-            if (System.nanoTime() - failTimeNanos >= 0) {
+            if (System.nanoTime() >= failTimeNanos) {
                 state = RingMessageSendState.FAILED;
 
                 return true;

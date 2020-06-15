@@ -66,7 +66,7 @@ public class IgniteSpiOperationTimeoutHelper {
      *
      * @param adapter SPI adapter.
      * @param srvOp {@code True} if communicates with server node.
-     * @param lastOperationNanos Time of last related operation in nanos.
+     * @param lastOperationNanos Time of last related operation in nanos. Ignored if negative.
      */
     public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp, long lastOperationNanos) {
         this(adapter, srvOp);
@@ -110,15 +110,17 @@ public class IgniteSpiOperationTimeoutHelper {
 
     /** If the absolute time threshold is set, checks it is not reached. */
     private long checkedNextChunk(long nextTimeoutChunk) throws IgniteSpiOperationTimeoutException {
-        if (nextTimeoutChunk > 0 && absolteThreshold > 0 && lastOperStartNanos + nextTimeoutChunk > absolteThreshold)
+        if (absolteThreshold > 0 && lastOperStartNanos + nextTimeoutChunk > absolteThreshold)
             nextTimeoutChunk = absolteThreshold - lastOperStartNanos;
+
+        nextTimeoutChunk = U.nanosToMillis(nextTimeoutChunk);
 
         if (nextTimeoutChunk <= 0) {
             throw new IgniteSpiOperationTimeoutException("Network operation timed out. Timeout: " +
-                U.nanosToMillis(nextTimeoutChunk));
+                nextTimeoutChunk);
         }
 
-        return U.nanosToMillis(nextTimeoutChunk);
+        return nextTimeoutChunk;
     }
 
     /**

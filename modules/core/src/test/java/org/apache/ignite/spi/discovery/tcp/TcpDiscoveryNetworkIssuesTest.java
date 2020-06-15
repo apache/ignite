@@ -119,7 +119,8 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         cfg.setFailureDetectionTimeout(failureDetectionTimeout);
 
-        cfg.setSystemWorkerBlockedTimeout(systemWorkerBlockedTimeout);
+        if (systemWorkerBlockedTimeout != null)
+            cfg.setSystemWorkerBlockedTimeout(systemWorkerBlockedTimeout);
 
         cfg.setDiscoverySpi(spi);
 
@@ -213,7 +214,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConnectionRecoveryTimeoutMediumValues() throws Exception {
-        checkConnectionRecoveryTimeout(400, 500, 100);
+        checkConnectionRecoveryTimeout(300, 500, 200);
     }
 
     /**
@@ -230,9 +231,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         // Avoid useless warnings. We do block threads specially.
         systemWorkerBlockedTimeout = 5_000L;
 
-        for (failureDetectionTimeout = 500; failureDetectionTimeout <= 500;
+        for (failureDetectionTimeout = minTimeout; failureDetectionTimeout <= maxTimeout;
             failureDetectionTimeout += step) {
-            for (connectionRecoveryTimeout = 300; connectionRecoveryTimeout <= 300;
+            for (connectionRecoveryTimeout = minTimeout; connectionRecoveryTimeout <= maxTimeout;
                 connectionRecoveryTimeout += step) {
                 AtomicLong timer = new AtomicLong();
 
@@ -243,45 +244,36 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
                     @Override protected void writeToSocket(Socket sock, OutputStream out,
                         TcpDiscoveryAbstractMessage msg,
                         long timeout) throws IOException, IgniteCheckedException {
+                        simulateSocketTimeout(timeout);
 
-                        if (timer.get() > 0) {
-                            simulateUnknowdDelay(timeout, "writeToSocket(sock, out, msg, timeout)");
-
-                            super.writeToSocket(sock, out, msg, -10);
-                        }
-                        else
-                            super.writeToSocket(sock, out, msg, timeout);
+                        super.writeToSocket(sock, out, msg, timeout);
                     }
 
                     /** {@inheritDoc} */
                     @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
                         long timeout) throws IOException {
-                        if (timer.get() > 0) {
-                            simulateUnknowdDelay(timeout, "writeToSocket(res)");
+                        simulateSocketTimeout(timeout);
 
-                            super.writeToSocket(msg, sock, res, -10);
-                        }
-                        else
-                            super.writeToSocket(msg, sock, res, timeout);
+                        super.writeToSocket(msg, sock, res, timeout);
                     }
 
                     /** {@inheritDoc} */
                     @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
                         long timeout) throws IOException {
-                        if (timer.get() > 0) {
-                            simulateUnknowdDelay(timeout, "writeToSocket(byte[] data)");
+                        simulateSocketTimeout(timeout);
 
-                            super.writeToSocket(sock, msg, data, -10);
-                        }
-                        else
-                            super.writeToSocket(sock, msg, data, timeout);
+                        super.writeToSocket(sock, msg, data, timeout);
                     }
 
-                    private void simulateUnknowdDelay(long delay, String txt) {
-                        log.error("Simulating delay: " + delay + " on " + txt);
+                    /** */
+                    private void simulateSocketTimeout(long timeout) throws SocketTimeoutException {
+                        if (timer.get() <= 0)
+                            return;
 
                         try {
-                            Thread.sleep(delay);
+                            Thread.sleep(timeout);
+
+                            throw new SocketTimeoutException("Simulated timeout " + timeout + "ms.");
                         }
                         catch (InterruptedException e) {
                             // No-op.
@@ -315,10 +307,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
                 startGrid(3);
 
                 startGrid(4);
-
-                awaitPartitionMapExchange();
-
-                Thread.sleep(1000);
 
                 synchronized (timer) {
                     timer.set(System.nanoTime());

@@ -1542,11 +1542,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             assert addr != null;
 
-            log.error("Sock.connect. Timeout: " + timeoutHelper.nextTimeoutChunk(sockTimeout));
-
             sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
-
-            log.error("writeToSocket(IGNITE_HEADER. Timeout: " + timeoutHelper.nextTimeoutChunk(sockTimeout));
 
             writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
@@ -2487,7 +2483,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 // Close socket - timeout occurred.
                 U.closeQuiet(sock);
 
-                             LT.warn(log, "Socket write has timed out (consider increasing " +
+                LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
                         "'IgniteConfiguration.failureDetectionTimeout' and 'connRecoveryTimeout' configuration " +
                             "properties) [failureDetectionTimeout=" + failureDetectionTimeout() :
