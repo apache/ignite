@@ -52,9 +52,7 @@ public class QueryExecutionTimer implements Supplier<Long> {
 
                 while (rs.next()) {
                     // Just read the full result set.
-
-                    if (cnt++ > 99_000)
-                        break; // result too big.
+                    cnt++;
                 }
 
             }

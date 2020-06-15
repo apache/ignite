@@ -38,6 +38,7 @@ public class Select extends Ast {
         from.print(out);
         out.append(" WHERE ");
         where.print(out);
+        out.append(" LIMIT  99000");
     }
 
     public static Select createParentRandom(Scope initScope) {

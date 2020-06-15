@@ -135,7 +135,7 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 2 * TEST_TIMEOUT + WARM_UP_TIMEOUT + super.getTestTimeout();
+        return 5 * TEST_TIMEOUT + WARM_UP_TIMEOUT + super.getTestTimeout();
     }
 
     /**
@@ -196,14 +196,14 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
      */
     public void startOldAndNewClusters(int seed) throws Exception {
         // Old cluster.
-        startGrid(2, IGNITE_VERSION, new NodeConfigurationClosure(), new PostStartupClosure(true, seed));
-        startGrid(3, IGNITE_VERSION, new NodeConfigurationClosure(), new PostStartupClosure(false, seed));
+        startGrid(2, IGNITE_VERSION, new NodeConfigurationClosure("0"), new PostStartupClosure(true, seed));
+        startGrid(3, IGNITE_VERSION, new NodeConfigurationClosure("1"), new PostStartupClosure(false, seed));
 
         // New cluster
         IgnitionEx.start(prepareNodeConfig(
-            getConfiguration(getTestIgniteInstanceName(0)), NEW_VER_FINDER, NEW_JDBC_PORT));
+            getConfiguration(getTestIgniteInstanceName(0)), NEW_VER_FINDER, NEW_JDBC_PORT, "0"));
         IgnitionEx.start(prepareNodeConfig(
-            getConfiguration(getTestIgniteInstanceName(1)), NEW_VER_FINDER, NEW_JDBC_PORT));
+            getConfiguration(getTestIgniteInstanceName(1)), NEW_VER_FINDER, NEW_JDBC_PORT, "1"));
     }
 
     /**
@@ -262,9 +262,10 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
      * Prepares ignite nodes configuration.
      */
     private static IgniteConfiguration prepareNodeConfig(IgniteConfiguration cfg, TcpDiscoveryIpFinder ipFinder,
-        int jdbcPort) {
+        int jdbcPort, String consistentId) {
         cfg.setLocalHost("127.0.0.1");
         cfg.setPeerClassLoadingEnabled(false);
+        cfg.setConsistentId(consistentId);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
         disco.setIpFinder(ipFinder);
@@ -279,9 +280,17 @@ public class SqlQueryRegressionsTest extends IgniteCompatibilityAbstractTest {
      * Configuration closure.
      */
     private static class NodeConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+        /** */
+        private final String consistentId;
+
+        /** */
+        public NodeConfigurationClosure(String consistentId) {
+            this.consistentId = consistentId;
+        }
+
         /** {@inheritDoc} */
         @Override public void apply(IgniteConfiguration cfg) {
-            prepareNodeConfig(cfg, OLD_VER_FINDER, OLD_JDBC_PORT);
+            prepareNodeConfig(cfg, OLD_VER_FINDER, OLD_JDBC_PORT, consistentId);
         }
     }
 

@@ -36,10 +36,19 @@ public class Comparison extends BooleanExpression{
     protected Comparison(Ast parent) {
         super(parent);
 
-        Class<?> opsType = r100(parent, 80) ? Integer.class : Boolean.class;
+        Class<?> opsType;
 
-        left = Expression.createRandom(parent, opsType);
-        right = Expression.createRandom(parent, opsType);
+        if (level < 2) {
+            opsType = Boolean.class;
+        }
+        else if (level < 4) {
+            opsType = r100(parent, 50) ? Boolean.class : Integer.class;
+        }
+        else
+            opsType = Integer.class;
+
+        left = Expression.createRandom(this, opsType);
+        right = Expression.createRandom(this, opsType);
         op = parent.scope().pickRandomOp(opsType, opsType, Boolean.class);
     }
 
