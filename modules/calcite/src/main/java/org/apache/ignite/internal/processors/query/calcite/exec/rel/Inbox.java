@@ -143,9 +143,12 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        checkThread();
-        context().markCancelled();
+        if (isCanceled())
+            return;
+
         close();
+
+        super.cancel();
     }
 
     /** {@inheritDoc} */
@@ -171,6 +174,8 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
      * @param last Last batch flag.
      * @param rows Rows.
      */
+
+    int qsize;
     public void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
         checkThread();
 
@@ -179,6 +184,14 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         boolean waitingBefore = buf.check() == State.WAITING;
 
         buf.offer(batchId, last, rows);
+
+        qsize += rows.size();
+
+        System.out.println("+++ inbox recv " + qsize);
+
+        perNodeBuffers.forEach((id, buff) -> {
+            System.out.println("+++ inbox: " + id + " " + buff.batches.size());
+        });
 
         if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
             pushInternal();
@@ -230,7 +243,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         }
 
         while (requested > 0 && !heap.isEmpty()) {
-            if (context().cancelled())
+            if (isCanceled())
                 return;
 
             Buffer buf = heap.poll().right;
@@ -268,7 +281,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         int idx = 0, noProgress = 0;
 
         while (requested > 0 && !buffers.isEmpty()) {
-            if (context().cancelled())
+            if (isCanceled())
                 return;
 
             Buffer buf = buffers.get(idx);
@@ -281,6 +294,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
                 case READY:
                     noProgress = 0;
                     requested--;
+
                     downstream.push(buf.remove());
 
                     break;
@@ -305,6 +319,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
 
     /** */
     private void acknowledge(UUID nodeId, int batchId) throws IgniteCheckedException {
+        System.out.println("+++ inbox ACK " + nodeId + " " + batchId);
         exchange.acknowledge(nodeId, queryId(), srcFragmentId, exchangeId, batchId);
     }
 

@@ -60,9 +60,6 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     private final Map<UUID, Buffer> nodeBuffers = new HashMap<>();
 
     /** */
-    private boolean cancelled;
-
-    /** */
     private int waiting;
 
     /**
@@ -162,18 +159,12 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        checkThread();
-
-        context().markCancelled();
-
-        if (cancelled)
+        if (isCanceled())
             return;
 
-        cancelled = true;
+        close();
 
         nodeBuffers.values().forEach(Buffer::cancel);
-
-        close();
 
         super.cancel();
     }

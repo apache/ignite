@@ -132,6 +132,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     @Override public void push(Row row) {
         checkThread();
 
+
         assert downstream != null;
 
         waiting--;
@@ -139,7 +140,12 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         if (!ended && rowNum >= offset) {
             requested--;
 
+            System.out.println("+++ push down");
             downstream.push(row);
+        }
+        else {
+            System.out.println("+++ push skip");
+
         }
 
         rowNum++;
@@ -147,7 +153,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         if (requested > 0 && limit > 0 && rowNum >= limit + offset)
             end();
 
-        if (requested > 0 && waiting == 0)
+        if (!ended && requested > 0 && waiting == 0)
             request0(IN_BUFFER_SIZE);
     }
 
@@ -158,6 +164,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         if (ended)
             return;
 
+        System.out.println("+++ end");
         ended = true;
 
         assert downstream != null;

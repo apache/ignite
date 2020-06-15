@@ -91,13 +91,14 @@ public class RootNode<Row> extends AbstractNode<Row>
 
         lock.lock();
         try {
-            if (state != State.RUNNING)
+            if (state != State.RUNNING || isCanceled())
                 return;
 
-            context().markCancelled();
             state = State.CANCELLED;
             buff.clear();
             cond.signalAll();
+
+            super.cancel();
         }
         finally {
             lock.unlock();

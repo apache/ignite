@@ -56,6 +56,9 @@ import static org.apache.calcite.util.Static.RESOURCE;
 
 /** Validator. */
 public class IgniteSqlValidator extends SqlValidatorImpl {
+    /** Decimal of Integer.MAX_VALUE. */
+    private static final BigDecimal DEC_INT_MAX = BigDecimal.valueOf(Integer.MAX_VALUE);
+
     /**
      * Creates a validator.
      *
@@ -159,21 +162,21 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
-        SqlNode fetch = select.getFetch();
-        SqlNode offset = select.getOffset();
-
-        if (fetch instanceof SqlLiteral) {
-            if (((SqlLiteral)fetch).bigDecimalValue().compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) > 0)
-                throw newValidationError(fetch, IgniteResource.INSTANCE.tooBig("fetch"));
-
-        }
-
-        if (offset instanceof SqlLiteral) {
-            if (((SqlLiteral)fetch).bigDecimalValue().compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) > 0)
-                throw newValidationError(offset, IgniteResource.INSTANCE.tooBig("offset"));
-        }
+        checkIntegerLimit(select.getFetch(), "fetch / limit");
+        checkIntegerLimit(select.getOffset(), "offset");
 
         super.validateSelect(select, targetRowType);
+    }
+
+    /**
+     * @param n Node to check limit.
+     * @param nodeName Node name.
+     */
+    private void checkIntegerLimit(SqlNode n, String nodeName) {
+        if (n instanceof SqlLiteral) {
+            if (((SqlLiteral)n).bigDecimalValue().compareTo(DEC_INT_MAX) > 0)
+                throw newValidationError(n, IgniteResource.INSTANCE.greaterThanIntegerLimit(nodeName));
+        }
     }
 
     /** */

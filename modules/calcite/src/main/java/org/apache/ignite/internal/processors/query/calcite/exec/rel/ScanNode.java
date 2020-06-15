@@ -63,9 +63,12 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        checkThread();
-        context().markCancelled();
+        if (isCanceled())
+            return;
+
         close();
+
+        super.cancel();
     }
 
     /** {@inheritDoc} */
@@ -95,13 +98,14 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             Thread thread = Thread.currentThread();
 
             while (requested > 0 && it.hasNext()) {
-                if (context().cancelled())
+                if (isCanceled())
                     return;
 
                 if (thread.isInterrupted())
                     throw new IgniteInterruptedCheckedException("Thread was interrupted.");
 
                 requested--;
+                System.out.println("+++ scan push");
                 downstream.push(it.next());
 
                 if (++processed == IN_BUFFER_SIZE && requested > 0) {
