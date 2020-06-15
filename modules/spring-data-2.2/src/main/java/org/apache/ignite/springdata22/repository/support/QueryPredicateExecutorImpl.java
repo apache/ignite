@@ -164,7 +164,7 @@ public class QueryPredicateExecutorImpl<T> implements QuerydslPredicateExecutor<
 
         IgniteQuery qry = IgniteQueryGenerator.prepareQuery(type, ser.toString(), arrParams);
 
-        try(QueryCursor qryCursor = cache.query(QueryUtils.prepareQuery(qry, arrParams))) {
+        try (QueryCursor qryCursor = cache.query(QueryUtils.prepareQuery(qry, arrParams))) {
             return (List<T>) transformQueryCursor(qryCursor, arrParams, false, ReturnStrategy.LIST_OF_VALUES);
         }
     }
