@@ -159,6 +159,30 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheQueriesCodeConfigurationTest.cs" Link="Cache\Query\CacheQueriesCodeConfigurationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheQueriesTest.cs" Link="Cache\Query\CacheQueriesTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheQueriesTestSimpleName.cs" Link="Cache\Query\CacheQueriesTestSimpleName.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Continuous\ContinuousQueryAbstractTest.cs">
+      <Link>Cache\Query\Continuous\ContinuousQueryAbstractTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Continuous\ContinuousQueryAtomicBackupTest.cs">
+      <Link>Cache\Query\Continuous\ContinuousQueryAtomicBackupTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Continuous\ContinuousQueryAtomicNoBackupTest.cs">
+      <Link>Cache\Query\Continuous\ContinuousQueryAtomicNoBackupTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Continuous\ContinuousQueryJavaFilterTest.cs">
+      <Link>Cache\Query\Continuous\ContinuousQueryJavaFilterTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Continuous\ContinuousQueryNoBackupAbstractTest.cs">
+      <Link>Cache\Query\Continuous\ContinuousQueryNoBackupAbstractTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Continuous\ContinuousQueryTest.cs">
+      <Link>Cache\Query\Continuous\ContinuousQueryTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Continuous\ContinuousQueryTransactionalBackupTest.cs">
+      <Link>Cache\Query\Continuous\ContinuousQueryTransactionalBackupTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Continuous\ContinuousQueryTransactionalNoBackupTest.cs">
+      <Link>Cache\Query\Continuous\ContinuousQueryTransactionalNoBackupTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Aggregates.cs" Link="Cache\Query\Linq\CacheLinqTest.Aggregates.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Base.cs" Link="Cache\Query\Linq\CacheLinqTest.Base.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" Link="Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" />
