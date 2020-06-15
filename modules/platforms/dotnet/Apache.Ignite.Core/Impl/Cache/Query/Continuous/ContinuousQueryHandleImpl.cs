@@ -111,6 +111,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 
                     if (qry.BinaryFilter != null)
                     {
+                        writer.WriteBoolean(true);
+                        writer.WriteObject(qry.BinaryFilter);
                     }
                     else
                     {
