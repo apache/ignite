@@ -30,7 +30,9 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBin
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationStoreEnabledTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFilterDeploymentFailedTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryBufferCleanupTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryMarshallerTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryWithTransformerBufferCleanupTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryLocalAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryMultiNodesFilteringTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryPartitionAtomicOneNodeTest;
@@ -68,7 +70,9 @@ import org.junit.runners.Suite;
     StaticCacheDdlTest.class,
     StaticCacheDdlKeepStaticConfigurationTest.class,
     MemLeakOnSqlWithClientReconnectTest.class,
-    CacheContinuousQueryFilterDeploymentFailedTest.class
+    CacheContinuousQueryFilterDeploymentFailedTest.class,
+    ContinuousQueryBufferCleanupTest.class,
+    ContinuousQueryWithTransformerBufferCleanupTest.class
 })
 public class IgniteCacheQuerySelfTestSuite6 {
 }
