@@ -56,6 +56,7 @@
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Cache\Configuration\PlatformCacheConfiguration.cs" />
     <Compile Include="Cache\IQueryMetrics.cs" />
+    <Compile Include="Cache\Query\Continuous\IContinuousQueryHandleFields.cs" />
     <Compile Include="Cache\Query\IQueryCursorField.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
     <Compile Include="Client\Compute\IComputeClient.cs" />
@@ -96,6 +97,7 @@
     <Compile Include="Impl\Cache\Platform\PlatformCacheEntry.cs" />
     <Compile Include="Impl\Cache\Platform\PlatformCacheManager.cs" />
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
+    <Compile Include="Impl\Cache\Query\IQueryBaseInternal.cs" />
     <Compile Include="Impl\Cache\Query\PlatformCacheQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\QueryCursorField.cs" />
     <Compile Include="Impl\Client\ClientBitmaskFeature.cs" />
