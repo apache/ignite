@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Query.Continuous
 {
     using System;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Event;
 
     /// <summary>
@@ -52,16 +53,16 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
     /// <summary>
     /// API for configuring continuous cache queries.
     /// <para />
-    /// Continuous queries allow to register a remote and a listener for cache update events. 
-    /// If an update event passes the filter, it will be sent to the node that executed the 
+    /// Continuous queries allow to register a remote and a listener for cache update events.
+    /// If an update event passes the filter, it will be sent to the node that executed the
     /// query and listener will be notified on that node.
     /// <para />
     /// Continuous query can either be executed on the whole topology or only on local node.
     /// <para />
-    /// In case query is distributed and a new node joins, it will get the filter for the query 
+    /// In case query is distributed and a new node joins, it will get the filter for the query
     /// during discovery process before it actually joins topology, so no updates will be missed.
     /// <para />
-    /// To execute the query use method 
+    /// To execute the query use method
     /// <see cref="ICache{K,V}.QueryContinuous(ContinuousQuery{K,V})"/>.
     /// </summary>
     public class ContinuousQuery<TK, TV> : ContinuousQuery
@@ -114,7 +115,7 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Cache entry event listener. Invoked on the node where continuous query execution 
+        /// Cache entry event listener. Invoked on the node where continuous query execution
         /// has been started.
         /// </summary>
         public ICacheEntryEventListener<TK, TV> Listener { get; set; }
@@ -128,9 +129,12 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// </summary>
         public ICacheEntryEventFilter<TK, TV> Filter { get; set; }
 
+        // TODO: POC
+        public IBinaryObject BinaryFilter { get; set; }
+
         /// <summary>
-        /// Buffer size. When a cache update happens, entry is first put into a buffer. 
-        /// Entries from buffer will be sent to the master node only if the buffer is 
+        /// Buffer size. When a cache update happens, entry is first put into a buffer.
+        /// Entries from buffer will be sent to the master node only if the buffer is
         /// full or time provided via <see cref="TimeInterval"/> is exceeded.
         /// <para />
         /// Defaults to <see cref="ContinuousQuery.DefaultBufferSize"/>
@@ -138,21 +142,21 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         public int BufferSize { get; set; }
 
         /// <summary>
-        /// Time interval. When a cache update happens, entry is first put into a buffer. 
-        /// Entries from buffer will be sent to the master node only if the buffer is full 
-        /// (its size can be provided via <see cref="BufferSize"/> property) or time provided 
+        /// Time interval. When a cache update happens, entry is first put into a buffer.
+        /// Entries from buffer will be sent to the master node only if the buffer is full
+        /// (its size can be provided via <see cref="BufferSize"/> property) or time provided
         /// via this method is exceeded.
         /// <para />
-        /// Defaults to <c>0</c> which means that time check is disabled and entries will be 
+        /// Defaults to <c>0</c> which means that time check is disabled and entries will be
         /// sent only when buffer is full.
         /// </summary>
         public TimeSpan TimeInterval { get; set; }
 
         /// <summary>
-        /// Automatic unsubscribe flag. This flag indicates that query filters on remote nodes 
-        /// should be automatically unregistered if master node (node that initiated the query) 
-        /// leaves topology. If this flag is <c>false</c>, filters will be unregistered only 
-        /// when the query is cancelled from master node, and won't ever be unregistered if 
+        /// Automatic unsubscribe flag. This flag indicates that query filters on remote nodes
+        /// should be automatically unregistered if master node (node that initiated the query)
+        /// leaves topology. If this flag is <c>false</c>, filters will be unregistered only
+        /// when the query is cancelled from master node, and won't ever be unregistered if
         /// master node leaves grid.
         /// <para />
         /// Defaults to <c>true</c>.
@@ -160,7 +164,7 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         public bool AutoUnsubscribe { get; set; }
 
         /// <summary>
-        /// Local flag. When set query will be executed only on local node, so only local 
+        /// Local flag. When set query will be executed only on local node, so only local
         /// entries will be returned as query result.
         /// <para />
         /// Defaults to <c>false</c>.

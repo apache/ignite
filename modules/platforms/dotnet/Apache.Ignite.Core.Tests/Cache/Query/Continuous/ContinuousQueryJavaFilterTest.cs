@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
         /** */
         private IIgnite _ignite;
-        
+
         /** */
         private string _javaNodeName;
 
@@ -150,6 +150,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             };
 
             TestFilter(javaObj);
+        }
+
+        /// <summary>
+        /// Tests filter created as a Binary Object
+        /// </summary>
+        [Test]
+        public void TestFilterAsBinaryObject()
+        {
+            // org.apache.ignite.platform.PlatformCacheEntryEventFilter
+            var cache = _ignite.GetOrCreateCache<int, int>(TestUtils.TestName);
+
+            var qry = new ContinuousQuery<int, int>(new QueryListener<int>(), false)
+            {
+                BinaryFilter = _ignite.GetBinary()
+                    .GetBuilder("org.apache.ignite.platform.PlatformCacheEntryEventFilter")
+                    .SetByteField("byteField", 1)
+                    .Build()
+            };
+
+            using (var handle = cache.QueryContinuous(qry))
+            {
+                cache[1] = 1;
+            }
         }
 
         /// <summary>
