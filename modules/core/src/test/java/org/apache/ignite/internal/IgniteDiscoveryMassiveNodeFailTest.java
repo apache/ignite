@@ -301,15 +301,23 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      */
     private class FailDiscoverySpi extends TcpDiscoverySpi {
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
+        /**
+         * Writes message to the socket.
+         *
+         * @param sock Socket.
+         * @param msg Message.
+         * @param data Raw data to write.
+         * @param timeout Socket write timeout.
+         * @throws IOException If IO failed or write timed out.
+         */
+        protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
             long timeout) throws IOException {
             assertNotFailedNode(sock);
 
             if (isDrop(msg))
                 return;
 
-            super.writeToSocket(sock, msg, data, timeout);
+            super.writeToSocket(sock, data, timeout);
         }
 
         /** {@inheritDoc} */

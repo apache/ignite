@@ -200,10 +200,10 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
      */
     private static class DropTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
-            long timeout) throws IOException {
+        @Override protected void writeToSocket(Socket sock, byte[] data,
+                                               long timeout) throws IOException {
             if (sock.getPort() != FAIL_PORT)
-                super.writeToSocket(sock, msg, data, timeout);
+                super.writeToSocket(sock, data, timeout);
         }
 
         /** {@inheritDoc} */

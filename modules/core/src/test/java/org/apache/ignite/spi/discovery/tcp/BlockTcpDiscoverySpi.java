@@ -74,8 +74,16 @@ public class BlockTcpDiscoverySpi extends TcpDiscoverySpi {
             clo.apply(addr, delegate);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void writeToSocket(
+    /**
+     * Writes message to the socket.
+     *
+     * @param sock Socket.
+     * @param msg Message.
+     * @param data Raw data to write.
+     * @param timeout Socket write timeout.
+     * @throws IOException If IO failed or write timed out.
+     */
+    protected void writeToSocket(
         Socket sock,
         TcpDiscoveryAbstractMessage msg,
         byte[] data,
@@ -84,7 +92,7 @@ public class BlockTcpDiscoverySpi extends TcpDiscoverySpi {
         if (spiCtx != null)
             apply(spiCtx.localNode(), msg);
 
-        super.writeToSocket(sock, msg, data, timeout);
+        super.writeToSocket(sock, data, timeout);
     }
 
     /** {@inheritDoc} */

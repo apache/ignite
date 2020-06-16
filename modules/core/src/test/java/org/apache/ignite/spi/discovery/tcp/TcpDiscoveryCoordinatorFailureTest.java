@@ -273,8 +273,16 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
                 throw new IgniteCheckedException("Failed to wait for NodeAddFinishedMessage");
         }
 
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(
+        /**
+         * Writes message to the socket.
+         *
+         * @param sock Socket.
+         * @param msg Message.
+         * @param data Raw data to write.
+         * @param timeout Socket write timeout.
+         * @throws IOException If IO failed or write timed out.
+         */
+        protected void writeToSocket(
             Socket sock,
             TcpDiscoveryAbstractMessage msg,
             byte[] data,
@@ -283,7 +291,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             if (isDrop(msg))
                 return;
 
-            super.writeToSocket(sock, msg, data, timeout);
+            super.writeToSocket(sock, data, timeout);
         }
 
         /** {@inheritDoc} */

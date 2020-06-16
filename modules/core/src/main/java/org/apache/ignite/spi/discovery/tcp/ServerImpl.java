@@ -7469,7 +7469,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             msgLog.debug("Sending message ack to client [sock=" + sock + ", locNodeId="
                                 + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
 
-                        spi.writeToSocket(sock, msg, msgBytes, spi.failureDetectionTimeoutEnabled() ?
+                        spi.writeToSocket(sock, msgBytes, spi.failureDetectionTimeoutEnabled() ?
                             spi.clientFailureDetectionTimeout() : spi.getSocketTimeout());
                     }
                 }
@@ -7480,7 +7480,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     assert topologyInitialized(msg) : msg;
 
-                    spi.writeToSocket(sock, msg, msgBytes, spi.getEffectiveSocketTimeout(false));
+                    spi.writeToSocket(sock, msgBytes, spi.getEffectiveSocketTimeout(false));
                 }
 
                 boolean clientFailed = msg instanceof TcpDiscoveryNodeFailedMessage &&
