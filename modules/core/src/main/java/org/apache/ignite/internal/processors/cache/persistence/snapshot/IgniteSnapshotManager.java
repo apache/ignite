@@ -112,6 +112,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.cluster.ClusterState.active;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
@@ -429,6 +431,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     return FileVisitResult.CONTINUE;
                 }
             });
+
+            File binMetadataDfltDir = new File(snpDir, DFLT_BINARY_METADATA_PATH);
+            File marshallerDfltDir = new File(snpDir, DFLT_MARSHALLER_PATH);
+
+            U.delete(binMetadataDfltDir);
+            U.delete(marshallerDfltDir);
 
             File db = new File(snpDir, DB_DEFAULT_FOLDER);
 
@@ -1092,7 +1100,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (mappings == null)
                 return;
 
-            saveMappings(cctx.kernalContext(), mappings, snpLocDir);
+            try {
+                saveMappings(cctx.kernalContext(), mappings, snpLocDir);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /** {@inheritDoc} */

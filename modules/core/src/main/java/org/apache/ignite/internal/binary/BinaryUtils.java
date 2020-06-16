@@ -1045,7 +1045,7 @@ public class BinaryUtils {
                                 + " has a different/incorrect type for field '" + newField.getKey()
                                 + "'. Expected '" + oldFieldTypeName + "' but '" + newFieldTypeName
                                 + "' was provided. Field type's modification is unsupported, clean {root_path}/marshaller " +
-                                "and {root_path}/binary_meta directories if the type change is required."
+                                "and {root_path}/db/binary_meta directories if the type change is required."
                         );
                     }
                 }

@@ -56,6 +56,7 @@ import org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStreamTest;
 import org.apache.ignite.internal.binary.streams.BinaryHeapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryAtomicCacheLocalEntriesSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataMoveLegacyFolderTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationCacheApiTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationCacheStoreTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationEntryProcessorTest;
@@ -160,7 +161,9 @@ import org.junit.runners.Suite;
     BinaryAbstractOutputStreamTest.class,
     BinaryOffheapStreamByteOrderSelfTest.class,
 
-    GridCacheBinaryObjectUserClassloaderSelfTest.class
+    GridCacheBinaryObjectUserClassloaderSelfTest.class,
+
+    BinaryMetadataMoveLegacyFolderTest.class
 })
 public class IgniteBinaryObjectsTestSuite {
 }

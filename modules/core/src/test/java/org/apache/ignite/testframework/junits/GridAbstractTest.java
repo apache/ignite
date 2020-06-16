@@ -158,7 +158,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
@@ -664,8 +663,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Will clean and re-create marshaller directory from scratch.
      */
     private void resolveWorkDirectory() throws Exception {
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), BINARY_META_FOLDER, true);
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, true);
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, true);
     }
 
     /** */

@@ -37,6 +37,7 @@ import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -189,7 +190,8 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param mappings Marshaller mappings to save.
      * @param dir Directory to save given mappings to.
      */
-    public static void saveMappings(GridKernalContext ctx, List<Map<Integer, MappedName>> mappings, File dir) {
+    public static void saveMappings(GridKernalContext ctx, List<Map<Integer, MappedName>> mappings, File dir)
+        throws IgniteCheckedException {
         MarshallerMappingFileStore writer = new MarshallerMappingFileStore(ctx,
             resolveMappingFileStoreWorkDir(dir.getAbsolutePath()));
 
@@ -594,7 +596,6 @@ public class MarshallerContextImpl implements MarshallerContext {
         fileStore = marshallerMappingFileStoreDir == null ?
             new MarshallerMappingFileStore(ctx, resolveMappingFileStoreWorkDir(workDir)) :
             new MarshallerMappingFileStore(ctx, marshallerMappingFileStoreDir);
-
         this.transport = transport;
         closProc = ctx.closure();
         clientNode = ctx.clientNode();
@@ -624,7 +625,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         if (F.isEmpty(igniteWorkDir))
             throw new IgniteException("Work directory has not been set: " + igniteWorkDir);
 
-        return new File(igniteWorkDir, "marshaller");
+        return new File(igniteWorkDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
     }
 
     /**
