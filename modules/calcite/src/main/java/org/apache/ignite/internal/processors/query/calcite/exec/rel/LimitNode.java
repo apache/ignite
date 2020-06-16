@@ -167,6 +167,8 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         System.out.println("+++ end");
         ended = true;
 
+        sources.get(0).cancel();
+
         assert downstream != null;
 
         downstream.end();

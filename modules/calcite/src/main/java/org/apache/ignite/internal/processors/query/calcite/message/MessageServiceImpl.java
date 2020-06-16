@@ -104,10 +104,8 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         this.classLoader = classLoader;
     }
 
-    /**
-     * @return Class loader.
-     */
-    public ClassLoader classLoader() {
+    /** {@inheritDoc} */
+    @Override public ClassLoader classLoader() {
         return classLoader;
     }
 
@@ -132,10 +130,9 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         this.marsh = marsh;
     }
 
-    /**
-     * @return Marshaller.
-     */
-    public Marshaller marshaller() {
+
+    /** {@inheritDoc} */
+    @Override public Marshaller marshaller() {
         return marsh;
     }
 

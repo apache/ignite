@@ -32,6 +32,7 @@ public enum MessageType {
     QUERY_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage::new),
     QUERY_INBOX_CANCEL_MESSAGE(305, InboxCancelMessage::new),
     GENERIC_ROW_MESSAGE(306, GenericRowMessage::new),
+    QUERY_ERROR_MESSAGE(307, ErrorMessage::new),
     NODES_MAPPING(350, NodesMapping::new),
     FRAGMENT_DESCRIPTION(351, FragmentDescription::new);
 

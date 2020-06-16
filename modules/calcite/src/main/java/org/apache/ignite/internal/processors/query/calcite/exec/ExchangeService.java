@@ -58,4 +58,20 @@ public interface ExchangeService extends Service {
      * @param batchId Batch ID.
      */
     void cancel(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
+
+    /**
+     * @param nodeId Target node ID.
+     * @param qryId Query ID.
+     * @param fragmentId Target fragment ID.
+     * @param exchangeId Exchange ID.
+     * @param err Exception to send.
+     * @throws IgniteCheckedException On error marshaling or send ErrorMessage.
+     */
+    void sendError(
+        UUID nodeId,
+        UUID qryId,
+        long fragmentId,
+        long exchangeId,
+        Throwable err
+    ) throws IgniteCheckedException;
 }

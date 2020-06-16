@@ -180,7 +180,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testDbg() throws Exception {
+    public void testReservation() throws Exception {
         fillCache(cachePart, 5000);
 
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);

@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
+import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -174,8 +175,6 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
      * @param last Last batch flag.
      * @param rows Rows.
      */
-
-    int qsize;
     public void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
         checkThread();
 
@@ -185,16 +184,19 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
 
         buf.offer(batchId, last, rows);
 
-        qsize += rows.size();
-
-        System.out.println("+++ inbox recv " + qsize);
-
-        perNodeBuffers.forEach((id, buff) -> {
-            System.out.println("+++ inbox: " + id + " " + buff.batches.size());
-        });
-
         if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
             pushInternal();
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param queryId Query ID.
+     * @param fragmentId Fragment ID.
+     * @param exchangeId Exchange ID.
+     * @param err Remote error.
+     */
+    public void onError(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, Throwable err) {
+        downstream.onError(new RemoteException(nodeId, queryId, fragmentId, exchangeId, err));
     }
 
     /** */
@@ -294,7 +296,6 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
                 case READY:
                     noProgress = 0;
                     requested--;
-
                     downstream.push(buf.remove());
 
                     break;
@@ -319,7 +320,6 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
 
     /** */
     private void acknowledge(UUID nodeId, int batchId) throws IgniteCheckedException {
-        System.out.println("+++ inbox ACK " + nodeId + " " + batchId);
         exchange.acknowledge(nodeId, queryId(), srcFragmentId, exchangeId, batchId);
     }
 

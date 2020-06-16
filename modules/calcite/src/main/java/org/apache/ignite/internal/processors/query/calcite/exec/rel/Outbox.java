@@ -154,7 +154,15 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         U.error(context().planningContext().logger(),
             "Error occurred during execution: " + X.getFullStackTrace(e));
 
-        cancel(); // TODO send cause to originator.
+        dest.targets().forEach(nodeId -> {
+            try {
+                sendError(nodeId, e);
+            }
+            catch (IgniteCheckedException ex) {
+                U.error(context().planningContext().logger(),
+                    "Error occurred during send error message: " + X.getFullStackTrace(e));
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -195,6 +203,11 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     /** */
     private void sendBatch(UUID nodeId, int batchId, boolean last, List<Row> rows) throws IgniteCheckedException {
         exchange.sendBatch(nodeId, queryId(), targetFragmentId, exchangeId, batchId, last, rows);
+    }
+
+    /** */
+    private void sendError(UUID nodeId, Throwable err) throws IgniteCheckedException {
+        exchange.sendError(nodeId, queryId(), targetFragmentId, exchangeId, err);
     }
 
     /** */

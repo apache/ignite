@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCancelMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescr
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -115,6 +117,18 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** {@inheritDoc} */
+    @Override public void sendError(
+        UUID nodeId,
+        UUID qryId,
+        long fragmentId,
+        long exchangeId,
+        Throwable err
+    ) throws IgniteCheckedException {
+        messageService().send(nodeId,
+            new ErrorMessage(qryId, fragmentId, exchangeId, messageService().marshaller().marshal(err)));
+    }
+
+    /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
         CalciteQueryProcessor proc =
             Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
@@ -131,6 +145,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         messageService().register((n, m) -> onMessage(n, (InboxCancelMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage) m), MessageType.QUERY_ACKNOWLEDGE_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchMessage) m), MessageType.QUERY_BATCH_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (ErrorMessage) m), MessageType.QUERY_ERROR_MESSAGE);
     }
 
     /** */
@@ -146,6 +161,32 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
                 "fragmentId=" + msg.fragmentId() + ", " +
                 "exchangeId=" + msg.exchangeId() + ", " +
                 "batchId=" + msg.batchId() + "]");
+        }
+    }
+
+    /** */
+    protected void onMessage(UUID nodeId, ErrorMessage msg) {
+        Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
+
+        if (inbox != null) {
+            try {
+                inbox.onError(
+                    nodeId,
+                    msg.queryId(),
+                    msg.fragmentId(),
+                    msg.exchangeId(),
+                    messageService().marshaller().unmarshal(msg.errorBytes(), messageService().classLoader()));
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Error on exception unmarshalling", e);
+            }
+        }
+        else if (log.isDebugEnabled()) {
+            log.debug("Stale error message received: [" +
+                "nodeId=" + nodeId + ", " +
+                "queryId=" + msg.queryId() + ", " +
+                "fragmentId=" + msg.fragmentId() + ", " +
+                "exchangeId=" + msg.exchangeId() + "]");
         }
     }
 
