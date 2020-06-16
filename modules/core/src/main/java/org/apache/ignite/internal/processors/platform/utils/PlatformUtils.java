@@ -889,7 +889,7 @@ public class PlatformUtils {
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        ctx.configure(marsh, new IgniteConfiguration());
+        ctx.configure(marsh);
 
         return new GridBinaryMarshaller(ctx);
     }

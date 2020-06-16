@@ -26,7 +26,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum SnapshotSubcommand {
     /** Sub-command to create a cluster snapshot. */
-    CREATE("create");
+    CREATE("create"),
+
+    /** Sub-command to cancel running snapshot. */
+    CANCEL("cancel");
 
     /** Sub-command name. */
     private final String name;

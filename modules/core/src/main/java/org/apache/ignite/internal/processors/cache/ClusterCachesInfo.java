@@ -55,13 +55,13 @@ import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -84,6 +84,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 
 /**
@@ -960,24 +961,45 @@ public class ClusterCachesInfo {
         DynamicCacheChangeRequest req,
         String cacheName
     ) {
-        String conflictErr = checkCacheConflict(req.startCacheConfiguration());
+        CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
 
-        if (conflictErr != null) {
-            U.warn(log, "Ignore cache start request. " + conflictErr);
+        IgniteCheckedException err = null;
 
-            IgniteCheckedException err = new IgniteCheckedException("Failed to start " +
-                "cache. " + conflictErr);
-
-            if (persistedCfgs)
-                res.errs.add(err);
-            else
-                ctx.cache().completeCacheStartFuture(req, false, err);
-
-            return false;
+        if (ctx.cache().context().readOnlyMode()) {
+            err = new IgniteClusterReadOnlyException(
+                String.format(CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT, "start cache", ccfg.getGroupName(), cacheName)
+            );
         }
 
-        SchemaOperationException err = QueryUtils.checkQueryEntityConflicts(
-            req.startCacheConfiguration(), registeredCaches.values());
+        if (err == null) {
+            String conflictErr = checkCacheConflict(req.startCacheConfiguration());
+
+            if (conflictErr != null) {
+                U.warn(log, "Ignore cache start request. " + conflictErr);
+
+                err = new IgniteCheckedException("Failed to start cache. " + conflictErr);
+            }
+        }
+
+        if (err == null)
+            err = QueryUtils.checkQueryEntityConflicts(req.startCacheConfiguration(), registeredCaches.values());
+
+        if (err == null) {
+            GridEncryptionManager encMgr = ctx.encryption();
+
+            if (ccfg.isEncryptionEnabled()) {
+                if (encMgr.isMasterKeyChangeInProgress())
+                    err = new IgniteCheckedException("Cache start failed. Master key change is in progress.");
+                else if (encMgr.masterKeyDigest() != null &&
+                    !Arrays.equals(encMgr.masterKeyDigest(), req.masterKeyDigest())) {
+                    err = new IgniteCheckedException("Cache start failed. The request was initiated before " +
+                        "the master key change and can't be processed.");
+                }
+
+                if (err != null)
+                    U.warn(log, "Ignore cache start request during the master key change process.", err);
+            }
+        }
 
         if (err != null) {
             if (persistedCfgs)
@@ -986,33 +1008,6 @@ public class ClusterCachesInfo {
                 ctx.cache().completeCacheStartFuture(req, false, err);
 
             return false;
-        }
-
-        CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
-
-        GridEncryptionManager encMgr = ctx.encryption();
-
-        if (ccfg.isEncryptionEnabled()) {
-            IgniteCheckedException error = null;
-
-            if (encMgr.isMasterKeyChangeInProgress())
-                error = new IgniteCheckedException("Cache start failed. Master key change is in progress.");
-            else if (encMgr.masterKeyDigest() != null &&
-                !Arrays.equals(encMgr.masterKeyDigest(), req.masterKeyDigest())) {
-                error = new IgniteCheckedException("Cache start failed. The request was initiated before " +
-                    "the master key change and can't be processed.");
-            }
-
-            if (error != null) {
-                U.warn(log, "Ignore cache start request during the master key change process.", error);
-
-                if (persistedCfgs)
-                    res.errs.add(error);
-                else
-                    ctx.cache().completeCacheStartFuture(req, false, error);
-
-                return false;
-            }
         }
 
         assert req.cacheType() != null : req;
