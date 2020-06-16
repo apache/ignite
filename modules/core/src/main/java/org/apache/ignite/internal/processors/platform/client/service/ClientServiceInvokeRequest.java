@@ -18,18 +18,18 @@
 package org.apache.ignite.internal.processors.platform.client.service;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
 
@@ -67,7 +66,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
     private final long timeout;
 
     /** Nodes. */
-    private final Set<UUID> nodeIds;
+    private final Collection<UUID> nodeIds;
 
     /** Method name. */
     private final String methodName;
@@ -97,7 +96,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
         int cnt = reader.readInt();
 
-        nodeIds = U.newHashSet(cnt);
+        nodeIds = new ArrayList<>(cnt);
 
         for (int i = 0; i < cnt; i++)
             nodeIds.add(new UUID(reader.readLong(), reader.readLong()));
@@ -228,11 +227,11 @@ public class ClientServiceInvokeRequest extends ClientRequest {
             if (method != null)
                 return method;
 
-            BinaryContext bctx = ((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects()).binaryContext();
+            IgniteBinary binary = ctx.kernalContext().grid().binary();
 
             for (Method method0 : cls.getMethods()) {
                 if (methodName.equals(method0.getName())) {
-                    MethodDescriptor desc0 = MethodDescriptor.forMethod(bctx, method0);
+                    MethodDescriptor desc0 = MethodDescriptor.forMethod(binary, method0);
 
                     methodsCache.putIfAbsent(desc0, method0);
 
@@ -283,16 +282,16 @@ public class ClientServiceInvokeRequest extends ClientRequest {
         }
 
         /**
-         * @param ctx Binary context.
+         * @param binary Ignite binary.
          * @param method Method.
          */
-        private static MethodDescriptor forMethod(BinaryContext ctx, Method method) {
+        private static MethodDescriptor forMethod(IgniteBinary binary, Method method) {
             Class<?>[] paramTypes = method.getParameterTypes();
 
             int[] paramTypeIds = new int[paramTypes.length];
 
             for (int i = 0; i < paramTypes.length; i++)
-                paramTypeIds[i] = ctx.typeId(paramTypes[i].getName());
+                paramTypeIds[i] = binary.typeId(paramTypes[i].getName());
 
             return new MethodDescriptor(method.getDeclaringClass(), method.getName(), paramTypeIds);
         }
