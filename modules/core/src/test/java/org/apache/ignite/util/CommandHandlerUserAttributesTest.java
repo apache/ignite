@@ -63,9 +63,7 @@ public class CommandHandlerUserAttributesTest {
         assertNotNull(fromPEM(strPem));
     }
 
-    /**
-     *
-     */
+    /** */
     private static X509Certificate fromPEM(String strPem) throws CertificateException {
         byte[] decode = Base64.getDecoder().decode(strPem.getBytes());
 
