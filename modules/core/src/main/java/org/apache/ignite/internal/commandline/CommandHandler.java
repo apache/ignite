@@ -22,7 +22,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -61,7 +60,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.logger.java.JavaLoggerFormatter;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
@@ -71,12 +69,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.lineSeparator;
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
@@ -125,8 +126,8 @@ public class CommandHandler {
     /** */
     public static final String NULL = "null";
 
-    /** */
-    public static final String ATTR_SECURITY_USER_CERTIFICATES = "com.sbt.sbergrid.users.security.cert";
+    /** Node SSL PEM certificate attribute name. */
+    public static final String ATTR_SECURITY_USER_CERTIFICATE_PEM = "com.sbt.sbergrid.users.security.cert.pem";
 
     /** JULs logger. */
     private final Logger logger;
@@ -237,12 +238,17 @@ public class CommandHandler {
 
         String commandName = "";
 
+        Throwable err = null;
+        boolean verbose = false;
+
         try {
             if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
                 printHelp();
 
                 return EXIT_CODE_OK;
             }
+
+            verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
             ConnectionAndSslParameters args = new CommonArgParser(logger).parseAndValidate(rawArgs.iterator());
 
@@ -300,7 +306,7 @@ public class CommandHandler {
 
                     String pwd = new String(requestPasswordFromConsole("password: "));
 
-                    clientCfg = getClientConfiguration(user, pwd,  args);
+                    clientCfg = getClientConfiguration(user, pwd, args);
 
                     credentialsRequested = true;
                 }
@@ -311,17 +317,21 @@ public class CommandHandler {
             return EXIT_CODE_OK;
         }
         catch (IllegalArgumentException e) {
-            logger.severe("Check arguments. " + CommandLogger.errorMessage(e));
-
+            logger.severe("Check arguments. " + errorMessage(e));
             logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+
+            if (verbose)
+                err = e;
 
             return EXIT_CODE_INVALID_ARGUMENTS;
         }
         catch (Throwable e) {
             if (isAuthError(e)) {
-                logger.severe("Authentication error. " + CommandLogger.errorMessage(e));
-
+                logger.severe("Authentication error. " + errorMessage(e));
                 logger.info("Command [" + commandName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
+
+                if (verbose)
+                    err = e;
 
                 return ERR_AUTHENTICATION_FAILED;
             }
@@ -336,11 +346,14 @@ public class CommandHandler {
                     if (isSSLMisconfigurationError(cause))
                         e = cause;
 
-                    logger.severe("Connection to cluster failed. " + CommandLogger.errorMessage(e));
+                    logger.severe("Connection to cluster failed. " + errorMessage(e));
 
                 }
 
                 logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
+
+                if (verbose)
+                    err = e;
 
                 return EXIT_CODE_CONNECTION_FAILED;
             }
@@ -348,14 +361,19 @@ public class CommandHandler {
             if (X.hasCause(e, IllegalArgumentException.class)) {
                 IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
-                logger.severe("Check arguments. " + CommandLogger.errorMessage(iae));
+                logger.severe("Check arguments. " + errorMessage(iae));
                 logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+
+                if (verbose)
+                    err = e;
 
                 return EXIT_CODE_INVALID_ARGUMENTS;
             }
 
-            logger.severe(CommandLogger.errorMessage(e));
+            logger.severe(errorMessage(e));
             logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
+
+            err = e;
 
             return EXIT_CODE_UNEXPECTED_ERROR;
         }
@@ -363,6 +381,9 @@ public class CommandHandler {
             LocalDateTime endTime = LocalDateTime.now();
 
             Duration diff = Duration.between(startTime, endTime);
+
+            if (nonNull(err))
+                logger.info("Error stack trace:" + System.lineSeparator() + X.getFullStackTrace(err));
 
             logger.info("Control utility has completed execution at: " + endTime);
             logger.info("Execution time: " + diff.toMillis() + " ms");
@@ -485,19 +506,19 @@ public class CommandHandler {
 
             Map<String, String> userAttr = new HashMap<>();
 
-            X509Certificate[] selfCerts;
+            String selfCertPem;
 
             try {
-                selfCerts = extractCertificates(loadKeyStore(sslCtxFactory.getKeyStoreFilePath(),
+                X509Certificate selfCert = extractCertificate(loadKeyStore(sslCtxFactory.getKeyStoreFilePath(),
                     sslCtxFactory.getKeyStorePassword()));
+
+                selfCertPem = Base64.getEncoder().encodeToString(selfCert.getEncoded());
             }
             catch (Exception e) {
                 throw new SecurityException("Failed to get user private key chain.", e);
             }
 
-            byte[] selfCertsBase64 = Base64.getEncoder().encode(U.marshal(new JdkMarshaller(), selfCerts));
-
-            userAttr.put(ATTR_SECURITY_USER_CERTIFICATES, new String(selfCertsBase64, StandardCharsets.ISO_8859_1));
+            userAttr.put(ATTR_SECURITY_USER_CERTIFICATE_PEM, selfCertPem);
 
             clientCfg.setUserAttributes(userAttr);
         }
@@ -713,7 +734,7 @@ public class CommandHandler {
      * @throws SecurityException If any exceptions while key store file reading occur or if the stored
      *     certificate number different from one.
      */
-    public static X509Certificate[] extractCertificates(KeyStore keyStore) {
+    public static X509Certificate extractCertificate(KeyStore keyStore) {
         try {
             Enumeration<String> aliases = keyStore.aliases();
 
@@ -738,12 +759,12 @@ public class CommandHandler {
             if (F.isEmpty(certChain))
                 throw new SecurityException("Certificate chain is missing [alias: " + selfAlias + ']');
 
-            if (!Arrays.stream(certChain).allMatch(cert -> cert instanceof X509Certificate)) {
-                throw new SecurityException("Certificate chain contains certificates with unexceptale types" +
+            if (!(certChain[0] instanceof X509Certificate)) {
+                throw new SecurityException("Unexpected certificate type" +
                     " [alias: " + selfAlias + "]. Expected type: java.security.cert.X509Certificate.");
             }
 
-            return Arrays.copyOf(certChain, certChain.length, X509Certificate[].class);
+            return (X509Certificate)certChain[0];
         }
         catch (KeyStoreException e) {
             throw new SecurityException("Key store is not initialized.", e);
@@ -765,6 +786,7 @@ public class CommandHandler {
 
         Arrays.stream(CommandList.values()).forEach(c -> c.command().printUsage(logger));
 
+        logger.info("");
         logger.info("By default commands affecting the cluster require interactive confirmation.");
         logger.info("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
         logger.info("");

@@ -108,6 +108,7 @@
         <maven.checkstyle.plugin.version>3.0.0</maven.checkstyle.plugin.version>
         <checkstyle.puppycrawl.version>8.21</checkstyle.puppycrawl.version>
         <mockito.version>1.10.19</mockito.version>
+        <powermock.version>2.0.7</powermock.version>
         <mysql.connector.version>8.0.13</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
