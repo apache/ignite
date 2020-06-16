@@ -99,7 +99,9 @@ public class TcpIgniteClient implements IgniteClient {
         Function<ClientChannelConfiguration, ClientChannel> chFactory,
         ClientConfiguration cfg
     ) throws ClientException {
-        marsh = new ClientBinaryMarshaller(new ClientBinaryMetadataHandler(), new ClientMarshallerContext());
+        final ClientBinaryMetadataHandler metadataHandler = new ClientBinaryMetadataHandler();
+
+        marsh = new ClientBinaryMarshaller(metadataHandler, new ClientMarshallerContext());
 
         marsh.setBinaryConfiguration(cfg.getBinaryConfiguration());
 
@@ -108,6 +110,8 @@ public class TcpIgniteClient implements IgniteClient {
         binary = new ClientBinary(marsh);
 
         ch = new ReliableChannel(chFactory, cfg, binary);
+
+        ch.addChannelFailListener(() -> metadataHandler.onReconnect());
 
         transactions = new TcpClientTransactions(ch, marsh,
             new ClientTransactionConfiguration(cfg.getTransactionConfiguration()));
@@ -276,10 +280,11 @@ public class TcpIgniteClient implements IgniteClient {
      */
     private class ClientBinaryMetadataHandler implements BinaryMetadataHandler {
         /** In-memory metadata cache. */
-        private final BinaryMetadataHandler cache = BinaryCachingMetadataHandler.create();
+        private volatile BinaryMetadataHandler cache = BinaryCachingMetadataHandler.create();
 
         /** {@inheritDoc} */
-        @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException {
+        @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered)
+            throws BinaryObjectException {
             if (cache.metadata(typeId) == null) {
                 try {
                     ch.request(
@@ -355,6 +360,13 @@ public class TcpIgniteClient implements IgniteClient {
         /** {@inheritDoc} */
         @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
             return cache.metadata();
+        }
+
+        /**
+         * Clear local cache on reconnect.
+         */
+        void onReconnect() {
+            cache = BinaryCachingMetadataHandler.create();
         }
     }
 

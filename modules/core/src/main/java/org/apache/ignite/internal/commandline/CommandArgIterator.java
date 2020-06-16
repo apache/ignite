@@ -100,16 +100,49 @@ public class CommandArgIterator {
     /**
      * @return Numeric value.
      */
+    public long nextPositiveLongArg(String argName) {
+        long val = nextLongArg(argName);
+
+        if (val < 0)
+            throw new IllegalArgumentException("Invalid value for " + argName + ": " + val);
+
+        return val;
+    }
+
+    /**
+     * @return Numeric value.
+     */
+    public int nextPositiveIntArg(String argName) {
+        int val = nextIntArg(argName);
+
+        if (val < 0)
+            throw new IllegalArgumentException("Invalid value for " + argName + ": " + val);
+
+        return val;
+    }
+
+    /**
+     * @return Numeric value.
+     */
     public long nextLongArg(String argName) {
         String str = nextArg("Expecting " + argName);
 
         try {
-            long val = Long.parseLong(str);
+            return str.startsWith("0x") ? Long.parseLong(str.substring(2), 16) : Long.parseLong(str);
+        }
+        catch (NumberFormatException ignored) {
+            throw new IllegalArgumentException("Invalid value for " + argName + ": " + str);
+        }
+    }
 
-            if (val < 0)
-                throw new IllegalArgumentException("Invalid value for " + argName + ": " + val);
+    /**
+     * @return Numeric value.
+     */
+    public int nextIntArg(String argName) {
+        String str = nextArg("Expecting " + argName);
 
-            return val;
+        try {
+            return str.startsWith("0x") ? Integer.parseInt(str.substring(2), 16) : Integer.parseInt(str);
         }
         catch (NumberFormatException ignored) {
             throw new IllegalArgumentException("Invalid value for " + argName + ": " + str);

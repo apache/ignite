@@ -247,7 +247,7 @@ public class BaselineCommand implements Command<BaselineArguments> {
                 break;
 
             case VERSION:
-                baselineArgs.withTopVer(argIter.nextLongArg("topology version"));
+                baselineArgs.withTopVer(argIter.nextPositiveLongArg("topology version"));
 
                 break;
 
@@ -264,7 +264,7 @@ public class BaselineCommand implements Command<BaselineArguments> {
                         baselineArgs.withEnable(autoAdjustArg == AutoAdjustCommandArg.ENABLE);
 
                     if (autoAdjustArg == AutoAdjustCommandArg.TIMEOUT)
-                        baselineArgs.withSoftBaselineTimeout(argIter.nextLongArg("soft timeout"));
+                        baselineArgs.withSoftBaselineTimeout(argIter.nextPositiveLongArg("soft timeout"));
                 }
                 while (argIter.hasNextSubArg());
 

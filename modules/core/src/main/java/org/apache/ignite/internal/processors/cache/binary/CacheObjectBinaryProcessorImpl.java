@@ -938,6 +938,28 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         });
     }
 
+    /**
+     * @return Cluster binary metadata.
+     * @throws BinaryObjectException on error.
+     */
+    public Collection<BinaryMetadata> binaryMetadata() throws BinaryObjectException {
+        return F.viewReadOnly(metadataLocCache.values(), new IgniteClosure<BinaryMetadataHolder, BinaryMetadata>() {
+            @Override public BinaryMetadata apply(BinaryMetadataHolder metaHolder) {
+                return metaHolder.metadata();
+            }
+        });
+    }
+
+    /**
+     * @return Binary metadata for specified type.
+     * @throws BinaryObjectException on error.
+     */
+    public BinaryMetadata binaryMetadata(int typeId) throws BinaryObjectException {
+        BinaryMetadataHolder hld = metadataLocCache.get(typeId);
+
+        return hld != null ? hld.metadata() : null;
+    }
+
     /** {@inheritDoc} */
     @Override public void saveMetadata(Collection<BinaryType> types, File dir) {
         try {
