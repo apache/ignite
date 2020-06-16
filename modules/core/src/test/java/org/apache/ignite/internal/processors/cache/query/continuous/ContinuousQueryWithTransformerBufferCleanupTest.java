@@ -29,8 +29,7 @@ import org.apache.ignite.lang.IgniteClosure;
  */
 public class ContinuousQueryWithTransformerBufferCleanupTest extends ContinuousQueryBufferCleanupAbstractTest {
     /** {@inheritDoc} */
-    @Override
-    protected AbstractContinuousQuery<Integer, String> getContinuousQuery() {
+    @Override protected AbstractContinuousQuery<Integer, String> getContinuousQuery() {
         ContinuousQueryWithTransformer<Integer, String, String> qry = new ContinuousQueryWithTransformer<>();
 
         Factory factory = FactoryBuilder.factoryOf(

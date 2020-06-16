@@ -50,7 +50,7 @@ class CacheContinuousQueryAcknowledgeBackupBuffer {
      * @return Tuple if acknowledge should be sent to backups.
      */
     @SuppressWarnings("unchecked")
-    @Nullable synchronized IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>>onAcknowledged(
+    @Nullable synchronized IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>> onAcknowledged(
         GridContinuousBatch batch) {
         assert batch instanceof GridContinuousQueryBatch;
 

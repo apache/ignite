@@ -25,8 +25,7 @@ import org.apache.ignite.cache.query.ContinuousQuery;
  */
 public class ContinuousQueryBufferCleanupTest extends ContinuousQueryBufferCleanupAbstractTest {
     /** {@inheritDoc} */
-    @Override
-    protected AbstractContinuousQuery<Integer, String> getContinuousQuery() {
+    @Override protected AbstractContinuousQuery<Integer, String> getContinuousQuery() {
         ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
 
         qry.setLocalListener((evts) -> evts.forEach(e -> System.out.println("key=" + e.getKey() + ", val=" + e.getValue())));
