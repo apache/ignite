@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.cache.QueryIndex;
@@ -110,14 +111,26 @@ public class QuerySchema implements Serializable {
     public QuerySchemaPatch makePatch(CacheConfiguration<?, ?> targetCfg, Collection<QueryEntity> target) {
         synchronized (mux) {
             Map<String, QueryEntity> localEntities = new HashMap<>();
+            Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
+            Collection<QueryEntity> entityToAdd = new ArrayList<>();
+
+            if (entities.isEmpty() && targetCfg != null) {
+                patchOperations.add(new SchemaAddQueryEntityOperation(
+                    UUID.randomUUID(),
+                    targetCfg.getName(),
+                    targetCfg.getSqlSchema(),
+                    target,
+                    targetCfg.getQueryParallelism(),
+                    targetCfg.isSqlEscapeAll()
+                ));
+
+                return new QuerySchemaPatch(patchOperations, entityToAdd, "");
+            }
 
             for (QueryEntity entity : entities) {
                 if (localEntities.put(entity.getTableName(), entity) != null)
                     throw new IllegalStateException("Duplicate key");
             }
-
-            Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
-            Collection<QueryEntity> entityToAdd = new ArrayList<>();
 
             StringBuilder conflicts = new StringBuilder();
 
@@ -141,7 +154,7 @@ public class QuerySchema implements Serializable {
                     entityToAdd.add(QueryUtils.copy(queryEntity));
             }
 
-            return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts.toString(), targetCfg);
+            return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts.toString());
         }
     }
 
@@ -322,9 +335,8 @@ public class QuerySchema implements Serializable {
 
                 assert entities.isEmpty();
 
-                QueryEntity opEntity = ((SchemaAddQueryEntityOperation)op).entity();
-
-                entities.add(QueryUtils.copy(opEntity));
+                for (QueryEntity opEntity: ((SchemaAddQueryEntityOperation)op).entities())
+                    entities.add(QueryUtils.copy(opEntity));
             }
         }
     }

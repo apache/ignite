@@ -937,7 +937,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                                     opEnableIdx.cacheName(),
                                                     opEnableIdx.schemaName(),
                                                     cacheInfo.config(),
-                                                    Collections.singletonList(opEnableIdx.entity()),
+                                                    opEnableIdx.entities(),
                                                     opEnableIdx.isSqlEscape()
                                                 ).get1();
 
@@ -1862,7 +1862,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
                     candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo.config(),
-                        Collections.singletonList(op0.entity()), op0.isSqlEscape());
+                        op0.entities(), op0.isSqlEscape());
 
                 registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
 
@@ -3007,7 +3007,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 UUID.randomUUID(),
                 cacheName,
                 schemaName,
-                entity0,
+                Collections.singletonList(entity0),
                 qryParallelism != null ? qryParallelism : CacheConfiguration.DFLT_QUERY_PARALLELISM,
                 sqlEscape);
 

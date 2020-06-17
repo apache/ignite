@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
@@ -29,9 +30,9 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -408,12 +409,13 @@ public class DynamicCacheDescriptor {
      */
     public boolean applySchemaPatch(QuerySchemaPatch patch) {
         synchronized (schemaMux) {
-            boolean shouldUpdateConfig = F.isEmpty(schema.entities());
-
             boolean res = schema.applyPatch(patch);
 
-            if (res && shouldUpdateConfig)
-                cacheCfg = new CacheConfiguration<>(patch.cacheConfiguration());
+            Optional<SchemaAbstractOperation> op = patch.getPatchOperations().stream()
+                    .filter(o -> o instanceof SchemaAddQueryEntityOperation).findFirst();
+
+            if (res && op.isPresent())
+                cacheCfg = GridCacheUtils.patchCacheConfiguration(cacheCfg, (SchemaAddQueryEntityOperation)op.get());
 
             return res;
         }

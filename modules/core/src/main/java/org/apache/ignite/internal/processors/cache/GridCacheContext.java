@@ -27,7 +27,6 @@ import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -2359,7 +2358,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param op Add query entity schema operation.
      */
     public void onSchemaAddQueryEntity(SchemaAddQueryEntityOperation op) {
-        onSchemaAddQueryEntity(Collections.singletonList(op.entity()), op.schemaName(), op.isSqlEscape(),
+        onSchemaAddQueryEntity(op.entities(), op.schemaName(), op.isSqlEscape(),
                 op.queryParallelism());
     }
 

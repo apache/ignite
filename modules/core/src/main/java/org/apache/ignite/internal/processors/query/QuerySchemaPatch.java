@@ -19,10 +19,9 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Query schema patch which contains {@link SchemaAbstractOperation} operations for changing query entities.
@@ -34,35 +33,24 @@ import org.jetbrains.annotations.Nullable;
  */
 public class QuerySchemaPatch {
     /** Message which described conflicts during creating this patch. */
-    private final String conflictsMessage;
+    private String conflictsMessage;
 
     /** Operations for modification query entity. */
-    private final Collection<SchemaAbstractOperation> patchOperations;
+    private Collection<SchemaAbstractOperation> patchOperations;
 
     /** Entities which should be added by whole. */
-    private final Collection<QueryEntity> entityToAdd;
-
-    /** Optional cache configuration if required to patch it (i.e. enable indexing). */
-    private final CacheConfiguration<?, ?> cacheCfg;
+    private Collection<QueryEntity> entityToAdd;
 
     /**
-     * Create schema patch.
-     *
-     * @param patchOperations Patch operations.
-     * @param entityToAdd Entity to add.
-     * @param conflictsMessage Conflicts message.
-     * @param cfg Cache configuration to patch.
+     * Create patch.
      */
     public QuerySchemaPatch(
-        Collection<SchemaAbstractOperation> patchOperations,
-        Collection<QueryEntity> entityToAdd,
-        String conflictsMessage,
-        CacheConfiguration<?, ?> cfg
-    ) {
+        @NotNull Collection<SchemaAbstractOperation> patchOperations,
+        @NotNull Collection<QueryEntity> entityToAdd,
+        String conflictsMessage) {
         this.patchOperations = patchOperations;
         this.entityToAdd = entityToAdd;
         this.conflictsMessage = conflictsMessage;
-        cacheCfg = cfg != null ? new CacheConfiguration<>(cfg) : null;
     }
 
     /**
@@ -89,22 +77,15 @@ public class QuerySchemaPatch {
     /**
      * @return Patch operations for applying.
      */
-    public Collection<SchemaAbstractOperation> getPatchOperations() {
+    @NotNull public Collection<SchemaAbstractOperation> getPatchOperations() {
         return patchOperations;
     }
 
     /**
      * @return Entities which should be added by whole.
      */
-    public Collection<QueryEntity> getEntityToAdd() {
+    @NotNull public Collection<QueryEntity> getEntityToAdd() {
         return entityToAdd;
-    }
-
-    /**
-     * @return Optional cache configuration if required (i.e. enable indexing).
-     */
-    @Nullable public CacheConfiguration<?, ?> cacheConfiguration() {
-        return cacheCfg;
     }
 
     /** {@inheritDoc} */

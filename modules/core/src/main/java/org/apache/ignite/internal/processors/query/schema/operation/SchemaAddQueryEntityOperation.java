@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.schema.operation;
 
+import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cache.QueryEntity;
 
@@ -28,7 +29,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final QueryEntity entity;
+    private final Collection<QueryEntity> entities;
 
     /** */
     private final int qryParallelism;
@@ -40,7 +41,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
      * @param opId    Operation ID.
      * @param cacheName Cache name.
      * @param schemaName Schema name.
-     * @param entity QueryEntity.
+     * @param entities Collection of QueryEntity.
      * @param qryParallelism Query parallelism.
      * @param sqlEscape Sql escape flag.
      */
@@ -48,21 +49,21 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
             UUID opId,
             String cacheName,
             String schemaName,
-            QueryEntity entity,
+            Collection<QueryEntity> entities,
             int qryParallelism,
             boolean sqlEscape
     ) {
         super(opId, cacheName, schemaName);
-        this.entity = entity;
+        this.entities = entities;
         this.qryParallelism = qryParallelism;
         this.sqlEscape = sqlEscape;
     }
 
     /**
-     * @return Query entity.
+     * @return Collection of query entities.
      */
-    public QueryEntity entity() {
-        return entity;
+    public Collection<QueryEntity> entities() {
+        return entities;
     }
 
     /**

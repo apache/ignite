@@ -2132,7 +2132,7 @@ public class GridCacheUtils {
             CacheConfiguration<K, V> oldCfg,
             SchemaAddQueryEntityOperation op
     ) {
-        return patchCacheConfiguration(oldCfg, Collections.singletonList(op.entity()), op.schemaName(), op.isSqlEscape(),
+        return patchCacheConfiguration(oldCfg, op.entities(), op.schemaName(), op.isSqlEscape(),
                 op.queryParallelism());
     }
 
