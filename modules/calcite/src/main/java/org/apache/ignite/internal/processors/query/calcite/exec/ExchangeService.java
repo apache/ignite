@@ -60,6 +60,15 @@ public interface ExchangeService extends Service {
     void cancel(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
 
     /**
+     * Sends cancel request.
+     * @param nodeId Target node ID.
+     * @param qryId Query ID.
+     * @param fragmentId Target fragment ID.
+     * @param exchangeId Exchange ID.
+     */
+    void cancel(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException;
+
+    /**
      * @param nodeId Target node ID.
      * @param qryId Query ID.
      * @param fragmentId Target fragment ID.

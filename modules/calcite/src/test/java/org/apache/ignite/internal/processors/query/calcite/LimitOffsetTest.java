@@ -53,6 +53,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
         cachePart = grid(0).cache("TEST_PART");
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         QueryEntity eRepl = new QueryEntity()
             .setTableName("TEST_REPL")

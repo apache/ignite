@@ -147,6 +147,16 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         if (isCanceled())
             return;
 
+        nodes.forEach(nodeId -> {
+            try {
+                exchange.cancel(nodeId, queryId(), srcFragmentId, exchangeId, -1);
+            }
+            catch (IgniteCheckedException e) {
+                // TODO:
+                e.printStackTrace();
+            }
+        });
+
         close();
 
         super.cancel();

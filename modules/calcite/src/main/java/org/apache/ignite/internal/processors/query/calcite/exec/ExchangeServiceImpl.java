@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -112,6 +113,11 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** {@inheritDoc} */
+    @Override public void cancel(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException {
+        cancel(nodeId, qryId, fragmentId, exchangeId, -1);
+    }
+
+    /** {@inheritDoc} */
     @Override public void cancel(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
         messageService().send(nodeId, new InboxCancelMessage(qryId, fragmentId, exchangeId, batchId));
     }
@@ -151,10 +157,15 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     /** */
     protected void onMessage(UUID nodeId, InboxCancelMessage msg) {
         Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
+        Collection<Outbox<?>> outboxes = mailboxRegistry().outboxes(msg.queryId());
 
         if (inbox != null)
             inbox.cancel();
-        else if (log.isDebugEnabled()) {
+
+        if (outboxes != null)
+            outboxes.forEach(Outbox::cancel);
+
+        if (log.isDebugEnabled() && outboxes == null && inbox == null) {
             log.debug("Stale cancel message received: [" +
                 "nodeId=" + nodeId + ", " +
                 "queryId=" + msg.queryId() + ", " +
