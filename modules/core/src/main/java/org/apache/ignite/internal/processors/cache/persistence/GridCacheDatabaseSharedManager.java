@@ -84,6 +84,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.EncryptionStatusRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
@@ -1251,6 +1252,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             grpIds.add(tup.get1().groupId());
 
+            cctx.kernalContext().encryption().stopReencryption(gctx.groupId());
+
             pageMem.onCacheGroupDestroyed(tup.get1().groupId());
 
             if (tup.get2())
@@ -1811,11 +1814,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 switch (rec.type()) {
                     case PAGE_RECORD:
                         if (restoreBinaryState.needApplyBinaryUpdate()) {
+
+//                            System.out.println(">>> need ApplyBinaryUpdate");
+
                             PageSnapshot pageSnapshot = (PageSnapshot)rec;
 
                             // Here we do not require tag check because we may be applying memory changes after
                             // several repetitive restarts and the same pages may have changed several times.
                             int groupId = pageSnapshot.fullPageId().groupId();
+
+//                            System.out.println(">>> apply " + pageSnapshot.fullPageId());
+
                             int partId = partId(pageSnapshot.fullPageId().pageId());
 
                             if (skipRemovedIndexUpdates(groupId, partId))
@@ -1887,6 +1896,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }, groupId, partId, exec, semaphore);
 
                     }
+                    break;
+
+                    case ENCRYPTION_STATUS_RECORD:
+                        cctx.kernalContext().encryption().applyEncryptionStatus((EncryptionStatusRecord)rec);
+
                     break;
 
                     default:
@@ -2330,6 +2344,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     case MVCC_DATA_RECORD:
                     case DATA_RECORD:
                     case ENCRYPTED_DATA_RECORD:
+                    case ENCRYPTED_DATA_RECORD_V2:
                         DataRecord dataRec = (DataRecord)rec;
 
                         for (DataEntry dataEntry : dataRec.writeEntries()) {
@@ -2412,6 +2427,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     case MASTER_KEY_CHANGE_RECORD:
                         cctx.kernalContext().encryption().applyKeys((MasterKeyChangeRecord)rec);
+
+                        break;
+
+                    case ENCRYPTION_STATUS_RECORD:
+                        cctx.kernalContext().encryption().applyEncryptionStatus((EncryptionStatusRecord)rec);
 
                         break;
 

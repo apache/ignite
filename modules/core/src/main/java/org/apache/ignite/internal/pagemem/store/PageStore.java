@@ -170,4 +170,13 @@ public interface PageStore extends Closeable {
      * @param usefulBytes Number of meaningful bytes from the beginning of the page.
      */
     void punchHole(long pageId, int usefulBytes);
+
+    public int encryptedPagesCount();
+
+    // todo should not clash with pages adding
+    public void encryptedPagesCount(int pagesCnt);
+
+    public int encryptedPagesOffset();
+
+    public void encryptedPagesOffset(int pagesCnt);
 }

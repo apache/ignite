@@ -98,7 +98,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         Function<I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish
     ) {
-        this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req));
+        this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req), false);
     }
 
     /**
@@ -113,7 +113,8 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish,
-        BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory
+        BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory,
+        boolean failOnNodeLeftOrFail
     ) {
         this.ctx = ctx;
         this.type = type;
@@ -199,7 +200,15 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
             for (Process p : processes.values()) {
                 p.initFut.listen(fut -> {
-                    if (F.eq(leftNodeId, p.crdId)) {
+                    boolean crdLeft = F.eq(leftNodeId, p.crdId);
+
+                    if (failOnNodeLeftOrFail && (crdLeft || p.remaining.contains(leftNodeId))) {
+                        p.singleMsgs.put(leftNodeId, new SingleNodeMessage<>(p.id, type, null,
+                            new IgniteCheckedException("The node left the cluster before the process was completed " +
+                                "[node=" + leftNodeId + ", processId=" + p.id + "]")));
+                    }
+
+                    if (crdLeft) {
                         ClusterNode crd = coordinator();
 
                         if (crd == null) {
@@ -226,8 +235,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                         }
 
                         if (rmvd) {
-                            assert !p.singleMsgs.containsKey(leftNodeId);
-
                             if (isEmpty)
                                 finishProcess(p);
                         }
@@ -430,6 +437,10 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
          *
          * @see IgniteSnapshotManager
          */
-        END_SNAPSHOT
+        END_SNAPSHOT,
+
+        GROUP_KEY_CHANGE_PREPARE,
+
+        GROUP_KEY_CHANGE_FINISH
     }
 }

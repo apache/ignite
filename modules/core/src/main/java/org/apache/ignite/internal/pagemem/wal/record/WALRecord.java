@@ -234,7 +234,19 @@ public abstract class WALRecord {
         TRACKING_PAGE_REPAIR_DELTA(61, PHYSICAL),
 
         /** Atomic out-of-order update. */
-        OUT_OF_ORDER_UPDATE(62, LOGICAL);
+        OUT_OF_ORDER_UPDATE(62, LOGICAL),
+
+        /** Encrypted WAL-record. */
+        ENCRYPTED_RECORD_V2(62, PHYSICAL),
+
+        /** Ecnrypted data record. */
+        ENCRYPTED_DATA_RECORD_V2(63, LOGICAL),
+
+        /** */
+        ENCRYPTION_STATUS_RECORD(64, MIXED),
+
+        // todo implement meta page recovery
+        META_PAGE_DELTA_RECORD(65, PHYSICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

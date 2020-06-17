@@ -1874,6 +1874,19 @@ public final class IgniteSystemProperties {
         "IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP";
 
     /**
+     * todo
+     */
+    public static final String IGNITE_ACTIVE_KEY_ID_FOR_GROUP = "IGNITE_ACTIVE_KEY_ID_FOR_GROUP_";
+
+    public static final String IGNITE_REENCRYPTION_BATCH_SIZE = "IGNITE_REENCRYPTION_BATCH_SIZE";
+
+    public static final String IGNITE_REENCRYPTION_THREAD_POOL_SIZE = "IGNITE_REENCRYPTION_THREAD_POOL_SIZE";
+
+    public static final String IGNITE_REENCRYPTION_DISABLED = "IGNITE_REENCRYPTION_DISABLED";
+
+    public static final String IGNITE_REENCRYPTION_THROTTLE = "IGNITE_REENCRYPTION_THROTTLE";
+
+    /**
      * Enables extended logging of indexes create/rebuild process. Default {@code false}.
      * <p/>
      * <b>Warning</b>: enabling that option can lead to performance degradation of index creation, rebuilding and  node

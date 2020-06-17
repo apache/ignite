@@ -55,6 +55,24 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
     }
 
     /**
+     * Tests cache get/put/remove.
+     */
+    @Test
+    public void testCacheCreate() {
+        assertCachesReadOnlyMode(false, CACHE_NAMES);
+
+        changeClusterReadOnlyMode(true);
+
+        grid(0).createCache("asshole");
+
+//        assertCachesReadOnlyMode(true, CACHE_NAMES);
+//
+//        changeClusterReadOnlyMode(false);
+//
+//        assertCachesReadOnlyMode(false, CACHE_NAMES);
+    }
+
+    /**
      * Tests data streamer.
      */
     @Test

@@ -17,44 +17,36 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-/**
- * Encrypted record from WAL.
- * That types of record returned from a {@code RecordDataSerializer} on offline WAL iteration.
- */
-public class EncryptedRecord extends WALRecord implements WalRecordCacheGroupAware {
-    /**
-     * Group id.
-     */
-    private int grpId;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.internal.util.typedef.T2;
 
-    /**
-     * Type of plain record.
-     */
-    private RecordType plainRecType;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTION_STATUS_RECORD;
 
-    /**
-     * @param grpId Group id
-     * @param plainRecType Plain record type.
-     */
-    public EncryptedRecord(int grpId, RecordType plainRecType) {
-        this.grpId = grpId;
-        this.plainRecType = plainRecType;
+public class EncryptionStatusRecord extends WALRecord {
+    private final Map<Integer, List<T2<Integer, Integer>>> grpStates;
+
+    public EncryptionStatusRecord(Map<Integer, List<T2<Integer, Integer>>> grpStates) {
+        this.grpStates = grpStates;
+    }
+
+    public Map<Integer, List<T2<Integer, Integer>>> groupsStatus() {
+        return grpStates;
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.ENCRYPTED_RECORD_V2;
+        return ENCRYPTION_STATUS_RECORD;
     }
 
-    /** {@inheritDoc} */
-    @Override public int groupId() {
-        return grpId;
+    /** @return Record data size. */
+    public int dataSize() {
+        int size = 4;
+
+        for (List entry : grpStates.values())
+            size += /*grpId*/4 + /*length*/4 + (entry.size() * (2 + 4));
+
+        return size;
     }
 
-    /**
-     * @return Type of plain record.
-     */
-    public RecordType plainRecordType() {
-        return plainRecType;
-    }
 }

@@ -250,7 +250,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .order(ByteOrder.nativeOrder()));
 
         startSnpProc = new DistributedProcess<>(ctx, START_SNAPSHOT, this::initLocalSnapshotStartStage,
-            this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new);
+            this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new, false);
 
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
             this::processLocalSnapshotEndStageResult);

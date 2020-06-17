@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.T3;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
 
@@ -30,13 +30,13 @@ public class MasterKeyChangeRecord extends WALRecord {
     private final String masterKeyName;
 
     /** Group keys encrypted by the master key. */
-    private final Map<Integer, byte[]> grpKeys;
+    private final List<T3<Integer, Byte, byte[]>> grpKeys;
 
     /**
      * @param masterKeyName Master key name.
      * @param grpKeys Encrypted group keys.
      */
-    public MasterKeyChangeRecord(String masterKeyName, Map<Integer, byte[]> grpKeys) {
+    public MasterKeyChangeRecord(String masterKeyName, List<T3<Integer, Byte, byte[]>> grpKeys) {
         this.masterKeyName = masterKeyName;
         this.grpKeys = grpKeys;
     }
@@ -47,7 +47,7 @@ public class MasterKeyChangeRecord extends WALRecord {
     }
 
     /** @return Encrypted group keys. */
-    public Map<Integer, byte[]> getGrpKeys() {
+    public List<T3<Integer, Byte, byte[]>> getGrpKeys() {
         return grpKeys;
     }
 
@@ -58,10 +58,10 @@ public class MasterKeyChangeRecord extends WALRecord {
 
     /** @return Record data size. */
     public int dataSize() {
-        int size = /*Master key name length*/4 + masterKeyName.getBytes().length + /*Group keys map size*/4;
+        int size = /*Master key name length*/4 + masterKeyName.getBytes().length + /*list size*/4;
 
-        for (Entry<Integer, byte[]> entry : grpKeys.entrySet())
-            size += /*grpId*/4 + /*grp key size*/4 + entry.getValue().length;
+        for (T3<Integer, Byte, byte[]> entry : grpKeys)
+            size += /*grpId*/4 + /*grp key size*/4 + /*grp key id size*/1 + entry.get3().length;
 
         return size;
     }

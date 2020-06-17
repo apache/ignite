@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -242,11 +243,15 @@ public class EncryptedFileIO implements FileIO {
 
         srcBuf.limit(srcBuf.position() + plainDataSize());
 
-        encSpi.encryptNoPadding(srcBuf, key(), res);
+        GroupKey grpKey = key();
+
+        encSpi.encryptNoPadding(srcBuf, grpKey.key(), res);
 
         res.rewind();
 
         storeCRC(res);
+
+        res.put(grpKey.id());
 
         srcBuf.limit(srcLimit);
         srcBuf.position(srcBuf.position() + encryptionOverhead);
@@ -260,11 +265,15 @@ public class EncryptedFileIO implements FileIO {
         assert encrypted.remaining() >= pageSize;
         assert encrypted.limit() >= pageSize;
 
-        checkCRC(encrypted);
+        int keyId = checkCRC(encrypted);
 
         encrypted.limit(encryptedDataSize());
 
-        encSpi.decryptNoPadding(encrypted, key(), destBuf);
+        Serializable key = readKey(keyId);
+
+        assert key != null : keyId;
+
+        encSpi.decryptNoPadding(encrypted, key, destBuf);
 
         destBuf.put(zeroes); //Forcibly purge page buffer tail.
     }
@@ -288,7 +297,7 @@ public class EncryptedFileIO implements FileIO {
      *
      * @param encrypted Encrypted data buffer.
      */
-    private void checkCRC(ByteBuffer encrypted) throws IOException {
+    private int checkCRC(ByteBuffer encrypted) throws IOException {
         int crc = FastCrc.calcCrc(encrypted, encryptedDataSize());
 
         int storedCrc = 0;
@@ -303,7 +312,11 @@ public class EncryptedFileIO implements FileIO {
                 ", calculatedCrd=" + crc + "]");
         }
 
-        encrypted.position(encrypted.position() - (encryptedDataSize() + 4 /* CRC size. */));
+        int keyId = encrypted.get() & 0xff;
+
+        encrypted.position(encrypted.position() - (encryptedDataSize() + 4 /* CRC size. */ + 1 /* key identifier */));
+
+        return keyId;
     }
 
     /**
@@ -337,11 +350,18 @@ public class EncryptedFileIO implements FileIO {
     /**
      * @return Encryption key.
      */
-    private Serializable key() {
-        if (encKey == null)
-            return encKey = encMgr.groupKey(groupId);
+    private GroupKey key() {
+//        if (encKey == null)
+        return encMgr.groupKey(groupId);
 
-        return encKey;
+//        return encKey;
+    }
+
+    private Serializable readKey(int keyId) {
+//        if (encKey == null)
+        return encMgr.groupKey(groupId, keyId);
+
+//        return encKey;
     }
 
     /** {@inheritDoc} */

@@ -32,12 +32,14 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
+import org.apache.ignite.internal.pagemem.wal.record.EncryptionStatusRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
@@ -117,8 +119,9 @@ import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.putRecordType;
@@ -190,7 +193,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int clSz = plainSize(record);
 
         if (needEncryption(record))
-            return encSpi.encryptedSize(clSz) + 4 /* groupId */ + 4 /* data size */ + REC_TYPE_SIZE;
+            return encSpi.encryptedSize(clSz) + 4 /* groupId */ + 4 /* data size */ + REC_TYPE_SIZE + 1;
 
         return clSz;
     }
@@ -198,7 +201,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** {@inheritDoc} */
     @Override public WALRecord readRecord(RecordType type, ByteBufferBackedDataInput in, int size)
         throws IOException, IgniteCheckedException {
-        if (type == ENCRYPTED_RECORD) {
+        if (type == ENCRYPTED_RECORD || type == ENCRYPTED_RECORD_V2) {
             if (encSpi == null) {
                 T2<Integer, RecordType> knownData = skipEncryptedRecord(in, true);
 
@@ -206,7 +209,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return new EncryptedRecord(knownData.get1(), knownData.get2());
             }
 
-            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, true);
+            T3<ByteBufferBackedDataInput, Integer, RecordType> clData =
+                readEncryptedData(in, true, type == ENCRYPTED_RECORD_V2);
 
             //This happen during startup. On first WAL iteration we restore only metastore.
             //So, no encryption keys available. See GridCacheDatabaseSharedManager#readMetastore
@@ -270,30 +274,36 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      *
      * @param in Input stream.
      * @param readType If {@code true} plain record type will be read from {@code in}.
+     * @param readKeyId If {@code true} encryption key identifier will be read from {@code in}.
      * @return Plain data stream, group id, plain record type,
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
     private T3<ByteBufferBackedDataInput, Integer, RecordType> readEncryptedData(ByteBufferBackedDataInput in,
-        boolean readType)
+        boolean readType, boolean readKeyId)
         throws IOException, IgniteCheckedException {
         int grpId = in.readInt();
         int encRecSz = in.readInt();
+
         RecordType plainRecType = null;
 
         if (readType)
             plainRecType = RecordV1Serializer.readRecordType(in);
 
+        int keyId = readKeyId ? in.readUnsignedByte() : 0;
+
         byte[] encData = new byte[encRecSz];
 
         in.readFully(encData);
 
-        Serializable key = encMgr.groupKey(grpId);
+        Serializable key = encMgr.groupKey(grpId, keyId);
 
         if (key == null)
             return new T3<>(null, grpId, plainRecType);
 
         byte[] clData = encSpi.decrypt(encData, key);
+
+//        System.out.println("read encrypted: " + clData.length);
 
         return new T3<>(new ByteBufferBackedDataInputImpl().buffer(ByteBuffer.wrap(clData)), grpId, plainRecType);
     }
@@ -333,17 +343,20 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     private void writeEncryptedData(int grpId, @Nullable RecordType plainRecType, ByteBuffer clData, ByteBuffer dst) {
         int dtSz = encSpi.encryptedSize(clData.capacity());
 
+//        System.out.println(">>> cap = " + clData.capacity());
+//        System.out.println(">>> dtSz = " + dtSz);
+
         dst.putInt(grpId);
         dst.putInt(dtSz);
 
         if (plainRecType != null)
             putRecordType(dst, plainRecType);
 
-        Serializable key = encMgr.groupKey(grpId);
+        GroupKey grpKey = encMgr.groupKey(grpId);
 
-        assert key != null;
+        dst.put(grpKey.id());
 
-        encSpi.encrypt(clData, key, dst);
+        encSpi.encrypt(clData, grpKey.key(), dst);
     }
 
     /**
@@ -543,6 +556,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 MasterKeyChangeRecord rec = (MasterKeyChangeRecord)record;
 
                 return rec.dataSize();
+
+            case ENCRYPTION_STATUS_RECORD:
+                return ((EncryptionStatusRecord)record).dataSize();
+
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
         }
@@ -650,12 +667,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case ENCRYPTED_DATA_RECORD:
+            case ENCRYPTED_DATA_RECORD_V2:
                 entryCnt = in.readInt();
 
                 entries = new ArrayList<>(entryCnt);
 
+                // todo
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(readEncryptedDataEntry(in));
+                    entries.add(readEncryptedDataEntry(in, type == ENCRYPTED_DATA_RECORD_V2));
 
                 res = new DataRecord(entries, 0L);
 
@@ -1197,10 +1216,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 int keysCnt = in.readInt();
 
-                HashMap<Integer, byte[]> grpKeys = new HashMap<>(keysCnt);
+                List<T3<Integer, Byte, byte[]>> grpKeys = new ArrayList<>(keysCnt);
 
                 for (int i = 0; i < keysCnt; i++) {
                     int grpId = in.readInt();
+                    byte keyId = in.readByte();
 
                     int grpKeySize = in.readInt();
 
@@ -1208,10 +1228,33 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                     in.readFully(grpKey);
 
-                    grpKeys.put(grpId, grpKey);
+                    System.out.println(">>> read wal grp=" + grpId + " id=" + keyId);
+
+                    grpKeys.add(new T3<>(grpId, keyId, grpKey));
                 }
 
                 res = new MasterKeyChangeRecord(masterKeyName, grpKeys);
+
+                break;
+
+            case ENCRYPTION_STATUS_RECORD:
+                int grpsCnt = in.readInt();
+
+                Map<Integer, List<T2<Integer, Integer>>> map = new HashMap<>(U.capacity(grpsCnt));
+
+                for (int i = 0; i < grpsCnt; i++) {
+                    int grpId = in.readInt();
+                    int partsCnt = in.readInt();
+
+                    List<T2<Integer, Integer>> parts = new ArrayList<>(partsCnt);
+
+                    for (int j = 0; j < partsCnt; j++)
+                        parts.add( new T2<>(in.readShort() & 0xffff, in.readInt()));
+
+                    map.put(grpId, parts);
+                }
+
+                res = new EncryptionStatusRecord(map);
 
                 break;
 
@@ -1810,15 +1853,39 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putInt(keyIdBytes.length);
                 buf.put(keyIdBytes);
 
-                Map<Integer, byte[]> grpKeys = mkChangeRec.getGrpKeys();
+                List<T3<Integer, Byte, byte[]>> grpKeys = mkChangeRec.getGrpKeys();
 
                 buf.putInt(grpKeys.size());
 
-                for (Entry<Integer, byte[]> entry : grpKeys.entrySet()) {
-                    buf.putInt(entry.getKey());
+                for (T3<Integer, Byte, byte[]> entry : grpKeys) {
+                    System.out.println(">>> write wal " + entry.get1() + " " + entry.get2());
 
-                    buf.putInt(entry.getValue().length);
-                    buf.put(entry.getValue());
+                    buf.putInt(entry.get1());
+                    buf.put(entry.get2());
+
+                    buf.putInt(entry.get3().length);
+                    buf.put(entry.get3());
+                }
+
+                break;
+
+            case ENCRYPTION_STATUS_RECORD:
+                EncryptionStatusRecord statusRecord = (EncryptionStatusRecord)rec;
+
+                Map<Integer, List<T2<Integer, Integer>>> map = statusRecord.groupsStatus();
+
+                buf.putInt(map.size());
+
+                for (Map.Entry<Integer, List<T2<Integer, Integer>>> e : map.entrySet()) {
+                    List<T2<Integer, Integer>> parts = e.getValue();
+
+                    buf.putInt(e.getKey());
+                    buf.putInt(parts.size());
+
+                    for (T2<Integer, Integer> state : parts) {
+                        buf.putShort((short)state.get1().intValue());
+                        buf.putInt(state.getValue());
+                    }
                 }
 
                 break;
@@ -1934,11 +2001,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
     /**
      * @param in Input to read from.
+     * @param readKeyId If {@code true} encryption key identifier will be read from {@code in}.
      * @return Read entry.
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    DataEntry readEncryptedDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    DataEntry readEncryptedDataEntry(ByteBufferBackedDataInput in, boolean readKeyId) throws IOException, IgniteCheckedException {
         boolean needDecryption = in.readByte() == ENCRYPTED;
 
         if (needDecryption) {
@@ -1948,7 +2016,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return new EncryptedDataEntry();
             }
 
-            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, false);
+            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, false, readKeyId);
 
             if (clData.get1() == null)
                 return null;
@@ -2042,12 +2110,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             return rec.type();
 
         if (needEncryption(rec))
-            return ENCRYPTED_RECORD;
+            return ENCRYPTED_RECORD_V2;
 
         if (rec.type() != DATA_RECORD)
             return rec.type();
 
-        return isDataRecordEncrypted((DataRecord)rec) ? ENCRYPTED_DATA_RECORD : DATA_RECORD;
+        return isDataRecordEncrypted((DataRecord)rec) ? ENCRYPTED_DATA_RECORD_V2 : DATA_RECORD;
     }
 
     /**
@@ -2136,7 +2204,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             int clSz = entrySize(entry);
 
             if (!encryptionDisabled && needEncryption(cctx.cacheContext(entry.cacheId()).groupId()))
-                sz += encSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */ + 4 /* data size */;
+                sz += encSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */ + 4 /* data size */ + 1 /* key identifier */;
             else {
                 sz += clSz;
 

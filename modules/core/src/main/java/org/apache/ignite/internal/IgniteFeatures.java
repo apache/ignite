@@ -111,6 +111,9 @@ public enum IgniteFeatures {
     /** Distributed propagation of tx collisions dump interval. */
     DISTRIBUTED_TX_COLLISIONS_DUMP(37),
 
+    /** Master key change. See {@link IgniteEncryption#changeGroupKey(Collection)}. */
+    GROUP_KEY_CHANGE(31),
+
     /** Remove metadata from cluster for specified type. */
     REMOVE_METADATA(39),
 

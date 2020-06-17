@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import java.util.Collection;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
@@ -70,4 +71,12 @@ public interface IgniteEncryption {
      * @return Future for this operation.
      */
     public IgniteFuture<Void> changeMasterKey(String masterKeyName);
+
+    /**
+     * Start encryption key change.
+     *
+     * @param groups cache or group names.
+     * @return Future for this operation.
+     */
+    public IgniteFuture<Void> changeGroupKey(Collection<String> groups);
 }
