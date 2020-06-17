@@ -38,6 +38,7 @@ import org.apache.ignite.client.ClientCluster;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -78,6 +79,9 @@ public class TcpIgniteClient implements IgniteClient {
     /** Cluster facade. */
     private final ClientClusterImpl cluster;
 
+    /** Services facade. */
+    private final ClientServicesImpl services;
+
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
@@ -115,6 +119,8 @@ public class TcpIgniteClient implements IgniteClient {
         cluster = new ClientClusterImpl(ch, marsh);
 
         compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
+
+        services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup());
     }
 
     /** {@inheritDoc} */
@@ -226,6 +232,16 @@ public class TcpIgniteClient implements IgniteClient {
     /** {@inheritDoc} */
     @Override public ClientCluster cluster() {
         return cluster;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientServices services() {
+        return services;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientServices services(ClientClusterGroup grp) {
+        return services.withClusterGroup((ClientClusterGroupImpl)grp);
     }
 
     /**
