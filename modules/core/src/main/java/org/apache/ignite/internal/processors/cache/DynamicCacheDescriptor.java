@@ -364,13 +364,12 @@ public class DynamicCacheDescriptor {
      */
     public void schemaChangeFinish(SchemaFinishDiscoveryMessage msg) {
         synchronized (schemaMux) {
-            if (msg.operation() instanceof SchemaAddQueryEntityOperation) {
-                SchemaAddQueryEntityOperation op = (SchemaAddQueryEntityOperation)msg.operation();
-
-                cacheCfg = GridCacheUtils.patchCacheConfiguration(cacheCfg, op);
-            }
-
             schema.finish(msg);
+
+            if (msg.operation() instanceof SchemaAddQueryEntityOperation) {
+                cacheCfg = GridCacheUtils.patchCacheConfiguration(cacheCfg,
+                        (SchemaAddQueryEntityOperation)msg.operation());
+            }
         }
     }
 

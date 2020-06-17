@@ -945,6 +945,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                                         cachesToEnableIndexing.remove(opEnableIdx.cacheName());
                                     }
+                                    else
+                                        assert false : "Unsupported operation: " + op0;
                                 }
                             }
                         }
