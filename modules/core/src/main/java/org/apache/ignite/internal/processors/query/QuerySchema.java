@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -110,27 +111,28 @@ public class QuerySchema implements Serializable {
      */
     public QuerySchemaPatch makePatch(CacheConfiguration<?, ?> targetCfg, Collection<QueryEntity> target) {
         synchronized (mux) {
-            Map<String, QueryEntity> localEntities = new HashMap<>();
-            Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
-            Collection<QueryEntity> entityToAdd = new ArrayList<>();
-
             if (entities.isEmpty() && targetCfg != null) {
-                patchOperations.add(new SchemaAddQueryEntityOperation(
+                SchemaAddQueryEntityOperation op = new SchemaAddQueryEntityOperation(
                     UUID.randomUUID(),
                     targetCfg.getName(),
                     targetCfg.getSqlSchema(),
                     target,
                     targetCfg.getQueryParallelism(),
                     targetCfg.isSqlEscapeAll()
-                ));
+                );
 
-                return new QuerySchemaPatch(patchOperations, entityToAdd, "");
+                return new QuerySchemaPatch(Collections.singletonList(op), Collections.emptyList(), "");
             }
+
+            Map<String, QueryEntity> localEntities = new HashMap<>();
 
             for (QueryEntity entity : entities) {
                 if (localEntities.put(entity.getTableName(), entity) != null)
                     throw new IllegalStateException("Duplicate key");
             }
+
+            Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
+            Collection<QueryEntity> entityToAdd = new ArrayList<>();
 
             StringBuilder conflicts = new StringBuilder();
 

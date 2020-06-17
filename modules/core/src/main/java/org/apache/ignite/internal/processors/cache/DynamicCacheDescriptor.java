@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
@@ -411,11 +410,12 @@ public class DynamicCacheDescriptor {
         synchronized (schemaMux) {
             boolean res = schema.applyPatch(patch);
 
-            Optional<SchemaAbstractOperation> op = patch.getPatchOperations().stream()
-                    .filter(o -> o instanceof SchemaAddQueryEntityOperation).findFirst();
-
-            if (res && op.isPresent())
-                cacheCfg = GridCacheUtils.patchCacheConfiguration(cacheCfg, (SchemaAddQueryEntityOperation)op.get());
+            if (res) {
+                for (SchemaAbstractOperation op: patch.getPatchOperations()) {
+                    if (op instanceof SchemaAddQueryEntityOperation)
+                        cacheCfg = GridCacheUtils.patchCacheConfiguration(cacheCfg, (SchemaAddQueryEntityOperation)op);
+                }
+            }
 
             return res;
         }
