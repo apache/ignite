@@ -120,8 +120,9 @@ public class BinaryMetadataRemoveTest extends GridCommonAbstractTest {
     public void testRemoveNotExistentType() {
         for (Ignite testNode : G.allGrids()) {
             GridTestUtils.assertThrows(log, () -> {
-                    ((IgniteEx)testNode).context().cacheObjects().removeType
-                        (((IgniteEx)testNode).context().cacheObjects().typeId("NotExistentType"));
+                    ((IgniteEx)testNode).context().cacheObjects().removeType(
+                        ((IgniteEx)testNode).context().cacheObjects().typeId("NotExistentType"));
+
                     return null;
                 },
                 IgniteException.class, "Failed to remove metadata, type not found");
