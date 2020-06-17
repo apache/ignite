@@ -697,7 +697,6 @@ public class CommandHandler {
             .collect(Collectors.toList());
     }
 
-
     /**
      * Loads key store with configured parameters.
      *
