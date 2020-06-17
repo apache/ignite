@@ -58,7 +58,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     protected List<Node<Row>> sources;
 
     /** */
-    protected boolean canceled;
+    protected volatile boolean canceled;
 
     /**
      * @param ctx Execution context.
