@@ -74,7 +74,9 @@ enum ClientOperation {
     /** Get nodes info by IDs. */CLUSTER_GROUP_GET_NODE_INFO(5101),
 
     /** Execute compute task. */COMPUTE_TASK_EXECUTE(6000),
-    /** Finished compute task notification. */COMPUTE_TASK_FINISHED(6001, true);
+    /** Finished compute task notification. */COMPUTE_TASK_FINISHED(6001, true),
+
+    /** Invoke service. */SERVICE_INVOKE(7000);
 
     /** Code. */
     private final int code;

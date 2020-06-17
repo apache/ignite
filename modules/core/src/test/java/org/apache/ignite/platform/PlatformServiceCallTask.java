@@ -18,11 +18,9 @@
 package org.apache.ignite.platform;
 
 import java.util.UUID;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -36,11 +34,6 @@ public class PlatformServiceCallTask extends AbstractPlatformServiceCallTask {
 
     /** */
     static class PlatformServiceCallJob extends AbstractServiceCallJob {
-        /** */
-        @SuppressWarnings("unused")
-        @IgniteInstanceResource
-        private transient Ignite ignite;
-
         /**
          * @param srvcName Service name.
          */
@@ -50,32 +43,41 @@ public class PlatformServiceCallTask extends AbstractPlatformServiceCallTask {
 
         /** {@inheritDoc} */
         @Override void runTest() {
-            TestPlatformService srv = ignite.services().serviceProxy(srvcName, TestPlatformService.class, false);
+            TestPlatformService srv = serviceProxy();
 
-            {
-                UUID nodeId = srv.getNodeId();
-                assertTrue(ignite.cluster().nodes().stream().anyMatch(n -> n.id().equals(nodeId)));
-            }
+            checkNodeId(srv);
+            checkUuidProp(srv);
+            checkObjectProp(srv);
+            checkErrorMethod(srv);
+        }
 
-            {
-                UUID expUuid = UUID.randomUUID();
-                srv.setGuidProp(expUuid);
-                assertEquals(expUuid, srv.getGuidProp());
-            }
+        /** */
+        protected void checkNodeId(TestPlatformService srv) {
+            UUID nodeId = srv.getNodeId();
+            assertTrue(ignite.cluster().nodes().stream().anyMatch(n -> n.id().equals(nodeId)));
+        }
 
-            {
-                TestValue exp = new TestValue(1, "test");
-                srv.setValueProp(exp);
-                assertEquals(exp, srv.getValueProp());
-            }
+        /** */
+        protected void checkUuidProp(TestPlatformService srv) {
+            UUID expUuid = UUID.randomUUID();
+            srv.setGuidProp(expUuid);
+            assertEquals(expUuid, srv.getGuidProp());
+        }
 
-            {
-                PlatformNativeException nativeEx = (PlatformNativeException)GridTestUtils
-                        .assertThrowsWithCause(srv::errorMethod, PlatformNativeException.class)
-                        .getCause();
+        /** */
+        protected void checkObjectProp(TestPlatformService srv) {
+            TestValue exp = new TestValue(1, "test");
+            srv.setValueProp(exp);
+            assertEquals(exp, srv.getValueProp());
+        }
 
-                assertTrue(nativeEx.toString().contains("Failed method"));
-            }
+        /** */
+        protected void checkErrorMethod(TestPlatformService srv) {
+            PlatformNativeException nativeEx = (PlatformNativeException)GridTestUtils
+                .assertThrowsWithCause(srv::errorMethod, PlatformNativeException.class)
+                .getCause();
+
+            assertTrue(nativeEx.toString().contains("Failed method"));
         }
     }
 }
