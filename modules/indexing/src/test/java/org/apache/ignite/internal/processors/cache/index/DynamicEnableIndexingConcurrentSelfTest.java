@@ -537,10 +537,10 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx, boolean rebuildInMemory) {
+        @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
             awaitIndexing(ctx.localNodeId());
 
-            return super.rebuildIndexesFromHash(cctx, rebuildInMemory);
+            return super.rebuildIndexesFromHash(cctx);
         }
     }
 }

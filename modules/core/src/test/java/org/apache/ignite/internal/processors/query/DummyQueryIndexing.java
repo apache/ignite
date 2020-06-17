@@ -244,7 +244,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx, boolean rebuildInMemory) {
+    @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
         return null;
     }
 

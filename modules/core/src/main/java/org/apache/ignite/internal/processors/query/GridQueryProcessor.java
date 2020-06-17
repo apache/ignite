@@ -957,7 +957,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 registerCache0(cacheName, schemaName, cacheInfo, cands, isSql);
 
                 if (enableIndexing)
-                    rebuildIndexesFromHash0(cacheInfo.cacheContext(), true);
+                    rebuildIndexesFromHash0(cacheInfo.cacheContext());
             }
         }
         finally {
@@ -1866,7 +1866,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
 
-                rebuildIndexesFromHash0(cacheInfo.cacheContext(), true);
+                rebuildIndexesFromHash0(cacheInfo.cacheContext());
             }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
@@ -2256,7 +2256,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         try {
-            return rebuildIndexesFromHash0(cctx, false);
+            return rebuildIndexesFromHash0(cctx);
         }
         finally {
             busyLock.leaveBusy();
@@ -2265,9 +2265,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cctx Cache context.
-     * @param rebuildInMemory If {@code True}, rebuild indexes for in-memory-cache too).
      */
-    private IgniteInternalFuture<?> rebuildIndexesFromHash0(GridCacheContext<?, ?> cctx, boolean rebuildInMemory) {
+    private IgniteInternalFuture<?> rebuildIndexesFromHash0(GridCacheContext<?, ?> cctx) {
         int cacheId = cctx.cacheId();
 
         GridFutureAdapter<Void> res = new GridFutureAdapter<>();
@@ -2277,7 +2276,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (old != null)
             old.onDone();
 
-        IgniteInternalFuture<?> idxFut = idx.rebuildIndexesFromHash(cctx, rebuildInMemory);
+        IgniteInternalFuture<?> idxFut = idx.rebuildIndexesFromHash(cctx);
 
         if (nonNull(idxFut)) {
             String cacheInfo = "[name=" + cctx.name() + ", grpName=" + cctx.group().name() + "]";
