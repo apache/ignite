@@ -37,10 +37,13 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.util.AttributeNodeFilter;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -320,6 +323,33 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
             mvccCacheConfig().setInterceptor(new TestCacheInterceptor()),
             "interceptor cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
         );
+    }
+
+    /**
+     * Check that node in client mode (filtered by AttributeNodeFilter) correctly works with MVCC.
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testMvccEnabledForClientMode() throws Exception {
+        String attrName = "has_cache";
+        Object attrVal = Boolean.TRUE;
+
+        final IgniteEx crd = (IgniteEx) startGrid(getTestIgniteInstanceName(0), getConfiguration());
+
+        // Do not start cache on non-affinity node.
+        CacheConfiguration ccfg = defaultCacheConfiguration()
+                .setNearConfiguration(null)
+                .setNodeFilter(new AttributeNodeFilter(attrName, attrVal))
+                .setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+
+        final IgniteEx node = (IgniteEx) startGrid(getTestIgniteInstanceName(1), getConfiguration()
+                .setCacheConfiguration(ccfg)
+                .setUserAttributes(F.asMap(attrName, attrVal)));
+
+        checkTopology(2);
+
+        assertTrue(crd.context().coordinators().mvccEnabled());
+        assertTrue(node.context().coordinators().mvccEnabled());
     }
 
     /**

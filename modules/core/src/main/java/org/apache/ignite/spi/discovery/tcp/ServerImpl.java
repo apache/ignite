@@ -7956,13 +7956,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     state = RingMessageSendState.STARTING_POINT;
-
-                    try {
-                        Thread.sleep(200);
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
                 }
 
                 return true;
