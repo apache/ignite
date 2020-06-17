@@ -104,8 +104,6 @@ public class IgnitePdsTestSuite4 {
 
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheEntriesExpirationTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheEntriesExpirationTest.class, ignoredTests);
-
         return suite;
     }
 

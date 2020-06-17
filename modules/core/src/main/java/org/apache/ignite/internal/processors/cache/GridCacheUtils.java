@@ -2123,7 +2123,7 @@ public class GridCacheUtils {
     }
 
     /**
-     * Patch cache configuration with {@link SchemaAddQueryEntityOperation}
+     * Patch cache configuration with {@link SchemaAddQueryEntityOperation}.
      *
      * @param oldCfg Old cache config.
      * @param op Schema add query entity operation.
@@ -2137,7 +2137,7 @@ public class GridCacheUtils {
     }
 
     /**
-     * Patch cache configuration with {@link SchemaAddQueryEntityOperation}
+     * Patch cache configuration with {@link SchemaAddQueryEntityOperation}.
      *
      * @param oldCfg Old cache config.
      * @param entities New query entities.

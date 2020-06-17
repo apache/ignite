@@ -928,8 +928,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     assert desc != null : cache.name();
 
-                    if (cache.context().config().getQueryEntities().isEmpty()
-                            && !desc.cacheConfiguration().getQueryEntities().isEmpty()) {
+                    if (!QueryUtils.isEnabled(cache.context().config())
+                            && QueryUtils.isEnabled(desc.cacheConfiguration())){
                         CacheConfiguration newCfg = desc.cacheConfiguration();
 
                         cache.context().onSchemaAddQueryEntity(newCfg.getQueryEntities(), newCfg.getSqlSchema(),
