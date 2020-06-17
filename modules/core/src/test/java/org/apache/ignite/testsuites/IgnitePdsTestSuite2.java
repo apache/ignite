@@ -113,6 +113,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      * @param suite suite to add tests into.
      */
     public static void addRealPageStoreTests(TestSuite suite) {
+        suite.addTestSuite(StandaloneWalRecordsIteratorTest.class);
+
         suite.addTestSuite(IgnitePdsPageSizesTest.class);
 
         // Metrics test.
@@ -180,8 +182,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteWalIteratorExceptionDuringReadTest.class);
 
         suite.addTestSuite(IgniteNodeStoppedDuringDisableWALTest.class);
-
-        suite.addTestSuite(StandaloneWalRecordsIteratorTest.class);
 
         suite.addTestSuite(FilteredWalIteratorTest.class);
 
