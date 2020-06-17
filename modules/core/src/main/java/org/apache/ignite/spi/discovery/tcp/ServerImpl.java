@@ -6576,13 +6576,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                         long rcvdTime = lastRingMsgReceivedTime;
                         long now = U.currentTimeMillis();
 
-                        // We got message from previous in less than double connection check interval.
-                        boolean ok = rcvdTime + CON_CHECK_INTERVAL + effectiveExchangeTimeout() >= now;
+                        // We got message from previous node within the timeout. No reason to consider it failed.
+                        boolean ok = rcvdTime + effectiveExchangeTimeout() > now;
                         TcpDiscoveryNode previous = null;
 
-                        if (ok) {
-                            // Check case when previous node suddenly died. This will speed up
-                            // node failing.
+                        // Check connection to backward node if reconnect configured. If not, we consider it failed
+                        // because it hasn't send ping to current node.
+                        if (!ok && !spi.failureDetectionTimeoutEnabled()) {
                             Set<TcpDiscoveryNode> failed;
 
                             synchronized (mux) {
