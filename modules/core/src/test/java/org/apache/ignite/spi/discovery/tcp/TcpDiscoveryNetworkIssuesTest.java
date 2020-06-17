@@ -23,19 +23,15 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -92,12 +88,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     /** */
     private int connectionRecoveryTimeout = -1;
 
-    /** */
-    private int failureDetectionTimeout = 2_000;
-
-    /** */
-    private Long systemWorkerBlockedTimeout;
-
     /** {@inheritDoc} */
     @Override protected void afterTest() {
         stopAllGrids();
@@ -117,10 +107,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         if (connectionRecoveryTimeout >= 0)
             spi.setConnectionRecoveryTimeout(connectionRecoveryTimeout);
 
-        cfg.setFailureDetectionTimeout(failureDetectionTimeout);
-
-        if (systemWorkerBlockedTimeout != null)
-            cfg.setSystemWorkerBlockedTimeout(systemWorkerBlockedTimeout);
+        cfg.setFailureDetectionTimeout(2_000);
 
         cfg.setDiscoverySpi(spi);
 
@@ -197,138 +184,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         assertTrue(String.format("Failed nodes is expected to be empty, but contains %s nodes.", failedNodes.size()),
             failedNodes.isEmpty());
-    }
-
-    /**
-     * Checks node get failed, segmented within failureDetectionTimeout + connectionRecoveryTimeout with some small
-     * timeouts.
-     */
-    @Test
-    public void testConnectionRecoveryTimeoutSmallValues() throws Exception {
-        checkConnectionRecoveryTimeout(200, 300, 100);
-    }
-
-    /**
-     * Checks node get failed, segmented within failureDetectionTimeout + connectionRecoveryTimeout with some medium
-     * timeouts.
-     */
-    @Test
-    public void testConnectionRecoveryTimeoutMediumValues() throws Exception {
-        checkConnectionRecoveryTimeout(300, 500, 200);
-    }
-
-    /**
-     * Checks node get failed, segmented within failureDetectionTimeout + connectionRecoveryTimeout with relatively
-     * long timeouts.
-     */
-    @Test
-    public void testConnectionRecoveryTimeoutLongValues() throws Exception {
-        checkConnectionRecoveryTimeout(1000, 1000, 100);
-    }
-
-    /** Checks node get failed, segmented within failureDetectionTimeout + connectionRecoveryTimeout. */
-    void checkConnectionRecoveryTimeout(int minTimeout, int maxTimeout, int step) throws Exception {
-        // Avoid useless warnings. We do block threads specially.
-        systemWorkerBlockedTimeout = 5_000L;
-
-        for (failureDetectionTimeout = minTimeout; failureDetectionTimeout <= maxTimeout;
-            failureDetectionTimeout += step) {
-            for (connectionRecoveryTimeout = minTimeout; connectionRecoveryTimeout <= maxTimeout;
-                connectionRecoveryTimeout += step) {
-                AtomicLong timer = new AtomicLong();
-
-                startGrids(2);
-
-                specialSpi = new TcpDiscoverySpi() {
-                    /** {@inheritDoc} */
-                    @Override protected void writeToSocket(Socket sock, OutputStream out,
-                        TcpDiscoveryAbstractMessage msg,
-                        long timeout) throws IOException, IgniteCheckedException {
-                        simulateSocketTimeout(timeout);
-
-                        super.writeToSocket(sock, out, msg, timeout);
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-                        long timeout) throws IOException {
-                        simulateSocketTimeout(timeout);
-
-                        super.writeToSocket(msg, sock, res, timeout);
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
-                        long timeout) throws IOException {
-                        simulateSocketTimeout(timeout);
-
-                        super.writeToSocket(sock, msg, data, timeout);
-                    }
-
-                    /** */
-                    private void simulateSocketTimeout(long timeout) throws SocketTimeoutException {
-                        if (timer.get() <= 0)
-                            return;
-
-                        try {
-                            Thread.sleep(timeout);
-
-                            throw new SocketTimeoutException("Simulated timeout " + timeout + "ms.");
-                        }
-                        catch (InterruptedException e) {
-                            // No-op.
-                        }
-                    }
-                };
-
-                IgniteEx failedGrid = startGrid(2);
-
-                failedGrid.events().localListen((e) -> {
-                        if (e.node().isLocal())
-                            timer.set(System.nanoTime() - timer.get());
-                        else {
-                            log.error("Wrong node failed: " + e.node().order() + ". Expected: " +
-                                failedGrid.localNode().order());
-
-                            timer.set(-1);
-                        }
-
-                        synchronized (timer) {
-                            timer.notifyAll();
-                        }
-
-                    return false;
-                }, EventType.EVT_NODE_SEGMENTED, EventType.EVT_NODE_FAILED);
-
-                specialSpi = null;
-
-                startGrid(3);
-
-                startGrid(4);
-
-                synchronized (timer) {
-                    timer.set(System.nanoTime());
-
-                    timer.wait(getTestTimeout());
-                }
-
-                if (timer.get() < 0)
-                    fail("Wrong node failed. See the log above.");
-                else {
-                    timer.set(U.nanosToMillis(timer.get()));
-
-                    long expectedDelay = failureDetectionTimeout + connectionRecoveryTimeout;
-
-                    // Give additional 100ms on GC, timer granulation and platform delays.
-                    assertTrue("Too long delay of connection recovery failure: " + timer.get() + ". Expected: " +
-                            expectedDelay + ". failureDetectionTimeout: " + failureDetectionTimeout +
-                            ", connectionRecoveryTimeout: " + connectionRecoveryTimeout,
-                        timer.get() < expectedDelay + 100);
-                }
-
-                stopAllGrids(true);
-            }
-        }
     }
 
     /**
