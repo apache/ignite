@@ -251,7 +251,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         Path typeFile = FS.getPath("type0.bin");
 
-        try (IgniteClient cli =  Ignition.startClient(clientConfiguration())) {
+        try (IgniteClient cli = Ignition.startClient(clientConfiguration())) {
             createType(cli.binary(), "Type0", 1);
 
             assertEquals(EXIT_CODE_OK, execute("--meta", "remove",
