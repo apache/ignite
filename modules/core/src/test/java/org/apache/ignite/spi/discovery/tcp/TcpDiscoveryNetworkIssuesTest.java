@@ -284,20 +284,18 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
                 IgniteEx failedGrid = startGrid(2);
 
                 failedGrid.events().localListen((e) -> {
-                    if (e.node().isLocal()) {
-                        timer.set(System.nanoTime() - timer.get());
+                        if (e.node().isLocal())
+                            timer.set(System.nanoTime() - timer.get());
+                        else {
+                            log.error("Wrong node failed: " + e.node().order() + ". Expected: " +
+                                failedGrid.localNode().order());
 
-                        log.error("Failure detected.");
-                    } else {
-                        log.error("Wrong node failed: " + e.node().order() + ". Expected: " +
-                            failedGrid.localNode().order());
+                            timer.set(-1);
+                        }
 
-                        timer.set(-1);
-                    }
-
-                    synchronized (timer) {
-                        timer.notifyAll();
-                    }
+                        synchronized (timer) {
+                            timer.notifyAll();
+                        }
 
                     return false;
                 }, EventType.EVT_NODE_SEGMENTED, EventType.EVT_NODE_FAILED);
@@ -310,8 +308,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
                 synchronized (timer) {
                     timer.set(System.nanoTime());
-
-                    log.error("Failure simulated.");
 
                     timer.wait(getTestTimeout());
                 }

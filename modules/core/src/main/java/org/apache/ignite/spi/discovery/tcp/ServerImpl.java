@@ -199,8 +199,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static final TcpDiscoveryAbstractMessage WAKEUP = new TcpDiscoveryDummyWakeupMessage();
 
-    /** Minimal interval of connection check to next node in the ring. */
-    private static final long MIN_CON_CHECK_INTERVAL = 500;
+    /** Maximal interval of connection check to next node in the ring. */
+    private static final long MAX_CON_CHECK_INTERVAL = 500;
 
     /** Interval of checking connection to next node in the ring. */
     private long connCheckInterval;
@@ -381,7 +381,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
-        connCheckInterval = Math.min(msgExchangeTimeout / 4, MIN_CON_CHECK_INTERVAL);
+        connCheckInterval = Math.min(msgExchangeTimeout / 4, MAX_CON_CHECK_INTERVAL);
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
@@ -3335,8 +3335,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     while (true) {
                         if (sock == null) {
+                            // We re-create the helper here because it could be created earlier with wrong timeout on
+                            // message sending like IgniteConfiguration.failureDetectionTimeout. Here we are in the
+                            // state of conenction recovering and have to work with
+                            // TcpDiscoverSpi.getEffectiveConnectionRecoveryTimeout()
                             if (timeoutHelper == null || sndState != null)
-                                timeoutHelper = srvOperationTimeoutHelper(sndState, spi, -1);
+                                timeoutHelper = srvOperationTimeoutHelper(sndState, -1);
 
                             boolean success = false;
 
@@ -3486,6 +3490,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 onException("Failed to connect to next node [msg=" + msg + ", err=" + e + ']', e);
 
+                                // Fastens failure detection.
                                 if (sndState != null && sndState.checkTimeout()) {
                                     segmentLocalNodeOnSendFail(failedNodes);
 
@@ -3558,7 +3563,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     addFailedNodes(pendingMsg, failedNodes);
 
                                     if (timeoutHelper == null)
-                                        timeoutHelper = srvOperationTimeoutHelper(sndState, spi, lastRingMsgSentTime);
+                                        timeoutHelper = srvOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
                                     try {
                                         spi.writeToSocket(sock, out, pendingMsg, timeoutHelper.nextTimeoutChunk(
@@ -3602,7 +3607,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 long tsNanos = System.nanoTime();
 
                                 if (timeoutHelper == null)
-                                    timeoutHelper = srvOperationTimeoutHelper(sndState, spi, lastRingMsgSentTime);
+                                    timeoutHelper = srvOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
                                 addFailedNodes(msg, failedNodes);
 
@@ -6193,7 +6198,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Check connection aliveness status.
+         * Check connection to next node in the ring.
          */
         private void checkConnection() {
             Boolean hasRemoteSrvNodes = null;
@@ -6216,9 +6221,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
-    /** Creates proper timeout helper taking in account current send state. */
-    private IgniteSpiOperationTimeoutHelper srvOperationTimeoutHelper(CrossRingMessageSendState sndState,
-        TcpDiscoverySpi spi, long lastOperationNanos) {
+    /**
+     * Creates proper timeout helper taking in account current send state.
+     *
+     * @param sndState Current connection recovering state. Ignored if {@code null}.
+     * @param lastOperationNanos Time of last related operation. Ignored if negative or 0.
+     * @return Timeout helper.
+     */
+    private IgniteSpiOperationTimeoutHelper srvOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState,
+        long lastOperationNanos) {
 
         IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true,
             lastOperationNanos);
@@ -7853,16 +7864,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private final long failTimeNanos;
 
-        /** */
-        private final long beginTimeNanos;
-
         /**
          *
          */
         CrossRingMessageSendState() {
-            beginTimeNanos = System.nanoTime();
-
-            failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + beginTimeNanos;
+            failTimeNanos = U.millisToNanos(spi.getEffectiveConnectionRecoveryTimeout()) + System.nanoTime();
         }
 
         /**
@@ -7903,7 +7909,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             return false;
         }
 
-        /** @return {@code True} if passed timeout is reached. {@code False} otherwise. */
+        /**
+         * Checks if message sending has completely failed due to the timeout. Sets {@code RingMessageSendState#FAILED}
+         * if the timeout is reached.
+         *
+         * @return {@code True} if passed timeout is reached. {@code False} otherwise.
+         */
         boolean checkTimeout() {
             if (System.nanoTime() >= failTimeNanos) {
                 state = RingMessageSendState.FAILED;
@@ -7912,11 +7923,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             return false;
-        }
-
-        /** @return Passed timeout in mills. */
-        long timeoutMills() {
-            return U.nanosToMillis(failTimeNanos - beginTimeNanos);
         }
 
         /**
