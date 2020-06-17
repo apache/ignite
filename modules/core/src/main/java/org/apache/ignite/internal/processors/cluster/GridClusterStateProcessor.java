@@ -1011,9 +1011,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
-        BaselineTopology blt = !forceChangeBaselineTopology ?
-            null :
-            calculateNewBaselineTopology(state, baselineNodes, forceChangeBaselineTopology);
+        BaselineTopology blt = calculateNewBaselineTopology(state, baselineNodes, forceChangeBaselineTopology);
 
         boolean isBaselineAutoAdjustEnabled = isBaselineAutoAdjustEnabled();
 
