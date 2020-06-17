@@ -198,7 +198,11 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      * @param txEx Atomic reference to transaction exception.
      * @param timeout Transaction timeout.
      */
-    private IgniteInternalFuture<Long> startDeadlock(Ignite ig, AtomicReference<Exception> txEx, long timeout) {
+    private IgniteInternalFuture<Long> startDeadlock(Ignite ig, AtomicReference<Exception> txEx, long timeout)
+        throws InterruptedException {
+        // Without the awaiting txs can map on different topology versions causing unexpected behavior.
+        awaitPartitionMapExchange();
+
         IgniteCache<Object, Object> cache = ig.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 

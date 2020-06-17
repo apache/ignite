@@ -49,6 +49,12 @@ public class TxPartitionCounterStateConsistencyVolatileRebalanceTest extends TxP
     }
 
     /** {@inheritDoc} */
+    @Ignore
+    @Override public void testLateAffinityChangeDuringExchange() throws Exception {
+        // Not applicable for volatile mode.
+    }
+
+    /** {@inheritDoc} */
     @Override protected void forceCheckpoint(Collection<Ignite> nodes) throws IgniteCheckedException {
         // No-op.
     }

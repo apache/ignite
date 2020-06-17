@@ -403,8 +403,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             return;
                         }
                     }
+                    else {
+                        GridDhtPartitionsExchangeFuture cur = lastTopologyFuture();
 
-                    preprocessSingleMessage(node, msg);
+                        if (!cur.isDone() && cur.changedAffinity() && !msg.restoreState()) {
+                            cur.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                                    if (fut.error() == null)
+                                        processSinglePartitionUpdate(node, msg);
+                                }
+                            });
+
+                            return;
+                        }
+                    }
+
+                    processSinglePartitionUpdate(node, msg);
                 }
             });
 
@@ -494,34 +508,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         rebalanced = clusterReg.booleanMetric(REBALANCED,
             "True if the cluster has achieved fully rebalanced state. Note that an inactive cluster always has" +
             " this metric in False regardless of the real partitions state.");
-    }
-
-    /**
-     * Preprocess {@code msg} which was sended by {@code node}.
-     *
-     * @param node Cluster node.
-     * @param msg Message.
-     */
-    private void preprocessSingleMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
-        if (!crdInitFut.isDone() && !msg.restoreState()) {
-            GridDhtPartitionExchangeId exchId = msg.exchangeId();
-
-            if (log.isInfoEnabled()) {
-                log.info("Waiting for coordinator initialization [node=" + node.id() +
-                    ", nodeOrder=" + node.order() +
-                    ", ver=" + (exchId != null ? exchId.topologyVersion() : null) + ']');
-            }
-
-            crdInitFut.listen(new CI1<IgniteInternalFuture>() {
-                @Override public void apply(IgniteInternalFuture fut) {
-                    processSinglePartitionUpdate(node, msg);
-                }
-            });
-
-            return;
-        }
-
-        processSinglePartitionUpdate(node, msg);
     }
 
     /**
@@ -2106,6 +2092,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (diagCtx != null)
             diagCtx.send(cctx.kernalContext(), null);
+    }
+
+    /**
+     * Force checking of rebalance state.
+     */
+    public void checkRebalanceState() {
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (!grp.isLocal()) {
+                GridDhtPartitionTopology top = grp.topology();
+
+                if (top != null)
+                    cctx.affinity().checkRebalanceState(top, grp.groupId());
+            }
+        }
     }
 
     /**

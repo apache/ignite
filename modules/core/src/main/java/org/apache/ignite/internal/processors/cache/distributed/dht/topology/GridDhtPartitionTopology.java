@@ -117,7 +117,7 @@ public interface GridDhtPartitionTopology {
      *
      * @param exchFut Exchange future.
      * @param affReady Affinity ready flag.
-     * @param updateMoving
+     * @param updateMoving {@code True} to initialize partition maps with moving partitions.
      * @throws IgniteCheckedException If failed.
      */
     public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut,
