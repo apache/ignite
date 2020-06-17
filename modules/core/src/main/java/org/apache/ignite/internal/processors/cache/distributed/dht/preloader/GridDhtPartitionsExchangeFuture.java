@@ -2624,7 +2624,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void waitUntilNewCachesAreRegistered() {
         try {
-            if (registerCachesFuture != null && !registerCachesFuture.isDone()) {
+            IgniteInternalFuture<?> registerCachesFut = registerCachesFuture;
+
+            if (registerCachesFut != null && !registerCachesFut.isDone()) {
                 final int timeout = Math.max(1000,
                     (int)(cctx.kernalContext().config().getFailureDetectionTimeout() / 2));
 
@@ -2632,7 +2634,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.exchange().exchangerBlockingSectionBegin();
 
                     try {
-                        registerCachesFuture.get(timeout, TimeUnit.SECONDS);
+                        registerCachesFut.get(timeout, TimeUnit.SECONDS);
 
                         break;
                     }
@@ -2653,15 +2655,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to wait for caches registration and saving", e);
-        }
-        finally {
-            try {
-                for (DynamicCacheDescriptor d: cctx.cache().cacheDescriptors().values())
-                    cctx.coordinators().validateCacheConfiguration(d.cacheConfiguration());
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to validate caches by coordinators", e);
-            }
         }
     }
 
