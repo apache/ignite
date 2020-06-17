@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.BitSet;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;

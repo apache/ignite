@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFa
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractJoinNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AntiJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
