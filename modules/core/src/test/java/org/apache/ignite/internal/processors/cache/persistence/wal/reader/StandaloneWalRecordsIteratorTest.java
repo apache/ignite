@@ -23,7 +23,9 @@ import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -38,10 +40,13 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -92,6 +97,38 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     /**
      * Check correct closing file descriptors.
      *
+     */
+    private String createWalFiles() throws Exception {
+        IgniteEx ig = (IgniteEx)startGrid();
+
+        String archiveWalDir = getArchiveWalDirPath(ig);
+
+        ig.cluster().active(true);
+
+        IgniteCacheDatabaseSharedManager sharedMgr = ig.context().cache().context().database();
+
+        IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
+
+        // Generate WAL segments for filling WAL archive folder.
+        for (int i = 0; i < 2 * ig.configuration().getDataStorageConfiguration().getWalSegments(); i++) {
+            sharedMgr.checkpointReadLock();
+
+            try {
+                walMgr.log(new SnapshotRecord(i, false));
+            }
+            finally {
+                sharedMgr.checkpointReadUnlock();
+            }
+        }
+
+        stopGrid();
+
+        return archiveWalDir;
+    }
+
+    /**
+     * Check correct closing file descriptors.
+     *
      * @throws Exception if test failed.
      */
     public void testCorrectClosingFileDescriptors() throws Exception {
@@ -126,6 +163,34 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         assertTrue("At least one WAL file must be opened!", CountedFileIO.getCountOpenedWalFiles() > 0);
 
         assertTrue("All WAL files must be closed at least ones!", CountedFileIO.getCountOpenedWalFiles() <= CountedFileIO.getCountClosedWalFiles());
+    }
+
+    /**
+     * Checks if binary-metadata-writer thread is not hung after standalone iterator is closed.
+     *
+     * @throws Exception if test failed.
+     */
+    public void testBinaryMetadataWriterStopped() throws Exception {
+        String dir = createWalFiles();
+
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger());
+
+        IgniteWalIteratorFactory.IteratorParametersBuilder iterParametersBuilder =
+            new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(dir)
+                .pageSize(4096);
+
+        try (WALIterator stIt = factory.iterator(iterParametersBuilder)) {
+        }
+
+        boolean binaryMetadataWriterStopped = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                Set<String> threadNames = Thread.getAllStackTraces().keySet().stream().map(Thread::getName).collect(Collectors.toSet());
+
+                return threadNames.stream().noneMatch(t -> t.startsWith("binary-metadata-writer"));
+            }
+        }, 10_000L);
+
+        assertTrue(binaryMetadataWriterStopped);
     }
 
     /**
