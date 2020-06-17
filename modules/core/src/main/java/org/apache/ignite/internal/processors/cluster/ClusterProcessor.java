@@ -39,7 +39,6 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDiagnosticInfo;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
-import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -146,64 +144,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     /** */
     private volatile DistributedMetaStorage metastorage;
 
-    /** Flag is used to detect and manage case when new node (this one) joins old cluster. */
-    private volatile boolean compatibilityMode;
-
-    /**
-     * Listener for LEFT and FAILED events intended to catch the moment when all nodes in topology support ID and tag.
-     */
-    private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
-        @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
-            if (!compatibilityMode)
-                return;
-
-            if (IgniteFeatures.allNodesSupports(discoCache.remoteNodes(), IgniteFeatures.CLUSTER_ID_AND_TAG)) {
-                // Only coordinator initializes ID and tag.
-                if (U.isLocalNodeCoordinator(ctx.discovery())) {
-                    localClusterId = localClusterId == null ? UUID.randomUUID() : localClusterId;
-
-                    localClusterTag = localClusterTag == null ? ClusterTagGenerator.generateTag() : localClusterTag;
-
-                    if (metastorage != null) {
-                        IgniteInternalFuture<?> clusterIdTagFut = null;
-
-                        try {
-                            ClusterIdAndTag idAndTag = new ClusterIdAndTag(localClusterId, localClusterTag);
-
-                            if (log.isInfoEnabled())
-                                log.info(
-                                    "Writing cluster ID and tag to metastorage " +
-                                        "on leaving compatibility mode " +
-                                        idAndTag
-                                );
-
-                            clusterIdTagFut = metastorage.writeAsync(CLUSTER_ID_TAG_KEY,
-                                idAndTag);
-                        }
-                        catch (IgniteCheckedException e) {
-                            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-                        }
-
-                        if (clusterIdTagFut != null) {
-                            clusterIdTagFut.listen(fut -> {
-                                if (fut.error() != null)
-                                    log.error("Write to metastorage failed unexpectedly", fut.error());
-                            });
-                        }
-                    }
-
-                    cluster.setId(localClusterId);
-
-                    cluster.setTag(localClusterTag);
-
-                    compatibilityMode = false;
-                }
-
-                ctx.event().removeDiscoveryEventListener(discoLsnr);
-            }
-        }
-    };
-
     /**
      * @param ctx Kernal context.
      */
@@ -236,8 +176,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-        ClusterIdAndTag idAndTag = readKey(metastorage, CLUSTER_ID_TAG_KEY, "Reading cluster ID and tag from metastorage failed, " +
-            "default values will be generated");
+        ClusterIdAndTag idAndTag = readKey(metastorage, CLUSTER_ID_TAG_KEY, "Reading cluster ID and tag " +
+            "from metastorage failed, default values will be generated");
 
         if (log.isInfoEnabled())
             log.info("Cluster ID and tag has been read from metastorage: " + idAndTag);
@@ -271,51 +211,33 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         metastorage.listen(
             (k) -> k.equals(CLUSTER_ID_TAG_KEY),
             (String k, ClusterIdAndTag oldVal, ClusterIdAndTag newVal) -> {
-                if (log.isInfoEnabled())
+                if (log.isInfoEnabled()) {
                     log.info(
                         "Cluster tag will be set to new value: " +
-                            newVal != null ? newVal.tag() : "null" +
+                            (newVal != null ? newVal.tag() : "null") +
                             ", previous value was: " +
-                            oldVal != null ? oldVal.tag() : "null");
+                            (oldVal != null ? oldVal.tag() : "null"));
+                }
 
                 cluster.setTag(newVal != null ? newVal.tag() : null);
-
-                if (compatibilityMode) {
-                    // In compatibility mode ID and tag
-                    // will be stored to metastorage on coordinator instead of receiving them on join.
-                    assert oldVal == null;
-
-                    if (log.isInfoEnabled())
-                        log.info("Cluster ID will be initialized to the value: " + newVal.id());
-
-                    cluster.setId(newVal.id());
-
-                    compatibilityMode = false;
-                }
             }
         );
 
-        //TODO GG-21718 - implement optimization so only coordinator makes a write to metastorage.
+        ctx.closure().runLocalSafe(
+            () -> {
+                try {
+                    ClusterIdAndTag idAndTag = new ClusterIdAndTag(cluster.id(), cluster.tag());
 
-        // Should not write to metastorage before exiting compatibility mode.
-        // On coordinator this happens in disco listener, on other nodes in metastorage update listener.
-        if (!compatibilityMode) {
-            ctx.closure().runLocalSafe(
-                () -> {
-                    try {
-                        ClusterIdAndTag idAndTag = new ClusterIdAndTag(cluster.id(), cluster.tag());
+                    if (log.isInfoEnabled())
+                        log.info("Writing cluster ID and tag to metastorage on ready for write " + idAndTag);
 
-                        if (log.isInfoEnabled())
-                            log.info("Writing cluster ID and tag to metastorage on ready for write " + idAndTag);
-
-                        metastorage.writeAsync(CLUSTER_ID_TAG_KEY, idAndTag);
-                    }
-                    catch (IgniteCheckedException e) {
-                        ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-                    }
+                    metastorage.writeAsync(CLUSTER_ID_TAG_KEY, idAndTag);
                 }
-            );
-        }
+                catch (IgniteCheckedException e) {
+                    ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                }
+            }
+        );
     }
 
     /**
@@ -324,9 +246,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @param newTag New tag.
      */
     public void updateTag(String newTag) throws IgniteCheckedException {
-        if (compatibilityMode)
-            throw new IgniteCheckedException("Not all nodes in the cluster support cluster ID and tag.");
-
         ClusterIdAndTag oldTag = metastorage.read(CLUSTER_ID_TAG_KEY);
 
         if (!metastorage.compareAndSet(CLUSTER_ID_TAG_KEY, oldTag, new ClusterIdAndTag(oldTag.id(), newTag))) {
@@ -342,8 +261,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     /**
      * Node makes ID and tag available through public API on local join event.
      *
-     * Effectively no-op if working in compatibility mode (see javadoc for {@link ClusterProcessor#compatibilityMode})
-     *
      * Two cases.
      * <ul>
      *     <li>In in-memory scenario very first node of the cluster generates ID and tag,
@@ -353,14 +270,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * </ul>
      */
     public void onLocalJoin() {
-        if (!IgniteFeatures.allNodesSupports(ctx.discovery().remoteNodes(), IgniteFeatures.CLUSTER_ID_AND_TAG)) {
-            compatibilityMode = true;
-
-            ctx.event().addDiscoveryEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
-
-            return;
-        }
-
         cluster.setId(localClusterId != null ? localClusterId : UUID.randomUUID());
 
         cluster.setTag(localClusterTag != null ? localClusterTag :
@@ -549,8 +458,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), getDiscoveryData());
 
-        if (!compatibilityMode)
-            dataBag.addGridCommonData(CLUSTER_PROC.ordinal(), new ClusterIdAndTag(cluster.id(), cluster.tag()));
+        dataBag.addGridCommonData(CLUSTER_PROC.ordinal(), new ClusterIdAndTag(cluster.id(), cluster.tag()));
     }
 
     /**
