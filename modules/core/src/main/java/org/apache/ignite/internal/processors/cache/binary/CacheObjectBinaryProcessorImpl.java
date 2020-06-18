@@ -49,6 +49,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -126,9 +127,6 @@ import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
  * Binary processor implementation.
  */
 public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter implements IgniteCacheObjectProcessor {
-    /** Binary metadata file store folder. */
-    public static final String BINARY_META_FOLDER = "binary_meta";
-
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
@@ -230,7 +228,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 "[igniteWorkDir=" + igniteWorkDir + ", consId=" + consId + ']');
         }
 
-        return Paths.get(igniteWorkDir, BINARY_META_FOLDER, consId).toFile();
+        return Paths.get(igniteWorkDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, consId).toFile();
     }
 
     /** {@inheritDoc} */
@@ -683,7 +681,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         catch (BinaryObjectException e) {
             throw new BinaryObjectException("New binary metadata is incompatible with binary metadata" +
                 " persisted locally." +
-                " Consider cleaning up persisted metadata from <workDir>/binary_meta directory.", e);
+                " Consider cleaning up persisted metadata from <workDir>/db/binary_meta directory.", e);
         }
     }
 
