@@ -342,7 +342,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                     return null;
                 }
             }, IgniteSQLException.class, "Table already exists: NameTest");
-
         }
         finally {
             client().destroyCache("new");
@@ -364,7 +363,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                     return null;
                 }
             }, IgniteSQLException.class, "Schema changes are not supported for LOCAL cache");
-
         }
         finally {
             client().destroyCache("local");

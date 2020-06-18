@@ -96,7 +96,7 @@ public class SchemaOperationWorker extends GridWorker {
 
         if (err != null)
             fut.onDone(err);
-        else if (nop || !(cacheRegistered || op instanceof SchemaAddQueryEntityOperation))
+        else if (nop || (!cacheRegistered && !(op instanceof SchemaAddQueryEntityOperation)))
             fut.onDone();
 
         pubFut = publicFuture(fut);
