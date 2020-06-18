@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -365,37 +363,35 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         // Start data change operations from several threads.
         final AtomicBoolean stopped = new AtomicBoolean();
 
-        IgniteInternalFuture<?> task = multithreadedAsync(new Callable<Void>() {
-            @Override public Void call() {
-                while (!stopped.get()) {
-                    Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
+        IgniteInternalFuture<?> task = multithreadedAsync(() -> {
+            while (!stopped.get()) {
+                Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    int i = rnd.nextInt(0, LARGE_NUM_ENTRIES);
+                int i = rnd.nextInt(0, LARGE_NUM_ENTRIES);
 
-                    BinaryObject val = node.binary().builder(POI_CLASS_NAME)
-                            .setField(NAME_FIELD_NAME, "POI_" + i, String.class)
-                            .setField(LATITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
-                            .setField(LONGITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
-                            .build();
+                BinaryObject val = node.binary().builder(POI_CLASS_NAME)
+                    .setField(NAME_FIELD_NAME, "POI_" + i, String.class)
+                    .setField(LATITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
+                    .setField(LONGITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
+                    .build();
 
-                    IgniteCache<Object, BinaryObject> cache = node.cache(POI_CACHE_NAME).withKeepBinary();
+                IgniteCache<Object, BinaryObject> cache = node.cache(POI_CACHE_NAME).withKeepBinary();
 
-                    try {
-                        if (ThreadLocalRandom.current().nextBoolean())
-                            cache.put(i, val);
-                        else
-                            cache.remove(i);
-                    }
-                    catch (CacheException e) {
-                        if (!X.hasCause(e, TransactionSerializationException.class))
-                            throw e;
-                    }
+                try {
+                    if (ThreadLocalRandom.current().nextBoolean())
+                        cache.put(i, val);
+                    else
+                        cache.remove(i);
                 }
-
-                return null;
+                catch (CacheException e) {
+                    if (!X.hasCause(e, TransactionSerializationException.class))
+                        throw e;
+                }
             }
+
+            return null;
         }, 4);
 
         // Do some work.
@@ -441,41 +437,37 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         final AtomicBoolean stopped = new AtomicBoolean();
         final AtomicInteger success = new AtomicInteger();
 
-        IgniteInternalFuture<?> task = multithreadedAsync(new Callable<Void>() {
-            @Override public Void call() {
-                while (!stopped.get()) {
-                    IgniteEx node = grid(ThreadLocalRandom.current().nextInt(1, 4));
+        IgniteInternalFuture<?> task = multithreadedAsync(() -> {
+            while (!stopped.get()) {
+                IgniteEx node = grid(ThreadLocalRandom.current().nextInt(1, 4));
 
-                    try {
-                        Thread.sleep(100);
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-
-                    enableIndexing(node).chain(new IgniteClosure<IgniteInternalFuture<?>, Void>() {
-                        @Override public Void apply(IgniteInternalFuture<?> fut) {
-                            try {
-                                fut.get();
-
-                                success.incrementAndGet();
-                            }
-                            catch (IgniteCheckedException e) {
-                                assertTrue(e.hasCause(SchemaOperationException.class));
-
-                                SchemaOperationException opEx = e.getCause(SchemaOperationException.class);
-
-                                assertEquals(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, opEx.code());
-                                assertEquals("Cache is already indexed: " + POI_CACHE_NAME, opEx.getMessage());
-                            }
-
-                            return null;
-                        }
-                    });
+                try {
+                    Thread.sleep(100);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
 
-                return null;
+                enableIndexing(node).chain((fut) -> {
+                    try {
+                        fut.get();
+
+                        success.incrementAndGet();
+                    }
+                    catch (IgniteCheckedException e) {
+                        assertTrue(e.hasCause(SchemaOperationException.class));
+
+                        SchemaOperationException opEx = e.getCause(SchemaOperationException.class);
+
+                        assertEquals(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, opEx.code());
+                        assertEquals("Cache is already indexed: " + POI_CACHE_NAME, opEx.getMessage());
+                    }
+
+                    return null;
+                });
             }
+
+            return null;
         }, 4);
 
         // Do attempts.
@@ -522,11 +514,12 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         fields.put(LATITUDE_FIELD_NAME, Double.class.getName());
         fields.put(LONGITUDE_FIELD_NAME, Double.class.getName());
 
-        return new QueryEntity().setKeyType(Integer.class.getName())
-                        .setKeyFieldName(ID_FIELD_NAME)
-                        .setValueType(POI_CLASS_NAME)
-                        .setTableName(POI_TABLE_NAME)
-                        .setFields(fields);
+        return new QueryEntity()
+            .setKeyType(Integer.class.getName())
+            .setKeyFieldName(ID_FIELD_NAME)
+            .setValueType(POI_CLASS_NAME)
+            .setTableName(POI_TABLE_NAME)
+            .setFields(fields);
     }
 
     /** */
@@ -606,14 +599,18 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
         IgniteEx node = (IgniteEx)Ignition.start(cfg);
 
-        if (latch != null)
+        if (latch != null) {
             node.context().discovery().setCustomEventListener(SchemaFinishDiscoveryMessage.class,
-                    new CustomEventListener<SchemaFinishDiscoveryMessage>() {
-                        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
-                                                            SchemaFinishDiscoveryMessage msg) {
-                            latch.countDown();
-                        }
-                    });
+                new CustomEventListener<SchemaFinishDiscoveryMessage>() {
+                    @Override public void onCustomEvent(
+                        AffinityTopologyVersion topVer,
+                        ClusterNode snd,
+                        SchemaFinishDiscoveryMessage msg
+                    ) {
+                        latch.countDown();
+                    }
+                });
+        }
 
         return node;
     }

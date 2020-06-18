@@ -152,11 +152,8 @@ public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbs
     @SuppressWarnings("ThrowableNotThrown")
     private void createTable() {
         if (cacheMode == CacheMode.REPLICATED) {
-            GridTestUtils.assertThrows(
-                log,
-                () -> createTable(node().cache(POI_CACHE_NAME), QUERY_PARALLELISM),
-                IgniteException.class,
-                "Segmented indices are supported for PARTITIONED mode only.");
+            GridTestUtils.assertThrows(log, () -> createTable(node().cache(POI_CACHE_NAME), QUERY_PARALLELISM),
+                IgniteException.class, "Segmented indices are supported for PARTITIONED mode only.");
 
             createTable(node().cache(POI_CACHE_NAME), 1);
         }

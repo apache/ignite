@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -108,28 +107,28 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
 
     /** */
     protected void createTable(IgniteCache<?, ?> cache, int qryParallelism) {
-        cache.query(new SqlFieldsQuery(
-                String.format("CREATE TABLE %s.%s " +
-                                "(%s INT, %s VARCHAR," +
-                                " %s DOUBLE PRECISION," +
-                                " %s DOUBLE PRECISION," +
-                                " PRIMARY KEY (%s)" +
-                                ") WITH " +
-                                " \"CACHE_NAME=%s,VALUE_TYPE=%s,PARALLELISM=%d\"",
-                        POI_SCHEMA_NAME, POI_TABLE_NAME, ID_FIELD_NAME, NAME_FIELD_NAME,
-                        LATITUDE_FIELD_NAME, LONGITUDE_FIELD_NAME, ID_FIELD_NAME,
-                        POI_CACHE_NAME, POI_CLASS_NAME, qryParallelism)
-        ));
+        String sql = String.format(
+            "CREATE TABLE %s.%s " +
+            "(%s INT, %s VARCHAR," +
+            " %s DOUBLE PRECISION," +
+            " %s DOUBLE PRECISION," +
+            " PRIMARY KEY (%s)" +
+            ") WITH " +
+            " \"CACHE_NAME=%s,VALUE_TYPE=%s,PARALLELISM=%d\"",
+            POI_SCHEMA_NAME, POI_TABLE_NAME, ID_FIELD_NAME, NAME_FIELD_NAME, LATITUDE_FIELD_NAME, LONGITUDE_FIELD_NAME,
+            ID_FIELD_NAME, POI_CACHE_NAME, POI_CLASS_NAME, qryParallelism);
+
+        cache.query(new SqlFieldsQuery(sql));
     }
 
     /** */
     protected List<IgniteConfiguration> configurations() throws Exception {
         return Arrays.asList(
-                serverConfiguration(IDX_SRV_CRD),
-                serverConfiguration(IDX_SRV_NON_CRD),
-                clientConfiguration(IDX_CLI),
-                serverConfiguration(IDX_SRV_FILTERED, true),
-                clientConfiguration(IDX_CLI_NEAR_ONLY)
+            serverConfiguration(IDX_SRV_CRD),
+            serverConfiguration(IDX_SRV_NON_CRD),
+            clientConfiguration(IDX_CLI),
+            serverConfiguration(IDX_SRV_FILTERED, true),
+            clientConfiguration(IDX_CLI_NEAR_ONLY)
         );
     }
 
@@ -165,9 +164,7 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(128 * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
-
         cfg.setConsistentId(gridName);
-
         cfg.setSqlSchemas(POI_SCHEMA_NAME);
 
         return optimize(cfg);
@@ -175,15 +172,15 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
 
     /** */
     protected CacheConfiguration<?, ?> testCacheConfiguration(
-            String name,
-            CacheMode mode,
-            CacheAtomicityMode atomicityMode
+        String name,
+        CacheMode mode,
+        CacheAtomicityMode atomicityMode
     ) {
         return new CacheConfiguration<>(name)
-                .setNodeFilter(new DynamicEnableIndexingBasicSelfTest.NodeFilter())
-                .setAtomicityMode(atomicityMode)
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                .setCacheMode(mode);
+            .setNodeFilter(new DynamicEnableIndexingBasicSelfTest.NodeFilter())
+            .setAtomicityMode(atomicityMode)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setCacheMode(mode);
     }
 
     /** */
@@ -193,10 +190,10 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
 
             for (int i = start; i < end; i++) {
                 BinaryObject bo = node.binary().builder(POI_CLASS_NAME)
-                        .setField(NAME_FIELD_NAME, "POI_" + i, String.class)
-                        .setField(LATITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
-                        .setField(LONGITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
-                        .build();
+                    .setField(NAME_FIELD_NAME, "POI_" + i, String.class)
+                    .setField(LATITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
+                    .setField(LONGITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
+                    .build();
 
                 streamer.addData(i, bo);
             }
@@ -219,26 +216,22 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
     protected void performQueryingIntegrityCheck(Ignite ig, int key) throws Exception {
         IgniteCache<Object, Object> cache = ig.cache(POI_CACHE_NAME).withKeepBinary();
 
-        List<List<?>> res = cache.query(new SqlFieldsQuery(
-                    String.format("DELETE FROM %s WHERE %s = %d", POI_TABLE_NAME, ID_FIELD_NAME, key))
-                .setSchema(POI_SCHEMA_NAME)).getAll();
+        String sql = String.format("DELETE FROM %s WHERE %s = %d", POI_TABLE_NAME, ID_FIELD_NAME, key);
+        List<List<?>> res = cache.query(new SqlFieldsQuery(sql).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertEquals(1, res.size());
         assertNull(cache.get(key));
 
-        res = cache.query(new SqlFieldsQuery(
-                String.format(
-                        "INSERT INTO %s(%s) VALUES (%s)",
-                        POI_TABLE_NAME,
-                        String.join(",", ID_FIELD_NAME, NAME_FIELD_NAME),
-                        String.join(",", String.valueOf(key),"'test'"))
-        ).setSchema(POI_SCHEMA_NAME)).getAll();
+        sql = String.format("INSERT INTO %s(%s) VALUES (%s)", POI_TABLE_NAME,
+            String.join(",", ID_FIELD_NAME, NAME_FIELD_NAME), String.join(",", String.valueOf(key), "'test'"));
+
+        res = cache.query(new SqlFieldsQuery(sql).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertEquals(1, res.size());
         assertNotNull(cache.get(key));
 
-        res = cache.query(new SqlFieldsQuery(String.format("UPDATE %s SET %s = '%s' WHERE ID = %d",
-                POI_TABLE_NAME, NAME_FIELD_NAME, "POI_" + key, key)).setSchema(POI_SCHEMA_NAME)).getAll();
+        sql = String.format("UPDATE %s SET %s = '%s' WHERE ID = %d", POI_TABLE_NAME, NAME_FIELD_NAME, "POI_" + key, key);
+        res = cache.query(new SqlFieldsQuery(sql).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertEquals(1, res.size());
         assertEquals("POI_" + key, ((BinaryObject)cache.get(key)).field(NAME_FIELD_NAME));
@@ -256,14 +249,12 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
     protected void assertIndexUsed(IgniteCache<?, ?> cache, String sql, String idx) throws IgniteCheckedException {
         AtomicReference<String> currPlan = new AtomicReference<>();
 
-        boolean res = GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
-                String plan = explainPlan(cache, sql);
+        boolean res = GridTestUtils.waitForCondition(() -> {
+            String plan = explainPlan(cache, sql);
 
-                currPlan.set(plan);
+            currPlan.set(plan);
 
-                return plan.contains(idx.toLowerCase());
-            }
+            return plan.contains(idx.toLowerCase());
         }, 1_000);
 
         assertTrue("Query \"" + sql + "\" executed without usage of " + idx + ", see plan:\n\"" +

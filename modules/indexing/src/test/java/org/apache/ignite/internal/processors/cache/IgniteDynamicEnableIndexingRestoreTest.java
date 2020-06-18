@@ -40,7 +40,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -100,9 +99,7 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
             .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
-
         cfg.setConsistentId(gridName);
-
         cfg.setSqlSchemas(POI_SCHEMA_NAME, WRONG_SCHEMA_NAME);
 
         return cfg;
@@ -287,50 +284,46 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
      * 4) Stop cluster.
      */
     private void prepareTestGrid() throws Exception {
-            IgniteEx ig = startGrids(2);
+        IgniteEx ig = startGrids(2);
 
-            ig.cluster().state(ClusterState.ACTIVE);
+        ig.cluster().state(ClusterState.ACTIVE);
 
-            IgniteCache<?, ?> cache = ig.createCache(testCacheConfiguration(POI_CACHE_NAME));
+        IgniteCache<?, ?> cache = ig.createCache(testCacheConfiguration(POI_CACHE_NAME));
 
-            fillTestData(ig);
+        fillTestData(ig);
 
-            stopGrid(1);
+        stopGrid(1);
 
-            createTable(cache, POI_SCHEMA_NAME);
+        createTable(cache, POI_SCHEMA_NAME);
 
-            performQueryingIntegrityCheck(ig);
+        performQueryingIntegrityCheck(ig);
 
-            stopAllGrids();
+        stopAllGrids();
     }
 
     /** */
     private void performQueryingIntegrityCheck(IgniteEx ig) throws Exception {
         IgniteCache<Object, Object> cache = ig.getOrCreateCache(POI_CACHE_NAME).withKeepBinary();
 
-        List<List<?>> res = cache.query(new SqlFieldsQuery(String.format("SELECT * FROM %s", POI_TABLE_NAME))
-            .setSchema(POI_SCHEMA_NAME)).getAll();
+        String sql = String.format("SELECT * FROM %s", POI_TABLE_NAME);
+        List<List<?>> res = cache.query(new SqlFieldsQuery(sql).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertEquals(NUM_ENTRIES, res.size());
 
-        cache.query(new SqlFieldsQuery(
-                    String.format("DELETE FROM %s WHERE %s = %s", POI_TABLE_NAME, ID_FIELD_NAME, "100")
-                ).setSchema(POI_SCHEMA_NAME)).getAll();
+        sql = String.format("DELETE FROM %s WHERE %s = %s", POI_TABLE_NAME, ID_FIELD_NAME, "100");
+        cache.query(new SqlFieldsQuery(sql).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertNull(cache.get(100));
 
-        cache.query(new SqlFieldsQuery(
-            String.format(
-                "INSERT INTO %s(%s) VALUES (%s)",
-                POI_TABLE_NAME,
-                String.join(",", ID_FIELD_NAME, NAME_FIELD_NAME),
-                String.join(",", "100","'test'"))
-        ).setSchema(POI_SCHEMA_NAME)).getAll();
+        sql = String.format("INSERT INTO %s(%s) VALUES (%s)", POI_TABLE_NAME,
+            String.join(",", ID_FIELD_NAME, NAME_FIELD_NAME), String.join(",", "100","'test'"));
+        cache.query(new SqlFieldsQuery(sql).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertNotNull(cache.get(100));
 
-        cache.query(new SqlFieldsQuery(String.format("UPDATE %s SET %s = '%s' WHERE %s = 100",
-            POI_TABLE_NAME, NAME_FIELD_NAME, "POI_100", ID_FIELD_NAME)).setSchema(POI_SCHEMA_NAME)).getAll();
+        sql = String.format("UPDATE %s SET %s = '%s' WHERE %s = 100", POI_TABLE_NAME, NAME_FIELD_NAME, "POI_100",
+            ID_FIELD_NAME);
+        cache.query(new SqlFieldsQuery(sql).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertEquals("POI_100", ((BinaryObject)cache.get(100)).field(NAME_FIELD_NAME));
 
@@ -358,18 +351,18 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
 
     /** */
     private void createTable(IgniteCache<?, ?> cache, String schemaName) {
-        cache.query(new SqlFieldsQuery(
-                String.format("CREATE TABLE %s.%s " +
-                                "(%s INT, %s VARCHAR," +
-                                " %s DOUBLE PRECISION," +
-                                " %s DOUBLE PRECISION," +
-                                " PRIMARY KEY (%s)" +
-                                ") WITH " +
-                                " \"CACHE_NAME=%s,VALUE_TYPE=%s\"",
-                        schemaName, POI_TABLE_NAME, ID_FIELD_NAME, NAME_FIELD_NAME,
-                        LATITUDE_FIELD_NAME, LONGITUDE_FIELD_NAME, ID_FIELD_NAME,
-                        POI_CACHE_NAME, POI_CLASS_NAME)
-        ));
+        String sql = String.format(
+            "CREATE TABLE %s.%s " +
+            "(%s INT, %s VARCHAR," +
+            " %s DOUBLE PRECISION," +
+            " %s DOUBLE PRECISION," +
+            " PRIMARY KEY (%s)" +
+            ") WITH " +
+            " \"CACHE_NAME=%s,VALUE_TYPE=%s\"",
+            schemaName, POI_TABLE_NAME, ID_FIELD_NAME, NAME_FIELD_NAME, LATITUDE_FIELD_NAME, LONGITUDE_FIELD_NAME,
+            ID_FIELD_NAME, POI_CACHE_NAME, POI_CLASS_NAME);
+
+        cache.query(new SqlFieldsQuery(sql));
     }
 
     /** */
@@ -377,14 +370,12 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
         throws IgniteCheckedException {
         AtomicReference<String> currPlan = new AtomicReference<>();
 
-        boolean res = GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
-                String plan = explainPlan(cache, sql);
+        boolean res = GridTestUtils.waitForCondition(() -> {
+            String plan = explainPlan(cache, sql);
 
-                currPlan.set(plan);
+            currPlan.set(plan);
 
-                return plan.contains(idx);
-            }
+            return plan.contains(idx);
         }, 10_000);
 
         assertTrue("Query \"" + sql + "\" executed without usage of " + idx + ", see plan:\n\"" +
@@ -399,10 +390,10 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
 
     /** */
     private CacheConfiguration<?, ?> testCacheConfiguration(String name) {
+        //Set transactional because of https://issues.apache.org/jira/browse/IGNITE-5564.
         return new CacheConfiguration<>(name)
-                    //Set transactional because of https://issues.apache.org/jira/browse/IGNITE-5564.
-                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                    .setCacheMode(CacheMode.REPLICATED)
-                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
     }
 }
