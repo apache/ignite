@@ -130,6 +130,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private boolean inMemoryMode;
 
+    /**
+     * Compatibility mode flag. When node detects it runs in heterogeneous cluster (nodes of different versions),
+     * it should skip baseline topology operations.
+     */
+    private volatile boolean compatibilityMode;
+
     /** */
     private volatile DiscoveryDataClusterState globalState;
 
@@ -236,6 +242,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         );
     }
 
+    /**
+     * @return {@code True} if {@link IGridClusterStateProcessor} has detected that cluster is working
+     * in compatibility mode (nodes of different versions are joined to the cluster).
+     */
+    public boolean compatibilityMode() {
+        return compatibilityMode;
+    }
+
     /** {@inheritDoc} */
     @Override public ClusterState publicApiState(boolean waitForTransition) {
         return publicApiStateAsync(waitForTransition).get();
@@ -316,6 +330,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
         this.metastorage = metastorage;
 
+        if (compatibilityMode) {
+            if (log.isInfoEnabled())
+                log.info("BaselineTopology won't be stored as this node is running in compatibility mode");
+
+            return;
+        }
+
         writeBaselineTopology(globalState.baselineTopology(), null);
 
         bltHist.flushHistoryItems(metastorage);
@@ -327,12 +348,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @throws IgniteCheckedException If write to metastore has failed.
      */
     public void resetBranchingHistory(long newBranchingHash) throws IgniteCheckedException {
-        globalState.baselineTopology().resetBranchingHistory(newBranchingHash);
+        if (!compatibilityMode()) {
+            globalState.baselineTopology().resetBranchingHistory(newBranchingHash);
 
-        writeBaselineTopology(globalState.baselineTopology(), null);
+            writeBaselineTopology(globalState.baselineTopology(), null);
 
-        U.log(log,
-            String.format("Branching history of current BaselineTopology is reset to the value %d", newBranchingHash));
+            U.log(log,
+                String.format("Branching history of current BaselineTopology is reset to the value %d", newBranchingHash));
+        }
     }
 
     /**
@@ -578,6 +601,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     " initiator node ID: " + msg.initiatorNodeId()
             );
         }
+
+        if (msg.baselineTopology() != null)
+            compatibilityMode = false;
 
         if (state.transition()) {
             if (isApplicable(msg, state)) {
@@ -845,8 +871,19 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         DiscoveryDataBag.JoiningNodeDiscoveryData joiningNodeData = dataBag.newJoinerDiscoveryData(STATE_PROC.ordinal());
 
+        if (joiningNodeData != null && !joiningNodeData.hasJoiningNodeData())
+            compatibilityMode = true; //compatibility mode: only old nodes don't send any data on join
+
         if (dataBag.commonDataCollectedFor(STATE_PROC.ordinal()) || joiningNodeData == null)
             return;
+
+        if (!joiningNodeData.hasJoiningNodeData() || compatibilityMode) {
+            //compatibility mode: old nodes don't send any data on join, so coordinator of new version
+            //doesn't send BaselineTopology history, only its current globalState
+            dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
+
+            return;
+        }
 
         DiscoveryDataClusterState joiningNodeState = null;
 
@@ -888,6 +925,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     " mixed cluster running in compatibility mode");
 
             globalState = (DiscoveryDataClusterState) data.commonData();
+
+            compatibilityMode = true;
 
             ctx.cache().context().readOnlyMode(readOnly(globalState.state()));
 
@@ -1011,7 +1050,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
-        BaselineTopology blt = calculateNewBaselineTopology(state, baselineNodes, forceChangeBaselineTopology);
+        BaselineTopology blt = (compatibilityMode && !forceChangeBaselineTopology) ?
+            null :
+            calculateNewBaselineTopology(state, baselineNodes, forceChangeBaselineTopology);
 
         boolean isBaselineAutoAdjustEnabled = isBaselineAutoAdjustEnabled();
 
@@ -1410,6 +1451,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         BaselineTopology blt,
         BaselineTopologyHistoryItem prevBltHistItem
     ) throws IgniteCheckedException {
+        if (compatibilityMode) {
+            if (log.isInfoEnabled())
+                log.info("BaselineTopology won't be stored as this node is running in compatibility mode");
+
+            return;
+        }
+
         writeBaselineTopology(blt, prevBltHistItem);
     }
 

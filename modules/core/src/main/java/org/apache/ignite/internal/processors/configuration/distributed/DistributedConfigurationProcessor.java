@@ -61,9 +61,6 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-//        if (ctx.isDaemon())
-//            return;
-
         GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
 
         isp.registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
