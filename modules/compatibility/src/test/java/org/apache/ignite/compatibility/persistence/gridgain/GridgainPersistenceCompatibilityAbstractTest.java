@@ -20,6 +20,7 @@ package org.apache.ignite.compatibility.persistence.gridgain;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Set;
 import org.apache.ignite.compatibility.persistence.IgnitePersistenceCompatibilityAbstractTest;
 import org.apache.ignite.compatibility.testframework.junits.Dependency;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -87,6 +88,15 @@ public class GridgainPersistenceCompatibilityAbstractTest extends IgnitePersiste
         dependencies.add(new Dependency("core", GRIDGAIN_GROUP_ID, "ignite-core", null, true));
 
         return dependencies;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Set<String> getExcluded(String ver, Collection<Dependency> dependencies) {
+        Set<String> excluded = super.getExcluded(ver, dependencies);
+
+        excluded.add("ignite/ignite-core");
+
+        return excluded;
     }
 
     /**
