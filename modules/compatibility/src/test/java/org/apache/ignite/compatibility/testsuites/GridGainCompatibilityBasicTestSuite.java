@@ -17,27 +17,16 @@
 
 package org.apache.ignite.compatibility.testsuites;
 
-import org.apache.ignite.compatibility.cache.LocalCacheTest;
-import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
-import org.apache.ignite.compatibility.persistence.MetaStorageCompatibilityTest;
-import org.apache.ignite.compatibility.persistence.MigratingToWalV2SerializerWithCompactionTest;
-import org.apache.ignite.compatibility.persistence.PersistenceBasicCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.gridgain.GridGainPersistenceBasicCompatibilityTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Compatibility tests basic test suite.
+ * Gridgain compatibility tests basic test suite.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    PersistenceBasicCompatibilityTest.class,
-    FoldersReuseCompatibilityTest.class,
-    MigratingToWalV2SerializerWithCompactionTest.class,
-    MetaStorageCompatibilityTest.class,
-    LocalCacheTest.class,
-
     GridGainPersistenceBasicCompatibilityTest.class
 })
-public class IgniteCompatibilityBasicTestSuite {
+public class GridGainCompatibilityBasicTestSuite {
 }

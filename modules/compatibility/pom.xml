@@ -36,6 +36,13 @@
     <version>2.9.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
+    <repositories>
+        <repository>
+            <id>GridGain Repository</id>
+            <url>http://www.gridgainsystems.com/nexus/content/repositories/external</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <!-- Note: when adding new Ignite module dependency please register it in
         org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest.getDependencies()

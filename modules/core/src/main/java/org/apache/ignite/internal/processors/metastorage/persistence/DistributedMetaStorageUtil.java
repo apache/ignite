@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
@@ -59,7 +62,19 @@ class DistributedMetaStorageUtil {
 
     /** */
     public static Serializable unmarshal(JdkMarshaller marshaller, byte[] valBytes) throws IgniteCheckedException {
-        return valBytes == null ? null : marshaller.unmarshal(valBytes, U.gridClassLoader());
+        try {
+            return valBytes == null ? null : marshaller.unmarshal(valBytes, U.gridClassLoader());
+        } catch (IgniteCheckedException e) {
+            if (X.hasCause(e, ClassNotFoundException.class)) {
+                IgniteLogger log = IgnitionEx.localIgnite().log();
+
+                log.warning("Unable to unmarshal the distributed metastorage value with unknown class.", e);
+
+                return null;
+            }
+
+            throw e;
+        }
     }
 
     /** */
