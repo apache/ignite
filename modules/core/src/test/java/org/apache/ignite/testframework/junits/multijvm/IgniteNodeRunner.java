@@ -73,7 +73,7 @@ public class IgniteNodeRunner {
     /**
      * @return Ignite instance started at main.
      */
-    public static IgniteEx startedInstance(){
+    public static IgniteEx startedInstance() {
         return (IgniteEx)ignite;
     }
 
@@ -113,7 +113,7 @@ public class IgniteNodeRunner {
     public static void storeToFile(IgniteConfiguration cfg, String fileName,
         boolean resetMarshaller,
         boolean resetDiscovery) throws IOException, IgniteCheckedException {
-        try(OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
+        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
             IgniteConfiguration cfg0 = new IgniteConfiguration(cfg);
 
             if (resetMarshaller)
@@ -141,7 +141,7 @@ public class IgniteNodeRunner {
      */
     private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName)
         throws IOException, IgniteCheckedException {
-        try(BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
+        try (BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
             IgniteConfiguration cfg = (IgniteConfiguration)new XStream().fromXML(cfgReader);
 
             if (cfg.getMarshaller() == null) {
@@ -173,30 +173,33 @@ public class IgniteNodeRunner {
      * @return List of killed process ids.
      * @throws Exception If exception.
      */
-    public static List<Integer> killAll() throws Exception{
+    public static List<Integer> killAll() throws Exception {
         //MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier("localhost"));
 
         //Set<Integer> jvms = monitoredHost.activeVms();
 
         List<Integer> res = new ArrayList<>();
+        /**
+        for (Integer jvmId : jvms) {
+            try {
+                MonitoredVm vm = monitoredHost.getMonitoredVm(new VmIdentifier("//" + jvmId + "?mode=r"), 0);
 
-		/*
-		 * for (Integer jvmId : jvms) { try { MonitoredVm vm =
-		 * monitoredHost.getMonitoredVm(new VmIdentifier("//" + jvmId + "?mode=r"), 0);
-		 * 
-		 * if (IgniteNodeRunner.class.getName().equals(MonitoredVmUtil.mainClass(vm,
-		 * true))) { Process killProc = Runtime.getRuntime().exec(U.isWindows() ? new
-		 * String[] {"taskkill", "/pid", jvmId.toString(), "/f", "/t"} : new String[]
-		 * {"kill", "-9", jvmId.toString()});
-		 * 
-		 * killProc.waitFor();
-		 * 
-		 * res.add(jvmId); } } catch (Exception e) { // Print stack trace just for
-		 * information.
-		 * X.printerrln("Could not kill IgniteNodeRunner java processes. Jvm pid = " +
-		 * jvmId, e); } }
-		 */
+                if (IgniteNodeRunner.class.getName().equals(MonitoredVmUtil.mainClass(vm, true))) {
+                    Process killProc = Runtime.getRuntime().exec(U.isWindows() ?
+                        new String[] {"taskkill", "/pid", jvmId.toString(), "/f", "/t"} :
+                        new String[] {"kill", "-9", jvmId.toString()});
 
+                    killProc.waitFor();
+
+                    res.add(jvmId);
+                }
+            }
+            catch (Exception e) {
+                // Print stack trace just for information.
+                X.printerrln("Could not kill IgniteNodeRunner java processes. Jvm pid = " + jvmId, e);
+            }
+        }
+		*/
         return res;
     }
 }

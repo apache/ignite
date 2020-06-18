@@ -25,14 +25,18 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -98,6 +102,43 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
                 return cacheWorkDir.toPath().resolve("index.bin");
             })
             .collect(Collectors.toList());
+    }
+
+    /**
+     * @throws Exception On error.
+     */
+    protected void checkThereAreNotUsedConnections() throws Exception {
+        boolean notLeak = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (Ignite ign : G.allGrids()) {
+                    if (!usedConnections(ign).isEmpty())
+                        return false;
+                }
+
+                return true;
+            }
+        }, 5000);
+
+        if (!notLeak) {
+            for (Ignite ign : G.allGrids()) {
+                Set<H2PooledConnection> usedConns = usedConnections(ign);
+
+                if (!usedConnections(ign).isEmpty())
+                    log.error("Not closed connections: " + usedConns);
+            }
+
+            fail("H2 JDBC connections leak detected. See the log above.");
+        }
+    }
+
+    /**
+     * @param ign Node.
+     * @return Set of used connections.
+     */
+    private Set<H2PooledConnection> usedConnections(Ignite ign) {
+        ConnectionManager connMgr = ((IgniteH2Indexing)((IgniteEx)ign).context().query().getIndexing()).connections();
+
+        return GridTestUtils.getFieldValue(connMgr, "usedConns");
     }
 
     /**

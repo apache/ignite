@@ -40,6 +40,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -95,7 +96,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
         ccfgs.add(buildCacheConfiguration(CACHE_POSITION));
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
-        c.setLongQueryWarningTimeout(10000);
+        c.setSqlConfiguration(new SqlConfiguration().setLongQueryWarningTimeout(10000));
         c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
@@ -258,7 +259,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
                 return cache.query(new SqlFieldsQueryEx("UPDATE Person SET name = Fail(name)", false)
                     .setSkipReducerOnUpdate(true));
             }
-        }, CacheException.class, "Failed to execute SQL query");
+        }, CacheException.class, "Failed to run SQL update query.");
     }
 
     /**
@@ -642,7 +643,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return (name==null? 0: name.hashCode()) ^ position ^ amount ^ (updated == null ? 0 : updated.hashCode());
+            return (name == null ? 0 : name.hashCode()) ^ position ^ amount ^ (updated == null ? 0 : updated.hashCode());
         }
 
         /** {@inheritDoc} */

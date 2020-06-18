@@ -141,7 +141,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridNioFilterChain<Object> chain = new GridNioFilterChain<>(log,  testLsnr, testHead,
+        GridNioFilterChain<Object> chain = new GridNioFilterChain<>(log, testLsnr, testHead,
             new AppendingFilter("A"), new AppendingFilter("B"), new AppendingFilter("C"), new AppendingFilter("D"));
 
         GridNioSession ses = new MockNioSession();

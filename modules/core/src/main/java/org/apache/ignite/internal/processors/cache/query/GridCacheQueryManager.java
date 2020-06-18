@@ -50,7 +50,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryMetrics;
-import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -64,6 +63,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -134,6 +134,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
@@ -619,16 +620,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             taskName));
                     }
 
-					
-                    //add@byron use TextQuery insteads text string
-                    TextQuery<K, V> tq = new TextQuery<K, V>(qry.queryClassName(),qry.clause());
-                    tq.setPageSize(qry.pageSize());
-                    tq.setLocal(qry.forceLocal());
-                    tq.setFitler(qry.scanFilter());
-					tq.setLimit(qry.limit());
-                    iter = qryProc.queryText(cacheName, tq, qry.queryClassName(), filter(qry));
-                    //- iter = qryProc.queryText(cacheName, qry.clause(), qry.queryClassName(), filter(qry), qry.limit());
-					//end@
+                    iter = qryProc.queryText(cacheName, qry.clause(), qry.queryClassName(), filter(qry), qry.limit());
+
                     break;
 
                 case SET:
@@ -807,7 +800,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         final InternalScanFilter<K, V> intFilter = keyValFilter != null ? new InternalScanFilter<>(keyValFilter) : null;
 
         try {
-            injectResources(keyValFilter);
+            if (keyValFilter instanceof PlatformCacheEntryFilter)
+                ((PlatformCacheEntryFilter)keyValFilter).cacheContext(cctx);
+            else
+                injectResources(keyValFilter);
 
             Integer part = cctx.isLocal() ? null : qry.partition();
 
@@ -837,9 +833,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 GridDhtLocalPartition locPart0 = dht.topology().localPartition(part, topVer, false);
 
-                if (locPart0 == null || locPart0.state() != OWNING || !locPart0.reserve())
-                    throw new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
-                        "Partition can not be reserved");
+                if (locPart0 == null || locPart0.state() != OWNING || !locPart0.reserve()) {
+                    throw locPart0 != null && locPart0.state() == LOST ?
+                        new CacheInvalidStateException("Failed to execute scan query because cache partition has been " +
+                            "lost [cacheName=" + cctx.name() + ", part=" + part + "]") :
+                        new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
+                            "Partition can not be reserved");
+                }
 
                 locPart = locPart0;
 
@@ -848,6 +848,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
             else {
                 locPart = null;
+
+                if (!cctx.isLocal()) {
+                    final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+
+                    Set<Integer> lostParts = dht.topology().lostPartitions();
+
+                    if (!lostParts.isEmpty()) {
+                        throw new CacheInvalidStateException("Failed to execute scan query because cache partition " +
+                            "has been lost [cacheName=" + cctx.name() + ", part=" + lostParts.iterator().next() + "]");
+                    }
+                }
 
                 it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
                     qry.mvccSnapshot(), qry.isDataPageScanEnabled());
@@ -1218,21 +1229,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         K key0 = null;
                         V val0 = null;
-                        
-                        //add@byron support scanfilter:
-                        if(qry.scanFilter()!=null){                        	
-                            key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false);                            
-                            val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false);
-                            
-                            if(!qry.scanFilter().apply(key0,val0))
-                            	continue;
-                        }
-                        //end@
 
                         if (readEvt && cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
-                        	if (key0 == null)
                             key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false);
-                        	if (val0 == null)
                             val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false);
 
                             switch (type) {
@@ -1299,9 +1298,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             else
                                 continue;
                         }
-                        else {                        	
-                            data.add(new T2<>(key, val));    
-                        }
+                        else
+                            data.add(new T2<>(key, val));
                     }
 
                     if (!loc) {
@@ -1531,7 +1529,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param reqId Request ID.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    protected void removeQueryResult(@Nullable UUID sndId, long reqId) {
+    public void removeQueryResult(@Nullable UUID sndId, long reqId) {
         if (sndId == null)
             return;
 
@@ -2805,23 +2803,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             keepBinary,
             null).limit(limit);
     }
-	//add@byron support text search filter
-    public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
-        String search,int limit, IgniteBiPredicate<Object, Object> filter, boolean keepBinary) {
-        A.notNull("clsName", clsName);
-        A.notNull("search", search);
 
-        return new GridCacheQueryAdapter<Map.Entry<K, V>>(cctx,
-            TEXT,
-            clsName,
-            search,
-            filter,
-            null,
-            false,
-            keepBinary,
-			null).limit(limit);
-    }
-	
     /** @return Query iterators. */
     public ConcurrentMap<UUID, RequestFutureMap> queryIterators() {
         return qryIters;

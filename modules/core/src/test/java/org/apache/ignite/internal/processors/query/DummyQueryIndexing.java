@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
@@ -108,10 +107,10 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(
         String schemaName,
         String cacheName,
-        TextQuery qry,
+        String qry,
         String typeName,
-        IndexingQueryFilter filter
-       
+        IndexingQueryFilter filter,
+        int limit
     ) throws IgniteCheckedException {
         return null;
     }
@@ -154,7 +153,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         List<String> cols,
         boolean ifTblExists,
         boolean ifColExists
-    ) throws IgniteCheckedException  {
+    ) throws IgniteCheckedException {
 
     }
 

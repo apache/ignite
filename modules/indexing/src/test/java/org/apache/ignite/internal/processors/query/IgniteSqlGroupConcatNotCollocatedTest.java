@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -91,9 +92,33 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends AbstractIndexingCommo
                 String s = "" + (char)('A' + i + (grp - 1) * grp / 2);
 
                 assertTrue("Invalid group_concat result: string doesn't contain value: " +
-                    "[str=" + str + ", val=" + s , str.contains(s));
+                    "[str=" + str + ", val=" + s, str.contains(s));
             }
         }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testGroupConcatSeparator() {
+        IgniteCache c = ignite(CLIENT).cache(CACHE_NAME);
+
+        List<List<Object>> res = c.query(
+            new SqlFieldsQuery("select grp, GROUP_CONCAT(str0 SEPARATOR '.') from Value group by grp")).getAll();
+
+        List<List<Object>> expRes = Arrays.asList(
+            Arrays.asList(1, "A"),
+            Arrays.asList(2, "C.B"),
+            Arrays.asList(3, "E.D.F"),
+            Arrays.asList(4, "J.G.I.H"),
+            Arrays.asList(5, "O.L.N.K.M"),
+            Arrays.asList(6, "Q.S.U.P.R.T"));
+
+        assertEquals(res.size(), expRes.size());
+
+        for (int i = 0; i < res.size(); i++)
+            assertEqualsCollections(expRes.get(i), res.get(i));
     }
 
     /**
@@ -115,7 +140,7 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends AbstractIndexingCommo
                 String s = "" + (char)('A' + i + (cnt - 1) * cnt / 2);
 
                 assertTrue("Invalid group_concat result: string doesn't contain value: " +
-                    "[str=" + str + ", val=" + s , str.contains(s));
+                    "[str=" + str + ", val=" + s, str.contains(s));
             }
         }
     }

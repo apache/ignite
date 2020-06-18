@@ -231,7 +231,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
                     taskLatch.await(30, TimeUnit.SECONDS);
 
                 // Check task and job states.
-                for (int i =  0; i < SPLIT_COUNT; i++) {
+                for (int i = 0; i < SPLIT_COUNT; i++) {
                     // Check task map state.
                     checkRunningState("map:session:key:" + i, "map:session:testval:" + i, "map:global:key:" + i,
                         "map:global:testval:" + i, ignite.configuration().getMarshaller(), getClass().getClassLoader());

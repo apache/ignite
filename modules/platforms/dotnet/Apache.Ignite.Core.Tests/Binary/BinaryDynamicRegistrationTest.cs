@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 var ex = Assert.Throws<BinaryObjectException>(() => ignite.GetCache<int, Foo>("default").Get(1));
 
-                Assert.IsTrue(ex.Message.Contains("Unknown pair"));
+                StringAssert.Contains("Failed to resolve class name", ex.Message);
             }
         }
 

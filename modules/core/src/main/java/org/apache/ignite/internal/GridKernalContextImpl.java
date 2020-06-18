@@ -67,6 +67,8 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
+import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
@@ -83,7 +85,6 @@ import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
@@ -110,7 +111,6 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
 /**
@@ -266,7 +266,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringInclude
     private IgfsHelper igfsHelper;
 
-   
+    /** */
+    @GridToStringInclude
+    private HadoopHelper hadoopHelper;
 
     /** */
     @GridToStringInclude
@@ -280,7 +282,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private GridContinuousProcessor contProc;
 
-   
+    /** */
+    @GridToStringExclude
+    private HadoopProcessorAdapter hadoopProc;
 
     /** */
     @GridToStringExclude
@@ -463,6 +467,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** Recovery mode flag. Flag is set to {@code false} when discovery manager started. */
     private boolean recoveryMode = true;
+
+    /** */
+    private final boolean igniteDaemon = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DAEMON);
 
     /**
      * No-arg constructor is required by externalization.
@@ -674,7 +681,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof IgfsProcessorAdapter)
             igfsProc = (IgfsProcessorAdapter)comp;
         else if (comp instanceof GridContinuousProcessor)
-            contProc = (GridContinuousProcessor)comp;       
+            contProc = (GridContinuousProcessor)comp;
+        else if (comp instanceof HadoopProcessorAdapter)
+            hadoopProc = (HadoopProcessorAdapter)comp;
         else if (comp instanceof IgniteCacheObjectProcessor)
             cacheObjProc = (IgniteCacheObjectProcessor)comp;
         else if (comp instanceof IgnitePluginProcessor)
@@ -710,8 +719,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof DurableBackgroundTasksProcessor)
             durableBackgroundTasksProcessor = (DurableBackgroundTasksProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
-            || comp instanceof PlatformPluginProcessor
-            || comp instanceof QueryEngine))
+            || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         if (addToList)
@@ -725,7 +733,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         assert helper != null;
 
         if (helper instanceof IgfsHelper)
-            igfsHelper = (IgfsHelper)helper;        
+            igfsHelper = (IgfsHelper)helper;
+        else if (helper instanceof HadoopHelper)
+            hadoopHelper = (HadoopHelper)helper;
         else
             assert false : "Unknown helper class: " + helper.getClass();
     }
@@ -940,11 +950,19 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return igfsHelper;
     }
 
-  
+    /** {@inheritDoc} */
+    @Override public HadoopHelper hadoopHelper() {
+        return hadoopHelper;
+    }
 
     /** {@inheritDoc} */
     @Override public GridContinuousProcessor continuous() {
         return contProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public HadoopProcessorAdapter hadoop() {
+        return hadoopProc;
     }
 
     /** {@inheritDoc} */
@@ -1036,7 +1054,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ClusterNode locNode0 = localNode();
 
         return locNode0 != null ? locNode0.isDaemon() :
-            (config().isDaemon() || IgniteSystemProperties.getBoolean(IGNITE_DAEMON));
+            (config().isDaemon() || igniteDaemon);
     }
 
     /** {@inheritDoc} */

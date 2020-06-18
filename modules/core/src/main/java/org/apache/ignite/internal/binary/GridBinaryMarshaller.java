@@ -32,9 +32,6 @@ import org.jetbrains.annotations.Nullable;
  * Binary objects marshaller.
  */
 public class GridBinaryMarshaller {
-    /** */
-    public static final ThreadLocal<Boolean> KEEP_BINARIES = ThreadLocal.withInitial(() -> true);
-
     /** Binary context in TLS store. */
     private static final ThreadLocal<BinaryContextHolder> BINARY_CTX =
         ThreadLocal.withInitial(BinaryContextHolder::new);

@@ -846,6 +846,76 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the FieldsMetadata property.
+        /// </summary>
+        [Test]
+        public void TestFieldsMetadata()
+        {
+            var cache = Cache();
+            PopulateCache(cache, false, 5, x => true);
+
+            // Get before iteration.
+            var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson");
+            var cur = cache.Query(qry);
+            var metas = cur.Fields;
+
+            ValidateFieldsMetadata(
+                metas,
+                new[] {"AGE", "NAME"},
+                new[] {typeof(int), typeof(string)},
+                new[] {"java.lang.Integer", "java.lang.String"}
+            );
+
+            cur.Dispose();
+            Assert.AreSame(metas, cur.Fields);
+
+            Assert.Throws<NotSupportedException>(() => cur.Fields.Add(default(IQueryCursorField)));
+
+            // Custom order, key-val, get after iteration.
+            qry.Sql = "SELECT NAME, _key, AGE, _val FROM QueryPerson";
+            cur = cache.Query(qry);
+            cur.GetAll();
+
+            ValidateFieldsMetadata(
+                cur.Fields,
+                new[] {"NAME", "_KEY", "AGE", "_VAL"},
+                new[] {typeof(string), typeof(object), typeof(int), typeof(object)},
+                new[] {"java.lang.String", "java.lang.Object", "java.lang.Integer", "java.lang.Object"}
+            );
+
+            // Get after disposal.
+            qry.Sql = "SELECT 1, AGE FROM QueryPerson";
+            cur = cache.Query(qry);
+            cur.Dispose();
+
+            ValidateFieldsMetadata(
+                cur.Fields,
+                new[] {"1", "AGE"},
+                new[] {typeof(int), typeof(int)},
+                new[] {"java.lang.Integer", "java.lang.Integer"}
+            );
+        }
+
+        /// <summary>
+        /// Validates fields metadata collection
+        /// </summary>
+        /// <param name="metadata">Metadata</param>
+        /// <param name="expectedNames">Expected field names</param>
+        /// <param name="expectedTypes">Expected field types</param>
+        /// <param name="expectedJavaTypeNames">Expected java type names</param>
+        private static void ValidateFieldsMetadata(
+            IList<IQueryCursorField> metadata,
+            string[] expectedNames,
+            Type[] expectedTypes,
+            string[] expectedJavaTypeNames
+        )
+        {
+            Assert.AreEqual(expectedNames, metadata.Select(m => m.Name));
+            Assert.AreEqual(expectedTypes, metadata.Select(m => m.Type));
+            Assert.AreEqual(expectedJavaTypeNames, metadata.Select(m => m.JavaTypeName));
+        }
+
+        /// <summary>
         /// Validates the query results.
         /// </summary>
         /// <param name="cache">Cache.</param>

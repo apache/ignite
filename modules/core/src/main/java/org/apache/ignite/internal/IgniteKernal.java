@@ -84,6 +84,7 @@ import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
@@ -244,7 +245,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.IgniteSystemProperties.snapshot;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.internal.GridKernalState.STARTED;
 import static org.apache.ignite.internal.GridKernalState.STARTING;
@@ -413,14 +413,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask metricsLogTask;
 
-    /**
-     * The instance of scheduled long operation checker. {@code null} means that the operations checker is disabled
-     * by the value of {@link IgniteSystemProperties#IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT} system property.
-     */
+    /** */
     @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask longOpDumpTask;
 
-    /** {@code true} if an error occurs at Ignite instance stop. */
+    /** Indicate error on grid stop. */
     @GridToStringExclude
     private boolean errOnStop;
 
@@ -1273,8 +1270,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     ctx.add(new GridPluginComponent(provider));
 
                     provider.start(ctx.plugins().pluginContextForProvider(provider));
-
-                    startTimer.finishGlobalStage("Start '"+ provider.name() + "' plugin");
                 }
 
                 // Start platform plugins.
@@ -1361,8 +1356,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             else
                 active = joinData.active();
 
-            startTimer.finishGlobalStage("Await transition");
-
             boolean recon = false;
 
             // Callbacks.
@@ -1406,18 +1399,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (recon)
                 reconnectState.waitFirstReconnect();
 
-            ctx.metric().registerThreadPools(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc,
-                p2pExecSvc, mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc,
-                callbackExecSvc, qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs);
-
-            registerMetrics();
-
             // Register MBeans.
             mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
                 mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
-                qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs, ctx.workersRegistry());
-
-            ctx.systemView().registerThreadPools(stripedExecSvc, dataStreamExecSvc);
+                qryExecSvc, schemaExecSvc, customExecSvcs, ctx.workersRegistry());
 
             // Lifecycle bean notifications.
             notifyLifecycleBeans(AFTER_NODE_START);
@@ -1527,7 +1512,21 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }, metricsLogFreq, metricsLogFreq);
         }
 
-        scheduleLongOperationsDumpTask(ctx.cache().context().tm().longOperationsDumpTimeout());
+        final long longOpDumpTimeout = IgniteSystemProperties.getLong(
+                IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
+                DFLT_LONG_OPERATIONS_DUMP_TIMEOUT
+        );
+
+        if (longOpDumpTimeout > 0) {
+            longOpDumpTask = ctx.timeout().schedule(new Runnable() {
+                @Override public void run() {
+                    GridKernalContext ctx = IgniteKernal.this.ctx;
+
+                    if (ctx != null)
+                        ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout);
+                }
+            }, longOpDumpTimeout, longOpDumpTimeout);
+        }
 
         ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());
 
@@ -1553,37 +1552,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * Scheduling tasks for dumping long operations. Closes current task
-     * (if any) and if the {@code longOpDumpTimeout > 0} schedules a new task
-     * with a new timeout, delay and start period equal to
-     * {@code longOpDumpTimeout}, otherwise task is deleted.
-     *
-     * @param longOpDumpTimeout Long operations dump timeout.
-     */
-    public void scheduleLongOperationsDumpTask(long longOpDumpTimeout) {
-        if (isStopping())
-            return;
-
-        synchronized (this) {
-            GridTimeoutProcessor.CancelableTask task = longOpDumpTask;
-
-            if (nonNull(task))
-                task.close();
-
-            if (longOpDumpTimeout > 0) {
-                longOpDumpTask = ctx.timeout().schedule(
-                    () -> ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout),
-                    longOpDumpTimeout,
-                    longOpDumpTimeout
-                );
-            }
-            else
-                longOpDumpTask = null;
-        }
-    }
-
-    /**
-     * @return Ignite security processor. See {@link IgniteSecurity} for details.
+     * @return IgniteSecurity.
      */
     private GridProcessor securityProcessor() throws IgniteCheckedException {
         GridSecurityProcessor prc = createComponent(GridSecurityProcessor.class, ctx);
@@ -1775,7 +1744,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             // Stick all system properties into node's attributes overwriting any
             // identical names from environment properties.
-            for (Map.Entry<Object, Object> e : snapshot().entrySet()) {
+            for (Map.Entry<Object, Object> e : IgniteSystemProperties.snapshot().entrySet()) {
                 String key = (String)e.getKey();
 
                 if (incProps == null || U.containsStringArray(incProps, key, true) ||
@@ -2592,9 +2561,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (metricsLogTask != null)
                 metricsLogTask.close();
 
-            if (longOpDumpTask != null)
-                longOpDumpTask.close();
-
             if (longJVMPauseDetector != null)
                 longJVMPauseDetector.stop();
 
@@ -2781,7 +2747,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackSystemProperties() {
         assert log != null;
 
-        if (log.isDebugEnabled() && S.includeSensitive())
+        if (log.isDebugEnabled() && S.INCLUDE_SENSITIVE)
             for (Map.Entry<Object, Object> entry : snapshot().entrySet())
                 log.debug("System property [" + entry.getKey() + '=' + entry.getValue() + ']');
     }
@@ -4409,7 +4375,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (cls.equals(IGridClusterStateProcessor.class))
             return (T)new GridClusterStateProcessor(ctx);
 
-        if(cls.equals(GridSecurityProcessor.class))
+        if (cls.equals(GridSecurityProcessor.class))
             return null;
 
         if (cls.equals(IgniteRestProcessor.class))

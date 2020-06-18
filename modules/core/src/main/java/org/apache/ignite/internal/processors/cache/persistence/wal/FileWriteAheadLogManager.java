@@ -1478,7 +1478,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             createFile(first);
         }
-        else
+        else if (isArchiverEnabled())
             checkFiles(0, false, null, null);
     }
 
@@ -2118,7 +2118,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
 
         /** {@inheritDoc} */
-        @Override public void body() throws InterruptedException, IgniteInterruptedCheckedException{
+        @Override public void body() throws InterruptedException, IgniteInterruptedCheckedException {
             init();
 
             super.body0();
@@ -2147,7 +2147,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private class FileCompressorWorker extends GridWorker {
         /** */
-        FileCompressorWorker(int idx,  IgniteLogger log) {
+        FileCompressorWorker(int idx, IgniteLogger log) {
             super(cctx.igniteInstanceName(), "wal-file-compressor-%" + cctx.igniteInstanceName() + "%-" + idx, log);
         }
 
@@ -2164,7 +2164,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
          * Waits if there's no segment to archive right now.
          */
-        private long tryReserveNextSegmentOrWait() throws IgniteInterruptedCheckedException{
+        private long tryReserveNextSegmentOrWait() throws IgniteInterruptedCheckedException {
             long segmentToCompress = segmentAware.waitNextSegmentToCompress();
 
             boolean reserved = reserve(new FileWALPointer(segmentToCompress, 0, 0));
@@ -2515,7 +2515,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         "(WAL segment size change is not supported in 'DEFAULT' WAL mode) " +
                         "[filePath=" + checkFile.getAbsolutePath() +
                         ", fileSize=" + checkFile.length() +
-                        ", configSize=" + dsCfg.getWalSegments() + ']');
+                        ", configSize=" + dsCfg.getWalSegmentSize() + ']');
             }
             else if (create)
                 createFile(checkFile);

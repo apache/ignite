@@ -54,6 +54,7 @@ public abstract class AbstractReducer implements Reducer {
     static final int MAX_FETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_MAX_SIZE, 10_000);
 
     /** */
+<<<<<<< HEAD
     static final int PREFETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE, 1024);
 
     static {
@@ -64,6 +65,18 @@ public abstract class AbstractReducer implements Reducer {
 
         if (PREFETCH_SIZE >= MAX_FETCH_SIZE) {
             throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
+=======
+    static int prefetchSize = getInteger(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE, 1024);
+
+    static {
+        if (!U.isPow2(prefetchSize)) {
+            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + prefetchSize +
+                ") must be positive and a power of 2.");
+        }
+
+        if (prefetchSize >= MAX_FETCH_SIZE) {
+            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + prefetchSize +
+>>>>>>> upstream/master
                 ") must be less than " + IGNITE_SQL_MERGE_TABLE_MAX_SIZE + " (" + MAX_FETCH_SIZE + ").");
         }
     }
@@ -102,7 +115,11 @@ public abstract class AbstractReducer implements Reducer {
     AbstractReducer(GridKernalContext ctx) {
         this.ctx = ctx;
 
+<<<<<<< HEAD
         fetched = new ReduceBlockList<>(PREFETCH_SIZE);
+=======
+        fetched = new ReduceBlockList<>(prefetchSize);
+>>>>>>> upstream/master
     }
 
     /** {@inheritDoc} */
@@ -183,14 +200,23 @@ public abstract class AbstractReducer implements Reducer {
      */
     protected void checkBounds(Row lastEvictedRow, SearchRow first, SearchRow last) {
         if (lastEvictedRow != null)
+<<<<<<< HEAD
             throw new IgniteException("Fetched result set was too large.");
+=======
+            throw new IgniteException("Fetched result set was too large. " +
+                    IGNITE_SQL_MERGE_TABLE_MAX_SIZE + "(" + MAX_FETCH_SIZE + ") should be increased.");
+>>>>>>> upstream/master
     }
 
     /**
      * @param evictedBlock Evicted block.
      */
     protected void onBlockEvict(@NotNull List<Row> evictedBlock) {
+<<<<<<< HEAD
         assert evictedBlock.size() == PREFETCH_SIZE;
+=======
+        assert evictedBlock.size() == prefetchSize;
+>>>>>>> upstream/master
 
         // Remember the last row (it will be max row) from the evicted block.
         lastEvictedRow = requireNonNull(last(evictedBlock));
@@ -287,11 +313,19 @@ public abstract class AbstractReducer implements Reducer {
         if (lp == null && !LAST_PAGES_UPDATER.compareAndSet(this, null, lp = new ConcurrentHashMap<>()))
             lp = lastPages;
 
+<<<<<<< HEAD
         assert pageSize > 0: pageSize;
 
         int lastPage = allRows == 0 ? 0 : (allRows - 1) / pageSize;
 
         assert lastPage >= 0: lastPage;
+=======
+        assert pageSize > 0 : pageSize;
+
+        int lastPage = allRows == 0 ? 0 : (allRows - 1) / pageSize;
+
+        assert lastPage >= 0 : lastPage;
+>>>>>>> upstream/master
 
         if (lp.put(new ReduceSourceKey(nodeId, res.segmentId()), lastPage) != null)
             throw new IllegalStateException();

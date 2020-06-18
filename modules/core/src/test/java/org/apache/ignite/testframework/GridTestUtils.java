@@ -17,11 +17,6 @@
 
 package org.apache.ignite.testframework;
 
-import javax.cache.CacheException;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -39,10 +34,8 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
-import java.security.AccessController;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.security.PrivilegedAction;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -71,6 +64,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
+import javax.management.Attribute;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -87,6 +86,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -142,9 +143,41 @@ public final class GridTestUtils {
      */
     public static class DiscoveryHook {
         /**
-         * @param msg Message.
+         * Handles discovery message before {@link DiscoverySpiListener#onDiscovery} invocation.
+         *
+         * @param msg Intercepted discovery message.
          */
-        public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+        public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
+            if (msg instanceof CustomMessageWrapper)
+                beforeDiscovery(unwrap((CustomMessageWrapper)msg));
+        }
+
+        /**
+         * Handles {@link DiscoveryCustomMessage} before {@link DiscoverySpiListener#onDiscovery} invocation.
+         *
+         * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
+         */
+        public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
+            // No-op.
+        }
+
+        /**
+         * Handles discovery message after {@link DiscoverySpiListener#onDiscovery} completion.
+         *
+         * @param msg Intercepted discovery message.
+         */
+        public void afterDiscovery(DiscoverySpiCustomMessage msg) {
+            if (msg instanceof CustomMessageWrapper)
+                afterDiscovery(unwrap((CustomMessageWrapper)msg));
+        }
+
+        /**
+         * Handles {@link DiscoveryCustomMessage} after {@link DiscoverySpiListener#onDiscovery} completion.
+         *
+         * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
+         */
+        public void afterDiscovery(DiscoveryCustomMessage customMsg) {
+            // No-op.
         }
 
         /**
@@ -152,6 +185,16 @@ public final class GridTestUtils {
          */
         public void ignite(IgniteEx ignite) {
             // No-op.
+        }
+
+        /**
+         * Obtains {@link DiscoveryCustomMessage} from {@link CustomMessageWrapper}.
+         *
+         * @param wrapper Wrapper of {@link DiscoveryCustomMessage}.
+         * @return Unwrapped {@link DiscoveryCustomMessage}.
+         */
+        private DiscoveryCustomMessage unwrap(CustomMessageWrapper wrapper) {
+            return U.field(wrapper, "delegate");
         }
     }
 
@@ -162,12 +205,12 @@ public final class GridTestUtils {
         /** */
         private final DiscoverySpiListener delegate;
 
-        /** */
+        /** Interceptor of discovery messages. */
         private final DiscoveryHook hook;
 
         /**
          * @param delegate Delegate.
-         * @param hook Hook.
+         * @param hook Interceptor of discovery messages.
          */
         private DiscoverySpiListenerWrapper(DiscoverySpiListener delegate, DiscoveryHook hook) {
             this.hook = hook;
@@ -175,10 +218,21 @@ public final class GridTestUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<?> onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
-            hook.handleDiscoveryMessage(spiCustomMsg);
+        @Override public IgniteFuture<?> onDiscovery(
+            int type,
+            long topVer,
+            ClusterNode node,
+            Collection<ClusterNode> topSnapshot,
+            @Nullable Map<Long, Collection<ClusterNode>> topHist,
+            @Nullable DiscoverySpiCustomMessage spiCustomMsg
+        ) {
+            hook.beforeDiscovery(spiCustomMsg);
 
-            return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+            IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+
+            fut.listen(f -> hook.afterDiscovery(spiCustomMsg));
+
+            return fut;
         }
 
         /** {@inheritDoc} */
@@ -188,10 +242,10 @@ public final class GridTestUtils {
 
         /**
          * @param delegate Delegate.
-         * @param discoveryHook Discovery hook.
+         * @param discoHook Interceptor of discovery messages.
          */
-        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook discoveryHook) {
-            return new DiscoverySpiListenerWrapper(delegate, discoveryHook);
+        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook discoHook) {
+            return new DiscoverySpiListenerWrapper(delegate, discoHook);
         }
     }
 
@@ -386,6 +440,29 @@ public final class GridTestUtils {
     }
 
     /**
+     * Checks whether runnable throws expected exception or not.
+     *
+     * @param log Logger (optional).
+     * @param run Runnable.
+     * @param cls Exception class.
+     * @param msg Exception message (optional). If provided exception message
+     *      and this message should be equal.
+     * @return Thrown throwable.
+     */
+    public static Throwable assertThrows(
+        @Nullable IgniteLogger log,
+        RunnableX run,
+        Class<? extends Throwable> cls,
+        @Nullable String msg
+    ) {
+        return assertThrows(log, () -> {
+            run.run();
+
+            return null;
+        }, cls, msg);
+    }
+
+    /**
      * Checks whether callable throws expected exception or not.
      *
      * @param log Logger (optional).
@@ -441,9 +518,8 @@ public final class GridTestUtils {
      * @param cls Exception class.
      * @param msg Exception message (optional). If provided exception message
      *      and this message should be equal.
-     * @return Thrown throwable.
      */
-    public static Throwable assertThrowsAnyCause(@Nullable IgniteLogger log, Callable<?> call,
+    public static void assertThrowsAnyCause(@Nullable IgniteLogger log, Callable<?> call,
         Class<? extends Throwable> cls, @Nullable String msg) {
         assert call != null;
         assert cls != null;
@@ -459,7 +535,7 @@ public final class GridTestUtils {
                     if (log != null && log.isInfoEnabled())
                         log.info("Caught expected exception: " + t.getMessage());
 
-                    return t;
+                    return;
                 }
 
                 t = t.getCause();
@@ -1544,28 +1620,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * Change static final fields.
-     * @param field Need to be changed.
-     * @param newVal New value.
-     * @throws Exception If failed.
-     */
-    public static void setFieldValue(Field field, Object newVal) throws Exception {
-        field.setAccessible(true);
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-
-        AccessController.doPrivileged(new PrivilegedAction() {
-            @Override
-            public Object run() {
-                modifiersField.setAccessible(true);
-                return null;
-            }
-        });
-
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-        field.set(null, newVal);
-    }
-
-    /**
      * Get inner class by its name from the enclosing class.
      *
      * @param parentCls Parent class to resolve inner class for.
@@ -1596,6 +1650,18 @@ public final class GridTestUtils {
             Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
 
             Field field = cls.getDeclaredField(fieldName);
+
+            boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
+
+            boolean isStatic = (field.getModifiers() & Modifier.STATIC) != 0;
+
+            /**
+             * http://java.sun.com/docs/books/jls/third_edition/html/memory.html#17.5.3
+             * If a final field is initialized to a compile-time constant in the field declaration,
+             *   changes to the final field may not be observed.
+             */
+            if (isFinal && isStatic)
+                throw new IgniteException("Modification of static final field through reflection.");
 
             boolean accessible = field.isAccessible();
 
@@ -1630,6 +1696,16 @@ public final class GridTestUtils {
                 field.setAccessible(true);
 
             boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
+
+            boolean isStatic = (field.getModifiers() & Modifier.STATIC) != 0;
+
+            /**
+             * http://java.sun.com/docs/books/jls/third_edition/html/memory.html#17.5.3
+             * If a final field is initialized to a compile-time constant in the field declaration,
+             *   changes to the final field may not be observed.
+             */
+            if (isFinal && isStatic)
+                throw new IgniteException("Modification of static final field through reflection.");
 
             if (isFinal) {
                 Field modifiersField = Field.class.getDeclaredField("modifiers");
@@ -1786,7 +1862,7 @@ public final class GridTestUtils {
      */
     public static byte[] readResource(ClassLoader classLoader, String resourceName) throws IOException {
         try (InputStream is = classLoader.getResourceAsStream(resourceName)) {
-            assertNotNull("Resource is missing: " + resourceName , is);
+            assertNotNull("Resource is missing: " + resourceName, is);
 
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 U.copy(is, baos);
@@ -2275,6 +2351,34 @@ public final class GridTestUtils {
             f.delete();
     }
 
+    /**
+     * @param grid Node.
+     * @param grp Group name.
+     * @param name Object name.
+     * @param attr Attribute name.
+     * @param val Attribute value.
+     * @throws Exception On error.
+     */
+    public static void setJmxAttribute(IgniteEx grid, String grp, String name, String attr, Object val) throws Exception {
+        grid.context().config().getMBeanServer().setAttribute(U.makeMBeanName(grid.name(), grp, name),
+            new Attribute(attr, val));
+    }
+
+    /**
+     * @param grid Node.
+     * @param grp Group name.
+     * @param name Object name.
+     * @param attr Attribute name.
+     * @return Attribute's value.
+     * @throws Exception On error.
+     */
+    public static Object getJmxAttribute(IgniteEx grid, String grp, String name, String attr) throws Exception {
+        return grid.context().config().getMBeanServer().getAttribute(U.makeMBeanName(grid.name(), grp, name), attr);
+    }
+
+    /**
+     *
+     */
     public static class SqlTestFunctions {
         /** Sleep milliseconds. */
         public static volatile long sleepMs;
@@ -2292,7 +2396,7 @@ public final class GridTestUtils {
         public static long sleep() {
             long end = System.currentTimeMillis() + sleepMs;
 
-            long remainTime =sleepMs;
+            long remainTime = sleepMs;
 
             do {
                 try {

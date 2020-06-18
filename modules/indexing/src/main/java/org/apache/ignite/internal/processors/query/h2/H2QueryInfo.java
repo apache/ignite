@@ -103,24 +103,42 @@ public class H2QueryInfo {
     /**
      * @param log Logger.
      * @param msg Log message
+<<<<<<< HEAD
      */
     public void printLogMessage(IgniteLogger log, String msg) {
+=======
+     * @param additionalInfo Additional query info.
+     */
+    public void printLogMessage(IgniteLogger log, String msg, String additionalInfo) {
+>>>>>>> upstream/master
         StringBuilder msgSb = new StringBuilder(msg + " [");
 
-        msgSb.append("time=").append(time()).append("ms")
+        if (additionalInfo != null)
+            msgSb.append(additionalInfo).append(", ");
+
+        msgSb.append("duration=").append(time()).append("ms")
             .append(", type=").append(type)
             .append(", distributedJoin=").append(distributedJoin)
             .append(", enforceJoinOrder=").append(enforceJoinOrder)
             .append(", lazy=").append(lazy)
             .append(", schema=").append(schema);
+<<<<<<< HEAD
 
         printInfo(msgSb);
+=======
+>>>>>>> upstream/master
 
         msgSb.append(", sql='")
             .append(sql);
 
+<<<<<<< HEAD
         if (type != QueryType.REDUCE)
             msgSb.append("', plan=").append(stmt.getPlanSQL());
+=======
+        msgSb.append("', plan=").append(stmt.getPlanSQL());
+
+        printInfo(msgSb);
+>>>>>>> upstream/master
 
         msgSb.append(']');
 

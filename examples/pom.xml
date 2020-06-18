@@ -107,7 +107,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-ml-h2o-model-parser</artifactId>
@@ -118,8 +117,7 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-ml-spark-model-parser</artifactId>
             <version>${project.version}</version>
-        </dependency> 
-        -->
+        </dependency>
 
         <dependency>
             <groupId>commons-cli</groupId>
@@ -165,10 +163,7 @@
             <artifactId>parquet-hadoop</artifactId>
             <version>1.10.0</version>
         </dependency>
-        
-        
 
-        <!-- 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
@@ -179,14 +174,8 @@
                     <artifactId>protobuf-java</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency> 
-        -->
-
-        <dependency>
-        	<groupId>commons-io</groupId>
-        	<artifactId>commons-io</artifactId>
-        	<version>${commons.io.version}</version>
         </dependency>
+
     </dependencies>
 
     <properties>

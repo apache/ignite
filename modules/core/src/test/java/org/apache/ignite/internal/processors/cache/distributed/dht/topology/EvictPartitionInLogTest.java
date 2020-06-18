@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -60,6 +61,9 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
 
     /** Cache names. */
     private static final String[] DEFAULT_CACHE_NAMES = {DEFAULT_CACHE_NAME + "0", DEFAULT_CACHE_NAME + "1"};
+
+    /** Cache's backups. */
+    public int backups = 0;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -88,7 +92,7 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
                     .map(cacheName ->
                         new CacheConfiguration<>(cacheName)
                             .setGroupName(cacheName)
-                            .setBackups(0)
+                            .setBackups(backups)
                             .setAffinity(new RendezvousAffinityFunction(false, 12))
                             .setIndexedTypes(Integer.class, Integer.class)
                     ).toArray(CacheConfiguration[]::new)
@@ -96,8 +100,7 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test checks the presence of evicted partitions (RENTING state) in log
-     * without duplicate partitions.
+     * Test checks the presence of evicted partitions (RENTING state) in log without duplicate partitions.
      *
      * @throws Exception If failed.
      */
@@ -128,14 +131,19 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test checks the presence of evicted partitions (MOVING state) in log
-     * without duplicate partitions.
+     * Test checks the presence of evicted partitions (MOVING state) in log without duplicate partitions.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testEvictPartByMovingState() throws Exception {
-        IgniteEx node = startGrid(0);
+        backups = 1;
+
+        IgniteEx node = startGrids(3);
+        awaitPartitionMapExchange();
+
+        stopGrid(2);
+
         awaitPartitionMapExchange();
 
         Map<Integer, Collection<Integer>> parseParts = new ConcurrentHashMap<>();
@@ -162,7 +170,12 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
             .collect(toList());
 
         parts.subList(0, parts.size() - 1).forEach(GridDhtLocalPartition::clearAsync);
-        rebFuts.forEach(rebFut -> rebFut.onDone(Boolean.TRUE));
+
+        rebFuts.forEach(rebFut -> {
+            GridTestUtils.setFieldValue(rebFut, "next", null);
+
+            rebFut.onDone(Boolean.TRUE);
+        });
 
         doSleep(100);
         rebFuts.forEach(GridFutureAdapter::reset);
@@ -227,24 +240,27 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
             .map(cacheName -> "grpId=" + CU.cacheId(cacheName) + ", grpName=" + cacheName)
             .collect(toList());
 
-        Pattern extractParts = Pattern.compile(reason + "=\\[([0-9\\-,]*)]]");
+        Pattern extractParts = Pattern.compile(reason + "=\\[([0-9\\-,]*)]");
         Pattern extractGrpId = Pattern.compile("grpId=([0-9]*)");
 
         LogListener.Builder builder = LogListener.matches(logStr -> {
-            if (logStr.contains("Partitions have been scheduled for eviction:")) {
-                Matcher grpIdMatcher = extractGrpId.matcher(logStr);
-                Matcher partsMatcher = extractParts.matcher(logStr);
+            String msgPrefix = "Partitions have been scheduled for eviction:";
+            if (!logStr.contains(msgPrefix))
+                return false;
+
+            of(logStr.replace(msgPrefix, "").split("], \\[")).forEach(s -> {
+
+                Matcher grpIdMatcher = extractGrpId.matcher(s);
+                Matcher partsMatcher = extractParts.matcher(s);
 
                 //find and parsing grpId and partitions
-                while (grpIdMatcher.find() && partsMatcher.find()) {
+                if (grpIdMatcher.find() && partsMatcher.find()) {
                     evictParts.computeIfAbsent(parseInt(grpIdMatcher.group(1)), i -> new ConcurrentLinkedQueue<>())
                         .addAll(parseContentCompactStr(partsMatcher.group(1)));
                 }
+            });
 
-                return cacheInfos.stream().allMatch(logStr::contains);
-            }
-            else
-                return false;
+            return cacheInfos.stream().allMatch(logStr::contains);
         });
 
         return builder.build();

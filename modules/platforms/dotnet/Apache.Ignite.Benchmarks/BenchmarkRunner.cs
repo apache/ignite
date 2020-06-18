@@ -36,15 +36,21 @@ namespace Apache.Ignite.Benchmarks
         // ReSharper disable once RedundantAssignment
         public static void Main(string[] args)
         {
+#if (DEBUG)
+            throw new Exception("Don't run benchmarks in Debug mode");
+#endif
+#pragma warning disable 162
+            // ReSharper disable HeuristicUnreachableCode
+
             args = new[] {
                 //typeof(GetAllBenchmark).FullName,
-                typeof(GetAllBinaryBenchmark).FullName,
+                typeof(PutWithPlatformCacheBenchmark).FullName,
                 //typeof(ThinClientGetAllBenchmark).FullName,
                 //typeof(ThinClientGetAllBinaryBenchmark).FullName,
                 "-ConfigPath", GetConfigPath(),
                 "-Threads", "1",
-                "-Warmup", "0",
-                "-Duration", "60",
+                "-Warmup", "5",
+                "-Duration", "30",
                 "-BatchSize", "1"
             };
 
@@ -90,10 +96,28 @@ namespace Apache.Ignite.Benchmarks
             }
 
             benchmark.Run();
+#pragma warning restore 162
+        }
 
-#if (DEBUG)
-            Console.ReadLine();
-#endif
+        /// <summary>
+        /// Gets the config path.
+        /// </summary>
+        private static string GetConfigPath()
+        {
+            var dir = new DirectoryInfo(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+
+            while (dir != null)
+            {
+                var configPath = Path.Combine(dir.FullName, "Config", "benchmark.xml");
+                if (File.Exists(configPath))
+                {
+                    return configPath;
+                }
+                
+                dir = dir.Parent;
+            }
+
+            throw new InvalidOperationException("Could not locate benchmark config.");
         }
 
         /// <summary>

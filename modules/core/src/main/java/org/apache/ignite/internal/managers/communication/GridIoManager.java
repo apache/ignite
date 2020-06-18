@@ -70,9 +70,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
-import java.util.function.IntSupplier;
-import java.util.function.LongSupplier;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteMessaging;
@@ -149,7 +146,6 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
 import static org.apache.ignite.internal.IgniteFeatures.CHANNEL_COMMUNICATION;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.CALLER_THREAD;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IDX_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
@@ -420,53 +416,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        startSpi();
-
-        MetricRegistry ioMetric = ctx.metric().registry(COMM_METRICS);
-
-        CommunicationSpi spi = ctx.config().getCommunicationSpi();
-
-        ioMetric.register(OUTBOUND_MSG_QUEUE_CNT, (IntSupplier)spi::getOutboundMessagesQueueSize,
-                "Outbound messages queue size.");
-
-        ioMetric.register(SENT_MSG_CNT, (IntSupplier)spi::getSentMessagesCount, "Sent messages count.");
-
-        ioMetric.register(SENT_BYTES_CNT,(LongSupplier) spi::getSentBytesCount, "Sent bytes count.");
-
-        ioMetric.register(RCVD_MSGS_CNT, (IntSupplier)spi::getReceivedMessagesCount,
-                "Received messages count.");
-
-        ioMetric.register(RCVD_BYTES_CNT, (LongSupplier)spi::getReceivedBytesCount, "Received bytes count.");
-
-        getSpi().setListener(commLsnr = new CommunicationListenerEx<Serializable>() {
-            @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
-                try {
-                    onMessage0(nodeId, (GridIoMessage)msg, msgC);
-                }
-                catch (ClassCastException ignored) {
-                    U.error(log, "Communication manager received message of unknown type (will ignore): " +
-                        msg.getClass().getName() + ". Most likely GridCommunicationSpi is being used directly, " +
-                        "which is illegal - make sure to send messages only via GridProjection API.");
-                }
-            }
-
-            @Override public void onDisconnected(UUID nodeId) {
-                for (GridDisconnectListener lsnr : disconnectLsnrs)
-                    lsnr.onNodeDisconnected(nodeId);
-            }
-
-            @Override public void onChannelOpened(UUID rmtNodeId, Serializable initMsg, Channel channel) {
-                try {
-                    onChannelOpened0(rmtNodeId, (GridIoMessage)initMsg, channel);
-                }
-                catch (ClassCastException ignored) {
-                    U.error(log, "Communication manager received message of unknown type (will ignore): " +
-                        initMsg.getClass().getName() + ". Most likely GridCommunicationSpi is being used directly, " +
-                        "which is illegal - make sure to send messages only via GridProjection API.");
-                }
-            }
-        });
-
         ctx.addNodeAttribute(DIRECT_PROTO_VER_ATTR, DIRECT_PROTO_VER);
 
         MessageFormatter[] formatterExt = ctx.plugins().extensions(MessageFormatter.class);
@@ -515,6 +464,53 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactory[compMsgs.size()]));
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
+
+        startSpi();
+
+        MetricRegistry ioMetric = ctx.metric().registry(COMM_METRICS);
+
+        CommunicationSpi spi = ctx.config().getCommunicationSpi();
+
+        ioMetric.register(OUTBOUND_MSG_QUEUE_CNT, spi::getOutboundMessagesQueueSize,
+                "Outbound messages queue size.");
+
+        ioMetric.register(SENT_MSG_CNT, spi::getSentMessagesCount, "Sent messages count.");
+
+        ioMetric.register(SENT_BYTES_CNT, spi::getSentBytesCount, "Sent bytes count.");
+
+        ioMetric.register(RCVD_MSGS_CNT, spi::getReceivedMessagesCount,
+                "Received messages count.");
+
+        ioMetric.register(RCVD_BYTES_CNT, spi::getReceivedBytesCount, "Received bytes count.");
+
+        getSpi().setListener(commLsnr = new CommunicationListenerEx<Serializable>() {
+            @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
+                try {
+                    onMessage0(nodeId, (GridIoMessage)msg, msgC);
+                }
+                catch (ClassCastException ignored) {
+                    U.error(log, "Communication manager received message of unknown type (will ignore): " +
+                            msg.getClass().getName() + ". Most likely GridCommunicationSpi is being used directly, " +
+                            "which is illegal - make sure to send messages only via GridProjection API.");
+                }
+            }
+
+            @Override public void onDisconnected(UUID nodeId) {
+                for (GridDisconnectListener lsnr : disconnectLsnrs)
+                    lsnr.onNodeDisconnected(nodeId);
+            }
+
+            @Override public void onChannelOpened(UUID rmtNodeId, Serializable initMsg, Channel channel) {
+                try {
+                    onChannelOpened0(rmtNodeId, (GridIoMessage)initMsg, channel);
+                }
+                catch (ClassCastException ignored) {
+                    U.error(log, "Communication manager received message of unknown type (will ignore): " +
+                            initMsg.getClass().getName() + ". Most likely GridCommunicationSpi is being used directly, " +
+                            "which is illegal - make sure to send messages only via GridProjection API.");
+                }
+            }
+        });
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -1187,7 +1183,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to process channel creation event due to exception " +
-                "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']' , e);
+                "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']', e);
         }
         finally {
             busyLock0.unlock();
@@ -1274,7 +1270,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case QUERY_POOL:
                 case SCHEMA_POOL:
                 case SERVICE_POOL:
-                case CALLER_THREAD:
                 {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
@@ -1848,7 +1843,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         UUID newSecSubjId = secSubjId != null ? secSubjId : nodeId;
 
-        try(OperationSecurityContext s = ctx.security().withContext(newSecSubjId)) {
+        try (OperationSecurityContext s = ctx.security().withContext(newSecSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
@@ -3173,7 +3168,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 syncMeta = (TransmissionMeta)in.readObject();
             }
             catch (ClassNotFoundException e) {
-                throw new IgniteException (e);
+                throw new IgniteException(e);
             }
 
             return syncMeta;
@@ -3291,7 +3286,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 U.log(log, "File has been sent to remote node [name=" + file.getName() +
                     ", uploadTime=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec, retries=" + retries +
-                    ", transferred=" + snd.transferred() + ", rmtId=" + rmtId +']');
+                    ", transferred=" + snd.transferred() + ", rmtId=" + rmtId + ']');
 
             }
             catch (InterruptedException e) {
@@ -3592,7 +3587,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 if (msgBody != null) {
                     if (predLsnr != null) {
-                        try(OperationSecurityContext s = ctx.security().withContext(initNodeId)) {
+                        try (OperationSecurityContext s = ctx.security().withContext(initNodeId)) {
                             if (!predLsnr.apply(nodeId, msgBody))
                                 removeMessageListener(TOPIC_COMM_USER, this);
                         }
@@ -4222,8 +4217,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @return Security subject id.
      */
-    private UUID secSubjId(GridIoMessage msg){
-        if(ctx.security().enabled()) {
+    private UUID secSubjId(GridIoMessage msg) {
+        if (ctx.security().enabled()) {
             assert msg instanceof GridIoSecurityAwareMessage;
 
             return ((GridIoSecurityAwareMessage) msg).secSubjId();

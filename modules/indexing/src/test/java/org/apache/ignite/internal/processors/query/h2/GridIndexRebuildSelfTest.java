@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -45,6 +46,9 @@ import org.junit.Test;
 
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.internal.util.IgniteUtils.delete;
 
 /**
  * Index rebuild after node restart test.
@@ -70,10 +74,10 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
-        IgniteConfiguration cfg =  super.commonConfiguration(idx);
+        IgniteConfiguration cfg = super.commonConfiguration(idx);
 
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration()
-            .setMaxSize(300*1024L*1024L)
+            .setMaxSize(300 * 1024L * 1024L)
             .setPersistenceEnabled(true);
 
         if (nonNull(buildIdxThreadPoolSize))
@@ -100,6 +104,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         cleanPersistenceDir();
 
         INSTANCE = this;
+
+        BlockingIndexing.slowRebuildIdxFut = false;
     }
 
     /** {@inheritDoc} */
@@ -154,7 +160,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         stopAllGrids();
 
-        assertTrue(U.delete(idxPath));
+        assertTrue(delete(idxPath));
 
         srv = startServer();
 
@@ -185,6 +191,46 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     }
 
     /**
+     * Test checks that there will be no data race between notifications about index rebuilding
+     * and an indication that index has been rebuilt.
+     *
+     * Steps:
+     * 1)Create a node with data filling;
+     * 2)Stopping a node with deletion index.bin;
+     * 3)Set a delay between notification and a note about index rebuilding;
+     * 4)Restarting node with waiting index rebuild;
+     * 5)Checking that index is not being rebuilt.
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testDataRaceWhenMarkIdxRebuild() throws Exception {
+        IgniteEx srv = startServer();
+
+        IgniteInternalCache internalCache = createAndFillTableWithIndex(srv);
+
+        File idxFile = indexFile(internalCache);
+
+        stopAllGrids();
+
+        assertTrue(delete(idxFile));
+
+        BlockingIndexing.slowRebuildIdxFut = true;
+
+        srv = startServer();
+
+        srv.cache(CACHE_NAME).indexReadyFuture().get();
+
+        IgniteH2Indexing idx = (IgniteH2Indexing)srv.context().query().getIndexing();
+
+        GridH2Table tbl = idx.schemaManager().dataTable(DFLT_SCHEMA, CACHE_NAME);
+
+        assertNotNull(tbl);
+
+        assertFalse(tbl.rebuildFromHashInProgress());
+    }
+
+    /**
      * Check that index rebuild uses the number of threads
      * that specified in configuration.
      *
@@ -207,7 +253,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         stopAllGrids();
 
-        assertTrue(U.delete(idxPath));
+        assertTrue(delete(idxPath));
 
         buildIdxThreadPoolSize = buildIdxThreadCnt;
 
@@ -260,7 +306,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         File cacheWorkDir = ((FilePageStoreManager)internalCache.context().shared().pageStore())
             .cacheWorkDir(internalCache.configuration());
 
-        return cacheWorkDir.toPath().resolve("index.bin").toFile();
+        return cacheWorkDir.toPath().resolve(INDEX_FILE_NAME).toFile();
     }
 
     /**
@@ -342,6 +388,9 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         /** Flag to ignore first rebuild performed on initial node start. */
         private boolean firstRbld = true;
 
+        /** Flag for slowing down {@code rebuildIdxFut} to reproduce data race. */
+        static boolean slowRebuildIdxFut;
+
         /** {@inheritDoc} */
         @Override protected void rebuildIndexesFromHash0(
             GridCacheContext cctx,
@@ -358,6 +407,17 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
             }
             else
                 firstRbld = false;
+
+            if (slowRebuildIdxFut) {
+                rebuildIdxFut.listen(fut -> {
+                    try {
+                        U.sleep(1_000);
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        log.error("Error while slow down " + fut, e);
+                    }
+                });
+            }
 
             super.rebuildIndexesFromHash0(cctx, clo, rebuildIdxFut);
         }

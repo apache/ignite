@@ -20,7 +20,6 @@ package org.apache.ignite.internal;
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
-import org.apache.ignite.internal.processors.query.NoOpQueryEngine;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -37,7 +36,20 @@ public enum IgniteComponentType {
         "ignite-hadoop"
     ),
 
-    
+    /** Hadoop. */
+    HADOOP(
+        "org.apache.ignite.internal.processors.hadoop.HadoopNoopProcessor",
+        "org.apache.ignite.internal.processors.hadoop.HadoopProcessor",
+        "ignite-hadoop"
+    ),
+
+    /** Hadoop Helper component. */
+    HADOOP_HELPER(
+        "org.apache.ignite.internal.processors.hadoop.HadoopNoopHelper",
+        "org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl",
+        "ignite-hadoop"
+    ),
+
     /** IGFS helper component. */
     IGFS_HELPER(
         "org.apache.ignite.internal.processors.igfs.IgfsNoopHelper",
@@ -85,14 +97,6 @@ public enum IgniteComponentType {
         CompressionProcessor.class.getName(),
         "org.apache.ignite.internal.processors.compress.CompressionProcessorImpl",
         "ignite-compress"
-    ),
-
-    /** Experimental calcite based query engine. */
-    QUERY_ENGINE(
-        NoOpQueryEngine.class.getName(),
-        "org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor",
-        "ignite-calcite",
-        "org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory"
     );
 
     /** No-op class name. */

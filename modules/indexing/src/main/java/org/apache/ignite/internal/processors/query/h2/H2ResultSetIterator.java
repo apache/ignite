@@ -30,8 +30,11 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+<<<<<<< HEAD
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
+=======
+>>>>>>> upstream/master
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -99,6 +102,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     /** Canceled. */
     private boolean canceled;
 
+<<<<<<< HEAD
     /** Query context. */
     private final QueryContext qctx;
 
@@ -107,6 +111,10 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
     /** Query context registry. */
     private final boolean lazy;
+=======
+    /** Fetch size interceptor. */
+    final H2QueryFetchSizeInterceptor fetchSizeInterceptor;
+>>>>>>> upstream/master
 
     /**
      * @param data Data array.
@@ -115,8 +123,20 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
      * @param pageSize Page size.
      * @throws IgniteCheckedException If failed.
      */
+<<<<<<< HEAD
     protected H2ResultSetIterator(ResultSet data, int pageSize, IgniteLogger log, IgniteH2Indexing h2,
         QueryContext qctx, boolean lazy) throws IgniteCheckedException {
+=======
+    protected H2ResultSetIterator(
+        ResultSet data,
+        int pageSize,
+        IgniteLogger log,
+        IgniteH2Indexing h2,
+        H2QueryInfo qryInfo
+    )
+        throws IgniteCheckedException {
+        this.pageSize = pageSize;
+>>>>>>> upstream/master
         this.data = data;
         this.qctx = qctx;
         qryCtxReg = h2.queryContextRegistry();
@@ -151,6 +171,12 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
         assert log != null;
         assert h2 != null;
+<<<<<<< HEAD
+=======
+        assert qryInfo != null;
+
+        fetchSizeInterceptor = new H2QueryFetchSizeInterceptor(h2, qryInfo, log);
+>>>>>>> upstream/master
     }
 
     /**
@@ -158,6 +184,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
      * @throws IgniteCheckedException On cancel.
      */
     private boolean fetchPage() throws IgniteCheckedException {
+<<<<<<< HEAD
         if (lazy) {
             lockTables();
 
@@ -167,6 +194,12 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         try {
             if (lazy)
                 GridH2Table.checkTablesVersions(ses);
+=======
+        lockTables();
+
+        try {
+            GridH2Table.checkTablesVersions(ses);
+>>>>>>> upstream/master
 
             page.clear();
 
@@ -177,6 +210,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
             catch (SQLException e) {
                 if (e.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
                     throw new QueryCancelledException();
+<<<<<<< HEAD
 
                 throw new IgniteSQLException(e);
             }
@@ -202,7 +236,40 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
                         throw new QueryCancelledException();
 
                     throw new IgniteSQLException(e);
+=======
+
+                throw new IgniteSQLException(e);
+            }
+
+            for (int i = 0; i < pageSize; ++i) {
+                try {
+                    if (!data.next())
+                        break;
+
+                    row = new Object[colCnt];
+
+                    readRow();
+
+                    page.add(row);
+>>>>>>> upstream/master
                 }
+                catch (SQLException e) {
+                    close();
+
+                    if (e.getCause() instanceof IgniteSQLException)
+                        throw (IgniteSQLException)e.getCause();
+
+                    if (e.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
+                        throw new QueryCancelledException();
+
+                    throw new IgniteSQLException(e);
+                }
+            }
+
+            if (F.isEmpty(page)) {
+                rowIter = null;
+
+                return false;
             }
 
             if (F.isEmpty(page)) {
@@ -217,6 +284,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
             }
         }
         finally {
+<<<<<<< HEAD
             if (lazy) {
                 qryCtxReg.clearThreadLocal();
 
@@ -244,6 +312,31 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
                     row[c] = val.getObject();
             }
         }
+=======
+            unlockTables();
+        }
+    }
+
+    /**
+     * @throws SQLException On error.
+     */
+    private void readRow() throws SQLException {
+        if (res != null) {
+            Value[] values = res.currentRow();
+
+            for (int c = 0; c < row.length; c++) {
+                Value val = values[c];
+
+                if (val instanceof GridH2ValueCacheObject) {
+                    GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)values[c];
+
+                    row[c] = valCacheObj.getObject(true);
+                }
+                else
+                    row[c] = val.getObject();
+            }
+        }
+>>>>>>> upstream/master
         else {
             for (int c = 0; c < row.length; c++)
                 row[c] = data.getObject(c + 1);
@@ -252,13 +345,21 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
     /** */
     public void lockTables() {
+<<<<<<< HEAD
         if (ses.isLazyQueryExecution() && !isClosed())
+=======
+        if (!isClosed() && ses.isLazyQueryExecution())
+>>>>>>> upstream/master
             GridH2Table.readLockTables(ses);
     }
 
     /** */
     public void unlockTables() {
+<<<<<<< HEAD
         if (ses != null && ses.isLazyQueryExecution())
+=======
+        if (ses.isLazyQueryExecution())
+>>>>>>> upstream/master
             GridH2Table.unlockTables(ses);
     }
 
@@ -273,6 +374,11 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (rowIter != null && rowIter.hasNext()) {
             row = rowIter.next();
 
+<<<<<<< HEAD
+=======
+            fetchSizeInterceptor.checkOnFetchNext();
+
+>>>>>>> upstream/master
             return true;
         }
 
@@ -285,6 +391,11 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (rowIter != null && rowIter.hasNext()) {
             row = rowIter.next();
 
+<<<<<<< HEAD
+=======
+            fetchSizeInterceptor.checkOnFetchNext();
+
+>>>>>>> upstream/master
             return true;
         }
         else
@@ -307,6 +418,8 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         lockTables();
 
         try {
+            fetchSizeInterceptor.checkOnClose();
+
             data.close();
         }
         catch (SQLException e) {

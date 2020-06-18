@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -31,6 +33,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -200,6 +203,9 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreNotEqual(clientCfg, client.GetConfiguration());
                 Assert.AreNotEqual(client.GetConfiguration(), client.GetConfiguration());
                 Assert.AreEqual(clientCfg.ToXml(), client.GetConfiguration().ToXml());
+
+                var conn = client.GetConnections().Single();
+                Assert.AreEqual(servCfg.ClientConnectorConfiguration.Port, ((IPEndPoint) conn.RemoteEndPoint).Port);
             }
         }
 
@@ -236,7 +242,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     Assert.AreEqual("foo", client.GetCacheNames().Single());
                 }
-                
+
                 // Port range.
                 cfg = new IgniteClientConfiguration("127.0.0.1:10798..10800");
 
@@ -256,9 +262,9 @@ namespace Apache.Ignite.Core.Tests.Client
             var cfg = new IgniteClientConfiguration("127.0.0.1:10800..10700");
 
             var ex = Assert.Throws<IgniteClientException>(() => Ignition.StartClient(cfg));
-            
+
             Assert.AreEqual(
-                "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: 127.0.0.1:10800..10700", 
+                "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: 127.0.0.1:10800..10700",
                 ex.Message);
         }
 
@@ -340,8 +346,7 @@ namespace Apache.Ignite.Core.Tests.Client
             ignite.Dispose();
 
             var ex = Assert.Throws<AggregateException>(() => putGetTask.Wait());
-            var baseEx = ex.GetBaseException();
-            var socketEx = baseEx as SocketException;
+            var socketEx = ex.GetInnermostException() as SocketException;
 
             if (socketEx != null)
             {
@@ -588,6 +593,45 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
                 Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
             }
+        }
+
+        /// <summary>
+        /// Tests that client stops it's receiver thread upon disposal.
+        /// </summary>
+        [Test]
+        public void TestClientDisposalStopsReceiverThread([Values(true, false)] bool async)
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var logger = new ListLogger {EnabledLevels = new[] {LogLevel.Trace}};
+
+            var cfg = new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                Logger = logger
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var cache = client.GetOrCreateCache<int, int>("c");
+
+                if (async)
+                {
+                    cache.PutAsync(1, 1);
+                }
+                else
+                {
+                    cache.Put(1, 1);
+                }
+            }
+
+            var threadId = logger.Entries
+                .Select(e => Regex.Match(e.Message, "Receiver thread #([0-9]+) started."))
+                .Where(m => m.Success)
+                .Select(m => int.Parse(m.Groups[1].Value))
+                .First();
+
+            TestUtils.WaitForTrueCondition(() => logger.Entries.Any(
+                e => e.Message == string.Format("Receiver thread #{0} stopped.", threadId)));
         }
 
         /// <summary>

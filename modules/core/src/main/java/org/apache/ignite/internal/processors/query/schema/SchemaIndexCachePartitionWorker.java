@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -38,7 +39,10 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
@@ -61,16 +65,13 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     private final SchemaIndexOperationCancellationToken cancel;
 
     /** Index closure. */
-    private final SchemaIndexCacheVisitorClosure clo;
+    private final SchemaIndexCacheVisitorClosureWrapper wrappedClo;
 
     /** Partition. */
     private final GridDhtLocalPartition locPart;
 
     /** Worker future. */
-    private final GridFutureAdapter<Void> fut;
-
-    /** Row filter. */
-    private final SchemaIndexCacheFilter rowFilter;
+    private final GridFutureAdapter<SchemaIndexCacheStat> fut;
 
     /** Count of partitions to be processed. */
     private final AtomicInteger partsCnt;
@@ -93,7 +94,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         AtomicBoolean stop,
         SchemaIndexOperationCancellationToken cancel,
         SchemaIndexCacheVisitorClosure clo,
-        GridFutureAdapter<Void> fut,
+        GridFutureAdapter<SchemaIndexCacheStat> fut,
         @Nullable SchemaIndexCacheFilter rowFilter,
         AtomicInteger partsCnt
     ) {
@@ -113,11 +114,9 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         assert nonNull(partsCnt);
 
         this.stop = stop;
-        this.clo = clo;
+        wrappedClo = new SchemaIndexCacheVisitorClosureWrapper(clo, rowFilter);
         this.fut = fut;
         this.partsCnt = partsCnt;
-
-        this.rowFilter = rowFilter;
     }
 
     /** {@inheritDoc} */
@@ -140,7 +139,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                 cctx.group().metrics().addIndexBuildCountPartitionsLeft(-cnt);
         }
         finally {
-            fut.onDone(err);
+            fut.onDone(wrappedClo.indexCacheStat, err);
         }
     }
 
@@ -159,7 +158,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
 
         GridDhtPartitionState partState = locPart.state();
         if (partState != EVICTED)
-            reserved = (partState == OWNING || partState == RENTING || partState == MOVING) && locPart.reserve();
+            reserved = (partState == OWNING || partState == MOVING || partState == LOST) && locPart.reserve();
 
         if (!reserved)
             return;
@@ -197,6 +196,8 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                     if (locPart.state() == RENTING)
                         break;
                 }
+
+                wrappedClo.addNumberProcessedKeys(cntr);
             }
             finally {
                 if (locked)
@@ -227,7 +228,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                 GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
                 try {
-                    entry.updateIndex(rowFilter, clo);
+                    entry.updateIndex(wrappedClo);
                 }
                 finally {
                     entry.touch();
@@ -266,5 +267,55 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaIndexCachePartitionWorker.class, this);
+    }
+
+    /**
+     * Wrapper class for given closure.
+     */
+    private class SchemaIndexCacheVisitorClosureWrapper implements SchemaIndexCacheVisitorClosure {
+        /** Closure. */
+        private final SchemaIndexCacheVisitorClosure clo;
+
+        /** Object for collecting statistics about index update. */
+        @Nullable private final SchemaIndexCacheStat indexCacheStat;
+
+        /** Row filter. */
+        @Nullable private final SchemaIndexCacheFilter rowFilter;
+
+        /** */
+        private SchemaIndexCacheVisitorClosureWrapper(
+            SchemaIndexCacheVisitorClosure clo,
+            @Nullable SchemaIndexCacheFilter filter
+        ) {
+            this.clo = clo;
+            indexCacheStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false) ? new SchemaIndexCacheStat() : null;
+            rowFilter = filter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
+            if (row != null && (rowFilter == null || rowFilter.apply(row))) {
+                clo.apply(row);
+
+                if (indexCacheStat != null) {
+                    QueryTypeDescriptorImpl type = cctx.kernalContext().query().typeByValue(
+                        cctx.cache().name(),
+                        cctx.cacheObjectContext(),
+                        row.key(),
+                        row.value(),
+                        true
+                    );
+
+                    if (type != null)
+                        indexCacheStat.addType(type);
+                }
+            }
+        }
+
+        /** */
+        private void addNumberProcessedKeys(int cnt) {
+            if (nonNull(indexCacheStat))
+                indexCacheStat.add(cnt);
+        }
     }
 }

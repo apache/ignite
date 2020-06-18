@@ -36,15 +36,17 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     /** */
     private transient MvccQueryTracker mvccTracker;
 
-    /** Detached connection. */
-    private final ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn;
+    /** Connection. */
+    private final H2PooledConnection conn;
 
     /**
      * @param data Data.
      * @param mvccTracker Mvcc tracker.
-     * @param detachedConn Detached connection.
+     * @param pageSize Page size.
+     * @param conn Connection.
      * @throws IgniteCheckedException If failed.
      */
+<<<<<<< HEAD
     public H2FieldsIterator(ResultSet data, MvccQueryTracker mvccTracker,
         ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn,
         int pageSize,
@@ -52,11 +54,24 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
         QueryContext qctx, boolean lazy)
         throws IgniteCheckedException {
         super(data, pageSize, log, h2, qctx, lazy);
+=======
+    public H2FieldsIterator(
+        ResultSet data,
+        MvccQueryTracker mvccTracker,
+        H2PooledConnection conn,
+        int pageSize,
+        IgniteLogger log,
+        IgniteH2Indexing h2,
+        H2QueryInfo qryInfo
+    )
+        throws IgniteCheckedException {
+        super(data, pageSize, log, h2, qryInfo);
+>>>>>>> upstream/master
 
-        assert detachedConn != null;
+        assert conn != null;
 
         this.mvccTracker = mvccTracker;
-        this.detachedConn = detachedConn;
+        this.conn = conn;
     }
 
     /** {@inheritDoc} */
@@ -74,7 +89,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
             super.onClose();
         }
         finally {
-            detachedConn.recycle();
+            conn.close();
 
             if (mvccTracker != null)
                 mvccTracker.onDone();
