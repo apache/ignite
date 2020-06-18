@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
@@ -59,17 +60,15 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -91,7 +90,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
@@ -130,6 +131,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** */
     private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, TxCounters> TX_COUNTERS_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, TxCounters.class, "txCounters");
+
+    /** Task name flag updater. */
+    protected static final AtomicIntegerFieldUpdater<IgniteTxAdapter> TASK_NAME_FLAG_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(IgniteTxAdapter.class, "taskNameResolved");
 
     /** Logger. */
     protected static IgniteLogger log;
@@ -257,6 +262,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Task name. */
     protected String taskName;
 
+    /** Flag indicating that taskName is resolved. */
+    protected volatile int taskNameResolved;
+
     /** Store used flag. */
     protected boolean storeEnabled = true;
 
@@ -336,6 +344,15 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+
+        boolean needTaskName = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ) ||
+                cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_PUT) ||
+                cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
+
+        if (needTaskName)
+            resolveTaskName();
+        else
+            TASK_NAME_FLAG_UPD.compareAndSet(this, 0, 1);
     }
 
     /**
@@ -387,6 +404,15 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+
+        boolean needTaskName = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ) ||
+                cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_PUT) ||
+                cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
+
+        if (needTaskName)
+            resolveTaskName();
+        else
+            TASK_NAME_FLAG_UPD.compareAndSet(this, 0, 1);
     }
 
     /**
@@ -1660,10 +1686,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @return Resolves task name.
      */
     public String resolveTaskName() {
-        if (taskName != null)
-            return taskName;
+        if (TASK_NAME_FLAG_UPD.compareAndSet(this, 0, 1))
+            taskName = cctx.kernalContext().task().resolveTaskName(taskNameHash);
 
-        return (taskName = cctx.kernalContext().task().resolveTaskName(taskNameHash));
+        return taskName;
     }
 
     /**
