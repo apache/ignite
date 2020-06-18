@@ -27,6 +27,7 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.ConnectionAndSslParameters;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
 
@@ -48,13 +49,15 @@ public class CommandHandlerUserAttributesTest {
     public void testUserAttributesContainsX509Certificate() throws Exception {
         CommandHandler cmdHndlr = new CommandHandler();
 
-        char[] chars = "123456".toCharArray();
+        String sslKeyStorePath = GridTestProperties.getProperty("ssl.keystore.path");
+
+        char[] chars = GridTestProperties.getProperty("ssl.keystore.password").toCharArray();
 
         ConnectionAndSslParameters params = new ConnectionAndSslParameters(CommandList.STATE.command(),
             DFLT_HOST, DFLT_PORT, "test", "test", DFLT_PING_INTERVAL, DFLT_PING_TIMEOUT,
             false, false, DFLT_SSL_PROTOCOL, "", SslContextFactory.DFLT_KEY_ALGORITHM,
-            "src/test/resources/client.jks", chars, SslContextFactory.DFLT_STORE_TYPE,
-            "src/test/resources/trust.jks", chars, SslContextFactory.DFLT_STORE_TYPE);
+            sslKeyStorePath, chars, SslContextFactory.DFLT_STORE_TYPE,
+            sslKeyStorePath, chars, SslContextFactory.DFLT_STORE_TYPE);
 
         GridClientConfiguration clientCfg = Whitebox.invokeMethod(cmdHndlr, "getClientConfiguration", params);
 
