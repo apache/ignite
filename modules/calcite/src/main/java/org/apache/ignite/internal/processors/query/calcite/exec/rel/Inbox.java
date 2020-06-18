@@ -68,6 +68,9 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
     /** */
     private boolean inLoop;
 
+    /** */
+    private RemoteException rmtEx;
+
     /**
      * @param ctx Execution context.
      * @param exchange Exchange service.
@@ -116,10 +119,15 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
     public void init(ExecutionContext<Row> ctx, Collection<UUID> nodes, Comparator<Row> comp) {
         // It's important to set proper context here because
         // because the one, that is created on a first message
-        // recived doesn't have all context variables in place.
+        // received doesn't have all context variables in place.
         this.ctx = ctx;
         this.nodes = nodes;
         this.comp = comp;
+
+        if (rmtEx != null) {
+            // Inbox is created and registered by exchange service.
+            downstream.onError(rmtEx);
+        }
     }
 
     /** {@inheritDoc} */
@@ -144,12 +152,12 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        if (isCanceled())
+        if (isCancelled())
             return;
 
         nodes.forEach(nodeId -> {
             try {
-                exchange.cancel(nodeId, queryId(), srcFragmentId, exchangeId, -1);
+                exchange.cancelOutbox(nodeId, queryId(), srcFragmentId, exchangeId);
             }
             catch (IgniteCheckedException e) {
                 // TODO:
@@ -206,7 +214,11 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
      * @param err Remote error.
      */
     public void onError(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, Throwable err) {
-        downstream.onError(new RemoteException(nodeId, queryId, fragmentId, exchangeId, err));
+        rmtEx = new RemoteException(nodeId, queryId, fragmentId, exchangeId, err);
+
+        if (downstream != null)
+            downstream.onError(rmtEx);
+
     }
 
     /** */
@@ -255,7 +267,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         }
 
         while (requested > 0 && !heap.isEmpty()) {
-            if (isCanceled())
+            if (isCancelled())
                 return;
 
             Buffer buf = heap.poll().right;
@@ -293,7 +305,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         int idx = 0, noProgress = 0;
 
         while (requested > 0 && !buffers.isEmpty()) {
-            if (isCanceled())
+            if (isCancelled())
                 return;
 
             Buffer buf = buffers.get(idx);

@@ -167,7 +167,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        if (isCanceled())
+        if (isCancelled())
             return;
 
         close();
@@ -213,7 +213,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     /** */
     private void sendCancel(UUID nodeId, int batchId) {
         try {
-            exchange.cancel(nodeId, queryId(), targetFragmentId, exchangeId, batchId);
+            exchange.cancelInbox(nodeId, queryId(), targetFragmentId, exchangeId, batchId);
         }
         catch (IgniteCheckedException e) {
             U.warn(context().planningContext().logger(), "Failed to send cancel message.", e);

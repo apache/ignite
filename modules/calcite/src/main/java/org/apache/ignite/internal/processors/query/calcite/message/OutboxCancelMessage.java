@@ -25,23 +25,41 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class QueryCancelRequest implements CalciteMessage {
+public class OutboxCancelMessage implements ExecutionContextAware {
     /** */
     private UUID queryId;
 
     /** */
-    QueryCancelRequest(){}
+    private long fragmentId;
 
     /** */
-    public QueryCancelRequest(UUID queryId) {
+    private long exchangeId;
+
+    /** */
+    public OutboxCancelMessage(){}
+
+    /** */
+    public OutboxCancelMessage(UUID queryId, long fragmentId, long exchangeId) {
         this.queryId = queryId;
+        this.fragmentId = fragmentId;
+        this.exchangeId = exchangeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID queryId() {
+        return queryId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long fragmentId() {
+        return fragmentId;
     }
 
     /**
-     * @return Query ID.
+     * @return Exchange ID.
      */
-    public UUID queryId() {
-        return queryId;
+    public long exchangeId() {
+        return exchangeId;
     }
 
     /** {@inheritDoc} */
@@ -57,6 +75,18 @@ public class QueryCancelRequest implements CalciteMessage {
 
         switch (writer.state()) {
             case 0:
+                if (!writer.writeLong("exchangeId", exchangeId))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeLong("fragmentId", fragmentId))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
                 if (!writer.writeUuid("queryId", queryId))
                     return false;
 
@@ -76,6 +106,22 @@ public class QueryCancelRequest implements CalciteMessage {
 
         switch (reader.state()) {
             case 0:
+                exchangeId = reader.readLong("exchangeId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                fragmentId = reader.readLong("fragmentId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
                 queryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
@@ -85,16 +131,16 @@ public class QueryCancelRequest implements CalciteMessage {
 
         }
 
-        return reader.afterMessageRead(QueryCancelRequest.class);
+        return reader.afterMessageRead(OutboxCancelMessage.class);
     }
 
     /** {@inheritDoc} */
     @Override public MessageType type() {
-        return MessageType.QUERY_CANCEL_REQUEST;
+        return MessageType.QUERY_OUTBOX_CANCEL_MESSAGE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 3;
     }
 }

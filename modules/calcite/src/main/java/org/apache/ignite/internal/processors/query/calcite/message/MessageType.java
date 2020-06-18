@@ -27,12 +27,13 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescr
 public enum MessageType {
     QUERY_START_REQUEST(300, QueryStartRequest::new),
     QUERY_START_RESPONSE(301, QueryStartResponse::new),
-    QUERY_CANCEL_REQUEST(302, QueryCancelRequest::new),
-    QUERY_BATCH_MESSAGE(303, QueryBatchMessage::new),
-    QUERY_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage::new),
-    QUERY_INBOX_CANCEL_MESSAGE(305, InboxCancelMessage::new),
-    GENERIC_ROW_MESSAGE(306, GenericRowMessage::new),
-    QUERY_ERROR_MESSAGE(307, ErrorMessage::new),
+    QUERY_BATCH_MESSAGE(302, QueryBatchMessage::new),
+    QUERY_ACKNOWLEDGE_MESSAGE(303, QueryBatchAcknowledgeMessage::new),
+    QUERY_INBOX_CANCEL_MESSAGE(304, InboxCancelMessage::new),
+    QUERY_OUTBOX_CANCEL_MESSAGE(305, OutboxCancelMessage::new),
+    QUERY_ERROR_MESSAGE(306, ErrorMessage::new),
+    GENERIC_ROW_MESSAGE(307, GenericRowMessage::new),
+
     NODES_MAPPING(350, NodesMapping::new),
     FRAGMENT_DESCRIPTION(351, FragmentDescription::new);
 
@@ -79,14 +80,16 @@ public enum MessageType {
             case 301:
                 return QUERY_START_RESPONSE.newMessage();
             case 302:
-                return QUERY_CANCEL_REQUEST.newMessage();
-            case 303:
                 return QUERY_BATCH_MESSAGE.newMessage();
-            case 304:
+            case 303:
                 return QUERY_ACKNOWLEDGE_MESSAGE.newMessage();
-            case 305:
+            case 304:
                 return QUERY_INBOX_CANCEL_MESSAGE.newMessage();
+            case 305:
+                return QUERY_OUTBOX_CANCEL_MESSAGE.newMessage();
             case 306:
+                return QUERY_ERROR_MESSAGE.newMessage();
+            case 307:
                 return GENERIC_ROW_MESSAGE.newMessage();
             case 350:
                 return NODES_MAPPING.newMessage();

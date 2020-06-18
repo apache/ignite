@@ -72,7 +72,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.processors.query.calcite.message.QueryCancelRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
@@ -434,7 +433,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     @Override public void init() {
         messageService().register((n,m) -> onMessage(n, (QueryStartRequest) m), MessageType.QUERY_START_REQUEST);
         messageService().register((n,m) -> onMessage(n, (QueryStartResponse) m), MessageType.QUERY_START_RESPONSE);
-        messageService().register((n,m) -> onMessage(n, (QueryCancelRequest) m), MessageType.QUERY_CANCEL_REQUEST);
 
         eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
@@ -891,13 +889,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private void onMessage(UUID nodeId, QueryCancelRequest msg) {
-        assert nodeId != null && msg != null;
-
-        cancelQuery(msg.queryId());
-    }
-
-    /** */
     private void onMessage(UUID nodeId, QueryStartResponse msg) {
         assert nodeId != null && msg != null;
 
@@ -1068,7 +1059,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         /** */
         private void cancel() {
             boolean cancelLoc = false;
-            boolean cancelRemote = false;
             QueryState state0 = null;
 
             synchronized (this) {
@@ -1079,31 +1069,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     cancelLoc = true;
                     state0 = state = QueryState.CANCELLING;
                 }
-
-                if (state == QueryState.CANCELLING && waiting.isEmpty()) {
-                    cancelRemote = true;
-                    state0 = state = QueryState.CANCELLED;
-                }
             }
 
             if (cancelLoc)
                 root.cancel();
-
-            if (cancelRemote) {
-                QueryCancelRequest msg = new QueryCancelRequest(ctx.queryId());
-
-                for (UUID remote : remotes) {
-                    try {
-                        messageService().send(remote, msg);
-                    }
-                    catch (ClusterTopologyCheckedException e) {
-                        U.warn(log, e.getMessage(), e);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw U.convertException(e);
-                    }
-                }
-            }
 
             if (state0 == QueryState.CANCELLED)
                 running.remove(ctx.queryId());

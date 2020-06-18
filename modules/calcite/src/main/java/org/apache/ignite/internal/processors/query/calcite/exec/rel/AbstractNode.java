@@ -58,7 +58,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     protected List<Node<Row>> sources;
 
     /** */
-    protected volatile boolean canceled;
+    protected boolean canceled;
 
     /**
      * @param ctx Execution context.
@@ -101,7 +101,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     /**
      * @return {@code true} if the subtree is canceled.
      */
-    public boolean isCanceled() {
+    public boolean isCancelled() {
         return canceled;
     }
 

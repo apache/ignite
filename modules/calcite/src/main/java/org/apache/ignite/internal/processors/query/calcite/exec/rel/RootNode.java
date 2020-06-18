@@ -27,7 +27,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -62,8 +61,6 @@ public class RootNode<Row> extends AbstractNode<Row>
     /** */
     private int waiting;
 
-    private final IgniteLogger log;
-
     /**
      * @param ctx Execution context.
      */
@@ -71,8 +68,6 @@ public class RootNode<Row> extends AbstractNode<Row>
         super(ctx);
 
         this.onClose = onClose;
-
-        log = ctx.planningContext().logger().getLogger(RootNode.class);
 
         // extra space for possible END marker
         buff = new ArrayDeque<>(IN_BUFFER_SIZE + 1);
@@ -87,26 +82,15 @@ public class RootNode<Row> extends AbstractNode<Row>
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        if (state != State.RUNNING)
+        checkThread();
+
+        if (isCancelled())
             return;
 
-        lock.lock();
-        try {
-            if (state != State.RUNNING || isCanceled())
-                return;
+        buff.clear();
+        cond.signalAll();
 
-            state = State.CANCELLED;
-            buff.clear();
-            cond.signalAll();
-
-            super.cancel();
-        }
-        finally {
-            lock.unlock();
-        }
-        
-        context().execute(F.first(sources)::cancel);
-        onClose.accept(this);
+        super.cancel();
     }
 
     /**
@@ -118,7 +102,23 @@ public class RootNode<Row> extends AbstractNode<Row>
 
     /** {@inheritDoc} */
     @Override public void close() {
-        cancel();
+        if (state != State.RUNNING)
+            return;
+
+        lock.lock();
+        try {
+            if (state != State.RUNNING || isCancelled())
+                return;
+
+            state = State.CANCELLED;
+
+            context().execute(this::cancel);
+        }
+        finally {
+            lock.unlock();
+        }
+
+        onClose.accept(this);
     }
 
     /** {@inheritDoc} */

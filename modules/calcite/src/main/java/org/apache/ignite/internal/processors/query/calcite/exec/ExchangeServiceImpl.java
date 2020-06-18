@@ -31,13 +31,13 @@ import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCancelMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
+import org.apache.ignite.internal.processors.query.calcite.message.OutboxCancelMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -113,13 +113,13 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException {
-        cancel(nodeId, qryId, fragmentId, exchangeId, -1);
+    @Override public void cancelOutbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException {
+        cancelInbox(nodeId, qryId, fragmentId, exchangeId, -1);
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
-        messageService().send(nodeId, new InboxCancelMessage(qryId, fragmentId, exchangeId, batchId));
+    @Override public void cancelInbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
+        messageService().send(nodeId, new OutboxCancelMessage(qryId, fragmentId, exchangeId));
     }
 
     /** {@inheritDoc} */
@@ -149,24 +149,20 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     /** {@inheritDoc} */
     @Override public void init() {
         messageService().register((n, m) -> onMessage(n, (InboxCancelMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (OutboxCancelMessage) m), MessageType.QUERY_OUTBOX_CANCEL_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (ErrorMessage) m), MessageType.QUERY_ERROR_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage) m), MessageType.QUERY_ACKNOWLEDGE_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchMessage) m), MessageType.QUERY_BATCH_MESSAGE);
-        messageService().register((n, m) -> onMessage(n, (ErrorMessage) m), MessageType.QUERY_ERROR_MESSAGE);
     }
 
     /** */
     protected void onMessage(UUID nodeId, InboxCancelMessage msg) {
         Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
-        Collection<Outbox<?>> outboxes = mailboxRegistry().outboxes(msg.queryId());
 
         if (inbox != null)
             inbox.cancel();
-
-        if (outboxes != null)
-            outboxes.forEach(Outbox::cancel);
-
-        if (log.isDebugEnabled() && outboxes == null && inbox == null) {
-            log.debug("Stale cancel message received: [" +
+        else if (log.isDebugEnabled()) {
+            log.debug("Stale inbox cancel message received: [" +
                 "nodeId=" + nodeId + ", " +
                 "queryId=" + msg.queryId() + ", " +
                 "fragmentId=" + msg.fragmentId() + ", " +
@@ -176,28 +172,43 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** */
+    protected void onMessage(UUID nodeId, OutboxCancelMessage msg) {
+        Collection<Outbox<?>> outboxes = mailboxRegistry().outboxes(msg.queryId());
+
+        if (outboxes != null)
+            outboxes.forEach(Outbox::cancel);
+        else if (log.isDebugEnabled()) {
+            log.debug("Stale oubox cancel message received: [" +
+                "nodeId=" + nodeId + ", " +
+                "queryId=" + msg.queryId() + ", " + ']');
+        }
+    }
+
+    /** */
     protected void onMessage(UUID nodeId, ErrorMessage msg) {
         Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
 
-        if (inbox != null) {
-            try {
-                inbox.onError(
-                    nodeId,
-                    msg.queryId(),
-                    msg.fragmentId(),
-                    msg.exchangeId(),
-                    messageService().marshaller().unmarshal(msg.errorBytes(), messageService().classLoader()));
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Error on exception unmarshalling", e);
-            }
+        if (inbox == null) {
+            // first message sent before a fragment is built
+            // note that an inbox source fragment id is also used as an exchange id
+            Inbox<?> newInbox = new Inbox<>(baseInboxContext(msg.queryId(), msg.fragmentId()),
+                this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId());
+
+            inbox = mailboxRegistry().register(newInbox);
         }
-        else if (log.isDebugEnabled()) {
-            log.debug("Stale error message received: [" +
-                "nodeId=" + nodeId + ", " +
-                "queryId=" + msg.queryId() + ", " +
-                "fragmentId=" + msg.fragmentId() + ", " +
-                "exchangeId=" + msg.exchangeId() + "]");
+
+        assert inbox != null;
+
+        try {
+            inbox.onError(
+                nodeId,
+                msg.queryId(),
+                msg.fragmentId(),
+                msg.exchangeId(),
+                messageService().marshaller().unmarshal(msg.errorBytes(), messageService().classLoader()));
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Error on exception unmarshalling", e);
         }
     }
 
