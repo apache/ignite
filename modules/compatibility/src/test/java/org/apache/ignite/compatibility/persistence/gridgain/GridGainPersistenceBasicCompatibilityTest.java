@@ -140,7 +140,7 @@ public class GridGainPersistenceBasicCompatibilityTest extends GridgainPersisten
                 // Set up the cluster tag.
                 String clusterTag = "testTag";
 
-                U.invoke(IgniteClusterEx.class, cluster, "tag",  new Class[] {String.class}, clusterTag);
+                U.invoke(IgniteClusterEx.class, cluster, "tag", new Class[] {String.class}, clusterTag);
 
                 String tag = U.invoke(IgniteClusterEx.class, cluster, "tag", new Class[] {}, null);
 
