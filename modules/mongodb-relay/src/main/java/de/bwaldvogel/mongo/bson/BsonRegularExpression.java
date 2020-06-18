@@ -1,23 +1,31 @@
 package de.bwaldvogel.mongo.bson;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import de.bwaldvogel.mongo.backend.Assert;
 
-public class BsonRegularExpression implements Bson {
+public class BsonRegularExpression implements Bson,Externalizable {
 
     private static final long serialVersionUID = 1L;
 
     private static final String REGEX = "$regex";
     private static final String OPTIONS = "$options";
 
-    private final String pattern;
-    private final String options;
+    private String pattern;
+    private String options;
 
     private transient final AtomicReference<Pattern> compiledPattern = new AtomicReference<>(null);
 
+    private BsonRegularExpression(){
+    	
+    }
+    
     public BsonRegularExpression(String pattern, String options) {
         this.pattern = pattern;
         this.options = options;
@@ -122,4 +130,18 @@ public class BsonRegularExpression implements Bson {
     public Matcher matcher(String string) {
         return toPattern().matcher(string);
     }
+
+	@Override
+	public void writeExternal(ObjectOutput out) throws IOException {
+		// TODO Auto-generated method stub
+		out.writeUTF(this.pattern);
+		out.writeUTF(this.options);
+	}
+
+	@Override
+	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+		// TODO Auto-generated method stub
+		this.pattern = in.readUTF();
+		this.options = in.readUTF();
+	}
 }

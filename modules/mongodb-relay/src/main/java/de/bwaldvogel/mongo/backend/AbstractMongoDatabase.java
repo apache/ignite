@@ -759,7 +759,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
     }
 
     protected String extractCollectionNameFromNamespace(String namespace) {
-    	if(namespace.startsWith(databaseName)) {
+    	if(namespace.startsWith(databaseName+'.')) {
     		Assert.startsWith(namespace, databaseName);
     		return namespace.substring(databaseName.length() + 1);
     	}

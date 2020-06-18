@@ -1,7 +1,17 @@
 package de.bwaldvogel.mongo.backend.ignite;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -16,16 +26,26 @@ import java.util.stream.StreamSupport;
 import javax.cache.Cache;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryFieldEx;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.stream.StreamVisitor;
 import org.slf4j.Logger;
@@ -71,11 +91,13 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
         } else {
             key = UUID.randomUUID();
         }
-        if(dataMap.containsKey(key)) {
+        
+        T2<Object,BinaryObject> obj = this.documentToBinaryObject(key,document);
+       
+        boolean rv = dataMap.putIfAbsent(Missing.ofNullable(obj.getKey()), obj.getValue());
+        if(!rv) {
         	throw new DuplicateKeyError(this.getCollectionName(),"Document with key '" + key + "' already existed");
         }
-        BinaryObject obj = this.documentToBinaryObject(document);
-        dataMap.put(Missing.ofNullable(key), obj);
         //Assert.isNull(previous, () -> "Document with key '" + key + "' already existed in " + this + ": " + previous);
         return key;
     }
@@ -89,7 +111,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     protected Document getDocument(Object position) {
     	BinaryObject obj = dataMap.get(position);
     	if(obj==null) return null;
-    	return this.binaryObjectToDocument(position,obj);
+    	return this.binaryObjectToDocument(position,obj,idField);
     }
 
     @Override
@@ -106,7 +128,8 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	 if(key!=null) {
     		 return key;
     	 }
-    	 BinaryObject obj = this.documentToBinaryObject(document);
+    	 T2<Object,BinaryObject> obj2 = this.documentToBinaryObject(key,document);
+    	 BinaryObject obj = obj2.getValue();
     	 ScanQuery<Object, BinaryObject> scan = new ScanQuery<>(
     	            new IgniteBiPredicate<Object, BinaryObject>() {
     	                @Override public boolean apply(Object key, BinaryObject other) {
@@ -129,12 +152,25 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
             int numberToReturn) {
         List<Document> matchedDocuments = new ArrayList<>();
         
-        ScanQuery<Object, BinaryObject> scan = new ScanQuery<>();
+        ScanQuery<Object, BinaryObject> scan = new ScanQuery<>(
+        		 new IgniteBiPredicate<Object, BinaryObject>() { 	                
+					private static final long serialVersionUID = 1L;
+
+					@Override public boolean apply(Object key, BinaryObject other) {
+ 	                	Document document = binaryObjectToDocument(key,other,idField);
+ 	                	if (documentMatchesQuery(document, query)) {
+ 	                       return true;
+ 	                    }
+ 	                	return false;
+ 	                }
+ 	            }
+        	
+        );
 	 
 		QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
 		//Iterator<Cache.Entry<Object, BinaryObject>> it = cursor.iterator();
 	    for (Cache.Entry<Object, BinaryObject> entry: cursor) {	 	    	
-	    	Document document = this.binaryObjectToDocument(entry.getKey(),entry.getValue());
+	    	Document document = this.binaryObjectToDocument(entry.getKey(),entry.getValue(),this.idField);
 	    	if (documentMatchesQuery(document, query)) {
                 matchedDocuments.add(document);
             }
@@ -145,11 +181,11 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     }
 
     @Override
-    protected void handleUpdate(Object position, Document oldDocument,Document document) {
+    protected void handleUpdate(Object key, Document oldDocument,Document document) {
         // noop   	
-
-        dataMap.put(Missing.ofNullable(position), documentToBinaryObject(document));
+    	T2<Object,BinaryObject> obj = this.documentToBinaryObject(key,document);
         
+        boolean rv = dataMap.putIfAbsent(Missing.ofNullable(obj.getKey()), obj.getValue());        
     }
 
 
@@ -164,28 +200,37 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     		 
     	 QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
     	//Iterator<Cache.Entry<Object, Document>> it = cursor.iterator();
-    	 return StreamSupport.stream(cursor.spliterator(),false).map(entry -> new DocumentWithPosition<>(binaryObjectToDocument(entry.getKey(),entry.getValue()), entry.getKey()));		
+    	 return StreamSupport.stream(cursor.spliterator(),false).map(entry -> new DocumentWithPosition<>(binaryObjectToDocument(entry.getKey(),entry.getValue(),this.idField), entry.getKey()));		
          
     }
     
-    public BinaryObject documentToBinaryObject(Document obj){	
-    	Ignite ignite = ((IgniteDatabase) this.database).getIgnite();
+    public T2<Object,BinaryObject> documentToBinaryObject(Object keyValue,Document obj){	
+    	IgniteBinary igniteBinary = ((IgniteDatabase) this.database).getIgnite().binary();
     	
-    	String typeName = (String)obj.get("_class");
-    	
+    	String typeName = (String)obj.get("_class");    	
+    	String keyField = "id";
     	CacheConfiguration cfg = dataMap.getConfiguration(CacheConfiguration.class);
-    	if(StringUtil.isNullOrEmpty(typeName) && !cfg.getQueryEntities().isEmpty()) {
+    	if(!cfg.getQueryEntities().isEmpty()) {
     		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
-    		typeName = qeit.next().getValueType();    		
+    		QueryEntity entity = qeit.next();   		
+    		keyField = entity.getKeyFieldName();
+    		if(StringUtil.isNullOrEmpty(typeName)) {
+        		typeName = entity.getValueType();
+        	}	
     	}
     	if(StringUtil.isNullOrEmpty(typeName)) {
     		typeName = dataMap.getName();
-    	}
-		BinaryObjectBuilder bb = ignite.binary().builder(typeName.toString());
+    	}		
+    	BinaryTypeImpl type = (BinaryTypeImpl)igniteBinary.type(typeName);
+		BinaryObjectBuilder bb = igniteBinary.builder(typeName);
+		
 		Set<Map.Entry<String,Object>> ents = obj.entrySet();
 	    for(Map.Entry<String,Object> ent: ents){	    	
 	    	String $key =  ent.getKey();
 	    	Object $value = ent.getValue();
+	    	if($key.equals(this.idField)) {
+	    		$key = keyField;
+	    	}
 			try {
 			
 				if($value instanceof List){
@@ -208,25 +253,43 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 					//$value = new HashMap($arr);
 					//$value = ($arr);
 				}
-				Object bValue = ignite.binary().toBinary($value);
+				else if(type!=null && $value instanceof Number) {
+					BinaryFieldMetadata field = type.metadata().fieldsMap().get($key);
+					if(field!=null) {
+						$value=readNumberBinaryField((Number)$value,field.typeId());
+					}
+				}
+				else if(type!=null) {
+					BinaryFieldMetadata field = type.metadata().fieldsMap().get($key);
+					if(field!=null) {
+						$value=readOtherBinaryField($value,field.typeId());
+					}
+				}
+				if($key==keyField) {
+					keyValue = $value;
+				}
+				
+				Object bValue = igniteBinary.toBinary($value);
 				bb.setField($key, bValue);
+				
 				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}	    	
 	    }	   
-	    return bb.build();
+	    BinaryObject  bobj = bb.build();
+	    return new T2(keyValue,bobj);
 	}
     
-    public Document binaryObjectToDocument(Object key,BinaryObject obj){	    	
+    public static Document binaryObjectToDocument(Object key,BinaryObject obj,String idField){	    	
     	Document doc = new Document();	
     	if(key!=null) {
     		if(key instanceof BinaryObject){
 				BinaryObject $arr = (BinaryObject)key;					
 				key = $arr.deserialize();
 			}	
-    		doc.append(this.idField, key);
+    		doc.append(idField, key);
     	}
 	    for(String field: obj.type().fieldNames()){	    	
 	    	String $key =  field;
@@ -250,9 +313,11 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 				}
 				if($value instanceof BinaryObject){
 					BinaryObject $arr = (BinaryObject)$value;					
-					$value = binaryObjectToDocument(null,$arr);
-				}				
-				doc.append($key, $value);
+					$value = binaryObjectToDocument(null,$arr,idField);
+				}	
+				if($value!=null) {
+					doc.append($key, $value);
+				}
 				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -262,4 +327,158 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 	    return doc;
 	}    
 
+
+    /** {@inheritDoc} */
+    public static <F> F readNumberBinaryField(Number buf,int hdr) {
+    	if(buf==null) return null;
+        try {
+
+            Object val = buf;
+
+            switch (hdr) {
+                case GridBinaryMarshaller.INT:
+                    val = buf.getClass()==Integer.class? buf: buf.intValue();
+                    break;
+
+                case GridBinaryMarshaller.LONG:
+                	 val = buf.getClass()==Long.class? buf: buf.longValue();
+
+                    break;               
+
+                case GridBinaryMarshaller.SHORT:
+                	val = buf.getClass()==Short.class? buf: buf.shortValue();
+
+                    break;
+
+                case GridBinaryMarshaller.BYTE:
+                	val = buf.getClass()==Byte.class? buf: buf.byteValue();
+
+                    break;
+
+               
+
+                case GridBinaryMarshaller.FLOAT:
+                	val = buf.getClass()==Float.class? buf: buf.floatValue();
+
+                    break;
+
+                case GridBinaryMarshaller.DOUBLE:
+                	val = buf.getClass()==Double.class? buf: buf.doubleValue();
+
+                    break;
+
+                
+                case GridBinaryMarshaller.DECIMAL: {
+                	val = buf.getClass()==BigDecimal.class? buf: new BigDecimal(buf.toString());
+                    break;
+                }
+
+                case GridBinaryMarshaller.NULL:
+                    val = null;
+
+                    break;               
+            }
+
+            return (F)val;
+        }
+        finally {
+           
+        }
+    }
+    
+
+    /** {@inheritDoc} */
+    public static <F> F readOtherBinaryField(Object buf,int hdr) {
+    	if(buf==null) return null;
+        try {
+
+            Object val = buf;;
+
+            switch (hdr) {
+                
+
+                case GridBinaryMarshaller.BOOLEAN:
+                	 val = buf.getClass()==Boolean.class? buf: Utils.isTrue(buf);
+
+                    break;
+
+                
+
+                case GridBinaryMarshaller.CHAR:
+                	val = buf.getClass()==Character.class? buf: buf.toString().charAt(0);
+
+                    break;
+
+               
+
+                case GridBinaryMarshaller.STRING: {
+                	val = buf.toString();
+
+                    break;
+                }
+
+                case GridBinaryMarshaller.DATE: {
+                	val = buf.getClass()==Date.class? buf:null;
+                	if(val==null) {
+                		DateFormat dateFormatSecond = new SimpleDateFormat("yyyy-mm-dd hh:ss");
+                		DateFormat dateFormatDay = new SimpleDateFormat("yyyy-mm-dd");
+                		try {
+                			val = dateFormatSecond.parse(buf.toString());
+                		}catch(ParseException e) {
+                			try {
+                				val = dateFormatDay.parse(buf.toString());
+                			}catch(ParseException e2) {
+                				long time = Long.parseLong(buf.toString());
+                        		val = new Date(time);
+                			}
+                		}
+                	}
+
+                    break;
+                }
+
+                case GridBinaryMarshaller.TIMESTAMP: {
+                	
+                	val = buf.getClass()==Timestamp.class? buf:null;
+                	if(val==null) {
+                		long time = Long.parseLong(buf.toString());
+                		val = new Timestamp(time);
+                	}
+                    break;
+                }
+
+                case GridBinaryMarshaller.TIME: {
+                	val = buf.getClass()==Time.class? buf:null;
+                	if(val==null) {
+                		long time = Long.parseLong(buf.toString());
+                		val = new Time(time);
+                	} 
+                    break;
+                }
+
+                case GridBinaryMarshaller.UUID: {
+                	val = buf.getClass()==UUID.class? buf:UUID.fromString(buf.toString());
+
+                    break;
+                }
+
+
+                case GridBinaryMarshaller.NULL:
+                    val = null;
+
+                    break;
+
+                default:
+                    // Restore buffer position.
+                    break;
+            }
+
+            return (F)val;
+        }
+        finally {
+          
+        }
+    }
+    
+   
 }

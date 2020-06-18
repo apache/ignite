@@ -84,7 +84,7 @@ public abstract class AbstractMongoBackend implements MongoBackend {
             Document response = new Document();
             List<Document> dbs = new ArrayList<>();
             for (String databaseName : listDatabaseNames()) {
-                MongoDatabase db = openOrCreateDatabase(databaseName);
+                MongoDatabase db = this.resolveDatabase(databaseName);
                 Document dbObj = new Document("name", db.getDatabaseName());
                 dbObj.put("empty", Boolean.valueOf(db.isEmpty()));
                 dbs.add(dbObj);

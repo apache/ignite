@@ -78,7 +78,7 @@ public class IgniteBackend extends AbstractMongoBackend {
     	if(databaseName!=null && databaseName.isEmpty()) {
     		gridName = null;
     		databaseName = IgniteDatabase.DEFAULT_DB_NAME;
-    	}
+    	}    	
     	Ignite mvStore = Ignition.ignite(gridName);
         return new IgniteDatabase(databaseName, this, mvStore);
     }

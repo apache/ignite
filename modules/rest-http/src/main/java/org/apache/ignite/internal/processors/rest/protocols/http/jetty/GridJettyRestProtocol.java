@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -133,8 +134,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             @Override public Boolean apply(String tok) {
                 return F.isEmpty(secretKey) || authenticate(tok);
             }
-        }, log);
-
+        }, log);        
+        
         String jettyPath = config().getJettyPath();
 
         final URL cfgUrl;

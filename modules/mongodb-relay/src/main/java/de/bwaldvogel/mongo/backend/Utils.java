@@ -109,15 +109,8 @@ public class Utils {
             return null;
         }
         if (value instanceof Number) {
-        	//add@byron
-        	if(value instanceof Integer || value instanceof Long) {
-        		return value;
-        	}
-            double doubleValue = ((Number) value).doubleValue();
-            if (doubleValue == -0.0) {
-                doubleValue = 0.0;
-            }
-            return Double.valueOf(doubleValue);
+        	//add@byron        	
+            return value.toString();
         } else if (value instanceof Map) {
             @SuppressWarnings("unchecked")
             Map<String, Object> map = (Map<String, Object>) value;

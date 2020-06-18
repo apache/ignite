@@ -2,12 +2,16 @@ package de.bwaldvogel.mongo.bson;
 
 import static de.bwaldvogel.mongo.wire.BsonConstants.LENGTH_OBJECTID;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
 import de.bwaldvogel.mongo.backend.Assert;
 
-public class ObjectId implements Bson, Comparable<ObjectId> {
+public class ObjectId implements Bson, Comparable<ObjectId> ,Externalizable {
 
     private static final long serialVersionUID = 1L;
 
@@ -84,5 +88,17 @@ public class ObjectId implements Bson, Comparable<ObjectId> {
         }
         return sb.toString();
     }
+
+	@Override
+	public void writeExternal(ObjectOutput out) throws IOException {
+		// TODO Auto-generated method stub
+		out.write(data);
+	}
+
+	@Override
+	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+		// TODO Auto-generated method stub
+		in.read(data,0,data.length);
+	}
 
 }

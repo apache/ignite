@@ -2248,7 +2248,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (!desc.keyClass().isAssignableFrom(keyCls)) {
                 	//add@byron
                 	if (Number.class.isAssignableFrom(desc.keyClass()) && Number.class.isAssignableFrom(keyCls)) {
-                    	return desc;
+                    	return null;
                     }
                     throw new IgniteCheckedException("Failed to update index, incorrect key class [expCls=" +
                         desc.keyClass().getName() + ", actualCls=" + keyCls.getName() + "]");

@@ -69,10 +69,11 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
         } else {
             key = UUID.randomUUID();
         }
-        if(dataMap.containsKey(key)) {
+        
+        boolean rv = dataMap.putIfAbsent(Missing.ofNullable(key), document);
+        if(!rv) {
         	throw new DuplicateKeyError(this.getCollectionName(),"Document with key '" + key + "' already existed");
         }
-        dataMap.put(Missing.ofNullable(key), document);
         //Assert.isNull(previous, () -> "Document with key '" + key + "' already existed in " + this + ": " + previous);
         return key;
     }
