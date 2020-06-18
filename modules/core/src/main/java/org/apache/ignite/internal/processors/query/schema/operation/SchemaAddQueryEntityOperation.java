@@ -38,7 +38,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
     private final boolean sqlEscape;
 
     /**
-     * @param opId    Operation ID.
+     * @param opId Operation ID.
      * @param cacheName Cache name.
      * @param schemaName Schema name.
      * @param entities Collection of QueryEntity.

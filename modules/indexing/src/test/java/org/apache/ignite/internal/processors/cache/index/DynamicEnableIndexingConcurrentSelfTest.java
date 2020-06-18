@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -51,11 +52,13 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -418,6 +421,89 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
             assertEquals(val.field(LATITUDE_FIELD_NAME), res.get(2));
             assertEquals(val.field(LONGITUDE_FIELD_NAME), res.get(3));
         });
+    }
+
+    /** Test concurrent enabling indexing. Only one attempt should succeed. */
+    @Test
+    public void testConcurrentEnableIndexing() throws Exception {
+        // Start several nodes.
+        IgniteEx srv1 = ignitionStart(serverConfiguration(1));
+        ignitionStart(serverConfiguration(2));
+        ignitionStart(clientConfiguration(3));
+        ignitionStart(clientConfiguration(4));
+
+        srv1.cluster().state(ClusterState.ACTIVE);
+
+        createCache(srv1);
+        loadData(srv1, 0, LARGE_NUM_ENTRIES);
+
+        // Start enable indexing from several threads.
+        final AtomicBoolean stopped = new AtomicBoolean();
+        final AtomicInteger success = new AtomicInteger();
+
+        IgniteInternalFuture<?> task = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() {
+                while (!stopped.get()) {
+                    IgniteEx node = grid(ThreadLocalRandom.current().nextInt(1, 4));
+
+                    try {
+                        Thread.sleep(100);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+
+                    enableIndexing(node).chain(new IgniteClosure<IgniteInternalFuture<?>, Void>() {
+                        @Override public Void apply(IgniteInternalFuture<?> fut) {
+                            try {
+                                fut.get();
+
+                                success.incrementAndGet();
+                            }
+                            catch (IgniteCheckedException e) {
+                                assertTrue(e.hasCause(SchemaOperationException.class));
+
+                                SchemaOperationException opEx = e.getCause(SchemaOperationException.class);
+
+                                assertEquals(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, opEx.code());
+                                assertEquals("Cache is already indexed: " + POI_CACHE_NAME, opEx.getMessage());
+                            }
+
+                            return null;
+                        }
+                    });
+                }
+
+                return null;
+            }
+        }, 4);
+
+        // Do attempts.
+        Thread.sleep(1_000L);
+
+        // Start more server nodes..
+        ignitionStart(serverConfiguration(5));
+        ignitionStart(serverConfiguration(6));
+
+        // Do some more attempts.
+        Thread.sleep(1_000L);
+
+        // Stop task.
+        stopped.set(true);
+        task.get();
+
+        // Check that only one successful attempt.
+        assertEquals(1, success.get());
+
+        awaitPartitionMapExchange();
+
+        for (Ignite g: G.allGrids()) {
+            assertEquals(LARGE_NUM_ENTRIES, query(g, SELECT_ALL_QUERY).size());
+
+            performQueryingIntegrityCheck(g);
+
+            checkQueryParallelism((IgniteEx)g, cacheMode);
+        }
     }
 
     /** */
