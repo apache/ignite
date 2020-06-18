@@ -159,6 +159,9 @@ public class MavenUtils {
 
         SB mavenCommandArgs = new SB(" org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact);
 
+        if (artifact.contains("org.gridgain"))
+            mavenCommandArgs.a(" -DremoteRepositories=http://www.gridgainsystems.com/nexus/content/repositories/external");
+
         if (!F.isEmpty(localProxyMavenSettingsFromEnv))
             localProxyMavenSettings = Paths.get(localProxyMavenSettingsFromEnv);
 
