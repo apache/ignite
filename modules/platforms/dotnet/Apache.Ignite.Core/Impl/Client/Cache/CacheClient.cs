@@ -98,6 +98,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /** Expiry policy. */
         private readonly IExpiryPolicy _expiryPolicy;
 
+        /** Expiry policy. */
+        private readonly ClientCacheTransactionManager _txManager;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheClient{TK, TV}" /> class.
         /// </summary>
@@ -116,6 +119,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             _id = BinaryUtils.GetCacheId(name);
             _keepBinary = keepBinary;
             _expiryPolicy = expiryPolicy;
+            _txManager = new ClientCacheTransactionManager(_ignite.Transactions);
         }
 
         /** <inheritDoc /> */

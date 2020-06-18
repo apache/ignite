@@ -25,10 +25,10 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     /// Cache transaction enlistment manager, 
     /// allows using Ignite transactions via standard <see cref="TransactionScope"/>.
     /// </summary>
-    public class ClientCacheTransactionManager : IEnlistmentNotification
+    internal class ClientCacheTransactionManager : IEnlistmentNotification
     {
         /** */
-        private readonly IClientTransactions _transactions;
+        private readonly IClientTransactionsInternal _transactions;
 
         /** */
         private readonly ThreadLocal<Enlistment> _enlistment = new ThreadLocal<Enlistment>();
@@ -37,14 +37,14 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Initializes a new instance of <see cref="ClientCacheTransactionManager"/> class.
         /// </summary>
         /// <param name="transactions">Transactions.</param>
-        public ClientCacheTransactionManager(IClientTransactions transactions)
+        public ClientCacheTransactionManager(IClientTransactionsInternal transactions)
         {
             _transactions = transactions;
         }
 
         public void Prepare(PreparingEnlistment preparingEnlistment)
         {
-            throw new System.NotImplementedException();
+            /* No-op. */
         }
 
         public void Commit(Enlistment enlistment)

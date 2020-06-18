@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** Internal transactions representation. */
-        internal ClientTransactions Transactions
+        internal IClientTransactionsInternal Transactions
         {
             get { return _transactions; }
         }

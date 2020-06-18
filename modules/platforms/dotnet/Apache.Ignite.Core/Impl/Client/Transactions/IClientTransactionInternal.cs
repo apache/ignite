@@ -15,23 +15,20 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Client.Transactions
+namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
-    using System;
+    using Apache.Ignite.Core.Client.Transactions;
 
-    /// <summary>
-    /// Thin client transaction.
-    /// </summary>
-    public interface IClientTransaction : IDisposable
+    internal interface IClientTransactionInternal : IClientTransaction
     {
         /// <summary>
-        /// Commits this transaction.
+        /// Transaction ID.
         /// </summary>
-        void Commit();
+        int Id { get; }
 
         /// <summary>
-        /// Rolls back this transaction.
+        /// Closed.
         /// </summary>
-        void Rollback();
+        bool Closed { get; }
     }
 }

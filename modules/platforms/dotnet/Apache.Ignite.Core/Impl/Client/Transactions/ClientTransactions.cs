@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     /// <summary>
     /// Ignite Thin Client transactions facade.
     /// </summary>
-    internal class ClientTransactions : IClientTransactions, IDisposable
+    internal class ClientTransactions : IClientTransactionsInternal, IDisposable
     {
         /** Ignite. */
         private readonly IgniteClient _ignite;
@@ -60,7 +60,8 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             _label = label;
         }
 
-        internal ClientTransaction CurrentTx
+        /** <inheritdoc /> */
+        public ClientTransaction CurrentTx
         {
             get
             {
@@ -79,12 +80,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                 return tx;
             }
         }
-
-        // internal void ClearCurrentTx()
-        // {
-        //     // todo - check for thread id
-        //     _currentTx.Value = null;
-        // }
 
         /** <inheritDoc /> */
         public IClientTransaction TxStart()

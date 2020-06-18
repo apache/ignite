@@ -19,13 +19,12 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System;
     using System.Threading;
-    using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Transactions;
 
     /// <summary>
     /// Ignite Thin Client transaction facade.
     /// </summary>
-    internal class ClientTransaction: IClientTransaction
+    internal class ClientTransaction: IClientTransactionInternal
     {
         /** Unique  transaction ID.*/
         private readonly int _id;
@@ -56,34 +55,19 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             _threadId = Thread.CurrentThread.ManagedThreadId;
         }
 
-        /// <summary>
-        /// Gets the thread identifier.
-        /// </summary>
-        public long ThreadId
-        {
-            get { return _threadId; }
-        }
-
+        /** <inheritdoc /> */
         public void Commit()
         {
             Close(true);
         }
 
-        public Task CommitAsync()
-        {
-            throw new System.NotImplementedException();
-        }
-
+        /** <inheritdoc /> */
         public void Rollback()
         {
             Close(false);
         }
 
-        public Task RollbackAsync()
-        {
-            throw new System.NotImplementedException();
-        }
-
+        /** <inheritdoc /> */
         public void Dispose()
         {
             try
@@ -96,22 +80,21 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             }
         }
 
-        /// <summary>
-        /// Transaction ID.
-        /// </summary>
-        internal int Id
+        /** <inheritdoc /> */
+        public int Id
         {
             get { return _id; }
         }
-        
-        /// <summary>
-        /// Closed.
-        /// </summary>
-        internal bool Closed
+
+        /** <inheritdoc /> */
+        public bool Closed
         {
             get { return _closed; }
         }
 
+        /// <summary>
+        /// Closes the transaction. 
+        /// </summary>
         private void Close(bool commit)
         {
             if (!_closed)
