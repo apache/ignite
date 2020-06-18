@@ -76,7 +76,7 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
     protected static final int NUM_ENTRIES = 1000;
 
     /** */
-    static final String POI_SCHEMA_NAME = "DOMAIN";
+    protected static final String POI_SCHEMA_NAME = "DOMAIN";
 
     /** */
     protected static final String POI_TABLE_NAME = "POI";
@@ -107,6 +107,11 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
 
     /** */
     protected void createTable(IgniteCache<?, ?> cache, int qryParallelism) {
+        createTable(cache, POI_SCHEMA_NAME, qryParallelism);
+    }
+
+    /** */
+    protected void createTable(IgniteCache<?, ?> cache, String schemaName, int qryParallelism) {
         String sql = String.format(
             "CREATE TABLE %s.%s " +
             "(%s INT, %s VARCHAR," +
@@ -115,7 +120,7 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
             " PRIMARY KEY (%s)" +
             ") WITH " +
             " \"CACHE_NAME=%s,VALUE_TYPE=%s,PARALLELISM=%d\"",
-            POI_SCHEMA_NAME, POI_TABLE_NAME, ID_FIELD_NAME, NAME_FIELD_NAME, LATITUDE_FIELD_NAME, LONGITUDE_FIELD_NAME,
+            schemaName, POI_TABLE_NAME, ID_FIELD_NAME, NAME_FIELD_NAME, LATITUDE_FIELD_NAME, LONGITUDE_FIELD_NAME,
             ID_FIELD_NAME, POI_CACHE_NAME, POI_CLASS_NAME, qryParallelism);
 
         cache.query(new SqlFieldsQuery(sql));

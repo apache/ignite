@@ -50,9 +50,9 @@ public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbs
         CacheMode[] cacheModes = new CacheMode[] {CacheMode.PARTITIONED, CacheMode.REPLICATED};
 
         CacheAtomicityMode[] atomicityModes = new CacheAtomicityMode[] {
-                CacheAtomicityMode.ATOMIC,
-                CacheAtomicityMode.TRANSACTIONAL,
-                CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT
+            CacheAtomicityMode.ATOMIC,
+            CacheAtomicityMode.TRANSACTIONAL,
+            CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT
         };
 
         List<Object[]> res = new ArrayList<>();
@@ -97,13 +97,6 @@ public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbs
             Ignition.start(cfg);
 
         node().cluster().state(ClusterState.ACTIVE);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */

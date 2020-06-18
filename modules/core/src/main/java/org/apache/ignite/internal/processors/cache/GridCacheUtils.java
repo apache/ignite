@@ -2129,8 +2129,8 @@ public class GridCacheUtils {
      * @param op Schema add query entity operation.
      */
     public static <K, V> CacheConfiguration<K, V> patchCacheConfiguration(
-            CacheConfiguration<K, V> oldCfg,
-            SchemaAddQueryEntityOperation op
+        CacheConfiguration<K, V> oldCfg,
+        SchemaAddQueryEntityOperation op
     ) {
         return patchCacheConfiguration(oldCfg, op.entities(), op.schemaName(), op.isSqlEscape(),
                 op.queryParallelism());
@@ -2146,11 +2146,11 @@ public class GridCacheUtils {
      * @param qryParallelism Query parallelism parameter.
      */
     public static <K, V> CacheConfiguration<K, V> patchCacheConfiguration(
-            CacheConfiguration<K, V> oldCfg,
-            Collection<QueryEntity> entities,
-            String sqlSchema,
-            boolean isSqlEscape,
-            int qryParallelism
+        CacheConfiguration<K, V> oldCfg,
+        Collection<QueryEntity> entities,
+        String sqlSchema,
+        boolean isSqlEscape,
+        int qryParallelism
     ) {
         return new CacheConfiguration<>(oldCfg)
                 .setQueryEntities(entities)
