@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -69,7 +68,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
     private static final String GRID_2 = "grid-2";
 
     /** Discovery hook for distributed process. */
-    private DiscoveryHook discoveryHook;
+    private InitMessageDiscoveryHook discoveryHook;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -210,18 +209,18 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
      * @param discoBlock  {@code True} to block discovery, {@code False} to block communication SPI.
      */
     private void checkNodeFailsDuringRotation(boolean stopCrd, boolean prepare, boolean discoBlock) throws Exception {
-        CountDownLatch discoLatch = new CountDownLatch(discoBlock ? 1 : 0);
-
         DistributedProcessType type = prepare ?
             DistributedProcessType.GROUP_KEY_CHANGE_PREPARE : DistributedProcessType.GROUP_KEY_CHANGE_FINISH;
 
-        if (stopCrd)
-            discoveryHook = new InitMessageDiscoveryHook(discoLatch, type);
+        InitMessageDiscoveryHook locHook = new InitMessageDiscoveryHook(type);
+
+        if (discoBlock && stopCrd)
+            discoveryHook = locHook;
 
         IgniteEx grid0 = startGrid(GRID_0);
 
-        if (!stopCrd)
-            discoveryHook = stopCrd ? null : new InitMessageDiscoveryHook(discoLatch, type);
+        if (discoBlock && !stopCrd)
+            discoveryHook = locHook;
 
         IgniteEx grid1 = startGrid(GRID_1);
 
@@ -256,7 +255,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         IgniteFuture<Void> fut = grid(alive).encryption().changeGroupKey(Collections.singleton(cacheName()));
 
-        IgniteInternalFuture stopFut;
+        IgniteInternalFuture stopFut = null;
 
         if (!discoBlock) {
             spi.waitForBlocked();
@@ -269,14 +268,14 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             });
         }
         else {
-            stopFut = new GridFinishedFuture();
+            locHook.waitForBlocked(MAX_AWAIT_MILLIS);
 
             if (stopCrd)
                 stopGrid(GRID_0, true);
             else
                 stopGrid(GRID_1, true);
 
-            discoLatch.countDown();
+            locHook.stopBlock();
         }
 
         if (prepare)
@@ -284,10 +283,11 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         else {
             keyId++;
 
-            fut.get();
+            fut.get(MAX_AWAIT_MILLIS);
         }
 
-        stopFut.get();
+        if (stopFut != null)
+            stopFut.get();
 
         checkGroupKey(grpId, keyId, MAX_AWAIT_MILLIS);
 
@@ -460,7 +460,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         IgniteEx node2 = startGrid(GRID_2);
 
-        node0.cluster().setBaselineTopology(node0.context().discovery().topologyVersion());
+        resetBaselineTopology();
 
         int grpId = CU.cacheId(cacheName());
 
@@ -630,7 +630,12 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         /**
          * Latch to sync execution.
          */
-        private final CountDownLatch latch;
+        private final CountDownLatch unlockLatch = new CountDownLatch(1);
+
+        /**
+         * Latch to sync execution.
+         */
+        private final CountDownLatch blockedLatch = new CountDownLatch(1);
 
         /**
          * Distributed process type.
@@ -638,11 +643,9 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         private final DistributedProcessType type;
 
         /**
-         * @param latch Latch to sync execution.
          * @param type Distributed process type.
          */
-        private InitMessageDiscoveryHook(CountDownLatch latch, DistributedProcessType type) {
-            this.latch = latch;
+        private InitMessageDiscoveryHook(DistributedProcessType type) {
             this.type = type;
         }
 
@@ -657,11 +660,26 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
                 return;
 
             try {
-                latch.await(MAX_AWAIT_MILLIS, TimeUnit.MILLISECONDS);
+                blockedLatch.countDown();
+
+                unlockLatch.await(MAX_AWAIT_MILLIS, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException ignore) {
                 Thread.currentThread().interrupt();
             }
+        }
+
+        /**
+         * @param timeout Timeout in milliseconds.
+         * @throws InterruptedException If interrupted.
+         */
+        public void waitForBlocked(long timeout) throws InterruptedException {
+            blockedLatch.await(timeout, TimeUnit.MILLISECONDS);
+        }
+
+        /** */
+        public void stopBlock() {
+            unlockLatch.countDown();
         }
     }
 }

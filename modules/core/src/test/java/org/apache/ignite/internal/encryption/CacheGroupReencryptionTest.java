@@ -270,13 +270,13 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
             return true;
         }, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
-        node0.cluster().setBaselineTopology(node0.context().discovery().topologyVersion());
+        resetBaselineTopology();
 
         rebalanceFinished.await();
 
         stopGrid(GRID_2);
 
-        node0.cluster().setBaselineTopology(node0.context().discovery().topologyVersion());
+        resetBaselineTopology();
 
         int grpId = CU.cacheId(cacheName());
 
@@ -368,6 +368,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         stopGrid(GRID_2);
 
         resetBaselineTopology();
+
+        awaitPartitionMapExchange(true, true, null);
 
         stopAllGrids();
 

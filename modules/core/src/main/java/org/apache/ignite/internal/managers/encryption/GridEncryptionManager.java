@@ -238,7 +238,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     private GroupKeyChangeProcess groupKeyChangeProcess;
 
-    private CacheEncryptionTask encryptTask;
+    private CacheGroupReencryption reencryption;
 
     private final Set<Integer> encryptedGroups = new GridConcurrentHashSet<>();
 
@@ -338,7 +338,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         groupKeyChangeProcess = new GroupKeyChangeProcess();
 
         // todo initialize
-        encryptTask = new CacheEncryptionTask(ctx);
+        reencryption = new CacheGroupReencryption(ctx);
     }
 
     public void onWalSegmentRemoved(long segmentIdx) {
@@ -434,7 +434,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         stopSpi();
 
         // Stop re-encryption.
-        encryptTask.stop();
+        reencryption.stop();
     }
 
     /** {@inheritDoc} */
@@ -531,13 +531,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "Master key change is in progress! Node join is rejected.");
         }
 
-        // todo verify topology when performing?
-        if (groupKeyChangeProcess.inProgress()) {
-            return new IgniteNodeValidationResult(ctx.localNodeId(),
-                "Group key change is in progress! Node join is rejected. [node=" + node.id() + "]",
-                "Group key change is in progress! Node join is rejected.");
-        }
-
         if (node.isClient() || node.isDaemon())
             return null;
 
@@ -545,6 +538,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         if (res != null)
             return res;
+
+        // todo verify topology when performing?
+        if (groupKeyChangeProcess.inProgress()) {
+            return new IgniteNodeValidationResult(ctx.localNodeId(),
+                "Group key change is in progress! Node join is rejected. [node=" + node.id() + "]",
+                "Group key change is in progress! Node join is rejected.");
+        }
 
         NodeEncryptionKeys nodeEncKeys = (NodeEncryptionKeys)discoData.joiningNodeData();
 
@@ -928,7 +928,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     public void onDestroyPartitionStore(int grpId, int partId) {
         try {
-            if (!encryptTask.cancel(grpId, partId))
+            if (!reencryption.cancel(grpId, partId))
                 return;
 
             FilePageStoreManager mgr = (FilePageStoreManager)ctx.cache().context().pageStore();
@@ -948,7 +948,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Encryption status.
      */
     public IgniteInternalFuture<Void> encryptionTask(Integer grpId) {
-        return encryptTask.encryptionFuture(grpId);
+        return reencryption.encryptionFuture(grpId);
     }
 
     /** {@inheritDoc} */
@@ -1190,7 +1190,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             if (!encryptedGroups.isEmpty()) {
                 for (int grpId : encryptedGroups) {
-                    IgniteInternalFuture<?> fut = encryptTask.schedule(grpId);
+                    IgniteInternalFuture<?> fut = reencryption.schedule(grpId);
 
                     fut.listen(f -> {
                         try {
@@ -1925,7 +1925,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
 
             for (int grpId : groups) {
-                IgniteInternalFuture<?> fut = encryptTask.schedule(grpId);
+                IgniteInternalFuture<?> fut = reencryption.schedule(grpId);
 
                 fut.listen(f -> {
                     try {

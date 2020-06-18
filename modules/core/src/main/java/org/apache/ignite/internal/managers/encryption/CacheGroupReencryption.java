@@ -23,7 +23,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -64,7 +63,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 /**
  *
  */
-public class CacheEncryptionTask implements DbCheckpointListener {
+public class CacheGroupReencryption implements DbCheckpointListener {
     /** Thread prefix for reencryption tasks. */
     private static final String REENCRYPT_THREAD_PREFIX = "reencrypt";
 
@@ -91,22 +90,24 @@ public class CacheEncryptionTask implements DbCheckpointListener {
     private final ReentrantLock initLock = new ReentrantLock();
 
     /** */
-    private final Map<Integer, ReencryptionContext> grps = new ConcurrentHashMap<>();
+    private final Map<Integer, GroupReencryptionContext> grps = new ConcurrentHashMap<>();
 
     /** */
     private final Queue<Integer> completedGrps = new ConcurrentLinkedQueue<>();
 
     /** */
-    private boolean stopped;
+    private final IgniteThreadPoolExecutor execSvc;
 
     /** */
-    private final ExecutorService execSvc;
+    private boolean stopped;
 
     /**
      * @param ctx Grid kernal context.
      */
-    public CacheEncryptionTask(GridKernalContext ctx) {
+    public CacheGroupReencryption(GridKernalContext ctx) {
         this.ctx = ctx;
+
+        log = ctx.log(getClass());
 
         execSvc = new IgniteThreadPoolExecutor(REENCRYPT_THREAD_PREFIX,
             ctx.igniteInstanceName(),
@@ -117,7 +118,7 @@ public class CacheEncryptionTask implements DbCheckpointListener {
             SYSTEM_POOL,
             new OomExceptionHandler(ctx));
 
-        log = ctx.log(getClass());
+        execSvc.allowCoreThreadTimeOut(true);
     }
 
     /**
@@ -129,7 +130,7 @@ public class CacheEncryptionTask implements DbCheckpointListener {
         try {
             stopped = true;
 
-            for (ReencryptionContext state : grps.values())
+            for (GroupReencryptionContext state : grps.values())
                 state.fut.cancel();
 
             execSvc.shutdown();
@@ -164,7 +165,7 @@ public class CacheEncryptionTask implements DbCheckpointListener {
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) {
-        for (ReencryptionContext state : grps.values())
+        for (GroupReencryptionContext state : grps.values())
             state.beforeCheckpoint(ctx);
     }
 
@@ -177,7 +178,7 @@ public class CacheEncryptionTask implements DbCheckpointListener {
      * @param grpId Group id.
      */
     public IgniteInternalFuture schedule(int grpId) throws IgniteCheckedException {
-        ReencryptionContext state = new ReencryptionContext(grpId);
+        GroupReencryptionContext state = new GroupReencryptionContext(grpId);
 
         if (disabled) {
             grps.put(grpId, state);
@@ -234,13 +235,13 @@ public class CacheEncryptionTask implements DbCheckpointListener {
     }
 
     public IgniteInternalFuture<Void> encryptionFuture(int grpId) {
-        ReencryptionContext state = grps.get(grpId);
+        GroupReencryptionContext state = grps.get(grpId);
 
         return state == null ? new GridFinishedFuture<>() : state.cpFut;
     }
 
     public boolean cancel(int grpId, int partId) throws IgniteCheckedException {
-        ReencryptionContext state = grps.get(grpId);
+        GroupReencryptionContext state = grps.get(grpId);
 
         if (state == null)
             return false;
@@ -254,7 +255,7 @@ public class CacheEncryptionTask implements DbCheckpointListener {
     }
 
     private void complete(int grpId) {
-        ReencryptionContext state = grps.remove(grpId);
+        GroupReencryptionContext state = grps.remove(grpId);
 
         state.cpFut.onDone(state.fut.result());
 
@@ -268,7 +269,7 @@ public class CacheEncryptionTask implements DbCheckpointListener {
         initLock.lock();
 
         try {
-            if (grps.isEmpty())
+            if (!grps.isEmpty())
                 return;
 
             ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).removeCheckpointListener(this);
@@ -277,7 +278,7 @@ public class CacheEncryptionTask implements DbCheckpointListener {
         }
     }
 
-    private class ReencryptionContext {
+    private class GroupReencryptionContext {
         private final int grpId;
 
         private final Map<Integer, IgniteInternalFuture<Void>> futMap = new ConcurrentHashMap<>();
@@ -294,7 +295,7 @@ public class CacheEncryptionTask implements DbCheckpointListener {
             }
         };
 
-        private ReencryptionContext(int grpId) {
+        private GroupReencryptionContext(int grpId) {
             this.grpId = grpId;
         }
 
