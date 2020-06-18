@@ -1,6 +1,6 @@
 package de.bwaldvogel.mongo.backend.aggregation.accumulator;
 
-import de.bwaldvogel.mongo.backend.Utils;
+import de.bwaldvogel.mongo.backend.NumericUtils;
 
 public class AvgAccumulator extends Accumulator {
 
@@ -14,7 +14,7 @@ public class AvgAccumulator extends Accumulator {
     @Override
     public void aggregate(Object value) {
         if (value instanceof Number) {
-            sum = Utils.addNumbers(sum, (Number) value);
+            sum = NumericUtils.addNumbers(sum, (Number) value);
             count++;
         }
     }

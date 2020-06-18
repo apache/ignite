@@ -1,13 +1,20 @@
 package de.bwaldvogel.mongo.backend.aggregation;
 
+import static de.bwaldvogel.mongo.backend.Missing.isNeitherNullNorMissing;
 import static de.bwaldvogel.mongo.backend.Missing.isNullOrMissing;
 import static de.bwaldvogel.mongo.backend.Utils.describeType;
 import static de.bwaldvogel.mongo.bson.Json.toJsonValue;
 
 import java.nio.charset.StandardCharsets;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
+import java.time.temporal.IsoFields;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -24,9 +32,11 @@ import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.backend.CollectionUtils;
 import de.bwaldvogel.mongo.backend.LinkedTreeSet;
 import de.bwaldvogel.mongo.backend.Missing;
+import de.bwaldvogel.mongo.backend.NumericUtils;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.backend.ValueComparator;
 import de.bwaldvogel.mongo.bson.Document;
+import de.bwaldvogel.mongo.exception.FailedToOptimizePipelineError;
 import de.bwaldvogel.mongo.exception.MongoServerError;
 
 public enum Expression implements ExpressionTraits {
@@ -57,7 +67,7 @@ public enum Expression implements ExpressionTraits {
                     number = instant.toEpochMilli();
                     returnDate = true;
                 }
-                sum = Utils.addNumbers(sum, (Number) number);
+                sum = NumericUtils.addNumbers(sum, (Number) number);
             }
             if (returnDate) {
                 return Instant.ofEpochMilli(sum.longValue());
@@ -151,18 +161,18 @@ public enum Expression implements ExpressionTraits {
         Object apply(List<?> expressionValues, Document document) {
             Object values = requireSingleValue(expressionValues);
             if ((!(values instanceof Collection))) {
-                throw new MongoServerError(40386, name() + " requires an array input, found: " + describeType(values));
+                throw new FailedToOptimizePipelineError(40386, name() + " requires an array input, found: " + describeType(values));
             }
             Document result = new Document();
             for (Object keyValueObject : (Collection<?>) values) {
                 if (keyValueObject instanceof List) {
                     List<?> keyValue = (List<?>) keyValueObject;
                     if (keyValue.size() != 2) {
-                        throw new MongoServerError(40397, name() + " requires an array of size 2 arrays,found array of size: " + keyValue.size());
+                        throw new FailedToOptimizePipelineError(40397, name() + " requires an array of size 2 arrays,found array of size: " + keyValue.size());
                     }
                     Object keyObject = keyValue.get(0);
                     if (!(keyObject instanceof String)) {
-                        throw new MongoServerError(40395, name() + " requires an array of key-value pairs, where the key must be of type string. Found key type: " + describeType(keyObject));
+                        throw new FailedToOptimizePipelineError(40395, name() + " requires an array of key-value pairs, where the key must be of type string. Found key type: " + describeType(keyObject));
                     }
                     String key = (String) keyObject;
                     Object value = keyValue.get(1);
@@ -170,23 +180,40 @@ public enum Expression implements ExpressionTraits {
                 } else if (keyValueObject instanceof Document) {
                     Document keyValue = (Document) keyValueObject;
                     if (keyValue.size() != 2) {
-                        throw new MongoServerError(40392, name() + " requires an object keys of 'k' and 'v'. Found incorrect number of keys:" + keyValue.size());
+                        throw new FailedToOptimizePipelineError(40392, name() + " requires an object keys of 'k' and 'v'. Found incorrect number of keys:" + keyValue.size());
                     }
                     if (!(keyValue.containsKey("k") && keyValue.containsKey("v"))) {
-                        throw new MongoServerError(40393, name() + " requires an object with keys 'k' and 'v'. Missing either or both keys from: " + keyValue.toString(true));
+                        throw new FailedToOptimizePipelineError(40393, name() + " requires an object with keys 'k' and 'v'. Missing either or both keys from: " + keyValue.toString(true));
                     }
                     Object keyObject = keyValue.get("k");
                     if (!(keyObject instanceof String)) {
-                        throw new MongoServerError(40394, name() + " requires an object with keys 'k' and 'v', where the value of 'k' must be of type string. Found type: " + describeType(keyObject));
+                        throw new FailedToOptimizePipelineError(40394, name() + " requires an object with keys 'k' and 'v', where the value of 'k' must be of type string. Found type: " + describeType(keyObject));
                     }
                     String key = (String) keyObject;
                     Object value = keyValue.get("v");
                     result.put(key, value);
                 } else {
-                    throw new MongoServerError(40398, "Unrecognised input type format for " + name() + ": " + describeType(keyValueObject));
+                    throw new FailedToOptimizePipelineError(40398, "Unrecognised input type format for " + name() + ": " + describeType(keyValueObject));
                 }
             }
             return result;
+        }
+    },
+
+    $avg {
+        @Override
+        Double apply(List<?> expressionValue, Document document) {
+            Collection<?> values = getValues(expressionValue);
+            OptionalDouble averageValue = values.stream()
+                .filter(Number.class::isInstance)
+                .map(Number.class::cast)
+                .mapToDouble(Number::doubleValue)
+                .average();
+            if (averageValue.isPresent()) {
+                return Double.valueOf(averageValue.getAsDouble());
+            } else {
+                return null;
+            }
         }
     },
 
@@ -301,6 +328,125 @@ public enum Expression implements ExpressionTraits {
         }
     },
 
+    $dateToString {
+        @Override
+        Object apply(Object expressionValue, Document document) {
+            Document dateToStringDocument = requireDocument(expressionValue, 18629);
+
+            // validate mandatory 'date' expression parameter
+            if (!dateToStringDocument.containsKey("date")) {
+                throw new MongoServerError(18628, "Missing 'date' parameter to " + name());
+            }
+
+            // validate unsupported parameters
+            List<String> supportedKeys = Arrays.asList("date", "format", "timezone", "onNull");
+            for (String key : dateToStringDocument.keySet()) {
+                if (!supportedKeys.contains(key)) {
+                    throw new MongoServerError(18534, "Unrecognized parameter to " + name() + ": " + key);
+                }
+            }
+
+            // validate optional 'format' parameter
+            String format = "%Y-%m-%dT%H:%M:%S.%LZ";
+            Object formatDocument = dateToStringDocument.get("format");
+            if (formatDocument != null) {
+                if (!(formatDocument instanceof String)) {
+                    throw new MongoServerError(18533, name() + " requires that 'format' be a string, found: " + describeType(formatDocument) + " with value " + formatDocument.toString());
+                }
+                format = (String) formatDocument;
+            }
+
+            // validate optional 'timezone' parameter
+            ZoneId timezone = ZoneId.of("UTC");
+            Object timezoneValue = Expression.evaluate(dateToStringDocument.get("timezone"), document);
+            if (timezoneValue != null) {
+                try {
+                    timezone = ZoneId.of(timezoneValue.toString());
+                } catch (DateTimeException e) {
+                    throw new MongoServerError(40485, name() + " unrecognized time zone identifier: " + timezoneValue);
+                }
+            }
+
+            // optional parameter 'onNull'
+            Object onNullValue = Expression.evaluate(dateToStringDocument.get("onNull"), document);
+
+            // get zoned date time
+            Object dateExpression = dateToStringDocument.get("date");
+            Object dateValue = Expression.evaluate(dateExpression, document);
+            if (Missing.isNullOrMissing(dateValue)) {
+                return onNullValue;
+            }
+            if (!(dateValue instanceof Instant)) {
+                throw new MongoServerError(16006, "can't convert from " + describeType(dateValue) + " to Date");
+            }
+            ZonedDateTime dateTime = ZonedDateTime.ofInstant((Instant) dateValue, timezone);
+
+            // format
+            return dateTime.format(builder(format).toFormatter());
+        }
+
+        private DateTimeFormatterBuilder builder(String format) {
+            DateTimeFormatterBuilder builder = new DateTimeFormatterBuilder();
+            for (String part : format.split("(?=%.)")) {
+                boolean hasFormatSpecifier = true;
+                if (part.equals("%")) {
+                    // empty format specifier
+                    throw new MongoServerError(18535, "Unmatched '%' at end of $dateToString format string");
+                } else if (part.startsWith("%d")) {
+                    builder.appendValue(ChronoField.DAY_OF_MONTH, 2);
+                } else if (part.startsWith("%G")) {
+                    builder.appendValue(ChronoField.YEAR, 4);
+                } else if (part.startsWith("%H")) {
+                    builder.appendValue(ChronoField.HOUR_OF_DAY, 2);
+                } else if (part.startsWith("%j")) {
+                    builder.appendValue(ChronoField.DAY_OF_YEAR, 3);
+                } else if (part.startsWith("%L")) {
+                    builder.appendValue(ChronoField.MILLI_OF_SECOND, 3);
+                } else if (part.startsWith("%m")) {
+                    builder.appendValue(ChronoField.MONTH_OF_YEAR, 2);
+                } else if (part.startsWith("%M")) {
+                    builder.appendValue(ChronoField.MINUTE_OF_HOUR, 2);
+                } else if (part.startsWith("%S")) {
+                    builder.appendValue(ChronoField.SECOND_OF_MINUTE, 2);
+                } else if (part.startsWith("%w")) {
+                    throw new MongoServerError(18536, "Not yet supported format character '%w' in $dateToString format string");
+                } else if (part.startsWith("%u")) {
+                    builder.appendValue(ChronoField.DAY_OF_WEEK, 1);
+                } else if (part.startsWith("%U")) {
+                    throw new MongoServerError(18536, "Not yet supported format character '%U' in $dateToString format string");
+                } else if (part.startsWith("%V")) {
+                    builder.appendValue(IsoFields.WEEK_OF_WEEK_BASED_YEAR, 2);
+                } else if (part.startsWith("%Y")) {
+                    builder.appendValue(ChronoField.YEAR, 4);
+                } else if (part.startsWith("%z")) {
+                    builder.appendOffset("+HHMM", "+0000");
+                } else if (part.startsWith("%Z")) {
+                    throw new MongoServerError(18536, "Not yet supported format character '%Z' in $dateToString format string");
+                } else if (part.startsWith("%%")) {
+                    builder.appendLiteral("%");
+                } else if (part.startsWith("%")) {
+                    // invalid format specifier
+                    throw new MongoServerError(18536, "Invalid format character '" + part + "' in $dateToString format string");
+                } else {
+                    // literals (without format specifier)
+                    hasFormatSpecifier = false;
+                    builder.appendLiteral(part);
+                }
+
+                // append literals (after format specifier)
+                if (hasFormatSpecifier && part.length() > 2) {
+                    builder.appendLiteral(part.substring(2, part.length()));
+                }
+            }
+            return builder;
+        }
+
+        @Override
+        Object apply(List<?> expressionValue, Document document) {
+            throw new UnsupportedOperationException("must not be invoked");
+        }
+    },
+
     $divide {
         @Override
         Object apply(List<?> expressionValue, Document document) {
@@ -310,8 +456,8 @@ public enum Expression implements ExpressionTraits {
                 return null;
             }
 
-            double a = parameters.getFirst();
-            double b = parameters.getSecond();
+            double a = parameters.getFirstAsDouble();
+            double b = parameters.getSecondAsDouble();
             if (Double.compare(b, 0.0) == 0) {
                 throw new MongoServerError(16608, "can't " + name() + " by zero");
             }
@@ -418,7 +564,7 @@ public enum Expression implements ExpressionTraits {
         Object apply(List<?> expressionValue, Document document) {
             TwoParameters parameters = requireTwoParameters(expressionValue);
             Object expression = parameters.getFirst();
-            if (!isNullOrMissing(expression)) {
+            if (isNeitherNullNorMissing(expression)) {
                 return expression;
             } else {
                 return parameters.getSecond();
@@ -444,13 +590,8 @@ public enum Expression implements ExpressionTraits {
     $indexOfArray {
         @Override
         Object apply(List<?> expressionValue, Document document) {
-            if (expressionValue.size() < 2 || expressionValue.size() > 4) {
-                throw new MongoServerError(28667,
-                    "Expression " + name() + " takes at least 2 arguments, and at most 4, but " + expressionValue.size() + " were passed in.");
-            }
-
-            Object first = expressionValue.get(0);
-            if (isNullOrMissing(first)) {
+            Object first = assertTwoToFourArguments(expressionValue);
+            if (first == null) {
                 return null;
             }
             if (!(first instanceof List<?>)) {
@@ -459,27 +600,16 @@ public enum Expression implements ExpressionTraits {
             }
             List<?> elementsToSearchIn = (List<?>) first;
 
-            int start = 0;
-            if (expressionValue.size() >= 3) {
-                Object startValue = expressionValue.get(2);
-                start = requireIntegral(startValue, "starting index");
-                start = Math.min(start, elementsToSearchIn.size());
-            }
+            Range range = indexOf(expressionValue, elementsToSearchIn.size());
 
-            int end = elementsToSearchIn.size();
-            if (expressionValue.size() >= 4) {
-                Object endValue = expressionValue.get(3);
-                end = requireIntegral(endValue, "ending index");
-                end = Math.min(Math.max(start, end), elementsToSearchIn.size());
-            }
-
-            elementsToSearchIn = elementsToSearchIn.subList(start, end);
+            elementsToSearchIn = elementsToSearchIn.subList(range.getStart(), range.getEnd());
             int index = elementsToSearchIn.indexOf(expressionValue.get(1));
             if (index >= 0) {
-                return index + start;
+                return index + range.getStart();
             }
             return index;
         }
+
     },
 
     $indexOfBytes {
@@ -622,6 +752,69 @@ public enum Expression implements ExpressionTraits {
         }
     },
 
+    $reduce {
+        @Override
+        Object apply(Object expressionValue, Document document) {
+            Document reduceExpression = requireDocument(expressionValue, 40075);
+            List<String> requiredKeys = Arrays.asList("input", "initialValue", "in");
+            for (String requiredKey : requiredKeys) {
+                if (!reduceExpression.containsKey(requiredKey)) {
+                    throw new MongoServerError(40079, "Missing '" + requiredKey + "' parameter to " + name());
+                }
+            }
+
+            for (String key : reduceExpression.keySet()) {
+                if (!Arrays.asList("input", "initialValue", "in").contains(key)) {
+                    throw new MongoServerError(40076, "Unrecognized parameter to " + name() + ": " + key);
+                }
+            }
+
+            Object input = evaluate(reduceExpression.get("input"), document);
+            Object initialValue = evaluate(reduceExpression.get("initialValue"), document);
+
+            if (Missing.isNullOrMissing(input)) {
+                return null;
+            }
+
+            if (!(input instanceof Collection)) {
+                throw new MongoServerError(40080, "input to " + name() + " must be an array not " + describeType(input));
+            }
+
+            Collection<?> inputCollection = (Collection<?>) input;
+
+            final String thisKey = "$this";
+            final String valueKey = "$value";
+            Document documentForReduce = document.clone();
+            Assert.isFalse(documentForReduce.containsKey(thisKey), () -> "Document already contains '" + thisKey + "'");
+            Assert.isFalse(documentForReduce.containsKey(valueKey), () -> "Document already contains '" + valueKey + "'");
+            Object result = initialValue;
+            for (Object inputValue : inputCollection) {
+                Object evaluatedInputValue = evaluate(inputValue, document);
+                documentForReduce.put(thisKey, evaluatedInputValue);
+                documentForReduce.put(valueKey, result);
+                result = evaluate(reduceExpression.get("in"), documentForReduce);
+            }
+
+            return result;
+        }
+
+        @Override
+        Object apply(List<?> expressionValue, Document document) {
+            throw new UnsupportedOperationException("must not be invoked");
+        }
+    },
+
+    $max {
+        @Override
+        Object apply(List<?> expressionValue, Document document) {
+            Collection<?> values = getValues(expressionValue);
+            return values.stream()
+                .filter(Missing::isNeitherNullNorMissing)
+                .max(ValueComparator.asc())
+                .orElse(null);
+        }
+    },
+
     $mergeObjects {
         @Override
         Object apply(List<?> expressionValue, Document document) {
@@ -640,6 +833,17 @@ public enum Expression implements ExpressionTraits {
         }
     },
 
+    $min {
+        @Override
+        Object apply(List<?> expressionValue, Document document) {
+            Collection<?> values = getValues(expressionValue);
+            return values.stream()
+                .filter(Missing::isNeitherNullNorMissing)
+                .min(ValueComparator.asc())
+                .orElse(null);
+        }
+    },
+
     $minute {
         @Override
         Object apply(List<?> expressionValue, Document document) {
@@ -654,8 +858,8 @@ public enum Expression implements ExpressionTraits {
             if (parameters == null) {
                 return null;
             }
-            double a = parameters.getFirst();
-            double b = parameters.getSecond();
+            double a = parameters.getFirstAsDouble();
+            double b = parameters.getSecondAsDouble();
             return a % b;
         }
     },
@@ -669,17 +873,18 @@ public enum Expression implements ExpressionTraits {
 
     $multiply {
         @Override
-        Object apply(List<?> expressionValue, Document document) {
+        Number apply(List<?> expressionValue, Document document) {
             TwoNumericParameters parameters = requireTwoNumericParameters(expressionValue, 16555);
 
             if (parameters == null) {
                 return null;
             }
 
-            double a = parameters.getFirst();
-            double b = parameters.getSecond();
-            return a * b;
+            Number first = parameters.getFirst();
+            Number second = parameters.getSecond();
+            return NumericUtils.multiplyNumbers(first, second);
         }
+
     },
 
 
@@ -785,7 +990,7 @@ public enum Expression implements ExpressionTraits {
                     values.add(i);
                 }
             } else {
-                for (int i = start; i > end; i += step) {
+                for (int i = start; i > end; i -= Math.abs(step)) {
                     values.add(i);
                 }
             }
@@ -1048,12 +1253,22 @@ public enum Expression implements ExpressionTraits {
                 return null;
             }
 
-            if (!(one instanceof Number && other instanceof Number)) {
-                throw new MongoServerError(16556,
-                    "cant " + name() + " a " + describeType(one) + " from a " + describeType(other));
+            if (one instanceof Number && other instanceof Number) {
+                return NumericUtils.subtractNumbers((Number) one, (Number) other);
             }
 
-            return Utils.subtractNumbers((Number) one, (Number) other);
+            if (one instanceof Instant) {
+                // subtract two instants (returns the difference in milliseconds)
+                if (other instanceof Instant) {
+                    return ((Instant) one).toEpochMilli() - ((Instant) other).toEpochMilli();
+                }
+                // subtract milliseconds from instant
+                if (other instanceof Number) {
+                    return Instant.ofEpochMilli(((Instant) one).toEpochMilli() - ((Number) other).longValue());
+                }
+            }
+
+            throw new MongoServerError(16556, "cant " + name() + " a " + describeType(one) + " from a " + describeType(other));
         }
     },
 
@@ -1069,7 +1284,7 @@ public enum Expression implements ExpressionTraits {
             Number sum = 0;
             for (Object value : expressionValue) {
                 if (value instanceof Number) {
-                    sum = Utils.addNumbers(sum, (Number) value);
+                    sum = NumericUtils.addNumbers(sum, (Number) value);
                 }
             }
             return sum;
@@ -1119,14 +1334,14 @@ public enum Expression implements ExpressionTraits {
 
             Object startValue = expressionValue.get(1);
             if (!(startValue instanceof Number)) {
-                throw new MongoServerError(16034, name() + ":  starting index must be a numeric type (is BSON type " + describeType(startValue) + ")");
+                throw new FailedToOptimizePipelineError(16034, name() + ":  starting index must be a numeric type (is BSON type " + describeType(startValue) + ")");
             }
             int startIndex = Math.max(0, ((Number) startValue).intValue());
             startIndex = Math.min(bytes.length, startIndex);
 
             Object lengthValue = expressionValue.get(2);
             if (!(lengthValue instanceof Number)) {
-                throw new MongoServerError(16035, name() + ":  length must be a numeric type (is BSON type " + describeType(lengthValue) + ")");
+                throw new FailedToOptimizePipelineError(16035, name() + ":  length must be a numeric type (is BSON type " + describeType(lengthValue) + ")");
             }
             int length = ((Number) lengthValue).intValue();
             if (length < 0) {
@@ -1147,14 +1362,14 @@ public enum Expression implements ExpressionTraits {
             }
             Object startValue = expressionValue.get(1);
             if (!(startValue instanceof Number)) {
-                throw new MongoServerError(34450, name() + ": starting index must be a numeric type (is BSON type " + describeType(startValue) + ")");
+                throw new FailedToOptimizePipelineError(34450, name() + ": starting index must be a numeric type (is BSON type " + describeType(startValue) + ")");
             }
             int startIndex = Math.max(0, ((Number) startValue).intValue());
             startIndex = Math.min(value.length(), startIndex);
 
             Object lengthValue = expressionValue.get(2);
             if (!(lengthValue instanceof Number)) {
-                throw new MongoServerError(34452, name() + ": length must be a numeric type (is BSON type " + describeType(lengthValue) + ")");
+                throw new FailedToOptimizePipelineError(34452, name() + ": length must be a numeric type (is BSON type " + describeType(lengthValue) + ")");
             }
             int length = ((Number) lengthValue).intValue();
             if (length < 0) {
@@ -1202,6 +1417,16 @@ public enum Expression implements ExpressionTraits {
 
     ;
 
+    private static Collection<?> getValues(List<?> expressionValue) {
+        Collection<?> values = expressionValue;
+        if (expressionValue.size() == 1) {
+            if (expressionValue.get(0) instanceof Collection) {
+                values = (Collection<?>) expressionValue.get(0);
+            }
+        }
+        return values;
+    }
+
     Object apply(Object expressionValue, Document document) {
         List<Object> evaluatedValues = new ArrayList<>();
         if (!(expressionValue instanceof Collection)) {
@@ -1224,7 +1449,10 @@ public enum Expression implements ExpressionTraits {
             for (Entry<String, Object> entry : projectedDocument.entrySet()) {
                 String field = entry.getKey();
                 Object expression = entry.getValue();
-                result.put(field, evaluate(expression, document));
+                Object value = evaluate(expression, document);
+                if (!(value instanceof Missing)) {
+                    result.put(field, value);
+                }
             }
             return result;
         } else {
@@ -1275,7 +1503,7 @@ public enum Expression implements ExpressionTraits {
                 }
                 return exp.apply(expressionValue, document);
             } else {
-                result.put(expressionKey, expressionValue);
+                result.put(expressionKey, evaluate(expressionValue, document));
             }
         }
         return result;

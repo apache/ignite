@@ -1,9 +1,7 @@
 package de.bwaldvogel.mongo.backend.h2;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -12,14 +10,14 @@ import org.h2.mvstore.MVMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.bwaldvogel.mongo.MongoDatabase;
 import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
 import de.bwaldvogel.mongo.backend.Assert;
-import de.bwaldvogel.mongo.backend.DocumentComparator;
 import de.bwaldvogel.mongo.backend.DocumentWithPosition;
 import de.bwaldvogel.mongo.backend.Missing;
+import de.bwaldvogel.mongo.backend.PrimaryKeyIndex;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.bson.Document;
-import de.bwaldvogel.mongo.exception.DuplicateKeyError;
 
 public class H2Collection extends AbstractMongoCollection<Object> {
 
@@ -30,15 +28,15 @@ public class H2Collection extends AbstractMongoCollection<Object> {
 
     private static final String DATA_SIZE_KEY = "dataSize";
 
-    public H2Collection(String databaseName, String collectionName, String idField, MVMap<Object, Document> dataMap, MVMap<String, Object> metaMap) {
-        super(databaseName, collectionName, idField);
+    public H2Collection(MongoDatabase database, String collectionName, String idField, MVMap<Object, Document> dataMap, MVMap<String, Object> metaMap) {
+        super(database, collectionName, idField);
         this.dataMap = dataMap;
         this.metaMap = metaMap;
         if (!this.metaMap.containsKey(DATA_SIZE_KEY)) {
             this.metaMap.put(DATA_SIZE_KEY, Long.valueOf(0));
         } else {
             log.debug("dataSize of {}: {}", getFullName(), getDataSize());
-        }
+        }        
     }
 
     @Override
@@ -51,7 +49,7 @@ public class H2Collection extends AbstractMongoCollection<Object> {
     }
 
     @Override
-    protected int getDataSize() {    	
+    protected int getDataSize() {
         Number value = (Number) metaMap.get(DATA_SIZE_KEY);
         return value.intValue();
     }
@@ -64,9 +62,7 @@ public class H2Collection extends AbstractMongoCollection<Object> {
         } else {
             key = UUID.randomUUID();
         }
-        if(dataMap.containsKey(key)) {
-        	throw new DuplicateKeyError(this.getCollectionName(),"Document with key '" + key + "' already existed");
-        }
+
         Document previous = dataMap.put(Missing.ofNullable(key), document);
         Assert.isNull(previous, () -> "Document with key '" + key + "' already existed in " + this + ": " + previous);
         return key;
@@ -75,6 +71,11 @@ public class H2Collection extends AbstractMongoCollection<Object> {
     @Override
     public int count() {
         return dataMap.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return dataMap.isEmpty();
     }
 
     @Override
@@ -91,43 +92,8 @@ public class H2Collection extends AbstractMongoCollection<Object> {
     }
 
     @Override
-    protected Object findDocumentPosition(Document document) {
-        for (Entry<Object, Document> entry : dataMap.entrySet()) {
-            if (entry.getValue().equals(document)) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-
-    @Override
     protected Stream<DocumentWithPosition<Object>> streamAllDocumentsWithPosition() {
         return dataMap.entrySet().stream().map(entry -> new DocumentWithPosition<>(entry.getValue(), entry.getKey()));
-    }
-
-    @Override
-    protected Iterable<Document> matchDocuments(Document query, Iterable<Object> positions, Document orderBy, int numberToSkip, int numberToReturn) {
-
-        List<Document> matchedDocuments = new ArrayList<>();
-
-        for (Object position : positions) {
-            Document document = getDocument(position);
-            if (documentMatchesQuery(document, query)) {
-                matchedDocuments.add(document);
-            }
-        }
-
-        sortDocumentsInMemory(matchedDocuments, orderBy);
-
-        if (numberToSkip > 0) {
-            matchedDocuments = matchedDocuments.subList(numberToSkip, matchedDocuments.size());
-        }
-
-        if (numberToReturn > 0 && matchedDocuments.size() > numberToReturn) {
-            matchedDocuments = matchedDocuments.subList(0, numberToReturn);
-        }
-
-        return matchedDocuments;
     }
 
     @Override
@@ -140,47 +106,13 @@ public class H2Collection extends AbstractMongoCollection<Object> {
             }
         }
 
-        if (orderBy != null && !orderBy.keySet().isEmpty()) {
-            if (orderBy.keySet().iterator().next().equals("$natural")) {
-                int sortValue = ((Integer) orderBy.get("$natural")).intValue();
-                if (sortValue == 1) {
-                    // already sorted
-                } else if (sortValue == -1) {
-                    Collections.reverse(matchedDocuments);
-                }
-            } else {
-                matchedDocuments.sort(new DocumentComparator(orderBy));
-            }
-        }
-
-        if (numberToSkip > 0) {
-            if (numberToSkip < matchedDocuments.size()) {
-                matchedDocuments = matchedDocuments.subList(numberToSkip, matchedDocuments.size());
-            } else {
-                return Collections.emptyList();
-            }
-        }
-
-        if (numberToReturn > 0 && matchedDocuments.size() > numberToReturn) {
-            matchedDocuments = matchedDocuments.subList(0, numberToReturn);
-        }
-
-        return matchedDocuments;
+        sortDocumentsInMemory(matchedDocuments, orderBy);
+        return applySkipAndLimit(matchedDocuments, numberToSkip, numberToReturn);
     }
 
     @Override
-    protected void handleUpdate(Document document) {
-        // noop
-    	//add@byron
-    	final Object key;
-        if (idField != null) {
-            key = Utils.getSubdocumentValue(document, idField);
-        } else {
-            key = UUID.randomUUID();
-        }
-
-        Document previous = dataMap.put(Missing.ofNullable(key), document);
-        
+    protected void handleUpdate(Object position, Document oldDocument, Document newDocument) {
+        dataMap.put(Missing.ofNullable(position), newDocument);
     }
 
 }

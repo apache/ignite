@@ -87,17 +87,24 @@ public class Projection {
                 boolean wasEmpty = projectedValues.isEmpty();
                 int idx = 0;
 
-                for (Object value : values) {
-                    if (value instanceof Document) {
-                        final Document projectedDocument;
-                        if (wasEmpty) {
-                            projectedDocument = new Document();
-                            projectedValues.add(projectedDocument);
-                        } else {
-                            projectedDocument = projectedValues.get(idx);
+                if ("$".equals(subKey) && !values.isEmpty()) {
+                    Object firstValue = values.get(0);
+                    if (firstValue instanceof Document) {
+                        projectedValues.add((Document) firstValue);
+                    }
+                } else {
+                    for (Object value : values) {
+                        if (value instanceof Document) {
+                            final Document projectedDocument;
+                            if (wasEmpty) {
+                                projectedDocument = new Document();
+                                projectedValues.add(projectedDocument);
+                            } else {
+                                projectedDocument = projectedValues.get(idx);
+                            }
+                            projectField((Document) value, projectedDocument, subKey, projectionValue);
+                            idx++;
                         }
-                        projectField((Document) value, projectedDocument, subKey, projectionValue);
-                        idx++;
                     }
                 }
             }

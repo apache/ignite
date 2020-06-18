@@ -7,10 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-import de.bwaldvogel.mongo.bson.BsonRegularExpression;
-import de.bwaldvogel.mongo.bson.Decimal128;
-import de.bwaldvogel.mongo.bson.Document;
-import de.bwaldvogel.mongo.bson.ObjectId;
+import de.bwaldvogel.mongo.bson.*;
 
 public class ValueComparator implements Comparator<Object> {
 
@@ -18,10 +15,11 @@ public class ValueComparator implements Comparator<Object> {
 
     private static final ValueComparator ASCENDING = new ValueComparator(true);
     private static final ValueComparator DESCENDING = new ValueComparator(false);
-    private static final ValueComparator ASCENDING_NO_LIST_HANDLING = new ValueComparator(true, false);
+    private static final ValueComparator ASCENDING_NO_LIST_HANDLING = new ValueComparator(true, false, false);
 
     private final boolean ascending;
     private final boolean handleLists;
+    private final boolean useDefaultComparatorForUuids;
 
     public static ValueComparator asc() {
         return ASCENDING;
@@ -44,20 +42,28 @@ public class ValueComparator implements Comparator<Object> {
         SORT_PRIORITY.add(Document.class);
         SORT_PRIORITY.add(List.class);
         SORT_PRIORITY.add(byte[].class);
+        SORT_PRIORITY.add(LegacyUUID.class);
         SORT_PRIORITY.add(UUID.class);
         SORT_PRIORITY.add(ObjectId.class);
         SORT_PRIORITY.add(Boolean.class);
         SORT_PRIORITY.add(Instant.class);
+        SORT_PRIORITY.add(BsonTimestamp.class);
         SORT_PRIORITY.add(BsonRegularExpression.class);
+        SORT_PRIORITY.add(MaxKey.class);
     }
 
     private ValueComparator(boolean ascending) {
-        this(ascending, true);
+        this(ascending, true, false);
     }
 
-    private ValueComparator(boolean ascending, boolean handleLists) {
+    private ValueComparator(boolean ascending, boolean handleLists, boolean useDefaultComparatorForUuids) {
         this.ascending = ascending;
         this.handleLists = handleLists;
+        this.useDefaultComparatorForUuids = useDefaultComparatorForUuids;
+    }
+
+    public ValueComparator withDefaultComparatorForUuids() {
+        return new ValueComparator(ascending, handleLists, true);
     }
 
     @Override
@@ -98,6 +104,12 @@ public class ValueComparator implements Comparator<Object> {
             return compareLists(value1, value2);
         }
 
+        if (value1 instanceof MinKey) {
+            return (value2 instanceof MinKey) ? 0 : -1;
+        } else if (value2 instanceof MinKey) {
+            return 1;
+        }
+
         if (Missing.isNullOrMissing(value1) && Missing.isNullOrMissing(value2)) {
             return 0;
         }
@@ -135,6 +147,12 @@ public class ValueComparator implements Comparator<Object> {
             return date1.compareTo(date2);
         }
 
+        if (BsonTimestamp.class.isAssignableFrom(clazz)) {
+            BsonTimestamp bt1 = (BsonTimestamp) value1;
+            BsonTimestamp bt2 = (BsonTimestamp) value2;
+            return Long.compare(bt1.getTimestamp(), bt2.getTimestamp());
+        }
+
         if (Boolean.class.isAssignableFrom(clazz)) {
             boolean b1 = ((Boolean) value1).booleanValue();
             boolean b2 = ((Boolean) value2).booleanValue();
@@ -170,7 +188,25 @@ public class ValueComparator implements Comparator<Object> {
         if (UUID.class.isAssignableFrom(clazz)) {
             UUID uuid1 = (UUID) value1;
             UUID uuid2 = (UUID) value2;
+            if (useDefaultComparatorForUuids) {
+                return uuid1.compareTo(uuid2);
+            } else {
+                int cmp1 = Long.compare(uuid1.getLeastSignificantBits(), uuid2.getLeastSignificantBits());
+                if (cmp1 != 0) {
+                    return cmp1;
+                }
+                return Long.compare(uuid1.getMostSignificantBits(), uuid2.getMostSignificantBits());
+            }
+        }
+
+        if (LegacyUUID.class.isAssignableFrom(clazz)) {
+            LegacyUUID uuid1 = (LegacyUUID) value1;
+            LegacyUUID uuid2 = (LegacyUUID) value2;
             return uuid1.compareTo(uuid2);
+        }
+
+        if (MaxKey.class.isAssignableFrom(clazz)) {
+            return (value2 instanceof MaxKey) ? 0 : 1;
         }
 
         throw new UnsupportedOperationException("can't compare " + clazz);
@@ -213,7 +249,7 @@ public class ValueComparator implements Comparator<Object> {
 
     private Object getListValueForComparison(Object value) {
         if (value instanceof Collection) {
-            List<Object> values = new ArrayList<> ((Collection<Object>) value);
+            List<Object> values = new ArrayList<>((Collection<Object>) value);
             if (values.isEmpty()) {
                 return Missing.getInstance();
             }

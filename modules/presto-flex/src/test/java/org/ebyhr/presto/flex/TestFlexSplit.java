@@ -13,10 +13,10 @@
  */
 package org.ebyhr.presto.flex;
 
-import io.airlift.json.JsonCodec;
+import com.facebook.airlift.json.JsonCodec;
 import org.testng.annotations.Test;
 
-import static io.airlift.json.JsonCodec.jsonCodec;
+import static com.facebook.airlift.json.JsonCodec.jsonCodec;
 import static org.testng.Assert.assertEquals;
 
 public class TestFlexSplit

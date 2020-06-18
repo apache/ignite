@@ -84,7 +84,7 @@ public class LinkedTreeSet<E> extends AbstractSet<E> {
             @Override
             public void remove() {
                 delegate.remove();
-                removeFromOrderedElements(currentElement);
+                LinkedTreeSet.this.remove(currentElement);
             }
         };
     }

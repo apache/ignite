@@ -13,7 +13,7 @@
  */
 package org.ebyhr.presto.flex;
 
-import io.airlift.configuration.Config;
+import com.facebook.airlift.configuration.Config;
 
 import java.net.URI;
 

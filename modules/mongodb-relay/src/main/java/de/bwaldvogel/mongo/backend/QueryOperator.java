@@ -8,21 +8,23 @@ import de.bwaldvogel.mongo.exception.MongoServerError;
 
 public enum QueryOperator {
 
-    IN("$in"), //
-    NOT_IN("$nin"), //
-    NOT("$not"), //
-    NOT_EQUALS("$ne"), //
-    EQUAL("$eq"), //
-    EXISTS("$exists"), //
-    GREATER_THAN_OR_EQUAL("$gte"), //
-    GREATER_THAN("$gt"), //
-    LESS_THAN_OR_EQUAL("$lte"), //
-    LESS_THAN("$lt"), //
-    MOD("$mod"), //
-    SIZE("$size"), //
-    ALL("$all"), //
-    ELEM_MATCH("$elemMatch"), //
-    TYPE("$type"), //
+    IN("$in"),
+    NOT_IN("$nin"),
+    NOT("$not"),
+    NOT_EQUALS("$ne"),
+    EQUAL("$eq"),
+    EXISTS("$exists"),
+    GREATER_THAN_OR_EQUAL("$gte"),
+    GREATER_THAN("$gt"),
+    LESS_THAN_OR_EQUAL("$lte"),
+    LESS_THAN("$lt"),
+    MOD("$mod"),
+    SIZE("$size"),
+    AND("$and"),
+    OR("$or"),
+    ALL("$all"),
+    ELEM_MATCH("$elemMatch"),
+    TYPE("$type"),
     ;
 
     private String value;

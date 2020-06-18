@@ -178,11 +178,6 @@ public class MongoServer {
             channelGroup.close().syncUninterruptibly();
         }
     }
-    
-    public String getOSSignalType(){
-        return System.getProperties().getProperty("os.name").
-                  toLowerCase().startsWith("win") ? "INT" : "USR2";
-     }
 
     @Override
     public String toString() {

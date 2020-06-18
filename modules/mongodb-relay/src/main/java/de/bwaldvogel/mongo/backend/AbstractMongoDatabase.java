@@ -23,18 +23,8 @@ import de.bwaldvogel.mongo.MongoBackend;
 import de.bwaldvogel.mongo.MongoCollection;
 import de.bwaldvogel.mongo.MongoDatabase;
 import de.bwaldvogel.mongo.backend.aggregation.Aggregation;
-import de.bwaldvogel.mongo.backend.aggregation.stage.AddFieldsStage;
-import de.bwaldvogel.mongo.backend.aggregation.stage.GroupStage;
-import de.bwaldvogel.mongo.backend.aggregation.stage.LimitStage;
-import de.bwaldvogel.mongo.backend.aggregation.stage.LookupStage;
-import de.bwaldvogel.mongo.backend.aggregation.stage.MatchStage;
-import de.bwaldvogel.mongo.backend.aggregation.stage.OrderByStage;
-import de.bwaldvogel.mongo.backend.aggregation.stage.ProjectStage;
-import de.bwaldvogel.mongo.backend.aggregation.stage.ReplaceRootStage;
-import de.bwaldvogel.mongo.backend.aggregation.stage.SkipStage;
-import de.bwaldvogel.mongo.backend.aggregation.stage.UnwindStage;
 import de.bwaldvogel.mongo.bson.Document;
-import de.bwaldvogel.mongo.exception.FailedToParseException;
+import de.bwaldvogel.mongo.exception.IndexNotFoundException;
 import de.bwaldvogel.mongo.exception.MongoServerError;
 import de.bwaldvogel.mongo.exception.MongoServerException;
 import de.bwaldvogel.mongo.exception.MongoSilentServerException;
@@ -51,10 +41,10 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
 
     private static final String INDEXES_COLLECTION_NAME = "system.indexes";
 
-    static final Logger log = LoggerFactory.getLogger(AbstractMongoDatabase.class);
+    protected static final Logger log = LoggerFactory.getLogger(AbstractMongoDatabase.class);
 
     protected final String databaseName;
-    private final MongoBackend backend;
+    protected final MongoBackend backend;
 
     protected final Map<String, MongoCollection<P>> collections = new ConcurrentHashMap<>();
 
@@ -73,9 +63,8 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         this.namespaces = openOrCreateCollection(NAMESPACES_COLLECTION_NAME, "name");
         this.collections.put(namespaces.getCollectionName(), namespaces);
 
-        if (this.namespaces.count() > 0) {
-            for (Document namespace : namespaces.queryAll()) {
-                String name = namespace.get("name").toString();
+        if (!namespaces.isEmpty()) {
+            for (String name : listCollectionNamespaces()) {
                 log.debug("opening {}", name);
                 String collectionName = extractCollectionNameFromNamespace(name);
                 MongoCollection<P> collection = openOrCreateCollection(collectionName, ID_FIELD);
@@ -83,7 +72,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
                 log.debug("opened collection '{}'", collectionName);
             }
 
-            MongoCollection<P> indexCollection = openOrCreateCollection(INDEXES_COLLECTION_NAME, ID_FIELD);
+            MongoCollection<P> indexCollection = openOrCreateCollection(INDEXES_COLLECTION_NAME, null);
             collections.put(indexCollection.getCollectionName(), indexCollection);
             this.indexes.set(indexCollection);
             for (Document indexDescription : indexCollection.queryAll()) {
@@ -115,8 +104,6 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         // getlasterror must not clear the last error
         if (command.equalsIgnoreCase("getlasterror")) {
             return commandGetLastError(channel, command, query);
-        } else if (command.equalsIgnoreCase("getpreverror")) {
-            return commandGetPrevError(channel);
         } else if (command.equalsIgnoreCase("reseterror")) {
             return commandResetError(channel);
         }
@@ -135,8 +122,6 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
             return commandCreate(command, query);
         } else if (command.equalsIgnoreCase("createIndexes")) {
             return commandCreateIndexes(query);
-        } else if (command.equalsIgnoreCase("dropIndexes")) {
-            return commandDropIndexes(query);        
         } else if (command.equalsIgnoreCase("count")) {
             return commandCount(command, query);
         } else if (command.equalsIgnoreCase("aggregate")) {
@@ -148,11 +133,21 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
             return commandDrop(query);
         } else if (command.equalsIgnoreCase("dropDatabase")) {
             return commandDropDatabase();
+        } else if (command.equalsIgnoreCase("dropIndexes")) {
+            return commandDropIndexes(query);
         } else if (command.equalsIgnoreCase("dbstats")) {
             return commandDatabaseStats();
         } else if (command.equalsIgnoreCase("collstats")) {
-            MongoCollection<P> collection = resolveCollection(command, query, true);
-            return collection.getStats();
+            MongoCollection<P> collection = resolveCollection(command, query, false);
+            if (collection == null) {
+                Document emptyStats = new Document()
+                    .append("count", 0)
+                    .append("size", 0);
+                Utils.markOkay(emptyStats);
+                return emptyStats;
+            } else {
+                return collection.getStats();
+            }
         } else if (command.equalsIgnoreCase("validate")) {
             MongoCollection<P> collection = resolveCollection(command, query, false);
             if (collection == null) {
@@ -188,7 +183,9 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
             Utils.markOkay(response);
             return response;
        
-        } else {
+        } 
+		//end@
+		else {
             log.error("unknown query: {}", query);
         }
         throw new NoSuchCommandException(command);
@@ -196,27 +193,37 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
 
     private Document listCollections() {
         List<Document> firstBatch = new ArrayList<>();
-        for (Document collection : namespaces.queryAll()) {
-            Document collectionDescription = new Document();
-            Document collectionOptions = new Document();
-            String namespace = (String) collection.get("name");
+        for (String namespace : listCollectionNamespaces()) {
             if (namespace.endsWith(INDEXES_COLLECTION_NAME)) {
                 continue;
             }
+            Document collectionDescription = new Document();
+            Document collectionOptions = new Document();
             String collectionName = extractCollectionNameFromNamespace(namespace);
             collectionDescription.put("name", collectionName);
             collectionDescription.put("options", collectionOptions);
             collectionDescription.put("info", new Document("readOnly", false));
             collectionDescription.put("type", "collection");
-            collectionDescription.put("idIndex", new Document("key", new Document(ID_FIELD, 1))
-                .append("name", "_id_")
-                .append("ns", namespace)
-                .append("v", 2)
+            collectionDescription.put("idIndex", getPrimaryKeyIndexDescription(namespace)
             );
             firstBatch.add(collectionDescription);
         }
 
         return Utils.cursorResponse(getDatabaseName() + ".$cmd.listCollections", firstBatch);
+    }
+
+    @VisibleForExternalBackends
+    protected static Document getPrimaryKeyIndexDescription(String namespace) {
+        return new Document("key", new Document(ID_FIELD, 1))
+            .append("name", "_id_")
+            .append("ns", namespace)
+            .append("v", 2);
+    }
+
+    private Iterable<String> listCollectionNamespaces() {
+        return namespaces.queryAllAsStream()
+            .map(document -> document.get("name").toString())
+            ::iterator;
     }
 
     private Document listIndexes(String collectionName) {
@@ -226,7 +233,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         return Utils.cursorResponse(getDatabaseName() + ".$cmd.listIndexes", indexes);
     }
 
-    private synchronized MongoCollection<P> resolveOrCreateCollection(final String collectionName) {
+    private synchronized MongoCollection<P> resolveOrCreateCollection(String collectionName) {
         final MongoCollection<P> collection = resolveCollection(collectionName, false);
         if (collection != null) {
             return collection;
@@ -305,7 +312,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         int nMatched = 0;
         int nModified = 0;
         Collection<Document> upserts = new ArrayList<>();
-       
+
         List<Document> writeErrors = new ArrayList<>();
 
         Document response = new Document();
@@ -328,8 +335,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
                 final Document upserted = new Document("index", i);
                 upserted.put(ID_FIELD, id);
                 upserts.add(upserted);
-                
-            }            
+            }
             nMatched += ((Integer) result.get("n")).intValue();
             nModified += ((Integer) result.get("nModified")).intValue();
         }
@@ -341,7 +347,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         }
         if (!writeErrors.isEmpty()) {
             response.put("writeErrors", writeErrors);
-        }        
+        }
         response.put("ops",upserts);
        
         Utils.markOkay(response);
@@ -381,25 +387,23 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         if (autoIndexId != null && !Utils.isTrue(autoIndexId)) {
             throw new MongoServerException("Disabling autoIndexId is not yet implemented");
         }
-        
-        MongoCollection<P> collection = null;
-        try {
-        	collection = resolveCollection(collectionName, true);
-        
-        }catch(MongoServerException e) {
-        	
-        }
-        
-        if (collection != null) {
-            throw new MongoServerError(48, "NamespaceExists",
-                "a collection '" + getDatabaseName() + "." + collectionName + "' already exists");
-        }
-        
-        createCollection(collectionName);
+
+        createCollectionOrThrowIfExists(collectionName);
 
         Document response = new Document();
         Utils.markOkay(response);
         return response;
+    }
+
+    @Override
+    public MongoCollection<P> createCollectionOrThrowIfExists(String collectionName) {
+        MongoCollection<P> collection = resolveCollection(collectionName, false);
+        if (collection != null) {
+            throw new MongoServerError(48, "NamespaceExists",
+                "a collection '" + getDatabaseName() + "." + collectionName + "' already exists");
+        }
+
+        return createCollection(collectionName);
     }
 
     private Document commandCreateIndexes(Document query) {
@@ -423,31 +427,40 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         Utils.markOkay(response);
         return response;
     }
- 	//add@byron
+
     private Document commandDropIndexes(Document query) {
-        int indexesBefore = countIndexes();
-
-        @SuppressWarnings("unchecked")
         String collectionName = (String) query.get("dropIndexes");
-        
-        MongoCollection<P> collection = resolveOrCreateCollection(collectionName);
-        MongoCollection<P> indexCollection = getOrCreateIndexesCollection();
-        
-        Document queryDesc = new Document();
-        queryDesc.append("name",query.get("index"));
-        queryDesc.append("ns", this.getDatabaseName()+"."+collectionName);
-        for (Document indexDescription : indexCollection.handleQuery(queryDesc)) {
-        	dropIndex(indexDescription);
+        MongoCollection<P> collection = resolveCollection(collectionName, true);
+        Object indexKeys0 =  query.get("index");
+        Document indexQuery = null;
+        if(indexKeys0 instanceof String) {
+        	indexQuery = new Document("name", indexKeys0);        	
         }
-
-        int indexesAfter = countIndexes();
-
+        else {
+        	indexQuery = new Document("key", indexKeys0);
+        }
+        Document indexKeys = (Document)indexQuery;
+        
+        MongoCollection<P> indexCollection = indexes.get();
+        Document indexToDrop = CollectionUtils.getSingleElement(indexCollection.handleQuery(indexQuery),
+            () -> new IndexNotFoundException(indexKeys));
+        int numDeleted = dropIndex(collection, indexToDrop);
+        //-Assert.equals(numDeleted, 1, () -> "Expected one deleted document");
         Document response = new Document();
-        response.put("numIndexesBefore", Integer.valueOf(indexesBefore));
-        response.put("numIndexesAfter", Integer.valueOf(indexesAfter));
         Utils.markOkay(response);
         return response;
     }
+
+    private int dropIndex(MongoCollection<P> collection, Document indexDescription) {
+        String indexName = (String) indexDescription.get("name");
+        dropIndex(collection, indexName);
+        return indexes.get().deleteDocuments(indexDescription, -1);
+    }
+
+    protected void dropIndex(MongoCollection<P> collection, String indexName) {
+        collection.dropIndex(indexName);
+    }
+
     private int countIndexes() {
         final MongoCollection<P> indexesCollection;
         synchronized (indexes) {
@@ -514,18 +527,19 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
 
     private Document commandDrop(Document query) {
         String collectionName = query.get("drop").toString();
-        MongoCollection<P> collection = collections.remove(collectionName);
 
+        MongoCollection<P> collection = resolveCollection(collectionName, false);
         if (collection == null) {
             throw new MongoSilentServerException("ns not found");
         }
+
+        int numIndexes = collection.getNumIndexes();
+        dropCollection(collectionName);
         Document response = new Document();
-        namespaces.removeDocument(new Document("name", collection.getFullName()));
-        response.put("nIndexesWas", Integer.valueOf(collection.getNumIndexes()));
+        response.put("nIndexesWas", Integer.valueOf(numIndexes));
         response.put("ns", collection.getFullName());
         Utils.markOkay(response);
         return response;
-
     }
 
     private Document commandGetLastError(Channel channel, String command, Document query) {
@@ -571,40 +585,6 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         return result;
     }
 
-    private Document commandGetPrevError(Channel channel) {
-        List<Document> results = lastResults.get(channel);
-
-        if (results != null) {
-            for (int i = 1; i < results.size(); i++) {
-                Document result = results.get(results.size() - i);
-                if (result == null) {
-                    continue;
-                }
-
-                boolean isRelevant = false;
-                if (result.get("err") != null) {
-                    isRelevant = true;
-                } else if (((Number) result.get("n")).intValue() > 0) {
-                    isRelevant = true;
-                }
-
-                if (isRelevant) {
-                    result.put("nPrev", Integer.valueOf(i));
-                    Utils.markOkay(result);
-                    return result;
-                }
-            }
-        }
-
-        // found no prev error
-        Document result = new Document();
-        result.put("nPrev", -1);
-        result.put("n", 0);
-        result.put("err", null);
-        Utils.markOkay(result);
-        return result;
-    }
-
     private Document commandResetError(Channel channel) {
         List<Document> results = lastResults.get(channel);
         if (results != null) {
@@ -632,81 +612,12 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
 
     private Document commandAggregate(String command, Document query) {
         String collectionName = query.get(command).toString();
-        Document cursor = (Document) query.get("cursor");
-        //modify@byron
-        if (cursor == null) {
-            //-throw new FailedToParseException("The 'cursor' option is required, except for aggregate with the explain argument");
-        }
-        if (cursor == null || !cursor.isEmpty()) {
-            log.warn("Non-empty cursor is not yet implemented. Ignoring.");
-        }
-
         MongoCollection<P> collection = resolveCollection(collectionName, false);
-
-        Aggregation aggregation = new Aggregation(collection);
-
-        @SuppressWarnings("unchecked")
-        List<Document> pipeline = (List<Document>) query.get("pipeline");
-        for (Document stage : pipeline) {
-            String stageOperation = CollectionUtils.getSingleElement(stage.keySet(), () -> {
-                throw new MongoServerError(40323, "A pipeline stage specification object must contain exactly one field.");
-            });
-            switch (stageOperation) {
-                case "$match":
-                    Document matchQuery = (Document) stage.get(stageOperation);
-                    aggregation.addStage(new MatchStage(matchQuery));
-                    break;
-                case "$skip":
-                    Number numSkip = (Number) stage.get(stageOperation);
-                    aggregation.addStage(new SkipStage(numSkip.longValue()));
-                    break;
-                case "$limit":
-                    Number numLimit = (Number) stage.get(stageOperation);
-                    aggregation.addStage(new LimitStage(numLimit.longValue()));
-                    break;
-                case "$sort":
-                    Document orderBy = (Document) stage.get(stageOperation);
-                    aggregation.addStage(new OrderByStage(orderBy));
-                    break;
-                case "$project":
-                    aggregation.addStage(new ProjectStage((Document) stage.get(stageOperation)));
-                    break;
-                case "$count":
-                    String count = (String) stage.get(stageOperation);
-                    aggregation.addStage(new GroupStage(new Document(ID_FIELD, null).append(count, new Document("$sum", 1))));
-                    aggregation.addStage(new ProjectStage(new Document(ID_FIELD, 0)));
-                    break;
-                case "$group":
-                    Document groupDetails = (Document) stage.get(stageOperation);
-                    aggregation.addStage(new GroupStage(groupDetails));
-                    break;
-                case "$addFields":
-                    Document addFieldsDetails = (Document) stage.get(stageOperation);
-                    aggregation.addStage(new AddFieldsStage(addFieldsDetails));
-                    break;
-                case "$unwind":
-                    Object unwind = stage.get(stageOperation);
-                    aggregation.addStage(new UnwindStage(unwind));
-                    break;
-                case "$lookup":
-                    Document lookup = (Document) stage.get(stageOperation);
-                    aggregation.addStage(new LookupStage(lookup, this));
-                    break;
-                case "$replaceRoot":
-                    Document replaceRoot = (Document) stage.get(stageOperation);
-                    aggregation.addStage(new ReplaceRootStage(replaceRoot));
-                    break;
-                case "$sortByCount":
-                    Object expression = stage.get(stageOperation);
-                    aggregation.addStage(new GroupStage(new Document(ID_FIELD, expression).append("count", new Document("$sum", 1))));
-                    aggregation.addStage(new OrderByStage(new Document("count", -1)));
-                    break;
-                default:
-                    throw new MongoServerError(40324, "Unrecognized pipeline stage name: '" + stageOperation + "'");
-            }
-        }
-
-        return Utils.cursorResponse(getDatabaseName() + "." + collectionName, aggregation.getResult());
+        Object pipeline = query.get("pipeline");
+        Aggregation aggregation = Aggregation.fromPipeline(pipeline, this, collection);
+        aggregation.validate(query);
+        List<Document> aggregationResult = aggregation.computeResult();
+        return Utils.cursorResponse(getDatabaseName() + "." + collectionName, aggregationResult);
     }
 
     private int getOptionalNumber(Document query, String fieldName, int defaultValue) {
@@ -769,15 +680,10 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         if (collection == null && throwIfNotFound) {
             throw new MongoServerException("Collection [" + getDatabaseName() + "." + collectionName + "] not found.");
         }
-        else if(collection == null){
-        	collection = openOrCreateCollection(collectionName, ID_FIELD);
-            collections.put(collectionName, collection);
-        }
         return collection;
     }
 
     private void checkCollectionName(String collectionName) {
-
         if (collectionName.length() > Constants.MAX_NS_LENGTH) {
             throw new MongoServerError(10080, "ns name too long, max size is " + Constants.MAX_NS_LENGTH);
         }
@@ -837,9 +743,8 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         if (!indexDescription.containsKey("v")) {
             indexDescription.put("v", 2);
         }
-        boolean success = openOrCreateIndex(indexDescription);
-        if(success)
-        	getOrCreateIndexesCollection().addDocument(indexDescription);
+        openOrCreateIndex(indexDescription);
+        getOrCreateIndexesCollection().addDocument(indexDescription);
     }
 
     private MongoCollection<P> getOrCreateIndexesCollection() {
@@ -853,32 +758,27 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         }
     }
 
-    private String extractCollectionNameFromNamespace(String namespace) {
-        Assert.startsWith(namespace, databaseName);
-        return namespace.substring(databaseName.length() + 1);
+    protected String extractCollectionNameFromNamespace(String namespace) {
+    	if(namespace.startsWith(databaseName)) {
+    		Assert.startsWith(namespace, databaseName);
+    		return namespace.substring(databaseName.length() + 1);
+    	}
+    	return namespace;
     }
 
-    private boolean openOrCreateIndex(Document indexDescription) {
+    private void openOrCreateIndex(Document indexDescription) {
         String ns = indexDescription.get("ns").toString();
         String collectionName = extractCollectionNameFromNamespace(ns);
 
         MongoCollection<P> collection = resolveOrCreateCollection(collectionName);
-        
+
+        String indexName = (String) indexDescription.get("name");
         Document key = (Document) indexDescription.get("key");
         if (key.keySet().equals(Collections.singleton(ID_FIELD))) {
-        	
-            boolean ascending = isAscending(key.get(ID_FIELD));    
-            
-            if(collection.checkIndex(Collections.singletonList(new IndexKey(ID_FIELD, ascending)))) {
-            	//throw new MongoServerError(10093, ID_FIELD+" index is already existed.");
-            	return false;
-            }
-            
-            collection.addIndex(openOrCreateIdIndex(collectionName, ascending));
+            boolean ascending = isAscending(key.get(ID_FIELD));
+            Index<P> index = openOrCreateIdIndex(collectionName, indexName, ascending);
             log.info("adding unique _id index for collection {}", collectionName);
-            
-            return true;
-            
+            collection.addIndex(index);
         } else if (Utils.isTrue(indexDescription.get("unique"))) {
             List<IndexKey> keys = new ArrayList<>();
             for (Entry<String, Object> entry : key.entrySet()) {
@@ -889,31 +789,11 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
 
             boolean sparse = Utils.isTrue(indexDescription.get("sparse"));
             log.info("adding {} unique index {} for collection {}", sparse ? "sparse" : "non-sparse", keys, collectionName);
-            if(collection.checkIndex(keys)) {
-            	//throw new MongoServerError(10093, keys+" index is already existed.");
-            	return false;
-            }
-            collection.addIndex(openOrCreateUniqueIndex(collectionName, keys, sparse));
-            
-            return true;
-        } else {
-            // TODO: non-unique non-id indexes not yet implemented
-            log.warn("adding non-unique non-id index with key {} is not yet implemented", key);
-        }
-        return false;
-    }
 
-    private boolean dropIndex(Document indexDescription) {
-        String ns = indexDescription.get("ns").toString();
-        String collectionName = extractCollectionNameFromNamespace(ns);
-
-        MongoCollection<P> collection = resolveOrCreateCollection(collectionName);
-        
-        Document key = (Document) indexDescription.get("key");
-        if (key.keySet().equals(Collections.singleton(ID_FIELD))) {            
-            throw new MongoServerError(10093, ID_FIELD+" index can not drop.");            
-        } else if (Utils.isTrue(indexDescription.get("unique"))) {
-            List<IndexKey> keys = new ArrayList<>();
+            Index<P> index = openOrCreateUniqueIndex(collectionName, indexName, keys, sparse);
+            collection.addIndex(index);
+        } else {        	
+        	List<IndexKey> keys = new ArrayList<>();
             for (Entry<String, Object> entry : key.entrySet()) {
                 String field = entry.getKey();
                 boolean ascending = isAscending(entry.getValue());
@@ -921,30 +801,32 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
             }
 
             boolean sparse = Utils.isTrue(indexDescription.get("sparse"));
-            log.info("adding {} unique index {} for collection {}", sparse ? "sparse" : "non-sparse", keys, collectionName);
-            if(!collection.checkIndex(keys)) {
-            	throw new MongoServerError(10093, keys+" index is not existed for drop.");
-            }
-            collection.dropIndex(keys);
-            getOrCreateIndexesCollection().removeDocument(indexDescription);
-            return true;
-        } else {
-            // TODO: non-unique non-id indexes not yet implemented
-            log.warn("non-unique non-id index with key {} is not yet implemented", key);
+        	Index<P> index = openOrCreateIndex(collectionName, indexName, keys, sparse);
+        	if(index==null) {
+	            // TODO: non-unique non-id indexes not yet implemented
+	            log.warn("adding non-unique non-id index with key {} is not yet implemented", key);
+        	}
+        	else {
+        		log.info("adding {} index {} for collection {}", sparse ? "sparse" : "non-sparse", keys, collectionName);
+
+        		collection.addIndex(index);
+        	}
         }
-        return false;
     }
 
-    
     private static boolean isAscending(Object keyValue) {
         return Objects.equals(Utils.normalizeValue(keyValue), Double.valueOf(1.0));
     }
 
-    private Index<P> openOrCreateIdIndex(String collectionName, boolean ascending) {
-        return openOrCreateUniqueIndex(collectionName, Collections.singletonList(new IndexKey(ID_FIELD, ascending)), false);
+    private Index<P> openOrCreateIdIndex(String collectionName, String indexName, boolean ascending) {
+        return openOrCreateUniqueIndex(collectionName, indexName, Collections.singletonList(new IndexKey(ID_FIELD, ascending)), false);
     }
 
-    protected abstract Index<P> openOrCreateUniqueIndex(String collectionName, List<IndexKey> keys, boolean sparse);
+    protected Index<P> openOrCreateIndex(String collectionName, String indexName, List<IndexKey> keys, boolean sparse) {
+       return null;
+    }
+    
+    protected abstract Index<P> openOrCreateUniqueIndex(String collectionName, String indexName, List<IndexKey> keys, boolean sparse);
 
     private void insertDocuments(Channel channel, String collectionName, List<Document> documents) {
         clearLastStatus(channel);
@@ -955,7 +837,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
             MongoCollection<P> collection = resolveOrCreateCollection(collectionName);
             collection.insertDocuments(documents);
             Document result = new Document("n", 0);
-            result.put("err", null);            
+            result.put("err", null);
             putLastResult(channel, result);
         } catch (MongoServerError e) {
             putLastError(channel, e);
@@ -1044,11 +926,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         MongoCollection<P> collection = openOrCreateCollection(collectionName, ID_FIELD);
         addNamespace(collection);
 
-        Document indexDescription = new Document();
-        indexDescription.put("name", "_id_");
-        indexDescription.put("ns", collection.getFullName());
-        indexDescription.put("key", new Document(ID_FIELD, 1));
-        addIndex(indexDescription);
+        addIndex(getPrimaryKeyIndexDescription(collection.getFullName()));
 
         log.info("created collection {}", collection.getFullName());
 
@@ -1077,7 +955,24 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
 
     @Override
     public void dropCollection(String collectionName) {
+        MongoCollection<P> collection = resolveCollection(collectionName, true);
+        dropAllIndexes(collection);
+        collection.drop();
         unregisterCollection(collectionName);
+    }
+
+    private void dropAllIndexes(MongoCollection<P> collection) {
+        MongoCollection<P> indexCollection = indexes.get();
+        if (indexCollection == null) {
+            return;
+        }
+        List<Document> indexesToDrop = new ArrayList<>();
+        for (Document index : indexCollection.handleQuery(new Document("ns", collection.getFullName()))) {
+            indexesToDrop.add(index);
+        }
+        for (Document indexToDrop : indexesToDrop) {
+            dropIndex(collection, indexToDrop);
+        }
     }
 
     @Override
@@ -1088,14 +983,20 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
 
     @Override
     public void moveCollection(MongoDatabase oldDatabase, MongoCollection<?> collection, String newCollectionName) {
+        String oldFullName = collection.getFullName();
         oldDatabase.unregisterCollection(collection.getCollectionName());
-        collection.renameTo(getDatabaseName(), newCollectionName);
+        collection.renameTo(this, newCollectionName);
         // TODO resolve cast
         @SuppressWarnings("unchecked")
         MongoCollection<P> newCollection = (MongoCollection<P>) collection;
         collections.put(newCollectionName, newCollection);
         List<Document> newDocuments = new ArrayList<>();
         newDocuments.add(new Document("name", collection.getFullName()));
+
+        indexes.get().updateDocuments(new Document("ns", oldFullName),
+            new Document("$set", new Document("ns", newCollection.getFullName())),
+            ArrayFilters.empty(), true, false);
+
         namespaces.insertDocuments(newDocuments);
     }
 

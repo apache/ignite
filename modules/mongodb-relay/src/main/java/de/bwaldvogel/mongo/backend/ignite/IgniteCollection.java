@@ -28,6 +28,7 @@ import org.apache.ignite.stream.StreamVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.bwaldvogel.mongo.MongoDatabase;
 import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
 import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.backend.DocumentComparator;
@@ -43,11 +44,9 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
 
     private final IgniteCache<Object, Document> dataMap;
     
-
-    public IgniteCollection(String databaseName, String collectionName, String idField, IgniteCache<Object, Document> dataMap) {
-        super(databaseName, collectionName, idField);
+    public IgniteCollection(IgniteDatabase database, String collectionName, String idField, IgniteCache<Object, Document> dataMap) {
+        super(database, collectionName, idField);
         this.dataMap = dataMap;
-        
     }
 
     @Override
@@ -95,7 +94,7 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
             throw new NoSuchElementException("No document with key " + position);
         }
     }
-
+	
     @Override
     protected Object findDocumentPosition(Document document) {
     	 Object key = document.getOrDefault(this.idField, null);
@@ -118,38 +117,13 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
     }
 
 
-    @Override
-    protected Iterable<Document> matchDocuments(Document query, Iterable<Object> positions, Document orderBy, int numberToSkip, int numberToReturn) {
-
-        List<Document> matchedDocuments = new ArrayList<>();
-
-        for (Object position : positions) {
-            Document document = getDocument(position);
-            if (documentMatchesQuery(document, query)) {
-                matchedDocuments.add(document);
-            }
-        }
-
-        sortDocumentsInMemory(matchedDocuments, orderBy);
-
-        if (numberToSkip > 0) {
-            matchedDocuments = matchedDocuments.subList(numberToSkip, matchedDocuments.size());
-        }
-
-        if (numberToReturn > 0 && matchedDocuments.size() > numberToReturn) {
-            matchedDocuments = matchedDocuments.subList(0, numberToReturn);
-        }
-
-        return matchedDocuments;
-    }
 
     @Override
     protected Iterable<Document> matchDocuments(Document query, Document orderBy, int numberToSkip,
             int numberToReturn) {
         List<Document> matchedDocuments = new ArrayList<>();
         
-        ScanQuery<Object, Document> scan = new ScanQuery<>(            
-	        );
+        ScanQuery<Object, Document> scan = new ScanQuery<>();
 	 
 		QueryCursor<Cache.Entry<Object, Document>>  cursor = dataMap.query(scan);
 		//Iterator<Cache.Entry<Object, Document>> it = cursor.iterator();
@@ -160,46 +134,18 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
             }
 	    }
 
-        if (orderBy != null && !orderBy.keySet().isEmpty()) {
-            if (orderBy.keySet().iterator().next().equals("$natural")) {
-                int sortValue = ((Integer) orderBy.get("$natural")).intValue();
-                if (sortValue == 1) {
-                    // already sorted
-                } else if (sortValue == -1) {
-                    Collections.reverse(matchedDocuments);
-                }
-            } else {
-                matchedDocuments.sort(new DocumentComparator(orderBy));
-            }
-        }
 
-        if (numberToSkip > 0) {
-            if (numberToSkip < matchedDocuments.size()) {
-                matchedDocuments = matchedDocuments.subList(numberToSkip, matchedDocuments.size());
-            } else {
-                return Collections.emptyList();
-            }
-        }
+        sortDocumentsInMemory(matchedDocuments, orderBy);
+        return applySkipAndLimit(matchedDocuments, numberToSkip, numberToReturn);
 
-        if (numberToReturn > 0 && matchedDocuments.size() > numberToReturn) {
-            matchedDocuments = matchedDocuments.subList(0, numberToReturn);
-        }
-
-        return matchedDocuments;
+       
     }
 
     @Override
-    protected void handleUpdate(Document document) {
-        // noop
-    	//add@byron
-    	final Object key;
-        if (idField != null) {
-            key = Utils.getSubdocumentValue(document, idField);
-        } else {
-            key = UUID.randomUUID();
-        }
+    protected void handleUpdate(Object position, Document oldDocument,Document document) {
+        // noop   	
 
-        dataMap.put(Missing.ofNullable(key), document);
+        dataMap.put(Missing.ofNullable(position), document);
         
     }
 
@@ -217,6 +163,5 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
     	//Iterator<Cache.Entry<Object, Document>> it = cursor.iterator();
     	 return StreamSupport.stream(cursor.spliterator(),false).map(entry -> new DocumentWithPosition<>(entry.getValue(), entry.getKey()));		
          
-    }
-
+    }    
 }

@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteSource;
 import com.facebook.presto.spi.PrestoException;
 import org.ebyhr.presto.flex.FlexColumn;
+import org.ebyhr.presto.flex.FlexSchemaClient;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -28,6 +29,9 @@ import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TextPlugin implements FilePlugin {
+	
+	FlexSchemaClient schemaClient = null;
+	
     @Override
     public List<FlexColumn> getFields(String schema, String table)
     {

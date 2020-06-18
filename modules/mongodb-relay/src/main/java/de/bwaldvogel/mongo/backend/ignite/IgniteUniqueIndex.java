@@ -14,9 +14,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-
-
-
 import de.bwaldvogel.mongo.backend.AbstractUniqueIndex;
 import de.bwaldvogel.mongo.backend.IndexKey;
 import de.bwaldvogel.mongo.backend.KeyValue;
@@ -27,8 +24,8 @@ public class IgniteUniqueIndex extends AbstractUniqueIndex<Object> {
 
     private IgniteCache<KeyValue, Object> mvMap;
 
-    IgniteUniqueIndex(IgniteCache<KeyValue, Object> mvMap, List<IndexKey> keys, boolean sparse) {
-        super(keys, sparse);
+    IgniteUniqueIndex(IgniteCache<KeyValue, Object> mvMap, String name, List<IndexKey> keys, boolean sparse) {
+        super(name, keys, sparse);
         this.mvMap = mvMap;
     }
 

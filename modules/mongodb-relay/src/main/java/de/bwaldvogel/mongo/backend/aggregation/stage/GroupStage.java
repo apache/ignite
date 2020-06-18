@@ -4,7 +4,6 @@ import static de.bwaldvogel.mongo.backend.Constants.ID_FIELD;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -13,19 +12,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import de.bwaldvogel.mongo.backend.CollectionUtils;
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.ValueComparator;
 import de.bwaldvogel.mongo.backend.aggregation.Expression;
 import de.bwaldvogel.mongo.backend.aggregation.accumulator.Accumulator;
-import de.bwaldvogel.mongo.backend.aggregation.accumulator.AddToSetAccumulator;
-import de.bwaldvogel.mongo.backend.aggregation.accumulator.AvgAccumulator;
-import de.bwaldvogel.mongo.backend.aggregation.accumulator.FirstAccumulator;
-import de.bwaldvogel.mongo.backend.aggregation.accumulator.LastAccumulator;
-import de.bwaldvogel.mongo.backend.aggregation.accumulator.MaxAccumulator;
-import de.bwaldvogel.mongo.backend.aggregation.accumulator.MinAccumulator;
-import de.bwaldvogel.mongo.backend.aggregation.accumulator.PushAccumulator;
-import de.bwaldvogel.mongo.backend.aggregation.accumulator.SumAccumulator;
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.exception.MongoServerError;
 
@@ -39,7 +29,7 @@ public class GroupStage implements AggregationStage {
             throw new MongoServerError(15955, "a group specification must include an _id");
         }
         idExpression = groupQuery.get(ID_FIELD);
-        accumulatorSuppliers = parseAccumulators(groupQuery);
+        accumulatorSuppliers = Accumulator.parse(groupQuery);
     }
 
     @Override
@@ -78,39 +68,4 @@ public class GroupStage implements AggregationStage {
         return result.stream();
     }
 
-    private static Map<String, Supplier<Accumulator>> parseAccumulators(Document groupStage) {
-        Map<String, Supplier<Accumulator>> accumulators = new LinkedHashMap<>();
-        for (Entry<String, ?> accumulatorEntry : groupStage.entrySet()) {
-            if (accumulatorEntry.getKey().equals(ID_FIELD)) {
-                continue;
-            }
-            String field = accumulatorEntry.getKey();
-            Document entryValue = (Document) accumulatorEntry.getValue();
-            Entry<String, Object> aggregation = CollectionUtils.getSingleElement(entryValue.entrySet(), () -> {
-                throw new MongoServerError(40238, "The field '" + field + "' must specify one accumulator");
-            });
-            String groupOperator = aggregation.getKey();
-            Object expression = aggregation.getValue();
-            if (groupOperator.equals("$sum")) {
-                accumulators.put(field, () -> new SumAccumulator(field, expression));
-            } else if (groupOperator.equals("$min")) {
-                accumulators.put(field, () -> new MinAccumulator(field, expression));
-            } else if (groupOperator.equals("$max")) {
-                accumulators.put(field, () -> new MaxAccumulator(field, expression));
-            } else if (groupOperator.equals("$avg")) {
-                accumulators.put(field, () -> new AvgAccumulator(field, expression));
-            } else if (groupOperator.equals("$addToSet")) {
-                accumulators.put(field, () -> new AddToSetAccumulator(field, expression));
-            } else if (groupOperator.equals("$push")) {
-                accumulators.put(field, () -> new PushAccumulator(field, expression));
-            } else if (groupOperator.equals("$first")) {
-                accumulators.put(field, () -> new FirstAccumulator(field, expression));
-            } else if (groupOperator.equals("$last")) {
-                accumulators.put(field, () -> new LastAccumulator(field, expression));
-            } else {
-                throw new MongoServerError(15952, "unknown group operator '" + groupOperator + "'");
-            }
-        }
-        return accumulators;
-    }
 }

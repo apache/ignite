@@ -11,6 +11,7 @@ import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -24,6 +25,7 @@ import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.backend.Index;
 import de.bwaldvogel.mongo.backend.IndexKey;
 import de.bwaldvogel.mongo.backend.KeyValue;
+import de.bwaldvogel.mongo.backend.PrimaryKeyIndex;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.exception.MongoServerError;
@@ -31,17 +33,18 @@ import de.bwaldvogel.mongo.exception.MongoServerException;
 
 public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 	public static final String DEFAULT_DB_NAME = "default";
+	public static final String SYS_DB_NAME = "sys";
 	public static final String INDEX_DB_PREFIX = "INDEX_SYS_";
     private Ignite mvStore;
     
-    private boolean isKeepBinary = true;
+    boolean isKeepBinary = true;
     
     public static String getCacheName(String databaseName,String collectionName) {
     	if(databaseName.equalsIgnoreCase(DEFAULT_DB_NAME)) {
     		return collectionName;
     	}
     	else {
-    		return databaseName + "." + collectionName;
+    		return collectionName;
     	}
     }
 
@@ -66,10 +69,15 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
    	                	}
                   }
                }
-               else if(databaseName.equalsIgnoreCase(DEFAULT_DB_NAME)){
+               else {
             	   try {
-	            	   Document doc = new Document("name",databaseName+'.'+fullName);
-	  	               this.namespaces.addDocument(doc);
+	            	 Document doc = new Document("name",fullName);
+	  	             this.namespaces.addDocument(doc);
+	  	               
+	  	             String collectionName = extractCollectionNameFromNamespace(fullName);
+	  	             MongoCollection<Object> collection = openOrCreateCollection(collectionName, ID_FIELD);
+	                 collections.put(collectionName, collection);
+	                 log.debug("opened collection '{}'", collectionName);
 	               }
 	               catch(MongoServerError e) {
 	              		//
@@ -79,15 +87,19 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
             }
         }
     }
+    
+    
 
     @Override
-    protected Index<Object> openOrCreateUniqueIndex(String collectionName, List<IndexKey> keys, boolean sparse) {    	
+    protected Index<Object> openOrCreateUniqueIndex(String collectionName,String indexName, List<IndexKey> keys, boolean sparse) {    	
     	if (keys.size()==1 && keys.get(0).getKey().equalsIgnoreCase(ID_FIELD)) {
-    		return null;
+    		//return null; //不创建主键索引 add@byron
+    		MongoCollection<Object> collection = resolveCollection(collectionName,true);
+        	return new PrimaryKeyIndex<Object>(indexName,collection,keys,sparse);
     	}
     	if(!isKeepBinary) {
     		IgniteCache<KeyValue, Object> mvMap = mvStore.getOrCreateCache(INDEX_DB_PREFIX+databaseName + "." + collectionName + "_" + indexName(keys));
-    		return new IgniteUniqueIndex(mvMap, keys, sparse);
+    		return new IgniteUniqueIndex(mvMap, indexName,keys, sparse);
     	}
     	return null;
     }
@@ -95,7 +107,7 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
     @Override
     public void drop() {
         super.drop();
-
+        
         List<String> maps = mvStore.cacheNames().stream()
             .filter(name -> name.startsWith(databaseName + ".")  ||  name.startsWith(INDEX_DB_PREFIX + databaseName + ".")          
             )
@@ -118,6 +130,7 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
     protected MongoCollection<Object> openOrCreateCollection(String collectionName, String idField) {
         String fullCollectionName = getCacheName(databaseName ,collectionName);
         if(this.isKeepBinary) {
+        	
 	        CacheConfiguration<Object, BinaryObject> cfg = new CacheConfiguration<>();
 	
 	        cfg.setCacheMode(CacheMode.PARTITIONED);
@@ -127,7 +140,7 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 	        
 	        IgniteCache<Object, BinaryObject> dataMap = mvStore.getOrCreateCache(cfg);
 	        dataMap = dataMap.withKeepBinary();
-	        return new IgniteBinaryCollection(databaseName, collectionName, idField, dataMap);
+	        return new IgniteBinaryCollection(this, collectionName, idField, dataMap);
         }
         else {
         	
@@ -139,7 +152,7 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 	        
         	IgniteCache<Object, Document> dataMap = mvStore.getOrCreateCache(cfg);
  	        
- 	        return new IgniteCollection(databaseName, collectionName, idField, dataMap);
+ 	        return new IgniteCollection(this, collectionName, idField, dataMap);
         }
     }
 
@@ -159,7 +172,16 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 
     @Override
     protected long getFileSize() {
-        return getStorageSize();
+    	DataStorageMetrics fileStore = mvStore.dataStorageMetrics();
+        if (fileStore != null) {
+            try {
+                return fileStore.getTotalAllocatedSize();
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to calculate filestore size", e);
+            }
+        } else {
+            return 0;
+        }
     }
 
     @Override
@@ -195,6 +217,10 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 	      }
        
         //throw new UnsupportedOperationException();
+    }
+    
+    public Ignite getIgnite() {
+    	return this.mvStore;
     }
 
 }

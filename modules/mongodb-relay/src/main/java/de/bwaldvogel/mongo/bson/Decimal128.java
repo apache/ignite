@@ -1,8 +1,11 @@
 package de.bwaldvogel.mongo.bson;
 
+import static java.math.MathContext.DECIMAL128;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Objects;
 
 import de.bwaldvogel.mongo.backend.Assert;
 
@@ -18,11 +21,18 @@ public final class Decimal128 extends Number implements Serializable, Comparable
     public static final Decimal128 POSITIVE_INFINITY = new Decimal128(0, 8646911284551352320L);
     public static final Decimal128 NEGATIVE_INFINITY = new Decimal128(0, -576460752303423488L);
 
+    private static final BigInteger BIG_INT_TEN = new BigInteger("10");
+    private static final BigInteger BIG_INT_ONE = new BigInteger("1");
+    private static final BigInteger BIG_INT_ZERO = new BigInteger("0");
+
     private static final long INFINITY_MASK = 0x7800000000000000L;
     private static final long NaN_MASK = 0x7c00000000000000L;
     private static final long SIGN_BIT_MASK = 1L << 63;
+    private static final int MIN_EXPONENT = -6176;
+    private static final int MAX_EXPONENT = 6111;
 
     private static final int EXPONENT_OFFSET = 6176;
+    private static final int MAX_BIT_LENGTH = 113;
 
     private final long low;
     private final long high;
@@ -30,6 +40,64 @@ public final class Decimal128 extends Number implements Serializable, Comparable
     public Decimal128(long low, long high) {
         this.low = low;
         this.high = high;
+    }
+
+    public Decimal128(BigDecimal value) {
+        this(value, value.signum() == -1);
+    }
+
+    public static Decimal128 fromNumber(Number value) {
+        if (value instanceof Decimal128) {
+            return (Decimal128) value;
+        } else if (value instanceof Long || value instanceof Integer || value instanceof Short) {
+            return new Decimal128(BigDecimal.valueOf(value.longValue()));
+        } else {
+            return new Decimal128(BigDecimal.valueOf(value.doubleValue()));
+        }
+    }
+
+    // isNegative is necessary to detect -0, which can't be represented with a BigDecimal
+    private Decimal128(BigDecimal initialValue, boolean isNegative) {
+        long localHigh = 0;
+        long localLow = 0;
+
+        BigDecimal value = clampAndRound(initialValue);
+
+        long exponent = -value.scale();
+
+        if ((exponent < MIN_EXPONENT) || (exponent > MAX_EXPONENT)) {
+            throw new AssertionError("Exponent is out of range for Decimal128 encoding: " + exponent);
+        }
+
+        if (value.unscaledValue().bitLength() > MAX_BIT_LENGTH) {
+            throw new AssertionError("Unscaled roundedValue is out of range for Decimal128 encoding:" + value.unscaledValue());
+        }
+
+        BigInteger significand = value.unscaledValue().abs();
+        int bitLength = significand.bitLength();
+
+        for (int i = 0; i < Math.min(64, bitLength); i++) {
+            if (significand.testBit(i)) {
+                localLow |= 1L << i;
+            }
+        }
+
+        for (int i = 64; i < bitLength; i++) {
+            if (significand.testBit(i)) {
+                localHigh |= 1L << (i - 64);
+            }
+        }
+
+        long biasedExponent = exponent + EXPONENT_OFFSET;
+
+        localHigh |= biasedExponent << 49;
+
+        if (value.signum() == -1 || isNegative) {
+            localHigh |= SIGN_BIT_MASK;
+        }
+
+        high = localHigh;
+        low = localLow;
     }
 
     public long getLow() {
@@ -40,7 +108,7 @@ public final class Decimal128 extends Number implements Serializable, Comparable
         return high;
     }
 
-    private BigDecimal toBigDecimal() {
+    public BigDecimal toBigDecimal() {
         Assert.isFalse(isSpecial(), () -> this + " cannot be converted to BigDecimal");
         return toBigDecimalValue();
     }
@@ -107,15 +175,7 @@ public final class Decimal128 extends Number implements Serializable, Comparable
         if (isInfinite()) {
             return isNegative() ? "-Infinity" : "Infinity";
         }
-        return (isNegative() ? "-" : "") + toStringInternal();
-    }
-
-    private String toStringInternal() {
-        if (isInfinite()) {
-            return "Infinity";
-        } else {
-            return toStringWithBigDecimal();
-        }
+        return (isNegative() ? "-" : "") + toStringWithBigDecimal();
     }
 
     private String toStringWithBigDecimal() {
@@ -201,6 +261,24 @@ public final class Decimal128 extends Number implements Serializable, Comparable
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Decimal128 that = (Decimal128) o;
+        return getLow() == that.getLow()
+            && getHigh() == that.getHigh();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getLow(), getHigh());
+    }
+
+    @Override
     public int compareTo(Decimal128 o) {
         if (isSpecial() || o.isSpecial()) {
             return Double.compare(doubleValue(), o.doubleValue());
@@ -210,6 +288,48 @@ public final class Decimal128 extends Number implements Serializable, Comparable
 
     private boolean isSpecial() {
         return isNaN() || isInfinite();
+    }
+
+    private BigDecimal clampAndRound(BigDecimal initialValue) {
+        if (-initialValue.scale() > MAX_EXPONENT) {
+            int diff = -initialValue.scale() - MAX_EXPONENT;
+            if (initialValue.unscaledValue().equals(BIG_INT_ZERO)) {
+                return new BigDecimal(initialValue.unscaledValue(), -MAX_EXPONENT);
+            } else if (diff + initialValue.precision() > 34) {
+                throw new NumberFormatException("Exponent is out of range for Decimal128 encoding of " + initialValue);
+            } else {
+                BigInteger multiplier = BIG_INT_TEN.pow(diff);
+                return new BigDecimal(initialValue.unscaledValue().multiply(multiplier), initialValue.scale() + diff);
+            }
+        } else if (-initialValue.scale() < MIN_EXPONENT) {
+            // Increasing a very negative exponent may require decreasing precision, which is rounding
+            // Only round exactly (by removing precision that is all zeroes).  An exception is thrown if the rounding would be inexact:
+            // Exact:     .000...0011000  => 11000E-6177  => 1100E-6176  => .000001100
+            // Inexact:   .000...0011001  => 11001E-6177  => 1100E-6176  => .000001100
+            int diff = initialValue.scale() + MIN_EXPONENT;
+            int undiscardedPrecision = ensureExactRounding(initialValue, diff);
+            BigInteger divisor = undiscardedPrecision == 0 ? BIG_INT_ONE : BIG_INT_TEN.pow(diff);
+            return new BigDecimal(initialValue.unscaledValue().divide(divisor), initialValue.scale() - diff);
+        } else {
+            BigDecimal roundedValue = initialValue.round(DECIMAL128);
+            int extraPrecision = initialValue.precision() - roundedValue.precision();
+            if (extraPrecision > 0) {
+                // Again, only round exactly
+                ensureExactRounding(initialValue, extraPrecision);
+            }
+            return roundedValue;
+        }
+    }
+
+    private int ensureExactRounding(BigDecimal initialValue, int extraPrecision) {
+        String significand = initialValue.unscaledValue().abs().toString();
+        int undiscardedPrecision = Math.max(0, significand.length() - extraPrecision);
+        for (int i = undiscardedPrecision; i < significand.length(); i++) {
+            if (significand.charAt(i) != '0') {
+                throw new NumberFormatException("Conversion to Decimal128 would require inexact rounding of " + initialValue);
+            }
+        }
+        return undiscardedPrecision;
     }
 
 }

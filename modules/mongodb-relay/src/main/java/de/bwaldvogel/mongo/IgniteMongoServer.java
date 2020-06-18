@@ -3,7 +3,6 @@ package de.bwaldvogel.mongo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.bwaldvogel.mongo.backend.h2.H2Backend;
 import de.bwaldvogel.mongo.backend.ignite.IgniteBackend;
 import io.netty.util.Signal;
 

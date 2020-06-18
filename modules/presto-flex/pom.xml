@@ -29,8 +29,8 @@
 		<presto.version>0.234-SNAPSHOT</presto.version>
         <prestosql.version>329</prestosql.version>
         <dep.airlift.version>0.191</dep.airlift.version>
-        <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
-        <dep.jackson.version>2.9.8</dep.jackson.version>    
+       
+        <jackson.version>2.9.8</jackson.version>    
       
      
         <dep.testng.version>6.10</dep.testng.version>
@@ -40,30 +40,32 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>io.airlift</groupId>
+    
+     <dependency>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>bootstrap</artifactId>
             <version>${dep.airlift.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>json</artifactId>
             <version>${dep.airlift.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>log</artifactId>
             <version>${dep.airlift.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>configuration</artifactId>
             <version>${dep.airlift.version}</version>
-        </dependency>
-
+        </dependency>       
+      
+        
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
@@ -79,7 +81,15 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${dep.jackson.version}</version>
+            <version>${jackson.version}</version>
+        </dependency>
+        
+          
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <scope>provided</scope>
+            <version>${jackson.version}</version>
         </dependency>
 
         <!-- Presto SPI -->
@@ -92,20 +102,7 @@
            
         </dependency>
 
-       
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>units</artifactId>
-            <version>1.5</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${dep.jackson.version}</version>
-            <scope>provided</scope>
-        </dependency>
+        
 
         <!-- for testing -->
         
@@ -117,7 +114,12 @@
             <scope>test</scope>
         </dependency>
 
-      
+       <dependency>
+            <groupId>com.facebook.airlift</groupId>
+            <artifactId>testing</artifactId>
+            <version>${dep.airlift.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
@@ -125,12 +127,7 @@
             <version>${dep.testng.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>testing</artifactId>
-            <scope>test</scope>
-            <version>${dep.airlift.version}</version>
-        </dependency>
+      
 
     </dependencies>
 

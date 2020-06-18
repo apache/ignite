@@ -57,6 +57,12 @@ public class MongoSecurityPluginProvider extends AbstractSecurityPluginProvider 
           perms = permsSet;
     }
 
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return "MongoSecurityProcessorProvider";
+    }
+
+    
     /** */
     public MongoSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms) {
         this.login = login;

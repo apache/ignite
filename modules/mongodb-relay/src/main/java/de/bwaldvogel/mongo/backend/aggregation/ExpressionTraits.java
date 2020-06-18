@@ -144,10 +144,7 @@ interface ExpressionTraits {
         return intValue;
     }
 
-    default <T> Object evaluateIndexOf(List<?> expressionValue,
-                                       Function<String, List<T>> toList,
-                                       int errorCodeFirstParameterTypeMismatch,
-                                       int errorCodeSecondParameterTypeMismatch) {
+    default Object assertTwoToFourArguments(List<?> expressionValue) {
         if (expressionValue.size() < 2 || expressionValue.size() > 4) {
             throw new MongoServerError(28667,
                 "Expression " + name() + " takes at least 2 arguments, and at most 4, but " + expressionValue.size() + " were passed in.");
@@ -155,6 +152,17 @@ interface ExpressionTraits {
 
         Object first = expressionValue.get(0);
         if (isNullOrMissing(first)) {
+            return null;
+        }
+        return first;
+    }
+
+    default <T> Object evaluateIndexOf(List<?> expressionValue,
+                                       Function<String, List<T>> toList,
+                                       int errorCodeFirstParameterTypeMismatch,
+                                       int errorCodeSecondParameterTypeMismatch) {
+        Object first = assertTwoToFourArguments(expressionValue);
+        if (first == null) {
             return null;
         }
         if (!(first instanceof String)) {
@@ -170,26 +178,31 @@ interface ExpressionTraits {
         }
         List<T> search = toList.apply((String) searchValue);
 
+        Range range = indexOf(expressionValue, elementsToSearchIn.size());
+
+        elementsToSearchIn = elementsToSearchIn.subList(range.getStart(), range.getEnd());
+        int index = Collections.indexOfSubList(elementsToSearchIn, search);
+        if (index >= 0) {
+            return index + range.getStart();
+        }
+        return index;
+    }
+
+    default Range indexOf(List<?> expressionValue, int size) {
         int start = 0;
         if (expressionValue.size() >= 3) {
             Object startValue = expressionValue.get(2);
             start = requireIntegral(startValue, "starting index");
-            start = Math.min(start, elementsToSearchIn.size());
+            start = Math.min(start, size);
         }
 
-        int end = elementsToSearchIn.size();
+        int end = size;
         if (expressionValue.size() >= 4) {
             Object endValue = expressionValue.get(3);
             end = requireIntegral(endValue, "ending index");
-            end = Math.min(Math.max(start, end), elementsToSearchIn.size());
+            end = Math.min(Math.max(start, end), size);
         }
-
-        elementsToSearchIn = elementsToSearchIn.subList(start, end);
-        int index = Collections.indexOfSubList(elementsToSearchIn, search);
-        if (index >= 0) {
-            return index + start;
-        }
-        return index;
+        return new Range(start, end);
     }
 
     default Collection<?> requireArray(int errorCode, Object value) {

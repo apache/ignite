@@ -1,12 +1,12 @@
 package de.bwaldvogel.mongo.wire;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.bwaldvogel.mongo.bson.Document;
+import de.bwaldvogel.mongo.wire.bson.BsonEncoder;
 import de.bwaldvogel.mongo.wire.message.MongoReply;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -15,8 +15,6 @@ import io.netty.handler.codec.MessageToByteEncoder;
 public class MongoWireEncoder extends MessageToByteEncoder<MongoReply> {
 
     private static final Logger log = LoggerFactory.getLogger(MongoWireEncoder.class);
-
-    private final BsonEncoder bsonEncoder = new BsonEncoder();
 
     @Override
     protected void encode(ChannelHandlerContext ctx, MongoReply reply, ByteBuf buf) throws Exception {
@@ -35,8 +33,8 @@ public class MongoWireEncoder extends MessageToByteEncoder<MongoReply> {
 
         for (Document document : documents) {
             try {
-                bsonEncoder.encodeDocument(document, buf);
-            } catch (IOException e) {
+                BsonEncoder.encodeDocument(document, buf);
+            } catch (RuntimeException e) {
                 log.error("Failed to encode {}", document, e);
                 ctx.channel().close();
                 throw e;

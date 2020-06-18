@@ -31,6 +31,7 @@ import org.apache.ignite.stream.StreamVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.bwaldvogel.mongo.MongoDatabase;
 import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
 import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.backend.DocumentComparator;
@@ -39,18 +40,15 @@ import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.exception.DuplicateKeyError;
+import io.netty.util.internal.StringUtil;
 
 public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
-    private static final Logger log = LoggerFactory.getLogger(IgniteBinaryCollection.class);
-
     private final IgniteCache<Object, BinaryObject> dataMap;
     
-
-    public IgniteBinaryCollection(String databaseName, String collectionName, String idField, IgniteCache<Object, BinaryObject> dataMap) {
-        super(databaseName, collectionName, idField);
+    public IgniteBinaryCollection(IgniteDatabase database, String collectionName, String idField, IgniteCache<Object, BinaryObject> dataMap) {
+        super(database, collectionName, idField);
         this.dataMap = dataMap;
-        
     }
 
     @Override
@@ -90,6 +88,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     @Override
     protected Document getDocument(Object position) {
     	BinaryObject obj = dataMap.get(position);
+    	if(obj==null) return null;
     	return this.binaryObjectToDocument(position,obj);
     }
 
@@ -124,38 +123,13 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     }
 
 
-    @Override
-    protected Iterable<Document> matchDocuments(Document query, Iterable<Object> positions, Document orderBy, int numberToSkip, int numberToReturn) {
-
-        List<Document> matchedDocuments = new ArrayList<>();
-
-        for (Object position : positions) {
-            Document document = getDocument(position);
-            if (documentMatchesQuery(document, query)) {
-                matchedDocuments.add(document);
-            }
-        }
-
-        sortDocumentsInMemory(matchedDocuments, orderBy);
-
-        if (numberToSkip > 0) {
-            matchedDocuments = matchedDocuments.subList(numberToSkip, matchedDocuments.size());
-        }
-
-        if (numberToReturn > 0 && matchedDocuments.size() > numberToReturn) {
-            matchedDocuments = matchedDocuments.subList(0, numberToReturn);
-        }
-
-        return matchedDocuments;
-    }
 
     @Override
     protected Iterable<Document> matchDocuments(Document query, Document orderBy, int numberToSkip,
             int numberToReturn) {
         List<Document> matchedDocuments = new ArrayList<>();
         
-        ScanQuery<Object, BinaryObject> scan = new ScanQuery<>(            
-	        );
+        ScanQuery<Object, BinaryObject> scan = new ScanQuery<>();
 	 
 		QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
 		//Iterator<Cache.Entry<Object, BinaryObject>> it = cursor.iterator();
@@ -166,46 +140,15 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
             }
 	    }
 
-        if (orderBy != null && !orderBy.keySet().isEmpty()) {
-            if (orderBy.keySet().iterator().next().equals("$natural")) {
-                int sortValue = ((Integer) orderBy.get("$natural")).intValue();
-                if (sortValue == 1) {
-                    // already sorted
-                } else if (sortValue == -1) {
-                    Collections.reverse(matchedDocuments);
-                }
-            } else {
-                matchedDocuments.sort(new DocumentComparator(orderBy));
-            }
-        }
-
-        if (numberToSkip > 0) {
-            if (numberToSkip < matchedDocuments.size()) {
-                matchedDocuments = matchedDocuments.subList(numberToSkip, matchedDocuments.size());
-            } else {
-                return Collections.emptyList();
-            }
-        }
-
-        if (numberToReturn > 0 && matchedDocuments.size() > numberToReturn) {
-            matchedDocuments = matchedDocuments.subList(0, numberToReturn);
-        }
-
-        return matchedDocuments;
+	    sortDocumentsInMemory(matchedDocuments, orderBy);
+        return applySkipAndLimit(matchedDocuments, numberToSkip, numberToReturn);
     }
 
     @Override
-    protected void handleUpdate(Document document) {
-        // noop
-    	//add@byron
-    	final Object key;
-        if (idField != null) {
-            key = Utils.getSubdocumentValue(document, idField);
-        } else {
-            key = UUID.randomUUID();
-        }
+    protected void handleUpdate(Object position, Document oldDocument,Document document) {
+        // noop   	
 
-        dataMap.put(Missing.ofNullable(key), documentToBinaryObject(document));
+        dataMap.put(Missing.ofNullable(position), documentToBinaryObject(document));
         
     }
 
@@ -226,16 +169,16 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     }
     
     public BinaryObject documentToBinaryObject(Document obj){	
-    	Ignite ignite = Ignition.ignite();
+    	Ignite ignite = ((IgniteDatabase) this.database).getIgnite();
     	
-    	Object typeName = obj.get("_class");
+    	String typeName = (String)obj.get("_class");
     	
     	CacheConfiguration cfg = dataMap.getConfiguration(CacheConfiguration.class);
-    	if(!cfg.getQueryEntities().isEmpty()) {
+    	if(StringUtil.isNullOrEmpty(typeName) && !cfg.getQueryEntities().isEmpty()) {
     		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
     		typeName = qeit.next().getValueType();    		
     	}
-    	if(typeName==null) {
+    	if(StringUtil.isNullOrEmpty(typeName)) {
     		typeName = dataMap.getName();
     	}
 		BinaryObjectBuilder bb = ignite.binary().builder(typeName.toString());
@@ -247,6 +190,11 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 			
 				if($value instanceof List){
 					List $arr = (List)$value;
+					//-$value = $arr.toArray();
+					$value = ($arr);
+				}
+				else if($value instanceof Set){
+					Set $arr = (Set)$value;
 					//-$value = $arr.toArray();
 					$value = ($arr);
 				}
@@ -267,7 +215,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}	    	
-	    }
+	    }	   
 	    return bb.build();
 	}
     
@@ -276,7 +224,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	if(key!=null) {
     		if(key instanceof BinaryObject){
 				BinaryObject $arr = (BinaryObject)key;					
-				key = $arr.deserialize().toString();
+				key = $arr.deserialize();
 			}	
     		doc.append(this.idField, key);
     	}
@@ -287,6 +235,11 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 			
 				if($value instanceof List){
 					List $arr = (List)$value;
+					//-$value = $arr.toArray();
+					$value = ($arr);
+				}
+				else if($value instanceof Set){
+					Set $arr = (Set)$value;
 					//-$value = $arr.toArray();
 					$value = ($arr);
 				}

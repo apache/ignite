@@ -52,7 +52,11 @@ public class ConnectionManager {
         ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0" +
         ";MAX_OPERATION_MEMORY=0;BATCH_JOINS=1" +
         ";ROW_FACTORY=\"" + H2PlainRowFactory.class.getName() + "\"" +
-        ";DEFAULT_TABLE_ENGINE=" + GridH2DefaultTableEngine.class.getName();
+        ";DEFAULT_TABLE_ENGINE=" + GridH2DefaultTableEngine.class.getName()
+    
+    //add@Byron 
+       +";database_to_upper=false";
+    //end@
 
     /** The period of clean up the {@link #threadConns}. */
     private static final Long CONN_CLEANUP_PERIOD = 2000L;

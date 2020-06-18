@@ -2,8 +2,6 @@ package de.bwaldvogel.mongo.backend.aggregation.stage;
 
 import static de.bwaldvogel.mongo.backend.Constants.ID_FIELD;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
@@ -24,16 +22,11 @@ public class ProjectStage implements AggregationStage {
         }
         this.projection = projection;
         this.hasInclusions = hasInclusions(projection);
+        validateProjection();
     }
 
     private static boolean hasInclusions(Document projection) {
-        for (Entry<String, Object> entry : projection.entrySet()) {
-            Object projectionValue = entry.getValue();
-            if (Utils.isTrue(projectionValue)) {
-                return true;
-            }
-        }
-        return false;
+        return projection.values().stream().anyMatch(Utils::isTrue);
     }
 
     @Override
@@ -42,20 +35,24 @@ public class ProjectStage implements AggregationStage {
     }
 
     Document projectDocument(Document document) {
-        Document result = new Document();
-
-        if (!projection.containsKey(ID_FIELD)) {
-            putIfContainsField(document, result, ID_FIELD);
+        final Document result;
+        if (hasInclusions) {
+            result = new Document();
+            if (!projection.containsKey(ID_FIELD)) {
+                putIfContainsField(document, result, ID_FIELD);
+            }
+        } else {
+            result = document.cloneDeeply();
         }
 
-        Map<String, Object> effectiveProjection = calculateEffectiveProjection(document);
-
-        for (Entry<String, Object> entry : effectiveProjection.entrySet()) {
+        for (Entry<String, Object> entry : projection.entrySet()) {
             String field = entry.getKey();
             Object projectionValue = entry.getValue();
-            if (projectionValue instanceof Number || projectionValue instanceof Boolean) {
+            if (isNumberOrBoolean(projectionValue)) {
                 if (Utils.isTrue(projectionValue)) {
                     putIfContainsField(document, result, field);
+                } else {
+                    Utils.removeSubdocumentValue(result, field);
                 }
             } else if (projectionValue == null) {
                 result.put(field, null);
@@ -69,24 +66,29 @@ public class ProjectStage implements AggregationStage {
         return result;
     }
 
-    private Map<String, Object> calculateEffectiveProjection(Document document) {
+    private void validateProjection() {
         if (hasInclusions) {
-            return projection;
-        }
-
-        Map<String, Object> effectiveProjection = new LinkedHashMap<>(projection);
-
-        for (String documentField : document.keySet()) {
-            if (!effectiveProjection.containsKey(documentField)) {
-                effectiveProjection.put(documentField, Boolean.TRUE);
+            boolean nonIdExclusion = projection.entrySet().stream()
+                .filter(entry -> !entry.getKey().equals(ID_FIELD))
+                .map(Entry::getValue)
+                .filter(ProjectStage::isNumberOrBoolean)
+                .anyMatch(entry -> !Utils.isTrue(entry));
+            if (nonIdExclusion) {
+                throw new MongoServerError(40178,
+                    "Bad projection specification, cannot exclude fields other than '_id' in an inclusion projection: "
+                        + projection.toString(true, "{ ", " }"));
             }
         }
-        return effectiveProjection;
     }
 
-    private static void putIfContainsField(Document input, Document result, String field) {
-        if (input.containsKey(field)) {
-            result.put(field, input.get(field));
+    private static boolean isNumberOrBoolean(Object projectionValue) {
+        return projectionValue instanceof Number || projectionValue instanceof Boolean;
+    }
+
+    private static void putIfContainsField(Document input, Document result, String key) {
+        Object value = Utils.getSubdocumentValue(input, key);
+        if (!(value instanceof Missing)) {
+            Utils.changeSubdocumentValue(result, key, value);
         }
     }
 }

@@ -2,6 +2,7 @@ package com.facebook.presto.plugin.ignite;
 
 import com.facebook.presto.plugin.jdbc.*;
 import com.facebook.presto.spi.ConnectorSession;
+import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.TableNotFoundException;
@@ -15,11 +16,13 @@ import org.apache.ignite.IgniteJdbcDriver;
 import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -48,7 +51,7 @@ public class IgniteClient extends BaseJdbcClient {
         try (ResultSet resultSet = connection.getMetaData().getSchemas()) {
             ImmutableSet.Builder<String> schemaNames = ImmutableSet.builder();
             while (resultSet.next()) {
-                String schemaName = resultSet.getString(1).toLowerCase(ENGLISH);
+                String schemaName = resultSet.getString(1); //.toLowerCase(ENGLISH);
                 schemaNames.add(schemaName);
             }
             return schemaNames.build();
@@ -78,6 +81,7 @@ public class IgniteClient extends BaseJdbcClient {
     public JdbcTableHandle getTableHandle(JdbcIdentity identity, SchemaTableName schemaTableName) {
         try (Connection connection = connectionFactory.openConnection(identity)) {
             DatabaseMetaData metadata = connection.getMetaData();
+           
             String jdbcSchemaName = schemaTableName.getSchemaName();
             String jdbcTableName = schemaTableName.getTableName();
             if (metadata.storesUpperCaseIdentifiers()) {
@@ -88,8 +92,11 @@ public class IgniteClient extends BaseJdbcClient {
             		 Optional.of(jdbcTableName))) {
                 List<JdbcTableHandle> tableHandles = new ArrayList<>();
                 while (resultSet.next()) {
+                	//modify@byron TABLE_CAT to null
+                	//resultSet.getString("TABLE_CAT")
+                	
                     tableHandles.add(new JdbcTableHandle(connectorId,
-                            schemaTableName, resultSet.getString("TABLE_CAT"),
+                            schemaTableName, null,
                             resultSet.getString("TABLE_SCHEM"), resultSet
                             .getString("TABLE_NAME")));
                 }
@@ -107,35 +114,26 @@ public class IgniteClient extends BaseJdbcClient {
         }
     }
 
-    @Override
-    public List<JdbcColumnHandle> getColumns(ConnectorSession session, JdbcTableHandle tableHandle) {
-        try (Connection connection = connectionFactory.openConnection(JdbcIdentity.from(session))) {
-            try (ResultSet resultSet = getColumns(tableHandle, connection.getMetaData())) {
-                List<JdbcColumnHandle> columns = new ArrayList<>();
-                while (resultSet.next()) {
-                    JdbcTypeHandle typeHandle = new JdbcTypeHandle(
-                            resultSet.getInt("DATA_TYPE"),
-                            resultSet.getInt("COLUMN_SIZE"),
-                            resultSet.getInt("DECIMAL_DIGITS"));
-                    Optional<ReadMapping> columnMapping = toPrestoType(session, typeHandle);
-                    // skip unsupported column types
-                    if (columnMapping.isPresent()) {
-                        String columnName = resultSet.getString("COLUMN_NAME");
-                        columns.add(new JdbcColumnHandle(connectorId, columnName, typeHandle, columnMapping.get().getType(),true));
-                    }
-                }
-                if (columns.isEmpty()) {
-                    // In rare cases (e.g. PostgreSQL) a table might have no columns.
-                    throw new TableNotFoundException(tableHandle.getSchemaTableName());
-                }
-                return ImmutableList.copyOf(columns);
-            }
-        } catch (SQLException e) {
-            throw new PrestoException(JDBC_ERROR, e);
-        }
+    protected String getTableWithString(ConnectorTableMetadata tableMetadata, String tableName)
+    {
+    	if(tableMetadata.getProperties().size()>0) {
+    		StringBuilder with = new StringBuilder();
+    		with.append("WITH ");
+    		with.append('"');
+    		for(Map.Entry<String,Object> ent: tableMetadata.getProperties().entrySet()) {    			
+    			with.append(ent.getKey());
+    			with.append('=');
+    			with.append(ent.getValue());
+    			with.append(',');
+    		}
+    		with.append('"');
+    		return with.toString();
+    	}
+    	return "";
     }
+   
 
-  
+  /**
 
     private static ResultSet getColumns(JdbcTableHandle tableHandle, DatabaseMetaData metadata)
             throws SQLException {
@@ -146,6 +144,15 @@ public class IgniteClient extends BaseJdbcClient {
                 null);
         return columnSet;
     }
-
-
+    
+    private static ResultSet getPkColumns(JdbcTableHandle tableHandle, DatabaseMetaData metadata)
+            throws SQLException {
+        ResultSet columnSet = metadata.getPrimaryKeys(
+                tableHandle.getCatalogName(),
+                tableHandle.getSchemaName(),
+                tableHandle.getTableName()
+                );
+        return columnSet;
+    }
+  */ 
 }

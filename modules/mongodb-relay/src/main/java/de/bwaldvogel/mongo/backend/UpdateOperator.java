@@ -23,7 +23,6 @@ enum UpdateOperator {
     POP("$pop"), // Removes the first or last item of an array.
     PULL_ALL("$pullAll"), // Removes all matching values from an array.
     PULL("$pull"), // Removes all array elements that match a specified query.
-    PUSH_ALL("$pushAll"), // Deprecated. Adds several items to an array.
     PUSH("$push"), // Adds an item to an array.
 
     // http://docs.mongodb.org/manual/reference/operator/update-bitwise/

@@ -41,7 +41,8 @@
         <docker.repository>apacheignite</docker.repository>
         <docker.backend.image>web-console-backend</docker.backend.image>
         <docker.frontend.image>web-console-frontend</docker.frontend.image>
-        <docker.standalone.image>web-console-standalone</docker.standalone.image>        
+        <docker.standalone.image>web-console-standalone</docker.standalone.image>  
+        <java7.hikaricp.version>2.4.7</java7.hikaricp.version>      
     </properties>
 
     <dependencies>
@@ -109,6 +110,35 @@
 		    <version>${slf4j.version}</version>		   
 		</dependency>
 
+		<dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        
+         <dependency> 
+	         <groupId>com.fasterxml.jackson.datatype</groupId> 
+	         <artifactId>jackson-datatype-jsr310</artifactId>
+	          <version>${jackson.version}</version> 
+        </dependency>
+        
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${java7.hikaricp.version}</version>
+        </dependency>
 
         <!-- Test dependencies -->
         
@@ -126,36 +156,14 @@
    			<version>3.11.1</version>   			
    			<scope>test</scope>
    		</dependency>
-        <!--  
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-hadoop</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-aws</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-hibernate_5.1</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-urideploy</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
         
-        -->
+        <dependency>
+   			<groupId>org.junit.jupiter</groupId>
+   			<artifactId>junit-jupiter-api</artifactId>
+   			<version>5.0.2</version>   	
+   			<scope>test</scope>		
+   		</dependency>
+     
     </dependencies>
 
     <profiles>

@@ -24,36 +24,34 @@ public class IgniteBackend extends AbstractMongoBackend {
     private Ignite mvStore;
     
     private boolean isKeepBinary = true;
+    
+    long oldVersion = System.nanoTime();
 
     public static IgniteBackend inMemory() {
     	
     	Ignite mvStore = Ignition.start();
-       
+    	
         return new IgniteBackend(mvStore);
+    }
+    
+	public void commit() {      
+        long newVersion = System.nanoTime();
+        log.debug("Committed MVStore (v: {} �� {})", oldVersion, newVersion);
     }
 
     public IgniteBackend(Ignite mvStore) {
         this.mvStore = mvStore;
-        String databaseName = IgniteDatabase.DEFAULT_DB_NAME;
+        String databaseName = mvStore.name();
+        if(databaseName==null || databaseName.isEmpty()) {
+        	databaseName = IgniteDatabase.DEFAULT_DB_NAME;
+        }
         log.info("opening database '{}'", databaseName);
         try {
             resolveDatabase(databaseName);
         } catch (MongoServerException e) {
             log.error("Failed to open {}", e);
         }
-        for (String mapName : mvStore.cacheNames()) {
-            if (!mapName.startsWith(IgniteDatabase.INDEX_DB_PREFIX) && mapName.indexOf('.')>0) {
-                String fullName = mapName;//.substring(IgniteDatabase.INDEX_PREFIX.length());
-                //String databaseName = fullName.split("_")[0];
-                databaseName = Utils.firstFragment(fullName);
-                log.info("opening database '{}'", databaseName);
-                try {
-                    resolveDatabase(databaseName);
-                } catch (MongoServerException e) {
-                    log.error("Failed to open {}", e);
-                }
-            }
-        }
+       
     }
 
     public IgniteBackend(String fileName) {
@@ -72,6 +70,16 @@ public class IgniteBackend extends AbstractMongoBackend {
 
     @Override
     protected MongoDatabase openOrCreateDatabase(String databaseName) {
+    	String gridName = databaseName;
+    	if(databaseName!=null && databaseName.equalsIgnoreCase(IgniteDatabase.DEFAULT_DB_NAME)) {
+    		gridName = null;
+    		databaseName = IgniteDatabase.DEFAULT_DB_NAME;
+    	}
+    	if(databaseName!=null && databaseName.isEmpty()) {
+    		gridName = null;
+    		databaseName = IgniteDatabase.DEFAULT_DB_NAME;
+    	}
+    	Ignite mvStore = Ignition.ignite(gridName);
         return new IgniteDatabase(databaseName, this, mvStore);
     }
 

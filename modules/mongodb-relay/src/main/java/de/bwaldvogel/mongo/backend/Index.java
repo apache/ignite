@@ -1,5 +1,6 @@
 package de.bwaldvogel.mongo.backend;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -16,10 +17,15 @@ import de.bwaldvogel.mongo.exception.KeyConstraintError;
 
 public abstract class Index<P> {
 
+    private final String name;
     private final List<IndexKey> keys;
     private final boolean sparse;
+    
+    private LinkedHashSet<String> keysSet = null;
+    private List<String> keysList = null;
 
-    protected Index(List<IndexKey> keys, boolean sparse) {
+    protected Index(String name, List<IndexKey> keys, boolean sparse) {
+        this.name = name;
         this.keys = keys;
         this.sparse = sparse;
     }
@@ -28,67 +34,123 @@ public abstract class Index<P> {
         return sparse;
     }
 
-    protected List<IndexKey> getKeys() {
+    public List<IndexKey> getKeys() {
         return keys;
     }
 
+    public boolean hasSameOptions(Index<?> other) {
+        return sparse == other.sparse;
+    }
+
     public String getName() {
-        if (keys.size() == 1 && CollectionUtils.getSingleElement(keys).getKey().equals(Constants.ID_FIELD)) {
-            return Constants.ID_INDEX_NAME;
-        }
-        return keys.stream()
-            .map(indexKey -> indexKey.getKey() + "_" + (indexKey.isAscending() ? "1" : "-1"))
-            .collect(Collectors.joining("_"));
+        return name;
     }
 
-    protected List<String> keys() {
-    	if(keys.size()==1) {
-    		return Collections.singletonList(keys.get(0).getKey());
+    public List<String> keys() {
+    	if(keysList==null) {
+    		keysList = keys.stream()
+    	            .map(IndexKey::getKey)
+    	            .collect(Collectors.toList());
     	}
-        return keys.stream()
-            .map(IndexKey::getKey)
-            .collect(Collectors.toList());
+        return keysList;
     }
 
-    protected Set<String> keySet() {
-    	if(keys.size()==1) {
-    		return Collections.singleton(keys.get(0).getKey());
+    public Set<String> keySet() {
+    	if(keysSet == null) {
+    		keysSet = keys.stream()
+    	            .map(IndexKey::getKey)
+    	            .collect(Collectors.toCollection(LinkedHashSet::new));    		
     	}
-        return keys.stream()
-            .map(IndexKey::getKey)
-            .collect(Collectors.toCollection(LinkedHashSet::new));
+    	return keysSet;
     }
 
-    Set<KeyValue> getKeyValues(Document document) {
+    public Set<KeyValue> getKeyValues(Document document) {
         return getKeyValues(document, true);
     }
 
     Set<KeyValue> getKeyValues(Document document, boolean normalize) {
-        Map<String, Object> valuesPerKey = new LinkedHashMap<>();
-        for (String key : keys()) {
-            Object value = Utils.getSubdocumentValueCollectionAware(document, key);
-            if (normalize) {
-                value = Utils.normalizeValue(value);
-            }
-            valuesPerKey.put(key, value);
+        Map<String, Object> valuesPerKey = collectValuesPerKey(document);
+        if (normalize) {
+            valuesPerKey.replaceAll((key, value) -> Utils.normalizeValue(value));
         }
 
-        Map<String, Object> collectionValues = valuesPerKey.entrySet().stream()
-            .filter(entry -> entry.getValue() instanceof Collection)
-            .collect(StreamUtils.toLinkedHashMap());
+        List<Collection<?>> collectionValues = valuesPerKey.values().stream()
+            .filter(value -> value instanceof Collection)
+            .map(value -> (Collection<?>) value)
+            .collect(Collectors.toList());
 
         if (collectionValues.size() == 1) {
             @SuppressWarnings("unchecked")
-            Collection<Object> collectionValue = (Collection<Object>) CollectionUtils.getSingleElement(collectionValues.values());
+            Collection<Object> collectionValue = (Collection<Object>) CollectionUtils.getSingleElement(collectionValues);
             return CollectionUtils.multiplyWithOtherElements(valuesPerKey.values(), collectionValue).stream()
                 .map(KeyValue::new)
                 .collect(StreamUtils.toLinkedHashSet());
         } else if (collectionValues.size() > 1) {
-            throw new CannotIndexParallelArraysError(collectionValues.keySet());
+            validateHasNoParallelArrays(document);
+            return collectCollectionValues(collectionValues);
         } else {
             return Collections.singleton(new KeyValue(valuesPerKey.values()));
         }
     }
+
+    private void validateHasNoParallelArrays(Document document) {
+        Set<List<String>> arrayPaths = new LinkedHashSet<>();
+        for (String key : keys()) {
+            List<String> pathToFirstCollection = getPathToFirstCollection(document, key);
+            if (pathToFirstCollection != null) {
+                arrayPaths.add(pathToFirstCollection);
+            }
+        }
+        if (arrayPaths.size() > 1) {
+            List<String> parallelArraysPaths = arrayPaths.stream()
+                .map(path -> path.get(path.size() - 1))
+                .collect(Collectors.toList());
+            throw new CannotIndexParallelArraysError(parallelArraysPaths);
+        }
+    }
+
+    private static List<String> getPathToFirstCollection(Document document, String key) {
+        List<String> fragments = Utils.splitPath(key);
+        List<String> remainingFragments = Utils.getTail(fragments);
+        return getPathToFirstCollection(document, remainingFragments, Collections.singletonList(fragments.get(0)));
+    }
+
+    private static List<String> getPathToFirstCollection(Document document, List<String> remainingFragments, List<String> path) {
+        Object value = Utils.getSubdocumentValue(document, Utils.joinPath(path));
+        if (value instanceof Collection) {
+            return path;
+        }
+        if (remainingFragments.isEmpty()) {
+            return null;
+        }
+        List<String> newPath = new ArrayList<>(path);
+        newPath.add(remainingFragments.get(0));
+        return getPathToFirstCollection(document, Utils.getTail(remainingFragments), newPath);
+    }
+
+    private Map<String, Object> collectValuesPerKey(Document document) {
+        Map<String, Object> valuesPerKey = new LinkedHashMap<>();
+        for (String key : keys()) {
+            Object value = Utils.getSubdocumentValueCollectionAware(document, key);
+            valuesPerKey.put(key, value);
+        }
+        return valuesPerKey;
+    }
+
+    private static Set<KeyValue> collectCollectionValues(List<Collection<?>> collectionValues) {
+        int size = collectionValues.get(0).size();
+        Set<KeyValue> keyValues = new LinkedHashSet<>();
+        for (int i = 0; i < size; i++) {
+            int pos = i;
+            List<Object> values = collectionValues.stream()
+                .map(collection -> CollectionUtils.getElementAtPosition(collection, pos))
+                .collect(Collectors.toList());
+            keyValues.add(new KeyValue(values));
+        }
+        return keyValues;
+    }
+
+    public abstract P getPosition(Document document);
 
     public abstract void checkAdd(Document document, MongoCollection<P> collection);
 
@@ -102,13 +164,15 @@ public abstract class Index<P> {
 
     public abstract long getCount();
 
-    public abstract boolean isEmpty();
+    public boolean isEmpty() {
+        return getCount() == 0;
+    }
 
     public abstract long getDataSize();
 
     public abstract void checkUpdate(Document oldDocument, Document newDocument, MongoCollection<P> collection);
 
-    public abstract void updateInPlace(Document oldDocument, Document newDocument, MongoCollection<P> collection) throws KeyConstraintError;
+    public abstract void updateInPlace(Document oldDocument, Document newDocument, P position, MongoCollection<P> collection) throws KeyConstraintError;
 
     protected boolean isCompoundIndex() {
         return keys().size() > 1;
@@ -120,30 +184,11 @@ public abstract class Index<P> {
         return Utils.nullAwareEquals(oldKeyValues, newKeyValues);
     }
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((keys == null) ? 0 : keys.hashCode());
-		return result;
-	}
+    public abstract void drop();
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Index other = (Index) obj;
-		if (keys == null) {
-			if (other.keys != null)
-				return false;
-		} else if (!keys.equals(other.keys))
-			return false;
-		return true;
-	}
-    
-    
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[name=" + getName() + "]";
+    }
+
 }

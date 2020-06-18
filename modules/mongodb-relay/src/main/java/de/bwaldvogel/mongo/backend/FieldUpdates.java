@@ -7,12 +7,13 @@ import static de.bwaldvogel.mongo.backend.Utils.splitPath;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import de.bwaldvogel.mongo.bson.BsonTimestamp;
 import de.bwaldvogel.mongo.bson.Document;
@@ -22,7 +23,6 @@ import de.bwaldvogel.mongo.exception.ConflictingUpdateOperatorsException;
 import de.bwaldvogel.mongo.exception.FailedToParseException;
 import de.bwaldvogel.mongo.exception.ImmutableFieldException;
 import de.bwaldvogel.mongo.exception.MongoServerError;
-import de.bwaldvogel.mongo.exception.MongoServerException;
 import de.bwaldvogel.mongo.exception.PathNotViableException;
 import de.bwaldvogel.mongo.exception.TypeMismatchException;
 
@@ -80,9 +80,11 @@ class FieldUpdates {
                 break;
 
             case PUSH:
-            case PUSH_ALL:
+                handlePush(key, value);
+                break;
+
             case ADD_TO_SET:
-                handlePushAllAddToSet(key, value);
+                handleAddToSet(key, value);
                 break;
 
             case PULL:
@@ -117,58 +119,127 @@ class FieldUpdates {
         }
     }
 
-    private void handlePushAllAddToSet(String key, Object changeValue) {
-        // http://docs.mongodb.org/manual/reference/operator/push/
+    private List<Object> getListOrThrow(String key, Function<Object, MongoServerError> errorSupplier) {
         Object value = getSubdocumentValue(document, key);
-        final List<Object> list;
         if (Missing.isNullOrMissing(value)) {
-            list = new ArrayList<>();
+            return new ArrayList<>();
         } else if (value instanceof List<?>) {
-            list = asList(value);
+            return asList(value);
         } else {
-            if (updateOperator == UpdateOperator.ADD_TO_SET) {
-                throw new MongoServerError(10141,
-                    "Cannot apply $addToSet to non-array field. Field named '" + key + "' has non-array type " + describeType(value));
-            } else if (updateOperator == UpdateOperator.PUSH_ALL || updateOperator == UpdateOperator.PUSH) {
-                throw new BadValueException("The field '" + key + "' must be an array but is of type " + describeType(value)
-                    + " in document {" + ID_FIELD + ": " + document.get(ID_FIELD) + "}");
-            } else {
-                throw new IllegalArgumentException("Unsupported operator: " + updateOperator);
-            }
+            throw errorSupplier.apply(value);
         }
+    }
 
-        if (updateOperator == UpdateOperator.PUSH_ALL) {
-            if (!(changeValue instanceof Collection<?>)) {
-                throw new MongoServerError(10153, "Modifier " + updateOperator + " allowed for arrays only");
-            }
-            @SuppressWarnings("unchecked")
-            Collection<Object> valueList = (Collection<Object>) changeValue;
-            list.addAll(valueList);
-        } else {
-            Collection<Object> pushValues = new ArrayList<>();
-            if (changeValue instanceof Document
-                && ((Document) changeValue).keySet().equals(Collections.singleton("$each"))) {
-                @SuppressWarnings("unchecked")
-                Collection<Object> values = (Collection<Object>) ((Document) changeValue).get("$each");
-                pushValues.addAll(values);
-            } else {
-                pushValues.add(changeValue);
-            }
+    private void handlePush(String key, Object changeValue) {
+        List<Object> existingValue = getListOrThrow(key, value ->
+            new BadValueException("The field '" + key + "' must be an array but is of type " + describeType(value)
+                + " in document {" + ID_FIELD + ": " + document.get(ID_FIELD) + "}"));
 
-            for (Object val : pushValues) {
-                if (updateOperator == UpdateOperator.PUSH) {
-                    list.add(val);
-                } else if (updateOperator == UpdateOperator.ADD_TO_SET) {
-                    if (!list.contains(val)) {
-                        list.add(val);
-                    }
-                } else {
-                    throw new MongoServerException(
-                        "internal server error. illegal modifier here: " + updateOperator);
+        List<Object> newValues = new ArrayList<>();
+
+        Integer slice = null;
+        Comparator<Object> comparator = null;
+        int position = existingValue.size();
+        if (changeValue instanceof Document && ((Document) changeValue).containsKey("$each")) {
+            Document pushDocument = (Document) changeValue;
+            for (Entry<String, Object> entry : pushDocument.entrySet()) {
+                String modifier = entry.getKey();
+                switch (modifier) {
+                    case "$each":
+                        @SuppressWarnings("unchecked")
+                        Collection<Object> values = (Collection<Object>) entry.getValue();
+                        newValues.addAll(values);
+                        break;
+                    case "$slice":
+                        Object sliceValue = entry.getValue();
+                        if (!(sliceValue instanceof Number)) {
+                            throw new BadValueException("The value for $slice must be an integer value but was given type: " + describeType(sliceValue));
+                        }
+                        slice = ((Number) sliceValue).intValue();
+                        break;
+                    case "$sort":
+                        Object sortValue = Utils.normalizeValue(entry.getValue());
+                        if (sortValue instanceof Number) {
+                            Number sortOrder = Utils.normalizeNumber((Number) sortValue);
+                            if (sortOrder.equals(1)) {
+                                comparator = ValueComparator.asc();
+                            } else if (sortOrder.equals(-1)) {
+                                comparator = ValueComparator.desc();
+                            }
+                        } else if (sortValue instanceof Document) {
+                            ValueComparator valueComparator = ValueComparator.asc();
+                            DocumentComparator documentComparator = new DocumentComparator((Document) sortValue);
+                            comparator = (o1, o2) -> {
+                                if (o1 instanceof Document && o2 instanceof Document) {
+                                    return documentComparator.compare((Document) o1, (Document) o2);
+                                } else if (o1 instanceof Document || o2 instanceof Document) {
+                                    return valueComparator.compare(o1, o2);
+                                } else {
+                                    return 0;
+                                }
+                            };
+                        }
+                        if (comparator == null) {
+                            throw new BadValueException("The $sort is invalid: use 1/-1 to sort the whole element, or {field:1/-1} to sort embedded fields");
+                        }
+                        break;
+                    case "$position":
+                        if (!(entry.getValue() instanceof Number)) {
+                            throw new BadValueException("The value for $position must be an integer value, not of type: " + describeType(entry.getValue()));
+                        }
+                        position = Utils.normalizeNumber((Number) entry.getValue()).intValue();
+                        break;
+                    default:
+                        throw new BadValueException("Unrecognized clause in $push: " + modifier);
                 }
             }
+        } else {
+            newValues.add(changeValue);
         }
-        changeSubdocumentValue(document, key, list);
+
+        List<Object> newValue = new ArrayList<>(existingValue);
+        if (position < 0) {
+            position = newValue.size() + position;
+        } else if (position >= newValue.size()) {
+            position = newValue.size();
+        }
+        newValue.addAll(position, newValues);
+
+        if (comparator != null) {
+            newValue.sort(comparator);
+        }
+        if (slice != null) {
+            newValue = newValue.subList(0, Math.min(slice.intValue(), newValue.size()));
+        }
+        changeSubdocumentValue(document, key, newValue);
+    }
+
+    private void handleAddToSet(String key, Object changeValue) {
+        List<Object> newValue = getListOrThrow(key, value ->
+            new MongoServerError(10141,
+                "Cannot apply $addToSet to non-array field. Field named '" + key + "' has non-array type " + describeType(value)));
+
+        Collection<Object> pushValues = new ArrayList<>();
+        if (changeValue instanceof Document && ((Document) changeValue).keySet().iterator().next().equals("$each")) {
+            Document addToSetDocument = (Document) changeValue;
+            for (String modifier : addToSetDocument.keySet()) {
+                if (!modifier.equals("$each")) {
+                    throw new BadValueException("Found unexpected fields after $each in $addToSet: " + addToSetDocument.toString(true, "{ ", " }"));
+                }
+            }
+            @SuppressWarnings("unchecked")
+            Collection<Object> values = (Collection<Object>) addToSetDocument.get("$each");
+            pushValues.addAll(values);
+        } else {
+            pushValues.add(changeValue);
+        }
+
+        for (Object val : pushValues) {
+            if (!newValue.contains(val)) {
+                newValue.add(val);
+            }
+        }
+        changeSubdocumentValue(document, key, newValue);
     }
 
     private void assertNotKeyField(String key) {
@@ -276,9 +347,9 @@ class FieldUpdates {
         Number changeValue = (Number) changeObject;
         final Number newValue;
         if (updateOperator == UpdateOperator.INC) {
-            newValue = Utils.addNumbers(number, changeValue);
+            newValue = NumericUtils.addNumbers(number, changeValue);
         } else if (updateOperator == UpdateOperator.MUL) {
-            newValue = Utils.multiplyNumbers(number, changeValue);
+            newValue = NumericUtils.multiplyNumbers(number, changeValue);
         } else {
             throw new RuntimeException();
         }

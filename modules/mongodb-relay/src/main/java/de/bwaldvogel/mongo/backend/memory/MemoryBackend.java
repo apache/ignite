@@ -9,9 +9,4 @@ public class MemoryBackend extends AbstractMongoBackend {
         return new MemoryDatabase(this, databaseName);
     }
 
-    @Override
-    public void close() {
-        // no-op
-    }
-
 }

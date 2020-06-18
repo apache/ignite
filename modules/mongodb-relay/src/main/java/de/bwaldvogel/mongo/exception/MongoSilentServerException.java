@@ -9,6 +9,7 @@ public class MongoSilentServerException extends MongoServerException {
 
     public MongoSilentServerException(String message) {
         super(message);
+        setLogError(false);
     }
 
 }

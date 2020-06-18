@@ -13,11 +13,12 @@
  */
 package org.ebyhr.presto.flex;
 
-import io.airlift.json.JsonCodec;
-import io.airlift.testing.EquivalenceTester;
+import com.facebook.airlift.json.JsonCodec;
+import com.facebook.airlift.testing.EquivalenceTester;
+
 import org.testng.annotations.Test;
 
-import static io.airlift.json.JsonCodec.jsonCodec;
+import static com.facebook.airlift.json.JsonCodec.jsonCodec;
 import static org.testng.Assert.assertEquals;
 
 public class TestFlexTableHandle

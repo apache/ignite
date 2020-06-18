@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.bson.Document;
+import de.bwaldvogel.mongo.wire.bson.BsonDecoder;
 import de.bwaldvogel.mongo.wire.message.ClientRequest;
 import de.bwaldvogel.mongo.wire.message.MessageHeader;
 import de.bwaldvogel.mongo.wire.message.MongoDelete;
@@ -38,11 +39,8 @@ public class MongoWireProtocolHandler extends LengthFieldBasedFrameDecoder {
     private static final int lengthAdjustment = -lengthFieldLength;
     private static final int initialBytesToStrip = 0;
 
-    private final BsonDecoder bsonDecoder;
-
     public MongoWireProtocolHandler() {
         super(maxFrameLength, lengthFieldOffset, lengthFieldLength, lengthAdjustment, initialBytesToStrip);
-        bsonDecoder = new BsonDecoder();
     }
 
     @Override
@@ -67,7 +65,7 @@ public class MongoWireProtocolHandler extends LengthFieldBasedFrameDecoder {
         }
         in = in.readSlice(totalLength - lengthFieldLength);
         int readable = in.readableBytes();
-        Assert.equals(readable, totalLength - lengthFieldLength);
+        Assert.equals(readable, (long) totalLength - lengthFieldLength);
 
         final int requestID = in.readIntLE();
         final int responseTo = in.readIntLE();
@@ -83,20 +81,20 @@ public class MongoWireProtocolHandler extends LengthFieldBasedFrameDecoder {
         final ClientRequest request;
 
         switch (opCode) {
-        case OP_QUERY:
-            request = handleQuery(channel, header, in);
-            break;
-        case OP_INSERT:
-            request = handleInsert(channel, header, in);
-            break;
-        case OP_DELETE:
-            request = handleDelete(channel, header, in);
-            break;
-        case OP_UPDATE:
-            request = handleUpdate(channel, header, in);
-            break;
-        default:
-            throw new UnsupportedOperationException("unsupported opcode: " + opCode);
+            case OP_QUERY:
+                request = handleQuery(channel, header, in);
+                break;
+            case OP_INSERT:
+                request = handleInsert(channel, header, in);
+                break;
+            case OP_DELETE:
+                request = handleDelete(channel, header, in);
+                break;
+            case OP_UPDATE:
+                request = handleUpdate(channel, header, in);
+                break;
+            default:
+                throw new UnsupportedOperationException("unsupported opcode: " + opCode);
         }
 
         if (in.isReadable()) {
@@ -112,7 +110,7 @@ public class MongoWireProtocolHandler extends LengthFieldBasedFrameDecoder {
 
         buffer.skipBytes(4); // reserved
 
-        final String fullCollectionName = bsonDecoder.decodeCString(buffer);
+        final String fullCollectionName = BsonDecoder.decodeCString(buffer);
 
         final int flags = buffer.readIntLE();
         boolean singleRemove = false;
@@ -124,7 +122,7 @@ public class MongoWireProtocolHandler extends LengthFieldBasedFrameDecoder {
             throw new UnsupportedOperationException("flags=" + flags + " not yet supported");
         }
 
-        Document selector = bsonDecoder.decodeBson(buffer);
+        Document selector = BsonDecoder.decodeBson(buffer);
         log.debug("delete {} from {}", selector, fullCollectionName);
         return new MongoDelete(channel, header, fullCollectionName, selector, singleRemove);
     }
@@ -133,14 +131,14 @@ public class MongoWireProtocolHandler extends LengthFieldBasedFrameDecoder {
 
         buffer.skipBytes(4); // reserved
 
-        final String fullCollectionName = bsonDecoder.decodeCString(buffer);
+        final String fullCollectionName = BsonDecoder.decodeCString(buffer);
 
         final int flags = buffer.readIntLE();
         boolean upsert = UpdateFlag.UPSERT.isSet(flags);
         boolean multi = UpdateFlag.MULTI_UPDATE.isSet(flags);
 
-        Document selector = bsonDecoder.decodeBson(buffer);
-        Document update = bsonDecoder.decodeBson(buffer);
+        Document selector = BsonDecoder.decodeBson(buffer);
+        Document update = BsonDecoder.decodeBson(buffer);
         log.debug("update {} in {}", selector, fullCollectionName);
         return new MongoUpdate(channel, header, fullCollectionName, selector, update, upsert, multi);
     }
@@ -152,11 +150,11 @@ public class MongoWireProtocolHandler extends LengthFieldBasedFrameDecoder {
             throw new UnsupportedOperationException("flags=" + flags + " not yet supported");
         }
 
-        final String fullCollectionName = bsonDecoder.decodeCString(buffer);
+        final String fullCollectionName = BsonDecoder.decodeCString(buffer);
 
         List<Document> documents = new ArrayList<>();
         while (buffer.isReadable()) {
-            Document document = bsonDecoder.decodeBson(buffer);
+            Document document = BsonDecoder.decodeBson(buffer);
             documents.add(document);
         }
         log.debug("insert {} in {}", documents, fullCollectionName);
@@ -167,18 +165,18 @@ public class MongoWireProtocolHandler extends LengthFieldBasedFrameDecoder {
 
         int flags = buffer.readIntLE();
 
-        final String fullCollectionName = bsonDecoder.decodeCString(buffer);
+        final String fullCollectionName = BsonDecoder.decodeCString(buffer);
         final int numberToSkip = buffer.readIntLE();
         final int numberToReturn = buffer.readIntLE();
 
-        Document query = bsonDecoder.decodeBson(buffer);
+        Document query = BsonDecoder.decodeBson(buffer);
         Document returnFieldSelector = null;
         if (buffer.isReadable()) {
-            returnFieldSelector = bsonDecoder.decodeBson(buffer);
+            returnFieldSelector = BsonDecoder.decodeBson(buffer);
         }
 
         MongoQuery mongoQuery = new MongoQuery(channel, header, fullCollectionName, numberToSkip, numberToReturn,
-                query, returnFieldSelector);
+            query, returnFieldSelector);
 
         if (QueryFlag.SLAVE_OK.isSet(flags)) {
             flags = QueryFlag.SLAVE_OK.removeFrom(flags);

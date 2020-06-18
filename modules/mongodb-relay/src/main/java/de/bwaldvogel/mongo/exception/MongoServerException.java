@@ -6,6 +6,8 @@ public class MongoServerException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
+    private boolean logError = true;
+
     public MongoServerException(String message) {
         super(validateMessage(message));
     }
@@ -21,6 +23,14 @@ public class MongoServerException extends RuntimeException {
 
     public String getMessageWithoutErrorCode() {
         return getMessage();
+    }
+
+    public void setLogError(boolean logError) {
+        this.logError = logError;
+    }
+
+    public boolean isLogError() {
+        return logError;
     }
 
 }

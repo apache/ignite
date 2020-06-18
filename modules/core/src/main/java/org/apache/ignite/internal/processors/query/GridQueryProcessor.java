@@ -2245,9 +2245,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!ctx.cacheObjects().isBinaryObject(key)) {
                 Class<?> keyCls = key.value(coctx, false).getClass();
 
-                if (!desc.keyClass().isAssignableFrom(keyCls))
+                if (!desc.keyClass().isAssignableFrom(keyCls)) {
+                	//add@byron
+                	if (Number.class.isAssignableFrom(desc.keyClass()) && Number.class.isAssignableFrom(keyCls)) {
+                    	return desc;
+                    }
                     throw new IgniteCheckedException("Failed to update index, incorrect key class [expCls=" +
                         desc.keyClass().getName() + ", actualCls=" + keyCls.getName() + "]");
+                }
             }
         }
 

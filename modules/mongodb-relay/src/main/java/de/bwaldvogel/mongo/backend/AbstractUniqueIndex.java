@@ -8,8 +8,12 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.bwaldvogel.mongo.MongoCollection;
 import de.bwaldvogel.mongo.bson.BsonRegularExpression;
@@ -19,8 +23,10 @@ import de.bwaldvogel.mongo.exception.KeyConstraintError;
 
 public abstract class AbstractUniqueIndex<P> extends Index<P> {
 
-    protected AbstractUniqueIndex(List<IndexKey> keys, boolean sparse) {
-        super(keys, sparse);
+    private static final Logger log = LoggerFactory.getLogger(AbstractUniqueIndex.class);
+
+    protected AbstractUniqueIndex(String name, List<IndexKey> keys, boolean sparse) {
+        super(name, keys, sparse);
     }
 
     protected abstract P removeDocument(KeyValue keyValue);
@@ -49,9 +55,18 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
             return null;
         }
 
+        return apply(document, this::removeDocument);
+    }
+
+    @Override
+    public P getPosition(Document document) {
+        return apply(document, this::getPosition);
+    }
+
+    private P apply(Document document, Function<KeyValue, P> keyToPositionFunction) {
         Set<KeyValue> keyValues = getKeyValues(document);
         Set<P> positions = keyValues.stream()
-            .map(this::removeDocument)
+            .map(keyToPositionFunction)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
 
@@ -70,7 +85,7 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
         for (KeyValue key : getKeyValues(document, false)) {
             KeyValue normalizedKey = key.normalized();
             if (containsKey(normalizedKey)) {
-                throw new DuplicateKeyError(this, collection, key);
+                throw new DuplicateKeyError(this, collection, getKeys(), key);
             }
         }
     }
@@ -101,7 +116,7 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
             KeyValue normalizedKey = key.normalized();
             P position = getPosition(normalizedKey);
             if (position != null && !position.equals(oldPosition)) {
-                throw new DuplicateKeyError(this, collection, key);
+                throw new DuplicateKeyError(this, collection, getKeys(), key);
             }
         }
     }
@@ -114,9 +129,12 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
     }
 
     @Override
-    public void updateInPlace(Document oldDocument, Document newDocument, MongoCollection<P> collection) throws KeyConstraintError {
+    public void updateInPlace(Document oldDocument, Document newDocument, P position, MongoCollection<P> collection) throws KeyConstraintError {
         if (!nullAwareEqualsKeys(oldDocument, newDocument)) {
-            P position = remove(oldDocument);
+            P removedPosition = remove(oldDocument);
+            if (removedPosition != null) {
+                Assert.equals(removedPosition, position);
+            }
             add(newDocument, position, collection);
         }
     }
@@ -235,6 +253,11 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
         } else {
             throw new UnsupportedOperationException("unsupported query expression: " + operator);
         }
+    }
+
+    @Override
+    public void drop() {
+        log.debug("Dropping {}", this);
     }
 
 }

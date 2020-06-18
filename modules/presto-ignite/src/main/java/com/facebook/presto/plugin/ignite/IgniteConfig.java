@@ -1,12 +1,12 @@
 package com.facebook.presto.plugin.ignite;
 
-import io.airlift.configuration.Config;
+import com.facebook.airlift.configuration.Config;
 
 public class IgniteConfig {
     private String user;
     private String password;
     private String url;
-    private boolean thinConnection;
+    private boolean thinConnection = true;
     private String cfg;
    
 
@@ -52,7 +52,7 @@ public class IgniteConfig {
     /**
      * @param url the url to set
      */
-    @Config("ignite.password")
+    @Config("ignite.url")
     public IgniteConfig setUrl(String url) {
         this.url = url;
         return this;
@@ -63,15 +63,18 @@ public class IgniteConfig {
 	}
 
 	@Config("ignite.thinConnection")
-	public void setThinConnection(boolean thinConnection) {
+	public IgniteConfig setThinConnection(boolean thinConnection) {
 		this.thinConnection = thinConnection;
+		return this;
 	}
 	
 	public String getCfg() {
 		return cfg;
 	}
+	
 	@Config("ignite.cfg")
-	public void setCfg(String cfg) {
-		this.cfg = cfg;
+	public IgniteConfig setCfg(String cfg) {
+		this.cfg = cfg;		
+		return this;
 	}
 }

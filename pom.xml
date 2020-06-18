@@ -129,9 +129,7 @@
 
                 <module>modules/ml/mleap-model-parser</module>
                 <module>modules/ml/spark-model-parser</module>
-                <module>modules/ml/h2o-model-parser</module>
-                <module>modules/ml/tensorflow-model-parser</module>
-        		<module>modules/tensorflow</module>
+                <module>modules/ml/h2o-model-parser</module>                
 
                 <module>modules/scalar-2.10</module>
                 <module>modules/scalar</module>

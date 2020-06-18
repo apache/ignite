@@ -920,9 +920,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     private T2<Collection<byte[]>, byte[]> createKeys(int keyCnt) {
         return withMasterKeyChangeReadLock(() -> {
-            if (keyCnt == 0)
-                return new T2<>(Collections.emptyList(), getSpi().masterKeyDigest());
-
+            if (keyCnt == 0) {
+            	List<byte[]> empty = Collections.emptyList();
+                return new T2<>(empty, getSpi().masterKeyDigest());
+            }
             List<byte[]> encKeys = new ArrayList<>(keyCnt);
 
             for (int i = 0; i < keyCnt; i++)

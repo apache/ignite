@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -21,6 +22,7 @@ import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.exception.MongoServerError;
 import de.bwaldvogel.mongo.exception.MongoServerException;
 import de.bwaldvogel.mongo.exception.MongoSilentServerException;
+import de.bwaldvogel.mongo.exception.NoReplicationEnabledException;
 import de.bwaldvogel.mongo.exception.NoSuchCommandException;
 import de.bwaldvogel.mongo.wire.BsonConstants;
 import de.bwaldvogel.mongo.wire.MongoWireProtocolHandler;
@@ -78,11 +80,11 @@ public abstract class AbstractMongoBackend implements MongoBackend {
     }
 
     private Document handleAdminCommand(String command, Document query) {
-
         if (command.equalsIgnoreCase("listdatabases")) {
             Document response = new Document();
             List<Document> dbs = new ArrayList<>();
-            for (MongoDatabase db : databases.values()) {
+            for (String databaseName : listDatabaseNames()) {
+                MongoDatabase db = openOrCreateDatabase(databaseName);
                 Document dbObj = new Document("name", db.getDatabaseName());
                 dbObj.put("empty", Boolean.valueOf(db.isEmpty()));
                 dbs.add(dbObj);
@@ -98,7 +100,7 @@ public abstract class AbstractMongoBackend implements MongoBackend {
                 throw new NoSuchCommandException(new Document(command, collectionName).toString());
             }
         } else if (command.equalsIgnoreCase("replSetGetStatus")) {
-            throw new MongoServerError(76, "NoReplicationEnabled", "not running with --replSet");
+            throw new NoReplicationEnabledException();
         } else if (command.equalsIgnoreCase("getLog")) {
             final Object argument = query.get(command);
             return getLog(argument == null ? null : argument.toString());
@@ -109,9 +111,62 @@ public abstract class AbstractMongoBackend implements MongoBackend {
             log.debug("getLastError on admin database");
             Utils.markOkay(response);
             return response;
+        } else if (command.equalsIgnoreCase("connectionStatus")) {
+            Document response = new Document();
+            response.append("authInfo", new Document()
+                .append("authenticatedUsers", Collections.emptyList())
+                .append("authenticatedUserRoles", Collections.emptyList())
+            );
+            Utils.markOkay(response);
+            return response;
+        } else if (command.equalsIgnoreCase("hostInfo")) {
+            return handleHostInfo();
+        } else if (command.equalsIgnoreCase("getCmdLineOpts")) {
+            return handleGetCmdLineOpts();
+        } else if (command.equalsIgnoreCase("getFreeMonitoringStatus")) {
+            return handleGetFreeMonitoringStatus();
         } else {
             throw new NoSuchCommandException(command);
         }
+    }
+
+    private Document handleHostInfo() {
+        Document response = new Document();
+        String osName = System.getProperty("os.name");
+        String osVersion = System.getProperty("os.version");
+        response.append("os", new Document()
+            .append("type", osName)
+            .append("version", osVersion)
+        );
+        response.append("system", new Document()
+            .append("currentTime", Instant.now())
+            .append("hostname", Utils.getHostName())
+        );
+        response.append("extra", new Document()
+            .append("versionString", osName + " " + osVersion)
+            .append("kernelVersion", osVersion));
+        Utils.markOkay(response);
+        return response;
+    }
+
+    private Document handleGetCmdLineOpts() {
+        Document response = new Document();
+        response.append("argv", Collections.emptyList());
+        response.append("parsed", new Document());
+        Utils.markOkay(response);
+        return response;
+    }
+
+    private Document handleGetFreeMonitoringStatus() {
+        Document response = new Document();
+        response.append("state", "undecided");
+        Utils.markOkay(response);
+        return response;
+    }
+
+    @VisibleForExternalBackends
+    protected Set<String> listDatabaseNames() {
+        return databases.keySet();
     }
 
     private Document handleRenameCollection(String command, Document query) {
@@ -154,12 +209,7 @@ public abstract class AbstractMongoBackend implements MongoBackend {
             return null;
         }
 
-        MongoCollection<?> collection = database.resolveCollection(collectionName, false);
-        if (collection == null) {
-            return null;
-        }
-
-        return collection;
+        return database.resolveCollection(collectionName, false);
     }
 
     protected abstract MongoDatabase openOrCreateDatabase(String databaseName);
@@ -239,6 +289,12 @@ public abstract class AbstractMongoBackend implements MongoBackend {
         for (MongoDatabase db : databases.values()) {
             db.handleClose(channel);
         }
+    }
+
+    @Override
+    public void close() {
+        log.info("closing {}", this);
+        databases.clear();
     }
 
     @Override

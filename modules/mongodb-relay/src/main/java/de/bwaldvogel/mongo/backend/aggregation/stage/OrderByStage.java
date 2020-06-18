@@ -17,4 +17,5 @@ public class OrderByStage implements AggregationStage {
     public Stream<Document> apply(Stream<Document> stream) {
         return stream.sorted(documentComparator);
     }
+
 }

@@ -17,12 +17,12 @@ public class MemoryDatabase extends AbstractMongoDatabase<Integer> {
 
     @Override
     protected MemoryCollection openOrCreateCollection(String collectionName, String idField) {
-        return new MemoryCollection(getDatabaseName(), collectionName, idField);
+        return new MemoryCollection(this, collectionName, idField);
     }
 
     @Override
-    protected Index<Integer> openOrCreateUniqueIndex(String collectionName, List<IndexKey> keys, boolean sparse) {
-        return new MemoryUniqueIndex(keys, sparse);
+    protected Index<Integer> openOrCreateUniqueIndex(String collectionName, String indexName, List<IndexKey> keys, boolean sparse) {
+        return new MemoryUniqueIndex(indexName, keys, sparse);
     }
 
     @Override

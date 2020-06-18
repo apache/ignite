@@ -1,6 +1,7 @@
 package de.bwaldvogel.mongo.backend;
 
-import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,10 +16,11 @@ import java.util.stream.Stream;
 
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.exception.BadValueException;
+import de.bwaldvogel.mongo.exception.DollarPrefixedFieldNameException;
 import de.bwaldvogel.mongo.exception.MongoServerError;
 import de.bwaldvogel.mongo.exception.MongoServerException;
 import de.bwaldvogel.mongo.exception.PathNotViableException;
-import de.bwaldvogel.mongo.wire.BsonEncoder;
+import de.bwaldvogel.mongo.wire.bson.BsonEncoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -26,54 +28,6 @@ public class Utils {
 
     public static final String PATH_DELIMITER = ".";
     private static final Pattern PATH_DELIMITER_PATTERN = Pattern.compile(Pattern.quote(PATH_DELIMITER));
-
-    public static Number addNumbers(Number a, Number b) {
-        if (a instanceof Double || b instanceof Double) {
-            return Double.valueOf(a.doubleValue() + b.doubleValue());
-        } else if (a instanceof Float || b instanceof Float) {
-            return Float.valueOf(a.floatValue() + b.floatValue());
-        } else if (a instanceof Long || b instanceof Long) {
-            return Long.valueOf(a.longValue() + b.longValue());
-        } else if (a instanceof Integer || b instanceof Integer) {
-            return Integer.valueOf(a.intValue() + b.intValue());
-        } else if (a instanceof Short || b instanceof Short) {
-            return Short.valueOf((short) (a.shortValue() + b.shortValue()));
-        } else {
-            throw new UnsupportedOperationException("cannot add " + a + " and " + b);
-        }
-    }
-
-    public static Number subtractNumbers(Number a, Number b) {
-        if (a instanceof Double || b instanceof Double) {
-            return Double.valueOf(a.doubleValue() - b.doubleValue());
-        } else if (a instanceof Float || b instanceof Float) {
-            return Float.valueOf(a.floatValue() - b.floatValue());
-        } else if (a instanceof Long || b instanceof Long) {
-            return Long.valueOf(a.longValue() - b.longValue());
-        } else if (a instanceof Integer || b instanceof Integer) {
-            return Integer.valueOf(a.intValue() - b.intValue());
-        } else if (a instanceof Short || b instanceof Short) {
-            return Short.valueOf((short) (a.shortValue() - b.shortValue()));
-        } else {
-            throw new UnsupportedOperationException("cannot subtract " + a + " and " + b);
-        }
-    }
-
-    static Number multiplyNumbers(Number a, Number b) {
-        if (a instanceof Double || b instanceof Double) {
-            return Double.valueOf(a.doubleValue() * b.doubleValue());
-        } else if (a instanceof Float || b instanceof Float) {
-            return Float.valueOf(a.floatValue() * b.floatValue());
-        } else if (a instanceof Long || b instanceof Long) {
-            return Long.valueOf(a.longValue() * b.longValue());
-        } else if (a instanceof Integer || b instanceof Integer) {
-            return Integer.valueOf(a.intValue() * b.intValue());
-        } else if (a instanceof Short || b instanceof Short) {
-            return Short.valueOf((short) (a.shortValue() * b.shortValue()));
-        } else {
-            throw new UnsupportedOperationException("can not multiply " + a + " and " + b);
-        }
-    }
 
     private static void validateKey(String key) {
         if (key.endsWith(PATH_DELIMITER)) {
@@ -155,6 +109,10 @@ public class Utils {
             return null;
         }
         if (value instanceof Number) {
+        	//add@byron
+        	if(value instanceof Integer || value instanceof Long) {
+        		return value;
+        	}
             double doubleValue = ((Number) value).doubleValue();
             if (doubleValue == -0.0) {
                 doubleValue = 0.0;
@@ -216,9 +174,9 @@ public class Utils {
     static int calculateSize(Document document) {
         ByteBuf buffer = Unpooled.buffer();
         try {
-            new BsonEncoder().encodeDocument(document, buffer);
+            BsonEncoder.encodeDocument(document, buffer);
             return buffer.writerIndex();
-        } catch (IOException e) {
+        } catch (RuntimeException e) {
             throw new MongoServerException("Failed to calculate document size", e);
         } finally {
             buffer.release();
@@ -372,7 +330,9 @@ public class Utils {
             }
             list.set(pos, obj);
         } else {
-            ((Document) document).put(key, obj);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> documentAsMap = (Map<String, Object>) document;
+            documentAsMap.put(key, obj);
         }
     }
 
@@ -431,7 +391,7 @@ public class Utils {
         Object subObject = getFieldValueListSafe(document, mainKey);
         if (subObject instanceof Document || subObject instanceof List<?>) {
             changeSubdocumentValue(subObject, subKey, newValue, mainKey, matchPos);
-        } else if (!Missing.isNullOrMissing(subObject)) {
+        } else if (Missing.isNeitherNullNorMissing(subObject)) {
             String element = new Document(mainKey, subObject).toString(true);
             String subKeyFirst = Utils.splitPath(subKey).get(0);
             throw new PathNotViableException("Cannot create field '" + subKeyFirst + "' in element " + element);
@@ -439,6 +399,29 @@ public class Utils {
             Document obj = new Document();
             changeSubdocumentValue(obj, subKey, newValue, mainKey, matchPos);
             setListSafe(document, mainKey, previousKey, obj);
+        }
+    }
+
+    public static void validateFieldNames(Document document) {
+        validateFieldNames(document, null);
+    }
+
+    private static void validateFieldNames(Object value, String path) {
+        if (value instanceof Document) {
+            Document document = (Document) value;
+            for (Entry<String, Object> entry : document.entrySet()) {
+                String key = entry.getKey();
+                String nextPath = path != null ? path + "." + key : key;
+                if (key.startsWith("$") && !Constants.REFERENCE_KEYS.contains(key)) {
+                    throw new DollarPrefixedFieldNameException("The dollar ($) prefixed field '" + key + "' in '" + nextPath + "' is not valid for storage.");
+                }
+                validateFieldNames(entry.getValue(), nextPath);
+            }
+        } else if (value instanceof Collection<?>) {
+            Collection<?> values = (Collection<?>) value;
+            for (Object object : values) {
+                validateFieldNames(object, path + ".");
+            }
         }
     }
 
@@ -555,6 +538,20 @@ public class Utils {
         }
         List<String> fragments1 = splitPath(path1);
         List<String> fragments2 = splitPath(path2);
+        List<String> commonFragments = collectCommonPathFragments(fragments1, fragments2);
+        if (commonFragments.size() != fragments1.size() && commonFragments.size() != fragments2.size()) {
+            return null;
+        }
+        return joinPath(commonFragments);
+    }
+
+    public static List<String> collectCommonPathFragments(String path1, String path2) {
+        List<String> fragments1 = splitPath(path1);
+        List<String> fragments2 = splitPath(path2);
+        return collectCommonPathFragments(fragments1, fragments2);
+    }
+
+    private static List<String> collectCommonPathFragments(List<String> fragments1, List<String> fragments2) {
         List<String> commonFragments = new ArrayList<>();
         for (int i = 0; i < Math.min(fragments1.size(), fragments2.size()); i++) {
             String fragment1 = fragments1.get(i);
@@ -562,16 +559,23 @@ public class Utils {
             if (fragment1.equals(fragment2)) {
                 commonFragments.add(fragment1);
             } else {
-                return null;
+                break;
             }
         }
-        Assert.notEmpty(commonFragments);
-        return joinPath(commonFragments);
+        return commonFragments;
     }
 
     static String getLastFragment(String path) {
         List<String> fragments = splitPath(path);
         return fragments.get(fragments.size() - 1);
+    }
+
+    public static String getHostName() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            return e.toString();
+        }
     }
 
 }

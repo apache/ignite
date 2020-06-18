@@ -8,14 +8,18 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.bwaldvogel.mongo.MongoCollection;
+import de.bwaldvogel.mongo.MongoDatabase;
 import de.bwaldvogel.mongo.backend.projection.ProjectingIterable;
 import de.bwaldvogel.mongo.backend.projection.Projection;
 import de.bwaldvogel.mongo.bson.Document;
@@ -24,21 +28,22 @@ import de.bwaldvogel.mongo.exception.BadValueException;
 import de.bwaldvogel.mongo.exception.ConflictingUpdateOperatorsException;
 import de.bwaldvogel.mongo.exception.FailedToParseException;
 import de.bwaldvogel.mongo.exception.ImmutableFieldException;
+import de.bwaldvogel.mongo.exception.IndexOptionsConflictException;
 import de.bwaldvogel.mongo.exception.MongoServerError;
 import de.bwaldvogel.mongo.exception.MongoServerException;
 
 public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
 
-    private static final Logger log = LoggerFactory.getLogger(AbstractMongoCollection.class);
+	protected static final Logger log = LoggerFactory.getLogger(AbstractMongoCollection.class);
 
-    private String collectionName;
-    private String databaseName;
-    private final List<Index<P>> indexes = new ArrayList<>();
-    private final QueryMatcher matcher = new DefaultQueryMatcher();
+    protected MongoDatabase database;
+    protected String collectionName;
+    protected final List<Index<P>> indexes = new ArrayList<>();
+    protected final QueryMatcher matcher = new DefaultQueryMatcher();
     protected final String idField;
 
-    protected AbstractMongoCollection(String databaseName, String collectionName, String idField) {
-        this.databaseName = databaseName;
+    protected AbstractMongoCollection(MongoDatabase database, String collectionName, String idField) {
+        this.database = database;
         this.collectionName = collectionName;
         this.idField = idField;
     }
@@ -61,27 +66,67 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
     }
 
     protected void sortDocumentsInMemory(List<Document> documents, Document orderBy) {
-        if (orderBy != null && !orderBy.keySet().isEmpty()) {
-            if (orderBy.keySet().iterator().next().equals("$natural")) {
-                int sortValue = ((Integer) orderBy.get("$natural")).intValue();
-                if (sortValue == 1) {
-                    // keep it as is
-                } else if (sortValue == -1) {
-                    Collections.reverse(documents);
-                } else {
-                    throw new IllegalArgumentException("Illegal sort value: " + sortValue);
-                }
-            } else {
-                documents.sort(new DocumentComparator(orderBy));
-            }
+        DocumentComparator documentComparator = deriveComparator(orderBy);
+        if (documentComparator != null) {
+            documents.sort(documentComparator);
+        } else if (isNaturalDescending(orderBy)) {
+            Collections.reverse(documents);
         }
     }
 
     protected abstract Iterable<Document> matchDocuments(Document query, Document orderBy, int numberToSkip,
                                                          int numberToReturn);
 
-    protected abstract Iterable<Document> matchDocuments(Document query, Iterable<P> positions, Document orderBy,
-                                                         int numberToSkip, int numberToReturn);
+    protected Iterable<Document> matchDocuments(Document query, Iterable<P> positions, Document orderBy,
+                                                int numberToSkip, int numberToReturn) {
+        List<Document> matchedDocuments = new ArrayList<>();
+
+        for (P position : positions) {
+            Document document = getDocument(position);
+            if (documentMatchesQuery(document, query)) {
+                matchedDocuments.add(document);
+            }
+        }
+
+        sortDocumentsInMemory(matchedDocuments, orderBy);
+
+        if (numberToSkip > 0) {
+            matchedDocuments = matchedDocuments.subList(numberToSkip, matchedDocuments.size());
+        }
+
+        if (numberToReturn > 0 && matchedDocuments.size() > numberToReturn) {
+            matchedDocuments = matchedDocuments.subList(0, numberToReturn);
+        }
+
+        return matchedDocuments;
+    }
+
+    protected static boolean isNaturalDescending(Document orderBy) {
+        if (orderBy != null && !orderBy.keySet().isEmpty()) {
+            if (orderBy.keySet().iterator().next().equals("$natural")) {
+                Number sortValue = (Number) orderBy.get("$natural");
+                if (sortValue.intValue() == -1) {
+                    return true;
+                }
+
+                if (sortValue.intValue() != 1) {
+                    throw new IllegalArgumentException("Illegal sort value: " + sortValue);
+                }
+            }
+        }
+        return false;
+    }
+
+    protected static DocumentComparator deriveComparator(Document orderBy) {
+        if (orderBy != null && !orderBy.keySet().isEmpty()) {
+            if (orderBy.keySet().iterator().next().equals("$natural")) {
+                // already sorted
+            } else {
+                return new DocumentComparator(orderBy);
+            }
+        }
+        return null;
+    }
 
     protected abstract Document getDocument(P position);
 
@@ -93,7 +138,6 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
 
     @Override
     public synchronized void addDocument(Document document) {
-
         if (document.get(ID_FIELD) instanceof Collection) {
             throw new BadValueException("can't use an array for _id");
         }
@@ -114,17 +158,12 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
             index.add(document, position, this);
         }
 
-        updateDataSize(Utils.calculateSize(document));
+        //-updateDataSize(Utils.calculateSize(document));
     }
 
     @Override
-    public String getDatabaseName() {
-        return databaseName;
-    }
-
-    @Override
-    public String getFullName() {
-        return getDatabaseName() + "." + getCollectionName();
+    public MongoDatabase getDatabase() {
+        return database;
     }
 
     @Override
@@ -139,7 +178,15 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
 
     @Override
     public void addIndex(Index<P> index) {
-    	if(index==null) return;
+    	if(index==null) return; //add@byron
+        Index<P> existingIndex = findByName(index.getName());
+        if (existingIndex != null) {
+            if (!existingIndex.hasSameOptions(index)) {
+                throw new IndexOptionsConflictException(existingIndex);
+            }
+            log.debug("Index with name '{}' already exists", index.getName());
+            return;
+        }
         if (index.isEmpty()) {
             streamAllDocumentsWithPosition().forEach(documentWithPosition -> {
                 Document document = documentWithPosition.getDocument();
@@ -155,31 +202,35 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
         }
         indexes.add(index);
     }
-    
+
+    private Index<P> findByName(String indexName) {
+        return indexes.stream()
+            .filter(index -> index.getName().equals(indexName))
+            .findFirst()
+            .orElse(null);
+    }
+
     @Override
-    public boolean checkIndex(List<IndexKey> index) {
-    	for(int i=0;i<indexes.size();i++) {
-    		Index<P> idx = indexes.get(i);
-    		if(idx.getKeys().equals(index)) {
-    			return true;
-    		}
-    	}
-    	return false;
+    public void drop() {
+        log.debug("Dropping collection {}", getFullName());
+        Assert.isEmpty(indexes);
+    }
+
+    @Override
+    public void dropIndex(String indexName) {
+        log.debug("Dropping index '{}'", indexName);
+        List<Index<P>> indexesToDrop = indexes.stream()
+            .filter(index -> index.getName().equals(indexName))
+            .collect(Collectors.toList());
+        if (indexesToDrop.isEmpty()) {
+            return;
+        }
+        Index<P> indexToDrop = CollectionUtils.getSingleElement(indexesToDrop);
+        indexToDrop.drop();
+        indexes.remove(indexToDrop);
     }
     
-    @Override
-    public boolean dropIndex(List<IndexKey> index) {
-    	for(int i=0;i<indexes.size();i++) {
-    		Index<P> idx = indexes.get(i);
-    		if(idx.getKeys().equals(index)) {
-    			 indexes.remove(i);
-    			 return true;
-    		}
-    	}
-    	return false;
-    }    
- 	
-
+ 	   
     private void modifyField(Document document, String modifier, Document update, ArrayFilters arrayFilters,
                              Integer matchPos, boolean isUpsert) {
         Document change = (Document) update.get(modifier);
@@ -193,21 +244,13 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
         try {
             op = UpdateOperator.fromValue(modifier);
         } catch (IllegalArgumentException e) {
-            throw new FailedToParseException("Unknown modifier: " + modifier);
+            throw new FailedToParseException("Unknown modifier: " + modifier + ". Expected a valid update modifier or pipeline-style update specified as an array");
         }
 
-        if (op != UpdateOperator.UNSET) {
-            for (String key : change.keySet()) {
-                if (key.startsWith("$") && !key.startsWith("$[")) {
-                    throw new MongoServerError(15896, "Modified field name may not start with $");
-                }
-            }
-        }
         return op;
     }
 
     private void applyUpdate(Document oldDocument, Document newDocument) {
-
         if (newDocument.equals(oldDocument)) {
             return;
         }
@@ -215,7 +258,7 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
         Object oldId = oldDocument.get(idField);
         Object newId = newDocument.get(idField);
 
-        if (newId != null && !Utils.nullAwareEquals(oldId, newId)) {
+        if (newId != null && oldId != null && !Utils.nullAwareEquals(oldId, newId)) {
             throw new ImmutableFieldException("After applying the update, the (immutable) field '_id' was found to have been altered to _id: " + newId);
         }
 
@@ -263,7 +306,10 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
             }
         }
 
-        Document newDocument = new Document(idField, oldDocument.get(idField));
+        Document newDocument = new Document();
+        if (idField != null) {
+            newDocument.put(idField, oldDocument.get(idField));
+        }
 
         if (numStartsWithDollar == update.keySet().size()) {
             validateUpdateQuery(update);
@@ -277,6 +323,7 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
             throw new MongoServerException("illegal update: " + update);
         }
 
+        Utils.validateFieldNames(newDocument);
         return newDocument;
     }
 
@@ -391,10 +438,6 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
             orderBy = null;
         }
 
-        if (count() == 0) {
-            return Collections.emptyList();
-        }
-
         Iterable<Document> objs = queryDocuments(query, orderBy, numberToSkip, numberToReturn);
 
         if (fieldSelector != null && !fieldSelector.keySet().isEmpty()) {
@@ -408,7 +451,7 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
     public synchronized Document handleDistinct(Document query) {
         String key = (String) query.get("key");
         Document filter = (Document) query.getOrDefault("query", new Document());
-        Set<Object> values = new LinkedTreeSet<>();
+        Set<Object> values = new TreeSet<>(ValueComparator.ascWithoutListHandling().withDefaultComparatorForUuids());
 
         for (Document document : queryDocuments(filter, null, 0, 0)) {
             Object value = Utils.getSubdocumentValueCollectionAware(document, key);
@@ -428,9 +471,7 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
 
     @Override
     public synchronized void insertDocuments(List<Document> documents) {
-        for (Document document : documents) {
-            addDocument(document);
-        }
+        MongoCollection.super.insertDocuments(documents);
     }
 
     @Override
@@ -488,47 +529,57 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
 
     private Document updateDocument(Document document, Document updateQuery,
                                     ArrayFilters arrayFilters, Integer matchPos) {
-        synchronized (document) {
-            // copy document
-            Document oldDocument = new Document();
-            cloneInto(oldDocument, document);
+        // copy document
+        Document oldDocument = new Document();
+        cloneInto(oldDocument, document);
 
-            Document newDocument = calculateUpdateDocument(document, updateQuery, arrayFilters, matchPos, false);
+        Document newDocument = calculateUpdateDocument(document, updateQuery, arrayFilters, matchPos, false);
 
-            if (!newDocument.equals(oldDocument)) {
-                for (Index<P> index : indexes) {
-                    index.checkUpdate(oldDocument, newDocument, this);
-                }
-                for (Index<P> index : indexes) {
-                    index.updateInPlace(oldDocument, newDocument, this);
-                }
-
-                int oldSize = Utils.calculateSize(oldDocument);
-                int newSize = Utils.calculateSize(newDocument);
-                updateDataSize(newSize - oldSize);
-
-                // only keep fields that are also in the updated document
-                Set<String> fields = new LinkedHashSet<>(document.keySet());
-                fields.removeAll(newDocument.keySet());
-                for (String key : fields) {
-                    document.remove(key);
-                }
-
-                // update the fields
-                for (String key : newDocument.keySet()) {
-                    if (key.contains(".")) {
-                        throw new MongoServerException(
-                                "illegal field name. must not happen as it must be caught by the driver");
-                    }
-                    document.put(key, newDocument.get(key));
-                }
-                handleUpdate(document);
+        if (!newDocument.equals(oldDocument)) {
+            for (Index<P> index : indexes) {
+                index.checkUpdate(oldDocument, newDocument, this);
             }
-            return oldDocument;
+            P position = getSinglePosition(oldDocument);
+            for (Index<P> index : indexes) {
+                index.updateInPlace(oldDocument, newDocument, position, this);
+            }
+
+            int oldSize = Utils.calculateSize(oldDocument);
+            int newSize = Utils.calculateSize(newDocument);
+            updateDataSize(newSize - oldSize);
+
+            // only keep fields that are also in the updated document
+            Set<String> fields = new LinkedHashSet<>(document.keySet());
+            fields.removeAll(newDocument.keySet());
+            for (String key : fields) {
+                document.remove(key);
+            }
+
+            // update the fields
+            for (String key : newDocument.keySet()) {
+                if (key.contains(".")) {
+                    throw new MongoServerException(
+                        "illegal field name. must not happen as it must be caught by the driver");
+                }
+                document.put(key, newDocument.get(key));
+            }
+            handleUpdate(position, oldDocument, document);
         }
+        return oldDocument;
     }
 
-    protected abstract void handleUpdate(Document document);
+    private P getSinglePosition(Document document) {
+        if (indexes.isEmpty()) {
+            return findDocumentPosition(document);
+        }
+        Set<P> positions = indexes.stream()
+            .map(index -> index.getPosition(document))
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        return CollectionUtils.getSingleElement(positions);
+    }
+
+    protected abstract void handleUpdate(P position, Document oldDocument, Document newDocument);
 
     private void cloneInto(Document targetDocument, Document sourceDocument) {
         for (String key : sourceDocument.keySet()) {
@@ -584,13 +635,13 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
     }
 
     @Override
-    public int getNumIndexes() {
-        return indexes.size();
+    public List<Index<P>> getIndexes() {
+        return indexes;
     }
 
     @Override
     public int count(Document query, int skip, int limit) {
-        if (query.keySet().isEmpty()) {
+        if (query == null || query.keySet().isEmpty()) {
             int count = count();
             if (skip > 0) {
                 count = Math.max(0, count - skip);
@@ -614,14 +665,15 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
     @Override
     public Document getStats() {
         int dataSize = getDataSize();
+        int count = count();
 
         Document response = new Document("ns", getFullName());
-        response.put("count", Integer.valueOf(count()));
+        response.put("count", Integer.valueOf(count));
         response.put("size", Integer.valueOf(dataSize));
 
         int averageSize = 0;
-        if (count() > 0) {
-            averageSize = dataSize / count();
+        if (count > 0) {
+            averageSize = dataSize / count;
         }
         response.put("avgObjSize", Integer.valueOf(averageSize));
         response.put("storageSize", Integer.valueOf(0));
@@ -648,9 +700,7 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
                     if (index.isSparse()) {
                         continue;
                     } else {
-                    	log.warn("Found no position for " + document + " in " + index);
-                    	continue;
-                        //-throw new IllegalStateException("Found no position for " + document + " in " + index);
+                        throw new IllegalStateException("Found no position for " + document + " in " + index);
                     }
                 }
                 if (position != null) {
@@ -658,9 +708,7 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
                 }
                 position = indexPosition;
             }
-        } 
-        
-        if (position == null) {
+        } else {
             position = findDocumentPosition(document);
         }
 
@@ -695,14 +743,36 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
     }
 
     @Override
-    public void renameTo(String newDatabaseName, String newCollectionName) {
-        this.databaseName = newDatabaseName;
+    public void renameTo(MongoDatabase newDatabase, String newCollectionName) {
+        this.database = newDatabase;
         this.collectionName = newCollectionName;
     }
 
     protected abstract void removeDocument(P position);
 
-    protected abstract P findDocumentPosition(Document document);
+    protected static Iterable<Document> applySkipAndLimit(List<Document> documents, int numberToSkip, int numberToReturn) {
+        if (numberToSkip > 0) {
+            if (numberToSkip < documents.size()) {
+                documents = documents.subList(numberToSkip, documents.size());
+            } else {
+                return Collections.emptyList();
+            }
+        }
+
+        if (numberToReturn > 0 && documents.size() > numberToReturn) {
+            documents = documents.subList(0, numberToReturn);
+        }
+
+        return documents;
+    }
+
+    protected P findDocumentPosition(Document document) {
+        return streamAllDocumentsWithPosition()
+            .filter(match -> documentMatchesQuery(match.getDocument(), document))
+            .map(DocumentWithPosition::getPosition)
+            .findFirst()
+            .orElse(null);
+    }
 
     protected abstract Stream<DocumentWithPosition<P>> streamAllDocumentsWithPosition();
 

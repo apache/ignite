@@ -1,6 +1,9 @@
 package de.bwaldvogel.mongo;
 
 import java.util.List;
+import java.util.Spliterator;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import de.bwaldvogel.mongo.backend.ArrayFilters;
 import de.bwaldvogel.mongo.backend.Index;
@@ -9,17 +12,21 @@ import de.bwaldvogel.mongo.bson.Document;
 
 public interface MongoCollection<P> {
 
-    String getDatabaseName();
+    MongoDatabase getDatabase();
 
-    String getFullName();
+    default String getDatabaseName() {
+        return getDatabase().getDatabaseName();
+    }
+
+    default String getFullName() {
+        return getDatabaseName() + "." + getCollectionName();
+    }
 
     String getCollectionName();
-    
-    boolean checkIndex(List<IndexKey> index);
-    
-    boolean dropIndex(List<IndexKey> index);
 
     void addIndex(Index<P> index);
+
+    void dropIndex(String indexName);
 
     void addDocument(Document document);
 
@@ -29,8 +36,18 @@ public interface MongoCollection<P> {
         return handleQuery(new Document());
     }
 
+    default Stream<Document> queryAllAsStream() {
+        Spliterator<Document> documents = queryAll().spliterator();
+        return StreamSupport.stream(documents, false);
+    }
+
     default Iterable<Document> handleQuery(Document query) {
         return handleQuery(query, 0, 0);
+    }
+
+    default Stream<Document> handleQueryAsStream(Document query) {
+        Spliterator<Document> documents = handleQuery(query).spliterator();
+        return StreamSupport.stream(documents, false);
     }
 
     default Iterable<Document> handleQuery(Document query, int numberToSkip, int numberToReturn) {
@@ -39,7 +56,11 @@ public interface MongoCollection<P> {
 
     Iterable<Document> handleQuery(Document query, int numberToSkip, int numberToReturn, Document returnFieldSelector);
 
-    void insertDocuments(List<Document> documents);
+    default void insertDocuments(List<Document> documents) {
+        for (Document document : documents) {
+            addDocument(document);
+        }
+    }
 
     Document updateDocuments(Document selector, Document update, ArrayFilters arrayFilters,
                              boolean isMulti, boolean isUpsert);
@@ -56,10 +77,19 @@ public interface MongoCollection<P> {
 
     int count(Document query, int skip, int limit);
 
+    default boolean isEmpty() {
+        return count() == 0;
+    }
+
     int count();
 
-    int getNumIndexes();
+    default int getNumIndexes() {
+        return getIndexes().size();
+    }
 
-    void renameTo(String newDatabaseName, String newCollectionName);
+    List<Index<P>> getIndexes();
 
+    void renameTo(MongoDatabase newDatabase, String newCollectionName);
+
+    void drop();
 }

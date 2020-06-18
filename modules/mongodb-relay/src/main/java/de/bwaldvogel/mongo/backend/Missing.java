@@ -22,6 +22,10 @@ public class Missing implements Bson {
         return value;
     }
 
+    public static boolean isNeitherNullNorMissing(Object value) {
+        return !isNullOrMissing(value);
+    }
+
     public static boolean isNullOrMissing(Object value) {
         return (value == null || value instanceof Missing);
     }

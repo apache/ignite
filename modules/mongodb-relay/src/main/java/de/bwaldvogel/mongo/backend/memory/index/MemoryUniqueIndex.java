@@ -13,8 +13,8 @@ public class MemoryUniqueIndex extends AbstractUniqueIndex<Integer> {
 
     private final Map<KeyValue, Integer> index = new ConcurrentHashMap<>();
 
-    public MemoryUniqueIndex(List<IndexKey> keys, boolean sparse) {
-        super(keys, sparse);
+    public MemoryUniqueIndex(String name, List<IndexKey> keys, boolean sparse) {
+        super(name, keys, sparse);
     }
 
     @Override

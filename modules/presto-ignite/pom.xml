@@ -3,9 +3,6 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    
-    
-    
 
     <groupId>com.al.data</groupId>
     <artifactId>presto-ignite</artifactId>
@@ -18,66 +15,28 @@
         <prestosql.version>329</prestosql.version>
         <dep.airlift.version>0.191</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
-        <dep.jackson.version>2.9.8</dep.jackson.version>    
+        <jackson.version>2.9.8</jackson.version>    
     </properties>
 
-    <dependencies>       
+    <dependencies> 
         
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>bootstrap</artifactId>
-            <version>${dep.airlift.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>json</artifactId>
-            <version>${dep.airlift.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>log</artifactId>
-            <version>${dep.airlift.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>configuration</artifactId>
-            <version>${dep.airlift.version}</version>
-        </dependency>
  		<dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${dep.jackson.version}</version>
+            <version>${jackson.version}</version>
         </dependency>
 
-        <!-- Presto SPI -->        
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>units</artifactId>
-            <version>1.5</version>
-        </dependency>
+        <!-- Presto SPI -->    
+        
+      
+      
+        
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${dep.jackson.version}</version>
+            <version>${jackson.version}</version>
            
-        </dependency>
-
-
-        <dependency>
-            <groupId>javax.validation</groupId>
-            <artifactId>validation-api</artifactId>
-            <version>1.1.0.Final</version>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.inject</groupId>
-            <artifactId>javax.inject</artifactId>
-            <version>1</version>
         </dependency>
 
      
@@ -120,11 +79,6 @@
         </dependency>
     
 
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${dep.jackson.version}</version>
-        </dependency>
 
        
  		<!-- for testing -->

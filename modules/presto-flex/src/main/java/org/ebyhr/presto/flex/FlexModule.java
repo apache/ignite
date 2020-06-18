@@ -18,16 +18,17 @@ import com.fasterxml.jackson.databind.deser.std.FromStringDeserializer;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeManager;
 import com.facebook.presto.spi.type.TypeSignature;
 
 import javax.inject.Inject;
 
-import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.json.JsonBinder.jsonBinder;
-import static io.airlift.json.JsonCodec.listJsonCodec;
-import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
+import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
+import static com.facebook.airlift.json.JsonBinder.jsonBinder;
+import static com.facebook.airlift.json.JsonCodec.listJsonCodec;
+import static com.facebook.airlift.json.JsonCodecBinder.jsonCodecBinder;
 import static java.util.Objects.requireNonNull;
 
 public class FlexModule
@@ -51,6 +52,7 @@ public class FlexModule
         binder.bind(FlexConnectorId.class).toInstance(new FlexConnectorId(connectorId));
         binder.bind(FlexMetadata.class).in(Scopes.SINGLETON);
         binder.bind(FlexClient.class).in(Scopes.SINGLETON);
+        binder.bind(FlexSchemaClient.class).in(Scopes.SINGLETON);
         binder.bind(FlexSplitManager.class).in(Scopes.SINGLETON);
         binder.bind(FlexRecordSetProvider.class).in(Scopes.SINGLETON);
         configBinder(binder).bindConfig(FlexConfig.class);

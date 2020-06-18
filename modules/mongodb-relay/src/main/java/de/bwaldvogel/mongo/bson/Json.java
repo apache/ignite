@@ -51,9 +51,13 @@ public final class Json {
             ObjectId objectId = (ObjectId) value;
             return objectId.getHexData();
         }
+        if (value instanceof LegacyUUID) {
+            UUID uuid = ((LegacyUUID) value).getUuid();
+            return "BinData(3, " + toHex(uuid) + ")";
+        }
         if (value instanceof UUID) {
             UUID uuid = (UUID) value;
-            return "BinData(3, " + toHex(uuid) + ")";
+            return "UUID(\"" + uuid + "\")";
         }
         return toJsonValue(value.toString());
     }

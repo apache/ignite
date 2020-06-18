@@ -59,7 +59,7 @@ public abstract class AbstractSecurityPluginProvider implements PluginProvider {
 	
     /** {@inheritDoc} */
     @Override public String name() {
-        return "MongoSecurityProcessorProvider";
+        return "AbstractSecurityPluginProvider";
     }
 
     /** {@inheritDoc} */

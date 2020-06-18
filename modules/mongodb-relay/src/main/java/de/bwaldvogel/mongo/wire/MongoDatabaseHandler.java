@@ -20,7 +20,6 @@ import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.exception.MongoServerError;
 import de.bwaldvogel.mongo.exception.MongoServerException;
-import de.bwaldvogel.mongo.exception.MongoSilentServerException;
 import de.bwaldvogel.mongo.exception.NoSuchCommandException;
 import de.bwaldvogel.mongo.wire.message.ClientRequest;
 import de.bwaldvogel.mongo.wire.message.MessageHeader;
@@ -67,7 +66,8 @@ public class MongoDatabaseHandler extends SimpleChannelInboundHandler<ClientRequ
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ClientRequest object) throws Exception {
         if (object instanceof MongoQuery) {
-            ctx.channel().writeAndFlush(handleQuery((MongoQuery) object));
+            MongoQuery mongoQuery = (MongoQuery) object;
+            ctx.channel().writeAndFlush(handleQuery(mongoQuery));
         } else if (object instanceof MongoInsert) {
             MongoInsert insert = (MongoInsert) object;
             mongoBackend.handleInsert(insert);
@@ -98,10 +98,10 @@ public class MongoDatabaseHandler extends SimpleChannelInboundHandler<ClientRequ
             log.error("unknown command: {}", query, e);
             Map<String, ?> additionalInfo = Collections.singletonMap("bad cmd", query.getQuery());
             return queryFailure(header, e, additionalInfo);
-        } catch (MongoSilentServerException e) {
-            return queryFailure(header, e);
         } catch (MongoServerException e) {
-            log.error("failed to handle query {}", query, e);
+            if (e.isLogError()) {
+                log.error("failed to handle query {}", query, e);
+            }
             return queryFailure(header, e);
         }
     }

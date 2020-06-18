@@ -19,6 +19,16 @@ public class ObjectId implements Bson, Comparable<ObjectId> {
         random.nextBytes(data);
     }
 
+    public ObjectId(String hexString) {
+        int len = hexString.length();
+        Assert.equals(hexString.length(), data.length * 2L);
+        for (int i = 0; i < len; i += 2) {
+            int first = Character.digit(hexString.charAt(i), 16) << 4;
+            int second = Character.digit(hexString.charAt(i + 1), 16);
+            data[i / 2] = (byte) (first + second);
+        }
+    }
+
     public ObjectId(byte[] data) {
         Assert.equals(data.length, LENGTH_OBJECTID, () -> "Length must be " + LENGTH_OBJECTID + " but was " + data.length);
         System.arraycopy(data, 0, this.data, 0, this.data.length);
@@ -74,4 +84,5 @@ public class ObjectId implements Bson, Comparable<ObjectId> {
         }
         return sb.toString();
     }
+
 }

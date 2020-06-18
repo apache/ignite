@@ -16,21 +16,33 @@ package org.ebyhr.presto.flex;
 import org.ebyhr.presto.flex.operator.FilePlugin;
 import org.ebyhr.presto.flex.operator.PluginFactory;
 
+
+import com.google.common.base.Supplier;
+import com.google.common.collect.Lists;
+
 import javax.inject.Inject;
+
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
-public class FlexClient
+import java.net.URI;
+import java.net.URISyntaxException;
+
+public class FlexClient  
 {
+
     @Inject
     public FlexClient(FlexConfig config)
     {
         requireNonNull(config, "config is null");
+       
     }
 
     public List<String> getSchemaNames()
@@ -53,6 +65,14 @@ public class FlexClient
 
         FilePlugin plugin = PluginFactory.create(schema);
         List<FlexColumn> columns = plugin.getFields(schema, tableName);
-        return new FlexTable(tableName, columns);
+        URI uri = null;
+		try {
+			uri = new URI("file:"+tableName);
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        
+        return new FlexTable(tableName, columns,Arrays.asList(uri));
     }
 }

@@ -16,4 +16,5 @@ public class LimitStage implements AggregationStage {
     public Stream<Document> apply(Stream<Document> stream) {
         return stream.limit(maxSize);
     }
+
 }

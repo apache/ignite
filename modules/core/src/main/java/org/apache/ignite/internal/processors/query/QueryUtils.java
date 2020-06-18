@@ -1560,8 +1560,8 @@ public class QueryUtils {
             return true;
 
         String regex = SqlListenerUtils.translateSqlWildcardsToRegex(sqlPtrn);
-
-        return str.matches(regex);
+        //modify@byron ignore case
+        return str.matches("(?i)"+regex);
     }
 
     /**

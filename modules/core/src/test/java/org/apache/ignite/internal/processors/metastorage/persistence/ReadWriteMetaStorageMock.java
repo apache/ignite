@@ -80,7 +80,7 @@ class ReadWriteMetaStorageMock implements ReadWriteMetastorage {
             String key = entry.getKey();
 
             if (key.startsWith(keyPrefix))
-                cb.accept(key, unmarshal ? read(key) : entry.getValue());
+                cb.accept(key, unmarshal ? read(key) : (Serializable)entry.getValue());
         }
     }
 

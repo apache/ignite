@@ -12,7 +12,7 @@ import com.google.inject.Scope;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 
-import static io.airlift.configuration.ConfigBinder.configBinder;
+import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
 
 
 public class IgniteClientModule implements Module {
