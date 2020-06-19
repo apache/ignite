@@ -119,26 +119,5 @@ namespace Apache.Ignite.Benchmarks
 
             throw new InvalidOperationException("Could not locate benchmark config.");
         }
-
-        /// <summary>
-        /// Gets the config path.
-        /// </summary>
-        private static string GetConfigPath()
-        {
-            var dir = new DirectoryInfo(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
-
-            while (dir != null)
-            {
-                var configPath = Path.Combine(dir.FullName, "Config", "benchmark.xml");
-                if (File.Exists(configPath))
-                {
-                    return configPath;
-                }
-                
-                dir = dir.Parent;
-            }
-
-            throw new InvalidOperationException("Could not locate benchmark config.");
-        }
     }
 }

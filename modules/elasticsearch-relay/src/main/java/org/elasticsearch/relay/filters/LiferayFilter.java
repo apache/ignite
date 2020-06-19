@@ -3,11 +3,14 @@ package org.elasticsearch.relay.filters;
 import java.util.List;
 import java.util.Set;
 
+import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.permissions.UserPermSet;
 import org.elasticsearch.relay.util.ESConstants;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 
 /**
  * Liferay filter filtering its unspecific entries by their owners' Liferay user
@@ -33,7 +36,7 @@ public class LiferayFilter implements IFilter {
 
 	@Override
 	public ESQuery addFilter(UserPermSet perms, ESQuery query, List<String> indices, List<String> types) {
-		JSONArray filters = query.getAuthFilterOrArr();
+		ArrayNode filters = query.getAuthFilterOrArr();
 
 		String userId = perms.getLiferayId();
 		List<String> roleIds = perms.getLiferayRoles();
@@ -42,8 +45,8 @@ public class LiferayFilter implements IFilter {
 
 		try {
 			// enable creating user to find entry
-			JSONObject userFilter = new JSONObject();
-			JSONObject termObject = new JSONObject();
+			ObjectNode userFilter = new ObjectNode(ESRelay.jsonNodeFactory);
+			ObjectNode termObject = new ObjectNode(ESRelay.jsonNodeFactory);
 
 			termObject.put(LR_USER_ID, userId);
 
@@ -53,8 +56,8 @@ public class LiferayFilter implements IFilter {
 
 			// enable users with specific roles to find document
 			for (String roleId : roleIds) {
-				JSONObject roleFilter = new JSONObject();
-				termObject = new JSONObject();
+				ObjectNode roleFilter = new ObjectNode(ESRelay.jsonNodeFactory);
+				termObject = new ObjectNode(ESRelay.jsonNodeFactory);
 
 				termObject.put(LR_ROLE_ID, roleId);
 
@@ -65,8 +68,8 @@ public class LiferayFilter implements IFilter {
 
 			// enable users with generic roles to find document
 			for (String roleId : fPassRoles) {
-				JSONObject roleFilter = new JSONObject();
-				termObject = new JSONObject();
+				ObjectNode roleFilter = new ObjectNode(ESRelay.jsonNodeFactory);
+				termObject = new ObjectNode(ESRelay.jsonNodeFactory);
 
 				termObject.put(LR_ROLE_ID, roleId);
 

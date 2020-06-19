@@ -3,7 +3,6 @@ package org.elasticsearch.relay.postprocess;
 import java.util.Set;
 
 import org.elasticsearch.relay.util.ESConstants;
-import com.alibaba.fastjson.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
@@ -11,6 +10,8 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * 处理HTML文档，格式化html，只获取body部分
@@ -40,11 +41,11 @@ public class HtmlPostProcessor implements IPostProcessor {
 
 
 	@Override
-	public JSONObject process(JSONObject result) throws Exception {
-		JSONObject source = result.getJSONObject(ESConstants.R_HIT_SOURCE);
+	public ObjectNode process(ObjectNode result) throws Exception {
+		ObjectNode source = result.with(ESConstants.R_HIT_SOURCE);
 
-		if (source!=null && source.containsKey(BODY_FIELD)) {
-			String content = getProcessed(source.getString(BODY_FIELD));
+		if (source!=null && source.has(BODY_FIELD)) {
+			String content = getProcessed(source.get(BODY_FIELD).asText());
 			source.remove(BODY_FIELD);
 			source.put(BODY_FIELD, content);
 		}

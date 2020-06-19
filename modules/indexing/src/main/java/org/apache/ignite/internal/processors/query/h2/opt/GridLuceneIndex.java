@@ -282,7 +282,7 @@ public class GridLuceneIndex implements AutoCloseable {
         Document doc = new Document();
 
         boolean stringsFound = false;
-                
+        
         if (type.valueTextIndex() || type.valueClass() == String.class) {
         	if(config.isStoreValue()){
         		doc.add(new TextField(VAL_STR_FIELD_NAME, val.toString(), Field.Store.YES));
@@ -364,7 +364,7 @@ public class GridLuceneIndex implements AutoCloseable {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(TextQuery qry, IndexingQueryFilter filters) throws IgniteCheckedException {
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(TextQuery<K, V> qry, IndexingQueryFilter filters) throws IgniteCheckedException {
         try {
         	indexAccess.flush();
         }

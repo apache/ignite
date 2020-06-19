@@ -4,8 +4,11 @@ import java.util.Set;
 
 import org.elasticsearch.relay.permissions.PermissionCrawler;
 import org.elasticsearch.relay.util.ESConstants;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 
 /**
  * Mail result post processor adding user IDs to the entries "to" and "from",
@@ -16,9 +19,6 @@ public class MailPostProcessor implements IPostProcessor {
 	private final String TO = "to";
 	private final String EMAIL = "email";
 	private final String ID = "uid";
-
-	
-	
 	
 	private Set<String>  typeSet= null;
 	
@@ -31,13 +31,13 @@ public class MailPostProcessor implements IPostProcessor {
 	}	
 
 	@Override
-	public JSONObject process(JSONObject result) throws Exception {
-		JSONObject source = result.getJSONObject(ESConstants.R_HIT_SOURCE);
+	public ObjectNode process(ObjectNode result) throws Exception {
+		ObjectNode source = result.with(ESConstants.R_HIT_SOURCE);
 
 		// retrieve sender Id
-		JSONObject fromObj = source.getJSONObject(FROM);
+		ObjectNode fromObj = source.with(FROM);
 		if (fromObj != null) {
-			String mail = fromObj.getString(EMAIL);
+			String mail = fromObj.get(EMAIL).asText();
 			String user = PermissionCrawler.getInstance().getUserByMail(mail);
 
 			if (user != null) {
@@ -46,12 +46,12 @@ public class MailPostProcessor implements IPostProcessor {
 		}
 
 		// retrieve recipient IDs
-		JSONArray toArray = source.getJSONArray(TO);
+		ArrayNode toArray = source.withArray(TO);
 		if (toArray != null) {
 			for (int i = 0; i < toArray.size(); ++i) {
-				JSONObject recipient = toArray.getJSONObject(i);
+				ObjectNode recipient = (ObjectNode)toArray.get(i);
 
-				String mail = recipient.getString(EMAIL);
+				String mail = recipient.get(EMAIL).asText();
 				String user = PermissionCrawler.getInstance().getUserByMail(mail);
 
 				if (user != null) {

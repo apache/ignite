@@ -3,11 +3,14 @@ package org.elasticsearch.relay.filters;
 import java.util.List;
 import java.util.Set;
 
+import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.permissions.UserPermSet;
 import org.elasticsearch.relay.util.ESConstants;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 
 /**
  * Nuxeo filter allowing objects' creators and people and groups who were given
@@ -32,12 +35,12 @@ public class NuxeoFilter implements IFilter {
 		String user = perms.getUserName();
 
 		try {
-			JSONArray filters = query.getAuthFilterOrArr();
+			ArrayNode filters = query.getAuthFilterOrArr();
 
 			// enable creator to find documents
-			JSONObject creatorFilter = new JSONObject();
+			ObjectNode creatorFilter = new ObjectNode(ESRelay.jsonNodeFactory);
 
-			JSONObject termObj = new JSONObject();
+			ObjectNode termObj = new ObjectNode(ESRelay.jsonNodeFactory);
 			termObj.put(NX_CREATOR, user);
 
 			// TODO: what if permissions are taken away from a user
@@ -47,9 +50,9 @@ public class NuxeoFilter implements IFilter {
 			filters.add(creatorFilter);
 
 			// filter by additional ACL rules
-			JSONObject aclFilter = new JSONObject();
+			ObjectNode aclFilter = new ObjectNode(ESRelay.jsonNodeFactory);
 
-			termObj = new JSONObject();
+			termObj = new ObjectNode(ESRelay.jsonNodeFactory);
 			termObj.put(NX_ACL, user);
 
 			aclFilter.put(ESConstants.Q_TERM, termObj);
@@ -58,9 +61,9 @@ public class NuxeoFilter implements IFilter {
 
 			// TODO: evaluate roles via ecm:acl
 			for (String group : perms.getNuxeoGroups()) {
-				aclFilter = new JSONObject();
+				aclFilter = new ObjectNode(ESRelay.jsonNodeFactory);
 
-				termObj = new JSONObject();
+				termObj = new ObjectNode(ESRelay.jsonNodeFactory);
 				termObj.put(NX_ACL, group);
 
 				aclFilter.put(ESConstants.Q_TERM, termObj);

@@ -8,9 +8,13 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.util.HttpUtil;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 
 /**
  * Main permission crawler triggering all other crawlers regularly and
@@ -165,21 +169,22 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 		// retrieve list of users from configured source (shindig)
 		String response = HttpUtil.getText(fShindigUrl);
 
-		JSONObject resObj = JSONObject.parseObject(response);
-		JSONArray list = resObj.getJSONArray(SHIND_LIST_FIELD);
+		ObjectNode resObj = (ObjectNode)ESRelay.objectMapper.readTree(response);
+		
+		ArrayNode list = resObj.withArray(SHIND_LIST_FIELD);
 		if (list != null) {
-			JSONObject entry = null;
+			JsonNode entry = null;
 			for (int i = 0; i < list.size(); ++i) {
-				entry = list.getJSONObject(i);
+				entry = list.get(i);
 
 				// register user
-				String userId = entry.getString(SHIND_ID_FIELD);
+				String userId = entry.get(SHIND_ID_FIELD).asText();
 				fUsers.add(userId);
 
 				// register all mail addresses
-				JSONArray mailAdds = entry.getJSONArray(SHIND_EMAILS_FIELD);
+				ArrayNode mailAdds = entry.withArray(SHIND_EMAILS_FIELD);
 				for (int j = 0; j < mailAdds.size(); ++j) {
-					String mail = mailAdds.getJSONObject(j).getString(SHIND_VALUE_FIELD);
+					String mail = mailAdds.get(j).get(SHIND_VALUE_FIELD).asText();
 					tempMails.put(mail, userId);
 				}
 			}

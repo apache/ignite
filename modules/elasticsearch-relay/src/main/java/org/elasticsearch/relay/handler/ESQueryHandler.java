@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,8 +41,11 @@ import org.elasticsearch.relay.util.HttpUtil;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+
 
 /**
  * Central query handler splitting up queries between multiple ES instances,
@@ -291,7 +295,7 @@ public class ESQueryHandler {
 	protected ESQuery getInstanceQuery(ESQuery query, Set<String> availIndices) throws Exception {
 		ESQuery esQuery = new ESQuery();
 
-		JSONObject request = query.getQuery();
+		ObjectNode request = query.getQuery();
 		String[] path = query.getQueryPath();
 		List<String> indices = getIndexNames(path);
 
@@ -322,7 +326,7 @@ public class ESQueryHandler {
 
 		// TODO: safely duplicate query body
 		if (query.getQuery() != null) {
-			//JSONObject newQueryObj = new JSONObject(query.getQuery().toString());
+			//ObjectNode newQueryObj = new ObjectNode(query.getQuery().toString());
 			esQuery.setQuery(query.getQuery());
 		}
 
@@ -384,7 +388,7 @@ public class ESQueryHandler {
 	protected ESUpdate getInstanceUpdate(ESUpdate query, Set<String> availIndices) throws Exception {
 		ESUpdate esQuery = new ESUpdate();
 
-		JSONObject request = query.getQuery();
+		ObjectNode request = query.getQuery();
 		String[] path = query.getQueryPath();
 		List<String> indices = getIndexNames(path);
 
@@ -542,29 +546,29 @@ public class ESQueryHandler {
 
 		// TODO: recognize non-result responses and only use valid responses?
 		if (es1Response != null) {
-			JSONObject es1Json = JSONObject.parseObject(es1Response);
+			ObjectNode es1Json = (ObjectNode)ESRelay.objectMapper.readTree(es1Response);
 
-			if (!es1Json.containsKey(ESConstants.R_ERROR)) {
+			if (!es1Json.has(ESConstants.R_ERROR)) {
 				es1Resp = new ESResponse(es1Json);
 			} else {
 				throw new Exception("ES 1.x error: " + es1Response);
 			}
 		}
 		if (es2Response != null) {
-			JSONObject es2Json = JSONObject.parseObject(es2Response);
+			ObjectNode es2Json = (ObjectNode)ESRelay.objectMapper.readTree(es2Response);
 
-			if (!es2Json.containsKey(ESConstants.R_ERROR)) {
+			if (!es2Json.has(ESConstants.R_ERROR)) {
 				es2Resp = new ESResponse(es2Json);
 			} else {
 				throw new Exception("ES 2.x error: " + es2Response);
 			}
 		}
 
-		List<JSONObject> hits = new LinkedList<JSONObject>();
+		List<ObjectNode> hits = new LinkedList<ObjectNode>();
 
 		// mix results 50:50 as far as possible
-		Iterator<JSONObject> es1Hits = es1Resp.getHits().iterator();
-		Iterator<JSONObject> es2Hits = es2Resp.getHits().iterator();
+		Iterator<ObjectNode> es1Hits = es1Resp.getHits().iterator();
+		Iterator<ObjectNode> es2Hits = es2Resp.getHits().iterator();
 
 		
 		while ((es1Hits.hasNext() || es2Hits.hasNext()) && hits.size() < limit) {
@@ -581,12 +585,12 @@ public class ESQueryHandler {
 		mergedResponse.setShards(es1Resp.getShards() + es2Resp.getShards());
 		mergedResponse.setTotalHits(es1Resp.getTotalHits() + es2Resp.getTotalHits());
 
-		return mergedResponse.toJSON().toJSONString();
+		return mergedResponse.toJSON().toPrettyString();
 	}
 
-	protected void addHit(List<JSONObject> hits, JSONObject hit) throws Exception {
+	protected void addHit(List<ObjectNode> hits, ObjectNode hit) throws Exception {
 		// retrieve type and handle postprocessing
-		String type = hit.getString(ESConstants.R_HIT_TYPE);
+		String type = hit.get(ESConstants.R_HIT_TYPE).asText();
 
 		List<IPostProcessor> pp = fPostProcs.get(type);
 		if (pp != null) {
@@ -604,27 +608,27 @@ public class ESQueryHandler {
 	}
 
 	protected ESQuery removeNestedFilters(ESQuery query) throws Exception {
-		JSONArray andArray = ESUtil.getOrCreateFilterArray(query);
+		ArrayNode andArray = ESUtil.getOrCreateFilterArray(query);
 
 		// json library has no remove function - reconstruct
-		JSONArray newArray = new JSONArray();
+		ArrayNode newArray = new ArrayNode(ESRelay.jsonNodeFactory);
 
 		// filter out statements that ES 2 can't handle
 		for (int i = 0; i < andArray.size(); ++i) {
 			boolean keep = true;
-			JSONObject filter = andArray.getJSONObject(i);
+			ObjectNode filter = (ObjectNode)andArray.get(i);
 
 			// case 1: nested filter added directly
-			if (filter.containsKey(ESConstants.Q_NESTED_FILTER)) {
+			if (filter.has(ESConstants.Q_NESTED_FILTER)) {
 				keep = false;
 			}
 			// case 2: nested filter in Nuxeo type or array
-			else if (keep && filter.containsKey(ESConstants.Q_OR)) {
-				JSONArray orArr = filter.getJSONArray(ESConstants.Q_OR);
+			else if (keep && filter.has(ESConstants.Q_OR)) {
+				ArrayNode orArr = filter.withArray(ESConstants.Q_OR);
 				for (int j = 0; j < orArr.size(); ++j) {
-					JSONObject orOjb = orArr.getJSONObject(j);
+					JsonNode orOjb = orArr.get(j);
 
-					if (orOjb.containsKey(ESConstants.Q_NESTED_FILTER)) {
+					if (orOjb.has(ESConstants.Q_NESTED_FILTER)) {
 						keep = false;
 						break;
 					}
@@ -644,7 +648,7 @@ public class ESQueryHandler {
 	}
 
 	protected ESQuery handleFiltering(String user, ESQuery query, IFilter blacklist) throws Exception {
-		JSONObject request = query.getQuery();
+		ObjectNode request = query.getQuery();
 		String[] path = query.getQueryPath();
 
 		List<String> indices = getIndexNames(path);
@@ -708,11 +712,11 @@ public class ESQueryHandler {
 		}
 
 		// integrate "or" filter array into body if filled
-		JSONArray authFilters = query.getAuthFilterOrArr();
+		ArrayNode authFilters = query.getAuthFilterOrArr();
 		if (authFilters.size() > 0) {
-			JSONArray filters = ESUtil.getOrCreateFilterArray(query);
+			ArrayNode filters = ESUtil.getOrCreateFilterArray(query);
 
-			JSONObject authOr = new JSONObject();
+			ObjectNode authOr = new ObjectNode(ESRelay.jsonNodeFactory);
 			authOr.put(ESConstants.Q_OR, authFilters);
 
 			filters.add(authOr);
@@ -775,9 +779,9 @@ public class ESQueryHandler {
 			limit = Integer.parseInt(limitParam);
 		}
 
-		JSONObject queryObj = query.getQuery();
-		if (queryObj != null) {
-			String requestLimit = queryObj.getString(ESConstants.MAX_ELEM_PARAM);
+		ObjectNode queryObj = query.getQuery();
+		if (queryObj != null && queryObj.has(ESConstants.MAX_ELEM_PARAM)) {
+			String requestLimit = queryObj.get(ESConstants.MAX_ELEM_PARAM).asText();
 			if (requestLimit != null && !requestLimit.isEmpty()) {
 				try {
 					int reqLim = Integer.parseInt(requestLimit);
@@ -805,14 +809,15 @@ public class ESQueryHandler {
 	 * @param $map URL parameters.
 	 * @return void
 	 */
-	protected String makeUrlParams(JSONObject query) {
+	protected String makeUrlParams(ObjectNode query) {
 	    StringBuilder $urlParams = new StringBuilder();
-	    Iterator it = query.keySet().iterator();
+	    Iterator<Entry<String, JsonNode>> it = query.fields();
 	    while(it.hasNext()){
-	    	String $key =  it.next().toString();
+	    	Entry<String, JsonNode> entry = it.next();
+	    	String $key =  entry.getKey();
 	    	String $value;
 			try {
-				$value = query.get($key).toString();
+				$value = entry.getValue().toString();
 				
 				$urlParams.append('&').append($key).append("=").append(URLEncoder.encode($value,"utf-8"));
 				

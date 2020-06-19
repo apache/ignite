@@ -4,8 +4,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import org.elasticsearch.relay.ESRelay;
+
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 
 /**
  * Elasticsearch index, disassembled into path, parameters and body. Also
@@ -24,9 +27,9 @@ public class ESUpdate {
 
 	private Map<String, String> fParams;
 
-	private JSONObject fBody;
+	private ObjectNode fBody;
 
-	private JSONArray fAuthFilterOrArr;
+	private ArrayNode fAuthFilterOrArr;
 
 	private boolean fCancelled = false;
 
@@ -42,7 +45,7 @@ public class ESUpdate {
 	 *            query path
 	 */
 	public ESUpdate(String[] path) {
-		this(path, (JSONObject) null);
+		this(path, (ObjectNode) null);
 	}
 
 	/**
@@ -51,7 +54,7 @@ public class ESUpdate {
 	 * @param body
 	 *            query body
 	 */
-	public ESUpdate(String[] path, JSONObject body) {
+	public ESUpdate(String[] path, ObjectNode body) {
 		this(path, null, body);
 	}
 
@@ -73,12 +76,12 @@ public class ESUpdate {
 	 * @param body
 	 *            query body
 	 */
-	public ESUpdate(String[] path, Map<String, String> params, JSONObject body) {
+	public ESUpdate(String[] path, Map<String, String> params, ObjectNode body) {
 		fPath = path;
 		fParams = params;
 		fBody = body;
 
-		fAuthFilterOrArr = new JSONArray();
+		fAuthFilterOrArr = new ArrayNode(ESRelay.jsonNodeFactory);
 	}
 
 	public String[] getQueryPath() {
@@ -97,15 +100,15 @@ public class ESUpdate {
 		fParams = params;
 	}
 
-	public JSONObject getQuery() {
+	public ObjectNode getQuery() {
 		return fBody;
 	}
 
-	public void setQuery(JSONObject query) {
+	public void setQuery(ObjectNode query) {
 		fBody = query;
 	}
 
-	public JSONArray getAuthFilterOrArr() {
+	public ArrayNode getAuthFilterOrArr() {
 		return fAuthFilterOrArr;
 	}
 

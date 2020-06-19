@@ -3,12 +3,15 @@ package org.elasticsearch.relay.filters;
 import java.util.List;
 import java.util.Set;
 
+import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.permissions.UserPermSet;
 import org.elasticsearch.relay.util.ESConstants;
 import org.elasticsearch.relay.util.ESUtil;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 
 /**
  * Filter excluding indices and types from the query result. Adjusts query body
@@ -103,12 +106,12 @@ public class BlacklistFilter implements IFilter {
 
 	private void filterTypes(ESQuery query) throws Exception {
 		// block problematic types through exclusion
-		JSONArray filters = ESUtil.getOrCreateFilterArray(query);
+		ArrayNode filters = ESUtil.getOrCreateFilterArray(query);
 
 		for (String type : fTypes) {
-			JSONObject notObject = new JSONObject();
-			JSONObject typeFilter = new JSONObject();
-			JSONObject valueObject = new JSONObject();
+			ObjectNode notObject = new ObjectNode(ESRelay.jsonNodeFactory);
+			ObjectNode typeFilter = new ObjectNode(ESRelay.jsonNodeFactory);
+			ObjectNode valueObject = new ObjectNode(ESRelay.jsonNodeFactory);
 
 			valueObject.put(TYPE_VALUE, type);
 

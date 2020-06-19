@@ -5,7 +5,9 @@ import java.util.logging.Logger;
 
 import org.elasticsearch.relay.util.ESConstants;
 import org.elasticsearch.relay.util.SensitivewordFilter;
-import com.alibaba.fastjson.JSONObject;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 
 /** 过滤敏感词
  *  如果是标题，过滤回车符，截断过长的标题
@@ -62,26 +64,26 @@ public class ContentPostProcessor implements IPostProcessor {
 	}
 
 	@Override
-	public JSONObject process(JSONObject result) throws Exception {
-		JSONObject source = result.getJSONObject(ESConstants.R_HIT_SOURCE);
+	public ObjectNode process(ObjectNode result) throws Exception {
+		ObjectNode source = result.with(ESConstants.R_HIT_SOURCE);
 
-		if (source.containsKey(CONTENT_FIELD)) {
+		if (source.has(CONTENT_FIELD)) {
 			shorten(CONTENT_FIELD, source);
 		}
 
-		if (source.containsKey(TITLE_FIELD)) {
+		if (source.has(TITLE_FIELD)) {
 			shorten(TITLE_FIELD, source);
 		}
 
 		return result;
 	}
 
-	private void sensitive_words(String field, JSONObject source) {
+	private void sensitive_words(String field, ObjectNode source) {
 		try {
 			if(sensitivewordFilter==null) {
 				sensitivewordFilter = new SensitivewordFilter(sensitiveWordFile);
 			}
-			String value = source.getString(field);
+			String value = source.get(field).asText();
 			source.remove(field);
 
 			Set<String> sens = sensitivewordFilter.getSensitiveWord(value, 1);
@@ -99,9 +101,9 @@ public class ContentPostProcessor implements IPostProcessor {
 		}
 	}
 	
-	private void shorten(String field, JSONObject source) {
+	private void shorten(String field, ObjectNode source) {
 		try {
-			String value = source.getString(field);
+			String value = source.get(field).asText();
 			source.remove(field);
 
 			// only shorten if String is too long

@@ -28,8 +28,7 @@ import org.elasticsearch.relay.model.ESUpdate;
 import org.elasticsearch.relay.postprocess.IPostProcessor;
 import org.elasticsearch.relay.util.ESConstants;
 import org.elasticsearch.relay.util.HttpUtil;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+
 
 /**
  * Central query handler splitting up queries between multiple ES instances,

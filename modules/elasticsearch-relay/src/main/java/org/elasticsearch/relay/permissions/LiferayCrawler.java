@@ -5,8 +5,12 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.util.HttpUtil;
-import com.alibaba.fastjson.JSONArray;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Liferay crawler retrieving users' Liferay IDs and Liferay Role IDs using
@@ -77,10 +81,10 @@ public class LiferayCrawler implements IPermCrawler {
 
 			// get Liferay Roles
 			response = HttpUtil.getAuthenticatedText(new URL(fLrUrl + USER_ROLES_FRAG + userId), fUser, fPassword);
-
-			JSONArray rolesArray = JSONArray.parseArray(response);
+			JsonNode node = ESRelay.objectMapper.readTree(response);
+			ArrayNode rolesArray = (ArrayNode)node;
 			for (int i = 0; i < rolesArray.size(); ++i) {
-				roles.add(rolesArray.getJSONObject(i).getString(LR_ROLE_ID));
+				roles.add(rolesArray.get(i).get(LR_ROLE_ID).asText());
 			}
 		} catch (Exception e) {
 			fLogger.log(Level.SEVERE, "failed to retrieve Liferay permission information.", e);

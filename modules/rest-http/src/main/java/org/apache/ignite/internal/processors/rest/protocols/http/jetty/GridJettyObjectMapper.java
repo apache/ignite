@@ -69,7 +69,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
     /**
      * @param ctx Defines a kernal context to enable deserialization into the Ignite binary object.
      */
-    GridJettyObjectMapper(GridKernalContext ctx) {
+    public GridJettyObjectMapper(GridKernalContext ctx) {
         super(null, new CustomSerializerProvider(), null);
 
         setDateFormat(DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US));

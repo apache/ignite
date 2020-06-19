@@ -3,16 +3,19 @@ package org.elasticsearch.relay.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.util.ESConstants;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 
 /**
- * List of JSONObjects representing an Elasticsearch result, with total number
+ * List of ObjectNodes representing an Elasticsearch result, with total number
  * of shards and results stored separately.
  */
 public class ESResponse {
-	private final List<JSONObject> fHits;
+	private final List<ObjectNode> fHits;
 
 	// TODO: actually note their status and not just assume a success?
 	private int fShards = 0;
@@ -20,10 +23,10 @@ public class ESResponse {
 	private int fTotalResults = 0;
 
 	public ESResponse() {
-		this(new ArrayList<JSONObject>());
+		this(new ArrayList<ObjectNode>());
 	}
 
-	public ESResponse(List<JSONObject> hits) {
+	public ESResponse(List<ObjectNode> hits) {
 		fHits = hits;
 
 		fTotalResults = hits.size();
@@ -39,32 +42,32 @@ public class ESResponse {
 	 * @throws Exception
 	 *             if disassembly fails
 	 */
-	public ESResponse(JSONObject body) throws Exception {
-		fHits = new ArrayList<JSONObject>();
+	public ESResponse(ObjectNode body) throws Exception {
+		fHits = new ArrayList<ObjectNode>();
 
 		if (body != null) {
-			JSONObject hitsObj = body.getJSONObject(ESConstants.R_HITS);
-			if (hitsObj != null && hitsObj.getJSONArray(ESConstants.R_HITS) != null) {
-				addHits(hitsObj.getJSONArray(ESConstants.R_HITS));
+			ObjectNode hitsObj = body.with(ESConstants.R_HITS);
+			if (hitsObj != null && hitsObj.withArray(ESConstants.R_HITS) != null) {
+				addHits(hitsObj.withArray(ESConstants.R_HITS));
 
-				fTotalResults = hitsObj.getInteger(ESConstants.R_HITS_TOTAL);
+				fTotalResults = hitsObj.get(ESConstants.R_HITS_TOTAL).asInt(0);
 			}
 
-			if (body.getJSONObject(ESConstants.R_SHARDS) != null) {
-				fShards = body.getJSONObject(ESConstants.R_SHARDS).getInteger(ESConstants.R_SHARDS_TOT);
+			if (body.with(ESConstants.R_SHARDS) != null) {
+				fShards = body.with(ESConstants.R_SHARDS).get(ESConstants.R_SHARDS_TOT).asInt(0);
 			}
 		}
 	}
 
-	private void addHits(JSONArray hits) throws Exception {
+	private void addHits(ArrayNode hits) throws Exception {
 		final int size = hits.size();
 
 		for (int i = 0; i < size; ++i) {
-			fHits.add(hits.getJSONObject(i));
+			fHits.add((ObjectNode)hits.get(i));
 		}
 	}
 
-	public List<JSONObject> getHits() {
+	public List<ObjectNode> getHits() {
 		return fHits;
 	}
 
@@ -89,13 +92,13 @@ public class ESResponse {
 	 * @throws Exception
 	 *             if assembly fails
 	 */
-	public JSONObject toJSON() throws Exception {
-		JSONObject result = new JSONObject();
+	public ObjectNode toJSON() throws Exception {
+		ObjectNode result = new ObjectNode(ESRelay.jsonNodeFactory);
 
 		// TODO: took and timed_out?
 
 		// shards
-		JSONObject shardsObj = new JSONObject();
+		ObjectNode shardsObj = new ObjectNode(ESRelay.jsonNodeFactory);
 
 		shardsObj.put(ESConstants.R_SHARDS_TOT, fShards);
 		shardsObj.put(ESConstants.R_SHARDS_SUC, fShards);
@@ -104,12 +107,12 @@ public class ESResponse {
 		result.put(ESConstants.R_SHARDS, shardsObj);
 
 		// hits
-		JSONObject hitsObj = new JSONObject();
+		ObjectNode hitsObj = new ObjectNode(ESRelay.jsonNodeFactory);
 		hitsObj.put(ESConstants.R_HITS_TOTAL, fTotalResults);
 
 		// actual hit entries
-		JSONArray hits = new JSONArray();
-		for (JSONObject hit : fHits) {
+		ArrayNode hits = new ArrayNode(ESRelay.jsonNodeFactory,fHits.size());
+		for (ObjectNode hit : fHits) {
 			hits.add(hit);
 		}
 		hitsObj.put(ESConstants.R_HITS, hits);

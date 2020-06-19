@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.elasticsearch.relay.handler.ESQueryClientIgniteHandler;
 import org.elasticsearch.relay.handler.ESQueryHandler;
 import org.elasticsearch.relay.handler.ESQueryKernelIgniteHandler;
@@ -26,9 +27,13 @@ import org.elasticsearch.relay.model.ESViewQuery;
 
 import org.elasticsearch.relay.util.ESConstants;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONException;
-import com.alibaba.fastjson.JSONObject;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -50,6 +55,10 @@ public class ESRelay extends HttpServlet {
 	public static ApplicationContext context = null;
 	
 	public static Map<String, ESViewQuery> allViews = null;
+	
+	public static GridJettyObjectMapper objectMapper = null;
+	
+	public static JsonNodeFactory jsonNodeFactory = new JsonNodeFactory(true);
 
 	public ESRelay() {
 		fConfig = new ESRelayConfig();
@@ -73,11 +82,13 @@ public class ESRelay extends HttpServlet {
 				if(ctx==null){
 					fHandler = new ESQueryClientIgniteHandler(fConfig);
 				}
-				else{
+				else{					
 					fHandler = new ESQueryKernelIgniteHandler(fConfig,ctx);
 				}
+				objectMapper = new GridJettyObjectMapper(ctx);
 			}
 			else{
+				objectMapper = new GridJettyObjectMapper();
 				fHandler = new ESQueryHandler(fConfig);
 			}
 			fLogger.info("init hander:" + fHandler.getClass());
@@ -192,18 +203,21 @@ public class ESRelay extends HttpServlet {
 		PrintWriter out = response.getWriter();
 		try {
 			
-			JSONObject jsonRequest = null;
+			ObjectNode jsonRequest = new ObjectNode(jsonNodeFactory);
+			
 			if (!requestBody.isEmpty()) {
 				if(path[2].equals(ESConstants.BULK_FRAGMENT)){
 					String[] batchs = requestBody.split("\\n");
-					JSONArray list = new JSONArray();
+					ArrayNode list = new ArrayNode(jsonNodeFactory);
 					for(String line: batchs){
-						list.add(JSONObject.parseObject(line));
+						list.add(objectMapper.readTree(line));
 					}
-					jsonRequest = new JSONObject();
-					jsonRequest.put(ESConstants.BULK_FRAGMENT, list);
+					
+					jsonRequest.set(ESConstants.BULK_FRAGMENT, list);
 				}
-				jsonRequest = JSONObject.parseObject(requestBody);
+				
+				jsonRequest = (ObjectNode) objectMapper.readTree(requestBody);
+				//jsonRequest = ObjectNode.parseObject(requestBody);
 			}
 			
 			String result = null;
@@ -281,14 +295,11 @@ public class ESRelay extends HttpServlet {
 			response.resetBuffer();
 			e.printStackTrace();
 
-			JSONObject jsonError = new JSONObject();
-			try {
-				jsonError.put(ESConstants.R_ERROR, e.toString());
-				jsonError.put(ESConstants.R_STATUS, 500);
-			} catch (JSONException e1) {
-				fLogger.log(Level.SEVERE, "Error during error JSON generation", e1);
-			}
-			out.println(jsonError);
+			ObjectNode jsonError = new ObjectNode(jsonNodeFactory);
+			jsonError.put(ESConstants.R_ERROR, e.toString());
+			jsonError.put(ESConstants.R_STATUS, 500);
+			fLogger.log(Level.SEVERE, "Error during error JSON generation", e);
+			out.println(jsonError.toPrettyString());
 		}
 
 		out.flush();

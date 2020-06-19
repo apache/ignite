@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryFieldsMetaResult;
 import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryResult;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
+import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.ESRelayConfig;
 import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.model.ESResponse;
@@ -43,8 +44,13 @@ import org.elasticsearch.relay.postprocess.IPostProcessor;
 import org.elasticsearch.relay.util.ESConstants;
 import org.elasticsearch.relay.util.HttpUtil;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.BinaryNode;
+import com.fasterxml.jackson.databind.node.NumericNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.POJONode;
+
 
 /**
  * Central query handler splitting up queries between multiple ES instances,
@@ -55,7 +61,6 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 	protected Ignite ignite;	
 	protected GridKernalContext ctx;
 	
-	protected GridJettyObjectMapper objectMapper;
 	
 	public ESQueryKernelIgniteHandler(ESRelayConfig config,GridKernalContext ctx) throws Exception{
 		super(config);
@@ -66,7 +71,6 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 			ignite = ctx.grid();
 		}
 		
-		this.objectMapper = new GridJettyObjectMapper();
 	}
 	
 	/**
@@ -98,26 +102,31 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		return cacheName;
 	}
 	
-	protected BinaryObject jsonToBinaryObject(String typeName,JSONObject obj){	
+	protected BinaryObject jsonToBinaryObject(String typeName,ObjectNode obj){	
 		BinaryObjectBuilder bb = ignite.binary().builder(typeName);
-		Set<Map.Entry<String,Object>> ents = obj.entrySet();
-	    for(Map.Entry<String,Object> ent: ents){	    	
+		Iterator<Map.Entry<String,JsonNode>> ents = obj.fields();
+	    while(ents.hasNext()){	    
+	    	Map.Entry<String,JsonNode> ent = ents.next();
 	    	String $key =  ent.getKey();
-	    	Object $value = ent.getValue();
+	    	JsonNode $value = ent.getValue();
 			try {
 			
-				if($value instanceof JSONArray){
-					JSONArray $arr = (JSONArray)$value;
-					//-$value = $arr.toArray();
-					$value = ($arr);
+				if($value.isContainerNode()){
+					Object bValue = jsonToObject($value,0);
+					bValue = ignite.binary().toBinary(bValue);
+					bb.setField($key, bValue);
 				}
-				else if($value instanceof JSONObject){
-					JSONObject $arr = (JSONObject)$value;
-					//-$value = new HashMap<String,Object>($arr);
-					$value = ($arr);
+				else if($value.isMissingNode() || $value.isNull()){
+					bb.setField($key, null);
 				}
-				Object bValue = ignite.binary().toBinary($value);
-				bb.setField($key, bValue);
+				else if($value.isPojo()){
+					Object bValue = ignite.binary().toBinary(((POJONode)$value).getPojo());
+					bb.setField($key, bValue);
+				}
+				else {					
+					Object bValue = jsonToObject($value,0);
+					bb.setField($key, bValue);
+				}
 				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -125,6 +134,62 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 			}	    	
 	    }
 	    return bb.build();
+	}
+	
+	protected Object jsonToObject(JsonNode json,int depth){
+		Object ret = null;
+		depth++;
+		if(json.isObject()) {
+			Map<String,Object> obj = new HashMap<>(json.size());
+			Iterator<Map.Entry<String,JsonNode>> ents = json.fields();
+			
+		    while(ents.hasNext()){	    
+		    	Map.Entry<String,JsonNode> ent = ents.next();
+		    	String $key =  ent.getKey();
+		    	JsonNode $value = ent.getValue();
+		    	if(depth<=16) {
+		    		Object bValue = jsonToObject($value,depth);
+		    		obj.put($key, bValue); 	
+		    	}
+		    	else {
+		    		obj.put($key, $value);
+		    	}
+		    }
+		   
+		    ret = obj;
+		}
+		else if(json.isArray()) {
+			ArrayNode array = (ArrayNode) json;
+			List<Object> obj = new ArrayList<>(json.size());
+			for(int i=0;i<array.size();i++) {
+				obj.add(jsonToObject(array.get(i),depth));
+			}
+			ret = array;
+		}
+		else if(json.isPojo()) {
+			ret = ((POJONode)json).getPojo();
+		}
+		else if(json.isMissingNode() || json.isNull()) {
+			
+		}
+		else if(json.isNumber()) {
+			NumericNode number = (NumericNode) json;
+			ret = number.numberValue();
+		}
+		else if(json.isTextual()) {
+			ret = json.asText();
+		}
+		else if(json.isBinary()) {
+			ret = ((BinaryNode)json).binaryValue();
+		}
+		else if(json.isBoolean()) {
+			ret = json.asBoolean();
+		}
+		else {
+			ret = json;
+		}
+		depth--;		
+		return ret;
 	}
 	
 	@Override
@@ -135,7 +200,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		String key = path[2];
 		boolean rv = false;
 		
-		JSONObject jsonResq = new JSONObject();
+		ObjectNode jsonResq = new ObjectNode(ESRelay.jsonNodeFactory);
 		
 		//将json转为binaryObject
 		if(query.getOp().equals(ESConstants.INSERT_FRAGMENT)){
@@ -180,7 +245,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 			
 		}
 		else if(query.getOp().equals(ESConstants.BULK_FRAGMENT)){
-			JSONArray list = query.getQuery().getJSONArray(ESConstants.BULK_FRAGMENT);
+			ArrayNode list = query.getQuery().withArray(ESConstants.BULK_FRAGMENT);
 			
 			// TODO @byron
 			for(Object o: list) {
@@ -210,14 +275,14 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		
 		String keyword = query.getParams().get("q");
 		if(keyword==null){
-			JSONObject queryObj = query.getQuery().getJSONObject("query");
-			if(queryObj.containsKey("multi_match")){
-				JSONObject multi_match = queryObj.getJSONObject("multi_match");
-				JSONArray fields = multi_match.getJSONArray("fields");
-				String queryString = multi_match.getString("query");
+			ObjectNode queryObj = query.getQuery().with("query");
+			if(queryObj.has("multi_match")){
+				ObjectNode multi_match = queryObj.with("multi_match");
+				ArrayNode fields = multi_match.withArray("fields");
+				String queryString = multi_match.get("query").asText();
 				keyword = "";
 				for(int i=0;i<fields.size();i++){
-					keyword+=fields.getString(i)+":"+queryString+" ";
+					keyword+=fields.get(i)+":"+queryString+" ";
 				}
 			}
 		}
@@ -249,7 +314,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		GridRestResponse result = new GridRestResponse(res);   
 		String es1Response = null;
 		query.setFormat("form");
-		es1Response = this.objectMapper.writeValueAsString(result);
+		es1Response = ESRelay.objectMapper.writeValueAsString(result);
 		return es1Response;
 		//return super.sendEsRequest(query, esUrl);
 	}
@@ -282,7 +347,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
        
 		String es1Response = null;
 		query.setFormat("form");		
-		es1Response = this.objectMapper.writeValueAsString(result);
+		es1Response = ESRelay.objectMapper.writeValueAsString(result);
 		return es1Response;
 		//return super.sendEsRequest(query, esUrl);
 	}
@@ -303,29 +368,29 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 
 		// TODO: recognize non-result responses and only use valid responses?
 		if (es1Response != null) {
-			JSONObject es1Json = JSONObject.parseObject(es1Response);
+			ObjectNode es1Json = (ObjectNode)ESRelay.objectMapper.readTree(es1Response);
 
-			if (!es1Json.containsKey(ESConstants.R_ERROR)) {
+			if (!es1Json.has(ESConstants.R_ERROR)) {
 				es1Resp = new ESResponse(es1Json);
 			} else {
 				throw new Exception("ES 1.x error: " + es1Response);
 			}
 		}
 		if (es2Response != null) {
-			JSONObject es2Json = JSONObject.parseObject(es2Response);
+			ObjectNode es2Json = (ObjectNode)ESRelay.objectMapper.readTree(es2Response);
 
-			if (!es2Json.containsKey(ESConstants.R_ERROR)) {
+			if (!es2Json.has(ESConstants.R_ERROR)) {
 				es2Resp = new ESResponse(es2Json);
 			} else {
 				throw new Exception("ES 2.x error: " + es2Response);
 			}
 		}
 
-		List<JSONObject> hits = new LinkedList<JSONObject>();
+		List<ObjectNode> hits = new LinkedList<ObjectNode>();
 
 		// mix results 50:50 as far as possible
-		Iterator<JSONObject> es1Hits = es1Resp.getHits().iterator();
-		Iterator<JSONObject> es2Hits = es2Resp.getHits().iterator();
+		Iterator<ObjectNode> es1Hits = es1Resp.getHits().iterator();
+		Iterator<ObjectNode> es2Hits = es2Resp.getHits().iterator();
 
 		while ((es1Hits.hasNext() || es2Hits.hasNext()) && hits.size() < limit) {
 			if (es1Hits.hasNext()) {
@@ -341,7 +406,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		mergedResponse.setShards(es1Resp.getShards() + es2Resp.getShards());
 		mergedResponse.setTotalHits(es1Resp.getTotalHits() + es2Resp.getTotalHits());
 
-		return mergedResponse.toJSON().toJSONString();
+		return mergedResponse.toJSON().toPrettyString();
 	}
 
 	 /**
