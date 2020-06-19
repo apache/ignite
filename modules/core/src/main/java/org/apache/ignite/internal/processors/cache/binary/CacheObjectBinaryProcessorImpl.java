@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
@@ -86,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
@@ -1576,11 +1578,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void removeType(int typeId) {
-        if (metadataLocCache.computeIfAbsent(typeId,
-                (id) -> {
-                    throw new IgniteException("Failed to remove metadata, type not found: " + id);
-                })
-            .removing())
+        BinaryMetadataHolder oldHld = metadataLocCache.get(typeId);
+
+        if (oldHld == null)
+            throw new IgniteException("Failed to remove metadata, type not found: " + typeId);
+
+        if (oldHld.removing())
             throw new IgniteException("Failed to remove metadata, type is being removed: " + typeId);
 
         if (!IgniteFeatures.allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.REMOVE_METADATA)) {
