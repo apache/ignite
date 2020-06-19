@@ -35,6 +35,7 @@ import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataMarshalled;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataUpdateTask;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /** */
@@ -64,17 +65,11 @@ public class MetadataUpdateCommand
         Path inFile = FS.getPath(argIter.nextArg("input file name"));
 
         try (InputStream is = Files.newInputStream(inFile)) {
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            int nRead;
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
-            byte[] data = new byte[1024];
+            U.copy(is, buf);
 
-            while ((nRead = is.read(data, 0, data.length)) != -1)
-                buffer.write(data, 0, nRead);
-
-            buffer.flush();
-
-            return new MetadataMarshalled(buffer.toByteArray(), null);
+            return new MetadataMarshalled(buf.toByteArray(), null);
         }
         catch (IOException e) {
             throw new IllegalArgumentException("Cannot read metadata from " + inFile, e);

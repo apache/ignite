@@ -44,9 +44,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, MetadataMarshalled, MetadataMarshalled> {
-    /**
-     *
-     */
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
@@ -76,6 +74,7 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
         /** Metadata future. */
         private transient IgniteFuture<Void> future;
 
+        /** Job result: metadata info for removed type (used for job continuation). */
         private transient MetadataMarshalled res;
 
         /**
@@ -105,15 +104,13 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
 
                     ignite.context().cacheObjects().removeType(typeId);
 
-                    future = ignite.compute().broadcastAsync(new DropAllThinSessionsJob());;// Drop all connection
+                    future = ignite.compute().broadcastAsync(new DropAllThinSessionsJob());
 
                     jobCtx.holdcc();
 
-                    future.listen(new IgniteInClosure<IgniteFuture<Void>>() {
-                        @Override public void apply(IgniteFuture<Void> f) {
-                            if (f.isDone())
-                                jobCtx.callcc();
-                        }
+                    future.listen((IgniteInClosure<IgniteFuture<Void>>)f -> {
+                        if (f.isDone())
+                            jobCtx.callcc();
                     });
 
                     return null;
@@ -140,8 +137,7 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
         private IgniteEx ignite;
 
         /** {@inheritDoc} */
-        @Override public void run()
-            throws IgniteException {
+        @Override public void run() throws IgniteException {
             ignite.context().security().authorize(null, SecurityPermission.ADMIN_METADATA_OPS);
 
             ignite.context().sqlListener().closeAllSessions();

@@ -92,7 +92,7 @@ final class BinaryMetadataHolder implements Serializable {
     }
 
     /**
-     *
+     * @return {@code true} is the metadata is removing now.
      */
     boolean removing() {
         return removing;

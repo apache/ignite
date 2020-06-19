@@ -20,8 +20,8 @@ package org.apache.ignite.internal.commandline.meta.tasks;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -36,7 +36,7 @@ public class MetadataListResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster metadata. */
-    private Collection<BinaryMetadata> meta = new ArrayList<>();
+    private Collection<BinaryMetadata> meta = Collections.emptyList();
 
     /**
      * Constructor for optimized marshaller.
