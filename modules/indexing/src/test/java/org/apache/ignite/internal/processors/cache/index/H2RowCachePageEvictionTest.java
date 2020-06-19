@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.query.h2.H2RowCacheRegistry;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests for H2RowCacheRegistry with page eviction.
@@ -101,6 +100,7 @@ public class H2RowCachePageEvictionTest extends AbstractIndexingCommonTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setConcurrencyLevel(4)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(persistenceEnabled)
                     .setMaxSize(SIZE)
