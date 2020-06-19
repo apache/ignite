@@ -450,7 +450,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         backup = startGrid(backupName);
 
-        GridTestUtils.waitForCondition(() ->spis.stream().anyMatch(TestRecordingCommunicationSpi::hasBlockedMessages),
+        GridTestUtils.waitForCondition(() -> spis.stream().anyMatch(TestRecordingCommunicationSpi::hasBlockedMessages),
             10_000);
 
         forceCheckpoint(backup);
