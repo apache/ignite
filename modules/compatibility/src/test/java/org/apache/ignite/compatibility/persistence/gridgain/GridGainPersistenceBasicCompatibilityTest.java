@@ -91,9 +91,6 @@ public class GridGainPersistenceBasicCompatibilityTest extends GridgainPersisten
                 ignite.context().distributedMetastorage().write(testKey, testValue);
 
                 assertEquals(testValue, ignite.context().distributedMetastorage().read(testKey));
-
-                // TODO For TC
-                U.sleep(1000);
             }
         });
 
