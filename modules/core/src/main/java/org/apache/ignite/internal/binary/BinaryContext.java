@@ -1452,10 +1452,8 @@ public class BinaryContext {
     /**
      * @param typeId Type ID.
      */
-    public void removeType(int typeId) {
-        synchronized (this) {
-            schemas.remove(typeId);
-        }
+    public synchronized void removeType(int typeId) {
+        schemas.remove(typeId);
     }
 
     /**

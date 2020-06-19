@@ -36,7 +36,7 @@ public class MetadataMarshalled extends IgniteDataTransferObject {
     /** Marshaled metadata. */
     private byte[] metaMarshalled;
 
-    /** Metadata */
+    /** Metadata. */
     private BinaryMetadata meta;
 
     /**
