@@ -243,7 +243,7 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
 
         assertThrows(() -> cache.putIfAbsent(1, obj), ERROR);
 
-        assertThrows(()-> cache.invoke(1, new TestEntryProcessor(obj)), ERROR);
+        assertThrows(() -> cache.invoke(1, new TestEntryProcessor(obj)), ERROR);
 
         assertThrows(() -> cache.invokeAll(
                 F.asMap(1, new TestEntryProcessor(obj), 2, new TestEntryProcessor(obj))).get(1).get(),
