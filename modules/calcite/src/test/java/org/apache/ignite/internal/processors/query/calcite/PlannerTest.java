@@ -2962,7 +2962,7 @@ public class PlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    static private class TestRelVisitor extends RelVisitor {
+    private static class TestRelVisitor extends RelVisitor {
         /** */
         final TestVisitor v;
 

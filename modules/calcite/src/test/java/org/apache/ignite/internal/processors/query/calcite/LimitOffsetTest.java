@@ -78,8 +78,8 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
                 new CacheConfiguration<>(eRepl.getTableName())
                     .setCacheMode(CacheMode.REPLICATED)
                     .setQueryEntities(singletonList(eRepl))
-                    .setSqlSchema("PUBLIC")
-                ,new CacheConfiguration<>(ePart.getTableName())
+                    .setSqlSchema("PUBLIC"),
+                new CacheConfiguration<>(ePart.getTableName())
                     .setCacheMode(CacheMode.PARTITIONED)
                     .setQueryEntities(singletonList(ePart))
                     .setSqlSchema("PUBLIC"));
@@ -113,7 +113,6 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
 
             return null;
         }, SqlValidatorException.class, "Illegal value of fetch / limit. The value must be less than Integer.MAX_VALUE");
-
 
         GridTestUtils.assertThrows(log, () -> {
             List<FieldsQueryCursor<List<?>>> cursors =
@@ -253,7 +252,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
 
         log.info("SQL: " + sql);
 
-        Object [] params;
+        Object[] params;
         if (lim >= 0 && off >= 0)
             params = new Object[]{off, lim};
         else if (lim >= 0)
@@ -268,8 +267,8 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
 
         List<List<?>> res = cursors.get(0).getAll();
 
-        assertEquals("Invalid results size. [rows=" + rows +", limit=" + lim + ", off=" + off + ", res=" + res.size() + ']',
-            expectedSize(rows, lim, off), res.size());
+        assertEquals("Invalid results size. [rows=" + rows + ", limit=" + lim + ", off=" + off
+            + ", res=" + res.size() + ']', expectedSize(rows, lim, off), res.size());
     }
 
     /**
@@ -284,9 +283,9 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
         else if (lim < 0)
             return rows - off;
         else if (lim + off < rows)
-            return  lim;
+            return lim;
         else if (off > rows)
-            return  0;
+            return 0;
         else
             return rows - off;
     }

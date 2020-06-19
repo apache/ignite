@@ -125,7 +125,7 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
             return Math.min(lim, off != null ? inRows - off : inRows);
         }
         else if (off != null)
-            return inRows - off ;
+            return inRows - off;
         else
             return inRows;
     }
