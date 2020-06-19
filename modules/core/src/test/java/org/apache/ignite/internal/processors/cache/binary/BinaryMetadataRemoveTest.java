@@ -49,14 +49,10 @@ public class BinaryMetadataRemoveTest extends GridCommonAbstractTest {
     /** Max retry cont. */
     private static final int MAX_RETRY_CONT = 10;
 
-    /**
-     *
-     */
+    /** */
     private static final String CACHE_NAME = "cache";
 
-    /**
-     *
-     */
+    /** */
     private GridTestUtils.DiscoveryHook discoveryHook;
 
     /** {@inheritDoc} */
