@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.KEY_SCALE_OUT_OF_RANGE;
@@ -604,10 +606,28 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     isKey ? NULL_KEY : NULL_VALUE);
             }
 
-            if (validateTypes && propVal != null && !prop.type().isAssignableFrom(propVal.getClass())) {
-                throw new IgniteSQLException("Type for a column '" + prop.name() +
-                        "' is not compatible with table definition. Expected '"
-                        + prop.type().getSimpleName() + "', actual type '" + propVal.getClass().getSimpleName() + "'");
+            if (validateTypes && propVal != null) {
+                if (!(propVal instanceof BinaryObject)) {
+                    if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass()))) {
+                        // Some reference type arrays end up being converted to Object[]
+                        if (!(prop.type().isArray() && Object[].class == propVal.getClass() &&
+                            Arrays.stream((Object[]) propVal).
+                            noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
+                        {
+                            throw new IgniteSQLException("Type for a column '" + prop.name() +
+                                "' is not compatible with table definition. Expected '" +
+                                prop.type().getSimpleName() + "', actual type '" +
+                                propVal.getClass().getSimpleName() + "'");
+                        }
+                    }
+                }
+                else if (coCtx.kernalContext().cacheObjects().typeId(prop.type().getName()) !=
+                        ((BinaryObject)propVal).type().typeId()) {
+                    throw new IgniteSQLException("Type for a column '" + prop.name() +
+                        "' is not compatible with table definition. Expected '" +
+                        prop.type().getSimpleName() + "', actual type '" +
+                        ((BinaryObject)propVal).type().typeName() + "'");
+                }
             }
 
             if (propVal == null || prop.precision() == -1)
