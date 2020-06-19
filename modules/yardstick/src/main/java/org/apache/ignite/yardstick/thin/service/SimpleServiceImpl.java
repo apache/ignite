@@ -15,30 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.loadtests.colocation;
+package org.apache.ignite.yardstick.thin.service;
 
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.lifecycle.LifecycleBean;
-import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceContext;
 
 /**
- * Lifecycle bean.
+ * Simple service implementation.
  */
-public class GridTestLifecycleBean implements LifecycleBean {
-    /** */
-    @IgniteInstanceResource
-    protected IgniteEx g;
+public class SimpleServiceImpl implements SimpleService, Service {
+    /** {@inheritDoc} */
+    @Override public void cancel(ServiceContext ctx) {
+        // No-op.
+    }
 
     /** {@inheritDoc} */
-    @Override public void onLifecycleEvent(LifecycleEventType type) {
-        if (type == LifecycleEventType.AFTER_NODE_START) {
-            IgniteCache<GridTestKey, Long> cache = g.cache("partitioned");
+    @Override public void init(ServiceContext ctx) {
+        // No-op.
+    }
 
-            assert cache != null;
+    /** {@inheritDoc} */
+    @Override public void execute(ServiceContext ctx) {
+        // No-op.
+    }
 
-            cache.loadCache(null, GridTestConstants.LOAD_THREADS, GridTestConstants.ENTRY_COUNT);
-        }
+    /** {@inheritDoc} */
+    @Override public int echo(int val) {
+        return val;
     }
 }
