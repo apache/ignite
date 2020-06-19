@@ -517,6 +517,8 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         startGrid(1);
         startNodeWithBlockingSupplying(2);
 
+        crd.cluster().active(true);
+
         TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(crd);
         TestRecordingCommunicationSpi spi2 = TestRecordingCommunicationSpi.spi(ignite(2));
 
