@@ -2,6 +2,7 @@
 /out/
 /work/
 */build/
+*/node_modules/
 xcuserdata/
 *.iws
 .DS_Store
