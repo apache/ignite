@@ -2141,7 +2141,7 @@ public class GridCacheUtils {
      *
      * @param oldCfg Old cache config.
      * @param entities New query entities.
-     * @param sqlSchema Sql schema name,
+     * @param sqlSchema Sql schema name.
      * @param isSqlEscape Sql escape flag.
      * @param qryParallelism Query parallelism parameter.
      */

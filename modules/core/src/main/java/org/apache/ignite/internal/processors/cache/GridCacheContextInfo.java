@@ -169,7 +169,7 @@ public class GridCacheContextInfo<K, V> {
     }
 
     /**
-     * Apply changes from {@link SchemaAddQueryEntityOperation}
+     * Apply changes from {@link SchemaAddQueryEntityOperation}.
      *
      * @param op Add query entity schema operation.
      */

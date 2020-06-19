@@ -92,16 +92,16 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
  * Util class for joining node validation.
  */
 public class ValidationOnNodeJoinUtils {
-    /** Template of message of conflicts of sql schema name */
+    /** Template of message of conflicts of sql schema name. */
     private static final String SQL_SCHEMA_CONFLICTS_MESSAGE =
         "Failed to join node to the active cluster, configuration conflict for cache '%s': " +
             "schema '%s' from joining node differs to '%s'";
 
-    /** Template of message of conflicts during configuration merge */
+    /** Template of message of conflicts during configuration merge. */
     private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
         "Conflicts during configuration merge for cache '%s' : \n%s";
 
-    /** Template of message of node join was fail because it requires to merge of config */
+    /** Template of message of node join was fail because it requires to merge of config. */
     private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE = "Failed to join node to the active cluster " +
         "(the config of the cache '%s' has to be merged which is impossible on active grid). " +
         "Deactivate grid and retry node join or clean the joining node.";

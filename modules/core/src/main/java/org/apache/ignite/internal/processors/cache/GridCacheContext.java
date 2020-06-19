@@ -2353,7 +2353,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Apply changes from {@link SchemaAddQueryEntityOperation}
+     * Apply changes from {@link SchemaAddQueryEntityOperation}.
      *
      * @param op Add query entity schema operation.
      */
@@ -2366,7 +2366,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Apply changes on enable indexing.
      *
      * @param entities New query entities.
-     * @param sqlSchema Sql schema name,
+     * @param sqlSchema Sql schema name.
      * @param isSqlEscape Sql escape flag.
      * @param qryParallelism Query parallelism parameter.
      */

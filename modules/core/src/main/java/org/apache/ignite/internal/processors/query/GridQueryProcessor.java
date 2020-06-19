@@ -200,9 +200,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Map from a cacheId to a future indicating that there is an in-progress index rebuild for the given cache. */
     private final ConcurrentMap<Integer, GridFutureAdapter<Void>> idxRebuildFuts = new ConcurrentHashMap<>();
 
-    /** Caches to enable indexing. */
-    private final Set<String> cachesToEnableIndexing = ConcurrentHashMap.newKeySet();
-
     /** General state mutex. */
     private final Object stateMux = new Object();
 
@@ -419,14 +416,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         // Process proposals as if they were received as regular discovery messages.
         if (!F.isEmpty(activeProposals)) {
             synchronized (stateMux) {
-                for (SchemaProposeDiscoveryMessage activeProposal : activeProposals.values()) {
-                    if (activeProposal.operation() instanceof SchemaAddQueryEntityOperation) {
-                        SchemaAddQueryEntityOperation op = (SchemaAddQueryEntityOperation)activeProposal.operation();
-                        cachesToEnableIndexing.add(op.cacheName());
-                    }
-
+                for (SchemaProposeDiscoveryMessage activeProposal : activeProposals.values())
                     onSchemaProposeDiscovery0(activeProposal);
-                }
             }
         }
 
@@ -881,8 +872,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void onCacheStart0(GridCacheContextInfo<?, ?> cacheInfo, QuerySchema schema, boolean isSql)
         throws IgniteCheckedException {
-        if (!cacheSupportSql(cacheInfo.config()) && !cachesToEnableIndexing.contains(cacheInfo.name()))
-            return;
+        if (!cacheSupportSql(cacheInfo.config())) {
+            synchronized (stateMux) {
+                boolean proceed = false;
+
+                for (SchemaAbstractDiscoveryMessage msg: activeProposals.values()) {
+                    if (msg.operation() instanceof SchemaAddQueryEntityOperation) {
+                       SchemaAddQueryEntityOperation op = (SchemaAddQueryEntityOperation)msg.operation();
+
+                       if (op.cacheName().equals(cacheInfo.name())) {
+                           proceed = true;
+
+                           break;
+                        }
+                    }
+                }
+
+                if (!proceed)
+                    return;
+            }
+        }
 
         ctx.cache().context().database().checkpointReadLock();
 
@@ -980,8 +989,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                                 ).get1();
 
                                         schemaName = opEnableIdx.schemaName();
-
-                                        cachesToEnableIndexing.remove(opEnableIdx.cacheName());
                                     }
                                     else
                                         assert false : "Unsupported operation: " + op0;
@@ -1177,7 +1184,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Create query candidates and mappings of index and type descriptors names to them.
      *
+     * @param cacheName Cache name.
+     * @param schemaName Schema name.
+     * @param cacheInfo Grid cache info.
+     * @param entities Collection of query entities.
+     * @param escape Sql escale flag.
+     * @return Triple of query candidates and mappings of index and type descriptors names to them.
+     * @throws IgniteCheckedException If failed.
      */
     private T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
         createQueryCandidates(
@@ -3023,11 +3038,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param sqlEscape Escape flag, see{@link QueryUtils#normalizeQueryEntity}.
      */
     public IgniteInternalFuture<?> dynamicAddQueryEntity(
-            String cacheName,
-            String schemaName,
-            QueryEntity entity,
-            Integer qryParallelism,
-            boolean sqlEscape
+        String cacheName,
+        String schemaName,
+        QueryEntity entity,
+        Integer qryParallelism,
+        boolean sqlEscape
     ) {
         assert qryParallelism == null || qryParallelism > 0;
 
