@@ -37,8 +37,7 @@ public class InnerJoinNode<Row> extends AbstractJoinNode<Row> {
     }
 
     /** */
-    @Override
-    protected void doJoin() {
+    @Override protected void doJoin() {
         if (waitingRight == NOT_WAITING) {
             while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
                 if (left == null)
