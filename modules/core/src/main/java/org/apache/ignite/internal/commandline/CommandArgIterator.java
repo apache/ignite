@@ -100,7 +100,7 @@ public class CommandArgIterator {
     /**
      * @return Numeric value.
      */
-    public long nextPositiveLongArg(String argName) {
+    public long nextNonNegativeLongArg(String argName) {
         long val = nextLongArg(argName);
 
         if (val < 0)
@@ -112,7 +112,7 @@ public class CommandArgIterator {
     /**
      * @return Numeric value.
      */
-    public int nextPositiveIntArg(String argName) {
+    public int nextNonNegativeIntArg(String argName) {
         int val = nextIntArg(argName);
 
         if (val < 0)

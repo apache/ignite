@@ -233,7 +233,7 @@ public class TxCommands implements Command<VisorTxTaskArg> {
                 case TX_LIMIT:
                     argIter.nextArg("");
 
-                    limit = (int)argIter.nextPositiveLongArg(TxCommandArg.TX_LIMIT.toString());
+                    limit = (int)argIter.nextNonNegativeLongArg(TxCommandArg.TX_LIMIT.toString());
 
                     break;
 
@@ -271,13 +271,13 @@ public class TxCommands implements Command<VisorTxTaskArg> {
                 case TX_DURATION:
                     argIter.nextArg("");
 
-                    duration = argIter.nextPositiveLongArg(TxCommandArg.TX_DURATION.toString()) * 1000L;
+                    duration = argIter.nextNonNegativeLongArg(TxCommandArg.TX_DURATION.toString()) * 1000L;
                     break;
 
                 case TX_SIZE:
                     argIter.nextArg("");
 
-                    size = (int)argIter.nextPositiveLongArg(TxCommandArg.TX_SIZE.toString());
+                    size = (int)argIter.nextNonNegativeLongArg(TxCommandArg.TX_SIZE.toString());
                     break;
 
                 case TX_LABEL:
