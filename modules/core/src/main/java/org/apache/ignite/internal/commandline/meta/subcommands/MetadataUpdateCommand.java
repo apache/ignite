@@ -43,7 +43,7 @@ public class MetadataUpdateCommand
     extends MetadataAbstractSubCommand<MetadataMarshalled, MetadataMarshalled>
 {
     /** Output file name. */
-    public static String OPT_IN_FILE_NAME = "--in";
+    public static final String OPT_IN_FILE_NAME = "--in";
 
     /** {@inheritDoc} */
     @Override protected String taskName() {
