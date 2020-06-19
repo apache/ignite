@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
@@ -361,6 +362,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
         // Start data change operations from several threads.
         final AtomicBoolean stopped = new AtomicBoolean();
+        final CountDownLatch iterations = new CountDownLatch(1000);
 
         IgniteInternalFuture<?> task = multithreadedAsync(() -> {
             while (!stopped.get()) {
@@ -388,13 +390,16 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
                     if (!X.hasCause(e, TransactionSerializationException.class))
                         throw e;
                 }
+                finally {
+                    iterations.countDown();
+                }
             }
 
             return null;
         }, 4);
 
         // Do some work.
-        Thread.sleep(2_000L);
+        iterations.await(2, TimeUnit.SECONDS);
 
         enableIndexing(srv1).get();
 
@@ -435,6 +440,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         // Start enable indexing from several threads.
         final AtomicBoolean stopped = new AtomicBoolean();
         final AtomicInteger success = new AtomicInteger();
+        final CountDownLatch iterations = new CountDownLatch(1000);
 
         IgniteInternalFuture<?> task = multithreadedAsync(() -> {
             while (!stopped.get()) {
@@ -445,6 +451,8 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
+
+                    break;
                 }
 
                 enableIndexing(node).chain((fut) -> {
@@ -464,20 +472,19 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
                     return null;
                 });
+
+                iterations.countDown();
             }
 
             return null;
         }, 4);
 
         // Do attempts.
-        Thread.sleep(1_000L);
+        iterations.await(2, TimeUnit.SECONDS);
 
         // Start more server nodes..
         ignitionStart(serverConfiguration(5));
         ignitionStart(serverConfiguration(6));
-
-        // Do some more attempts.
-        Thread.sleep(1_000L);
 
         // Stop task.
         stopped.set(true);
