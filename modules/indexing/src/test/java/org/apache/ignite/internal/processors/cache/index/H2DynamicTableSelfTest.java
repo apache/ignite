@@ -1003,15 +1003,20 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         String createSql = "CREATE TABLE \"" + tableName + "\" (id int primary key, x varchar) WITH " +
             "\"wrap_key,wrap_value,cache_name=" + cacheName + "\"";
 
-        client().getOrCreateCache(cacheName);
+        try {
+            client().getOrCreateCache(cacheName);
 
-        execute(client(), createSql);
+            execute(client(), createSql);
 
-        GridTestUtils.assertThrows(null, () -> {
-            execute("DROP TABLE \"" + tableName + "\"");
+            GridTestUtils.assertThrows(null, () -> {
+                execute("DROP TABLE \"" + tableName + "\"");
 
-            return null;
-        }, IgniteSQLException.class, "Only cache created with CREATE TABLE may be removed with DROP TABLE");
+                return null;
+            }, IgniteSQLException.class, "Only cache created with CREATE TABLE may be removed with DROP TABLE");
+        }
+        finally {
+            client().destroyCache(cacheName);
+        }
     }
 
     /**
