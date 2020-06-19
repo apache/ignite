@@ -67,23 +67,17 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
         this.typeId = typeId;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return (status == ProposalStatus.SUCCESSFUL) ? new MetadataRemoveAcceptedMessage(typeId) : null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return true;
     }

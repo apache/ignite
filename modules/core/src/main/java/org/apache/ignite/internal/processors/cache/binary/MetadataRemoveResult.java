@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import org.apache.ignite.binary.BinaryObjectException;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Represents result of metadata remove.
@@ -54,14 +55,14 @@ final class MetadataRemoveResult {
 
     /**
      */
-    static MetadataRemoveResult createSuccessfulResult() {
+    static @NotNull MetadataRemoveResult createSuccessfulResult() {
         return new MetadataRemoveResult(ResultType.SUCCESS, null);
     }
 
     /**
      * @param err Error lead to request failure.
      */
-    static MetadataRemoveResult createFailureResult(BinaryObjectException err) {
+    static @NotNull MetadataRemoveResult createFailureResult(BinaryObjectException err) {
         assert err != null;
 
         return new MetadataRemoveResult(ResultType.REJECT, err);
