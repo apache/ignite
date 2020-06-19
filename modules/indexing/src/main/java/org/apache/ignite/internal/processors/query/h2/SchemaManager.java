@@ -60,10 +60,6 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBase
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroupsIOStatistics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
-<<<<<<< HEAD
-import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
-=======
->>>>>>> upstream/master
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -119,12 +115,6 @@ public class SchemaManager {
     /** */
     public static final String SQL_VIEW_COLS_VIEW_DESC = "SQL view columns";
 
-<<<<<<< HEAD
-    /** */
-    private final SchemaChangeListener lsnr;
-
-=======
->>>>>>> upstream/master
     /** Connection manager. */
     private final ConnectionManager connMgr;
 
@@ -151,14 +141,14 @@ public class SchemaManager {
 
     /**
      * Constructor.
-     *  @param ctx Kernal context.
+     *
+     * @param ctx Kernal context.
      * @param connMgr Connection manager.
      */
     public SchemaManager(GridKernalContext ctx, ConnectionManager connMgr) {
         this.ctx = ctx;
         this.connMgr = connMgr;
 
-        lsnr = schemaChangeListener(ctx);
         log = ctx.log(SchemaManager.class);
 
         ctx.systemView().registerView(SQL_SCHEMA_VIEW, SQL_SCHEMA_VIEW_DESC,
@@ -230,15 +220,10 @@ public class SchemaManager {
         boolean disabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
 
         if (disabled) {
-<<<<<<< HEAD
-            log.info("SQL system views will not be created because they are disabled (see " +
-                IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS + " system property)");
-=======
             if (log.isInfoEnabled()) {
                 log.info("SQL system views will not be created because they are disabled (see " +
                     IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS + " system property)");
             }
->>>>>>> upstream/master
 
             return;
         }
@@ -248,17 +233,10 @@ public class SchemaManager {
                 createSchema(schema, true);
             }
 
-<<<<<<< HEAD
-            try (Connection c = connMgr.connectionNoCache(schema)) {
-                SqlSystemTableEngine.registerView(c, view);
-
-                    systemViews.add(view);
-=======
             try (H2PooledConnection c = connMgr.connection(schema)) {
                 SqlSystemTableEngine.registerView(c.connection(), view);
 
                 systemViews.add(view);
->>>>>>> upstream/master
             }
         }
         catch (IgniteCheckedException | SQLException e) {
@@ -352,7 +330,6 @@ public class SchemaManager {
 
         try (H2PooledConnection conn = connMgr.connection(schema.schemaName())) {
             GridH2Table h2tbl = createTable(schema.schemaName(), schema, tblDesc, conn);
-            lsnr.onSqlTypeCreate(schemaName, type, cacheInfo);
 
             schema.add(tblDesc);
 
@@ -387,7 +364,6 @@ public class SchemaManager {
                     tbl.table().setRemoveIndexOnDestroy(rmvIdx);
 
                     dropTable(tbl);
-                    lsnr.onSqlTypeDrop(schemaName, tbl.type(), tbl.cacheInfo());
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to drop table on cache stop (will ignore): " + tbl.fullTableName(), e);
@@ -453,7 +429,6 @@ public class SchemaManager {
      */
     private void createSchema0(String schema) throws IgniteCheckedException {
         connMgr.executeSystemStatement("CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
-        lsnr.onSchemaCreate(schema);
 
         if (log.isDebugEnabled())
             log.debug("Created H2 schema for index database: " + schema);
@@ -616,7 +591,6 @@ public class SchemaManager {
      */
     private void dropSchema(String schema) throws IgniteCheckedException {
         connMgr.executeSystemStatement("DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
-        lsnr.onSchemaDrop(schema);
 
         if (log.isDebugEnabled())
             log.debug("Dropped H2 schema for index database: " + schema);
@@ -856,60 +830,5 @@ public class SchemaManager {
         }
 
         return null;
-    }
-
-    /** */
-    private SchemaChangeListener schemaChangeListener(GridKernalContext ctx) {
-        List<SchemaChangeListener> subscribers = new ArrayList<>(ctx.internalSubscriptionProcessor().getSchemaChangeSubscribers());
-
-        if (F.isEmpty(subscribers))
-            return new NoOpSchemaChangeListener();
-
-        return subscribers.size() == 1 ? subscribers.get(0) : new CompoundSchemaChangeListener(subscribers);
-    }
-
-    /** */
-    private static final class NoOpSchemaChangeListener implements SchemaChangeListener {
-        /** {@inheritDoc} */
-        @Override public void onSchemaCreate(String schemaName) {}
-
-        /** {@inheritDoc} */
-        @Override public void onSchemaDrop(String schemaName) {}
-
-        /** {@inheritDoc} */
-        @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {}
-
-        /** {@inheritDoc} */
-        @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {}
-    }
-
-    /** */
-    private static final class CompoundSchemaChangeListener implements SchemaChangeListener {
-        /** */
-        private final List<SchemaChangeListener> lsnrs;
-
-        private CompoundSchemaChangeListener(List<SchemaChangeListener> lsnrs) {
-            this.lsnrs = lsnrs;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSchemaCreate(String schemaName) {
-            lsnrs.forEach(lsnr -> lsnr.onSchemaCreate(schemaName));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSchemaDrop(String schemaName) {
-            lsnrs.forEach(lsnr -> lsnr.onSchemaCreate(schemaName));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
-            lsnrs.forEach(lsnr -> lsnr.onSqlTypeCreate(schemaName, typeDescriptor, cacheInfo));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
-            lsnrs.forEach(lsnr -> lsnr.onSqlTypeDrop(schemaName, typeDescriptor, cacheInfo));
-        }
     }
 }

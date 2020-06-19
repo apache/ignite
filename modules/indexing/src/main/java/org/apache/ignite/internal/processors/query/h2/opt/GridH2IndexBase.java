@@ -78,10 +78,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-<<<<<<< HEAD
-=======
      * @param qctx Query context.
->>>>>>> upstream/master
      * @return Index segment ID for current query context.
      */
     protected int segment(QueryContext qctx) {

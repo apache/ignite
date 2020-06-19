@@ -159,12 +159,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopDirectShuffleMessage;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleAck;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishRequest;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishResponse;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleMessage;
+
 import org.apache.ignite.internal.processors.igfs.IgfsAckMessage;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsBlocksMessage;
@@ -222,12 +217,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-45, GridChangeGlobalStateMessageResponse::new);
         factory.register((short)-44, HandshakeMessage2::new);
         factory.register((short)-43, IgniteIoTestMessage::new);
-        factory.register((short)-42, HadoopDirectShuffleMessage::new);
-        factory.register((short)-41, HadoopShuffleFinishResponse::new);
-        factory.register((short)-40, HadoopShuffleFinishRequest::new);
-        factory.register((short)-39, HadoopJobId::new);
-        factory.register((short)-38, HadoopShuffleAck::new);
-        factory.register((short)-37, HadoopShuffleMessage::new);
+        
         factory.register((short)-36, GridDhtAtomicSingleUpdateRequest::new);
         factory.register((short)-27, GridDhtTxOnePhaseCommitAckRequest::new);
         factory.register((short)-26, TxLockList::new);

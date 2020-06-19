@@ -83,7 +83,7 @@ public abstract class H2Row implements Row, MvccVersionAware {
     /** {@inheritDoc} */
     @Override public void setDeleted(boolean deleted) {
     	if(deleted) //add@byron
-    		throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

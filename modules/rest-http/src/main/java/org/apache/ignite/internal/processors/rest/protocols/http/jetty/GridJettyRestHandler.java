@@ -388,10 +388,10 @@ public class GridJettyRestHandler extends AbstractHandler {
 
             req.setHandled(true);
         }
-        else {
+        else if(target.equals("/")){  //modify@byron 
             if (dfltPage == null) {
                 res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-
+               
                 req.setHandled(true);
 
                 return;
@@ -403,8 +403,11 @@ public class GridJettyRestHandler extends AbstractHandler {
 
             res.getWriter().write(dfltPage);
             res.getWriter().flush();
-
+            
             req.setHandled(true);
+        }
+        else{ //add@byron
+        	req.setHandled(false);
         }
     }
 

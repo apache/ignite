@@ -347,12 +347,7 @@ public class GridMapQueryExecutor {
                 distributedJoinCtx,
                 mvccSnapshot,
                 reserved,
-<<<<<<< HEAD
-                true
-            );
-=======
                 true);
->>>>>>> upstream/master
 
             qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, lazy, qctx);
 
@@ -442,11 +437,7 @@ public class GridMapQueryExecutor {
                             throw new QueryCancelledException();
                         }
 
-<<<<<<< HEAD
-                        res.openResult(rs);
-=======
                         res.openResult(rs, qryInfo);
->>>>>>> upstream/master
 
                         final GridQueryNextPageResponse msg = prepareNextPage(
                             nodeRess,
@@ -458,11 +449,7 @@ public class GridMapQueryExecutor {
                             dataPageScanEnabled
                         );
 
-<<<<<<< HEAD
-                        if(msg != null)
-=======
                         if (msg != null)
->>>>>>> upstream/master
                             sendNextPage(node, msg);
                     }
                     else {
@@ -685,11 +672,7 @@ public class GridMapQueryExecutor {
 
                     if (log.isDebugEnabled())
                         U.warn(log, errMsg, err);
-<<<<<<< HEAD
-                    else
-=======
                     else if (log.isInfoEnabled())
->>>>>>> upstream/master
                         log.info(errMsg);
                 }
                 else
@@ -787,11 +770,7 @@ public class GridMapQueryExecutor {
                         req.pageSize(),
                         dataPageScanEnabled);
 
-<<<<<<< HEAD
-                    if(msg != null)
-=======
                     if (msg != null)
->>>>>>> upstream/master
                         sendNextPage(node, msg);
                 }
                 finally {

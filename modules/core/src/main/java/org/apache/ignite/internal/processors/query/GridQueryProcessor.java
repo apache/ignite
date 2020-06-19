@@ -54,6 +54,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -79,6 +80,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
@@ -97,6 +99,7 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeD
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaCommandOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -952,6 +955,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                                         processDynamicDropColumn(typeDesc, opDropCol.columns());
                                     }
+                                    else if (op0 instanceof SchemaCommandOperation) {
+                                    	
+                                    }
                                     else
                                         assert false;
                                 }
@@ -1519,6 +1525,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
         }
+        //add@byron
+        else if (op instanceof SchemaCommandOperation) {
+        	SchemaCommandOperation op0 = (SchemaCommandOperation) op;
+        	
+        	SqlFieldsQueryEx qry = new SqlFieldsQueryEx(op0.cmd(),false);
+        	qry.setLocal(true);
+        	qry.setSkipReducerOnUpdate(true);
+        	
+        	//nsql.getCmd().update();
+        	//idx.querySqlFields(op0.schemaName(),qry, null, false, true, null);             	
+        	//end@byron
+        }
         else
             err = new SchemaOperationException("Unsupported operation: " + op);
 
@@ -1639,8 +1657,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     idxs.remove(idxKey);
                 }
                 else {
-                    assert (op instanceof SchemaAlterTableAddColumnOperation ||
-                        op instanceof SchemaAlterTableDropColumnOperation);
+					//remove@byron
+                    //-assert (op instanceof SchemaAlterTableAddColumnOperation ||
+                    //-    op instanceof SchemaAlterTableDropColumnOperation);
 
                     // No-op - all processing is done at "local" stage
                     // as we must update both table and type descriptor atomically.
@@ -1776,6 +1795,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 idx.dynamicDropColumn(op0.schemaName(), op0.tableName(), op0.columns(), op0.ifTableExists(),
                     op0.ifExists());
             }
+            else if(op instanceof SchemaCommandOperation) { //add#byron support other schemaCmd
+            	SchemaCommandOperation op0 = (SchemaCommandOperation) op;
+            	
+            	SqlFieldsQueryEx qry = new SqlFieldsQueryEx(op0.cmd(),false);
+            	qry.setLocal(true);
+            	qry.setSkipReducerOnUpdate(true);
+            	
+            	//nsql.getCmd().update();
+            	idx.querySqlFields(op0.schemaName(),qry, null, false, true, null);             	
+            	//end@byron
+            }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
         }
@@ -1868,8 +1898,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ccfg.setQueryParallelism(qryParallelism);
 
         ccfg.setEncryptionEnabled(encrypted);
-        ccfg.setSqlSchema("\"" + schemaName + "\"");
-        ccfg.setSqlEscapeAll(true);
+        ccfg.setSqlSchema("\"" + schemaName + "\""); ccfg.setSqlSchema(schemaName); //modify@byron
+        ccfg.setSqlEscapeAll(true);  ccfg.setSqlEscapeAll(false); //modify@byron
         ccfg.setQueryEntities(Collections.singleton(entity));
 
         if (!QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()))
@@ -2840,7 +2870,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param op Operation.
      * @return Future.
      */
-    private IgniteInternalFuture<?> startIndexOperationDistributed(SchemaAbstractOperation op) {
+    public IgniteInternalFuture<?> startIndexOperationDistributed(SchemaAbstractOperation op) {
         SchemaOperationClientFuture fut = new SchemaOperationClientFuture(op.id());
 
         SchemaOperationClientFuture oldFut = schemaCliFuts.put(op.id(), fut);
@@ -2994,8 +3024,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(final String cacheName, final String clause,
-        final String resType, final IndexingQueryFilter filters, int limit) throws IgniteCheckedException {
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(final String cacheName, final TextQuery<K,V> clause,
+        final String resType, final IndexingQueryFilter filters) throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())
@@ -3004,13 +3034,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             final GridCacheContext<?, ?> cctx = ctx.cache().internalCache(cacheName).context();
 
-            return executeQuery(GridCacheQueryType.TEXT, clause, cctx,
+            return executeQuery(GridCacheQueryType.TEXT, clause.getText(), cctx,
                 new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
                     @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
                         String typeName = typeName(cacheName, resType);
                         String schemaName = idx.schema(cacheName);
 
-                        return idx.queryLocalText(schemaName, cacheName, clause, typeName, filters, limit);
+                        return idx.queryLocalText(schemaName, cacheName, clause, typeName, filters);
                     }
                 }, true);
         }

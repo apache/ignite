@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -37,13 +38,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
 import org.xml.sax.SAXException;
@@ -210,6 +214,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      */
     private boolean startJetty() throws IgniteCheckedException {
         try {
+        	
             httpSrv.start();
 
             if (httpSrv.isStarted()) {
@@ -223,7 +228,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 return true;
             }
 
-            return false;
+            return  false;
         }
         catch (Exception e) {
             boolean failedToBind = e instanceof SocketException;
@@ -268,7 +273,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             httpCfg.setSecureScheme("https");
             httpCfg.setSecurePort(8443);
             httpCfg.setSendServerVersion(true);
-            httpCfg.setSendDateHeader(true);
+            httpCfg.setSendDateHeader(true);           
 
             String srvPortStr = System.getProperty(IGNITE_JETTY_PORT, "8080");
 
@@ -282,13 +287,13 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                     "cannot be cast to integer: " + srvPortStr);
             }
 
-            httpSrv = new Server(new QueuedThreadPool(200, 20));
+            httpSrv = new Server(new QueuedThreadPool(200, 8));
 
             ServerConnector srvConn = new ServerConnector(httpSrv, new HttpConnectionFactory(httpCfg));
 
             srvConn.setHost(System.getProperty(IGNITE_JETTY_HOST, "localhost"));
             srvConn.setPort(srvPort);
-            srvConn.setIdleTimeout(30000L);
+            srvConn.setIdleTimeout(60000L);
             srvConn.setReuseAddress(true);
 
             httpSrv.addConnector(srvConn);
@@ -323,8 +328,39 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         }
 
         assert httpSrv != null;
+        
+        //add@byron support custom rest cmd handler
+        
+        String warFile = "webapp"; 
+		if(ctx.config().getIgniteHome()!=null){
+			warFile = ctx.config().getIgniteHome()+File.separatorChar+"webapp"; 
+		}
+		WebAppContext context = new	WebAppContext(warFile, "/");
+		context.setAttribute("gridKernalContext", ctx);
+		context.setServer(httpSrv);
+		
+		context.setResourceBase(warFile);
+		
+		File workDir = new File(ctx.config().getWorkDirectory(),"webapp");
+		context.setTempDirectory(workDir); 
+		//-context.setClassLoader(Thread.currentThread().getContextClassLoader());  
+		
 
-        httpSrv.setHandler(jettyHnd);
+		 // Create a handler list to store our static and servlet context handlers.
+		
+		Handler hnd = httpSrv.getHandler();
+		HandlerList handlers = new HandlerList();
+		if(hnd!=null) {
+			handlers.setHandlers(new Handler[] { jettyHnd, context, hnd });	
+		}
+		else {
+			handlers.setHandlers(new Handler[] { jettyHnd, context });	
+		}
+
+        //-httpSrv.setHandler(jettyHnd);
+        httpSrv.setHandler(handlers);
+        
+        //end@
 
         override(getJettyConnector());
     }

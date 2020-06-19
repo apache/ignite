@@ -534,13 +534,8 @@ public class H2Utils {
      */
     @SuppressWarnings("unchecked")
     public static QueryCursorImpl<List<?>> zeroCursor() {
-<<<<<<< HEAD
-        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-            (Collections.singletonList(0L)), null, false, false);
-=======
         QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList(
             Collections.singletonList(0L)), null, false, false);
->>>>>>> upstream/master
 
         resCur.fieldsMeta(UPDATE_RESULT_META);
 
@@ -594,7 +589,7 @@ public class H2Utils {
      */
     @SuppressWarnings("ConstantConditions")
     public static Value wrap(CacheObjectValueContext coCtx, Object obj, int type) throws IgniteCheckedException {
-        assert obj != null;        
+        assert obj != null;
 
         if (obj instanceof CacheObject) { // Handle cache object.
             CacheObject co = (CacheObject)obj;
@@ -604,7 +599,6 @@ public class H2Utils {
 
             obj = co.value(coCtx, false);
         }
-        
 
         //add@byron
         if(obj.getClass().isArray() && !obj.getClass().getComponentType().isPrimitive() ){
@@ -618,7 +612,6 @@ public class H2Utils {
         		return ValueString.get(eObj.name());
         }
         //end@
-        
         switch (type) {
             case Value.BOOLEAN:
                 return ValueBoolean.get((Boolean)obj);

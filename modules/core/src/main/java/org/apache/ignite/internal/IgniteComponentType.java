@@ -97,7 +97,14 @@ public enum IgniteComponentType {
         CompressionProcessor.class.getName(),
         "org.apache.ignite.internal.processors.compress.CompressionProcessorImpl",
         "ignite-compress"
-    );
+    ),
+    
+    QUERY_ENGINE(
+    	org.apache.ignite.internal.processors.query.QueryEngine.class.getName(),
+        "org.apache.ignite.internal.processors.query.QueryEngineImpl",
+        "ignite-query-engine"	
+	)
+    ;
 
     /** No-op class name. */
     private final String noOpClsName;

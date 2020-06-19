@@ -149,7 +149,7 @@
             <version>1.4.7</version>
         </dependency>
 
-        <dependency>
+       <!--  <dependency>
             <groupId>org.apache.parquet</groupId>
             <artifactId>parquet-hadoop</artifactId>
             <version>1.10.0</version>
@@ -165,7 +165,7 @@
                     <artifactId>protobuf-java</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
+        </dependency> -->
 
     </dependencies>
 

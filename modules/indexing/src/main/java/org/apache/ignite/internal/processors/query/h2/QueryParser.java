@@ -45,10 +45,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
-<<<<<<< HEAD
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
-=======
->>>>>>> upstream/master
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
@@ -173,11 +169,7 @@ public class QueryParser {
         if (qry.getTimeout() >= 0)
             timeout = qry.getTimeout();
         else
-<<<<<<< HEAD
-            timeout = (int)idx.kernalContext().config().getDefaultQueryTimeout();
-=======
             timeout = (int)idx.kernalContext().config().getSqlConfiguration().getDefaultQueryTimeout();
->>>>>>> upstream/master
 
         return new QueryParameters(
             qry.getArgs(),
@@ -357,29 +349,6 @@ public class QueryParser {
                 enforceJoinOrderOnParsing,
                 false);
 
-<<<<<<< HEAD
-        QueryContext qctx = new QueryContext(
-            0,
-            idx.backupFilter(null, null),
-            null,
-            null,
-            null,
-            qry.isLocal()
-        );
-
-        QueryContextRegistry qryCtxRegistry = idx.queryContextRegistry();
-
-        qryCtxRegistry.setThreadLocal(qctx);
-
-        PreparedStatement stmt = null;
-
-        try {
-            stmt = connMgr.prepareStatementNoCache(c, qry.getSql());
-
-            if (qry.isLocal() && GridSqlQueryParser.checkMultipleStatements(stmt))
-                throw new IgniteSQLException("Multiple statements queries are not supported for local queries.",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-=======
             PreparedStatement stmt = null;
 
             try {
@@ -388,7 +357,6 @@ public class QueryParser {
                 if (qry.isLocal() && GridSqlQueryParser.checkMultipleStatements(stmt))
                     throw new IgniteSQLException("Multiple statements queries are not supported for local queries.",
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
->>>>>>> upstream/master
 
                 GridSqlQueryParser.PreparedWithRemaining prep = GridSqlQueryParser.preparedWithRemaining(stmt);
 
@@ -449,63 +417,12 @@ public class QueryParser {
                     throw new IgniteSQLException("Failed to get parameters metadata", IgniteQueryErrorCode.UNKNOWN, e);
                 }
 
-<<<<<<< HEAD
-            // Do actual parsing.
-            if (CommandProcessor.isCommand(prepared)) {
-                GridSqlStatement cmdH2 = new GridSqlQueryParser(false, log).parse(prepared);
-=======
                 // Do actual parsing.
                 if (CommandProcessor.isCommand(prepared)) {
                     GridSqlStatement cmdH2 = new GridSqlQueryParser(false, log).parse(prepared);
->>>>>>> upstream/master
 
                     QueryParserResultCommand cmd = new QueryParserResultCommand(null, cmdH2, false);
 
-<<<<<<< HEAD
-                return new QueryParserResult(
-                    newQryDesc,
-                    queryParameters(newQry),
-                    remainingQry,
-                    paramsMeta,
-                    null,
-                    null,
-                    cmd
-                );
-            }
-            else if (CommandProcessor.isCommandNoOp(prepared)) {
-                QueryParserResultCommand cmd = new QueryParserResultCommand(null, null, true);
-
-                return new QueryParserResult(
-                    newQryDesc,
-                    queryParameters(newQry),
-                    remainingQry,
-                    paramsMeta,
-                    null,
-                    null,
-                    cmd
-                );
-            }
-            else if (GridSqlQueryParser.isDml(prepared)) {
-                QueryParserResultDml dml = prepareDmlStatement(newQryDesc, prepared);
-
-                return new QueryParserResult(
-                    newQryDesc,
-                    queryParameters(newQry),
-                    remainingQry,
-                    paramsMeta,
-                    null,
-                    dml,
-                    null
-                );
-            }
-            else if (!prepared.isQuery()) {
-                throw new IgniteSQLException("Unsupported statement: " + newQry.getSql(),
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-            }
-
-            // Parse SELECT.
-            GridSqlQueryParser parser = new GridSqlQueryParser(false, log);
-=======
                     return new QueryParserResult(
                         newQryDesc,
                         queryParameters(newQry),
@@ -549,7 +466,6 @@ public class QueryParser {
 
                 // Parse SELECT.
                 GridSqlQueryParser parser = new GridSqlQueryParser(false, log);
->>>>>>> upstream/master
 
                 GridSqlQuery selectStmt = (GridSqlQuery)parser.parse(prepared);
 
@@ -579,13 +495,6 @@ public class QueryParser {
                 // node stripes in parallel and then merged through reduce process.
                 boolean splitNeeded = !loc || locSplit;
 
-<<<<<<< HEAD
-            String forUpdateQryOutTx = null;
-            String forUpdateQryTx = null;
-            GridCacheTwoStepQuery forUpdateTwoStepQry = null;
-
-            boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
-=======
                 String forUpdateQryOutTx = null;
                 String forUpdateQryTx = null;
                 GridCacheTwoStepQuery forUpdateTwoStepQry = null;
@@ -642,55 +551,16 @@ public class QueryParser {
                         );
                     }
                 }
->>>>>>> upstream/master
 
-            // SELECT FOR UPDATE case handling. We need to create extra queries with appended _key
-            // column to be able to lock selected rows further.
-            if (forUpdate) {
-                // We have checked above that it's not an UNION query, so it's got to be SELECT.
-                assert selectStmt instanceof GridSqlSelect;
+                GridCacheTwoStepQuery twoStepQry = null;
 
-                // Check FOR UPDATE invariants: only one table, MVCC is there.
-                if (cacheIds.size() != 1)
-                    throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
-                        "that involve single transactional cache.");
-
-                if (mvccCacheId == null)
-                    throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
-                        "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-                // We need a copy because we are going to modify AST a bit. We do not want to modify original select.
-                GridSqlSelect selForUpdate = ((GridSqlSelect)selectStmt).copySelectForUpdate();
-
-                // Clear forUpdate flag to run it as a plain query.
-                selForUpdate.forUpdate(false);
-                ((GridSqlSelect)selectStmt).forUpdate(false);
-
-                // Remember sql string without FOR UPDATE clause.
-                forUpdateQryOutTx = selForUpdate.getSQL();
-
-                GridSqlAlias keyCol = keyColumn(selForUpdate);
-
-                selForUpdate.addColumn(keyCol, true);
-
-                // Remember sql string without FOR UPDATE clause and with _key column.
-                forUpdateQryTx = selForUpdate.getSQL();
-
-                // Prepare additional two-step query for FOR UPDATE case.
                 if (splitNeeded) {
-<<<<<<< HEAD
-                    forUpdateTwoStepQry = GridSqlQuerySplitter.split(
-                        connMgr.connectionForThread().connection(newQry.getSchema()),
-                        selForUpdate,
-                        forUpdateQryTx,
-=======
                     c.schema(newQry.getSchema());
 
                     twoStepQry = GridSqlQuerySplitter.split(
                         c,
                         selectStmt,
                         newQry.getSql(),
->>>>>>> upstream/master
                         newQry.isCollocated(),
                         newQry.isDistributedJoins(),
                         newQry.isEnforceJoinOrder(),
@@ -700,25 +570,19 @@ public class QueryParser {
                         log
                     );
                 }
-            }
 
-            GridCacheTwoStepQuery twoStepQry = null;
+                List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
 
-            if (splitNeeded) {
-                twoStepQry = GridSqlQuerySplitter.split(
-                    connMgr.connectionForThread().connection(newQry.getSchema()),
+                QueryParserResultSelect select = new QueryParserResultSelect(
                     selectStmt,
-                    newQry.getSql(),
-                    newQry.isCollocated(),
-                    newQry.isDistributedJoins(),
-                    newQry.isEnforceJoinOrder(),
-                    locSplit,
-                    idx,
-                    paramsCnt,
-                    log
+                    twoStepQry,
+                    forUpdateTwoStepQry,
+                    meta,
+                    cacheIds,
+                    mvccCacheId,
+                    forUpdateQryOutTx,
+                    forUpdateQryTx
                 );
-<<<<<<< HEAD
-=======
 
                 return new QueryParserResult(
                     newQryDesc,
@@ -735,43 +599,8 @@ public class QueryParser {
             }
             finally {
                 U.close(stmt, log);
->>>>>>> upstream/master
             }
-
-            List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
-
-            QueryParserResultSelect select = new QueryParserResultSelect(
-                selectStmt,
-                twoStepQry,
-                forUpdateTwoStepQry,
-                meta,
-                cacheIds,
-                mvccCacheId,
-                forUpdateQryOutTx,
-                forUpdateQryTx
-            );
-
-            return new QueryParserResult(
-                newQryDesc,
-                queryParameters(newQry),
-                remainingQry,
-                paramsMeta,
-                select,
-                null,
-                null
-            );
         }
-        catch (IgniteCheckedException | SQLException e) {
-            throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
-        }
-<<<<<<< HEAD
-        finally {
-            qryCtxRegistry.clearThreadLocal();
-
-            U.close(stmt, log);
-        }
-=======
->>>>>>> upstream/master
     }
 
     /**

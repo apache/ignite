@@ -84,14 +84,6 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
      * @param inlineObjHashSupported Whether hash inlining is supported or not.
      * @return List of {@link InlineIndexColumn} objects.
      */
-<<<<<<< HEAD
-    static List<InlineIndexHelper> getAvailableInlineColumns(boolean affinityKey, String cacheName,
-        String idxName, IgniteLogger log, boolean pk, Table tbl, IndexColumn[] cols) {
-        List<InlineIndexHelper> res = new ArrayList<>();
-
-        for (IndexColumn col : cols) {
-            if (!InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType())) {
-=======
     static List<InlineIndexColumn> getAvailableInlineColumns(boolean affinityKey, String cacheName,
         String idxName, IgniteLogger log, boolean pk, Table tbl, IndexColumn[] cols,
         InlineIndexColumnFactory factory, boolean inlineObjHashSupported) {
@@ -99,7 +91,6 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
 
         for (IndexColumn col : cols) {
             if (!InlineIndexColumnFactory.typeSupported(col.column.getType())) {
->>>>>>> upstream/master
                 String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
 
                 U.warn(log, "Column cannot be inlined into the index because it's type doesn't support inlining, " +
@@ -109,31 +100,15 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
                     ", idxName=" + idxName +
                     ", idxType=" + idxType +
                     ", colName=" + col.columnName +
-<<<<<<< HEAD
-                    ", columnType=" + InlineIndexHelper.nameTypeBycode(col.column.getType()) + ']'
-                );
-=======
                     ", columnType=" + InlineIndexColumnFactory.nameTypeByCode(col.column.getType()) + ']'
                 );
 
                 res.trimToSize();
->>>>>>> upstream/master
 
                 break;
             }
 
-<<<<<<< HEAD
-            InlineIndexHelper idx = new InlineIndexHelper(
-                col.columnName,
-                col.column.getType(),
-                col.column.getColumnId(),
-                col.sortType,
-                tbl.getCompareMode());
-
-            res.add(idx);
-=======
             res.add(factory.createInlineHelper(col.column, inlineObjHashSupported));
->>>>>>> upstream/master
         }
 
         return res;
@@ -146,21 +121,10 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
      * @return Inline size.
      */
     protected static int computeInlineSize(
-<<<<<<< HEAD
-        List<InlineIndexHelper> inlineIdxs,
-        int cfgInlineSize,
-        int maxInlineSize
-    ) {
-        int propSize = maxInlineSize == -1
-            ? IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE, IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT)
-            : maxInlineSize;
-
-=======
         List<InlineIndexColumn> inlineIdxs,
         int cfgInlineSize,
         int maxInlineSize
     ) {
->>>>>>> upstream/master
         if (cfgInlineSize == 0)
             return 0;
 

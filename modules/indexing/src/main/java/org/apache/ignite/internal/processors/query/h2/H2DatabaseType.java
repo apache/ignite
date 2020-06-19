@@ -75,7 +75,7 @@ public enum H2DatabaseType {
 
     /** */
     UUID("UUID"),
-   
+
     /** */
     ARRAY("ARRAY"),
 

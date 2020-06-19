@@ -361,18 +361,10 @@ public class GridLuceneIndex implements AutoCloseable {
      *
      * @param qry Query.
      * @param filters Filters over result.
-     * @param limit Limits response records count. If 0 or less, the limit considered to be Integer.MAX_VALUE, that is virtually no limit.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-<<<<<<< HEAD
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(TextQuery qry, IndexingQueryFilter filters) throws IgniteCheckedException {
-=======
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String qry,
-        IndexingQueryFilter filters, int limit) throws IgniteCheckedException {
-        IndexReader reader;
-
->>>>>>> upstream/master
         try {
         	indexAccess.flush();
         }
@@ -430,7 +422,6 @@ public class GridLuceneIndex implements AutoCloseable {
             	query.add(new TermQuery(new Term("tag",tag)),BooleanClause.Occur.MUST);
             }
 
-<<<<<<< HEAD
             if(sort!=null){
             	String[] sorts = sort.split(",");
             	Sort sortObj = new Sort();
@@ -444,9 +435,6 @@ public class GridLuceneIndex implements AutoCloseable {
             else{
             	docs = searcher.search(query.build(), limit);
             }
-=======
-            docs = searcher.search(query, limit > 0 ? limit : Integer.MAX_VALUE);
->>>>>>> upstream/master
         }
         catch (Exception e) {
             //U.closeQuiet(indexAccess.reader);

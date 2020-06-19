@@ -197,7 +197,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
      * @return {@code true} if this cursor corresponds to a {@link ResultSet} as a result of query,
      * {@code false} if query was modifying operation like INSERT, UPDATE, or DELETE.
      */
-    @Override public boolean isQuery() {
+    public boolean isQuery() {
         return isQry;
     }
 

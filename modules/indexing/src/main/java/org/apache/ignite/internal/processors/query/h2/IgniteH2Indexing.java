@@ -26,10 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-<<<<<<< HEAD
-=======
 import java.util.HashMap;
->>>>>>> upstream/master
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -186,10 +183,7 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
-<<<<<<< HEAD
-=======
 import org.h2.index.Index;
->>>>>>> upstream/master
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableType;
@@ -488,23 +482,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName,
-<<<<<<< HEAD
-        String cacheName, TextQuery qry, String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
-=======
-        String cacheName, String qry, String typeName, IndexingQueryFilter filters, int limit) throws IgniteCheckedException {
->>>>>>> upstream/master
+        String cacheName, TextQuery<K, V> qry, String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
         H2TableDescriptor tbl = schemaMgr.tableForType(schemaName, cacheName, typeName);
 
         if (tbl != null && tbl.luceneIndex() != null) {
             Long qryId = runningQueryManager().register(qry.getText(), TEXT, schemaName, true, null);
 
             try {
-<<<<<<< HEAD
 				//modify@byron use TextQuery AS qry
                 return tbl.luceneIndex().query(qry, filters);
-=======
-                return tbl.luceneIndex().query(qry.toUpperCase(), filters, limit);
->>>>>>> upstream/master
             }
             finally {
                 runningQueryManager().unregister(qryId, null);
@@ -596,12 +582,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         );
 
                         return new H2FieldsIterator(rs, mvccTracker, conn, qryParams.pageSize(),
-<<<<<<< HEAD
-                            log, IgniteH2Indexing.this,
-                            qctx, qryParams.lazy());
-=======
                             log, IgniteH2Indexing.this, qryInfo);
->>>>>>> upstream/master
                     }
                     catch (IgniteCheckedException | RuntimeException | Error e) {
                         conn.close();
@@ -935,22 +916,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
 
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout())
-<<<<<<< HEAD
-                qryInfo.printLogMessage(log, "Long running query is finished");
-=======
                 qryInfo.printLogMessage(log, "Long running query is finished", null);
->>>>>>> upstream/master
 
             return rs;
         }
         catch (Throwable e) {
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout()) {
                 qryInfo.printLogMessage(log, "Long running query is finished with error: "
-<<<<<<< HEAD
-                    + e.getMessage());
-=======
                     + e.getMessage(), null);
->>>>>>> upstream/master
             }
 
             throw e;
@@ -1964,11 +1937,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-<<<<<<< HEAD
-    @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery qry) throws SQLException{
-=======
     @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery qry) throws SQLException {
->>>>>>> upstream/master
         QueryParserResult parsed = parser.parse(schemaName, qry, true);
 
         return parsed.isDml() && parsed.dml().streamable() && parsed.remainingQuery() == null;
@@ -2029,41 +1998,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
 
-<<<<<<< HEAD
-        rebuildCacheIdxFut.listen(fut -> {
-            Throwable err = fut.error();
-
-=======
         //to avoid possible data race
         GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
 
         rebuildCacheIdxFut.listen(fut -> {
             Throwable err = fut.error();
 
->>>>>>> upstream/master
             if (isNull(err)) {
                 try {
                     markIndexRebuild(cacheName, false);
                 }
                 catch (Throwable t) {
                     err = t;
-<<<<<<< HEAD
-
-                    rebuildCacheIdxFut.onDone(t);
-=======
->>>>>>> upstream/master
                 }
             }
 
             if (nonNull(err))
                 U.error(log, "Failed to rebuild indexes for cache: " + cacheName, err);
-<<<<<<< HEAD
-        });
-
-        rebuildIndexesFromHash0(cctx, clo, rebuildCacheIdxFut);
-
-        return rebuildCacheIdxFut;
-=======
 
             outRebuildCacheIdxFut.onDone(err);
         });
@@ -2071,7 +2022,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         rebuildIndexesFromHash0(cctx, clo, rebuildCacheIdxFut);
 
         return outRebuildCacheIdxFut;
->>>>>>> upstream/master
     }
 
     /**
@@ -2724,13 +2674,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             for (UpdateResult res : ress) {
                 res.throwIfError();
 
-<<<<<<< HEAD
-                QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(singletonList
-                    (singletonList(res.counter())), cancel, false, false);
-=======
                 QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(singletonList(
                     singletonList(res.counter())), cancel, false, false);
->>>>>>> upstream/master
 
                 resCur.fieldsMeta(UPDATE_RESULT_META);
 
@@ -2751,13 +2696,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             res.throwIfError();
 
-<<<<<<< HEAD
-            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(singletonList
-                (singletonList(res.counter())), cancel, false, false);
-=======
             QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(singletonList(
                 singletonList(res.counter())), cancel, false, false);
->>>>>>> upstream/master
 
             resCur.fieldsMeta(UPDATE_RESULT_META);
 

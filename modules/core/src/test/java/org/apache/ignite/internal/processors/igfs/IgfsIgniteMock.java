@@ -63,7 +63,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.hadoop.Hadoop;
+
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -148,12 +148,7 @@ public class IgfsIgniteMock implements IgniteEx {
         return F.eq(name, igfs.name()) ? igfs : null;
     }
 
-    /** {@inheritDoc} */
-    @Override public Hadoop hadoop() {
-        throwUnsupported();
-
-        return null;
-    }
+   
 
     /** {@inheritDoc} */
     @Override public IgniteClusterEx cluster() {

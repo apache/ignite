@@ -35,10 +35,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-<<<<<<< HEAD
-=======
 import org.apache.ignite.cache.CachePeekMode;
->>>>>>> upstream/master
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -237,23 +234,13 @@ public class GridH2Table extends TableBase {
         lock = new ReentrantReadWriteLock();
 
         if (cacheInfo.affinityNode()) {
-<<<<<<< HEAD
-            long totalTblSize = rowCount(false);
-=======
             long totalTblSize = cacheSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP);
->>>>>>> upstream/master
 
             size.add(totalTblSize);
         }
 
-<<<<<<< HEAD
-        // Init stats with the dummy values. This prevents us from scanning index with backup filter when
-        // topology may not be initialized yet.
-        tblStats = new TableStatistics(0, 0);
-=======
         // Init stats with the default values.
         tblStats = new TableStatistics(10_000, 10_000);
->>>>>>> upstream/master
 
         if (desc != null && desc.context() != null) {
             GridKernalContext ctx = desc.context().kernalContext();
@@ -1222,11 +1209,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-<<<<<<< HEAD
-        if (!localQuery())
-=======
         if (!localQuery(QueryContext.threadLocal()))
->>>>>>> upstream/master
             return 10_000; // Fallback to the previous behaviour.
 
         refreshStatsIfNeeded();
@@ -1235,19 +1218,11 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-<<<<<<< HEAD
-     * @return {@code True} if the current query is a local query.
-     */
-    private boolean localQuery() {
-        QueryContext qctx = rowDescriptor().indexing().queryContextRegistry().getThreadLocal();
-
-=======
      * @param qctx Context.
      *
      * @return {@code True} if the current query is a local query.
      */
     private boolean localQuery(QueryContext qctx) {
->>>>>>> upstream/master
         assert qctx != null;
 
         return qctx.local();
@@ -1263,12 +1238,6 @@ public class GridH2Table extends TableBase {
         long curTotalRowCnt = size.sum();
 
         // Update stats if total table size changed significantly since the last stats update.
-<<<<<<< HEAD
-        if (needRefreshStats(statsTotalRowCnt, curTotalRowCnt)) {
-            long primaryRowCnt = rowCount(true);
-
-            tblStats = new TableStatistics(curTotalRowCnt, primaryRowCnt);
-=======
         if (needRefreshStats(statsTotalRowCnt, curTotalRowCnt) && cacheInfo.affinityNode()) {
             long primaryRowCnt = cacheSize(CachePeekMode.PRIMARY);
             long totalRowCnt = cacheSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP);
@@ -1277,7 +1246,6 @@ public class GridH2Table extends TableBase {
             size.add(totalRowCnt);
 
             tblStats = new TableStatistics(totalRowCnt, primaryRowCnt);
->>>>>>> upstream/master
         }
     }
 
@@ -1296,17 +1264,6 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-<<<<<<< HEAD
-     * Retrieves partitions rows count for all segments.
-     *
-     * @param primaryOnly If {@code true}, only primary rows will be counted.
-     * @return Rows count.
-     */
-    private long rowCount(boolean primaryOnly) {
-        IndexingQueryCacheFilter partsFilter = primaryOnly ? backupFilter() : null;
-
-        return ((GridH2IndexBase)getUniqueIndex()).totalRowCount(partsFilter);
-=======
      * Retrieves partitions size.
      *
      * @return Rows count.
@@ -1318,7 +1275,6 @@ public class GridH2Table extends TableBase {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
->>>>>>> upstream/master
     }
 
     /**

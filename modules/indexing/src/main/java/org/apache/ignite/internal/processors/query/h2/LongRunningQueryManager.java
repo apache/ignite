@@ -33,15 +33,12 @@ public final class LongRunningQueryManager {
     /** Check period in ms. */
     private static final long CHECK_PERIOD = 1_000;
 
-<<<<<<< HEAD
-=======
     /**
      * Default threshold result's row count, when count of fetched rows is bigger than the threshold
      * warning will be printed.
      */
     private static final long DFLT_FETCHED_SIZE_THRESHOLD = 100_000;
 
->>>>>>> upstream/master
     /** Message about the long execution of the query. */
     public static final String LONG_QUERY_EXEC_MSG = "Query execution is too long";
 
@@ -144,11 +141,7 @@ public final class LongRunningQueryManager {
             H2QueryInfo qinfo = e.getKey();
 
             if (e.getValue().checkTimeout(qinfo.time())) {
-<<<<<<< HEAD
-                qinfo.printLogMessage(log, LONG_QUERY_EXEC_MSG);
-=======
                 qinfo.printLogMessage(log, LONG_QUERY_EXEC_MSG, null);
->>>>>>> upstream/master
 
                 if (e.getValue().timeoutMult <= 1)
                     qrys.remove(qinfo);

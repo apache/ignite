@@ -274,11 +274,7 @@ public class GridSqlQuerySplitter {
         // The distributedJoins parameter is ignored because it is not relevant for
         // the REDUCE query optimization.
         qry = GridSqlQueryParser.parseQuery(
-<<<<<<< HEAD
-            prepare(conn, qry.getSQL(), false, enforceJoinOrder),
-=======
             prepare(conn, H2Utils.context(conn), qry.getSQL(), false, enforceJoinOrder),
->>>>>>> upstream/master
             true, log);
 
         // Do the actual query split. We will update the original query AST, need to be careful.

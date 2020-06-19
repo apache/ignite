@@ -57,10 +57,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-<<<<<<< HEAD
-import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
-=======
->>>>>>> upstream/master
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -368,15 +364,9 @@ public class GridReduceQueryExecutor {
             params = EMPTY_PARAMS;
 
         List<Integer> cacheIds = qry.cacheIds();
-<<<<<<< HEAD
 
         List<GridCacheSqlQuery> mapQueries = prepareMapQueries(qry, params, singlePartMode);
 
-=======
-
-        List<GridCacheSqlQuery> mapQueries = prepareMapQueries(qry, params, singlePartMode);
-
->>>>>>> upstream/master
         final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable() || singlePartMode;
 
         final int segmentsPerIndex = qry.explain() || qry.isReplicatedOnly() ? 1 :
@@ -405,24 +395,6 @@ public class GridReduceQueryExecutor {
             }
 
             ReducePartitionMapResult mapping = createMapping(qry, parts, cacheIds, topVer);
-<<<<<<< HEAD
-
-            if (mapping == null) // Can't map query.
-                continue; // Retry.
-
-            final Collection<ClusterNode> nodes = mapping.nodes();
-
-            assert !F.isEmpty(nodes);
-
-            final long qryReqId = qryIdGen.incrementAndGet();
-
-            boolean retry = false;
-            boolean release = true;
-
-            final ReduceQueryRun r = createReduceQueryRun(
-                (JdbcConnection)h2.connections().connectionForThread().connection(schemaName),
-                mapQueries, nodes, pageSize, segmentsPerIndex, skipMergeTbl, qry.explain(), dataPageScanEnabled);
-=======
 
             if (mapping == null) // Can't map query.
                 continue; // Retry.
@@ -533,29 +505,9 @@ public class GridReduceQueryExecutor {
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
                             final PreparedStatement stmt = conn.prepareStatementNoCache(rdc.query());
->>>>>>> upstream/master
 
                             H2Utils.bindParameters(stmt, F.asList(rdc.parameters(params)));
 
-<<<<<<< HEAD
-            ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn = h2.connections().detachThreadConnection();
-
-            try {
-                cancel.add(() -> send(nodes, new GridQueryCancelRequest(qryReqId), null, true));
-
-                GridH2QueryRequest req = new GridH2QueryRequest()
-                    .requestId(qryReqId)
-                    .topologyVersion(topVer)
-                    .pageSize(pageSize)
-                    .caches(qry.cacheIds())
-                    .tables(qry.distributedJoins() ? qry.tables() : null)
-                    .partitions(convert(mapping.partitionsMap()))
-                    .queries(mapQueries)
-                    .parameters(params)
-                    .flags(queryFlags(qry, enforceJoinOrder || !singlePartMode, lazy, dataPageScanEnabled))
-                    .timeout(timeoutMillis)
-                    .schemaName(schemaName);
-=======
                             ReduceH2QueryInfo qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(), qryReqId);
 
                             ResultSet res = h2.executeSqlQueryWithTimer(stmt,
@@ -652,7 +604,6 @@ public class GridReduceQueryExecutor {
             throw new CacheException("Query was interrupted.", e);
         }
     }
->>>>>>> upstream/master
 
     /**
      * Check if query is cancelled.
@@ -664,17 +615,12 @@ public class GridReduceQueryExecutor {
         if (Thread.currentThread().isInterrupted())
             throw new CacheException(new IgniteInterruptedCheckedException("Query was interrupted."));
 
-<<<<<<< HEAD
-                final C2<ClusterNode, Message, Message> spec =
-                    parts == null ? null : new ReducePartitionsSpecializer(mapping.queryPartitionsMap());
-=======
         try {
             cancel.checkCancelled();
         }
         catch (QueryCancelledException cancelEx) {
             throw new CacheException("Failed to run reduce query locally. " + cancelEx.getMessage(), cancelEx);
         }
->>>>>>> upstream/master
 
         if (ctx.clientDisconnected()) {
             throw new CacheException("Query was cancelled, client node disconnected.",
@@ -702,59 +648,15 @@ public class GridReduceQueryExecutor {
             else {
                 mapQueries = new ArrayList<>(qry.mapQueries().size());
 
-<<<<<<< HEAD
-                            if (QueryUtils.wasCancelled(err))
-                                throw new QueryCancelledException(); // Throw correct exception.
-=======
                 // Copy queries here because node ID will be changed below.
                 for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                     final GridCacheSqlQuery copy = mapQry.copy();
->>>>>>> upstream/master
 
                     mapQueries.add(copy);
 
                     if (qry.explain())
                         copy.query("EXPLAIN " + mapQry.query()).parameterIndexes(mapQry.parameterIndexes());
                 }
-<<<<<<< HEAD
-                else // Send failed.
-                    retry = true;
-
-                if (retry) {
-                    lastRun = runs.remove(qryReqId);
-                    assert lastRun != null;
-
-                    continue;
-                }
-                else {
-                    Iterator<List<?>> resIter;
-
-                    if (skipMergeTbl) {
-                        resIter = new ReduceIndexIterator(this,
-                            nodes,
-                            r,
-                            qryReqId,
-                            qry.distributedJoins(),
-                            mvccTracker);
-
-                        release = false;
-                    }
-                    else {
-                        ensureQueryNotCancelled(cancel);
-
-                        QueryContext qctx = new QueryContext(
-                            0,
-                            null,
-                            null,
-                            null,
-                            null,
-                            true
-                        );
-
-                        H2Utils.setupConnection(r.connection(), false, enforceJoinOrder);
-
-                        QueryContextRegistry qryCtxRegistry = h2.queryContextRegistry();
-=======
             }
         }
         return mapQueries;
@@ -793,7 +695,6 @@ public class GridReduceQueryExecutor {
         int replicatedQrysCnt = 0;
         for (GridCacheSqlQuery mapQry : mapQueries) {
             Reducer reducer;
->>>>>>> upstream/master
 
             if (skipMergeTbl)
                 reducer = UnsortedReducer.createDummy(ctx);
@@ -818,43 +719,15 @@ public class GridReduceQueryExecutor {
 
                 mapQry.node(node.id());
 
-<<<<<<< HEAD
-                            ResultSet res = h2.executeSqlQueryWithTimer(stmt, r.connection(),
-                                rdc.query(),
-                                F.asList(rdc.parameters(params)),
-                                timeoutMillis,
-                                cancel,
-                                dataPageScanEnabled,
-                                qryInfo
-                            );
-
-                            resIter = new H2FieldsIterator(res, mvccTracker, detachedConn, r.pageSize(), log, h2,
-                                qctx, lazy);
-=======
                 replicatedQrysCnt++;
 
                 reducer.setSources(singletonList(node), 1); // Replicated tables can have only 1 segment.
             }
             else
                 reducer.setSources(nodes, segmentsPerIndex);
->>>>>>> upstream/master
 
             reducer.setPageSize(r.pageSize());
 
-<<<<<<< HEAD
-                            mvccTracker = null; // To prevent callback inside finally block;
-                        }
-                        finally {
-                            qryCtxRegistry.clearThreadLocal();
-                        }
-                    }
-
-                    return new GridQueryCacheObjectsIterator(resIter, h2.objectContext(), keepBinary);
-                }
-            }
-            catch (IgniteCheckedException | RuntimeException e) {
-                release = true;
-=======
             r.reducers().add(reducer);
         }
 
@@ -874,19 +747,12 @@ public class GridReduceQueryExecutor {
         Boolean dataPageScanEnabled) {
         if (qry.distributedJoins())
             enforceJoinOrder = true;
->>>>>>> upstream/master
 
         return GridH2QueryRequest.queryFlags(qry.distributedJoins(),
             enforceJoinOrder, lazy, qry.isReplicatedOnly(),
             qry.explain(), dataPageScanEnabled);
     }
 
-<<<<<<< HEAD
-                if (e instanceof CacheException) {
-                    if (QueryUtils.wasCancelled(e))
-                        throw new CacheException("Failed to run reduce query locally.",
-                            new QueryCancelledException());
-=======
     /**
      * Create mapping for query.
      *
@@ -905,7 +771,6 @@ public class GridReduceQueryExecutor {
         else {
             ReducePartitionMapResult nodesParts =
                 mapper.nodesForPartitions(cacheIds, topVer, parts, qry.isReplicatedOnly());
->>>>>>> upstream/master
 
             Collection<ClusterNode> nodes = nodesParts.nodes();
 
@@ -924,245 +789,7 @@ public class GridReduceQueryExecutor {
                     nodes = singletonList(F.rand(nodes));
                 }
 
-<<<<<<< HEAD
-                throw new CacheException("Failed to run reduce query locally. " + cause.getMessage(), cause);
-            }
-            finally {
-                if (detachedConn != null)
-                    detachedConn.recycle();
-
-                if (release) {
-                    releaseRemoteResources(nodes, r, qryReqId, qry.distributedJoins(), mvccTracker);
-=======
                 return new ReducePartitionMapResult(nodes, nodesParts.partitionsMap(), nodesParts.queryPartitionsMap());
-            }
->>>>>>> upstream/master
-
-            return nodesParts;
-        }
-    }
-
-    /**
-     * Wait on retry.
-     *
-     * @param lastRun Previous query run.
-     * @param startTime Query start time.
-     * @param retryTimeout Query retry timeout.
-     * @param timeoutMultiplier Timeout multiplier.
-     */
-    private void throttleOnRetry(
-        @Nullable ReduceQueryRun lastRun,
-        long startTime,
-        long retryTimeout,
-        int timeoutMultiplier) {
-        if (retryTimeout > 0 && (U.currentTimeMillis() - startTime > retryTimeout)) {
-            // There are few cases when 'retryCause' can be undefined, so we should throw exception with proper message here.
-            if (lastRun == null || lastRun.retryCause() == null)
-                throw new CacheException("Failed to map SQL query to topology during timeout: " + retryTimeout + "ms");
-
-            UUID retryNodeId = lastRun.retryNodeId();
-            String retryCause = lastRun.retryCause();
-
-            throw new CacheException("Failed to map SQL query to topology on data node [dataNodeId=" + retryNodeId +
-                ", msg=" + retryCause + ']');
-        }
-
-        try {
-            Thread.sleep(Math.min(10_000, timeoutMultiplier * 10)); // Wait for exchange.
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new CacheException("Query was interrupted.", e);
-        }
-    }
-
-    /**
-     * Check if query is cancelled.
-     *
-     * @param cancel Query cancel object.
-     * @throws CacheException If query was cancelled.
-     */
-    private void ensureQueryNotCancelled(GridQueryCancel cancel) {
-        if (Thread.currentThread().isInterrupted())
-            throw new CacheException(new IgniteInterruptedCheckedException("Query was interrupted."));
-
-        try {
-            cancel.checkCancelled();
-        }
-        catch (QueryCancelledException cancelEx) {
-            throw new CacheException("Failed to run reduce query locally. " + cancelEx.getMessage(),  cancelEx);
-        }
-
-        if (ctx.clientDisconnected()) {
-            throw new CacheException("Query was cancelled, client node disconnected.",
-                new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
-                    "Client node disconnected."));
-        }
-    }
-
-    /**
-     * Prepare map queries.
-     * @param qry TwoStep query.
-     * @param params Query parameters.
-     * @param singlePartMode Single partition mode flag.
-     * @return List of map queries.
-     */
-    @NotNull private List<GridCacheSqlQuery> prepareMapQueries(
-        GridCacheTwoStepQuery qry,
-        Object[] params,
-        boolean singlePartMode) {
-        List<GridCacheSqlQuery> mapQueries;
-
-        {
-            if (singlePartMode)
-                mapQueries = prepareMapQueryForSinglePartition(qry, params);
-            else {
-                mapQueries = new ArrayList<>(qry.mapQueries().size());
-
-                // Copy queries here because node ID will be changed below.
-                for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
-                    final GridCacheSqlQuery copy = mapQry.copy();
-
-                    mapQueries.add(copy);
-
-                    if (qry.explain())
-                        copy.query("EXPLAIN " + mapQry.query()).parameterIndexes(mapQry.parameterIndexes());
-                }
-            }
-        }
-        return mapQueries;
-    }
-
-    /**
-     * Query run factory method.
-     *
-     * @param conn H2 connection.
-     * @param mapQueries Map queries.
-     * @param nodes Target nodes.
-     * @param pageSize Page size.
-     * @param segmentsPerIndex Segments per-index.
-     * @param skipMergeTbl Skip merge table flag.
-     * @param explain Explain query flag.
-     * @param dataPageScanEnabled DataPage scan enabled flag.
-     * @return Reduce query run.
-     */
-    @NotNull private ReduceQueryRun createReduceQueryRun(
-        JdbcConnection conn,
-        List<GridCacheSqlQuery> mapQueries,
-        Collection<ClusterNode> nodes,
-        int pageSize,
-        int segmentsPerIndex,
-        boolean skipMergeTbl,
-        boolean explain,
-        Boolean dataPageScanEnabled) {
-
-        final ReduceQueryRun r = new ReduceQueryRun(
-            conn,
-            mapQueries.size(),
-            pageSize,
-            dataPageScanEnabled
-        );
-
-        int tblIdx = 0;
-        int replicatedQrysCnt = 0;
-        for (GridCacheSqlQuery mapQry : mapQueries) {
-            Reducer reducer;
-
-            if (skipMergeTbl)
-                reducer = UnsortedReducer.createDummy(ctx);
-            else {
-                ReduceTable tbl;
-
-                try {
-                    tbl = createMergeTable(conn, mapQry, explain);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-
-                reducer = tbl.getReducer();
-
-                fakeTable(conn, tblIdx++).innerTable(tbl);
-            }
-
-            // If the query has only replicated tables, we have to run it on a single node only.
-            if (!mapQry.isPartitioned()) {
-                ClusterNode node = F.rand(nodes);
-
-                mapQry.node(node.id());
-
-                replicatedQrysCnt++;
-
-                reducer.setSources(singletonList(node), 1); // Replicated tables can have only 1 segment.
-            }
-            else
-                reducer.setSources(nodes, segmentsPerIndex);
-
-            reducer.setPageSize(r.pageSize());
-
-            r.reducers().add(reducer);
-        }
-
-        r.init( (r.reducers().size() - replicatedQrysCnt) * nodes.size() * segmentsPerIndex + replicatedQrysCnt);
-
-        return r;
-    }
-
-    /**
-     * Build query flags.
-     *
-     * @return Query flags.
-     */
-    private int queryFlags(GridCacheTwoStepQuery qry,
-        boolean enforceJoinOrder,
-        boolean lazy,
-        Boolean dataPageScanEnabled) {
-        if (qry.distributedJoins())
-            enforceJoinOrder = true;
-
-        return GridH2QueryRequest.queryFlags(qry.distributedJoins(),
-            enforceJoinOrder, lazy, qry.isReplicatedOnly(),
-            qry.explain(), dataPageScanEnabled);
-    }
-
-    /**
-     * Create mapping for query.
-     *
-     * @param qry Query.
-     * @param parts Partitions.
-     * @param cacheIds Cache ids.
-     * @param topVer Topology version.
-     * @return
-     */
-    private ReducePartitionMapResult createMapping(GridCacheTwoStepQuery qry,
-        @Nullable int[] parts,
-        List<Integer> cacheIds,
-        AffinityTopologyVersion topVer) {
-        if (qry.isLocalSplit() || !qry.hasCacheIds())
-            return new ReducePartitionMapResult(singletonList(ctx.discovery().localNode()), null, null);
-        else {
-            ReducePartitionMapResult nodesParts =
-                mapper.nodesForPartitions(cacheIds, topVer, parts, qry.isReplicatedOnly());
-
-            Collection<ClusterNode> nodes = nodesParts.nodes();
-
-            if (F.isEmpty(nodes))
-                return null;
-
-            if (qry.explain() || qry.isReplicatedOnly()) {
-                ClusterNode locNode = ctx.discovery().localNode();
-
-                // Always prefer local node if possible.
-                if (nodes.contains(locNode))
-                    nodes = singletonList(locNode);
-                else {
-                    // Select random data node to run query on a replicated data or
-                    // get EXPLAIN PLAN from a single node.
-                    nodes = singletonList(F.rand(nodes));
-                }
-
-                return new ReducePartitionMapResult(nodes,  nodesParts.partitionsMap(), nodesParts.queryPartitionsMap());
             }
 
             return nodesParts;

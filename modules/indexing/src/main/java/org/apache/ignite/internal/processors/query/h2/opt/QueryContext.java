@@ -77,8 +77,6 @@ public class QueryContext {
         this.mvccSnapshot = mvccSnapshot;
         this.reservations = reservations;
         this.loc = loc;
-<<<<<<< HEAD
-=======
     }
 
     /**
@@ -94,7 +92,6 @@ public class QueryContext {
             null,
             null,
             local);
->>>>>>> upstream/master
     }
 
     /**
