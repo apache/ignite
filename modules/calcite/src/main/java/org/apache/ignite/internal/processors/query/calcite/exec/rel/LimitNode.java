@@ -131,7 +131,6 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     @Override public void push(Row row) {
         checkThread();
 
-
         assert downstream != null;
 
         waiting--;
