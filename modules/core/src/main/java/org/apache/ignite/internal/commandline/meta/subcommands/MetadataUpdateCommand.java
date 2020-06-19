@@ -43,7 +43,7 @@ public class MetadataUpdateCommand
     extends MetadataAbstractSubCommand<MetadataMarshalled, MetadataMarshalled>
 {
     /** Output file name. */
-    public static final String OPT_IN_FILE_NAME = "--in";
+    public static final String IN_FILE_NAME = "--in";
 
     /** {@inheritDoc} */
     @Override protected String taskName() {
@@ -59,7 +59,7 @@ public class MetadataUpdateCommand
     @Override public MetadataMarshalled parseArguments0(CommandArgIterator argIter) {
         String opt = argIter.nextArg("--in");
 
-        if (!OPT_IN_FILE_NAME.equalsIgnoreCase(opt))
+        if (!IN_FILE_NAME.equalsIgnoreCase(opt))
             throw new IllegalArgumentException("");
 
         Path inFile = FS.getPath(argIter.nextArg("input file name"));

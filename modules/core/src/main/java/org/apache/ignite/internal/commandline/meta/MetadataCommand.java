@@ -64,8 +64,8 @@ public class MetadataCommand implements Command<Object> {
                 "(the type must be specified by type name or by type identifier):",
             METADATA,
             DETAILS.toString(),
-            optional(MetadataTypeArgs.OPT_TYPE_ID, "<typeId>"),
-            optional(MetadataTypeArgs.OPT_TYPE_NAME, "<typeName>")
+            optional(MetadataTypeArgs.TYPE_ID, "<typeId>"),
+            optional(MetadataTypeArgs.TYPE_NAME, "<typeName>")
         );
 
         usage(log, "Remove the metadata of the specified type " +
@@ -74,15 +74,15 @@ public class MetadataCommand implements Command<Object> {
                 "If the file name isn't specified the output file name is: '<typeId>.bin'",
             METADATA,
             REMOVE.toString(),
-            optional(MetadataTypeArgs.OPT_TYPE_ID, "<typeId>"),
-            optional(MetadataTypeArgs.OPT_TYPE_NAME, "<typeName>"),
-            optional(MetadataRemoveCommand.OPT_OUT_FILE_NAME, "<fileName>")
+            optional(MetadataTypeArgs.TYPE_ID, "<typeId>"),
+            optional(MetadataTypeArgs.TYPE_NAME, "<typeName>"),
+            optional(MetadataRemoveCommand.OUT_FILE_NAME, "<fileName>")
         );
 
         usage(log, "Update cluster metadata from specified file (file name is required)",
             METADATA,
             UPDATE.toString(),
-            MetadataUpdateCommand.OPT_IN_FILE_NAME, "<fileName>"
+            MetadataUpdateCommand.IN_FILE_NAME, "<fileName>"
         );
     }
 

@@ -31,10 +31,10 @@ public class MetadataTypeArgs extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Type name argument. */
-    public static final String OPT_TYPE_NAME = "--typeName";
+    public static final String TYPE_NAME = "--typeName";
 
     /** Type ID argument. */
-    public static final String OPT_TYPE_ID = "--typeId";
+    public static final String TYPE_ID = "--typeId";
 
     /** Config. */
     private String typeName;
@@ -99,15 +99,15 @@ public class MetadataTypeArgs extends IgniteDataTransferObject {
         Integer typeId = null;
 
         while (argIter.hasNextSubArg() && typeName == null && typeId == null) {
-            String optName = argIter.nextArg("Expecting " + OPT_TYPE_NAME + " or " + OPT_TYPE_ID);
+            String optName = argIter.nextArg("Expecting " + TYPE_NAME + " or " + TYPE_ID);
 
             switch (optName) {
-                case OPT_TYPE_NAME:
+                case TYPE_NAME:
                     typeName = argIter.nextArg("type name");
 
                     break;
 
-                case OPT_TYPE_ID:
+                case TYPE_ID:
                     typeId = argIter.nextIntArg("typeId");
 
                     break;

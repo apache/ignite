@@ -44,7 +44,7 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 public class MetadataRemoveCommand
     extends MetadataAbstractSubCommand<MetadataTypeArgs, MetadataMarshalled> {
     /** Output file name. */
-    public static final String OPT_OUT_FILE_NAME = "--out";
+    public static final String OUT_FILE_NAME = "--out";
 
     /** Output file. */
     private Path outFile;
@@ -69,7 +69,7 @@ public class MetadataRemoveCommand
         while (argIter.hasNextSubArg() && outFile == null) {
             String opt = argIter.nextArg("");
 
-            if (OPT_OUT_FILE_NAME.equalsIgnoreCase(opt)) {
+            if (OUT_FILE_NAME.equalsIgnoreCase(opt)) {
                 String fileName = argIter.nextArg("output file name");
 
                 outFile = FS.getPath(fileName);
