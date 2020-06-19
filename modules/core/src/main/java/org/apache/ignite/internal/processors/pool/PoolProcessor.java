@@ -28,7 +28,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
-import org.apache.ignite.thread.SameThreadExecutor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -150,9 +149,6 @@ public class PoolProcessor extends GridProcessorAdapter {
                 assert ctx.getSchemaExecutorService() != null : "Query pool is not configured.";
 
                 return ctx.getSchemaExecutorService();
-
-            case GridIoPolicy.CALLER_THREAD:
-                return SameThreadExecutor.INSTANCE;
 
             default: {
                 if (plc < 0)

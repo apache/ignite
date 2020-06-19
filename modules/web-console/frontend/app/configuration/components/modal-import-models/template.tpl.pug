@@ -1,0 +1,263 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+mixin td-ellipses-lbl(w, lbl)
+    td.td-ellipsis(width=`${w}` style=`min-width: ${w}; max-width: ${w}`)
+        label #{lbl}
+
+.modal--ignite.modal--wide.modal.modal-domain-import.center(role='dialog')
+    -var tipOpts = {};
+    - tipOpts.container = '.modal-content'
+    - tipOpts.placement = 'right'
+    .modal-dialog
+        .modal-content(ignite-loading='importDomainFromDb' ignite-loading-text='{{importDomain.loadingOptions.text}}')
+            #errors-container.modal-header.header
+                button.close(type='button' ng-click='$hide()' aria-hidden='true')
+                    svg(ignite-icon="cross")
+                h4.modal-title()
+                    span(ng-if='!importDomain.demo') Import domain models from database
+                    span(ng-if='importDomain.demo') Import domain models from demo database
+            .modal-body(ng-if-start='$ctrl.agentIsAvailable$ | async: this')
+                modal-import-models-step-indicator(
+                    steps='$ctrl.actions'
+                    current-step='importDomain.action'
+                )
+                .import-domain-model-wizard-page(ng-if='importDomain.action == "drivers" && !importDomain.jdbcDriversNotFound')
+                .import-domain-model-wizard-page(ng-if='importDomain.action == "drivers" && importDomain.jdbcDriversNotFound')
+                    | Domain model could not be imported
+                    ul
+                        li Agent failed to find JDBC drivers
+                        li Copy required JDBC drivers into agent 'jdbc-drivers' folder and try again
+                        li Refer to agent README.txt for more information
+                .import-domain-model-wizard-page(ng-if='importDomain.action == "connect" && importDomain.demo')
+                    div(ng-if='demoConnection.db == "H2"')
+                        ul
+                            li In-memory H2 database server will be started inside agent.
+                            li Database will be populated with sample tables.
+                            li You could test domain model generation with this demo database.
+                            li Click "Next" to continue.
+                    div(ng-if='demoConnection.db != "H2"')
+                        label Demo could not be started
+                            ul
+                                li Agent failed to resolve H2 database jar
+                                li Copy h2-x.x.x.jar into agent 'jdbc-drivers' folder and try again
+                                li Refer to agent README.txt for more information
+                .import-domain-model-wizard-page(ng-if='importDomain.action == "connect" && !importDomain.demo')
+                    form.pc-form-grid-row(name=form novalidate)
+                        .pc-form-grid-col-30
+                            +form-field__dropdown({
+                                label: 'Driver JAR:',
+                                model: 'ui.selectedJdbcDriverJar',
+                                name: '"jdbcDriverJar"',
+                                required: true,
+                                placeholder: 'Choose JDBC driver',
+                                options: 'jdbcDriverJars',
+                                tip: 'Select appropriate JAR with JDBC driver<br> To add another driver you need to place it into "/jdbc-drivers" folder of Ignite Web Agent<br> Refer to Ignite Web Agent README.txt for for more information'
+                            })
+                        .pc-form-grid-col-30
+                            +form-field__java-class({
+                                label: 'JDBC driver:',
+                                model: 'selectedPreset.jdbcDriverClass',
+                                name: '"jdbcDriverClass"',
+                                required: true,
+                                tip: 'Fully qualified class name of JDBC driver that will be used to connect to database'
+                            })
+                        .pc-form-grid-col-60
+                            +form-field__text({
+                                label: 'JDBC URL:',
+                                model: 'selectedPreset.jdbcUrl',
+                                name: '"jdbcUrl"',
+                                required: true,
+                                placeholder: 'JDBC URL',
+                                tip: 'JDBC URL for connecting to database<br>Refer to your database documentation for details'
+                            })(
+                                ignite-form-field-input-autofocus='true'
+                            )
+
+                        .pc-form-grid-col-30
+                            +form-field__text({
+                                label: 'User:',
+                                model: 'selectedPreset.user',
+                                name: '"jdbcUser"',
+                                tip: 'User name for connecting to database'
+                            })
+                        .pc-form-grid-col-30
+                            +form-field__password({
+                                label: 'Password:',
+                                model: 'selectedPreset.password',
+                                name: '"jdbcPassword"',
+                                tip: 'Password for connecting to database<br>Note, password would not be saved in preferences for security reasons'
+                            })(
+                                ignite-on-enter='importDomainNext()'
+                            )
+                        .pc-form-grid-col-60
+                            +form-field__checkbox({
+                                label: 'Tables only',
+                                model: 'selectedPreset.tablesOnly',
+                                name: '"tablesOnly"',
+                                tip: 'If selected, then only tables metadata will be parsed<br>Otherwise table and view metadata will be parsed',
+                                tipOpts
+                            })
+
+                .import-domain-model-wizard-page(ng-if='importDomain.action == "schemas"')
+                    pc-items-table(
+                        column-defs='::$ctrl.schemasColumnDefs'
+                        items='importDomain.schemas'
+                        hide-header='::true'
+                        one-way-selection='::true'
+                        selected-row-id='$ctrl.selectedSchemasIDs'
+                        on-selection-change='$ctrl.onSchemaSelectionChange($event)'
+                        row-identity-key='name'
+                    )
+                .import-domain-model-wizard-page(ng-if='importDomain.action == "tables"')
+                    form.pc-form-grid-row(novalidate)
+                        .pc-form-grid-col-30
+                            +form-field__dropdown({
+                                label: 'Action:',
+                                model: 'importCommon.action'
+                            })(
+                                bs-options='item.value as item.label for item in importActions'
+                            )
+                        .pc-form-grid-col-30
+                            +form-field__dropdown({
+                                label: 'Cache:',
+                                model: 'importCommon.cacheOrTemplate'
+                            })(
+                                bs-options='item.value as item.label for item in importCommon.cachesOrTemplates'
+                                ng-change='$ctrl.onCacheSelect(importCommon.cacheOrTemplate)'
+                            )
+                        .pc-form-grid-col-60.pc-form-grid__text-only-item
+                            +form-field__label({ label: 'Defaults to be applied for filtered tables' })
+                                +form-field__tooltip({ title: 'Select and apply options for caches generation' })
+                            button.btn-ignite.btn-ignite--success(
+                                type='button'
+                                ng-click='applyDefaults()'
+                                style='margin-left: auto'
+                            ) Apply
+                    pc-items-table(
+                        column-defs='::$ctrl.tablesColumnDefs'
+                        items='importDomain.tables'
+                        hide-header='::true'
+                        on-visible-rows-change='$ctrl.onVisibleRowsChange($event)'
+                        one-way-selection='::true'
+                        selected-row-id='$ctrl.selectedTablesIDs'
+                        on-selection-change='$ctrl.onTableSelectionChange($event)'
+                        row-identity-key='id'
+                    )
+                .import-domain-model-wizard-page(ng-show='importDomain.action == "options"')
+                    -var form = 'optionsForm'
+                    -var generatePojo = 'ui.generatePojo'
+
+                    form.pc-form-grid-row(name=form novalidate)
+                        .pc-form-grid-col-60
+                            +form-field__checkbox({
+                                label: 'Use Java built-in types for keys',
+                                model: 'ui.builtinKeys',
+                                name: '"domainBuiltinKeys"',
+                                tip: 'Use Java built-in types like "Integer", "Long", "String" instead of POJO generation in case when table primary key contains only one field',
+                                tipOpts
+                            })
+                        .pc-form-grid-col-60
+                            +form-field__checkbox({
+                                label: 'Use primitive types for NOT NULL table columns',
+                                model: 'ui.usePrimitives',
+                                name: '"domainUsePrimitives"',
+                                tip: 'Use primitive types like "int", "long", "double" for POJOs fields generation in case of NOT NULL columns',
+                                tipOpts
+                            })
+                        .pc-form-grid-col-60
+                            +form-field__checkbox({
+                                label: 'Generate query entity key fields',
+                                model: 'ui.generateKeyFields',
+                                name: '"generateKeyFields"',
+                                tip: 'Generate key fields for query entity.<br\>\
+                                We need this for the cases when no key-value classes\
+                                are present on cluster nodes, and we need to build/modify keys and values during SQL DML operations.\
+                                Thus, setting this parameter is not mandatory and should be based on particular use case.',
+                                tipOpts
+                            })
+                        .pc-form-grid-col-60
+                            +form-field__checkbox({
+                                label: 'Generate POJO classes',
+                                model: generatePojo,
+                                name: '"domainGeneratePojo"',
+                                tip: 'If selected then POJO classes will be generated from database tables',
+                                tipOpts
+                            })
+                        .pc-form-grid-col-60(ng-if=generatePojo)
+                            +form-field__checkbox({
+                                label: 'Generate aliases for query entity',
+                                model: 'ui.generateTypeAliases',
+                                name: '"domainGenerateTypeAliases"',
+                                tip: 'Generate aliases for query entity if table name is invalid Java identifier',
+                                tipOpts
+                            })
+                        .pc-form-grid-col-60(ng-if=generatePojo)
+                            +form-field__checkbox({
+                                label: 'Generate aliases for query fields',
+                                model: 'ui.generateFieldAliases',
+                                name: '"domainGenerateFieldAliases"',
+                                tip: 'Generate aliases for query fields with database field names when database field name differ from Java field name',
+                                tipOpts
+                            })
+                        .pc-form-grid-col-60(ng-if=generatePojo)
+                            +form-field__java-package({
+                                label: 'Package:',
+                                model: 'ui.packageName',
+                                name: '"domainPackageName"',
+                                required: true,
+                                tip: 'Package that will be used for POJOs generation',
+                                tipOpts
+                            })
+
+            .modal-footer(ng-if-end)
+                button.btn-ignite.btn-ignite--success.modal-import-models__prev-button(
+                    type='button'
+                    ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"'
+                    ng-click='importDomainPrev()'
+                    b_s-tooltip=''
+                    d_ata-title='{{prevTooltipText()}}'
+                    d_ata-placement='bottom'
+                ) Prev
+                selected-items-amount-indicator(
+                    ng-if='$ctrl.$scope.importDomain.action === "schemas"'
+                    selected-amount='$ctrl.selectedSchemasIDs.length'
+                    total-amount='$ctrl.$scope.importDomain.schemas.length'
+                )
+                selected-items-amount-indicator(
+                    ng-if='$ctrl.$scope.importDomain.action === "tables"'
+                    selected-amount='$ctrl.selectedTablesIDs.length'
+                    total-amount='$ctrl.$scope.importDomain.tables.length'
+                )
+                button.btn-ignite.btn-ignite--success.modal-import-models__next-button(
+                    type='button'
+                    ng-click='importDomainNext(optionsForm)'
+                    ng-disabled='!importDomainNextAvailable()'
+                    b_s-tooltip=''
+                    d_ata-title='{{nextTooltipText()}}'
+                    d_ata-placement='bottom'
+                )
+                    svg.icon-left(ignite-icon='checkmark' ng-show='importDomain.button === "Save"')
+                    | {{importDomain.button}}
+
+            .modal-body(ng-if-start='!($ctrl.agentIsAvailable$ | async: this)')
+                no-data
+
+            .modal-footer(ng-if-end)
+                button.btn-ignite.btn-ignite--success.modal-import-models__next-button(ng-click='$ctrl.onHide()') Cancel

@@ -1,0 +1,161 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+div
+    global-progress-line(is-loading='$ctrl.isLoading')
+
+    header.header-with-selector
+        div
+            h1 User profile
+
+    -var form = '$ctrl.form'
+    form.theme--ignite(name='$ctrl.form' novalidate)
+        .row
+            .col-50
+                +form-field__text({
+                    label: 'First name:',
+                    model: '$ctrl.ui.user.firstName',
+                    name: '"firstName"',
+                    required: true,
+                    placeholder: 'Input first name'
+                })(
+                ignite-auto-focus
+                    ignite-on-enter-focus-move='lastNameInput'
+                )
+            .col-50
+                +form-field__text({
+                    label: 'Last name:',
+                    model: '$ctrl.ui.user.lastName',
+                    name: '"lastName"',
+                    required: true,
+                    placeholder: 'Input last name'
+                })(
+                    ignite-on-enter-focus-move='emailInput'
+                )
+        .row
+            .col-100
+                +form-field__email({
+                    label: 'Email:',
+                    model: '$ctrl.ui.user.email',
+                    name: '"email"',
+                    required: true,
+                    placeholder: 'Input email'
+                })(
+                    ignite-on-enter-focus-move='phoneInput'
+                )
+        .row
+            .col-50
+                +form-field__phone({
+                    label: 'Phone:',
+                    model: '$ctrl.ui.user.phone',
+                    name: '"phone"',
+                    optional: true,
+                    placeholder: 'Input phone (ex.: +15417543010)'
+                })(
+                    ignite-on-enter-focus-move='companyInput'
+                )
+            .col-50
+                +form-field__dropdown({
+                    label: 'Country/Region:',
+                    model: '$ctrl.ui.user.country',
+                    name: '"country"',
+                    required: true,
+                    placeholder: 'Choose your country/region',
+                    options: '$ctrl.ui.countries'
+                })
+        .row
+            .col-100
+                +form-field__text({
+                    label: 'Company:',
+                    model: '$ctrl.ui.user.company',
+                    name: '"company"',
+                    required: true,
+                    placeholder: 'Input company name'
+                })(
+                    ignite-on-enter-focus-move='countryInput'
+                )
+
+        .row#security-token-section
+            .col-100
+                panel-collapsible(
+                    opened='$ctrl.ui.expandedToken'
+                    on-open='$ctrl.ui.expandedToken = true'
+                    on-close='$ctrl.onSecurityTokenPanelClose()'
+                )
+                    panel-title
+                        | {{ $panel.opened ? 'Cancel security token changing...' : 'Show security token...' }}
+                    panel-content
+                        .row
+                            .col-50
+                                +form-field__text({
+                                    label: 'Security Token:',
+                                    model: '$ctrl.ui.user.token',
+                                    tip: 'The security token is used for authentication of Web agent',
+                                    name: '"securityToken"',
+                                    placeholder: 'No security token. Regenerate please.'
+                                })(
+                                    autocomplete='security-token'
+                                    ng-disabled='::true'
+                                    copy-input-value-button='Copy security token to clipboard'
+                                )
+                            .col-50
+                                a(ng-click='$ctrl.generateToken()') Generate Random Security Token?
+
+        .row
+            .col-100
+                panel-collapsible(
+                    opened='$ctrl.ui.expandedPassword'
+                    on-open='$ctrl.ui.expandedPassword = true'
+                    on-close='$ctrl.onPasswordPanelClose()'
+                )
+                    panel-title
+                        | {{ $panel.opened ? 'Cancel password changing...' : 'Change password...' }}
+                    panel-content(ng-if='$panel.opened')
+                        .row
+                            .col-100
+                                +form-field__password({
+                                    label: 'New password:',
+                                    model: '$ctrl.ui.user.password',
+                                    name: '"password"',
+                                    required: true,
+                                    placeholder: 'New password'
+                                })(
+                                    ignite-auto-focus
+                                    ignite-on-enter-focus-move='passwordConfirmInput'
+                                )
+
+                        .row
+                            .col-100
+                                +form-field__password({
+                                    label: 'Confirm password:',
+                                    model: 'user.confirm',
+                                    name: '"passwordConfirm"',
+                                    required: true,
+                                    placeholder: 'Confirm new password'
+                                })(
+                                    ignite-on-enter-focus-move='passwordConfirmInput'
+                                    ignite-match='$ctrl.ui.user.password'
+                                )
+
+    hr
+
+    footer
+        a.btn-ignite.btn-ignite--link-success(type='button' ui-sref='default-state') Cancel
+        button.btn-ignite.btn-ignite--success(ng-click='$ctrl.saveUser()' ng-disabled='$ctrl.isLoading')
+            svg.icon-left(ignite-icon='checkmark')
+            | Save Changes

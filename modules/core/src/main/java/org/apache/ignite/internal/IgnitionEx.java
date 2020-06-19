@@ -1694,7 +1694,17 @@ public class IgnitionEx {
                 try {
                     starterThread = Thread.currentThread();
 
-                    start0(startCtx);
+                    IgniteConfiguration myCfg = initializeConfiguration(
+                        startCtx.config() != null ? startCtx.config() : new IgniteConfiguration()
+                    );
+
+                    TimeBag startNodeTimer = new TimeBag(TimeUnit.MILLISECONDS, log.isInfoEnabled());
+
+                    start0(startCtx, myCfg, startNodeTimer);
+
+                    if (log.isInfoEnabled())
+                        log.info("Node started : "
+                            + startNodeTimer.stagesTimings().stream().collect(joining(",", "[", "]")));
                 }
                 catch (Exception e) {
                     if (log != null)
@@ -1995,6 +2005,28 @@ public class IgnitionEx {
 
             schemaExecSvc.allowCoreThreadTimeOut(true);
 
+            validateThreadPoolSize(cfg.getRebalanceThreadPoolSize(), "rebalance");
+
+            rebalanceExecSvc = new IgniteThreadPoolExecutor(
+                "rebalance",
+                cfg.getIgniteInstanceName(),
+                cfg.getRebalanceThreadPoolSize(),
+                cfg.getRebalanceThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                excHnd);
+
+            rebalanceExecSvc.allowCoreThreadTimeOut(true);
+
+            rebalanceStripedExecSvc = new IgniteStripedThreadPoolExecutor(
+                cfg.getRebalanceThreadPoolSize(),
+                cfg.getIgniteInstanceName(),
+                "rebalance-striped",
+                excHnd,
+                true,
+                DFLT_THREAD_KEEP_ALIVE_TIME);
+
             if (!F.isEmpty(cfg.getExecutorConfiguration())) {
                 validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());
 
@@ -2201,6 +2233,9 @@ public class IgnitionEx {
 
             myCfg.setGridLogger(cfgLog);
 
+            if (F.isEmpty(userProvidedWorkDir) && F.isEmpty(U.IGNITE_WORK_DIR))
+                log.warning("Ignite work directory is not provided, automatically resolved to: " + workDir);
+
             // Check Ignite home folder (after log is available).
             if (ggHome != null) {
                 File ggHomeFile = new File(ggHome);
@@ -2360,6 +2395,9 @@ public class IgnitionEx {
 
             cacheCfgs.add(utilitySystemCache());
 
+            if (IgniteComponentType.HADOOP.inClassPath())
+                cacheCfgs.add(CU.hadoopSystemCache());
+
             CacheConfiguration[] userCaches = cfg.getCacheConfiguration();
 
             if (userCaches != null && userCaches.length > 0) {
@@ -2453,6 +2491,24 @@ public class IgnitionEx {
 
             if (cfg.getEncryptionSpi() == null)
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());
+
+            if (F.isEmpty(cfg.getMetricExporterSpi()))
+                cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
+
+            if (F.isEmpty(cfg.getSystemViewExporterSpi())) {
+                if (IgniteComponentType.INDEXING.inClassPath()) {
+                    try {
+                        cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi(),
+                            U.newInstance(SYSTEM_VIEW_SQL_SPI));
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+
+                }
+                else
+                    cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
+            }
         }
 
         /**

@@ -1,0 +1,169 @@
+[
+  {
+    "label": "EVTS_CHECKPOINT",
+    "value": "EVTS_CHECKPOINT",
+    "class": "org.apache.ignite.events.EventType",
+    "events": [
+      "EVT_CHECKPOINT_SAVED",
+      "EVT_CHECKPOINT_LOADED",
+      "EVT_CHECKPOINT_REMOVED"
+    ]
+  },
+  {
+    "label": "EVTS_DEPLOYMENT",
+    "value": "EVTS_DEPLOYMENT",
+    "class": "org.apache.ignite.events.EventType",
+    "events": [
+      "EVT_CLASS_DEPLOYED",
+      "EVT_CLASS_UNDEPLOYED",
+      "EVT_CLASS_DEPLOY_FAILED",
+      "EVT_TASK_DEPLOYED",
+      "EVT_TASK_UNDEPLOYED",
+      "EVT_TASK_DEPLOY_FAILED"
+    ]
+  },
+  {
+    "label": "EVTS_ERROR",
+    "value": "EVTS_ERROR",
+    "class": "org.apache.ignite.events.EventType",
+    "events": [
+      "EVT_JOB_TIMEDOUT",
+      "EVT_JOB_FAILED",
+      "EVT_JOB_FAILED_OVER",
+      "EVT_JOB_REJECTED",
+      "EVT_JOB_CANCELLED",
+      "EVT_TASK_TIMEDOUT",
+      "EVT_TASK_FAILED",
+      "EVT_CLASS_DEPLOY_FAILED",
+      "EVT_TASK_DEPLOY_FAILED",
+      "EVT_TASK_DEPLOYED",
+      "EVT_TASK_UNDEPLOYED",
+      "EVT_CACHE_REBALANCE_STARTED",
+      "EVT_CACHE_REBALANCE_STOPPED"
+    ]
+  },
+  {
+    "label": "EVTS_DISCOVERY",
+    "value": "EVTS_DISCOVERY",
+    "class": "org.apache.ignite.events.EventType",
+    "events": [
+      "EVT_NODE_JOINED",
+      "EVT_NODE_LEFT",
+      "EVT_NODE_FAILED",
+      "EVT_NODE_SEGMENTED",
+      "EVT_CLIENT_NODE_DISCONNECTED",
+      "EVT_CLIENT_NODE_RECONNECTED"
+    ]
+  },
+  {
+    "label": "EVTS_JOB_EXECUTION",
+    "value": "EVTS_JOB_EXECUTION",
+    "class": "org.apache.ignite.events.EventType",
+    "events": [
+      "EVT_JOB_MAPPED",
+      "EVT_JOB_RESULTED",
+      "EVT_JOB_FAILED_OVER",
+      "EVT_JOB_STARTED",
+      "EVT_JOB_FINISHED",
+      "EVT_JOB_TIMEDOUT",
+      "EVT_JOB_REJECTED",
+      "EVT_JOB_FAILED",
+      "EVT_JOB_QUEUED",
+      "EVT_JOB_CANCELLED"
+    ]
+  },
+  {
+    "label": "EVTS_TASK_EXECUTION",
+    "value": "EVTS_TASK_EXECUTION",
+    "class": "org.apache.ignite.events.EventType",
+    "events": [
+      "EVT_TASK_STARTED",
+      "EVT_TASK_FINISHED",
+      "EVT_TASK_FAILED",
+      "EVT_TASK_TIMEDOUT",
+      "EVT_TASK_SESSION_ATTR_SET",
+      "EVT_TASK_REDUCED"
+    ]
+  },
+  {
+    "label": "EVTS_CACHE",
+    "value": "EVTS_CACHE",
+    "class": "org.apache.ignite.events.EventType",
+    "events": [
+      "EVT_CACHE_ENTRY_CREATED",
+      "EVT_CACHE_ENTRY_DESTROYED",
+      "EVT_CACHE_OBJECT_PUT",
+      "EVT_CACHE_OBJECT_READ",
+      "EVT_CACHE_OBJECT_REMOVED",
+      "EVT_CACHE_OBJECT_LOCKED",
+      "EVT_CACHE_OBJECT_UNLOCKED",
+      "EVT_CACHE_OBJECT_SWAPPED",
+      "EVT_CACHE_OBJECT_UNSWAPPED",
+      "EVT_CACHE_OBJECT_EXPIRED"
+    ]
+  },
+  {
+    "label": "EVTS_CACHE_REBALANCE",
+    "value": "EVTS_CACHE_REBALANCE",
+    "class": "org.apache.ignite.events.EventType",
+    "events": [
+      "EVT_CACHE_REBALANCE_STARTED",
+      "EVT_CACHE_REBALANCE_STOPPED",
+      "EVT_CACHE_REBALANCE_PART_LOADED",
+      "EVT_CACHE_REBALANCE_PART_UNLOADED",
+      "EVT_CACHE_REBALANCE_OBJECT_LOADED",
+      "EVT_CACHE_REBALANCE_OBJECT_UNLOADED",
+      "EVT_CACHE_REBALANCE_PART_DATA_LOST"
+    ]
+  },
+  {
+    "label": "EVTS_CACHE_LIFECYCLE",
+    "value": "EVTS_CACHE_LIFECYCLE",
+    "class": "org.apache.ignite.events.EventType",
+    "events": [
+      "EVT_CACHE_STARTED",
+      "EVT_CACHE_STOPPED",
+      "EVT_CACHE_NODES_LEFT"
+    ]
+  },
+  {
+    "label": "EVTS_CACHE_QUERY",
+    "value": "EVTS_CACHE_QUERY",
+    "class": "org.apache.ignite.events.EventType",
+    "events": [
+      "EVT_CACHE_QUERY_EXECUTED",
+      "EVT_CACHE_QUERY_OBJECT_READ"
+    ]
+  },
+  {
+    "label": "EVTS_SWAPSPACE",
+    "value": "EVTS_SWAPSPACE",
+    "class": "org.apache.ignite.events.EventType",
+    "events": [
+      "EVT_SWAP_SPACE_CLEARED",
+      "EVT_SWAP_SPACE_DATA_REMOVED",
+      "EVT_SWAP_SPACE_DATA_READ",
+      "EVT_SWAP_SPACE_DATA_STORED",
+      "EVT_SWAP_SPACE_DATA_EVICTED"
+    ]
+  },
+  {
+    "label": "EVTS_IGFS",
+    "value": "EVTS_IGFS",
+    "class": "org.apache.ignite.events.EventType",
+    "events": [
+      "EVT_IGFS_FILE_CREATED",
+      "EVT_IGFS_FILE_RENAMED",
+      "EVT_IGFS_FILE_DELETED",
+      "EVT_IGFS_FILE_OPENED_READ",
+      "EVT_IGFS_FILE_OPENED_WRITE",
+      "EVT_IGFS_FILE_CLOSED_WRITE",
+      "EVT_IGFS_FILE_CLOSED_READ",
+      "EVT_IGFS_FILE_PURGED",
+      "EVT_IGFS_META_UPDATED",
+      "EVT_IGFS_DIR_CREATED",
+      "EVT_IGFS_DIR_RENAMED",
+      "EVT_IGFS_DIR_DELETED"
+    ]
+  }
+]

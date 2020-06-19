@@ -22,7 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Schema cmd  operation. such as create alise,drop alise
+ * Schema cmd  operation. such as create alise,drop alise  add@byron
  */
 public class SchemaCommandOperation extends SchemaAbstractOperation {
 	 /** */

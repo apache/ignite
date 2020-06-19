@@ -1,0 +1,48 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+-var model = `${modelAt}.discovery.ZooKeeper.retryPolicy.BoundedExponentialBackoff`
+
+.pc-form-grid-col-20(ng-if-start=`${modelRetryPolicyKind} === 'BoundedExponentialBackoff'`)
+    +form-field__number({
+        label: 'Base interval:',
+        model: `${model}.baseSleepTimeMs`,
+        name: '"beBaseSleepTimeMs"',
+        placeholder: '1000',
+        min: '0',
+        tip: 'Initial amount of time in ms to wait between retries'
+    })
+.pc-form-grid-col-20
+    +form-field__number({
+        label: 'Max interval:',
+        model: `${model}.maxSleepTimeMs`,
+        name: '"beMaxSleepTimeMs"',
+        placeholder: 'Integer.MAX_VALUE',
+        min: '0',
+        tip: 'Max time in ms to sleep on each retry'
+    })
+.pc-form-grid-col-20(ng-if-end)
+    +form-field__number({
+        label: 'Max retries:',
+        model: `${model}.maxRetries`,
+        name: '"beMaxRetries"',
+        placeholder: '10',
+        min: '0',
+        max: '29',
+        tip: 'Max number of times to retry'
+    })

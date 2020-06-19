@@ -76,10 +76,6 @@ public class IgniteCacheMvccTestSuite7 {
         ignoredTests.add(TxCrossCacheMapOnInvalidTopologyTest.class);
         ignoredTests.add(TxCrossCacheRemoteMultiplePartitionReservationTest.class);
 
-        // Test logic is not compatible with MVCC style tx locking.
-        ignoredTests.add(TxCrossCacheMapOnInvalidTopologyTest.class);
-        ignoredTests.add(TxCrossCacheRemoteMultiplePartitionReservationTest.class);
-
         List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite7.suite(ignoredTests));
 
         // Add Mvcc clones.

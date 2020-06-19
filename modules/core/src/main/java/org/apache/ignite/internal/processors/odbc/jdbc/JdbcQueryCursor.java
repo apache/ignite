@@ -21,7 +21,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
@@ -38,10 +38,10 @@ class JdbcQueryCursor extends JdbcCursor {
     private long fetched;
 
     /** Query result rows. */
-    private final QueryCursorEx<List<?>> cur;
+    private final QueryCursorImpl<List<Object>> cur;
 
     /** Query results iterator. */
-    private Iterator<List<?>> iter;
+    private Iterator<List<Object>> iter;
 
     /**
      * @param pageSize Fetch size.
@@ -49,7 +49,7 @@ class JdbcQueryCursor extends JdbcCursor {
      * @param cur Query cursor.
      * @param reqId Id of the request that created given cursor.
      */
-    JdbcQueryCursor(int pageSize, int maxRows, QueryCursorEx<List<?>> cur, long reqId) {
+    JdbcQueryCursor(int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur, long reqId) {
         super(reqId);
 
         this.pageSize = pageSize;
@@ -73,7 +73,7 @@ class JdbcQueryCursor extends JdbcCursor {
         List<List<Object>> items = new ArrayList<>(fetchSize);
 
         for (int i = 0; i < fetchSize && iter.hasNext(); i++) {
-            items.add((List<Object>)iter.next());
+            items.add(iter.next());
 
             fetched++;
         }

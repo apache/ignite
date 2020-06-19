@@ -1,0 +1,83 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+-var model = '$ctrl.clonedCluster.collision.JobStealing'
+-var stealingAttributes = `${model}.stealingAttributes`
+
+.pc-form-grid-col-30
+    +form-field__number({
+        label: 'Active jobs threshold:',
+        model: `${model}.activeJobsThreshold`,
+        name: '"jsActiveJobsThreshold"',
+        placeholder: '95',
+        min: '0',
+        tip: 'Number of jobs that can be executed in parallel'
+    })
+.pc-form-grid-col-30
+    +form-field__number({
+        label: 'Wait jobs threshold:',
+        model: `${model}.waitJobsThreshold`,
+        name: '"jsWaitJobsThreshold"',
+        placeholder: '0',
+        min: '0',
+        tip: 'Job count threshold at which this node will start stealing jobs from other nodes'
+    })
+.pc-form-grid-col-30
+    +form-field__number({
+        label: 'Message expire time:',
+        model: `${model}.messageExpireTime`,
+        name: '"jsMessageExpireTime"',
+        placeholder: '1000',
+        min: '1',
+        tip: 'Message expire time in ms'
+    })
+.pc-form-grid-col-30
+    +form-field__number({
+        label: 'Maximum stealing attempts:',
+        model: `${model}.maximumStealingAttempts`,
+        name: '"jsMaximumStealingAttempts"',
+        placeholder: '5',
+        min: '1',
+        tip: 'Maximum number of attempts to steal job by another node'
+    })
+.pc-form-grid-col-60
+    +form-field__checkbox({
+        label: 'Stealing enabled',
+        model: `${model}.stealingEnabled`,
+        name: '"jsStealingEnabled"',
+        tip: 'Node should attempt to steal jobs from other nodes'
+    })
+.pc-form-grid-col-60
+    +form-field__java-class({
+        label: 'External listener:',
+        model: `${model}.externalCollisionListener`,
+        name: '"jsExternalCollisionListener"',
+        tip: 'Listener to be set for notification of external collision events',
+        validationActive: '$ctrl.clonedCluster.collision.kind === "JobStealing"'
+    })
+.pc-form-grid-col-60
+    .ignite-form-field
+        +form-field__label({ label: 'Stealing attributes:', name: '"stealingAttributes"' })
+            +form-field__tooltip(`Configuration parameter to enable stealing to/from only nodes that have these attributes set`)
+        +list-pair-edit({
+            items: stealingAttributes,
+            keyLbl: 'Attribute name',
+            valLbl: 'Attribute value',
+            itemName: 'stealing attribute',
+            itemsName: 'stealing attributes'
+        })

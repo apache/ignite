@@ -1,0 +1,334 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+page-configure {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+
+    &>.pc-page-header {
+        display: flex;
+
+        .pc-page-header-title {
+            margin-right: auto;
+        }
+    }
+
+    .pc-form-actions-panel {
+        display: flex;
+        flex-direction: row;
+        padding: 10px 20px 10px 30px;
+        box-shadow: 0 0 4px 0 rgba(0, 0, 0, 0.2), 0 3px 4px -1px rgba(0, 0, 0, 0.2);
+        position: -webkit-sticky;
+        position: sticky;
+        bottom: 0;
+        // margin: 20px -30px -30px;
+        background: white;
+        border-radius: 0 0 4px 4px;
+        z-index: 10;
+
+        &>*+* {
+            margin-left: 10px;
+        }
+
+        .link-primary + .link-primary {
+            margin-left: 40px;
+        }
+
+        .pc-form-actions-panel__right-after {
+            width: 0;
+            margin-left: auto;
+        }
+    }
+
+    .pc-hide-tooltips {
+        .tipField:not(.fa-remove), .icon-help, [ignite-icon='info'] {
+            display: none;
+        }
+    }
+
+    .pc-content-container {
+        position: relative;
+
+        &, &>ui-view {
+            flex: 1 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pc-tooltips-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+
+        &>.tabs {
+            flex: 0 0 auto;
+        }
+    }
+
+    .pc-tooltips-toggle {
+        display: inline-flex;
+        height: 40px;
+        align-items: center;
+        width: auto;
+        max-width: none !important;
+        user-select: none;
+
+        &>*:not(input) {
+            margin-left: 5px;
+            flex: 0 0 auto;
+        }
+
+        input {
+            pointer-events: none;
+        }
+
+        &>div {
+            margin-left: 10px !important;
+        }
+    }
+
+    .form-field__label.required:after {
+        content: '*';
+        margin-left: 0.25em;
+    }
+}
+
+.pc-form-group {
+    $input-height: 36px;
+    width: 100%;
+    border: 1px solid rgba(197, 197, 197, 0.5);
+    border-radius: 4px;
+    padding-bottom: 10px;
+    padding-top: $input-height / 2;
+    margin-top: $input-height / -2;
+
+    &:empty {
+        display: none;
+    }
+
+}
+
+.pc-form-group__text-title {
+    transform: translateY(-9px);
+    --pc-form-group-title-bg-color: white;
+
+    &>span {
+        padding-left: 10px;
+        padding-right: 10px;
+        background: var(--pc-form-group-title-bg-color);
+    }
+
+    &+.pc-form-group {
+        padding-top: 10px;
+    }
+
+    .form-field__checkbox {
+        background-color: white;
+        padding: 0 5px;
+        margin: 0 -5px;
+    }
+}
+
+.pc-form-grid-row > .pc-form-group__text-title[class*='pc-form-grid-col-'] {
+    margin-top: 20px !important;
+}
+
+list-editable .pc-form-group__text-title {
+    --pc-form-group-title-bg-color: var(--le-row-bg-color);
+}
+
+.pc-form-grid-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: flex-start;
+
+    &>[class*='pc-form-grid-col-'] {
+        margin: 10px 0 0 !important;
+        max-width: none;
+        padding: 0 10px;
+        flex-grow: 0;
+        flex-shrink: 0;
+    }
+
+    .group-section {
+        width: 100%;
+    }
+
+    &>.pc-form-grid__break {
+        flex: 1 0 100%;
+    }
+}
+
+// Add this class to list-editable when a pc-form-grid is used inside list-editable-item-edit
+.pc-list-editable-with-form-grid > .le-body > .le-row {
+    & > .le-row-index,
+    & > .le-row-cross {
+        margin-top: 28px;
+    }
+}
+
+// Add this class to list-editable when legacy settings-row classes are used inside list-editable-item-edit
+.pc-list-editable-with-legacy-settings-rows > .le-body > .le-row {
+    & > .le-row-index,
+    & > .le-row-cross {
+        margin-top: 18px;
+    }
+}
+
+.pc-form-grid-row {
+    &>.pc-form-grid-col-10 {
+        flex-basis: calc(100% / 6);
+    }
+
+    &>.pc-form-grid-col-20 {
+        flex-basis: calc(100% / 3);
+    }
+
+    &>.pc-form-grid-col-30 {
+        flex-basis: calc(100% / 2);
+    }
+
+    &>.pc-form-grid-col-40 {
+        flex-basis: calc(100% / 1.5);
+    }
+
+    &>.pc-form-grid-col-60 {
+        flex-basis: calc(100% / 1);
+    }
+
+    &>.pc-form-grid-col-free {
+        flex: 1;
+    }
+
+    @media(max-width: 992px) {
+        &>.pc-form-grid-col-10 {
+            flex-basis: calc(25%);
+        }
+
+        &>.pc-form-grid-col-20 {
+            flex-basis: calc(50%);
+        }
+
+        &>.pc-form-grid-col-30 {
+            flex-basis: calc(100%);
+        }
+
+        &>.pc-form-grid-col-60 {
+            flex-basis: calc(100%);
+        }
+    }
+    // IE11 does not count padding towards flex width
+    @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+        &>.pc-form-grid-col-10 {
+            flex-basis: calc(99.9% / 6 - 20px);
+        }
+
+        &>.pc-form-grid-col-20 {
+            flex-basis: calc(99.9% / 3 - 20px);
+        }
+
+        &>.pc-form-grid-col-30 {
+            flex-basis: calc(100% / 2 - 20px);
+        }
+
+        &>.pc-form-grid-col-40 {
+            flex-basis: calc(100% / 1.5 - 20px);
+        }
+
+        &>.pc-form-grid-col-60 {
+            flex-basis: calc(100% / 1 - 20px);
+        }
+
+        @media(max-width: 992px) {
+            &>.pc-form-grid-col-20 {
+                flex-basis: calc(50% - 20px);
+            }
+
+            &>.pc-form-grid-col-30 {
+                flex-basis: calc(100% - 20px);
+            }
+
+            &>.pc-form-grid-col-60 {
+                flex-basis: calc(100% - 20px);
+            }
+        }
+    }
+}
+.pc-page-header {
+    font-size: 24px;
+    line-height: 36px;
+    color: #393939;
+    margin: 40px 0 30px;
+    padding: 0;
+    border: none;
+    word-break: break-all;
+
+    .pc-page-header-sub {
+        font-size: 14px;
+        line-height: 20px;
+        color: #757575;
+        margin-left: 8px;
+    }
+
+    version-picker {
+        margin-left: 8px;
+        vertical-align: 2px;
+    }
+
+    button-import-models {
+        flex: 0 0 auto;
+        margin-left: 30px;
+        position: relative;
+        // For some reason button is heigher up by 1px than on overview page
+        top: 1px;
+    }
+}
+
+.pc-form-grid__text-only-item {
+    padding-top: 16px;
+    align-self: flex-start;
+    height: 54px;
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+    background: white;
+    z-index: 2;
+}
+
+.config-changes-guard__details {
+    cursor: pointer;
+
+    summary {
+        list-style: none;
+    }
+
+    summary::-webkit-details-marker {
+        display: none;
+    }
+
+    summary:before {
+        content: '▶ ';
+    }
+
+    &[open] summary:before {
+        content: '▼ ';
+    }
+}
