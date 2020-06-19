@@ -107,17 +107,8 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml-h2o-model-parser</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+       
 
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml-spark-model-parser</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>commons-cli</groupId>
