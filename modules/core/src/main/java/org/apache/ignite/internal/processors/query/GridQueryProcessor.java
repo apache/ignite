@@ -56,6 +56,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -68,12 +69,14 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -443,6 +446,41 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
         }
+    }
+
+    /**
+     * Prepare index rebuild futures if needed before exchange.
+     *
+     * @param fut Exchange future.
+     */
+    public void beforeExchange(GridDhtPartitionsExchangeFuture fut) {
+        ExchangeActions acts = fut.exchangeActions();
+
+        if (acts != null) {
+            if (!F.isEmpty(acts.cacheStartRequests())) {
+                for (ExchangeActions.CacheActionData actionData : acts.cacheStartRequests())
+                    prepareIndexRebuildFuture(CU.cacheId(actionData.request().cacheName()));
+            }
+            else if (acts.localJoinContext() != null && !F.isEmpty(acts.localJoinContext().caches())) {
+                for (T2<DynamicCacheDescriptor, NearCacheConfiguration> tup : acts.localJoinContext().caches())
+                    prepareIndexRebuildFuture(tup.get1().cacheId());
+            }
+        }
+    }
+
+    /**
+     * Creates a new index rebuild future that should be completed later after exchange is done. The future
+     * has to be created before exchange is initialized to guarantee that we will capture a correct future
+     * after activation or restore completes.
+     * If there was an old future for the given ID, it will be completed.
+     *
+     * @param cacheId Cache ID.
+     */
+    private void prepareIndexRebuildFuture(int cacheId) {
+        GridFutureAdapter<Void> old = idxRebuildFuts.put(cacheId, new GridFutureAdapter<>());
+
+        if (old != null)
+            old.onDone();
     }
 
     /**
@@ -2271,12 +2309,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private IgniteInternalFuture<?> rebuildIndexesFromHash0(GridCacheContext<?, ?> cctx) {
         int cacheId = cctx.cacheId();
 
-        GridFutureAdapter<Void> res = new GridFutureAdapter<>();
-
-        GridFutureAdapter<Void> old = idxRebuildFuts.put(cacheId, res);
-
-        if (old != null)
-            old.onDone();
+        GridFutureAdapter<Void> res = idxRebuildFuts.computeIfAbsent(cacheId, id -> new GridFutureAdapter<>());
 
         IgniteInternalFuture<?> idxFut = idx.rebuildIndexesFromHash(cctx);
 
