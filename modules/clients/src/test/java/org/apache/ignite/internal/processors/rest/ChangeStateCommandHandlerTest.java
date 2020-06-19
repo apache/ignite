@@ -89,7 +89,7 @@ public class ChangeStateCommandHandlerTest extends GridCommonAbstractTest {
     public void testActivateDeActivate() throws GridClientException {
         GridClientClusterState state = client.state();
 
-        assertTrue(state.toString(), state.state().active());
+        assertTrue(state.state().toString(), state.state().active());
 
         state.state(INACTIVE, true);
 

@@ -276,7 +276,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                         }));
                     }
                     else
-                        return new IgniteFinishedFutureImpl<>(withMinimalFeatures(globalState.lastState(), globalState.state()));
+                        return new IgniteFinishedFutureImpl<>(stateWithMinimalFeatures(globalState.lastState(), globalState.state()));
                 }
 
                 transitionRes = globalState.transitionResult();
@@ -1809,7 +1809,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @param state2 Second given state.
      * @return State with minimal number of available features.
      */
-    public static ClusterState withMinimalFeatures(ClusterState state1, ClusterState state2) {
+    public static ClusterState stateWithMinimalFeatures(ClusterState state1, ClusterState state2) {
         if (state1 == state2)
             return state1;
 
