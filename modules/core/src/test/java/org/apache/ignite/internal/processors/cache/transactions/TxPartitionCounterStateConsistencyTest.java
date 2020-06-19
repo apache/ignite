@@ -1353,7 +1353,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         startGrid(backupName);
 
-        GridTestUtils.waitForCondition(() ->spis.stream().anyMatch(TestRecordingCommunicationSpi::hasBlockedMessages),
+        GridTestUtils.waitForCondition(() -> spis.stream().anyMatch(TestRecordingCommunicationSpi::hasBlockedMessages),
             10_000);
 
         rebBlockClo.accept(backupName);
