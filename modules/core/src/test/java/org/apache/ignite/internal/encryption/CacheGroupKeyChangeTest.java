@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.encryption;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -56,6 +58,7 @@ import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -94,8 +97,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
                     .setPersistenceEnabled(true))
             .setPageSize(4 * 1024)
             .setWalSegmentSize(1024 * 1024)
-            .setWalSegments(4)
-            .setMaxWalArchiveSize(10 * 1024 * 1024)
+            .setWalSegments(10)
+            .setMaxWalArchiveSize(20 * 1024 * 1024)
             .setCheckpointFrequency(30 * 1000L)
             .setWalMode(LOG_ONLY);
 
@@ -341,7 +344,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        int maxItrs = 0xff * 2;
+        int maxItrs = 0x100;
 
         for (int i = 0; i < maxItrs; i++) {
             node0.encryption().changeGroupKey(Collections.singleton(cacheName())).get();
@@ -579,9 +582,6 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         Map<Integer, Integer> keys1 = node0.context().encryption().groupKeysInfo(grpId);
         Map<Integer, Integer> keys2 = node1.context().encryption().groupKeysInfo(grpId);
 
-        assertEquals(2, keys1.size());
-        assertEquals(2, keys2.size());
-
         assertEquals(keys1, keys2);
 
         awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
@@ -621,6 +621,105 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         assertEquals(1, node0.context().encryption().groupKeysInfo(grpId).size());
         assertEquals(1, node1.context().encryption().groupKeysInfo(grpId).size());
+    }
+
+    /**
+     * Ensures that unused key will be removed even if user cleaned wal archive folder manually.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWalArchiveCleanup() throws Exception {
+        startTestGrids(true);
+
+        IgniteEx node1 = grid(GRID_0);
+        IgniteEx node2 = grid(GRID_1);
+
+        createEncryptedCache(node1, node2, cacheName(), null);
+
+        node1.encryption().changeGroupKey(Collections.singleton(cacheName())).get();
+
+        long walIdx = node1.context().cache().context().wal().currentSegment();
+
+        IgniteInternalFuture fut = runAsync(() -> {
+            Ignite grid = grid(GRID_0);
+
+            long cntr = grid.cache(cacheName()).size();
+
+            try (IgniteDataStreamer<Long, String> streamer = grid.dataStreamer(cacheName())) {
+                while (!Thread.currentThread().isInterrupted()) {
+                    streamer.addData(cntr, String.valueOf(cntr));
+
+                    streamer.flush();
+
+                    ++cntr;
+                }
+            }
+        });
+
+        try {
+            boolean success = waitForCondition(() -> {
+                return grid(GRID_0).context().cache().context().wal().lastArchivedSegment() >= walIdx;
+            }, MAX_AWAIT_MILLIS);
+
+            assertTrue(success);
+        } finally {
+            fut.cancel();
+        }
+
+        forceCheckpoint();
+
+        assertEquals(2, node1.context().encryption().groupKeysInfo(CU.cacheId(cacheName())).size());
+        assertEquals(2, node2.context().encryption().groupKeysInfo(CU.cacheId(cacheName())).size());
+
+        stopAllGrids();
+
+        // Cleanup wal arcive.
+        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
+
+        boolean rmvd = U.delete(new File(dbDir, "wal/archive"));
+
+        assertTrue(rmvd);
+
+        startTestGrids(false);
+
+        node1 = grid(GRID_0);
+        node2 = grid(GRID_1);
+
+        assertEquals(2, node1.context().encryption().groupKeysInfo(CU.cacheId(cacheName())).size());
+        assertEquals(2, node2.context().encryption().groupKeysInfo(CU.cacheId(cacheName())).size());
+
+        fut = runAsync(() -> {
+            Ignite grid = grid(GRID_0);
+
+            long cntr = grid.cache(cacheName()).size();
+
+            try (IgniteDataStreamer<Long, String> streamer = grid.dataStreamer(cacheName())) {
+                while (!Thread.currentThread().isInterrupted()) {
+                    streamer.addData(cntr, String.valueOf(cntr));
+
+                    ++cntr;
+                }
+            }
+        });
+
+        int grpId = CU.cacheId(cacheName());
+
+        try {
+            waitForCondition(() -> {
+                Map<Integer, Integer> keys1 = grid(GRID_0).context().encryption().groupKeysInfo(grpId);
+                Map<Integer, Integer> keys2 = grid(GRID_1).context().encryption().groupKeysInfo(grpId);
+
+                return keys1.size() == 1 && keys2.size() == 1;
+            }, MAX_AWAIT_MILLIS);
+
+            assertEquals(1, node1.context().encryption().groupKeysInfo(grpId).size());
+            assertEquals(1, node2.context().encryption().groupKeysInfo(grpId).size());
+        } finally {
+            fut.cancel();
+        }
+
+        checkGroupKey(grpId, 1, MAX_AWAIT_MILLIS);
     }
 
     /**
