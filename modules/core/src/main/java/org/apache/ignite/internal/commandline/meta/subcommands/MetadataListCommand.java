@@ -47,33 +47,9 @@ public class MetadataListCommand
     }
 
     /** {@inheritDoc} */
-    @Override protected MetadataListResult execute0(
-        GridClientConfiguration clientCfg,
-        GridClient client
-    ) throws Exception {
-        GridClientCompute compute = client.compute();
-
-        Collection<GridClientNode> connectableNodes = compute.nodes(GridClientNode::connectable);
-
-        if (F.isEmpty(connectableNodes))
-            throw new GridClientDisconnectedException("Connectable nodes not found", null);
-
-        GridClientNode node = connectableNodes.stream()
-            .findAny().orElse(null);
-
-        if (node == null)
-            node = compute.balancer().balancedNode(connectableNodes);
-
-        return compute.projection(node).execute(
-            taskName(),
-            new VisorTaskArgument<>(node.nodeId(), false)
-        );
-    }
-
-    /** {@inheritDoc} */
     @Override protected void printResult(MetadataListResult res, Logger log) {
         for (BinaryMetadata m : res.metadata()) {
-            log.info("typeId=0x" + Integer.toHexString(m.typeId()).toUpperCase() +
+            log.info("typeId=" + printInt(m.typeId()) +
                 ", typeName=" + m.typeName() +
                 ", fields=" + m.fields().size() +
                 ", schemas=" + m.schemas().size() +

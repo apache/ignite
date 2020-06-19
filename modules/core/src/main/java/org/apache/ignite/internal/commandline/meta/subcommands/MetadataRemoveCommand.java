@@ -92,35 +92,6 @@ public class MetadataRemoveCommand
     }
 
     /** {@inheritDoc} */
-    @Override protected MetadataMarshalled execute0(
-        GridClientConfiguration clientCfg,
-        GridClient client
-    ) throws Exception {
-        GridClientCompute compute = client.compute();
-
-        // Try to find connectable server nodes.
-        Collection<GridClientNode> nodes = compute.nodes((n) -> n.connectable() && !n.isClient());
-
-        if (F.isEmpty(nodes)) {
-            nodes = compute.nodes(GridClientNode::connectable);
-
-            if (F.isEmpty(nodes))
-                throw new GridClientDisconnectedException("Connectable nodes not found", null);
-        }
-
-        GridClientNode node = nodes.stream()
-            .findAny().orElse(null);
-
-        if (node == null)
-            node = compute.balancer().balancedNode(nodes);
-
-        return compute.projection(node).execute(
-            taskName(),
-            new VisorTaskArgument<>(node.nodeId(), arg(), false)
-        );
-    }
-
-    /** {@inheritDoc} */
     @Override protected void printResult(MetadataMarshalled res, Logger log) {
         if (res.metadata() == null) {
             log.info("Type not found");

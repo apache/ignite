@@ -22,13 +22,19 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.util.Collection;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientDisconnectedException;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /** */
 public abstract class MetadataAbstractSubCommand<
@@ -59,7 +65,28 @@ public abstract class MetadataAbstractSubCommand<
     /** {@inheritDoc} */
     @Override public final Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            MetadataResultDto res = execute0(clientCfg, client);
+            GridClientCompute compute = client.compute();
+
+            // Try to find connectable server nodes.
+            Collection<GridClientNode> nodes = compute.nodes((n) -> n.connectable() && !n.isClient());
+
+            if (F.isEmpty(nodes)) {
+                nodes = compute.nodes(GridClientNode::connectable);
+
+                if (F.isEmpty(nodes))
+                    throw new GridClientDisconnectedException("Connectable nodes not found", null);
+            }
+
+            GridClientNode node = nodes.stream()
+                .findAny().orElse(null);
+
+            if (node == null)
+                node = compute.balancer().balancedNode(nodes);
+
+            MetadataResultDto res = compute.projection(node).execute(
+                taskName(),
+                new VisorTaskArgument<>(node.nodeId(), arg(), false)
+            );
 
             printResult(res, log);
         }
@@ -70,14 +97,6 @@ public abstract class MetadataAbstractSubCommand<
             throw e;
         }
 
-        return null;
-    }
-
-    /** */
-    protected MetadataResultDto execute0(
-        GridClientConfiguration clientCfg,
-        GridClient client
-    ) throws Exception {
         return null;
     }
 
@@ -96,6 +115,14 @@ public abstract class MetadataAbstractSubCommand<
 
     /** */
     protected abstract void printResult(MetadataResultDto res, Logger log);
+
+    /**
+     * @param val Integer value.
+     * @return String.
+     */
+    protected String printInt(int val) {
+        return "0x" + Integer.toHexString(val).toUpperCase() + " (" + val + ')';
+    }
 
     /**
      *

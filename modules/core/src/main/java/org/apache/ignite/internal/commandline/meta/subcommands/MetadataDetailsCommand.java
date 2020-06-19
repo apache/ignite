@@ -55,30 +55,6 @@ public class MetadataDetailsCommand
     }
 
     /** {@inheritDoc} */
-    @Override protected MetadataListResult execute0(
-        GridClientConfiguration clientCfg,
-        GridClient client
-    ) throws Exception {
-        GridClientCompute compute = client.compute();
-
-        Collection<GridClientNode> connectableNodes = compute.nodes(GridClientNode::connectable);
-
-        if (F.isEmpty(connectableNodes))
-            throw new GridClientDisconnectedException("Connectable nodes not found", null);
-
-        GridClientNode node = connectableNodes.stream()
-            .findAny().orElse(null);
-
-        if (node == null)
-            node = compute.balancer().balancedNode(connectableNodes);
-
-        return compute.projection(node).execute(
-            taskName(),
-            new VisorTaskArgument<>(node.nodeId(), arg(), false)
-        );
-    }
-
-    /** {@inheritDoc} */
     @Override protected void printResult(MetadataListResult res, Logger log) {
         if (res.metadata() == null) {
             log.info("Type not found");
@@ -112,14 +88,6 @@ public class MetadataDetailsCommand
                 ", fields=" + Arrays.stream(s.fieldIds())
                     .mapToObj(fldMap::get)
                     .collect(Collectors.toList())));
-    }
-
-    /**
-     * @param val Integer value.
-     * @return String.
-     */
-    private String printInt(int val) {
-        return "0x" + Integer.toHexString(val).toUpperCase() + " (" + val + ')';
     }
 
     /** {@inheritDoc} */
