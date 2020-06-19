@@ -116,7 +116,7 @@ public class MetadataTypeArgs extends IgniteDataTransferObject {
 
         if (typeName == null && typeId == null) {
             throw new IllegalArgumentException("Type to remove is not specified. " +
-                "Please add one of the options: --typeName <type_name> or --typeId <type_ID>");
+                "Please add one of the options: --typeName <type_name> or --typeId <type_id>");
         }
 
         return new MetadataTypeArgs(typeName, typeId);

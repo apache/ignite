@@ -26,7 +26,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Acknowledge message for {@link MetadataRemoveAcceptedMessage}: see its javadoc for detailed description of protocol.
+ * Acknowledge message for {@link MetadataRemoveProposedMessage}: see its javadoc for detailed description of protocol.
  *
  * As discovery messaging doesn't guarantee that message makes only one pass across the cluster
  * <b>MetadataRemoveAcceptedMessage</b> enables to mark it as duplicated so other nodes won't process it but skip.
