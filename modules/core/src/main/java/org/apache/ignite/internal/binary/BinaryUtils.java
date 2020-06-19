@@ -1044,8 +1044,12 @@ public class BinaryUtils {
                             "Type '" + oldMeta.typeName() + "' with typeId " + oldMeta.typeId()
                                 + " has a different/incorrect type for field '" + newField.getKey()
                                 + "'. Expected '" + oldFieldTypeName + "' but '" + newFieldTypeName
-                                + "' was provided. Field type's modification is unsupported, clean {root_path}/marshaller " +
-                                "and {root_path}/db/binary_meta directories if the type change is required."
+                                + "' was provided. Field type's modification is unsupported, if the type change is " +
+                                "required delete all data with old schema, then remove metadata. " +
+                                "Remove metadata by the command: " +
+                                "'control.sh --meta remove --typeId " + oldMeta.typeId() + "' " +
+                                "or stop cluster, manually clean {root_path}/marshaller " +
+                                "and {root_path}/db/binary_meta directories and start cluster."
                         );
                     }
                 }
