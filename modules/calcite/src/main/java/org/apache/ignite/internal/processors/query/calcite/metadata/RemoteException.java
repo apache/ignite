@@ -30,7 +30,7 @@ public class RemoteException extends RuntimeException {
     private final UUID queryId;
 
     /** */
-    private final  long fragmentId;
+    private final long fragmentId;
 
     /** */
     private final long exchangeId;
