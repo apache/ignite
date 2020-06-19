@@ -48,11 +48,8 @@ public class MetadataUpdateTask extends VisorMultiNodeTask<MetadataMarshalled, M
 
     /** {@inheritDoc} */
     @Nullable @Override protected MetadataMarshalled reduce0(List<ComputeJobResult> results) {
-        if (results.isEmpty())
-            throw new IgniteException("Empty job results");
-
-        if (results.size() > 1)
-            throw new IgniteException("Invalid job results: " + results);
+        if (results.size() != 1)
+            throw new IgniteException("Invalid job results. Expected exactly 1 result, but was: " + results);
 
         if (results.get(0).getException() != null)
             throw results.get(0).getException();

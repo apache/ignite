@@ -61,7 +61,6 @@ final class BinaryMetadataHolder implements Serializable {
         this.pendingVer = pendingVer;
         this.acceptedVer = acceptedVer;
         this.removing = removing;
-
     }
 
     /**
