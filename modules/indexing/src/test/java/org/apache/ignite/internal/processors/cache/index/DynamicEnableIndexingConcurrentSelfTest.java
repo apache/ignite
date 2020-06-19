@@ -75,9 +75,9 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         CacheMode[] cacheModes = new CacheMode[] {CacheMode.PARTITIONED, CacheMode.REPLICATED};
 
         CacheAtomicityMode[] atomicityModes = new CacheAtomicityMode[] {
-                CacheAtomicityMode.ATOMIC,
-                CacheAtomicityMode.TRANSACTIONAL,
-                CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT
+            CacheAtomicityMode.ATOMIC,
+            CacheAtomicityMode.TRANSACTIONAL,
+            CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT
         };
 
         List<Object[]> res = new ArrayList<>();
@@ -106,7 +106,6 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
     /** */
     @Parameter(1)
     public CacheAtomicityMode atomicityMode;
-
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -584,7 +583,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
     }
 
     /** */
-    private static IgniteEx ignitionStart(IgniteConfiguration cfg) {
+    private IgniteEx ignitionStart(IgniteConfiguration cfg) throws Exception {
         return ignitionStart(cfg, null);
     }
 
@@ -593,11 +592,12 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
      * @param cfg Node configuration.
      * @param latch Latch to await schema operation finish.
      * @return New node.
+     * @throws Exception If failed.
      */
-    private static IgniteEx ignitionStart(IgniteConfiguration cfg, final CountDownLatch latch) {
+    private IgniteEx ignitionStart(IgniteConfiguration cfg, final CountDownLatch latch) throws Exception {
         GridQueryProcessor.idxCls = BlockingIndexing.class;
 
-        IgniteEx node = (IgniteEx)Ignition.start(cfg);
+        IgniteEx node = startGrid(cfg);
 
         if (latch != null) {
             node.context().discovery().setCustomEventListener(SchemaFinishDiscoveryMessage.class,

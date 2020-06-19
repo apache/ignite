@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterState;
@@ -94,7 +93,7 @@ public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbs
         super.beforeTestsStarted();
 
         for (IgniteConfiguration cfg : configurations())
-            Ignition.start(cfg);
+            startGrid(cfg);
 
         node().cluster().state(ClusterState.ACTIVE);
     }

@@ -46,12 +46,12 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
      * @param sqlEscape Sql escape flag.
      */
     public SchemaAddQueryEntityOperation(
-            UUID opId,
-            String cacheName,
-            String schemaName,
-            Collection<QueryEntity> entities,
-            int qryParallelism,
-            boolean sqlEscape
+        UUID opId,
+        String cacheName,
+        String schemaName,
+        Collection<QueryEntity> entities,
+        int qryParallelism,
+        boolean sqlEscape
     ) {
         super(opId, cacheName, schemaName);
         this.entities = entities;
