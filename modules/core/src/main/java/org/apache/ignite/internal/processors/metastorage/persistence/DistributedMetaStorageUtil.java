@@ -66,9 +66,7 @@ class DistributedMetaStorageUtil {
             return valBytes == null ? null : marshaller.unmarshal(valBytes, U.gridClassLoader());
         } catch (IgniteCheckedException e) {
             if (X.hasCause(e, ClassNotFoundException.class)) {
-                IgniteLogger log = IgnitionEx.localIgnite().log();
-
-                log.warning("Unable to unmarshal the distributed metastorage value with unknown class.", e);
+                U.warn(null, "Unable to unmarshal the distributed metastorage value with unknown class.", e);
 
                 return null;
             }
