@@ -105,7 +105,6 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
                     throw new IgniteInterruptedCheckedException("Thread was interrupted.");
 
                 requested--;
-                System.out.println("+++ scan push");
                 downstream.push(it.next());
 
                 if (++processed == IN_BUFFER_SIZE && requested > 0) {

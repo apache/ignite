@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.function.Supplier;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -28,16 +27,16 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
-    private final static int NOT_READY = -1;
+    private static final int NOT_READY = -1;
 
     /** */
-    private final static int LIMIT_NOT_SET = -2;
+    private static final int LIMIT_NOT_SET = -2;
 
     /** */
-    final private Supplier<Integer> offsetSup;
+    private final Supplier<Integer> offsetSup;
 
     /** */
-    final private Supplier<Integer> limitSup;
+    private final Supplier<Integer> limitSup;
 
     /** */
     private int offset = NOT_READY;
@@ -140,12 +139,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         if (!ended && rowNum >= offset) {
             requested--;
 
-            System.out.println("+++ push down");
             downstream.push(row);
-        }
-        else {
-            System.out.println("+++ push skip");
-
         }
 
         rowNum++;
@@ -164,7 +158,6 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         if (ended)
             return;
 
-        System.out.println("+++ end");
         ended = true;
 
         sources.get(0).cancel();
