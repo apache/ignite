@@ -901,7 +901,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             synchronized (stateMux) {
                 boolean escape = cacheInfo.config().isSqlEscapeAll();
-                boolean enableIndexing = false;
 
                 String cacheName = cacheInfo.name();
 
@@ -973,8 +972,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                         processDynamicDropColumn(typeDesc, opDropCol.columns());
                                     }
                                     else if (op0 instanceof SchemaAddQueryEntityOperation) {
-                                        enableIndexing = true;
-
                                         SchemaAddQueryEntityOperation opEnableIdx =
                                                 (SchemaAddQueryEntityOperation)op0;
 
@@ -1002,9 +999,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 // Ready to register at this point.
                 registerCache0(cacheName, schemaName, cacheInfo, cands, isSql);
-
-                if (enableIndexing)
-                    rebuildIndexesFromHash0(cacheInfo.cacheContext());
             }
         }
         finally {
@@ -1913,13 +1907,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else if (op instanceof SchemaAddQueryEntityOperation) {
                 SchemaAddQueryEntityOperation op0 = (SchemaAddQueryEntityOperation)op;
 
-                cacheInfo.onSchemaAddQueryEntity(op0);
+                if (!cacheNames.contains(op0.cacheName())) {
+                    cacheInfo.onSchemaAddQueryEntity(op0);
 
-                T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
-                    candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo, op0.entities(),
+                    T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
+                        candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo, op0.entities(),
                         op0.isSqlEscape());
 
-                registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
+                    registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
+                }
 
                 rebuildIndexesFromHash0(cacheInfo.cacheContext());
             }
@@ -2289,7 +2285,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         // Indexing module is disabled, nothing to rebuild.
         if (rebuildIsMeaningless(cctx))
-            return null;
+            return chainIndexRebuildFuture(null, cctx);
 
         // No need to rebuild if cache has no data.
         boolean empty = true;
@@ -2303,7 +2299,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (empty)
-            return null;
+            return chainIndexRebuildFuture(null, cctx);
 
         if (!busyLock.enterBusy()) {
             return new GridFinishedFuture<>(new NodeStoppingException("Failed to rebuild indexes from hash " +
@@ -2322,13 +2318,27 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      */
     private IgniteInternalFuture<?> rebuildIndexesFromHash0(GridCacheContext<?, ?> cctx) {
-        int cacheId = cctx.cacheId();
-
-        GridFutureAdapter<Void> res = idxRebuildFuts.computeIfAbsent(cacheId, id -> new GridFutureAdapter<>());
-
         IgniteInternalFuture<?> idxFut = idx.rebuildIndexesFromHash(cctx);
 
+        return chainIndexRebuildFuture(idxFut, cctx);
+    }
+
+    /**
+     * Chain real index rebuild future with user future and do some post processing.
+     *
+     * @param idxFut Real index future. If {@code null} simply completes existing user future.
+     * @param cctx Cache context.
+     * @return Chained user future.
+     */
+    private @Nullable IgniteInternalFuture<?> chainIndexRebuildFuture(
+        @Nullable IgniteInternalFuture<?> idxFut,
+        GridCacheContext<?, ?> cctx
+    ) {
+        int cacheId = cctx.cacheId();
+
         if (nonNull(idxFut)) {
+            GridFutureAdapter<Void> res = idxRebuildFuts.computeIfAbsent(cacheId, id -> new GridFutureAdapter<>());
+
             String cacheInfo = "[name=" + cctx.name() + ", grpName=" + cctx.group().name() + "]";
 
             if (log.isInfoEnabled())
@@ -2350,9 +2360,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return res;
         }
         else {
-            idxRebuildFuts.remove(cacheId, res);
+            GridFutureAdapter<Void> fut = idxRebuildFuts.remove(cacheId);
 
-            res.onDone();
+            if (fut != null)
+                fut.onDone();
 
             return null;
         }
