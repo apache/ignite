@@ -191,7 +191,7 @@ public class H2TableDescriptor {
     /**
      * @return Lucene index.
      */
-    GridLuceneIndex luceneIndex() {
+    public GridLuceneIndex luceneIndex() {
         return luceneIdx;
     }
 

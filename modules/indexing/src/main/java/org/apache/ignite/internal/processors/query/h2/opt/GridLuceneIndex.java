@@ -97,7 +97,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
  */
 public class GridLuceneIndex implements AutoCloseable {
     /** Field name for string representation of value. */
-    public static final String VAL_STR_FIELD_NAME = "_gg_val_str__";  
+    public static final String VAL_STR_FIELD_NAME = "_TEXT";//modify@byron "_gg_val_str__";  
     
     public static final String DLF_LUCENE_CONFIG = "default";
     
@@ -185,6 +185,7 @@ public class GridLuceneIndex implements AutoCloseable {
         }         
 
         try {
+        	
         	 indexAccess = FullTextLucene.getIndexAccess(null, type.schemaName(), type.tableName());        	 
         }
         catch (Exception e) {
@@ -383,7 +384,7 @@ public class GridLuceneIndex implements AutoCloseable {
 
 //            parser.setAllowLeadingWildcard(true);
             String [] items = qry.getText().split("\\s");
-            //qty: hello type:blog user:xiaoming orderby:create
+            //qty: hello type:blog user:xiaoming sort:create
             int limit =  qry.getLimit()>0? qry.getLimit(): qry.getPageSize();
             if(limit<=0) {
             	limit = Integer.MAX_VALUE;
@@ -447,7 +448,7 @@ public class GridLuceneIndex implements AutoCloseable {
         if (filters != null)
             fltr = filters.forCache(cacheName);
 
-        return new It<K,V>(indexAccess.reader, searcher, docs.scoreDocs, fltr);
+        return new It<K,V>(searcher, docs.scoreDocs, fltr);
     }
 
     /** {@inheritDoc} */
@@ -462,9 +463,6 @@ public class GridLuceneIndex implements AutoCloseable {
     private class It<K, V> extends GridCloseableIteratorAdapter<IgniteBiTuple<K, V> > {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        private final IndexReader reader;
 
         /** */
         private final IndexSearcher searcher;
@@ -493,9 +491,9 @@ public class GridLuceneIndex implements AutoCloseable {
          * @param filters Filters over result.
          * @throws IgniteCheckedException if failed.
          */
-        private It(IndexReader reader, IndexSearcher searcher, ScoreDoc[] docs, IndexingQueryCacheFilter filters)
+        private It(IndexSearcher searcher, ScoreDoc[] docs, IndexingQueryCacheFilter filters)
                 throws IgniteCheckedException {
-                this.reader = reader;
+              
                 this.searcher = searcher;
                 this.docs = docs;
                 this.filters = filters;
@@ -540,7 +538,7 @@ public class GridLuceneIndex implements AutoCloseable {
                 Document doc;
 
                 try {
-                    doc = searcher.doc(docs[idx++].doc);
+                    doc = searcher.doc(docs[idx++].doc);                   
                 }
                 catch (IOException e) {
                     throw new IgniteCheckedException(e);

@@ -70,6 +70,9 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteMessaging;
@@ -471,17 +474,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         CommunicationSpi spi = ctx.config().getCommunicationSpi();
 
-        ioMetric.register(OUTBOUND_MSG_QUEUE_CNT, spi::getOutboundMessagesQueueSize,
+        ioMetric.register(OUTBOUND_MSG_QUEUE_CNT, (IntSupplier)spi::getOutboundMessagesQueueSize,
                 "Outbound messages queue size.");
 
-        ioMetric.register(SENT_MSG_CNT, spi::getSentMessagesCount, "Sent messages count.");
+        ioMetric.register(SENT_MSG_CNT, (IntSupplier)spi::getSentMessagesCount, "Sent messages count.");
 
-        ioMetric.register(SENT_BYTES_CNT, spi::getSentBytesCount, "Sent bytes count.");
+        ioMetric.register(SENT_BYTES_CNT, (LongSupplier)spi::getSentBytesCount, "Sent bytes count.");
 
-        ioMetric.register(RCVD_MSGS_CNT, spi::getReceivedMessagesCount,
+        ioMetric.register(RCVD_MSGS_CNT, (IntSupplier)spi::getReceivedMessagesCount,
                 "Received messages count.");
 
-        ioMetric.register(RCVD_BYTES_CNT, spi::getReceivedBytesCount, "Received bytes count.");
+        ioMetric.register(RCVD_BYTES_CNT, (LongSupplier)spi::getReceivedBytesCount, "Received bytes count.");
 
         getSpi().setListener(commLsnr = new CommunicationListenerEx<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {

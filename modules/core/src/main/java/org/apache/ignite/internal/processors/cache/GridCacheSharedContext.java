@@ -1155,7 +1155,7 @@ public class GridCacheSharedContext<K, V> {
      * @param mgr Manager to add.
      * @return Added manager.
      */
-    @Nullable private <T extends GridCacheSharedManager<K, V>> T add(List<GridCacheSharedManager<K, V>> mgrs,
+    @Nullable private <T extends GridCacheSharedManager> T add(List<GridCacheSharedManager<K, V>> mgrs,
         @Nullable T mgr) {
         if (mgr != null)
             mgrs.add(mgr);
