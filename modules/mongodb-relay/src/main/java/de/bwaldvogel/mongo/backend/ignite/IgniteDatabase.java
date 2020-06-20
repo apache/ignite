@@ -16,6 +16,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.stream.StreamVisitor;
 
 import de.bwaldvogel.mongo.MongoCollection;
@@ -97,12 +98,26 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
     		MongoCollection<Object> collection = resolveCollection(collectionName,true);
         	return new PrimaryKeyIndex<Object>(indexName,collection,keys,sparse);
     	}
-    	if(!isKeepBinary) {
-    		IgniteCache<KeyValue, Object> mvMap = mvStore.getOrCreateCache(INDEX_DB_PREFIX+databaseName + "." + collectionName + "_" + indexName(keys));
+    	if(!isKeepBinary || isKeepBinary) {
+    		CacheConfiguration<KeyValue, Object> cfg = new CacheConfiguration<>();        	
+	        cfg.setCacheMode(CacheMode.PARTITIONED);
+	        cfg.setName(INDEX_DB_PREFIX+databaseName + "." + collectionName + "_" + indexName(keys));
+	        cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);  
+    		IgniteCache<KeyValue, Object> mvMap = mvStore.getOrCreateCache(cfg);
     		return new IgniteUniqueIndex(mvMap, indexName,keys, sparse);
     	}
     	return null;
     }
+    
+    
+    protected Index<Object> openOrCreateIndex(String collectionName, String indexName, List<IndexKey> keys, boolean sparse) {
+    	if(!isKeepBinary || isKeepBinary) {
+    		IgniteEx ignite = (IgniteEx)mvStore;
+    		IgniteLuceneIndex index = new IgniteLuceneIndex(ignite.context(),collectionName,indexName,keys,sparse);    		
+    		return index;
+    	}
+    	return null;
+     }
 
     @Override
     public void drop() {

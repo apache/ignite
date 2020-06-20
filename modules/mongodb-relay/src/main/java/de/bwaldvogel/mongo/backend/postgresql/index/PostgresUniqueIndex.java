@@ -114,7 +114,7 @@ public class PostgresUniqueIndex extends Index<Long> {
             fillStrings(stmt, keyValues);
             try (ResultSet resultSet = stmt.executeQuery()) {
                 if (resultSet.next()) {
-                    throw new DuplicateKeyError(this, collection, getKeys(), new KeyValue(keyValues.values()));
+                    throw new DuplicateKeyError(this, collection, getKeys(), KeyValue.valueOf(keyValues.values()));
                 }
             }
         } catch (SQLException e) {

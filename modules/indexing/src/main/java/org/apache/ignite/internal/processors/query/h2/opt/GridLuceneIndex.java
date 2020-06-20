@@ -25,7 +25,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -60,10 +62,8 @@ import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.search.BooleanClause;
@@ -78,13 +78,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.context.support.GenericXmlApplicationContext;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.UrlResource;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
@@ -99,11 +92,8 @@ public class GridLuceneIndex implements AutoCloseable {
     /** Field name for string representation of value. */
     public static final String VAL_STR_FIELD_NAME = "_TEXT";//modify@byron "_gg_val_str__";  
     
-    public static final String DLF_LUCENE_CONFIG = "default";
-    
-    /** spring ctx for lucene.xml */
-    public static ApplicationContext springCtx = null;
-
+  
+   
     /** */
     private final String cacheName;
 
@@ -136,120 +126,31 @@ public class GridLuceneIndex implements AutoCloseable {
         this.cacheName = cacheName;
         this.type = type;       
         
-        try{
-        	if(springCtx==null)
-        		springCtx = initContext(new FileInputStream(ctx.config().getIgniteHome()+"/config/lucene.xml"));    
-        	
-    		if(springCtx.containsBean(cacheName)){
-    			this.config = springCtx.getBean(cacheName,LuceneConfiguration.class);
-    		}
-    		else if(springCtx.containsBean(DLF_LUCENE_CONFIG)){
-    			this.config = springCtx.getBean(DLF_LUCENE_CONFIG,LuceneConfiguration.class);
-    		}
-    		else{
-    			this.config = LuceneConfiguration.getConfiguration(type.schemaName(),type.tableName());     
-    		}
-    	}
-    	catch(Exception e){   
-    		this.config = LuceneConfiguration.getConfiguration(type.schemaName(),type.tableName());  
-    		ctx.grid().log().error(e.getMessage(),e);
-    	}
-        
-        
-        //if no ctx use lucene to store val.
-        if(ctx==null){
-        	this.config.setStoreValue(true);
-        }
-        else{
-        	FullTextLucene.ctx = ctx;    
-        	this.config.cacheName(cacheName);
-        	this.config.type(type);        	
-        	this.config.setPersistenceEnabled(ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled());
-        }  
-        //store config
-        LuceneConfiguration.putConfiguration(type.schemaName(),type.tableName(),this.config);
-        
-        QueryIndex qtextIdx = ((QueryIndexDescriptorImpl)type.textIndex()).getQueryIndex();  
-        if(qtextIdx instanceof FullTextQueryIndex){
-        	try{        		
-        		this.textIdx = (FullTextQueryIndex)qtextIdx;
-        		if(this.textIdx.getAnalyzer()!=null)
-        			this.config.setIndexAnalyzer(springCtx.getBean(this.textIdx.getAnalyzer(),Analyzer.class));
-        		if(this.textIdx.getQueryAnalyzer()!=null)
-        			this.config.setQueryAnalyzer(springCtx.getBean(this.textIdx.getQueryAnalyzer(),Analyzer.class));
-        	}
-        	catch(BeansException e){
-        		e.printStackTrace();
-        		ctx.grid().log().error(e.getMessage(),e);
-        	}
-        }         
+        try {        	
+        	 indexAccess = FullTextLucene.getIndexAccess(null, cacheName, null);  
+        	 QueryIndex qtextIdx = ((QueryIndexDescriptorImpl)type.textIndex()).getQueryIndex();  
+             if(qtextIdx instanceof FullTextQueryIndex){
+            	 this.textIdx = (FullTextQueryIndex)qtextIdx;
+            	 Set<String> fields = indexAccess.init(type).keySet();
+            	 idxdFields = new String[fields.size() + 1];
 
-        try {
-        	
-        	 indexAccess = FullTextLucene.getIndexAccess(null, type.schemaName(), type.tableName());        	 
+                 fields.toArray(idxdFields);
+             }   
+             else {
+            	 assert type.valueTextIndex() || type.valueClass() == String.class;
+
+                 idxdFields = new String[1];
+             }
+             
+             idxdFields[idxdFields.length - 1] = VAL_STR_FIELD_NAME;
         }
         catch (Exception e) {
+        	ctx.grid().log().error(e.getMessage(),e);
             throw new IgniteCheckedException(e);
         }
-
-        GridQueryIndexDescriptor idx = type.textIndex();
-
-        if (idx != null) {
-            Collection<String> fields = indexAccess.fields;
-
-            idxdFields = new String[fields.size() + 1];
-
-            fields.toArray(idxdFields);
-        }
-        else {
-            assert type.valueTextIndex() || type.valueClass() == String.class;
-
-            idxdFields = new String[1];
-        }
-
-        idxdFields[idxdFields.length - 1] = VAL_STR_FIELD_NAME;
+        
     }
     
-    /**
-     * @param stream Input stream containing Spring XML configuration.
-     * @return Context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private ApplicationContext initContext(InputStream stream) throws IgniteCheckedException {
-        GenericApplicationContext springCtx;
-
-        try {
-        	springCtx = new GenericApplicationContext();
-
-            XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(springCtx);
-
-            reader.setValidationMode(XmlBeanDefinitionReader.VALIDATION_XSD);
-
-            reader.loadBeanDefinitions(new InputStreamResource(stream));
-
-            springCtx.refresh();
-           
-        }
-        catch (BeansException e) {
-            if (X.hasCause(e, ClassNotFoundException.class))
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
-                    "(make sure all classes used in Spring configuration are present at CLASSPATH) ", e);
-            else
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context" +
-                    ", err=" + e.getMessage() + ']', e);
-        }
-
-        return springCtx;
-    }
-      
-
-	public Analyzer getQueryAnalyzer(LuceneConfiguration config){
-		if(config.getQueryAnalyzer()!=null){
-			return config.getQueryAnalyzer();
-		}		
-		Analyzer ana = new StandardAnalyzer();
-		return ana;
-	}
 	
 
     /**
@@ -380,7 +281,7 @@ public class GridLuceneIndex implements AutoCloseable {
         try {
             searcher = indexAccess.searcher;
 
-            MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields, getQueryAnalyzer(this.config));
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields, indexAccess.getQueryAnalyzer());
 
 //            parser.setAllowLeadingWildcard(true);
             String [] items = qry.getText().split("\\s");

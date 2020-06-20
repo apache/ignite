@@ -142,7 +142,7 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
     @Override
     public synchronized boolean canHandle(Document query) {
 
-        if (!query.keySet().equals(keySet())) {
+        if (!query.keySet().containsAll(keySet())) {
             return false;
         }
 
@@ -159,7 +159,7 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
                     return false;
                 }
                 if (BsonRegularExpression.isRegularExpression(queryValue)) {
-                    return true;
+                	continue;
                 }
                 for (String queriedKeys : ((Document) queryValue).keySet()) {
                     if (isInQuery(queriedKeys)) {
@@ -183,7 +183,7 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
     public synchronized Iterable<P> getPositions(Document query) {
         KeyValue queriedKeys = getQueriedKeys(query);
 
-        for (Object queriedKey : queriedKeys) {
+        for (Object queriedKey : queriedKeys.iterator()) {
             if (BsonRegularExpression.isRegularExpression(queriedKey)) {
                 if (isCompoundIndex()) {
                     throw new UnsupportedOperationException("Not yet implemented");
@@ -226,12 +226,6 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
         return Collections.singletonList(position);
     }
 
-    private KeyValue getQueriedKeys(Document query) {
-        return new KeyValue(keys().stream()
-            .map(query::get)
-            .map(Utils::normalizeValue)
-            .collect(Collectors.toList()));
-    }
 
     private Iterable<P> getPositionsForExpression(Document keyObj, String operator) {
         if (isInQuery(operator)) {

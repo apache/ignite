@@ -184,7 +184,7 @@ public class H2TableDescriptor {
     /**
      * @return Type.
      */
-    GridQueryTypeDescriptor type() {
+    public GridQueryTypeDescriptor type() {
         return type;
     }
 

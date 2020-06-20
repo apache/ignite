@@ -127,22 +127,8 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	 Object key = document.getOrDefault(this.idField, null);
     	 if(key!=null) {
     		 return key;
-    	 }
-    	 T2<Object,BinaryObject> obj2 = this.documentToBinaryObject(key,document);
-    	 BinaryObject obj = obj2.getValue();
-    	 ScanQuery<Object, BinaryObject> scan = new ScanQuery<>(
-    	            new IgniteBiPredicate<Object, BinaryObject>() {
-    	                @Override public boolean apply(Object key, BinaryObject other) {
-    	                    return obj.equals(other);
-    	                }
-    	            }
-    	        );
-    	 
-    	QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
-        for (Cache.Entry<Object, BinaryObject> entry : cursor.getAll()) {            
-           return entry.getKey();           
-        }
-        return null;
+    	 }    	 
+         return null;
     }
 
 

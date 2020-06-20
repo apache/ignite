@@ -15,6 +15,7 @@ public class BsonRegularExpression implements Bson,Externalizable {
     private static final long serialVersionUID = 1L;
 
     private static final String REGEX = "$regex";
+    private static final String TEXT = "$text";
     private static final String OPTIONS = "$options";
 
     private String pattern;
@@ -56,6 +57,14 @@ public class BsonRegularExpression implements Bson,Externalizable {
     public static boolean isRegularExpression(Object object) {
         if (object instanceof Document) {
             return ((Document) object).containsKey(REGEX);
+        } else {
+            return object instanceof BsonRegularExpression;
+        }
+    }
+    
+    public static boolean isTextSearchExpression(Object object) {
+        if (object instanceof Document) {
+            return ((Document) object).containsKey(TEXT);
         } else {
             return object instanceof BsonRegularExpression;
         }

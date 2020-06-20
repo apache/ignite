@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
+import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2TableEngine;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
@@ -166,7 +167,7 @@ public class FullTextLucene {
     	if(schema==null || schema.isEmpty()){
     		return table;
     	}
-    	if(table.length()==0){
+    	if(table==null || table.length()==0){
 			return schema.toUpperCase();
 		}			
 		
@@ -602,60 +603,57 @@ public class FullTextLucene {
     public static LuceneIndexAccess getIndexAccess(Connection conn,String schema,String table)
             throws SQLException {
         String path = getIndexPath(conn,schema,table);
-       
-        LuceneConfiguration idxConfig = LuceneConfiguration.getConfiguration(schema,table); 
-        
+        String cacheName = cacheName(schema,table);
         synchronized (INDEX_ACCESS) {
             LuceneIndexAccess access = INDEX_ACCESS.get(path);
            
             if (access == null) {
                 try {
-                	access = new LuceneIndexAccess(idxConfig,path);                 
+                	access = new LuceneIndexAccess(ctx,cacheName,path); 
+                    //fill indexed fields
+                    if(table!=null && table.length()!=0){
+                    	GridQueryTypeDescriptor type = cacheTypeDesc(schema,table);
+                    	access.init(type);
+                        // read index desc form FTL.INDEXES
+                        if(conn!=null){                	
+        	                PreparedStatement prep = conn.prepareStatement(
+        	                        "SELECT COLUMNS FROM " + SCHEMA+ ".INDEXES WHERE SCHEMA=? AND TABLE=?");
+        	                prep.setString(1, schema);
+        	                prep.setString(2, table);
+        	                
+        	                ResultSet rs = prep.executeQuery();
+        	                while (rs.next()) {
+        	                    String cols = rs.getString(1);
+        	                    if (cols != null) {
+        	                        for (String s : StringUtils.arraySplit(cols, ',', true)) {
+        	                        	if(!s.isEmpty() && s.charAt(0)!='_'){	                    			
+        	                    			access.fields.put(s,TextField.TYPE_NOT_STORED);
+        	                    		}
+        	                        }
+        	                       
+        	                    }
+        	                                      
+        	                }  
+                        }
+                    }
                     
                 } catch (IOException e) {
                     throw convertException(e);
                 }
                 INDEX_ACCESS.put(path, access);
+                
+                
             }
             
             if (!access.writer.isOpen()) {
                 try {
-                	access.open(idxConfig,path);                 
+                	access.open(path);                 
                     
                 } catch (IOException e) {
                     throw convertException(e);
                 }               
             }
             
-            //fill indexed fields
-            if(access.fields.isEmpty()){
-            	access.config = idxConfig;      
-            	if(idxConfig.type()!=null && idxConfig.type().textIndex()!=null){
-            		access.fields.addAll(idxConfig.type().textIndex().fields());
-                }
-                // read index desc form FTL.INDEXES
-                if(conn!=null){
-                	ArrayList<String> indexList = new ArrayList<>();
-	                PreparedStatement prep = conn.prepareStatement(
-	                        "SELECT COLUMNS FROM " + SCHEMA+ ".INDEXES WHERE SCHEMA=? AND TABLE=?");
-	                prep.setString(1, schema);
-	                prep.setString(2, table);
-	                
-	                ResultSet rs = prep.executeQuery();
-	                if (rs.next()) {
-	                    String cols = rs.getString(1);
-	                    if (cols != null) {
-	                        for (String s : StringUtils.arraySplit(cols, ',', true)) {
-	                        	if(!s.isEmpty() && s.charAt(0)!='_'){
-	                    			indexList.add(s);
-	                    		}
-	                        }
-	                        access.fields.addAll(indexList);
-	                    }
-	                                      
-	                }  
-                }
-            }
             return access;
         }
     }
@@ -845,7 +843,16 @@ public class FullTextLucene {
         }
     }
 
-    
+    public static GridQueryTypeDescriptor cacheTypeDesc(String forschema, String table) {
+    	
+    	IgniteH2Indexing idxing = (IgniteH2Indexing)ctx.query().getIndexing();
+
+    	String cacheName = cacheName(forschema,table);
+    	H2TableDescriptor tableDesc = idxing.schemaManager().tableForType(forschema,cacheName,table);
+		
+    	GridQueryTypeDescriptor type = tableDesc.type();
+    	return type;
+    }
     /**
      * Do the search.
      *
@@ -860,8 +867,9 @@ public class FullTextLucene {
             int limit, int offset, boolean data) throws SQLException {   
     	
     	LuceneIndexAccess access = getIndexAccess(conn,forschema,table);
+    	GridQueryTypeDescriptor type = cacheTypeDesc(forschema,table);
     	
-        SimpleResultSet result = createResultSet(data,access.type());
+        SimpleResultSet result = createResultSet(data,type);
         
         if (conn.getMetaData().getURL().startsWith("jdbc:columnlist:")) {
             // this is just to query the result set columns
@@ -889,7 +897,7 @@ public class FullTextLucene {
             // also allows subclasses to control the analyzer used.
             Analyzer analyzer = access.writer.getAnalyzer();           
             
-            MultiFieldQueryParser parser = new MultiFieldQueryParser(access.fields.toArray(new String[access.fields.size()]), analyzer);
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(access.fields.keySet().toArray(new String[access.fields.size()]), analyzer);
                       
             
             // Filter expired items.
@@ -920,10 +928,10 @@ public class FullTextLucene {
                 Object k = unmarshall(doc.getBinaryValue(FIELD_KEY).bytes, ldr,cache.context().cacheObjectContext());
                 Object ver = doc.get(VER_FIELD_NAME);
                 
-                if (data && cache!=null && access.type()!=null) {
+                if (data && cache!=null && type!=null) {
                 	
                 	Object v = cache.get(k);
-                	Object[] row = new Object[5+access.type().fields().size()];
+                	Object[] row = new Object[5+type.fields().size()];
                 	row[0] = k;
                 	row[1] = ver;
                 	row[2] = v;
@@ -932,8 +940,8 @@ public class FullTextLucene {
                 	int c= 5;
                 	if(v!=null && v instanceof BinaryObject){
                 		BinaryObject bobj = (BinaryObject) v;
-	                	for(String f : access.type().fields().keySet()){
-	                		Object fieldVal = access.type().value(f, k, bobj);
+	                	for(String f : type.fields().keySet()){
+	                		Object fieldVal = type.value(f, k, bobj);
 	                		row[c++] = fieldVal; //bobj.field(f.toLowerCase());
 	                	}
                 	}                	
@@ -1040,20 +1048,18 @@ public class FullTextLucene {
             prep.setString(1, schemaName);
             prep.setString(2, tableName);
             rs = prep.executeQuery();
-            if (rs.next()) {
+            while (rs.next()) {
                 String cols = rs.getString(1);
                 if (cols != null) {
                     for (String s : StringUtils.arraySplit(cols, ',', true)) {
                     	if(!s.isEmpty() && s.charAt(0)!='_'){
-                			indexList.add(s);
+                    		indexList.add(s);
+                			this.indexAccess.fields.put(s, TextField.TYPE_NOT_STORED);
                 		}
                     }
                 }
                 
-            }
-           
-            this.indexAccess.fields.addAll(indexList);
-            
+            }            
             keys = new int[keyList.size()];
             setColumns(keys, keyList, columnList);
             indexColumns = new int[indexList.size()];

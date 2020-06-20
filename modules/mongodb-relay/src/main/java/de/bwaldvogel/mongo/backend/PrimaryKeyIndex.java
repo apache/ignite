@@ -13,6 +13,12 @@ import de.bwaldvogel.mongo.backend.IndexKey;
 import de.bwaldvogel.mongo.backend.KeyValue;
 import de.bwaldvogel.mongo.bson.Document;
 
+/**
+  *  主键在document里面，不需要创建索引
+ * @author WBPC1158
+ *
+ * @param <P>
+ */
 public class PrimaryKeyIndex<P> extends AbstractUniqueIndex<P> {
     
     private MongoCollection<P> collection;

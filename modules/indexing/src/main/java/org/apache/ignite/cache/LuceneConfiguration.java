@@ -37,13 +37,12 @@ public class LuceneConfiguration implements PluginConfiguration {
 	// default query analyzer
 	private Analyzer queryAnalyzer;
 	
-	private GridQueryTypeDescriptor type = null;
-	
+		
 	private String cacheName = null;
 	
 	
 
-	private LuceneConfiguration() {
+	public LuceneConfiguration() {
 
 		this.storeTextFieldValue = Utils.getProperty("h2.storeDocumentTextInIndex", false);
 		this.storeValue = Utils.getProperty("h2.storeValueInIndex", false);		
@@ -97,8 +96,6 @@ public class LuceneConfiguration implements PluginConfiguration {
 		this.storeValue = storeValue;
 	}
 
-	
-
 	public LuceneConfiguration cacheName(String cacheName){
 		this.cacheName = cacheName;
 		return this;
@@ -106,38 +103,26 @@ public class LuceneConfiguration implements PluginConfiguration {
 	
 	public String cacheName(){
 		return cacheName;
-	}
+	}		
 	
-	public GridQueryTypeDescriptor type() {
-		return type;
-	}
-
-	public LuceneConfiguration type(GridQueryTypeDescriptor type) {
-		this.type = type;
-		return this;
-	}	
-	
-	
-	public static LuceneConfiguration getConfiguration(String schema,String type) {
-		String region = QueryUtils.createTableCacheName(schema.toUpperCase(),type.toUpperCase());
-		LuceneConfiguration _instance = _instanceMap.get(region);
+	public Analyzer getFieldAnalyzer(String schema,String field) {
+		String region = QueryUtils.createTableCacheName(schema.toUpperCase(),field.toUpperCase());
+		Analyzer _instance = _fieldAnalyzerMap.get(region);
 		if (_instance == null) {
-			_instance = new LuceneConfiguration();
-			_instance.cacheName(region);
-			_instanceMap.put(region, _instance);
+			return this.getIndexAnalyzer();
 		}
 		return _instance;
 	}
 	
-	public static boolean putConfiguration(String schema,String type,LuceneConfiguration config) {
-		String region = QueryUtils.createTableCacheName(schema.toUpperCase(),type.toUpperCase());
-		LuceneConfiguration _instance = _instanceMap.get(region);
+	public boolean setFieldAnalyzer(String schema,String field,Analyzer config) {
+		String region = QueryUtils.createTableCacheName(schema.toUpperCase(),field.toUpperCase());
+		Analyzer _instance = _fieldAnalyzerMap.get(region);
 		if (_instance == null) {			
-			_instanceMap.put(region, config);
+			_fieldAnalyzerMap.put(region, config);
 			return true;
 		}
 		return false;
 	}
 
-	static Map<String, LuceneConfiguration> _instanceMap = new HashMap<>();
+	private Map<String, Analyzer> _fieldAnalyzerMap = new HashMap<>();
 }

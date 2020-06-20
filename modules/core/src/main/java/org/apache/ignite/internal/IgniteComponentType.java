@@ -101,8 +101,8 @@ public enum IgniteComponentType {
     
     QUERY_ENGINE(
     	org.apache.ignite.internal.processors.query.QueryEngine.class.getName(),
-        "org.apache.ignite.internal.processors.query.QueryEngineImpl",
-        "ignite-query-engine"	
+        "org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor",
+        "ignite-calcite"	
 	)
     ;
 

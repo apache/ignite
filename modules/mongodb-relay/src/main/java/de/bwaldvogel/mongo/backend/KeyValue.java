@@ -1,5 +1,9 @@
 package de.bwaldvogel.mongo.backend;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,38 +15,33 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import de.bwaldvogel.mongo.bson.Json;
 
-public final class KeyValue implements Serializable, Iterable<Object> {
+public class KeyValue implements Externalizable {
 
     private static final long serialVersionUID = 1L;
 
-    private final List<Object> values;
+    private Object values;   
 
-    public KeyValue(Object... values) {
-        this(Arrays.asList(values));
-    }
-
-    public KeyValue(Object values) {
-        this(Collections.singletonList(values));
+    public KeyValue(Object value) {
+        this.values = value;
     }
     
-    public KeyValue(Collection<?> values) {
-        Assert.notEmpty(values);
-        this.values = new ArrayList<>(values);
-    }
-
+    public static KeyValue valueOf(Object... value) {
+    	if(value.length==1) return new KeyValue(value[0]);
+		return new ComposeKeyValue(value);
+	}
+    
     public int size() {
-        return values.size();
+        return 1;
     }
 
     public Object get(int index) {
-        return values.get(index);
+        return values;
     }
 
-    @Override
-    public Iterator<Object> iterator() {
-        return values.iterator();
+   
+    public Object[] iterator() {
+        return new Object[] { values };
     }
 
     @Override
@@ -54,32 +53,37 @@ public final class KeyValue implements Serializable, Iterable<Object> {
             return false;
         }
         KeyValue keyValue = (KeyValue) o;
-        return Objects.equals(values, keyValue.values);
+        return values.equals(keyValue.values);
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(values);
+    public int hashCode() {    
+    	return values.hashCode();
     }
 
     @Override
     public String toString() {
-        return values.stream()
-            .map(value -> ": " + Json.toJsonValue(value, true, "{ ", " }"))
-            .collect(Collectors.joining(", ", "{ ", " }"));
+        return values.toString();
     }
 
     public Stream<Object> stream() {
-        return values.stream();
+        return Stream.of(values);
     }
 
     public KeyValue normalized() {
-    	if(values.size()==1) {
-    		return new KeyValue(Utils.normalizeValue(values.get(0)));
-    	}
-        return new KeyValue(values.stream()
-            .map(Utils::normalizeValue)
-            .collect(Collectors.toList()));
+    	return new KeyValue(Utils.normalizeValue(values));
     }
 
+	@Override
+	public void writeExternal(ObjectOutput out) throws IOException {
+		// TODO Auto-generated method stub
+		out.writeObject(this.values);
+	}
+
+	@Override
+	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+		// TODO Auto-generated method stub
+		this.values = in.readObject();
+	}
+	
 }

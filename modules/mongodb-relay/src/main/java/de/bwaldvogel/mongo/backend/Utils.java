@@ -104,7 +104,7 @@ public class Utils {
         return true;
     }
 
-    static Object normalizeValue(Object value) {
+    public static Object normalizeValue(Object value) {
         if (Missing.isNullOrMissing(value)) {
             return null;
         }
@@ -146,7 +146,7 @@ public class Utils {
         }
     }
 
-    static boolean nullAwareEquals(Object a, Object b) {
+    public static boolean nullAwareEquals(Object a, Object b) {
         if (a == b) {
             return true;
         } else if (Missing.isNullOrMissing(a) && Missing.isNullOrMissing(b)) {
@@ -164,7 +164,7 @@ public class Utils {
         }
     }
 
-    static int calculateSize(Document document) {
+    public static int calculateSize(Document document) {
         ByteBuf buffer = Unpooled.buffer();
         try {
             BsonEncoder.encodeDocument(document, buffer);
@@ -176,7 +176,7 @@ public class Utils {
         }
     }
 
-    static boolean containsQueryExpression(Object value) {
+    public static boolean containsQueryExpression(Object value) {
         if (value == null) {
             return false;
         }
@@ -197,7 +197,7 @@ public class Utils {
         return false;
     }
 
-    static Object getFieldValueListSafe(Object value, String field) throws IllegalArgumentException {
+    public static Object getFieldValueListSafe(Object value, String field) throws IllegalArgumentException {
         if (Missing.isNullOrMissing(value)) {
             return Missing.getInstance();
         }

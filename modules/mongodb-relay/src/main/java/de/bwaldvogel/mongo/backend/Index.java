@@ -89,7 +89,7 @@ public abstract class Index<P> {
             validateHasNoParallelArrays(document);
             return collectCollectionValues(collectionValues);
         } else {
-            return Collections.singleton(new KeyValue(valuesPerKey.values()));
+            return Collections.singleton(KeyValue.valueOf(valuesPerKey.values().toArray()));
         }
     }
 
@@ -145,7 +145,7 @@ public abstract class Index<P> {
             List<Object> values = collectionValues.stream()
                 .map(collection -> CollectionUtils.getElementAtPosition(collection, pos))
                 .collect(Collectors.toList());
-            keyValues.add(new KeyValue(values));
+            keyValues.add(KeyValue.valueOf(values.toArray()));
         }
         return keyValues;
     }
@@ -191,4 +191,13 @@ public abstract class Index<P> {
         return getClass().getSimpleName() + "[name=" + getName() + "]";
     }
 
+
+    protected KeyValue getQueriedKeys(Document query) {
+    	List<String> keys = keys();
+    	Object[] values = new Object[keys.size()];
+    	for(int i=0;i<values.length;i++) {
+    		values[i] = Utils.normalizeValue(query.get(keys.get(i)));
+    	}
+        return KeyValue.valueOf(values);
+    }
 }

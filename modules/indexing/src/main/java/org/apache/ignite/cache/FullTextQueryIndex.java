@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 
 
 public class FullTextQueryIndex extends QueryIndex {
+	private static final long serialVersionUID = 0L;
+	
 	private String analyzer;
 
 	private String queryAnalyzer;
@@ -51,8 +53,8 @@ public class FullTextQueryIndex extends QueryIndex {
 	 * @param field
 	 *            Field name.
 	 */
-	public FullTextQueryIndex(String field, String analyzer) {
-		this(field,analyzer,analyzer);
+	public FullTextQueryIndex(String fieldList, String analyzer) {
+		this(fieldList,analyzer,analyzer);
 	}
 	
 	/**
@@ -61,8 +63,8 @@ public class FullTextQueryIndex extends QueryIndex {
 	 * @param field
 	 *            Field name.
 	 */
-	public FullTextQueryIndex(String field, String analyzer,String queryAnalyzer) {
-		String [] fields = field.split("[,\\s]");
+	public FullTextQueryIndex(String fieldList, String analyzer,String queryAnalyzer) {
+		String [] fields = fieldList.split("[,\\s]");
 		LinkedHashMap<String,Boolean> fieldsList = new LinkedHashMap<>();
         for (String f : fields)
         	fieldsList.put(f, true);

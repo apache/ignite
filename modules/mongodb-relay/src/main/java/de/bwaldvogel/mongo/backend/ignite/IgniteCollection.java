@@ -101,20 +101,8 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
     	 Object key = document.getOrDefault(this.idField, null);
     	 if(key!=null) {
     		 return key;
-    	 }
-    	 ScanQuery<Object, Document> scan = new ScanQuery<>(
-    	            new IgniteBiPredicate<Object, Document>() {
-    	                @Override public boolean apply(Object key, Document other) {
-    	                    return document.equals(other);
-    	                }
-    	            }
-    	        );
-    	 
-    	QueryCursor<Cache.Entry<Object, Document>>  cursor = dataMap.query(scan);
-        for (Cache.Entry<Object, Document> entry : cursor.getAll()) {            
-           return entry.getKey();           
-        }
-        return null;
+    	 }    	 
+         return null;
     }
 
 
