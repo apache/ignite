@@ -638,7 +638,14 @@ public class FullTextLucene {
 				                              
 				        }  
 				    }
-				}                
+				}  
+				
+				IgniteH2Indexing idxing = (IgniteH2Indexing)ctx.query().getIndexing();
+		    	
+		    	Collection<H2TableDescriptor> tableDesc = idxing.schemaManager().tablesForCache(cacheName);
+		    	for(H2TableDescriptor tabInfo : tableDesc) {
+		    		access.init(tabInfo.type());
+		    	}
                 
             }
             

@@ -240,15 +240,7 @@ public class LuceneIndexAccess {
        
         this.writer = writer;
         this.reader = reader;
-        this.searcher = new IndexSearcher(reader);    
-        
-        IgniteH2Indexing idxing = (IgniteH2Indexing)ctx.query().getIndexing();
-
-    	
-    	Collection<H2TableDescriptor> tableDesc = idxing.schemaManager().tablesForCache(config.cacheName());
-    	for(H2TableDescriptor tabInfo : tableDesc) {
-    		this.init(tabInfo.type());
-    	}
+        this.searcher = new IndexSearcher(reader);           
     }    
 	
 	

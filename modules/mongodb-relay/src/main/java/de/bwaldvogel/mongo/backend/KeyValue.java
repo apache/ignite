@@ -22,6 +22,10 @@ public class KeyValue implements Externalizable {
 
     private Object values;   
 
+    protected KeyValue() {
+      
+    }
+    
     public KeyValue(Object value) {
         this.values = value;
     }

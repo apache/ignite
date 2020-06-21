@@ -21,6 +21,10 @@ public final class ComposeKeyValue extends KeyValue implements Externalizable {
 
 	private Object[] values;
 	private int hashCode = 0;
+	
+	private ComposeKeyValue() {
+		
+	}
 
 	ComposeKeyValue(Object... values) {
 		super(values);
