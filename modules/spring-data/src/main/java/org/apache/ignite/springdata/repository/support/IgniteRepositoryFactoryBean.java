@@ -35,8 +35,8 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
  * The repository requires to define one of the parameters below in your Spring application configuration in order
  * to get an access to Apache Ignite cluster:
  * <ul>
- * <li>{@link Ignite} instance bean named "igniteInstance"</li>
- * <li>{@link IgniteConfiguration} bean named "igniteCfg"</li>
+ * <li>{@link Ignite} instance bean</li>
+ * <li>{@link IgniteConfiguration} bean</li>
  * <li>A path to Ignite's Spring XML configuration named "igniteSpringCfgPath"</li>
  * <ul/>
  *
@@ -64,13 +64,13 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
     /** {@inheritDoc} */
     @Override protected RepositoryFactorySupport createRepositoryFactory() {
         try {
-            Ignite ignite = (Ignite)ctx.getBean("igniteInstance");
+            Ignite ignite = ctx.getBean(Ignite.class);
 
             return new IgniteRepositoryFactory(ignite);
         }
         catch (BeansException ex) {
             try {
-                IgniteConfiguration cfg = (IgniteConfiguration)ctx.getBean("igniteCfg");
+                IgniteConfiguration cfg = ctx.getBean(IgniteConfiguration.class);
 
                 return new IgniteRepositoryFactory(cfg);
             }

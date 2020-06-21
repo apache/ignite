@@ -37,7 +37,7 @@ public class ApplicationConfiguration {
      * @return Ignite instance.
      */
     @Bean
-    public Ignite igniteInstance() {
+    public Ignite ignite() {
         IgniteConfiguration cfg = new IgniteConfiguration()
             .setCacheConfiguration(
                 new CacheConfiguration<Integer, Person>("PersonCache")

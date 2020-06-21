@@ -29,10 +29,10 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Every {@link IgniteRepository} is bound to a specific Apache Ignite that it communicates to in order to mutate and
  * read data via Spring Data API. To pass an instance of Apache Ignite cache to an {@link IgniteRepository} it's
- * required to initialize {@link IgniteRepositoryFactoryBean} with on of the following:
+ * required to initialize {@link IgniteRepositoryFactoryBean} with one of the following:
  * <ul>
- * <li>{@link Ignite} instance bean named "igniteInstance"</li>
- * <li>{@link IgniteConfiguration} bean named "igniteCfg"</li>
+ * <li>{@link Ignite} instance bean</li>
+ * <li>{@link IgniteConfiguration} bean</li>
  * <li>A path to Ignite's Spring XML configuration named "igniteSpringCfgPath"</li>
  * <ul/>
  * In this example the first approach is utilized.
