@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -55,6 +56,7 @@ import org.apache.lucene.util.Version;
 
 
 import de.bwaldvogel.mongo.MongoCollection;
+import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.backend.CollectionUtils;
 import de.bwaldvogel.mongo.backend.Index;
 import de.bwaldvogel.mongo.backend.IndexKey;
@@ -132,18 +134,21 @@ public class IgniteLuceneIndex extends Index<Object>{
 
 	@Override
 	public void add(Document document, Object position, MongoCollection<Object> collection) {
-		// TODO Auto-generated method stub
-		if(collection instanceof IgniteCollection && this.isFirstIndex) {
+		// index all field
+		if(collection instanceof IgniteCollection) {
 			IgniteCollection coll = (IgniteCollection) collection;
 			T2<String,String> t2 = coll.typeNameAndKeyField(document);
 	    	String typeName = t2.get1();    	
 	    	String keyField = t2.get2();    
+	    	
 	    	if(idxdFields==null) {
 	    		Set<String> fields = coll.fields().keySet();
 	    		idxdFields = new String[fields.size()];
 	    		fields.toArray(idxdFields);
 	    	}
 	    	
+	    	if(!this.isFirstIndex)
+	    		return ;
 	    	Object key = document.getOrDefault(coll.idField, null);
 	    	Field.Store storeText = indexAccess.config.isStoreTextFieldValue()?  Field.Store.YES : Field.Store.NO;
 
@@ -152,7 +157,7 @@ public class IgniteLuceneIndex extends Index<Object>{
 	        boolean stringsFound = false;
 	        
 	        Object[] row = new Object[idxdFields.length]; 
-	        for (int i = 0, last = idxdFields.length - 1; i < last; i++) {
+	        for (int i = 0, last = idxdFields.length; i < last; i++) {
 	            Object fieldVal = document.get(idxdFields[i]);
 	            row[i] = fieldVal;
 	        }
@@ -232,6 +237,9 @@ public class IgniteLuceneIndex extends Index<Object>{
                 if (BsonRegularExpression.isRegularExpression(queryValue)) {
                     continue;
                 }
+                if (BsonRegularExpression.isTextSearchExpression(queryValue)) {
+                    continue;
+                }
                 for (String queriedKeys : ((Document) queryValue).keySet()) {
                     if (isInQuery(queriedKeys)) {
                         // okay
@@ -258,7 +266,7 @@ public class IgniteLuceneIndex extends Index<Object>{
 	                 throw new UnsupportedOperationException("Not yet implemented");
 	             }
 	             List<Object> positions = new ArrayList<>();
-	             for (Entry<KeyValue, Object> entry : getFullTextIterable(queriedKey.toString())) {
+	             for (Entry<KeyValue, Object> entry : getFullTextIterable(queriedKey)) {
 	                 KeyValue obj = entry.getKey();
 	                 if (obj.size() == 1) {
 	                     Object o = obj.get(0);
@@ -315,9 +323,14 @@ public class IgniteLuceneIndex extends Index<Object>{
 
 	@Override
 	public void updateInPlace(Document oldDocument, Document newDocument, Object position,
-			MongoCollection<Object> collection) throws KeyConstraintError {
-		// TODO Auto-generated method stub
-		
+			MongoCollection<Object> collection) throws KeyConstraintError {		
+		 if (true || !nullAwareEqualsKeys(oldDocument, newDocument)) {
+	            Object removedPosition = remove(oldDocument,collection);
+	            if (removedPosition != null) {
+	                Assert.equals(removedPosition, position);
+	            }
+	            add(newDocument, position, collection);
+	        }
 	}
 
 	@Override
@@ -362,7 +375,10 @@ public class IgniteLuceneIndex extends Index<Object>{
 	            
 	            GridCacheAdapter cache = null;
 	            if (ctx != null){
-	            	cache = ctx.cache().internalCache(cacheName);            	
+	            	cache = ctx.cache().internalCache(cacheName);  
+	            	if(cache==null) {
+	            		cache = ctx.cache().internalCache(this.cacheName);  
+	            	}
 	            }
 	            if (cache != null && ctx.deploy().enabled())
 	                ldr = cache.context().deploy().globalLoader();
@@ -438,7 +454,7 @@ public class IgniteLuceneIndex extends Index<Object>{
 	  * @param text
 	  * @return
 	  */
-    protected Iterable<Entry<KeyValue, Object>> getFullTextIterable(String text) {
+    protected Iterable<Entry<KeyValue, Object>> getFullTextIterable(Object exp) {
     	 LuceneIndexAccess access = indexAccess;
     	 String field = this.getKeys().get(0).getKey();
     	
@@ -450,7 +466,10 @@ public class IgniteLuceneIndex extends Index<Object>{
 	            
 	            GridCacheAdapter cache = null;
 	            if (ctx != null){
-	            	cache = ctx.cache().internalCache(cacheName);            	
+	            	cache = ctx.cache().internalCache(cacheName);   
+	            	if(cache==null) {
+	            		cache = ctx.cache().internalCache(this.cacheName);  
+	            	}
 	            }
 	            if (cache != null && ctx.deploy().enabled())
 	                ldr = cache.context().deploy().globalLoader();
@@ -462,9 +481,15 @@ public class IgniteLuceneIndex extends Index<Object>{
 	            // reuse the same analyzer; it's thread-safe;
 	            // also allows subclasses to control the analyzer used.
 	            Analyzer analyzer = access.writer.getAnalyzer(); 	            
-	           
+	            Object text = null;
 	            QueryParser parser = new QueryParser(field, access.getQueryAnalyzer()); //定义查询分析器
-			    Query query = parser.parse(text);
+			    if(exp instanceof Map) {
+			    	text = ((Map<String, Object>)exp).get(BsonRegularExpression.TEXT);
+			    }
+			    else {
+			    	text = exp;
+			    }
+	            Query query = parser.parse(text.toString());
 	        
 	            
 	            int limit = 0;

@@ -147,7 +147,7 @@ public class Utils {
     }
 
     public static boolean nullAwareEquals(Object a, Object b) {
-        if (a == b) {
+        if (a == b || a!=null && a.equals(b)) {
             return true;
         } else if (Missing.isNullOrMissing(a) && Missing.isNullOrMissing(b)) {
             return true;

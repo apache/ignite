@@ -160,6 +160,9 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
                 }
                 if (BsonRegularExpression.isRegularExpression(queryValue)) {
                 	continue;
+                }               
+                if (BsonRegularExpression.isTextSearchExpression(queryValue)) {
+                	continue;
                 }
                 for (String queriedKeys : ((Document) queryValue).keySet()) {
                     if (isInQuery(queriedKeys)) {

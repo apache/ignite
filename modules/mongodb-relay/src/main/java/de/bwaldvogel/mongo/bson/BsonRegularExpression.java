@@ -14,9 +14,9 @@ public class BsonRegularExpression implements Bson,Externalizable {
 
     private static final long serialVersionUID = 1L;
 
-    private static final String REGEX = "$regex";
-    private static final String TEXT = "$text";
-    private static final String OPTIONS = "$options";
+    public static final String REGEX = "$regex";
+    public static final String TEXT = "$text";
+    public static final String OPTIONS = "$options";
 
     private String pattern;
     private String options;
