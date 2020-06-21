@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -301,19 +302,26 @@ public class GridRedisProtocolParser {
         assert vals != null : "The resulting map is null.";
         assert origin != null : "The origin list is null.";
 
-        byte[] arrSize = String.valueOf(vals.size()).getBytes();
+        int capacity = 0;
 
-        ByteBuffer buf = ByteBuffer.allocateDirect(1024 * 1024);
+        ArrayList<ByteBuffer> res = new ArrayList<>();
+        for (Object o : origin) {
+            Object val = vals.get(o);
+
+            if (val != null) {
+                ByteBuffer b = toBulkString(val);
+                res.add(b);
+                capacity += b.limit();
+            }
+        }
+
+        byte[] arrSize = String.valueOf(res.size()).getBytes();
+
+        ByteBuffer buf = ByteBuffer.allocateDirect(capacity + arrSize.length + 1 + CRLF.length);
         buf.put(ARRAY);
         buf.put(arrSize);
         buf.put(CRLF);
-
-        origin.forEach(o -> {
-            Object val = vals.get(o);
-
-            if (val != null)
-                buf.put(toBulkString(val));
-        });
+        res.forEach(o -> buf.put(o));
 
         buf.flip();
 
