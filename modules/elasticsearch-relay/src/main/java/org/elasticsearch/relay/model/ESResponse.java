@@ -45,7 +45,7 @@ public class ESResponse {
 	public ESResponse(ObjectNode body) throws Exception {
 		fHits = new ArrayList<ObjectNode>();
 
-		if (body != null) {
+		if (body != null && body.has(ESConstants.R_HITS)) {
 			ObjectNode hitsObj = body.with(ESConstants.R_HITS);
 			if (hitsObj != null && hitsObj.withArray(ESConstants.R_HITS) != null) {
 				addHits(hitsObj.withArray(ESConstants.R_HITS));
@@ -55,6 +55,18 @@ public class ESResponse {
 
 			if (body.with(ESConstants.R_SHARDS) != null) {
 				fShards = body.with(ESConstants.R_SHARDS).get(ESConstants.R_SHARDS_TOT).asInt(0);
+			}
+		}
+		else if (body != null && body.has("response")) {
+			ObjectNode hitsObj = body.with("response");
+			if (hitsObj != null && hitsObj.has("items")) {
+				addHits(hitsObj.withArray("items"));
+
+				fTotalResults = this.getHits().size();
+			}
+
+			if (hitsObj!=null && hitsObj.has("fieldsMetadata")) {
+				fShards = hitsObj.get("queryId").asInt(0);
 			}
 		}
 	}

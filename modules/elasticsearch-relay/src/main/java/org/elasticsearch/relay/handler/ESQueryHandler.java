@@ -590,7 +590,7 @@ public class ESQueryHandler {
 
 	protected void addHit(List<ObjectNode> hits, ObjectNode hit) throws Exception {
 		// retrieve type and handle postprocessing
-		String type = hit.get(ESConstants.R_HIT_TYPE).asText();
+		String type = hit.has(ESConstants.R_HIT_TYPE)? hit.get(ESConstants.R_HIT_TYPE).asText():"_doc";
 
 		List<IPostProcessor> pp = fPostProcs.get(type);
 		if (pp != null) {

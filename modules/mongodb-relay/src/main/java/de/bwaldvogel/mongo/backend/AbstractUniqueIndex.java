@@ -50,7 +50,7 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
     }
 
     @Override
-    public synchronized P remove(Document document) {
+    public synchronized P remove(Document document,MongoCollection<P> collection) {
         if (isSparseAndHasNoValueForKeys(document)) {
             return null;
         }
@@ -131,7 +131,7 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
     @Override
     public void updateInPlace(Document oldDocument, Document newDocument, P position, MongoCollection<P> collection) throws KeyConstraintError {
         if (!nullAwareEqualsKeys(oldDocument, newDocument)) {
-            P removedPosition = remove(oldDocument);
+            P removedPosition = remove(oldDocument,collection);
             if (removedPosition != null) {
                 Assert.equals(removedPosition, position);
             }

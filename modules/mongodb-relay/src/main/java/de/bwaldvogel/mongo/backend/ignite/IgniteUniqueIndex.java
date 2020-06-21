@@ -1,6 +1,6 @@
 package de.bwaldvogel.mongo.backend.ignite;
 
-import java.util.AbstractSet;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +18,7 @@ import de.bwaldvogel.mongo.backend.AbstractUniqueIndex;
 import de.bwaldvogel.mongo.backend.IndexKey;
 import de.bwaldvogel.mongo.backend.KeyValue;
 import de.bwaldvogel.mongo.backend.Missing;
-import de.bwaldvogel.mongo.bson.Document;
+
 
 public class IgniteUniqueIndex extends AbstractUniqueIndex<Object> {
 

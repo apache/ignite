@@ -1,9 +1,11 @@
 package de.bwaldvogel.mongo.backend.ignite;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -21,16 +23,23 @@ import org.apache.ignite.cache.LuceneIndexAccess;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -43,8 +52,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
-import org.h2.tools.SimpleResultSet;
-import org.h2.util.JdbcUtils;
+
 
 import de.bwaldvogel.mongo.MongoCollection;
 import de.bwaldvogel.mongo.backend.CollectionUtils;
@@ -69,23 +77,34 @@ public class IgniteLuceneIndex extends Index<Object>{
 	
 	private IgniteH2Indexing idxing;
 	
-	private H2TableDescriptor tableDesc;
-	
 	private LuceneIndexAccess indexAccess;
 	
 	private final GridKernalContext ctx;
+	
+	private GridBinaryMarshaller marshaller;
+	
+	private boolean isFirstIndex = false;
+	
+	private long docCount = 0;
 	 
+	 /** */
+    private String[] idxdFields = null;   
+    
 	protected IgniteLuceneIndex(GridKernalContext ctx,String collectionName, String name, List<IndexKey> keys, boolean sparse) {
 		super(name, keys, sparse);
 		this.ctx = ctx;
 		this.cacheName = collectionName;
+		init(collectionName);
 		     	 
 	}
 
-	public void init(String cacheName,String typeName) {
+	public void init(String cacheName) {
 		if(indexAccess==null) {
 			try {
 				indexAccess = FullTextLucene.getIndexAccess(null, cacheName, null);
+				
+				marshaller = PlatformUtils.marshaller();
+                 
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -93,10 +112,6 @@ public class IgniteLuceneIndex extends Index<Object>{
 		}
 		
 		idxing = (IgniteH2Indexing)ctx.query().getIndexing();
-		
-		tableDesc = idxing.schemaManager().tableForType(idxing.schema(cacheName),cacheName,typeName);
-		
-		GridLuceneIndex luceneIndex = tableDesc.luceneIndex();
 	}
 
 	@Override
@@ -118,12 +133,80 @@ public class IgniteLuceneIndex extends Index<Object>{
 	@Override
 	public void add(Document document, Object position, MongoCollection<Object> collection) {
 		// TODO Auto-generated method stub
-		
+		if(collection instanceof IgniteCollection && this.isFirstIndex) {
+			IgniteCollection coll = (IgniteCollection) collection;
+			T2<String,String> t2 = coll.typeNameAndKeyField(document);
+	    	String typeName = t2.get1();    	
+	    	String keyField = t2.get2();    
+	    	if(idxdFields==null) {
+	    		Set<String> fields = coll.fields().keySet();
+	    		idxdFields = new String[fields.size()];
+	    		fields.toArray(idxdFields);
+	    	}
+	    	
+	    	Object key = document.getOrDefault(coll.idField, null);
+	    	Field.Store storeText = indexAccess.config.isStoreTextFieldValue()?  Field.Store.YES : Field.Store.NO;
+
+	    	org.apache.lucene.document.Document doc = new org.apache.lucene.document.Document();
+
+	        boolean stringsFound = false;
+	        
+	        Object[] row = new Object[idxdFields.length]; 
+	        for (int i = 0, last = idxdFields.length - 1; i < last; i++) {
+	            Object fieldVal = document.get(idxdFields[i]);
+	            row[i] = fieldVal;
+	        }
+	        byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(key),false);
+	        BytesRef keyByteRef = new BytesRef(keyBytes);
+	        Term term = new Term(KEY_FIELD_NAME, keyByteRef);
+	         // build doc body
+	        try {
+				stringsFound = FullTextLucene.FullTextTrigger.buildDocument(doc,this.idxdFields,null,row,storeText);
+				if (!stringsFound) {
+	            	indexAccess.writer.deleteDocuments(term);
+
+	                return; // We did not find any strings to be indexed, will not store data at all.
+	            }
+				
+				 doc.add(new StringField(KEY_FIELD_NAME, keyByteRef, Field.Store.YES));
+		         doc.add(new StringField(FullTextLucene.FIELD_TABLE, typeName, Field.Store.YES));
+		            
+		         // Next implies remove than add atomically operation.
+		         long seq = indexAccess.writer.updateDocument(term, doc);
+		         docCount = seq;
+		         
+		         indexAccess.increment();
+		            
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
+	       
+	            
+		}
 	}
 
 	@Override
-	public Object remove(Document document) {
+	public Object remove(Document document,MongoCollection<Object> collection) {
 		// TODO Auto-generated method stub
+		if(collection instanceof IgniteCollection && this.isFirstIndex) {
+			try {
+				IgniteCollection coll = (IgniteCollection) collection;
+				Object key = document.getOrDefault(coll.idField, null);
+				if(key!=null) {
+					byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(key),false);
+			        BytesRef keyByteRef = new BytesRef(keyBytes);
+			        Term term = new Term(KEY_FIELD_NAME, keyByteRef);
+					indexAccess.writer.deleteDocuments(term);
+				}
+	        }
+	        catch (IOException e) {
+	            e.printStackTrace();
+	        }
+	        finally {
+	        	indexAccess.increment();
+	        }
+		}
 		return null;
 	}
 
@@ -215,13 +298,13 @@ public class IgniteLuceneIndex extends Index<Object>{
 	@Override
 	public long getCount() {
 		// TODO Auto-generated method stub
-		return 0;
+		return docCount;
 	}
 
 	@Override
 	public long getDataSize() {
 		// TODO Auto-generated method stub
-		return 0;
+		return docCount*8;
 	}
 
 	@Override
@@ -418,6 +501,21 @@ public class IgniteLuceneIndex extends Index<Object>{
         return key.equals(QueryOperator.IN.getValue());
     }
 
+	public boolean isFirstIndex() {
+		return isFirstIndex;
+	}
 
- 
+	public void setFirstIndex(boolean isFirstIndex) {
+		this.isFirstIndex = isFirstIndex;
+	}
+
+	/**
+     * @return Cache object context.
+     */
+    private CacheObjectContext objectContext() {
+        if (ctx == null)
+            return null;
+
+        return ctx.cache().internalCache(cacheName).context().cacheObjectContext();
+    }
 }

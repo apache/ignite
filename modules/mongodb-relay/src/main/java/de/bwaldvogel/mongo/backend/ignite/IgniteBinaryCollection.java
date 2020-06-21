@@ -190,9 +190,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
          
     }
     
-    public T2<Object,BinaryObject> documentToBinaryObject(Object keyValue,Document obj){	
-    	IgniteBinary igniteBinary = ((IgniteDatabase) this.database).getIgnite().binary();
-    	
+    public T2<String,String> typeNameAndKeyField(Document obj) {
     	String typeName = (String)obj.get("_class");    	
     	String keyField = "id";
     	CacheConfiguration cfg = dataMap.getConfiguration(CacheConfiguration.class);
@@ -206,7 +204,17 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	}
     	if(StringUtil.isNullOrEmpty(typeName)) {
     		typeName = dataMap.getName();
-    	}		
+    	}	
+    	
+    	return new T2(typeName,keyField);
+    }
+    
+    public T2<Object,BinaryObject> documentToBinaryObject(Object keyValue,Document obj){	
+    	IgniteBinary igniteBinary = ((IgniteDatabase) this.database).getIgnite().binary();
+    	
+    	T2<String,String> t2 = typeNameAndKeyField(obj);
+    	String typeName = t2.get1();    	
+    	String keyField = t2.get2();    	
     	BinaryTypeImpl type = (BinaryTypeImpl)igniteBinary.type(typeName);
 		BinaryObjectBuilder bb = igniteBinary.builder(typeName);
 		

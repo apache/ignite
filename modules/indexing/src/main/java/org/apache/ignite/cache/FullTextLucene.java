@@ -144,7 +144,7 @@ public class FullTextLucene {
     public static final String SCORE_FIELD_NAME = "_SCORE";
    
 
-    private static final HashMap<String, LuceneIndexAccess> INDEX_ACCESS = new HashMap<>();
+   
     private static final String TRIGGER_PREFIX = "FTL_";
     private static final String SCHEMA = "\"FTL\"";
    
@@ -170,7 +170,12 @@ public class FullTextLucene {
     	if(table==null || table.length()==0){
 			return schema.toUpperCase();
 		}			
-		
+    	if(ctx.cache().cacheNames().contains(schema)){
+			return schema;
+		}
+		else if(ctx.cache().cacheNames().contains(schema.toUpperCase())){
+			return schema.toUpperCase();
+		}
 		String cacheName = "SQL_"+schema.toUpperCase()+"_"+table.toUpperCase();		
 		return cacheName;    	
     }   
@@ -599,88 +604,52 @@ public class FullTextLucene {
      *
      * @param conn the connection
      * @return the index access wrapper
+     * @throws IOException 
      */
     public static LuceneIndexAccess getIndexAccess(Connection conn,String schema,String table)
             throws SQLException {
-        String path = getIndexPath(conn,schema,table);
+       
         String cacheName = cacheName(schema,table);
-        synchronized (INDEX_ACCESS) {
-            LuceneIndexAccess access = INDEX_ACCESS.get(path);
+        try {
+            LuceneIndexAccess access = LuceneIndexAccess.getIndexAccess(ctx, cacheName);
            
-            if (access == null) {
-                try {
-                	access = new LuceneIndexAccess(ctx,cacheName,path); 
-                    //fill indexed fields
-                    if(table!=null && table.length()!=0){
-                    	GridQueryTypeDescriptor type = cacheTypeDesc(schema,table);
-                    	access.init(type);
-                        // read index desc form FTL.INDEXES
-                        if(conn!=null){                	
-        	                PreparedStatement prep = conn.prepareStatement(
-        	                        "SELECT COLUMNS FROM " + SCHEMA+ ".INDEXES WHERE SCHEMA=? AND TABLE=?");
-        	                prep.setString(1, schema);
-        	                prep.setString(2, table);
-        	                
-        	                ResultSet rs = prep.executeQuery();
-        	                while (rs.next()) {
-        	                    String cols = rs.getString(1);
-        	                    if (cols != null) {
-        	                        for (String s : StringUtils.arraySplit(cols, ',', true)) {
-        	                        	if(!s.isEmpty() && s.charAt(0)!='_'){	                    			
-        	                    			access.fields.put(s,TextField.TYPE_NOT_STORED);
-        	                    		}
-        	                        }
-        	                       
-        	                    }
-        	                                      
-        	                }  
-                        }
-                    }
-                    
-                } catch (IOException e) {
-                    throw convertException(e);
-                }
-                INDEX_ACCESS.put(path, access);
+            if (!access.typeFields.containsKey(table) || access.typeFields.get(table).isEmpty()) {
+                //fill indexed fields
+				if(table!=null && table.length()!=0){
+					
+				    // read index desc form FTL.INDEXES
+				    if(conn!=null){                	
+				        PreparedStatement prep = conn.prepareStatement(
+				                "SELECT COLUMNS FROM " + SCHEMA+ ".INDEXES WHERE SCHEMA=? AND TABLE=?");
+				        prep.setString(1, schema);
+				        prep.setString(2, table);
+				        
+				        ResultSet rs = prep.executeQuery();
+				        while (rs.next()) {
+				            String cols = rs.getString(1);
+				            if (cols != null) {
+				                for (String s : StringUtils.arraySplit(cols, ',', true)) {
+				                	if(!s.isEmpty() && s.charAt(0)!='_'){	                    			
+				            			access.fields(table).put(s,TextField.TYPE_NOT_STORED);
+				            		}
+				                }
+				               
+				            }
+				                              
+				        }  
+				    }
+				}                
                 
-                
-            }
-            
-            if (!access.writer.isOpen()) {
-                try {
-                	access.open(path);                 
-                    
-                } catch (IOException e) {
-                    throw convertException(e);
-                }               
             }
             
             return access;
         }
+        catch(Exception e){
+        	throw convertException(e);
+        }        
     }
 
-    /**
-     * Get the path of the Lucene index for this database.
-     *
-     * @param conn the database connection
-     * @return the path
-     */
-    protected static String getIndexPath(Connection conn,String schema,String table) throws SQLException {
-    	String cacheName = cacheName(schema,table);
-    	if(ctx!=null){ 
-    		try {
-				String subFolder = ctx.pdsFolderResolver().resolveFolders().folderName();
-				String path = ctx.config().getWorkDirectory()+File.separator+"lucene"+File.separator+subFolder+File.separator+"cache-"+cacheName;
-	        	return path;
-	        	
-			} catch (IgniteCheckedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				throw convertException(e);
-			}    		
-    		
-    	}
-    	return IN_MEMORY_PREFIX + conn.getCatalog()+'/'+cacheName;
-    }
+   
 
     /**
      * Add the existing data to the index.
@@ -689,12 +658,10 @@ public class FullTextLucene {
      * @param schema the schema name
      * @param table the table name
      */
-    protected static int indexExistingRows(Connection conn, String schema,
-            String table) throws SQLException {
+    protected static int indexExistingRows(Connection conn, String schema,String table) throws SQLException {
         FullTextLucene.FullTextTrigger existing = new FullTextLucene.FullTextTrigger();
         existing.init(conn, schema, null, table, false, Trigger.INSERT);
-        String sql = "SELECT _key,_val,* FROM " + StringUtils.quoteIdentifier(schema) +
-                "." + StringUtils.quoteIdentifier(table);
+        String sql = "SELECT _key,_val,* FROM " + StringUtils.quoteIdentifier(schema) + "." + StringUtils.quoteIdentifier(table);
         int c = 0;
         ResultSet rs = conn.createStatement().executeQuery(sql);
         int columnCount = rs.getMetaData().getColumnCount();
@@ -707,9 +674,10 @@ public class FullTextLucene {
             c++;
         }
         
-        String path = getIndexPath(conn,schema,table);
-        LuceneIndexAccess access = INDEX_ACCESS.get(path);
+        String cacheName = cacheName(schema,table);
+        
         try{
+        	LuceneIndexAccess access = LuceneIndexAccess.getIndexAccess(ctx, cacheName);
         	access.commitIndex();
         }
         catch(IOException e){
@@ -718,37 +686,24 @@ public class FullTextLucene {
         return c;
     }
 
-    private static void removeIndexFiles(Connection conn,String schema,String table) throws SQLException {
-        String path = getIndexPath(conn,schema,table);
-        LuceneIndexAccess access = INDEX_ACCESS.get(path);
-        if (access != null) {
-            removeIndexAccess(access, path);
-        }
-        if (!path.startsWith(IN_MEMORY_PREFIX)) {
-            FileUtils.deleteRecursive(path, false);
-        }
+    private static void removeIndexFiles(Connection conn,String schema,String table)  {
+    	String cacheName = cacheName(schema,table);
+    	
+        LuceneIndexAccess access;
+		try {
+			access = LuceneIndexAccess.getIndexAccess(ctx, cacheName);
+			
+			if (access != null) {
+	        	LuceneIndexAccess.removeIndexAccess(access);
+	        }
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}        
     }
 
-    /**
-     * Close the index writer and searcher and remove them from the index access
-     * set.
-     *
-     * @param access the index writer/searcher wrapper
-     * @param indexPath the index path
-     */
-    protected static void removeIndexAccess(LuceneIndexAccess access, String indexPath)
-            throws SQLException {
-        synchronized (INDEX_ACCESS) {
-            try {
-                INDEX_ACCESS.remove(indexPath);
-            
-                access.reader.close();
-                access.writer.close();
-            } catch (Exception e) {
-                throw convertException(e);
-            }
-        }
-    }
+    
 
 
     /**
@@ -897,7 +852,7 @@ public class FullTextLucene {
             // also allows subclasses to control the analyzer used.
             Analyzer analyzer = access.writer.getAnalyzer();           
             
-            MultiFieldQueryParser parser = new MultiFieldQueryParser(access.fields.keySet().toArray(new String[access.fields.size()]), analyzer);
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(access.fields(table).keySet().toArray(new String[access.fields(table).size()]), analyzer);
                       
             
             // Filter expired items.
@@ -996,7 +951,7 @@ public class FullTextLucene {
         protected int[] indexColumns;
         protected String[] indexColumnNames;       
        
-        protected String indexPath;
+     
         protected LuceneIndexAccess indexAccess;
 
         /**
@@ -1007,7 +962,7 @@ public class FullTextLucene {
                 String tableName, boolean before, int type) throws SQLException {
             this.schema = schemaName;
             this.table = tableName;
-            this.indexPath = getIndexPath(conn,schemaName,table);
+         
             this.indexAccess = getIndexAccess(conn,schemaName,table);
             ArrayList<String> keyList = new ArrayList<>();
             DatabaseMetaData meta = conn.getMetaData();
@@ -1054,7 +1009,7 @@ public class FullTextLucene {
                     for (String s : StringUtils.arraySplit(cols, ',', true)) {
                     	if(!s.isEmpty() && s.charAt(0)!='_'){
                     		indexList.add(s);
-                			this.indexAccess.fields.put(s, TextField.TYPE_NOT_STORED);
+                			this.indexAccess.fields(tableName).put(s, TextField.TYPE_NOT_STORED);
                 		}
                     }
                 }
@@ -1096,8 +1051,14 @@ public class FullTextLucene {
         @Override
         public void close() throws SQLException {
             if (indexAccess != null) {
-                removeIndexAccess(indexAccess, indexPath);
-                indexAccess = null;
+            	try {
+					indexAccess.close();
+					indexAccess = null;
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					throw convertException(e);
+				}
+               
             }
         }
 

@@ -156,7 +156,7 @@ public abstract class Index<P> {
 
     public abstract void add(Document document, P position, MongoCollection<P> collection);
 
-    public abstract P remove(Document document);
+    public abstract P remove(Document document,MongoCollection<P> collection);
 
     public abstract boolean canHandle(Document query);
 

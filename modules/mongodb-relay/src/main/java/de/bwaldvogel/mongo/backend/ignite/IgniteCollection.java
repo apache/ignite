@@ -2,6 +2,7 @@ package de.bwaldvogel.mongo.backend.ignite;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -21,10 +22,15 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.stream.StreamVisitor;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,16 +39,21 @@ import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
 import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.backend.DocumentComparator;
 import de.bwaldvogel.mongo.backend.DocumentWithPosition;
+import de.bwaldvogel.mongo.backend.Index;
+import de.bwaldvogel.mongo.backend.IndexKey;
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.exception.DuplicateKeyError;
+import io.netty.util.internal.StringUtil;
 
 public class IgniteCollection extends AbstractMongoCollection<Object> {
 
     private static final Logger log = LoggerFactory.getLogger(IgniteCollection.class);
 
     private final IgniteCache<Object, Document> dataMap;
+    
+    HashMap<String,FieldType> fields = new HashMap<>();
     
     public IgniteCollection(IgniteDatabase database, String collectionName, String idField, IgniteCache<Object, Document> dataMap) {
         super(database, collectionName, idField);
@@ -153,4 +164,43 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
     	 return StreamSupport.stream(cursor.spliterator(),false).map(entry -> new DocumentWithPosition<>(entry.getValue(), entry.getKey()));		
          
     }    
+    
+    public T2<String,String> typeNameAndKeyField(Document obj) {
+    	String typeName = (String)obj.get("_class");    	
+    	String keyField = "id";
+    	CacheConfiguration cfg = dataMap.getConfiguration(CacheConfiguration.class);
+    	if(!cfg.getQueryEntities().isEmpty()) {
+    		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
+    		QueryEntity entity = qeit.next();   		
+    		keyField = entity.getKeyFieldName();
+    		if(StringUtil.isNullOrEmpty(typeName)) {
+        		typeName = entity.getValueType();
+        	}	
+    	}
+    	if(StringUtil.isNullOrEmpty(typeName)) {
+    		typeName = dataMap.getName();
+    	}	
+    	
+    	return new T2(typeName,keyField);
+    }
+    
+    public HashMap<String,FieldType> fields(){
+    	if(fields.size()>0) return fields;
+    	
+		for(Index<Object> idx: this.getIndexes()) {
+			if(idx instanceof IgniteLuceneIndex) {
+				IgniteLuceneIndex igniteIndex = (IgniteLuceneIndex) idx;
+				if(fields.isEmpty()) {
+					igniteIndex.setFirstIndex(true);
+				}
+				else {
+					igniteIndex.setFirstIndex(false);
+				}
+				for(IndexKey ik: idx.getKeys()) {
+					fields.put(ik.getKey(), TextField.TYPE_NOT_STORED);
+				}
+			}
+		}
+		return fields;
+    }
 }

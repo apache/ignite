@@ -104,9 +104,7 @@ public class GridLuceneIndex implements AutoCloseable {
     private final String[] idxdFields;   
 
     /** */
-    private final GridKernalContext ctx;    
-    
-    private LuceneConfiguration config;
+    private final GridKernalContext ctx; 
     
     private FullTextQueryIndex textIdx;
     
@@ -126,8 +124,9 @@ public class GridLuceneIndex implements AutoCloseable {
         this.cacheName = cacheName;
         this.type = type;       
         
-        try {        	
-        	 indexAccess = FullTextLucene.getIndexAccess(null, cacheName, null);  
+        try {   
+        	 FullTextLucene.ctx = ctx;
+        	 indexAccess = LuceneIndexAccess.getIndexAccess(ctx, cacheName);  
         	 QueryIndex qtextIdx = ((QueryIndexDescriptorImpl)type.textIndex()).getQueryIndex();  
              if(qtextIdx instanceof FullTextQueryIndex){
             	 this.textIdx = (FullTextQueryIndex)qtextIdx;
@@ -150,8 +149,6 @@ public class GridLuceneIndex implements AutoCloseable {
         }
         
     }
-    
-	
 
     /**
      * @return Cache object context.
@@ -176,7 +173,7 @@ public class GridLuceneIndex implements AutoCloseable {
     public void store(CacheObject k, CacheObject v, GridCacheVersion ver, long expires) throws IgniteCheckedException {
         CacheObjectContext coctx = objectContext();
         
-        Field.Store storeText = config.isStoreTextFieldValue()?  Field.Store.YES : Field.Store.NO;
+        Field.Store storeText = indexAccess.config.isStoreTextFieldValue()?  Field.Store.YES : Field.Store.NO;
 
         Object key = k.isPlatformType() ? k.value(coctx, false) : k;
         Object val = v.isPlatformType() ? v.value(coctx, false) : v;
@@ -186,7 +183,7 @@ public class GridLuceneIndex implements AutoCloseable {
         boolean stringsFound = false;
         
         if (type.valueTextIndex() || type.valueClass() == String.class) {
-        	if(config.isStoreValue()){
+        	if(indexAccess.config.isStoreValue()){
         		doc.add(new TextField(VAL_STR_FIELD_NAME, val.toString(), Field.Store.YES));
         	}
         	else{
@@ -217,7 +214,7 @@ public class GridLuceneIndex implements AutoCloseable {
             doc.add(new StringField(KEY_FIELD_NAME, keyByteRef, Field.Store.YES));
             doc.add(new StringField(FullTextLucene.FIELD_TABLE, this.type.name(), Field.Store.YES));
             //add@byron may not store value
-            if(config.isStoreValue()){
+            if(indexAccess.config.isStoreValue()){
             	
             	if (type.valueClass() != String.class)
             		doc.add(new StoredField(VAL_FIELD_NAME, v.valueBytes(coctx)));
@@ -452,7 +449,7 @@ public class GridLuceneIndex implements AutoCloseable {
                 
                 V v = null;
                 //add@byron
-                if(config.isStoreValue()){
+                if(indexAccess.config.isStoreValue()){
                 	v = type.valueClass() == String.class ?
                     (V)doc.get(VAL_STR_FIELD_NAME) :
                     this.<V>unmarshall(doc.getBinaryValue(VAL_FIELD_NAME).bytes, ldr);

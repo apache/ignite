@@ -370,7 +370,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		if (es1Response != null) {
 			ObjectNode es1Json = (ObjectNode)ESRelay.objectMapper.readTree(es1Response);
 
-			if (!es1Json.has(ESConstants.R_ERROR)) {
+			if (es1Json.get(ESConstants.R_ERROR)!=null) {
 				es1Resp = new ESResponse(es1Json);
 			} else {
 				throw new Exception("ES 1.x error: " + es1Response);
@@ -379,7 +379,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		if (es2Response != null) {
 			ObjectNode es2Json = (ObjectNode)ESRelay.objectMapper.readTree(es2Response);
 
-			if (!es2Json.has(ESConstants.R_ERROR)) {
+			if (es2Json.get(ESConstants.R_ERROR)!=null) {
 				es2Resp = new ESResponse(es2Json);
 			} else {
 				throw new Exception("ES 2.x error: " + es2Response);

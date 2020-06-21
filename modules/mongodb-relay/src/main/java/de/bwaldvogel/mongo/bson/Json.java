@@ -63,6 +63,7 @@ public final class Json {
     }
 
     static String escapeJson(String input) {
+    	if(input==null) return input;
         String escaped = input;
         escaped = escaped.replace("\\", "\\\\");
         escaped = escaped.replace("\"", "\\\"");

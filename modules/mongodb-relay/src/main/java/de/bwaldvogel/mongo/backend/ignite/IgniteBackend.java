@@ -23,7 +23,7 @@ public class IgniteBackend extends AbstractMongoBackend {
 
     private Ignite mvStore;
     
-    private boolean isKeepBinary = true;
+    private boolean isKeepBinary = !true;
     
     long oldVersion = System.nanoTime();
 

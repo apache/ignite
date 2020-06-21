@@ -40,7 +40,7 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
     protected String collectionName;
     protected final List<Index<P>> indexes = new ArrayList<>();
     protected final QueryMatcher matcher = new DefaultQueryMatcher();
-    protected final String idField;
+    public final String idField;
 
     protected AbstractMongoCollection(MongoDatabase database, String collectionName, String idField) {
         this.database = database;
@@ -695,7 +695,7 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
 
         if (!indexes.isEmpty()) {
             for (Index<P> index : indexes) {
-                P indexPosition = index.remove(document);
+                P indexPosition = index.remove(document,this);
                 if (indexPosition == null) {
                     if (index.isSparse()) {
                         continue;

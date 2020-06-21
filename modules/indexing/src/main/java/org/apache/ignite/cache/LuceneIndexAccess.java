@@ -4,10 +4,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -15,6 +21,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneDirectory;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -31,6 +39,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.h2.util.StringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContext;
@@ -65,9 +74,9 @@ public class LuceneIndexAccess {
 	public IndexSearcher searcher;   
 	
 	/**
-	 *  current cache fields that must indexed by lucene. 该字段列表对不同类型的对象都有效。
+	 *  current cache fields that must indexed by lucene. 
 	 */
-	public HashMap<String,FieldType> fields = new HashMap<>();
+	public HashMap<String,Map<String,FieldType>> typeFields = new HashMap<>();
 	
 	public LuceneConfiguration config;
 	
@@ -84,6 +93,9 @@ public class LuceneIndexAccess {
     		}
     		else if(springCtx.containsBean(DLF_LUCENE_CONFIG)){
     			this.config = springCtx.getBean(DLF_LUCENE_CONFIG,LuceneConfiguration.class);
+    		}
+    		else {
+    			this.config = new LuceneConfiguration();
     		}
     		
     	}
@@ -104,9 +116,20 @@ public class LuceneIndexAccess {
         } 
     	
         this.open(path);     
-	}    
+	}  
+	
+	public Map<String,FieldType> fields(String type) {
+		Map<String,FieldType> fields = typeFields.get(type);
+		if(fields==null){
+			fields = new HashMap<String,FieldType>();
+			typeFields.put(type,fields);
+		}
+		return fields;
+	}
 	
 	public Map<String,FieldType> init(GridQueryTypeDescriptor type) {
+		
+		Map<String,FieldType> fields = fields(type.name());
 		
 		try{        		
 			QueryIndex qtextIdx = ((QueryIndexDescriptorImpl)type.textIndex()).getQueryIndex();  
@@ -217,8 +240,16 @@ public class LuceneIndexAccess {
        
         this.writer = writer;
         this.reader = reader;
-        this.searcher = new IndexSearcher(reader);              
-	}    
+        this.searcher = new IndexSearcher(reader);    
+        
+        IgniteH2Indexing idxing = (IgniteH2Indexing)ctx.query().getIndexing();
+
+    	
+    	Collection<H2TableDescriptor> tableDesc = idxing.schemaManager().tablesForCache(config.cacheName());
+    	for(H2TableDescriptor tabInfo : tableDesc) {
+    		this.init(tabInfo.type());
+    	}
+    }    
 	
 	
 	public String cacheName(){
@@ -260,4 +291,85 @@ public class LuceneIndexAccess {
               throw new IgniteCheckedException(e);
           }
     }
+    
+
+    /**
+     * Get the path of the Lucene index for this database.
+     *
+     * @param conn the database connection
+     * @return the path
+     */
+    protected static String getIndexPath(GridKernalContext ctx, String cacheName){    	
+		String subFolder;
+		try {
+			subFolder = ctx.pdsFolderResolver().resolveFolders().folderName();
+		} catch (IgniteCheckedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			subFolder = ctx.localNodeId().toString();
+		}
+		String path = ctx.config().getWorkDirectory()+File.separator+"lucene"+
+					File.separator+subFolder+File.separator+"cache-"+cacheName;
+    	return path;
+    }
+
+    /**
+     * Get the index writer/searcher wrapper for the given connection.
+     *
+     * @param conn the connection
+     * @return the index access wrapper
+     */
+    public static LuceneIndexAccess getIndexAccess(GridKernalContext ctx, String cacheName)
+            throws IOException {
+    	String path = getIndexPath(ctx,cacheName);
+        synchronized (INDEX_ACCESS) {
+            LuceneIndexAccess access = INDEX_ACCESS.get(path);
+           
+            if (access == null) {
+                try {
+                	
+                	access = new LuceneIndexAccess(ctx,cacheName,path); 
+                    
+                    
+                } catch (IOException e) {
+                    throw e;
+                }
+                INDEX_ACCESS.put(path, access);
+                
+                
+            }
+            
+            if (!access.writer.isOpen()) {
+                try {                	
+                	
+                	access.open(path);                 
+                    
+                } catch (IOException e) {
+                    throw e;
+                }               
+            }
+            
+            return access;
+        }
+    }
+    
+    /**
+     * Close the index writer and searcher and remove them from the index access
+     * set.
+     *
+     * @param access the index writer/searcher wrapper
+     * @param indexPath the index path
+     */
+    public static void removeIndexAccess(LuceneIndexAccess access) {
+        synchronized (INDEX_ACCESS) {
+            try {
+                INDEX_ACCESS.remove(access.writer.getDirectory().toString());  
+                access.close();
+            } catch (Exception e) {
+            	e.printStackTrace();
+            }
+        }
+    }
+    
+    private static final Map<String, LuceneIndexAccess> INDEX_ACCESS = new ConcurrentHashMap<>();
 }

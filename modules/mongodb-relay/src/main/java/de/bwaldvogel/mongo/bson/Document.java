@@ -115,6 +115,9 @@ public final class Document implements Map<String, Object>, Bson {
 
     @Override
     public Object put(String key, Object value) {
+    	if(key==null) { //add@byron
+    		return null;
+    	}
         return documentAsMap.put(key, value);
     }
 

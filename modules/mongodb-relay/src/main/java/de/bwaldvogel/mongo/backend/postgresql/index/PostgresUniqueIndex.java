@@ -139,7 +139,7 @@ public class PostgresUniqueIndex extends Index<Long> {
     }
 
     @Override
-    public Long remove(Document document) {
+    public Long remove(Document document,MongoCollection<Long> collection) {
         return getPosition(document);
     }
 
