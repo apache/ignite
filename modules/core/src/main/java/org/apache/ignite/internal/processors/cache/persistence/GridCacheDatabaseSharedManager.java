@@ -81,7 +81,6 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -122,7 +121,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -194,7 +192,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD;
@@ -365,9 +362,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Thread local with buffers for the checkpoint threads. Each buffer represent one page for durable memory. */
     private ThreadLocal<ByteBuffer> threadBuf;
-
-    /** Map from a cacheId to a future indicating that there is an in-progress index rebuild for the given cache. */
-    private final ConcurrentMap<Integer, GridFutureAdapter<Void>> idxRebuildFuts = new ConcurrentHashMap<>();
 
     /**
      * Lock holder for compatible folders mode. Null if lock holder was created at start node. <br>
@@ -1488,35 +1482,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             fut.timeBag().finishGlobalStage("Restore partition states");
         }
 
-        if (cctx.kernalContext().query().moduleEnabled()) {
-            ExchangeActions acts = fut.exchangeActions();
-
-            if (acts != null) {
-                if (!F.isEmpty(acts.cacheStartRequests())) {
-                    for (ExchangeActions.CacheActionData actionData : acts.cacheStartRequests())
-                        prepareIndexRebuildFuture(CU.cacheId(actionData.request().cacheName()));
-                }
-                else if (acts.localJoinContext() != null && !F.isEmpty(acts.localJoinContext().caches())) {
-                    for (T2<DynamicCacheDescriptor, NearCacheConfiguration> tup : acts.localJoinContext().caches())
-                        prepareIndexRebuildFuture(tup.get1().cacheId());
-                }
-            }
-        }
-    }
-
-    /**
-     * Creates a new index rebuild future that should be completed later after exchange is done. The future
-     * has to be created before exchange is initialized to guarantee that we will capture a correct future
-     * after activation or restore completes.
-     * If there was an old future for the given ID, it will be completed.
-     *
-     * @param cacheId Cache ID.
-     */
-    private void prepareIndexRebuildFuture(int cacheId) {
-        GridFutureAdapter<Void> old = idxRebuildFuts.put(cacheId, new GridFutureAdapter<>());
-
-        if (old != null)
-            old.onDone();
+        if (cctx.kernalContext().query().moduleEnabled())
+           cctx.kernalContext().query().beforeExchange(fut);
     }
 
     /** {@inheritDoc} */
@@ -1541,43 +1508,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!cacheCtx.startTopologyVersion().equals(exchangeFut.initialVersion()))
                 continue;
 
-            int cacheId = cacheCtx.cacheId();
-            GridFutureAdapter<Void> usrFut = idxRebuildFuts.get(cacheId);
-
             IgniteInternalFuture<?> rebuildFut = qryProc.rebuildIndexesFromHash(cacheCtx);
 
-            if (nonNull(rebuildFut)) {
-                if (log.isInfoEnabled())
-                    log.info("Started indexes rebuilding for cache [" + cacheInfo(cacheCtx) + ']');
-
-                assert nonNull(usrFut) : "Missing user future for cache: " + cacheCtx.name();
-
-                rebuildFut.listen(fut -> {
-                    idxRebuildFuts.remove(cacheId, usrFut);
-
-                    Throwable err = fut.error();
-
-                    usrFut.onDone(err);
-
-                    if (isNull(err)) {
-                        if (log.isInfoEnabled())
-                            log.info("Finished indexes rebuilding for cache [" + cacheInfo(cacheCtx) + ']');
-                    }
-                    else {
-                        if (!(err instanceof NodeStoppingException))
-                            log.error("Failed to rebuild indexes for cache [" + cacheInfo(cacheCtx) + ']', err);
-                    }
-
-                    rebuildIndexesCompleteCntr.countDown(true);
-                });
-            }
-            else if (nonNull(usrFut)) {
-                idxRebuildFuts.remove(cacheId, usrFut);
-
-                usrFut.onDone();
-
+            if (nonNull(rebuildFut))
+                rebuildFut.listen(fut -> rebuildIndexesCompleteCntr.countDown(true));
+            else
                 rebuildIndexesCompleteCntr.countDown(false);
-            }
         }
     }
 
@@ -1591,11 +1527,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         assert nonNull(cacheCtx);
 
         return "name=" + cacheCtx.name() + ", grpName=" + cacheCtx.group().name();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteInternalFuture indexRebuildFuture(int cacheId) {
-        return idxRebuildFuts.get(cacheId);
     }
 
     /** {@inheritDoc} */
