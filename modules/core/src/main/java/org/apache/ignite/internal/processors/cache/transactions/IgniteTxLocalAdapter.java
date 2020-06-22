@@ -1392,9 +1392,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             TransactionState state = state();
 
-            if (state == ROLLING_BACK || state == ROLLED_BACK)
-                throw new IgniteTxRollbackCheckedException("Cache transaction is marked as rollback-only " +
-                    "(will be rolled back automatically): " + this);
+            if (state == ROLLING_BACK || state == ROLLED_BACK) {
+                Throwable commitErr0 = commitErr;
+
+                if (commitErr0 != null)
+                    throw new IgniteTxRollbackCheckedException(commitErr0);
+                else
+                    throw new IgniteTxRollbackCheckedException("Cache transaction is marked as rollback-only " +
+                        "(will be rolled back automatically): " + this);
+            }
 
             if (state == UNKNOWN)
                 throw new IgniteTxHeuristicCheckedException("Cache transaction is in unknown state " +
