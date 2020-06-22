@@ -4056,7 +4056,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     private void checkState(ClusterState expState) throws Exception {
         assertClusterState(expState);
-        assertClusterState(ClusterState.active(expState));
+        assertClusterState(expState.active());
     }
 
     /**
