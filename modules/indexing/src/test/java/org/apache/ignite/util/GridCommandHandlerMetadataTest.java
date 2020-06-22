@@ -27,6 +27,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteLogger;
@@ -164,8 +165,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove", "--typeId", "0", "--out", "target"));
         out = testOut.toString();
         assertContains(log, out, "Check arguments.");
-        assertContains(log, out, "Cannot write to output file target. " +
-            "Error: java.nio.file.FileSystemException: target: Is a directory");
+        assertContains(log, out, "Cannot write to output file target.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "update", "--in", "target"));
         out = testOut.toString();
@@ -280,12 +280,11 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
      * Check the all thin connections are dropped on the command '--meta remove' and '--meta update'.
      * Steps:
      * - opens JDBC thin client connection.
-     * - execute: CREATE TABLE test(id INT PRIMARY KEY, objVal OTHER).
-     * - insert the instance of the 'TestValue' class to the table.
-     * - try to insert the instance of the 'TestValuE' class to the table - exception expected.
-     * - remove the type 'TestValue' by cmd line.
+     * - executes: CREATE TABLE test(id INT PRIMARY KEY, objVal OTHER).
+     * - inserts the instance of the 'TestValue' class to the table.
+     * - removes the type 'TestValue' by cmd line.
      * - executes any command on JDBC driver to detect disconnect.
-     * - insert the instance of the 'TestValuE' class to the table - success expected.
+     * - checks metadata on client side. It must be empty.
      */
     @Test
     public void testDropJdbcThinConnectionsOnRemove() throws Exception {
@@ -307,22 +306,9 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
                 stmt.execute("DELETE FROM test WHERE id >= 0");
             }
 
-            // Check that we cannot marshal object with new class.
-            GridTestUtils.assertThrowsAnyCause(log, () -> {
-                try (PreparedStatement pstmt = conn.prepareStatement("INSERT INTO test(id, objVal) VALUES (?, ?)")) {
-                    pstmt.setInt(1, 0);
-                    pstmt.setObject(2, new TestValuE());
+            HashMap<Integer, BinaryType> metasOld = GridTestUtils.getFieldValue(conn, "metaHnd", "cache", "metas");
 
-                    pstmt.execute();
-                }
-
-                return null;
-            }, BinaryObjectException.class, "Two binary types have duplicate type ID");
-
-            // Repair connection after disconnect on error at the binary protocol (see above check).
-            try (Statement stmt = conn.createStatement()) {
-                stmt.execute("SELECT * FROM test");
-            }
+            assertFalse(metasOld.isEmpty());
 
             assertEquals(EXIT_CODE_OK, execute("--meta", "remove",
                 "--typeName", TestValue.class.getName(),
@@ -338,13 +324,10 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
                 },
                 SQLException.class, "Failed to communicate with Ignite cluster");
 
-            // Check that we can marshal object with new class after remove old type.
-            try (PreparedStatement pstmt = conn.prepareStatement("INSERT INTO test(id, objVal) VALUES (?, ?)")) {
-                pstmt.setInt(1, 0);
-                pstmt.setObject(2, new TestValuE());
+            HashMap<Integer, BinaryType> metas = GridTestUtils.getFieldValue(conn, "metaHnd", "cache", "metas");
 
-                pstmt.execute();
-            }
+            assertNotSame(metasOld, metas);
+            assertTrue(metas.isEmpty());
         }
         finally {
             if (Files.exists(typeFile))
@@ -397,13 +380,5 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
     public static class TestValue {
         /** */
         public final int val = 3;
-    }
-
-    /**
-     *
-     */
-    public static class TestValuE {
-        /** */
-        public final String val = "val";
     }
 }
