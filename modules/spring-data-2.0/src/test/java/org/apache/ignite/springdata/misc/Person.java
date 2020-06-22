@@ -18,10 +18,12 @@
 package org.apache.ignite.springdata.misc;
 
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.query.annotations.QueryTextField;
 
 public class Person {
     /** First name. */
     @QuerySqlField(index = true)
+    @QueryTextField
     private String firstName;
 
     /** Second name. */

@@ -25,6 +25,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import static org.apache.ignite.springdata.misc.ApplicationConfiguration.IGNITE_INSTANCE_ONE;
+import static org.apache.ignite.springdata.misc.ApplicationConfiguration.IGNITE_INSTANCE_TWO;
+
 /**
  * Test with using repository which is configured by Spring EL
  */
@@ -116,11 +119,24 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
     }
 
     /**
-     * Tests SpEL exphression.
+     * Tests SpEL expression.
      */
     @Test
     public void testCacheCount() {
-        Ignite ignite = ctx.getBean(Ignite.class);
+        Ignite ignite = ctx.getBean("igniteInstance", Ignite.class);
+
+        Collection<String> cacheNames = ignite.cacheNames();
+
+        assertFalse("The SpEL \"#{cacheNames.personCacheName}\" isn't processed!",
+            cacheNames.contains("#{cacheNames.personCacheName}"));
+
+        assertTrue("Cache \"PersonCache\" isn't found!",
+            cacheNames.contains("PersonCache"));
+    }
+
+    @Test
+    public void testCacheCountTWO() {
+        Ignite ignite = ctx.getBean("igniteInstanceTWO", Ignite.class);
 
         Collection<String> cacheNames = ignite.cacheNames();
 

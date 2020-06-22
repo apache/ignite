@@ -18,6 +18,7 @@ package org.apache.ignite.springdata22.repository.config;
 
 import java.util.Collection;
 import java.util.Collections;
+
 import org.apache.ignite.springdata22.repository.IgniteRepository;
 import org.apache.ignite.springdata22.repository.support.IgniteRepositoryFactoryBean;
 import org.springframework.data.repository.config.RepositoryConfigurationExtension;

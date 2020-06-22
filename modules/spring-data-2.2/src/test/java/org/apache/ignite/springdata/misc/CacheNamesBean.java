@@ -25,7 +25,8 @@ public class CacheNamesBean {
     private String personCacheName;
 
     /**
-     *  Get name of cache for persons
+     * Get name of cache for persons
+     *
      * @return name of cache
      */
     public String getPersonCacheName() {

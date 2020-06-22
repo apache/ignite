@@ -23,8 +23,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
+
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
+import org.apache.ignite.springdata.misc.FullNameProjection;
 import org.apache.ignite.springdata.misc.Person;
+import org.apache.ignite.springdata.misc.PersonProjection;
 import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -282,10 +285,10 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemoveExpression() {
-        long countRemoved = repo.removeByFirstName("person3f");
+        repo.removeByFirstName("person3f");
 
         long count = repo.count();
-        assertEquals(CACHE_SIZE - countRemoved, count);
+        assertEquals(CACHE_SIZE - 1, count);
     }
 
     /**
@@ -330,7 +333,96 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         List<Person> person = repo.findByFirstName("uniquePerson");
         assertEquals(person.get(0).getSecondName(), "updatedUniqueSecondName");
     }
+    /**
+     * Update with a @Query a record
+     */
+    @Test
+    public void testUpdateQueryMixedCaseProjection() {
+        final String newSecondName = "updatedUniqueSecondName1";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
 
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.queryByFirstNameWithProjection("uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName1");
+    }
+    @Test
+    public void testUpdateQueryMixedCaseProjectionNamedParameter() {
+        final String newSecondName = "updatedUniqueSecondName2";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedParameter("uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName2");
+    }
+    @Test
+    public void testUpdateQueryMixedCaseDynamicProjectionNamedParameter() {
+        final String newSecondName = "updatedUniqueSecondName2";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedParameter(PersonProjection.class, "uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName2");
+
+        List<FullNameProjection> personFullName = repo.queryByFirstNameWithProjectionNamedParameter(FullNameProjection.class, "uniquePerson");
+        assertEquals(personFullName.get(0).getFullName(), "uniquePerson updatedUniqueSecondName2");
+    }
+    @Test
+    public void testUpdateQueryOneMixedCaseDynamicProjectionNamedParameter() {
+        final String newSecondName = "updatedUniqueSecondName2";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        PersonProjection person = repo.queryOneByFirstNameWithProjectionNamedParameter(PersonProjection.class, "uniquePerson");
+        assertEquals(person.getFullName(), "uniquePerson updatedUniqueSecondName2");
+
+        FullNameProjection personFullName = repo.queryOneByFirstNameWithProjectionNamedParameter(FullNameProjection.class, "uniquePerson");
+        assertEquals(personFullName.getFullName(), "uniquePerson updatedUniqueSecondName2");
+    }
+    @Test
+    public void testUpdateQueryMixedCaseProjectionIndexedParameter() {
+        final String newSecondName = "updatedUniqueSecondName3";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedIndexedParameter("notUsed","uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName3");
+    }
+    @Test
+    public void testUpdateQueryMixedCaseProjectionIndexedParameterLuceneTextQuery() {
+        final String newSecondName = "updatedUniqueSecondName4";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.textQueryByFirstNameWithProjectionNamedParameter("uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName4");
+    }
+    @Test
+    public void testUpdateQueryMixedCaseProjectionNamedParameterAndTemplateDomainEntityVariable() {
+        final String newSecondName = "updatedUniqueSecondName5";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedParameterAndTemplateDomainEntityVariable("uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName5");
+    }
+    @Test
+    public void testUpdateQueryMixedCaseProjectionNamedParameterWithSpELExtension() {
+        final String newSecondName = "updatedUniqueSecondName6";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedParameterWithSpELExtension("uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName6");
+        assertEquals(person.get(0).getFirstName(), person.get(0).getFirstNameTransformed());
+    }
     /**
      * Update with a wrong @Query
      */

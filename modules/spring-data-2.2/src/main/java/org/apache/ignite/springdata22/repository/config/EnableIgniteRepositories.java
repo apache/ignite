@@ -22,6 +22,7 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 import org.apache.ignite.springdata22.repository.support.IgniteRepositoryFactoryBean;
 import org.apache.ignite.springdata22.repository.support.IgniteRepositoryImpl;
 import org.springframework.beans.factory.FactoryBean;

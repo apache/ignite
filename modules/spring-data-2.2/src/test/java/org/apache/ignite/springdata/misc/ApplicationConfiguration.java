@@ -23,9 +23,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.springdata.misc.SampleEvaluationContextExtension.SamplePassParamExtension;
+import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
+import org.springframework.data.spel.spi.EvaluationContextExtension;
 
 /**
  *
@@ -34,6 +36,9 @@ import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories
 @EnableIgniteRepositories
 public class ApplicationConfiguration {
 
+    public static final String IGNITE_INSTANCE_ONE = "IGNITE_INSTANCE_ONE";
+
+    public static final String IGNITE_INSTANCE_TWO = "IGNITE_INSTANCE_TWO";
     /**
      * The bean with cache names
      */
@@ -46,12 +51,48 @@ public class ApplicationConfiguration {
         return bean;
     }
 
+    @Bean
+    public EvaluationContextExtension sampleSpELExtension() {
+        return new SampleEvaluationContextExtension();
+    }
+
+    @Bean(value = "sampleExtensionBean")
+    public SamplePassParamExtension sampleExtensionBean() {
+        return new SamplePassParamExtension();
+    }
+
     /**
-     * Ignite instance bean.
+     * Ignite instance bean - no instance name provided on RepositoryConfig
      */
     @Bean
     public Ignite igniteInstance() {
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setIgniteInstanceName(IGNITE_INSTANCE_ONE);
+
+        CacheConfiguration ccfg = new CacheConfiguration("PersonCache");
+
+        ccfg.setIndexedTypes(Integer.class, Person.class);
+
+        cfg.setCacheConfiguration(ccfg);
+
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+        spi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+
+        cfg.setDiscoverySpi(spi);
+
+        return Ignition.start(cfg);
+    }
+
+    /**
+     * Ignite instance bean with not default name
+     */
+    @Bean
+    public Ignite igniteInstanceTWO() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setIgniteInstanceName(IGNITE_INSTANCE_TWO);
 
         CacheConfiguration ccfg = new CacheConfiguration("PersonCache");
 

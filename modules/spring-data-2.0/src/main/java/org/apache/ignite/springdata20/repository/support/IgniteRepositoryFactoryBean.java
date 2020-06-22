@@ -32,12 +32,12 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
 /**
  * Apache Ignite repository factory bean.
  *
- * The repository requires to define one of the parameters below in your Spring application configuration in order
+ * The {@link org.apache.ignite.springdata20.repository.config.RepositoryConfig} requires to define one of the parameters below in your Spring application configuration in order
  * to get an access to Apache Ignite cluster:
  * <ul>
- * <li>{@link Ignite} instance bean named "igniteInstance"</li>
- * <li>{@link IgniteConfiguration} bean named "igniteCfg"</li>
- * <li>A path to Ignite's Spring XML configuration named "igniteSpringCfgPath"</li>
+ * <li>{@link Ignite} instance bean named "igniteInstance" by default</li>
+ * <li>{@link IgniteConfiguration} bean named "igniteCfg" by default</li>
+ * <li>A path to Ignite's Spring XML configuration named "igniteSpringCfgPath" by default</li>
  * <ul/>
  *
  * @param <T> Repository type, {@link IgniteRepository}
@@ -63,29 +63,6 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
 
     /** {@inheritDoc} */
     @Override protected RepositoryFactorySupport createRepositoryFactory() {
-        try {
-            Ignite ignite = (Ignite)ctx.getBean("igniteInstance");
-
-            return new IgniteRepositoryFactory(ignite, ctx );
-        }
-        catch (BeansException ex) {
-            try {
-                IgniteConfiguration cfg = (IgniteConfiguration)ctx.getBean("igniteCfg");
-
-                return new IgniteRepositoryFactory(cfg, ctx);
-            }
-            catch (BeansException ex2) {
-                try {
-                    String path = (String)ctx.getBean("igniteSpringCfgPath");
-
-                    return new IgniteRepositoryFactory(path, ctx );
-                }
-                catch (BeansException ex3) {
-                    throw new IgniteException("Failed to initialize Ignite repository factory. Ignite instance or" +
-                        " IgniteConfiguration or a path to Ignite's spring XML configuration must be defined in the" +
-                        " application configuration");
-                }
-            }
-        }
+        return new IgniteRepositoryFactory(ctx);
     }
 }
