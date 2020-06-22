@@ -36,7 +36,7 @@ public class IgniteBackend extends AbstractMongoBackend {
     
 	public void commit() {      
         long newVersion = System.nanoTime();
-        log.debug("Committed MVStore (v: {} �� {})", oldVersion, newVersion);
+        log.debug("Committed MVStore (old: {} new: {})", oldVersion, newVersion);
     }
 
     public IgniteBackend(Ignite mvStore) {
@@ -46,12 +46,6 @@ public class IgniteBackend extends AbstractMongoBackend {
         	databaseName = IgniteDatabase.DEFAULT_DB_NAME;
         }
         log.info("opening database '{}'", databaseName);
-        try {
-            resolveDatabase(databaseName);
-        } catch (MongoServerException e) {
-            log.error("Failed to open {}", e);
-        }
-       
     }
 
     public IgniteBackend(String fileName) {

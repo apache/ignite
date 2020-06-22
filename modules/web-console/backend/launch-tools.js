@@ -20,7 +20,8 @@
 const _ = require('lodash');
 const http = require('http');
 const https = require('https');
-const MigrateMongoose = require('migrate-mongoose-typescript');
+const MigrateMongoose = require('migrate-mongoose');
+const mongoose = require('mongoose');
 
 /**
  * Event listener for HTTP server "error" event.
@@ -80,15 +81,15 @@ const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
 /**
  * Run mongo model migration.
  *
- * @param connection Mongo connection.
+ * @param dbConnectionUri Mongo connection url.
  * @param group Migrations group.
  * @param migrationsPath Migrations path.
  * @param collectionName Name of collection where migrations write info about applied scripts.
  */
-const migrate = (connection, group, migrationsPath, collectionName) => {
+const migrate = (dbConnectionUri, group, migrationsPath, collectionName) => {
     const migrator = new MigrateMongoose({
         migrationsPath,
-        connection,
+        dbConnectionUri,
         collectionName,
         autosync: true
     });
@@ -110,7 +111,6 @@ const migrate = (connection, group, migrationsPath, collectionName) => {
         });
 };
 
-<<<<<<< HEAD
 /**
  * Check version of used MongoDB.
  */
@@ -129,6 +129,3 @@ const checkMongo = () => {
 };
 
 module.exports = { checkMongo, migrate, init };
-=======
-module.exports = { migrate, init };
->>>>>>> upstream/ignite-12248
