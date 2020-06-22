@@ -30,7 +30,7 @@ endif()
 
 add_subdirectory(compute-example)
 add_subdirectory(continuous-query-example)
-add_subdirectory(odbc-example)
+#add_subdirectory(odbc-example)
 add_subdirectory(put-get-example)
 add_subdirectory(query-example)
 add_subdirectory(thin-client-put-get-example)
