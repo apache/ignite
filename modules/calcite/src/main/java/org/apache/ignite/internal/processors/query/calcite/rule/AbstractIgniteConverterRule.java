@@ -32,6 +32,11 @@ public abstract class AbstractIgniteConverterRule<T extends RelNode> extends Con
         super(clazz, Convention.NONE, IgniteConvention.INSTANCE, clazz.getName() + "Converter");
     }
 
+    /** */
+    protected AbstractIgniteConverterRule(Class<T> clazz, String desc) {
+        super(clazz, Convention.NONE, IgniteConvention.INSTANCE, desc);
+    }
+
     /** {@inheritDoc} */
     @Override public final RelNode convert(RelNode rel) {
         return convert(rel.getCluster().getPlanner(), rel.getCluster().getMetadataQuery(), (T)rel);

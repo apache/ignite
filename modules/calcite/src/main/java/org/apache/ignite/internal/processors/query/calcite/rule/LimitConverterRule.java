@@ -28,18 +28,17 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 
 /**
  * Converter rule for sort operator.
  */
-public class SortConverterRule extends AbstractIgniteConverterRule<LogicalSort> {
+public class LimitConverterRule extends AbstractIgniteConverterRule<LogicalSort> {
     /** */
-    public static final RelOptRule INSTANCE = new SortConverterRule();
+    public static final RelOptRule INSTANCE = new LimitConverterRule();
 
     /** */
-    public SortConverterRule() {
-        super(LogicalSort.class);
+    public LimitConverterRule() {
+        super(LogicalSort.class, "Extract Limit from LogicalSort");
     }
 
     /** {@inheritDoc} */
@@ -49,19 +48,33 @@ public class SortConverterRule extends AbstractIgniteConverterRule<LogicalSort> 
         if (n instanceof LogicalSort) {
             LogicalSort sort = (LogicalSort)n;
 
-            return sort.fetch == null && sort.offset == null;
+            return sort.fetch != null || sort.offset != null;
         }
 
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalSort rel) {
-        RelOptCluster cluster = rel.getCluster();
-        RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(rel.getCollation());
+    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalSort sort) {
+        RelOptCluster cluster = sort.getCluster();
+        RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation());
         RelTraitSet inTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelNode input = convert(rel.getInput(), inTraits);
+        RelNode input = convert(sort.getInput(), inTraits);
 
-        return new IgniteSort(cluster, outTraits, input, rel.getCollation(), rel.offset, rel.fetch);
+        if (!sort.getCollation().getFieldCollations().isEmpty()) {
+            // Create a sort with the same sort key, but no offset or fetch.
+            input = sort.copy(
+                sort.getTraitSet(),
+                input,
+                sort.getCollation(),
+                null,
+                null);
+        }
+
+        return new IgniteLimit(
+            cluster,
+            outTraits,
+            input,
+            sort.offset, sort.fetch);
     }
 }
