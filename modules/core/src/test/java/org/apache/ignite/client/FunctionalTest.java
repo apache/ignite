@@ -905,6 +905,15 @@ public class FunctionalTest {
                 assertEquals("value23", cache.get(0));
             }
 
+            // Test transactions with label.
+            cache.put(0, "value24");
+
+            try (ClientTransaction tx = client.transactions().withLabel("label").txStart()) {
+                cache.put(0, "value25");
+            }
+
+            assertEquals("value24", cache.get(0));
+
             // Test active transactions limit.
             int txLimit = ignite.configuration().getClientConnectorConfiguration().getThinClientConfiguration()
                 .getMaxActiveTxPerConnection();
