@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
@@ -29,6 +31,12 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
     /** Query. */
     private final ContinuousQuery qry;
+
+    /** */
+    private final byte filterPlatform;
+
+    /** */
+    private final byte transformerPlatform;
 
     /**
      * Ctor.
@@ -42,9 +50,9 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         long timeInterval = reader.readLong();
         boolean includeExpired = reader.readBoolean();
         Object filter = reader.readObjectDetached();
-        byte filterPlatform = filter == null ? 0 : reader.readByte();
+        filterPlatform = filter == null ? 0 : reader.readByte();
         Object transformer = reader.readObjectDetached();
-        byte transformerPlatform = transformer == null ? 0 : reader.readByte();
+        transformerPlatform = transformer == null ? 0 : reader.readByte();
         byte initialQueryType = reader.readByte();
 
         assert initialQueryType == 0; // TODO: 1 = SQL, 2 = SCAN
@@ -61,6 +69,8 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         ctx.incrementCursors();
 
         try {
+            IgniteCache cache = filterPlatform == ClientPlatform.JAVA && !isKeepBinary() ? rawCache(ctx) : cache(ctx);
+
             // TODO
             return new ClientCacheQueryContinuousResponse(requestId(), 0, null);
         }

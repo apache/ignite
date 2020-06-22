@@ -53,4 +53,11 @@ class ClientCacheQueryContinuousResponse extends ClientResponse {
         if (initialQueryId != null)
             writer.writeLong(initialQueryId);
     }
+
+    /** {@inheritDoc} */
+    @Override public void onSent() {
+        super.onSent();
+
+        // TODO: Start sending notifications
+    }
 }
