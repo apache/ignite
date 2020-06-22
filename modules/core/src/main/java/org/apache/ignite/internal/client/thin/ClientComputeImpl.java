@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -207,7 +208,12 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             if (task == null) // Channel is closed concurrently, retry with another channel.
                 continue;
 
-            task.fut.listen(f -> removeTask(task.ch, task.taskId));
+            task.fut.listen(f -> {
+                // Don't remove task if future was canceled by user. This task can be added again later by notification.
+                // To prevent leakage tasks for cancelled futures will be removed on notification (or channel close event).
+                if (!f.isCancelled())
+                    removeTask(task.ch, task.taskId);
+            });
 
             return new ClientFutureImpl<>((GridFutureAdapter<R>)task.fut);
         }
@@ -257,13 +263,16 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         if (op == ClientOperation.COMPUTE_TASK_FINISHED) {
             Object res = payload == null ? null : utils.readObject(new BinaryHeapInputStream(payload), false);
 
-            ClientComputeTask<Object> task = removeTask(ch, rsrcId);
+            ClientComputeTask<Object> task = addTask(ch, rsrcId);
 
             if (task != null) { // If channel is closed concurrently, task is already done with "channel closed" reason.
                 if (err == null)
                     task.fut.onDone(res);
                 else
                     task.fut.onDone(err);
+
+                if (task.fut.isCancelled())
+                    removeTask(ch, rsrcId);
             }
         }
     }
@@ -410,7 +419,16 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             fut = new GridFutureAdapter<R>() {
                 @Override public boolean cancel() {
                     if (onCancelled()) {
-                        ch.service(RESOURCE_CLOSE, req -> req.out().writeLong(taskId), null);
+                        try {
+                            ch.service(RESOURCE_CLOSE, req -> req.out().writeLong(taskId), null);
+                        }
+                        catch (ClientServerError e) {
+                            // Ignore "resource doesn't exist" error. The task can be completed concurrently on the
+                            // server, but we already complete future with "cancelled" state, so result will never be
+                            // received by a client.
+                            if (e.getCode() != ClientStatus.RESOURCE_DOES_NOT_EXIST)
+                                throw new ClientException(e);
+                        }
 
                         return true;
                     }
