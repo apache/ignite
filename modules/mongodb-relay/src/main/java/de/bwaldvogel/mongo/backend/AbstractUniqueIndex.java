@@ -37,7 +37,7 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
 
     protected abstract boolean putKeyPosition(KeyValue keyValue, P position);
 
-    protected abstract Iterable<Entry<KeyValue, P>> getIterable();
+    protected abstract Iterable<Entry<KeyValue, P>> getIterable(Object queriedKey);
 
     protected abstract P getPosition(KeyValue keyValue);
 
@@ -192,7 +192,7 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
                     throw new UnsupportedOperationException("Not yet implemented");
                 }
                 List<P> positions = new ArrayList<>();
-                for (Entry<KeyValue, P> entry : getIterable()) {
+                for (Entry<KeyValue, P> entry : getIterable(queriedKey)) {
                     KeyValue obj = entry.getKey();
                     if (obj.size() == 1) {
                         Object o = obj.get(0);
@@ -206,7 +206,29 @@ public abstract class AbstractUniqueIndex<P> extends Index<P> {
                     }
                 }
                 return positions;
-            } else if (queriedKey instanceof Document) {
+            } 
+            else if (BsonRegularExpression.isTextSearchExpression(queriedKey)) {
+                if (isCompoundIndex()) {
+                    throw new UnsupportedOperationException("Not yet implemented");
+                }
+                List<P> positions = new ArrayList<>();
+                for (Entry<KeyValue, P> entry : getIterable(queriedKey)) {
+                    KeyValue obj = entry.getKey();
+                    if (obj.size() == 1) {
+                        Object o = obj.get(0);
+                        if (o instanceof String) {
+                            BsonRegularExpression regularExpression = BsonRegularExpression.convertToRegularExpression(queriedKey);
+                            boolean matcher = regularExpression.textSearchMatcher(o.toString());
+                            if (matcher) {
+                                positions.add(entry.getValue());
+                            }
+                        }
+                    }
+                }
+                return positions;
+            } 
+            
+            else if (queriedKey instanceof Document) {
                 if (isCompoundIndex()) {
                     throw new UnsupportedOperationException("Not yet implemented");
                 }

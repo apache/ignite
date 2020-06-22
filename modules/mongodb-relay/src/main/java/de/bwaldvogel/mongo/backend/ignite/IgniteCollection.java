@@ -51,7 +51,7 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
 
     private static final Logger log = LoggerFactory.getLogger(IgniteCollection.class);
 
-    private final IgniteCache<Object, Document> dataMap;
+    public final IgniteCache<Object, Document> dataMap;
     
     HashMap<String,FieldType> fields = new HashMap<>();
     
@@ -152,10 +152,6 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
 
     @Override
     protected Stream<DocumentWithPosition<Object>> streamAllDocumentsWithPosition() {
-    	// Get the data streamer reference and stream data.
-    	//try (IgniteDataStreamer<Object, Document> stmr = Ignition.ignite().dataStreamer(dataMap.getName())) {    
-    	//	stmr.receiver(StreamVisitor.from((key, val) -> {}));
-    	//}
     	
     	 ScanQuery<Object, Document> scan = new ScanQuery<>();
     		 
@@ -165,7 +161,16 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
          
     }    
     
-    public T2<String,String> typeNameAndKeyField(Document obj) {
+    public static String tableOfCache(String cacheName) {
+		if(cacheName.startsWith("SQL_")) {
+			int pos = cacheName.lastIndexOf('_',5);
+			if(pos>0)
+				return cacheName.substring(pos+1);
+		}
+		return cacheName;
+	}
+    
+    public static T2<String,String> typeNameAndKeyField(IgniteCache<?,?> dataMap,Document obj) {
     	String typeName = (String)obj.get("_class");    	
     	String keyField = "id";
     	CacheConfiguration cfg = dataMap.getConfiguration(CacheConfiguration.class);
@@ -178,7 +183,7 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
         	}	
     	}
     	if(StringUtil.isNullOrEmpty(typeName)) {
-    		typeName = dataMap.getName();
+    		typeName = tableOfCache(dataMap.getName());
     	}	
     	
     	return new T2(typeName,keyField);

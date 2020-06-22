@@ -170,6 +170,9 @@ public class PostgresqlCollection extends AbstractMongoCollection<Long> {
             	 if (BsonRegularExpression.isRegularExpression(queryValue)) {
                      
                  }
+            	 else if (BsonRegularExpression.isTextSearchExpression(queryValue)) {
+                     
+                 }
             }
             else {
             	values.add(queryValue);

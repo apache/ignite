@@ -50,6 +50,9 @@ public class DefaultQueryMatcher implements QueryMatcher {
         if (BsonRegularExpression.isRegularExpression(queryValue)) {
             return;
         }
+        if (BsonRegularExpression.isTextSearchExpression(queryValue)) {
+            return;
+        }
         Document queryObject = (Document) queryValue;
         if (!queryObject.keySet().isEmpty() && queryObject.keySet().iterator().next().startsWith("$")) {
             for (String operator : queryObject.keySet()) {
@@ -329,6 +332,14 @@ public class DefaultQueryMatcher implements QueryMatcher {
                 BsonRegularExpression pattern = BsonRegularExpression.convertToRegularExpression(queryValue);
                 Matcher matcher = pattern.matcher(value.toString());
                 return matcher.find();
+            }
+        }
+        if (BsonRegularExpression.isTextSearchExpression(queryValue)) {
+            if (Missing.isNullOrMissing(value)) {
+                return false;
+            } else {
+                BsonRegularExpression pattern = BsonRegularExpression.convertToRegularExpression(queryValue);
+                return  pattern.textSearchMatcher(value.toString());               
             }
         }
 

@@ -31,7 +31,7 @@ public class H2UniqueIndex extends AbstractUniqueIndex<Object> {
     }
 
     @Override
-    protected Iterable<Entry<KeyValue, Object>> getIterable() {
+    protected Iterable<Entry<KeyValue, Object>> getIterable(Object queryObject) {
         return mvMap.entrySet();
     }
 

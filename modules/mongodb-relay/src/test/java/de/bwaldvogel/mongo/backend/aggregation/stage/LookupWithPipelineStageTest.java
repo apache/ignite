@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Test;
 
 import de.bwaldvogel.mongo.exception.MongoServerException;
-import de.bwaldvogel.mongo.oplog.NoopOplog;
+
 
 public class LookupWithPipelineStageTest extends AbstractLookupStageTest {
 
@@ -18,7 +18,7 @@ public class LookupWithPipelineStageTest extends AbstractLookupStageTest {
     }
 
     private void buildLookupStage(String jsonDocument) {
-        new LookupWithPipelineStage(json(jsonDocument), database, NoopOplog.get());
+        new LookupWithPipelineStage(json(jsonDocument), database);
     }
 
 }

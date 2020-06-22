@@ -100,12 +100,18 @@ public class IgniteLuceneIndex extends Index<Object>{
 		     	 
 	}
 
+	
 	public void init(String cacheName) {
 		if(indexAccess==null) {
 			try {
 				indexAccess = FullTextLucene.getIndexAccess(null, cacheName, null);
 				
 				marshaller = PlatformUtils.marshaller();
+				String typeName = IgniteCollection.tableOfCache(cacheName);
+				Map<String, FieldType> fields = indexAccess.fields(typeName);
+		    	for(IndexKey ik: this.getKeys()) {
+					fields.put(ik.getKey(), TextField.TYPE_NOT_STORED);
+				}
                  
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
@@ -137,7 +143,7 @@ public class IgniteLuceneIndex extends Index<Object>{
 		// index all field
 		if(collection instanceof IgniteCollection) {
 			IgniteCollection coll = (IgniteCollection) collection;
-			T2<String,String> t2 = coll.typeNameAndKeyField(document);
+			T2<String,String> t2 = IgniteCollection.typeNameAndKeyField(coll.dataMap,document);
 	    	String typeName = t2.get1();    	
 	    	String keyField = t2.get2();    
 	    	
@@ -188,6 +194,17 @@ public class IgniteLuceneIndex extends Index<Object>{
 			} 
 	       
 	            
+		}
+		
+		else if(collection instanceof IgniteBinaryCollection) {
+			IgniteBinaryCollection coll = (IgniteBinaryCollection) collection;
+			T2<String,String> t2 = IgniteCollection.typeNameAndKeyField(coll.dataMap,document);
+	    	String typeName = t2.get1();    	
+	    	String keyField = t2.get2();    
+	    	Map<String, FieldType> fields = indexAccess.fields(typeName);
+	    	for(IndexKey ik: this.getKeys()) {
+				fields.put(ik.getKey(), TextField.TYPE_NOT_STORED);
+			}
 		}
 	}
 
@@ -261,7 +278,7 @@ public class IgniteLuceneIndex extends Index<Object>{
 		 KeyValue queriedKeys = getQueriedKeys(query);
 
 	     for (Object queriedKey : queriedKeys.iterator()) {
-	         if (BsonRegularExpression.isRegularExpression(queriedKey) || BsonRegularExpression.isTextSearchExpression(queriedKey)) {
+	         if (BsonRegularExpression.isRegularExpression(queriedKey)) {
 	             if (isCompoundIndex()) {
 	                 throw new UnsupportedOperationException("Not yet implemented");
 	             }
@@ -280,7 +297,22 @@ public class IgniteLuceneIndex extends Index<Object>{
 	                 }
 	             }
 	             return positions;
-	         } else if (queriedKey instanceof Document) {
+	         } 	         
+	         else if (BsonRegularExpression.isTextSearchExpression(queriedKey)) {
+	             if (isCompoundIndex()) {
+	                 throw new UnsupportedOperationException("Not yet implemented");
+	             }
+	             List<Object> positions = new ArrayList<>();
+	             for (Entry<KeyValue, Object> entry : getFullTextIterable(queriedKey)) {
+	                 KeyValue obj = entry.getKey();
+	                 if (obj.size() == 1) {
+	                     Object o = obj.get(0);
+	                     positions.add(entry.getValue());
+	                 }
+	             }
+	             return positions;
+	         } 
+	         else if (queriedKey instanceof Document) {
 	             if (isCompoundIndex()) {
 	                 throw new UnsupportedOperationException("Not yet implemented");
 	             }

@@ -49,7 +49,7 @@ public class MemoryUniqueIndex extends AbstractUniqueIndex<Integer> {
     }
 
     @Override
-    protected Iterable<Entry<KeyValue, Integer>> getIterable() {
+    protected Iterable<Entry<KeyValue, Integer>> getIterable(Object queryObject) {
         return index.entrySet();
     }
 

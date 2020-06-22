@@ -139,6 +139,10 @@ public class BsonRegularExpression implements Bson,Externalizable {
     public Matcher matcher(String string) {
         return toPattern().matcher(string);
     }
+    
+    public boolean textSearchMatcher(String string) {
+        return string.indexOf(this.pattern)>=0;
+    }
 
 	@Override
 	public void writeExternal(ObjectOutput out) throws IOException {

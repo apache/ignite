@@ -64,7 +64,7 @@ import io.netty.util.internal.StringUtil;
 
 public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
-    private final IgniteCache<Object, BinaryObject> dataMap;
+	public final IgniteCache<Object, BinaryObject> dataMap;
     
     public IgniteBinaryCollection(IgniteDatabase database, String collectionName, String idField, IgniteCache<Object, BinaryObject> dataMap) {
         super(database, collectionName, idField);
@@ -189,30 +189,12 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	 return StreamSupport.stream(cursor.spliterator(),false).map(entry -> new DocumentWithPosition<>(binaryObjectToDocument(entry.getKey(),entry.getValue(),this.idField), entry.getKey()));		
          
     }
-    
-    public T2<String,String> typeNameAndKeyField(Document obj) {
-    	String typeName = (String)obj.get("_class");    	
-    	String keyField = "id";
-    	CacheConfiguration cfg = dataMap.getConfiguration(CacheConfiguration.class);
-    	if(!cfg.getQueryEntities().isEmpty()) {
-    		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
-    		QueryEntity entity = qeit.next();   		
-    		keyField = entity.getKeyFieldName();
-    		if(StringUtil.isNullOrEmpty(typeName)) {
-        		typeName = entity.getValueType();
-        	}	
-    	}
-    	if(StringUtil.isNullOrEmpty(typeName)) {
-    		typeName = dataMap.getName();
-    	}	
-    	
-    	return new T2(typeName,keyField);
-    }
+   
     
     public T2<Object,BinaryObject> documentToBinaryObject(Object keyValue,Document obj){	
     	IgniteBinary igniteBinary = ((IgniteDatabase) this.database).getIgnite().binary();
     	
-    	T2<String,String> t2 = typeNameAndKeyField(obj);
+    	T2<String,String> t2 = IgniteCollection.typeNameAndKeyField(this.dataMap,obj);
     	String typeName = t2.get1();    	
     	String keyField = t2.get2();    	
     	BinaryTypeImpl type = (BinaryTypeImpl)igniteBinary.type(typeName);

@@ -9,20 +9,27 @@ import java.util.Map.Entry;
 import javax.cache.Cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import de.bwaldvogel.mongo.backend.AbstractUniqueIndex;
+import de.bwaldvogel.mongo.backend.DefaultQueryMatcher;
 import de.bwaldvogel.mongo.backend.IndexKey;
 import de.bwaldvogel.mongo.backend.KeyValue;
 import de.bwaldvogel.mongo.backend.Missing;
+import de.bwaldvogel.mongo.backend.QueryMatcher;
+import de.bwaldvogel.mongo.bson.Document;
 
 
 public class IgniteUniqueIndex extends AbstractUniqueIndex<Object> {
 
     private IgniteCache<KeyValue, Object> mvMap;
+    
+    protected final QueryMatcher matcher = new DefaultQueryMatcher();
 
     IgniteUniqueIndex(IgniteCache<KeyValue, Object> mvMap, String name, List<IndexKey> keys, boolean sparse) {
         super(name, keys, sparse);
@@ -45,9 +52,19 @@ public class IgniteUniqueIndex extends AbstractUniqueIndex<Object> {
     }
 
     @Override
-    protected Iterable<Entry<KeyValue, Object>> getIterable() {
+    protected Iterable<Entry<KeyValue, Object>> getIterable(Object queryObject) {
     	
-    	ScanQuery<KeyValue, Object> scan = new ScanQuery<>();
+    	ScanQuery<KeyValue, Object> scan = new ScanQuery<>(new IgniteBiPredicate<KeyValue, Object>() { 	                
+			private static final long serialVersionUID = 1L;
+
+			@Override public boolean apply(KeyValue key, Object other) {
+             	Object value = key.get(0);
+             	if (matcher.matchesValue(queryObject, value)) {
+                    return true;
+                 }
+             	return false;
+             }
+         });
     	 
     	QueryCursor<Cache.Entry<KeyValue, Object>>  cursor = mvMap.query(scan);    		
     	    

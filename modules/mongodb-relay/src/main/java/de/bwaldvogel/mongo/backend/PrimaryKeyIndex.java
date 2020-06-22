@@ -59,7 +59,7 @@ public class PrimaryKeyIndex<P> extends AbstractUniqueIndex<P> {
     }
 
     @Override
-    protected Iterable<Entry<KeyValue, P>> getIterable() {
+    protected Iterable<Entry<KeyValue, P>> getIterable(Object o) {
         return new ArrayList<>();
     }
     

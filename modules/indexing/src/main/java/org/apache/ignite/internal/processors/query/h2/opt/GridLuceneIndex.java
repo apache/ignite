@@ -101,7 +101,7 @@ public class GridLuceneIndex implements AutoCloseable {
     private final GridQueryTypeDescriptor type;  
 
     /** */
-    private final String[] idxdFields;   
+    private String[] idxdFields;   
 
     /** */
     private final GridKernalContext ctx; 
@@ -123,33 +123,34 @@ public class GridLuceneIndex implements AutoCloseable {
         this.ctx = ctx;
         this.cacheName = cacheName;
         this.type = type;       
-        
-        try {   
-        	 FullTextLucene.ctx = ctx;
-        	 indexAccess = LuceneIndexAccess.getIndexAccess(ctx, cacheName);  
-        	 QueryIndex qtextIdx = ((QueryIndexDescriptorImpl)type.textIndex()).getQueryIndex();  
-             if(qtextIdx instanceof FullTextQueryIndex){
-            	 this.textIdx = (FullTextQueryIndex)qtextIdx;
-            	 Set<String> fields = indexAccess.init(type).keySet();
-            	 idxdFields = new String[fields.size() + 1];
-
-                 fields.toArray(idxdFields);
-             }   
-             else {
-            	 assert type.valueTextIndex() || type.valueClass() == String.class;
-
-                 idxdFields = new String[1];
-             }
+        FullTextLucene.ctx = ctx;
+        try {
+			indexAccess = LuceneIndexAccess.getIndexAccess(ctx, cacheName);
+			init();  
+			
+		} catch (IOException e) {
+			ctx.grid().log().error(e.getMessage(),e);
+	        throw new IgniteCheckedException(e);
+		}  
              
-             idxdFields[idxdFields.length - 1] = VAL_STR_FIELD_NAME;
-        }
-        catch (Exception e) {
-        	ctx.grid().log().error(e.getMessage(),e);
-            throw new IgniteCheckedException(e);
-        }
-        
     }
 
+	private void init() {
+		QueryIndex qtextIdx = ((QueryIndexDescriptorImpl) type.textIndex()).getQueryIndex();
+		if (qtextIdx instanceof FullTextQueryIndex) {
+			this.textIdx = (FullTextQueryIndex) qtextIdx;
+			Set<String> fields = indexAccess.init(type).keySet();
+			idxdFields = new String[fields.size() + 1];
+
+			fields.toArray(idxdFields);
+		} else {
+			assert type.valueTextIndex() || type.valueClass() == String.class;
+
+			idxdFields = new String[1];
+		}
+
+		idxdFields[idxdFields.length - 1] = VAL_STR_FIELD_NAME;
+	}
     /**
      * @return Cache object context.
      */
@@ -190,7 +191,11 @@ public class GridLuceneIndex implements AutoCloseable {
         		doc.add(new TextField(VAL_STR_FIELD_NAME, val.toString(), Field.Store.NO));
         	}
             stringsFound = true;
-        }        
+        }     
+        // index fields have changed!
+        if(idxdFields.length>1 && idxdFields.length-1 != indexAccess.fields(type.name()).size()) {
+        	init();
+        }
         Object[] row = new Object[idxdFields.length]; 
         for (int i = 0, last = idxdFields.length - 1; i < last; i++) {
             Object fieldVal = type.value(idxdFields[i], key, val);
@@ -213,13 +218,7 @@ public class GridLuceneIndex implements AutoCloseable {
 
             doc.add(new StringField(KEY_FIELD_NAME, keyByteRef, Field.Store.YES));
             doc.add(new StringField(FullTextLucene.FIELD_TABLE, this.type.name(), Field.Store.YES));
-            //add@byron may not store value
-            if(indexAccess.config.isStoreValue()){
-            	
-            	if (type.valueClass() != String.class)
-            		doc.add(new StoredField(VAL_FIELD_NAME, v.valueBytes(coctx)));
-            }
-            //end@
+            
 
             doc.add(new StoredField(FullTextLucene.VER_FIELD_NAME, ver.toString()));
 
@@ -449,11 +448,8 @@ public class GridLuceneIndex implements AutoCloseable {
                 
                 V v = null;
                 //add@byron
-                if(indexAccess.config.isStoreValue()){
-                	v = type.valueClass() == String.class ?
-                    (V)doc.get(VAL_STR_FIELD_NAME) :
-                    this.<V>unmarshall(doc.getBinaryValue(VAL_FIELD_NAME).bytes, ldr);
-                    
+                if(indexAccess.config.isStoreValue() && type.valueClass() == String.class){
+                	v =  (V)doc.get(VAL_STR_FIELD_NAME);                    
                 }               
                 else{
                 	v = (V)cache.repairableGet(k,false,false);
