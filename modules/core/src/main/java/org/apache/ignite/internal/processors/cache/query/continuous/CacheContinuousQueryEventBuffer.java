@@ -258,6 +258,10 @@ public class CacheContinuousQueryEventBuffer {
             while (batch != batch0);
         }
 
+        assert res == null && backup;
+        //todo if backup == true then discard messages, if backup == false send to client
+        //todo add constant for pending buffer
+
         return res;
     }
 
