@@ -61,7 +61,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- *
+ * Cache group key change distributed process tests.
  */
 public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
     /** Timeout. */
@@ -720,6 +720,92 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         }
 
         checkGroupKey(grpId, 1, MAX_AWAIT_MILLIS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheStartOnClientDuringRotation() throws Exception {
+        T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
+
+        IgniteEx node0 = nodes.get1();
+        IgniteEx node1 = nodes.get2();
+
+        IgniteEx client = startClientGrid(getConfiguration("client"));
+
+        node0.cluster().state(ClusterState.ACTIVE);
+
+        String grpName = "shared";
+
+        createEncryptedCache(client, null, cacheName(), grpName);
+
+        awaitPartitionMapExchange();
+
+        TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(node1);
+
+        commSpi.blockMessages((node, message) -> message instanceof SingleNodeMessage);
+
+        IgniteFuture<Void> changeKeyFut = node0.encryption().changeGroupKey(Collections.singleton(grpName));
+
+        commSpi.waitForBlocked();
+
+        String cacheName = "userCache";
+
+        IgniteInternalFuture cacheStartFut = runAsync(() -> {
+            client.getOrCreateCache(cacheConfiguration(cacheName, grpName));
+        });
+
+        commSpi.stopBlock();
+
+        changeKeyFut.get(MAX_AWAIT_MILLIS);
+        cacheStartFut.get(MAX_AWAIT_MILLIS);
+
+        IgniteCache<Integer, String> cache = client.cache(cacheName);
+
+        for (int i = 0; i < 200; i++)
+            cache.put(i, String.valueOf(i));
+
+        checkEncryptedCaches(node0, client);
+
+        checkGroupKey(CU.cacheId(grpName), 1, MAX_AWAIT_MILLIS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientJoinDuringRotation() throws Exception {
+        T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
+
+        IgniteEx node0 = nodes.get1();
+        IgniteEx node1 = nodes.get2();
+
+        node0.cluster().state(ClusterState.ACTIVE);
+
+        createEncryptedCache(node0, node1, cacheName(), null);
+
+        awaitPartitionMapExchange();
+
+        TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(node1);
+
+        commSpi.blockMessages((node, message) -> message instanceof SingleNodeMessage);
+
+        IgniteFuture<Void> changeKeyFut = node0.encryption().changeGroupKey(Collections.singleton(cacheName()));
+
+        commSpi.waitForBlocked();
+
+        IgniteEx client = startClientGrid(getConfiguration("client"));
+
+        assertTrue(!changeKeyFut.isDone());
+
+        commSpi.stopBlock();
+
+        changeKeyFut.get(MAX_AWAIT_MILLIS);
+
+        checkEncryptedCaches(node0, client);
+
+        checkGroupKey(CU.cacheId(cacheName()), 1, MAX_AWAIT_MILLIS);
     }
 
     /**

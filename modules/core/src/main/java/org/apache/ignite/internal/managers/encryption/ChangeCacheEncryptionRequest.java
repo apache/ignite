@@ -22,54 +22,76 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
+/**
+ * Change cache group encryption key request.
+ */
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class ChangeCacheEncryptionRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Request id. */
-    private final UUID reqId;
+    private final UUID reqId = UUID.randomUUID();
 
     /** Encrypted master key name. */
-    private final int[] groups;
+    private final int[] grpIds;
 
     /** Encryption keys. */
     private final byte[][] keys;
 
+    /** Key identifiers. */
     private final byte[] keyIds;
 
+    /** Initial topology version. */
     private AffinityTopologyVersion topVer;
 
     /**
-     * @param groups Groups.
-     * @param keys Keys.
+     * @param grpIds Cache group IDs.
+     * @param keys Encryption keys.
+     * @param keyIds Key identifiers.
+     * @param topVer Initial topology version.
      */
-    public ChangeCacheEncryptionRequest(int[] groups, byte[][] keys, byte[] keyIds, AffinityTopologyVersion topVer) {
-        reqId = UUID.randomUUID();
-
-        this.groups = groups;
+    public ChangeCacheEncryptionRequest(int[] grpIds, byte[][] keys, byte[] keyIds, AffinityTopologyVersion topVer) {
+        this.grpIds = grpIds;
         this.keys = keys;
         this.keyIds = keyIds;
         this.topVer = topVer;
     }
 
+    /**
+     * @return Request ID.
+     */
     public UUID requestId() {
-        return this.reqId;
+        return reqId;
     }
 
+    /**
+     * @return Cache group IDs.
+     */
     public int[] groups() {
-        return groups;
+        return grpIds;
     }
 
+    /**
+     * @return Encryption keys.
+     */
     public byte[][] keys() {
         return keys;
     }
 
+    /**
+     * @return Key identifiers.
+     */
     public byte[] keyIdentifiers() { return keyIds; }
 
+    /**
+     * @return Initial topology version.
+     */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -80,6 +102,7 @@ public class ChangeCacheEncryptionRequest implements Serializable {
         return Objects.equals(reqId, ((ChangeCacheEncryptionRequest)o).reqId);
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(reqId);
     }

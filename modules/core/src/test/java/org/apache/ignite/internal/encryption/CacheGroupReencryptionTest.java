@@ -23,12 +23,14 @@ import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -109,7 +111,14 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     @Override protected <K, V> CacheConfiguration<K, V> cacheConfiguration(String name, String grp) {
         CacheConfiguration<K, V> cfg = super.cacheConfiguration(name, grp);
 
+        cfg.setIndexedTypes(Long.class, IndexedObject.class);
+
         return cfg.setAffinity(new RendezvousAffinityFunction(false, 16)).setBackups(backups);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Object generateValue(long id) {
+        return new IndexedObject(id, "string-" + id);
     }
 
     /**
@@ -123,9 +132,12 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         createEncryptedCache(nodes.get1(), nodes.get2(), cacheName(), null);
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> loadData(100_000));
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> loadData(50_000));
 
         forceCheckpoint();
+
+        enableCheckpoints(nodes.get1(), false);
+        enableCheckpoints(nodes.get2(), false);
 
         int grpId = CU.cacheId(cacheName());
 
@@ -138,6 +150,9 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         fut.get();
 
         assertThrowsAnyCause(log, () -> {
+            enableCheckpoints(grid(GRID_0), true);
+            enableCheckpoints(grid(GRID_1), true);
+
             forceCheckpoint();
 
             return null;
@@ -512,7 +527,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     }
 
     /** */
-    static final class FailingFileIOFactory implements FileIOFactory {
+    private static final class FailingFileIOFactory implements FileIOFactory {
         /** */
         private final FileIOFactory delegateFactory;
 
@@ -551,6 +566,43 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
                 return delegate.writeFully(srcBuf, position);
             }
+        }
+    }
+
+    /** */
+    private static class IndexedObject {
+        /** Id. */
+        @QuerySqlField(index = true)
+        private long id;
+
+        /** Name. */
+        @QuerySqlField(index = true)
+        private String name;
+
+        /**
+         * @param id Id.
+         */
+        public IndexedObject(long id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            IndexedObject obj = (IndexedObject)o;
+
+            return id == obj.id && Objects.equals(name, obj.name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(name, id);
         }
     }
 }

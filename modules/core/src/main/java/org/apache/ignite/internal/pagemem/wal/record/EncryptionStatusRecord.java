@@ -27,18 +27,18 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
  * Logical record to restart encryption with the latest encryption key.
  */
 public class EncryptionStatusRecord extends WALRecord {
-    /** */
+    /** Mapping the cache group ID to a list of partitions with the number of encrypted pages. */
     private final Map<Integer, List<T2<Integer, Integer>>> grpStates;
 
     /**
-     * @param grpStates Mapping of group ID to list of partitions with the number of encrypted pages.
+     * @param grpStates Mapping the cache group ID to a list of partitions with the number of encrypted pages.
      */
     public EncryptionStatusRecord(Map<Integer, List<T2<Integer, Integer>>> grpStates) {
         this.grpStates = grpStates;
     }
 
     /**
-     * @return Mapping of group ID to list of partitions with the number of encrypted pages.
+     * @return Mapping the cache group ID to a list of partitions with the number of encrypted pages.
      */
     public Map<Integer, List<T2<Integer, Integer>>> groupsStatus() {
         return grpStates;

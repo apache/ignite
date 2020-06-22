@@ -19,7 +19,6 @@ package org.apache.ignite.internal.encryption;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -203,14 +202,19 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
     /** */
     protected void checkData(IgniteEx grid0) {
-        IgniteCache<Long, String> cache = grid0.cache(cacheName());
+        IgniteCache<Long, Object> cache = grid0.cache(cacheName());
 
         assertNotNull(cache);
 
         int size = cache.size();
 
         for (long i = 0; i < size; i++)
-            assertEquals("" + i, cache.get(i));
+            assertEquals(generateValue(i), cache.get(i));
+    }
+
+    /** */
+    protected Object generateValue(long id) {
+        return String.valueOf(id);
     }
 
     /** */
@@ -222,17 +226,17 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     /** */
     protected void createEncryptedCache(IgniteEx grid0, @Nullable IgniteEx grid1, String cacheName, String cacheGroup,
         boolean putData) throws IgniteInterruptedCheckedException {
-        IgniteCache<Long, String> cache = grid0.createCache(cacheConfiguration(cacheName, cacheGroup));
+        IgniteCache<Long, Object> cache = grid0.createCache(cacheConfiguration(cacheName, cacheGroup));
 
         if (grid1 != null)
             GridTestUtils.waitForCondition(() -> grid1.cachex(cacheName()) != null, 2_000L);
 
         if (putData) {
             for (long i = 0; i < 100; i++)
-                cache.put(i, "" + i);
+                cache.put(i, generateValue(i));
 
             for (long i = 0; i < 100; i++)
-                assertEquals("" + i, cache.get(i));
+                assertEquals(generateValue(i), cache.get(i));
         }
     }
 
@@ -311,20 +315,32 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         return true;
     }
 
+    /**
+     * Load data into cache "{@link #cacheName()}" using node "{@link #GRID_0}".
+     * @param cnt Count of entries.
+     */
     protected void loadData(int cnt) {
         info("Loading " + cnt + " entries into " + cacheName());
 
         int start = grid(GRID_0).cache(cacheName()).size();
 
-        try (IgniteDataStreamer<Long, String> streamer = grid(GRID_0).dataStreamer(cacheName())) {
+        try (IgniteDataStreamer<Long, Object> streamer = grid(GRID_0).dataStreamer(cacheName())) {
             for (long i = start; i < (cnt + start); i++)
-                streamer.addData(i, String.valueOf(i));
+                streamer.addData(i, generateValue(i));
         }
 
         info("Load data finished");
     }
 
-    protected void checkGroupKey(int grpId, int keyId, long timeout) throws IgniteCheckedException, IOException {
+    /**
+     * Ensures that all pages of page store have expected encryption key identifier.
+     *
+     * @param grpId Cache group ID.
+     * @param keyId Encryption key ID.
+     * @param timeout Timeout to wait for encryption to complete.
+     * @throws Exception If failed.
+     */
+    protected void checkGroupKey(int grpId, int keyId, long timeout) throws Exception {
         awaitEncryption(G.allGrids(), grpId, timeout);
 
         for (Ignite g : G.allGrids()) {
@@ -385,7 +401,6 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                         ch.position(pageOffset);
                         ch.read(pageBuf);
 
-                        // todo ensure that page is not empty?
                         pageBuf.position(realPageSize + encryptionBlockSize);
 
                         // If crc present
@@ -400,6 +415,12 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @param grids Grids.
+     * @param grpId Cache group ID.
+     * @param timeout Timeout to wait for encryption to complete.
+     * @throws IgniteCheckedException If failed.
+     */
     protected void awaitEncryption(List<Ignite> grids, int grpId, long timeout) throws IgniteCheckedException {
         GridCompoundFuture<Void, ?> fut = new GridCompoundFuture<>();
 
@@ -426,6 +447,11 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         fut.get(timeout);
     }
 
+    /**
+     * @param node Node.
+     * @param grpId Cache group ID.
+     * @return {@code True} If reencryption of the specified group is not yet complete.
+     */
     protected boolean isReencryptionInProgress(IgniteEx node, int grpId) {
         FilePageStoreManager pageStoreMgr = ((FilePageStoreManager)node.context().cache().context().pageStore());
 
