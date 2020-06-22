@@ -39,9 +39,21 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         super(reader);
 
         int pageSize = reader.readInt();
+        long timeInterval = reader.readLong();
+        boolean includeExpired = reader.readBoolean();
+        Object filter = reader.readObjectDetached();
+        byte filterPlatform = filter == null ? 0 : reader.readByte();
+        Object transformer = reader.readObjectDetached();
+        byte transformerPlatform = transformer == null ? 0 : reader.readByte();
+        byte initialQueryType = reader.readByte();
+
+        assert initialQueryType == 0; // TODO: 1 = SQL, 2 = SCAN
 
         qry = new ContinuousQuery()
-                .setPageSize(pageSize);
+                .setPageSize(pageSize)
+                .setTimeInterval(timeInterval);
+
+        qry.setIncludeExpired(includeExpired);
     }
 
     /** {@inheritDoc} */
