@@ -71,6 +71,9 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         try {
             IgniteCache cache = filterPlatform == ClientPlatform.JAVA && !isKeepBinary() ? rawCache(ctx) : cache(ctx);
 
+            ClientCacheQueryContinuousHandle handle = new ClientCacheQueryContinuousHandle(ctx);
+            qry.setLocalListener(handle)
+
             // TODO
             return new ClientCacheQueryContinuousResponse(requestId(), 0, null);
         }

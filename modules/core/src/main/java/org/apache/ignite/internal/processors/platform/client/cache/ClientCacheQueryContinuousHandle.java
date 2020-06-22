@@ -17,5 +17,41 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-public class ClientCacheQueryContinuousHandle {
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
+import org.apache.ignite.internal.processors.platform.client.ClientNotification;
+
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
+
+/**
+ * Continuous query handle.
+ */
+@SuppressWarnings("rawtypes")
+public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListener {
+    /** */
+    private final ClientConnectionContext ctx;
+
+    /** */
+    private final QueryCursor cursor;
+
+    /** */
+    private long cursorId;
+
+    public ClientCacheQueryContinuousHandle(ClientConnectionContext ctx, QueryCursor cursor) {
+        assert ctx != null;
+        assert cursor != null;
+
+        this.ctx = ctx;
+        this.cursor = cursor;
+        this.cursorId = cursorId;
+    }
+
+    /** {@inheritDoc} */
+    @Override  public void onUpdated(Iterable iterable) throws CacheEntryListenerException {
+        // TODO: Send notification for every item in iterable.
+        // TODO: Buffer events while response is not sent.
+        ctx.notifyClient(new ClientNotification(ClientMessageParser.OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION, cursorId));
+    }
 }
