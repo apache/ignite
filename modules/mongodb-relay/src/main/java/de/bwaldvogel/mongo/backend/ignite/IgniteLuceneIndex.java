@@ -95,7 +95,7 @@ public class IgniteLuceneIndex extends Index<Object>{
 	protected IgniteLuceneIndex(GridKernalContext ctx,String collectionName, String name, List<IndexKey> keys, boolean sparse) {
 		super(name, keys, sparse);
 		this.ctx = ctx;
-		this.cacheName = collectionName;
+		this.cacheName = collectionName;		
 		init(collectionName);
 		     	 
 	}
@@ -104,7 +104,7 @@ public class IgniteLuceneIndex extends Index<Object>{
 	public void init(String cacheName) {
 		if(indexAccess==null) {
 			try {
-				indexAccess = FullTextLucene.getIndexAccess(null, cacheName, null);
+				indexAccess = LuceneIndexAccess.getIndexAccess(ctx, cacheName);
 				
 				marshaller = PlatformUtils.marshaller();
 				String typeName = IgniteCollection.tableOfCache(cacheName);
@@ -113,7 +113,7 @@ public class IgniteLuceneIndex extends Index<Object>{
 					fields.put(ik.getKey(), TextField.TYPE_NOT_STORED);
 				}
                  
-			} catch (SQLException e) {
+			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}  
