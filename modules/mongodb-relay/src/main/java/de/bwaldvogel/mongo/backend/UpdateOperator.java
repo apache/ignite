@@ -31,7 +31,7 @@ enum UpdateOperator {
 
     ;
 
-    private String value;
+    private final String value;
 
     UpdateOperator(String value) {
         this.value = value;

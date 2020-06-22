@@ -6,7 +6,7 @@ public enum ReplyFlag {
     SHARD_CONFIG_STALE(2),
     AWAIT_CAPABLE(3);
 
-    private int value;
+    private final int value;
 
     ReplyFlag(int bit) {
         this.value = 1 << bit;

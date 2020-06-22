@@ -5,8 +5,8 @@ import io.netty.channel.Channel;
 
 public class MongoDelete extends ClientRequest {
 
-    private Document selector;
-    private boolean singleRemove;
+    private final Document selector;
+    private final boolean singleRemove;
 
     public MongoDelete(Channel channel, MessageHeader header, String fullCollectionName, Document selector,
             boolean singleRemove) {

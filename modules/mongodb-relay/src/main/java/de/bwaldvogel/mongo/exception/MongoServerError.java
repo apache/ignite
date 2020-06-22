@@ -12,6 +12,10 @@ public class MongoServerError extends MongoServerException {
         this(errorCode, "Location" + errorCode, message);
     }
 
+    public MongoServerError(ErrorCode errorCode, String message) {
+        this(errorCode.getValue(), errorCode.name(), message);
+    }
+
     public MongoServerError(int errorCode, String codeName, String message) {
         super("[Error " + errorCode + "] " + message);
         this.errorCode = errorCode;

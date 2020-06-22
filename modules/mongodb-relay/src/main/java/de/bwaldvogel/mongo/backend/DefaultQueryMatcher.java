@@ -22,6 +22,7 @@ import de.bwaldvogel.mongo.exception.BadValueException;
 import de.bwaldvogel.mongo.exception.FailedToParseException;
 import de.bwaldvogel.mongo.exception.MongoServerError;
 import de.bwaldvogel.mongo.exception.MongoServerException;
+import de.bwaldvogel.mongo.exception.MongoServerNotYetImplementedException;
 
 public class DefaultQueryMatcher implements QueryMatcher {
 
@@ -134,7 +135,7 @@ public class DefaultQueryMatcher implements QueryMatcher {
             }
 
             // handle $all
-            if (queryValue instanceof Document && ((Document) queryValue).keySet().contains(QueryOperator.ALL.getValue())) {
+            if (queryValue instanceof Document && ((Document) queryValue).containsKey(QueryOperator.ALL.getValue())) {
                 // clone first
                 queryValue = ((Document) queryValue).clone();
                 Object allQuery = ((Document) queryValue).remove(QueryOperator.ALL.getValue());
@@ -507,6 +508,10 @@ public class DefaultQueryMatcher implements QueryMatcher {
                 return matchTypes(value, expressionValue);
             case ELEM_MATCH:
                 return checkMatchesElemValues(expressionValue, value);
+            case NEAR_SPHERE:
+                return checkNearSphere(expressionValue, value);
+            case GEO_WITHIN:
+                return checkGeoWithin(expressionValue, value);
             default:
                 throw new IllegalArgumentException("unhandled query operator: " + queryOperator);
         }
@@ -551,4 +556,15 @@ public class DefaultQueryMatcher implements QueryMatcher {
 
         return value.getClass().equals(expressionValue.getClass());
     }
+
+    private boolean checkNearSphere(Object expressionValue, Object value) {
+        log.debug("Expression value: {}, value: {}", expressionValue, value);
+        throw new MongoServerNotYetImplementedException(132, QueryOperator.NEAR_SPHERE.getValue());
+    }
+
+    private boolean checkGeoWithin(Object expressionValue, Object value) {
+        log.debug("Expression value: {}, value: {}", expressionValue, value);
+        throw new MongoServerNotYetImplementedException(132, QueryOperator.GEO_WITHIN.getValue());
+    }
+
 }

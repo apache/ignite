@@ -10,7 +10,7 @@ import de.bwaldvogel.mongo.backend.Missing;
 
 public class AddToSetAccumulator extends Accumulator {
 
-    private Set<Object> result = new LinkedHashSet<>();
+    private final Set<Object> result = new LinkedHashSet<>();
 
     public AddToSetAccumulator(String field, Object expression) {
         super(field, expression);

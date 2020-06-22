@@ -7,7 +7,7 @@ public class IndexNotFoundException extends MongoServerError {
     private static final long serialVersionUID = 1L;
 
     public IndexNotFoundException(Document keys) {
-        super(27, "IndexNotFound", "can't find index with key: "
+        super(ErrorCode.IndexNotFound, "can't find index with key: "
             + keys.toString(true, "{ ", " }"));
     }
 

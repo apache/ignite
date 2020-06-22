@@ -7,7 +7,7 @@ import de.bwaldvogel.mongo.backend.Missing;
 
 public class PushAccumulator extends Accumulator {
 
-    private List<Object> result = new ArrayList<>();
+    private final List<Object> result = new ArrayList<>();
 
     public PushAccumulator(String field, Object expression) {
         super(field, expression);

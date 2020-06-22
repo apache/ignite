@@ -7,8 +7,8 @@ public class MongoQuery extends ClientRequest {
 
     private final Document query;
     private final Document returnFieldSelector;
-    private int numberToSkip;
-    private int numberToReturn;
+    private final int numberToSkip;
+    private final int numberToReturn;
 
     public MongoQuery(Channel channel, MessageHeader header, String fullCollectionName, int numberToSkip,
             int numberToReturn, Document query, Document returnFieldSelector) {

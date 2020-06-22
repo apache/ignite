@@ -10,8 +10,7 @@ public class CannotIndexParallelArraysError extends KeyConstraintError {
     private static final long serialVersionUID = 1L;
 
     public CannotIndexParallelArraysError(Collection<String> paths) {
-        super(171, "CannotIndexParallelArrays",
-            "cannot index parallel arrays " + formatPaths(paths));
+        super(ErrorCode.CannotIndexParallelArrays, "cannot index parallel arrays " + formatPaths(paths));
     }
 
     private static String formatPaths(Collection<String> paths) {

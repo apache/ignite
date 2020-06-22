@@ -29,7 +29,7 @@ public class DuplicateKeyError extends KeyConstraintError {
     }
 
     public DuplicateKeyError(String collectionFullName, String message) {
-        super(11000, "DuplicateKey",
+        super(ErrorCode.DuplicateKey,
             "E11000 duplicate key error collection: " + collectionFullName + " index: " + message);
     }
 

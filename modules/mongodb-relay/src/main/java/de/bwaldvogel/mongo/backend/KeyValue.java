@@ -15,6 +15,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import de.bwaldvogel.mongo.bson.Json;
+
 
 public class KeyValue implements Externalizable {
 
@@ -67,7 +69,9 @@ public class KeyValue implements Externalizable {
 
     @Override
     public String toString() {
-        return values.toString();
+        return stream()
+            .map((Object value) -> { return ": " + Json.toJsonValue(value, true, "{ ", " }");})
+            .collect(Collectors.joining(", ", "{ ", " }"));
     }
 
     public Stream<Object> stream() {

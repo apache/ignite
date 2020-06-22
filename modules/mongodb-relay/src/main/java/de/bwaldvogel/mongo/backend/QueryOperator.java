@@ -25,9 +25,11 @@ public enum QueryOperator {
     ALL("$all"),
     ELEM_MATCH("$elemMatch"),
     TYPE("$type"),
+    NEAR_SPHERE("$nearSphere"),
+    GEO_WITHIN("$geoWithin"),
     ;
 
-    private String value;
+    private final String value;
 
     QueryOperator(String value) {
         this.value = value;
@@ -47,11 +49,11 @@ public enum QueryOperator {
     }
 
     static QueryOperator fromValue(String value) throws MongoServerError {
-        QueryOperator op = MAP.get(value);
-        if (op == null) {
+        QueryOperator operator = MAP.get(value);
+        if (operator == null) {
             throw new BadValueException("unknown operator: " + value);
         }
-        return op;
+        return operator;
     }
 
 }

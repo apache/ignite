@@ -1,6 +1,7 @@
 package de.bwaldvogel.mongo.backend;
 
 import static de.bwaldvogel.mongo.backend.Constants.ID_FIELD;
+import static de.bwaldvogel.mongo.backend.Constants.PRIMARY_KEY_INDEX_NAME;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -215,7 +216,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
     @VisibleForExternalBackends
     protected static Document getPrimaryKeyIndexDescription(String namespace) {
         return new Document("key", new Document(ID_FIELD, 1))
-            .append("name", "_id_")
+            .append("name", Constants.PRIMARY_KEY_INDEX_NAME)
             .append("ns", namespace)
             .append("v", 2);
     }

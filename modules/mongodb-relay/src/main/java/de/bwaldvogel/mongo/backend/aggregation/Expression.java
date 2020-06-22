@@ -4,6 +4,7 @@ import static de.bwaldvogel.mongo.backend.Missing.isNeitherNullNorMissing;
 import static de.bwaldvogel.mongo.backend.Missing.isNullOrMissing;
 import static de.bwaldvogel.mongo.backend.Utils.describeType;
 import static de.bwaldvogel.mongo.bson.Json.toJsonValue;
+import static java.util.Arrays.asList;
 
 import java.nio.charset.StandardCharsets;
 import java.time.DateTimeException;
@@ -16,9 +17,9 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.time.temporal.IsoFields;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -277,7 +278,7 @@ public enum Expression implements ExpressionTraits {
 
             if (expressionValue.size() == 1 && CollectionUtils.getSingleElement(expressionValue) instanceof Document) {
                 Document condDocument = (Document) CollectionUtils.getSingleElement(expressionValue);
-                List<String> requiredKeys = Arrays.asList("if", "then", "else");
+                List<String> requiredKeys = asList("if", "then", "else");
                 for (String requiredKey : requiredKeys) {
                     if (!condDocument.containsKey(requiredKey)) {
                         throw new MongoServerError(17080, "Missing '" + requiredKey + "' parameter to " + name());
@@ -339,7 +340,7 @@ public enum Expression implements ExpressionTraits {
             }
 
             // validate unsupported parameters
-            List<String> supportedKeys = Arrays.asList("date", "format", "timezone", "onNull");
+            List<String> supportedKeys = asList("date", "format", "timezone", "onNull");
             for (String key : dateToStringDocument.keySet()) {
                 if (!supportedKeys.contains(key)) {
                     throw new MongoServerError(18534, "Unrecognized parameter to " + name() + ": " + key);
@@ -435,7 +436,7 @@ public enum Expression implements ExpressionTraits {
 
                 // append literals (after format specifier)
                 if (hasFormatSpecifier && part.length() > 2) {
-                    builder.appendLiteral(part.substring(2, part.length()));
+                    builder.appendLiteral(part.substring(2));
                 }
             }
             return builder;
@@ -483,7 +484,7 @@ public enum Expression implements ExpressionTraits {
         @Override
         Object apply(Object expressionValue, Document document) {
             Document filterExpression = requireDocument(expressionValue, 28646);
-            List<String> requiredKeys = Arrays.asList("input", "cond");
+            List<String> requiredKeys = asList("input", "cond");
             for (String requiredKey : requiredKeys) {
                 if (!filterExpression.containsKey(requiredKey)) {
                     throw new MongoServerError(28648, "Missing '" + requiredKey + "' parameter to " + name());
@@ -491,7 +492,7 @@ public enum Expression implements ExpressionTraits {
             }
 
             for (String key : filterExpression.keySet()) {
-                if (!Arrays.asList("input", "cond", "as").contains(key)) {
+                if (!asList("input", "cond", "as").contains(key)) {
                     throw new MongoServerError(28647, "Unrecognized parameter to " + name() + ": " + key);
                 }
             }
@@ -706,7 +707,7 @@ public enum Expression implements ExpressionTraits {
         @Override
         Object apply(Object expressionValue, Document document) {
             Document filterExpression = requireDocument(expressionValue, 16878);
-            List<String> requiredKeys = Arrays.asList("input", "in");
+            List<String> requiredKeys = asList("input", "in");
             for (String requiredKey : requiredKeys) {
                 if (!filterExpression.containsKey(requiredKey)) {
                     throw new MongoServerError(16882, "Missing '" + requiredKey + "' parameter to " + name());
@@ -714,7 +715,7 @@ public enum Expression implements ExpressionTraits {
             }
 
             for (String key : filterExpression.keySet()) {
-                if (!Arrays.asList("input", "in", "as").contains(key)) {
+                if (!asList("input", "in", "as").contains(key)) {
                     throw new MongoServerError(16879, "Unrecognized parameter to " + name() + ": " + key);
                 }
             }
@@ -756,7 +757,7 @@ public enum Expression implements ExpressionTraits {
         @Override
         Object apply(Object expressionValue, Document document) {
             Document reduceExpression = requireDocument(expressionValue, 40075);
-            List<String> requiredKeys = Arrays.asList("input", "initialValue", "in");
+            List<String> requiredKeys = asList("input", "initialValue", "in");
             for (String requiredKey : requiredKeys) {
                 if (!reduceExpression.containsKey(requiredKey)) {
                     throw new MongoServerError(40079, "Missing '" + requiredKey + "' parameter to " + name());
@@ -764,7 +765,7 @@ public enum Expression implements ExpressionTraits {
             }
 
             for (String key : reduceExpression.keySet()) {
-                if (!Arrays.asList("input", "initialValue", "in").contains(key)) {
+                if (!asList("input", "initialValue", "in").contains(key)) {
                     throw new MongoServerError(40076, "Unrecognized parameter to " + name() + ": " + key);
                 }
             }
@@ -1413,9 +1414,9 @@ public enum Expression implements ExpressionTraits {
         Object apply(List<?> expressionValue, Document document) {
             return evaluateDate(expressionValue, LocalDate::getYear, document);
         }
-    },
+    };
 
-    ;
+    private static final Set<String> KEYWORD_EXPRESSIONS = new HashSet<>(asList("$$PRUNE", "$$KEEP", "$$DESCEND"));
 
     private static Collection<?> getValues(List<?> expressionValue) {
         Collection<?> values = expressionValue;
@@ -1462,6 +1463,9 @@ public enum Expression implements ExpressionTraits {
 
     static Object evaluate(Object expression, Document document) {
         if (expression instanceof String && ((String) expression).startsWith("$")) {
+            if (KEYWORD_EXPRESSIONS.contains(expression)) {
+                return expression;
+            }
             String value = ((String) expression).substring(1);
             if (value.startsWith("$")) {
                 if (value.equals("$ROOT")) {

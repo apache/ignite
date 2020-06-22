@@ -6,7 +6,7 @@ public class LimitedList<E> extends ArrayList<E> {
 
     private static final long serialVersionUID = -4265811949513159615L;
 
-    private int limit;
+    private final int limit;
 
     LimitedList(int limit) {
         this.limit = limit;

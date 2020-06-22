@@ -6,7 +6,7 @@ import de.bwaldvogel.mongo.bson.Document;
 
 public class DocumentComparator implements Comparator<Document> {
 
-    private Document orderBy;
+    private final Document orderBy;
 
     public DocumentComparator(Document orderBy) {
         Assert.notNull(orderBy);

@@ -5,10 +5,10 @@ import io.netty.channel.Channel;
 
 public class MongoUpdate extends ClientRequest {
 
-    private Document selector;
-    private Document update;
-    private boolean upsert;
-    private boolean multi;
+    private final Document selector;
+    private final Document update;
+    private final boolean upsert;
+    private final boolean multi;
 
     public MongoUpdate(Channel channel, MessageHeader header, String fullCollectionName, Document selector,
                        Document update, boolean upsert, boolean multi) {

@@ -64,10 +64,7 @@ public final class ComposeKeyValue extends KeyValue implements Externalizable {
 		return hashCode;
 	}
 
-	@Override
-	public String toString() {
-		return Arrays.toString(values);
-	}
+
 
 	public Stream<Object> stream() {
 		return Arrays.stream(values);

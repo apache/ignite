@@ -7,7 +7,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-import de.bwaldvogel.mongo.bson.*;
+import de.bwaldvogel.mongo.bson.BsonRegularExpression;
+import de.bwaldvogel.mongo.bson.BsonTimestamp;
+import de.bwaldvogel.mongo.bson.Decimal128;
+import de.bwaldvogel.mongo.bson.Document;
+import de.bwaldvogel.mongo.bson.LegacyUUID;
+import de.bwaldvogel.mongo.bson.MaxKey;
+import de.bwaldvogel.mongo.bson.MinKey;
+import de.bwaldvogel.mongo.bson.ObjectId;
 
 public class ValueComparator implements Comparator<Object> {
 
@@ -37,6 +44,7 @@ public class ValueComparator implements Comparator<Object> {
         /*
          * https://docs.mongodb.com/manual/reference/bson-type-comparison-order/
          */
+        SORT_PRIORITY.add(MinKey.class);
         SORT_PRIORITY.add(Number.class);
         SORT_PRIORITY.add(String.class);
         SORT_PRIORITY.add(Document.class);
@@ -72,6 +80,12 @@ public class ValueComparator implements Comparator<Object> {
     }
 
     static int compareTypes(Object value1, Object value2) {
+        if (value1 instanceof MinKey && value2 == null) {
+            return -1;
+        } else if (value2 instanceof MinKey && value1 == null) {
+            return 1;
+        }
+
         if (Missing.isNullOrMissing(value1) && Missing.isNullOrMissing(value2)) {
             return 0;
         } else if (Missing.isNullOrMissing(value1)) {
@@ -148,9 +162,9 @@ public class ValueComparator implements Comparator<Object> {
         }
 
         if (BsonTimestamp.class.isAssignableFrom(clazz)) {
-            BsonTimestamp bt1 = (BsonTimestamp) value1;
-            BsonTimestamp bt2 = (BsonTimestamp) value2;
-            return Long.compare(bt1.getTimestamp(), bt2.getTimestamp());
+            BsonTimestamp bsonTimestamp1 = (BsonTimestamp) value1;
+            BsonTimestamp bsonTimestamp2 = (BsonTimestamp) value2;
+            return bsonTimestamp1.compareTo(bsonTimestamp2);
         }
 
         if (Boolean.class.isAssignableFrom(clazz)) {
