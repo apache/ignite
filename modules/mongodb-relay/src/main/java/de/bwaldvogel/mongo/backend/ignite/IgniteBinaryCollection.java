@@ -85,10 +85,12 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
     @Override
     protected Object addDocumentInternal(Document document) {
-        final Object key;
+        Object key = null;
         if (idField != null) {
-            key = Utils.getSubdocumentValue(document, idField);
-        } else {
+            key = document.get(idField);
+        } 
+        
+        if(key==null || key==Missing.getInstance()) {
             key = UUID.randomUUID();
         }
         
@@ -222,7 +224,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 				else if($value instanceof Document){
 					Document $arr = (Document)$value;
 					//-$value = new HashMap<String,Object>($arr);
-					$value = ($arr.asMap());
+					//$value = ($arr.asMap());
 				}
 				else if($value instanceof Map){
 					Map $arr = (Map)$value;

@@ -73,7 +73,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
                 log.debug("opened collection '{}'", collectionName);
             }
 
-            MongoCollection<P> indexCollection = openOrCreateCollection(INDEXES_COLLECTION_NAME, "name");
+            MongoCollection<P> indexCollection = openOrCreateCollection(INDEXES_COLLECTION_NAME, ID_FIELD);
             collections.put(indexCollection.getCollectionName(), indexCollection);
             this.indexes.set(indexCollection);
             for (Document indexDescription : indexCollection.queryAll()) {
@@ -751,7 +751,14 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
     private MongoCollection<P> getOrCreateIndexesCollection() {
         synchronized (indexes) {
             if (indexes.get() == null) {
-                MongoCollection<P> indexCollection = openOrCreateCollection(INDEXES_COLLECTION_NAME, "name");
+                MongoCollection<P> indexCollection = openOrCreateCollection(INDEXES_COLLECTION_NAME, ID_FIELD);
+                Document indexDescription = new Document("ns",indexCollection.getCollectionName());
+                indexDescription.append("unique", 1);
+                indexDescription.append("name", "ns_name_1");
+                Document keys = new Document();
+                keys.append("ns", 1).append("name", 1);
+                indexDescription.append("key", keys);
+                //this.openOrCreateIndex(indexDescription);
                 addNamespace(indexCollection);
                 indexes.set(indexCollection);
             }

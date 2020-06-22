@@ -20,8 +20,7 @@
 const _ = require('lodash');
 const http = require('http');
 const https = require('https');
-const MigrateMongoose = require('migrate-mongoose');
-const mongoose = require('mongoose');
+const MigrateMongoose = require('migrate-mongoose-typescript');
 
 /**
  * Event listener for HTTP server "error" event.
@@ -81,15 +80,15 @@ const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
 /**
  * Run mongo model migration.
  *
- * @param dbConnectionUri Mongo connection url.
+ * @param connection Mongo connection.
  * @param group Migrations group.
  * @param migrationsPath Migrations path.
  * @param collectionName Name of collection where migrations write info about applied scripts.
  */
-const migrate = (dbConnectionUri, group, migrationsPath, collectionName) => {
+const migrate = (connection, group, migrationsPath, collectionName) => {
     const migrator = new MigrateMongoose({
         migrationsPath,
-        dbConnectionUri,
+        connection,
         collectionName,
         autosync: true
     });
@@ -111,21 +110,4 @@ const migrate = (dbConnectionUri, group, migrationsPath, collectionName) => {
         });
 };
 
-/**
- * Check version of used MongoDB.
- */
-const checkMongo = () => {
-    const versionValid = (mijor, minor) => mijor === 3 && minor >= 0 && minor <= 4;
-
-    const admin = new mongoose.mongo.Admin(mongoose.connection.db, null, global.Promise);
-
-    return admin.buildInfo()
-        .then((info) => {
-            const versions = info.version.split('.');
-
-            if (!versionValid(parseInt(versions[0]), parseInt(versions[1])))
-                throw Error(`Unsupported version of MongoDB ${info.version}. Supported versions: 3.2.x-3.4.x`);
-        });
-};
-
-module.exports = { checkMongo, migrate, init };
+module.exports = { migrate, init };

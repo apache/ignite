@@ -74,10 +74,12 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
 
     @Override
     protected Object addDocumentInternal(Document document) {
-        final Object key;
+    	Object key = null;
         if (idField != null) {
-            key = Utils.getSubdocumentValue(document, idField);
-        } else {
+            key = document.get(idField);
+        } 
+        
+        if(key==null || key==Missing.getInstance()) {
             key = UUID.randomUUID();
         }
         

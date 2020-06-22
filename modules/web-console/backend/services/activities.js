@@ -23,14 +23,14 @@ const _ = require('lodash');
 
 module.exports = {
     implements: 'services/activities',
-    inject: ['mongo','services/utils']
+    inject: ['mongo']
 };
 
 /**
  * @param mongo
  * @returns {ActivitiesService}
  */
-module.exports.factory = (mongo,utilsService) => {
+module.exports.factory = (mongo) => {
     class ActivitiesService {
         /**
          * Update page activities.
@@ -74,9 +74,7 @@ module.exports.factory = (mongo,utilsService) => {
                     _id: {owner: '$owner', group: '$group'},
                     amount: {$sum: '$amount'}
                 }}
-            ]).cursor({batchSize:1000,async: true}).exec().then((data) => {
-            	data = utilsService.cursor_to_array(data);
-            	console.log(data);
+            ]).exec().then((data) => {
                 return _.reduce(data, (acc, { _id, amount }) => {
                     const {owner, group} = _id;
                     acc[owner] = _.merge(acc[owner] || {}, { [group]: amount });
@@ -99,9 +97,7 @@ module.exports.factory = (mongo,utilsService) => {
             return mongo.Activities.aggregate([
                 {$match},
                 {$group: {_id: {owner: '$owner', action: '$action'}, total: {$sum: '$amount'}}}
-            ]).cursor({batchSize:1000,async: true}).exec().then((data) => {
-            	data = utilsService.cursor_to_array(data)
-            	console.log(data);
+            ]).exec().then((data) => {
                 return _.reduce(data, (acc, { _id, total }) => {
                     const {owner, action} = _id;
                     acc[owner] = _.merge(acc[owner] || {}, { [action]: total });

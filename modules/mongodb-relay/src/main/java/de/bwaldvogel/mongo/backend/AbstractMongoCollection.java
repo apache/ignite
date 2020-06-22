@@ -184,7 +184,7 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
             if (!existingIndex.hasSameOptions(index)) {
                 throw new IndexOptionsConflictException(existingIndex);
             }
-            log.debug("Index with name '{}' already exists", index.getName());
+            log.debug("Index with name '{}' already exists", index.getName());           
             return;
         }
         if (index.isEmpty()) {

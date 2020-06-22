@@ -26,9 +26,6 @@ module.exports = {
     inject: ['errors', 'settings', 'mongo', 'services/spaces', 'services/mails', 'services/activities', 'services/utils', 'agents-handler']
 };
 
-
-
-
 /**
  * @param mongo
  * @param errors
@@ -163,29 +160,6 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
          *
          * @returns {mongo.Account[]} - returns all accounts with counters object
          */
-        static list_all(params) {
-        	
-        	//const ret0 = mongo.Account.find({});
-        	//console.log(ret0); 
-        	//return ret0;
-        	
-        	 const aUsers = mongo.Account.aggregate(
-                 {$lookup: {from: 'spaces', localField: '_id', foreignField: 'owner', as: 'spaces'}}
-                 
-             );
-        	
-        	 aUsers.cursor({batchSize:100,async: true});
-        	 const ret = aUsers.exec();
-        	 console.log(ret); 
-        	 return utilsService.cursor_to_arra(ret);
-        }
-       
-        
-        /**
-         * Get list of user accounts and summary information.
-         *
-         * @returns {mongo.Account[]} - returns all accounts with counters object
-         */
         static list(params) {
             return Promise.all([
                 Promise.all([
@@ -211,54 +185,34 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                             }
                         }},
                         { $sort: {firstName: 1, lastName: 1}}
-                    ]).cursor({batchSize:100,async: false}).exec(),
-                    mongo.Cluster.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).cursor({batchSize:100,async: false}).exec(),
-                    mongo.Cache.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).cursor({batchSize:100,async: false}).exec(),
-                    mongo.DomainModel.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).cursor({batchSize:100,async: false}).exec(),
-                    mongo.Igfs.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).cursor({batchSize:100,async: false}).exec()
+                    ]).exec(),
+                    mongo.Cluster.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec(),
+                    mongo.Cache.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec(),
+                    mongo.DomainModel.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec(),
+                    mongo.Igfs.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec()
                 ]).then(([users, clusters, caches, models, igfs]) => {
-                	
-                	users = utilsService.cursor_to_array(users);                	
-                	clusters = utilsService.cursor_to_array(clusters);
-                	caches = utilsService.cursor_to_array(caches);
-                	models = utilsService.cursor_to_array(models);
-                	igfs = utilsService.cursor_to_array(igfs);
-                	
-                	console.log("count list to map:");
-                	
                     const clustersMap = _.mapValues(_.keyBy(clusters, '_id'), 'count');
-                    console.log(clustersMap);
-                    
                     const cachesMap = _.mapValues(_.keyBy(caches, '_id'), 'count');
-                    
                     const modelsMap = _.mapValues(_.keyBy(models, '_id'), 'count');
-                    
-                    console.log(modelsMap);
                     const igfsMap = _.mapValues(_.keyBy(igfs, '_id'), 'count');
-                    
-                    
-                    var list = [];
-                    var uf = function(user){                    	
+
+                    _.forEach(users, (user) => {
                         const counters = user.counters = {};
-                        
+
                         counters.clusters = _.sumBy(user.spaces, ({_id}) => clustersMap[_id]) || 0;
                         counters.caches = _.sumBy(user.spaces, ({_id}) => cachesMap[_id]) || 0;
                         counters.models = _.sumBy(user.spaces, ({_id}) => modelsMap[_id]) || 0;
                         counters.igfs = _.sumBy(user.spaces, ({_id}) => igfsMap[_id]) || 0;
-                       
+
                         delete user.spaces;
-                    }
-                   
-                    _.forEach(users,uf);
-                   
+                    });
+
                     return users;
                 }),
                 activitiesService.total(params),
                 activitiesService.detail(params)
             ])
                 .then(([users, activitiesTotal, activitiesDetail]) => {
-                	console.log('activitiesTotal:');
-                	console.log(activitiesTotal);
                     _.forEach(users, (user) => {
                         user.activitiesTotal = activitiesTotal[user._id];
                         user.activitiesDetail = activitiesDetail[user._id];

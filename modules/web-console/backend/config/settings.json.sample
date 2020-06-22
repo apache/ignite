@@ -13,7 +13,6 @@
     "rejectUnauthorized": false,
     "disable": {
       "signup": false
-
     }
   },
   "mongodb": {
