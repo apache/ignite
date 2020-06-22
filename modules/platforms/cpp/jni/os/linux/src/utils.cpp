@@ -39,6 +39,7 @@ namespace ignite
         const char* JAVA_HOME = "JAVA_HOME";
         const char* JAVA_DLL1 = "/jre/lib/amd64/server/libjvm.so";
         const char* JAVA_DLL2 = "/lib/server/libjvm.so";
+        const char* JAVA_DLL_DARWIN = "libjvm.dylib";
 
         const char* IGNITE_HOME = "IGNITE_HOME";
 
@@ -304,6 +305,9 @@ namespace ignite
 
         std::string FindJvmLibrary(const std::string& path)
         {
+#ifdef __APPLE__
+            return JAVA_DLL_DARWIN;
+#else
             // If path is provided explicitly, then check only it.
             if (!path.empty() && FileExists(path))
                 return path;
@@ -324,13 +328,18 @@ namespace ignite
             }
 
             return std::string();
+#endif
         }
 
         bool LoadJvmLibrary(const std::string& path)
         {
+#ifdef __APPLE__
+            return RTLD_DEFAULT;
+#else
             void* hnd = dlopen(path.c_str(), RTLD_LAZY);
             
             return hnd != NULL;
+#endif
         }
 
         /**

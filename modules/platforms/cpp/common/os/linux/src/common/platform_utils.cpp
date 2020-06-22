@@ -114,8 +114,11 @@ namespace ignite
 
         StdCharOutStream& Dle(StdCharOutStream& ostr)
         {
+#ifdef __APPLE__
+            static const char expansion[] = ".dylib";
+#else
             static const char expansion[] = ".so";
-
+#endif
             ostr.write(expansion, sizeof(expansion) - 1);
 
             return ostr;
