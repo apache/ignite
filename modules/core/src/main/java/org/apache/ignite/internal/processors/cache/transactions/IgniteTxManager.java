@@ -3202,9 +3202,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * Profiles transaction.
      *
      * @param tx Transaction.
-     * @param commit {@code True} if transaction commited.
+     * @param commited {@code True} if transaction commited.
      */
-    private void profile(IgniteInternalTx tx, boolean commit) {
+    private void profile(IgniteInternalTx tx, boolean commited) {
         if (!cctx.kernalContext().metric().profilingEnabled() || tx.startTimeNanos() == 0)
             return;
 
@@ -3212,7 +3212,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             tx.txState().cacheIds(),
             tx.startTime(),
             System.nanoTime() - tx.startTimeNanos(),
-            commit);
+            commited);
     }
 
     /**
