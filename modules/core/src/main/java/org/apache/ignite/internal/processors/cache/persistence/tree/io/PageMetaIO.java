@@ -95,8 +95,8 @@ public class PageMetaIO extends PageIO {
         setLastSuccessfulSnapshotTag(pageAddr, 0);
         setLastAllocatedPageCount(pageAddr, 0);
         setCandidatePageCount(pageAddr, 0);
-        setEncryptionPageIdx(pageAddr, 0);
-        setEncryptionPagesCount(pageAddr, 0);
+        setEncryptPageIndex(pageAddr, 0);
+        setEncryptPageCount(pageAddr, 0);
     }
 
     /**
@@ -258,20 +258,20 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
-     * @return Current encryption page index.
+     * @return Index of the last reencrypted page.
      */
-    public int getEncryptionPageIdx(long pageAddr) {
+    public int getEncryptPageIndex(long pageAddr) {
         return PageUtils.getInt(pageAddr, ENCRYPT_PAGE_IDX_OFF);
     }
 
     /**
      * @param pageAddr Page address.
-     * @param pageIdx Encryption page index..
+     * @param pageIdx Index of the last reencrypted page.
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    public boolean setEncryptionPageIdx(long pageAddr, int pageIdx) {
-        if (getEncryptionPageIdx(pageAddr) == pageIdx)
+    public boolean setEncryptPageIndex(long pageAddr, int pageIdx) {
+        if (pageIdx < 0 || getEncryptPageIndex(pageAddr) == pageIdx)
             return false;
 
         PageUtils.putLong(pageAddr, ENCRYPT_PAGE_IDX_OFF, pageIdx);
@@ -281,20 +281,20 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
-     * @return Encryption pages count.
+     * @return Total pages to be reencrypted.
      */
-    public int getEncryptionPagesCount(long pageAddr) {
+    public int getEncryptPageCount(long pageAddr) {
         return PageUtils.getInt(pageAddr, ENCRYPT_PAGE_MAX_OFF);
     }
 
     /**
      * @param pageAddr Page address.
-     * @param pagesCnt Encryption pages count.
+     * @param pagesCnt Total pages to be reencrypted.
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    public boolean setEncryptionPagesCount(long pageAddr, int pagesCnt) {
-        if (getEncryptionPagesCount(pageAddr) == pagesCnt)
+    public boolean setEncryptPageCount(long pageAddr, int pagesCnt) {
+        if (pagesCnt < 0 || getEncryptPageCount(pageAddr) == pagesCnt)
             return false;
 
         PageUtils.putInt(pageAddr, ENCRYPT_PAGE_MAX_OFF, pagesCnt);
@@ -311,6 +311,8 @@ public class PageMetaIO extends PageIO {
             .a(",\n\tlastSuccessfulSnapshotTag=").a(getLastSuccessfulSnapshotTag(addr))
             .a(",\n\tlastAllocatedPageCount=").a(getLastAllocatedPageCount(addr))
             .a(",\n\tcandidatePageCount=").a(getCandidatePageCount(addr))
+            .a(",\n\tencryptPageIndex=").a(getEncryptPageIndex(addr))
+            .a(",\n\tencryptPageCount=").a(getEncryptPageCount(addr))
             .a("\n]");
     }
 }

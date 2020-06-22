@@ -171,12 +171,23 @@ public interface PageStore extends Closeable {
      */
     void punchHole(long pageId, int usefulBytes);
 
-    public int encryptedPagesCount();
+    /**
+     * @return Index of the last reencrypted page.
+     */
+    public int encryptPageIndex();
 
-    // todo should not clash with pages adding
-    public void encryptedPagesCount(int pagesCnt);
+    /**
+     * @param pageIdx Index of the last reencrypted page.
+     */
+    public void encryptPageIndex(int pageIdx);
 
-    public int encryptedPagesOffset();
+    /**
+     * @return Total pages to be reencrypted.
+     */
+    public int encryptPageCount();
 
-    public void encryptedPagesOffset(int pagesCnt);
+    /**
+     * @param pagesCnt Total pages to be reencrypted.
+     */
+    public void encryptPageCount(int pagesCnt);
 }

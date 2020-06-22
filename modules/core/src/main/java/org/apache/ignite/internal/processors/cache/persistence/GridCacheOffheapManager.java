@@ -56,7 +56,8 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecordV2;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecordV3;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
@@ -373,7 +374,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 });
         }
 
-        updateEncryptionStatus(grp.groupId(), PageIdAllocator.INDEX_PARTITION);
+        if (!encryptionDisabled && grp.persistenceEnabled())
+            saveIndexReencryptionStatus(grp.groupId());
     }
 
     /**
@@ -490,12 +492,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         changed |= io.setGlobalRemoveId(partMetaPageAddr, rmvId);
                         changed |= io.setSize(partMetaPageAddr, size);
 
+                        int encryptIdx = -1;
+                        int encryptCnt = -1;
+
                         if (!encryptionDisabled && grp.persistenceEnabled() && !beforeDestroy) {
-                            FilePageStoreManager pageStoreMgr = ((FilePageStoreManager)this.ctx.pageStore());
+                            PageStore pageStore = ((FilePageStoreManager)this.ctx.pageStore()).getStore(grpId, part.id());
 
-                            PageStore pageStore = pageStoreMgr.getStore(grpId, part.id());
+                            encryptIdx = pageStore.encryptPageIndex();
+                            encryptCnt = pageStore.encryptPageCount();
 
-                            changed |= updateEncryptionStatusUnlocked(pageStore, partMetaPageAddr, io);
+                            changed |= saveReencryptionStatus(pageStore, partMetaPageAddr, io, encryptIdx, encryptCnt);
                         }
 
                         if (state != null)
@@ -565,7 +571,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             pageCnt = io.getCandidatePageCount(partMetaPageAddr);
 
                         if (changed && PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
-                            wal.log(new MetaPageUpdatePartitionDataRecordV2(
+                            wal.log(new MetaPageUpdatePartitionDataRecordV3(
                                 grpId,
                                 partMetaId,
                                 updCntr,
@@ -574,7 +580,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 cntrsPageId,
                                 state == null ? -1 : (byte)state.ordinal(),
                                 pageCnt,
-                                link
+                                link,
+                                encryptIdx,
+                                encryptCnt
                             ));
                     }
                     finally {
@@ -900,68 +908,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
     }
 
-    private boolean updateEncryptionStatus(int grpId, int partId) throws IgniteCheckedException {
-        boolean changed = false;
-
-        PageStore pageStore = ((FilePageStoreManager)this.ctx.pageStore()).getStore(grpId, partId);
-
-        int pagesCnt = pageStore.encryptedPagesCount();
-
-        if (pagesCnt == 0)
-            return false;
-
-        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
-
-        long metaPageId = pageMem.metaPageId(grpId);
-        long metaPage = pageMem.acquirePage(grpId, metaPageId);
-
-        try {
-            long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
-
-            try {
-                PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
-
-                updateEncryptionStatusUnlocked(pageStore, metaPageAddr, metaIo);
-            }
-            finally {
-                pageMem.writeUnlock(grpId, metaPageId, metaPage, null, changed);
-            }
-        }
-        finally {
-            pageMem.releasePage(grpId, metaPageId, metaPage);
-        }
-
-        return changed;
-    }
-
-    private boolean updateEncryptionStatusUnlocked(PageStore pageStore, long pageAddr, PageMetaIO io) {
-        int pagesCnt = pageStore.encryptedPagesCount();
-        boolean changed = false;
-
-        if (pagesCnt != 0) {
-            int off = pageStore.encryptedPagesOffset();
-
-            if (log.isInfoEnabled())
-                log.info("(save meta) update status [off=" + off + ", cnt=" + pagesCnt + ", path=" + ((FilePageStore)pageStore).getFileAbsolutePath() + "]");
-
-            if (off == pagesCnt) {
-                off = 0;
-                pagesCnt = 0;
-
-                pageStore.encryptedPagesCount(0);
-                pageStore.encryptedPagesOffset(off);
-            }
-
-            // todo first time should save current pages count
-            changed |= io.setEncryptionPageIdx(pageAddr, off);
-            changed |= io.setEncryptionPagesCount(pageAddr, pagesCnt);
-
-            return changed;
-        }
-
-        return false;
-    }
-
     /**
      * @param part Local partition.
      * @param map Map to add values to.
@@ -1145,14 +1091,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     metastoreRoot = pageIO.getTreeRoot(pageAddr);
                     reuseListRoot = pageIO.getReuseListRoot(pageAddr);
 
-                    int encrPageCnt = pageIO.getEncryptionPagesCount(pageAddr);
+                    int encrPageCnt = pageIO.getEncryptPageCount(pageAddr);
 
                     if (encrPageCnt > 0) {
                         PageStore pageStore =
                             ((FilePageStoreManager)ctx.pageStore()).getStore(grpId, PageIdAllocator.INDEX_PARTITION);
 
-                        pageStore.encryptedPagesCount(encrPageCnt);
-                        pageStore.encryptedPagesOffset(pageIO.getEncryptionPageIdx(pageAddr));
+                        pageStore.encryptPageCount(encrPageCnt);
+                        pageStore.encryptPageIndex(pageIO.getEncryptPageIndex(pageAddr));
                     }
 
                     System.out.println("init meta " + grpId + " p=" + PageIdAllocator.INDEX_PARTITION + " pagesCnt=" + encrPageCnt);
@@ -1354,6 +1300,84 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
             }
         }
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @return {@code True} If status has been updated.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean saveIndexReencryptionStatus(int grpId) throws IgniteCheckedException {
+        boolean changed = false;
+
+        PageStore pageStore = ((FilePageStoreManager)ctx.pageStore()).getStore(grpId, PageIdAllocator.INDEX_PARTITION);
+
+        int pagesCnt = pageStore.encryptPageCount();
+
+        if (pagesCnt == 0)
+            return false;
+
+        int pageOffset = pageStore.encryptPageIndex();
+
+        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+        long metaPageId = pageMem.metaPageId(grpId);
+        long metaPage = pageMem.acquirePage(grpId, metaPageId);
+
+        try {
+            long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
+
+            try {
+                PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
+
+                changed = saveReencryptionStatus(pageStore, metaPageAddr, metaIo, pageOffset, pagesCnt);
+
+                IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
+
+                if (changed && PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaPageId, metaPage, wal, null))
+                    wal.log(new MetaPageUpdateDataRecord(grpId, metaPageId, pageOffset, pagesCnt));
+            }
+            finally {
+                pageMem.writeUnlock(grpId, metaPageId, metaPage, null, changed);
+            }
+        }
+        finally {
+            pageMem.releasePage(grpId, metaPageId, metaPage);
+        }
+
+        return changed;
+    }
+
+    /**
+     * @param pageStore Page store.
+     * @param pageAddr Page address.
+     * @param io IO.
+     * @param off Index of the last reencrypted page.
+     * @param cnt Total pages to be reencrypted.
+     * @return {@code True} If status has been updated.
+     */
+    private boolean saveReencryptionStatus(PageStore pageStore, long pageAddr, PageMetaIO io, int off, int cnt) {
+        if (cnt == 0)
+            return false;
+
+        boolean changed = false;
+
+        // todo remove
+        if (log.isInfoEnabled())
+            log.info("(save meta) update status [off=" + off + ", cnt=" + cnt + ", path=" + ((FilePageStore)pageStore).getFileAbsolutePath() + "]");
+
+        if (off == cnt) {
+            off = 0;
+            cnt = 0;
+
+            pageStore.encryptPageIndex(off);
+            pageStore.encryptPageCount(cnt);
+        }
+
+        changed |= io.setEncryptPageIndex(pageAddr, off);
+        changed |= io.setEncryptPageCount(pageAddr, cnt);
+
+        return changed;
     }
 
     /**
@@ -2069,13 +2093,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                 delegate0.restoreState(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes, data);
 
-                                int encrPageCnt = io.getEncryptionPagesCount(pageAddr);
+                                int encrPageCnt = io.getEncryptPageCount(pageAddr);
 
                                 if (encrPageCnt > 0) {
                                     PageStore pageStore = ((FilePageStoreManager)ctx.pageStore()).getStore(grpId, partId);
 
-                                    pageStore.encryptedPagesCount(encrPageCnt);
-                                    pageStore.encryptedPagesOffset(io.getEncryptionPageIdx(pageAddr));
+                                    pageStore.encryptPageCount(encrPageCnt);
+                                    pageStore.encryptPageIndex(io.getEncryptPageIndex(pageAddr));
                                 }
 
                                 if (log.isInfoEnabled())

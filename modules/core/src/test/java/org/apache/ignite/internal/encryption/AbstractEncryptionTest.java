@@ -361,10 +361,10 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                     continue;
 
                 String msg = String.format("p=%d, off=%d, total=%d",
-                    p, pageStore.encryptedPagesOffset(), pageStore.encryptedPagesCount());
+                    p, pageStore.encryptPageIndex(), pageStore.encryptPageCount());
 
-                assertEquals(msg, 0, pageStore.encryptedPagesCount());
-                assertEquals(msg, 0, pageStore.encryptedPagesOffset());
+                assertEquals(msg, 0, pageStore.encryptPageCount());
+                assertEquals(msg, 0, pageStore.encryptPageIndex());
 
                 long startPageId = PageIdUtils.pageId(p, PageIdAllocator.FLAG_DATA, 0);
 
@@ -431,7 +431,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         try {
             for (PageStore pageStore : pageStoreMgr.getStores(grpId)) {
-                if (pageStore.encryptedPagesOffset() != pageStore.encryptedPagesCount())
+                if (pageStore.encryptPageIndex() != pageStore.encryptPageCount())
                     return true;
             }
         } catch (IgniteCheckedException e) {

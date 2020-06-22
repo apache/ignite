@@ -124,11 +124,11 @@ public class FilePageStore implements PageStore {
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    /** Count of pages for re-encryption. */
-    private volatile int encPagesCnt;
+    /** Total pages to be reencrypted. */
+    private volatile int encryptPageCnt;
 
-    /** Count of pages for re-encryption. */
-    private volatile int encPagesOff;
+    /** Index of the last reencrypted page. */
+    private volatile int encryptPageIdx;
 
     /** */
     public FilePageStore(
@@ -396,9 +396,6 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-//            encPagesCnt = 0;
-//            encPagesOff = 0;
-
             this.tag = tag;
 
             fileIO.clear();
@@ -907,22 +904,22 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public int encryptedPagesCount() {
-        return encPagesCnt;
+    @Override public int encryptPageCount() {
+        return encryptPageCnt;
     }
 
     /** {@inheritDoc} */
-    @Override public void encryptedPagesCount(int encPagesCnt) {
-        this.encPagesCnt = encPagesCnt;
+    @Override public void encryptPageCount(int encPagesCnt) {
+        this.encryptPageCnt = encPagesCnt;
     }
 
     /** {@inheritDoc} */
-    @Override public int encryptedPagesOffset() {
-        return encPagesOff;
+    @Override public int encryptPageIndex() {
+        return encryptPageIdx;
     }
 
     /** {@inheritDoc} */
-    @Override public void encryptedPagesOffset(int encPagesOff) {
-        this.encPagesOff = encPagesOff;
+    @Override public void encryptPageIndex(int pageIdx) {
+        this.encryptPageIdx = pageIdx;
     }
 }

@@ -315,7 +315,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
         private IgniteInternalFuture<Void> scheduleScanner(int grpId, int partId, BooleanSupplier cpFinished) throws IgniteCheckedException {
             PageStore pageStore = ((FilePageStoreManager)ctx.cache().context().pageStore()).getStore(grpId, partId);
 
-            if (pageStore.encryptedPagesCount() == 0) {
+            if (pageStore.encryptPageCount() == 0) {
                 if (log.isDebugEnabled())
                     log.debug("Skipping partition re-encryption [grp=" + grpId + ", p=" + partId + "]");
 
@@ -392,11 +392,11 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
                 int pageSize = pageMem.realPageSize(grpId);
 
-                int pageNum = store.encryptedPagesOffset();
+                int pageNum = store.encryptPageIndex();
 
                 IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
 
-                int cnt = store.encryptedPagesCount();
+                int cnt = store.encryptPageCount();
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition re-encryption is started [" +
@@ -408,7 +408,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                         ctx.cache().context().database().checkpointReadLock();
 
                         try {
-                            if (isDone() || store.encryptedPagesCount() == 0)
+                            if (isDone() || store.encryptPageCount() == 0)
                                 break;
 
                             int end = Math.min(pageNum + batchSize, cnt);
@@ -451,7 +451,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                         }
                     }
 
-                    store.encryptedPagesOffset(pageNum);
+                    store.encryptPageIndex(pageNum);
 
                     if (timeoutBetweenBatches != 0 && !isDone())
                         U.sleep(timeoutBetweenBatches);
