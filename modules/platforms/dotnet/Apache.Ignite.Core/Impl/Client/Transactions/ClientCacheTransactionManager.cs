@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
+    using System;
+    using System.Diagnostics;
     using System.Threading;
     using System.Transactions;
-    using Apache.Ignite.Core.Client.Transactions;
+    using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Cache transaction enlistment manager, 
@@ -42,24 +44,99 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             _transactions = transactions;
         }
 
-        public void Prepare(PreparingEnlistment preparingEnlistment)
+        /// <summary>
+        /// If ambient transaction is present, starts an Ignite transaction and enlists it.
+        /// </summary>
+        public void StartTxIfNeeded()
         {
-            /* No-op. */
+            if (_enlistment.Value != null)
+            {
+                // We are already enlisted.
+                // .NET transaction mechanism allows nested transactions,
+                // and they can be processed differently depending on TransactionScopeOption.
+                // Ignite, however, allows only one active transaction per thread.
+                // Therefore we enlist only once on the first transaction that we encounter.
+                return;
+            }
+
+            var ambientTx = Transaction.Current;
+
+            if (ambientTx != null && ambientTx.TransactionInformation.Status == TransactionStatus.Active)
+            {
+                _transactions.TxStart(TransactionConcurrency.Optimistic, // todo 
+                    ConvertTransactionIsolation(ambientTx.IsolationLevel));
+
+                _enlistment.Value = ambientTx.EnlistVolatile(this, EnlistmentOptions.None);
+            }
         }
 
-        public void Commit(Enlistment enlistment)
+        void IEnlistmentNotification.Prepare(PreparingEnlistment preparingEnlistment)
         {
-            throw new System.NotImplementedException();
+            preparingEnlistment.Prepared();
         }
 
-        public void Rollback(Enlistment enlistment)
+        void IEnlistmentNotification.Commit(Enlistment enlistment)
         {
-            throw new System.NotImplementedException();
+            Debug.Assert(enlistment != null);
+
+            var igniteTx = _transactions.CurrentTx;
+
+            if (igniteTx != null && _enlistment.Value != null)
+            {
+                Debug.Assert(ReferenceEquals(enlistment, _enlistment.Value));
+
+                igniteTx.Commit();
+                igniteTx.Dispose();
+                _enlistment.Value = null;
+            }
+
+            enlistment.Done();
         }
 
-        public void InDoubt(Enlistment enlistment)
+        void IEnlistmentNotification.Rollback(Enlistment enlistment)
         {
-            throw new System.NotImplementedException();
+            Debug.Assert(enlistment != null);
+
+            var igniteTx = _transactions.CurrentTx;
+
+            if (igniteTx != null && _enlistment.Value != null)
+            {
+                igniteTx.Rollback();
+                igniteTx.Dispose();
+                _enlistment.Value = null;
+            }
+
+            enlistment.Done();
+        }
+
+        void IEnlistmentNotification.InDoubt(Enlistment enlistment)
+        {
+            Debug.Assert(enlistment != null);
+
+            enlistment.Done();
+        }
+
+        // TODO
+        /// <summary>
+        /// Converts the isolation level from .NET-specific to Ignite-specific.
+        /// </summary>
+        private static TransactionIsolation ConvertTransactionIsolation(IsolationLevel isolation)
+        {
+            switch (isolation)
+            {
+                case IsolationLevel.Serializable:
+                    return TransactionIsolation.Serializable;
+                case IsolationLevel.RepeatableRead:
+                    return TransactionIsolation.RepeatableRead;
+                case IsolationLevel.ReadCommitted:
+                case IsolationLevel.ReadUncommitted:
+                case IsolationLevel.Snapshot:
+                case IsolationLevel.Chaos:
+                    return TransactionIsolation.ReadCommitted;
+                default:
+                    throw new ArgumentOutOfRangeException("isolation", isolation, 
+                        "Unsupported transaction isolation level: " + isolation);
+            }
         }
     }
 }

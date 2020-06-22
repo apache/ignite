@@ -49,6 +49,9 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** Transaction for this thread and client. */
         private readonly ThreadLocal<ClientTransaction> _currentTx = new ThreadLocal<ClientTransaction>();
 
+        /** Transaction manager. */
+        private readonly ClientCacheTransactionManager _txManager;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -58,6 +61,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         {
             _ignite = ignite;
             _label = label;
+            _txManager = new ClientCacheTransactionManager(this);
         }
 
         /** <inheritdoc /> */
@@ -79,6 +83,11 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
                 return tx;
             }
+        }
+
+        public void StartTxIfNeeded()
+        {
+            _txManager.StartTxIfNeeded();
         }
 
         /** <inheritDoc /> */

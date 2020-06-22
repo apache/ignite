@@ -25,5 +25,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Current thread transaction
         /// </summary>
         ClientTransaction CurrentTx { get; }
+
+        void StartTxIfNeeded();
     }
 }

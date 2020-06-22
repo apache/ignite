@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System;
     using System.Threading;
-    using Apache.Ignite.Core.Client.Transactions;
 
     /// <summary>
     /// Ignite Thin Client transaction facade.
