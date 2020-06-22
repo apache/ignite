@@ -169,11 +169,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     .Build()
             };
 
-            using (var handle = cache.QueryContinuous(qry))
+            using (cache.QueryContinuous(qry))
             {
                 cache[1] = 123;
 
                 TestUtils.WaitForCondition(() => _lastEvent != null, 20000);
+
+                Assert.AreEqual(123, _lastEvent.Item2);
             }
         }
 
