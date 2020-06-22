@@ -28,28 +28,26 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import static org.apache.ignite.springdata.misc.ApplicationConfiguration.IGNITE_INSTANCE_ONE;
-import static org.apache.ignite.springdata.misc.ApplicationConfiguration.IGNITE_INSTANCE_TWO;
-
 /**
  * Test with using repository which is configured by Spring EL
  */
 public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTest {
+
     /** Number of entries to store */
     private static final int CACHE_SIZE = 1000;
-
     /** Repository. */
     private static PersonExpressionRepository repo;
-
     /** Context. */
     private static AnnotationConfigApplicationContext ctx;
-
-    /** */
+    /**
+     *
+     */
     @Rule
     public final ExpectedException expected = ExpectedException.none();
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override
+    protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         ctx = new AnnotationConfigApplicationContext();
@@ -60,7 +58,8 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override
+    protected void beforeTest() throws Exception {
         super.beforeTest();
 
         fillInRepository();
@@ -69,7 +68,8 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override
+    protected void afterTest() throws Exception {
         repo.deleteAll();
 
         assertEquals(0, repo.count());
@@ -77,22 +77,25 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         super.afterTest();
     }
 
-    /** */
+    /**
+     *
+     */
     private void fillInRepository() {
         for (int i = 0; i < CACHE_SIZE - 5; i++) {
-            repo.save(i, new Person("person" + Integer.toHexString(i),
-                "lastName" + Integer.toHexString((i + 16) % 256)));
+            repo.save(i,
+                new Person("person" + Integer.toHexString(i), "lastName" + Integer.toHexString((i + 16) % 256)));
         }
 
-        repo.save((int) repo.count(), new Person("uniquePerson", "uniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int)repo.count(), new Person("uniquePerson", "uniqueLastName"));
+        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
+    @Override
+    protected void afterTestsStopped() {
         ctx.close();
     }
 
@@ -128,8 +131,7 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         assertFalse("The SpEL \"#{cacheNames.personCacheName}\" isn't processed!",
             cacheNames.contains("#{cacheNames.personCacheName}"));
 
-        assertTrue("Cache \"PersonCache\" isn't found!",
-            cacheNames.contains("PersonCache"));
+        assertTrue("Cache \"PersonCache\" isn't found!", cacheNames.contains("PersonCache"));
     }
 
     @Test
@@ -141,7 +143,7 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         assertFalse("The SpEL \"#{cacheNames.personCacheName}\" isn't processed!",
             cacheNames.contains("#{cacheNames.personCacheName}"));
 
-        assertTrue("Cache \"PersonCache\" isn't found!",
-            cacheNames.contains("PersonCache"));
+        assertTrue("Cache \"PersonCache\" isn't found!", cacheNames.contains("PersonCache"));
     }
+
 }

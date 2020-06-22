@@ -24,11 +24,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
 
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.FullNameProjection;
 import org.apache.ignite.springdata.misc.Person;
+import org.apache.ignite.springdata.misc.PersonKey;
 import org.apache.ignite.springdata.misc.PersonProjection;
 import org.apache.ignite.springdata.misc.PersonRepository;
+import org.apache.ignite.springdata.misc.PersonRepositoryWithCompoundKey;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -39,6 +44,9 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /** Repository. */
     private static PersonRepository repo;
+
+    /** Repository. */
+    private static PersonRepositoryWithCompoundKey repoWithCompoundKey;
 
     /** Context. */
     private static AnnotationConfigApplicationContext ctx;
@@ -57,6 +65,8 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         ctx.refresh();
 
         repo = ctx.getBean(PersonRepository.class);
+
+        repoWithCompoundKey = ctx.getBean(PersonRepositoryWithCompoundKey.class);
     }
 
     /** {@inheritDoc} */
@@ -441,5 +451,70 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         List<Person> person = repo.findByFirstName("uniquePerson");
         assertEquals(person.get(0).getSecondName(), "uniqueLastName");
+    }
+
+    /** */
+    @Test
+    public void shouldDeleteAllById() {
+        List<PersonKey> ids = prepareDataWithNonComparableKeys();
+
+        repoWithCompoundKey.deleteAllById(ids);
+
+        assertEquals(0, repoWithCompoundKey.count());
+    }
+
+    /** */
+    @Test
+    public void shouldFindAllById() {
+        List<PersonKey> ids = prepareDataWithNonComparableKeys();
+
+        Iterable<Person> res = repoWithCompoundKey.findAllById(ids);
+
+        assertEquals(2, res.spliterator().estimateSize());
+    }
+
+    /** */
+    private List<PersonKey> prepareDataWithNonComparableKeys() {
+        List<PersonKey> ids = new ArrayList<>();
+
+        PersonKey key = new PersonKey(1, 1);
+        ids.add(key);
+
+        repoWithCompoundKey.save(key, new Person("test1", "test1"));
+
+        key = new PersonKey(2, 2);
+        ids.add(key);
+
+        repoWithCompoundKey.save(key, new Person("test2", "test2"));
+
+        assertEquals(2, repoWithCompoundKey.count());
+
+        return ids;
+    }
+
+    /** */
+    @Test
+    public void shouldNotLeakCursorsInRunningQueryManager() {
+        RunningQueryManager runningQryMgr = ((IgniteH2Indexing)((IgniteKernal)repo.ignite()).context().query().getIndexing()).runningQueryManager();
+
+        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
+
+        List<Person> res = repo.simpleQuery("person0");
+
+        assertEquals(1, res.size());
+
+        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
+
+        PersonProjection person = repo.findTopBySecondNameStartingWith("lastName");
+
+        assertNotNull(person);
+
+        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
+
+        long cnt = repo.countByFirstName("person0");
+
+        assertEquals(1, cnt);
+
+        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
     }
 }
