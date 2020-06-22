@@ -138,14 +138,14 @@ class TcpClientTransactions implements ClientTransactions {
     }
 
     /**
-     * Transactions "withLabel" facade
+     * Transactions "withLabel" facade.
      */
     private class ClientTransactionsWithLabel implements ClientTransactions {
         /** Transaction label. */
         private final String lb;
 
         /**
-         * @param lb Label.
+         * @param lb Transaction's label.
          */
         ClientTransactionsWithLabel(String lb) {
             this.lb = lb;

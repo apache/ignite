@@ -56,6 +56,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
@@ -1006,7 +1007,7 @@ public class FunctionalTest {
 
                 cache.put(0, "value3");
 
-                Thread t = new Thread(() -> {
+                IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
                     try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                         cache.put(1, "value3");
 
@@ -1021,8 +1022,6 @@ public class FunctionalTest {
                     }
                 });
 
-                t.start();
-
                 barrier.await();
 
                 assertNull(cache.get(1));
@@ -1032,7 +1031,7 @@ public class FunctionalTest {
 
                 barrier.await();
 
-                t.join();
+                fut.get();
             }
 
             // Test nested transactions is not possible.
