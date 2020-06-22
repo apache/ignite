@@ -27,11 +27,11 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
@@ -40,19 +40,16 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class CacheContinuousQueryEventBuffer {
+    /** Maximum size of buffer for pending events. Default value is {@code 10_000}. */
+    public static final int MAX_PENDING_BUFF_SIZE =
+        IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE", 10_000);
+
     /** Batch buffer size. */
     private static final int BUF_SIZE =
         IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE", 1000);
 
-    /** Maximum size of buffer for pending events. */
-    private static final int MAX_PENDING_BUFF_SIZE = CacheContinuousQueryHandler.LSNR_MAX_BUF_SIZE;
-
     /** */
     private static final Object RETRY = new Object();
-
-    /** Field updater. */
-    private static final AtomicLongFieldUpdater<CacheContinuousQueryEventBuffer> ACKED_UPDATER =
-        AtomicLongFieldUpdater.newUpdater(CacheContinuousQueryEventBuffer.class, "ackedUpdCntr");
 
     /** Continuous query category logger. */
     private final IgniteLogger log;
@@ -76,7 +73,7 @@ public class CacheContinuousQueryEventBuffer {
     private final AtomicInteger pendingSize = new AtomicInteger();
 
     /** Last seen ack partition counter tracked by the CQ handler partition recovery queue. */
-    private volatile long ackedUpdCntr;
+    private final GridAtomicLong ackedUpdCntr = new GridAtomicLong(0);
 
     /**
      * @param part Partition number.
@@ -107,10 +104,7 @@ public class CacheContinuousQueryEventBuffer {
                 it.remove();
         }
 
-        long val = ackedUpdCntr;
-
-        while (val < updateCntr && !ACKED_UPDATER.compareAndSet(this, val, updateCntr))
-            val = ackedUpdCntr;
+        ackedUpdCntr.setIfGreater(updateCntr);
     }
 
     /**
@@ -191,7 +185,7 @@ public class CacheContinuousQueryEventBuffer {
         Object res = null;
 
         for (;;) {
-            // Set bach only if batch is null (first attempt).
+            // Set batch only if batch is null (first attempt).
             batch = initBatch(entry.topologyVersion(), backup);
 
             if (batch == null || cntr < batch.startCntr) {
@@ -211,7 +205,7 @@ public class CacheContinuousQueryEventBuffer {
                     continue;
             }
             else {
-                if (batch.endCntr < ackedUpdCntr)
+                if (batch.endCntr < ackedUpdCntr.get())
                     batch.tryRollOver(entry.topologyVersion());
 
                 if (pendingSize.get() > MAX_PENDING_BUFF_SIZE) {
@@ -224,11 +218,12 @@ public class CacheContinuousQueryEventBuffer {
 
                     Iterator<Map.Entry<Long, CacheContinuousQueryEntry>> iter = pending.entrySet().iterator();
 
-                    res = new ArrayList<>();
-
                     while (iter.hasNext() && keysToRemove > 0) {
-                        // Collecting results ignore backup flag due to batch may not be switched.
-                        res = addResult(res, iter.next().getValue(), false);
+                        CacheContinuousQueryEntry entry0 = iter.next().getValue();
+
+                        // Discard messages on backup and send to client if primary.
+                        if (!backup)
+                            res = addResult(res, entry0, !backup);
 
                         iter.remove();
                         pendingSize.decrementAndGet();
@@ -259,8 +254,6 @@ public class CacheContinuousQueryEventBuffer {
         }
 
         assert res == null && backup;
-        //todo if backup == true then discard messages, if backup == false send to client
-        //todo add constant for pending buffer
 
         return res;
     }
@@ -512,7 +505,7 @@ public class CacheContinuousQueryEventBuffer {
                 entries[pos] = entry;
 
                 int next = lastProc + 1;
-                long ackedUpdCntr0 = ackedUpdCntr;
+                long ackedUpdCntr0 = ackedUpdCntr.get();
 
                 if (next == pos) {
                     for (int i = next; i < entries.length; i++) {
@@ -554,7 +547,7 @@ public class CacheContinuousQueryEventBuffer {
             if (entries == null)
                 return;
 
-            long ackedUpdCntr0 = ackedUpdCntr;
+            long ackedUpdCntr0 = ackedUpdCntr.get();
 
             if (endCntr < ackedUpdCntr0)
                 rollOver(ackedUpdCntr0 + 1, 0, topVer);

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -52,7 +54,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -61,7 +69,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  *
  */
-public abstract class AbstractCacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest {
+@RunWith(Parameterized.class)
+public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest {
     /** Cache partitions count. */
     private static final int PARTS = 1;
 
@@ -80,6 +89,25 @@ public abstract class AbstractCacheContinuousQueryBufferLimitTest extends GridCo
     /** Counter of cache messages being send. */
     private final AtomicInteger msgCntr = new AtomicInteger();
 
+    /** Cache mode. */
+    @Parameterized.Parameter(0)
+    public CacheMode cacheMode;
+
+    /** Cache atomicity mode. */
+    @Parameterized.Parameter(1)
+    public CacheAtomicityMode atomicityMode;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "cacheMode={0}, atomicityMode={1}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(new Object[][] {
+            {REPLICATED, ATOMIC},
+            {REPLICATED, TRANSACTIONAL},
+            {PARTITIONED, ATOMIC},
+            {PARTITIONED, TRANSACTIONAL}
+        });
+    }
+
     /** @throws Exception If fails. */
     @Test
     public void testContinuousQueryBatchSwitchOnAck() throws Exception {
@@ -89,7 +117,7 @@ public abstract class AbstractCacheContinuousQueryBufferLimitTest extends GridCo
 
     /** @throws Exception If fails. */
     @Test
-    @WithSystemProperty(key = "IGNITE_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE", value = "1000")
+    @WithSystemProperty(key = "IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE", value = "1000")
     public void testContinuousQueryPendingBufferLimit() throws Exception {
         doTestContinuousQueryPendingBufferLimit((n, msg) ->
             (msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 10) ||
@@ -102,8 +130,8 @@ public abstract class AbstractCacheContinuousQueryBufferLimitTest extends GridCo
         return super.getConfiguration(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                .setAtomicityMode(atomicityMode())
-                .setCacheMode(cacheMode())
+                .setAtomicityMode(atomicityMode)
+                .setCacheMode(cacheMode)
                 .setBackups(1)
                 .setAffinity(new RendezvousAffinityFunction(false, PARTS)));
     }
@@ -119,16 +147,6 @@ public abstract class AbstractCacheContinuousQueryBufferLimitTest extends GridCo
     public void stopAllInstances() {
         stopAllGrids();
     }
-
-    /**
-     * @return Cache mode.
-     */
-    protected abstract CacheMode cacheMode();
-
-    /**
-     * @return Cache atomicity mode.
-     */
-    protected abstract CacheAtomicityMode atomicityMode();
 
     /**
      * @param locBlockPred Block predicate on local node to emulate message delivery issues.
