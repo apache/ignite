@@ -22,21 +22,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientCompute;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientDisconnectedException;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataMarshalled;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataUpdateTask;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /** */
 public class MetadataUpdateCommand

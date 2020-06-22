@@ -18,25 +18,18 @@
 package org.apache.ignite.internal.commandline.meta.subcommands;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientCompute;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientDisconnectedException;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
-import org.apache.ignite.internal.commandline.meta.tasks.MetadataListResult;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataInfoTask;
+import org.apache.ignite.internal.commandline.meta.tasks.MetadataListResult;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataTypeArgs;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 

@@ -21,22 +21,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientCompute;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientDisconnectedException;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataMarshalled;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataRemoveTask;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataTypeArgs;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
  *
