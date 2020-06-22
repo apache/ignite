@@ -65,11 +65,6 @@ public class EncryptedFileIO implements FileIO {
     private final EncryptionSpi encSpi;
 
     /**
-     * Encryption key.
-     */
-    private Serializable encKey;
-
-    /**
      * Extra bytes added by encryption.
      */
     private final int encryptionOverhead;
@@ -269,7 +264,7 @@ public class EncryptedFileIO implements FileIO {
 
         encrypted.limit(encryptedDataSize());
 
-        Serializable key = readKey(keyId);
+        Serializable key = encMgr.groupKey(groupId, keyId);
 
         assert key != null : keyId;
 
@@ -351,17 +346,7 @@ public class EncryptedFileIO implements FileIO {
      * @return Encryption key.
      */
     private GroupKey key() {
-//        if (encKey == null)
         return encMgr.groupKey(groupId);
-
-//        return encKey;
-    }
-
-    private Serializable readKey(int keyId) {
-//        if (encKey == null)
-        return encMgr.groupKey(groupId, keyId);
-
-//        return encKey;
     }
 
     /** {@inheritDoc} */

@@ -23,13 +23,23 @@ import org.apache.ignite.internal.util.typedef.T2;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTION_STATUS_RECORD;
 
+/**
+ * Logical record to restart encryption with the latest encryption key.
+ */
 public class EncryptionStatusRecord extends WALRecord {
+    /** */
     private final Map<Integer, List<T2<Integer, Integer>>> grpStates;
 
+    /**
+     * @param grpStates Mapping of group ID to list of partitions with the number of encrypted pages.
+     */
     public EncryptionStatusRecord(Map<Integer, List<T2<Integer, Integer>>> grpStates) {
         this.grpStates = grpStates;
     }
 
+    /**
+     * @return Mapping of group ID to list of partitions with the number of encrypted pages.
+     */
     public Map<Integer, List<T2<Integer, Integer>>> groupsStatus() {
         return grpStates;
     }
@@ -48,5 +58,4 @@ public class EncryptionStatusRecord extends WALRecord {
 
         return size;
     }
-
 }

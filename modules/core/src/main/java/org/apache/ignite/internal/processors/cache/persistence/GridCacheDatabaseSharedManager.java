@@ -1252,7 +1252,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             grpIds.add(tup.get1().groupId());
 
-            cctx.kernalContext().encryption().stopReencryption(gctx.groupId());
+            cctx.kernalContext().encryption().onCacheGroupStop(gctx.groupId());
 
             pageMem.onCacheGroupDestroyed(tup.get1().groupId());
 

@@ -165,8 +165,8 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) {
-        for (GroupReencryptionContext state : grps.values())
-            state.beforeCheckpoint(ctx);
+        for (GroupReencryptionContext encryptCtx : grps.values())
+            encryptCtx.beforeCheckpoint(ctx);
     }
 
     /** {@inheritDoc} */
@@ -175,10 +175,11 @@ public class CacheGroupReencryption implements DbCheckpointListener {
     }
 
     /**
-     * @param grpId Group id.
+     * @param grpId Cache group ID.
+     * @param skipDirty Skip dirty pages.
      */
-    public IgniteInternalFuture schedule(int grpId) throws IgniteCheckedException {
-        GroupReencryptionContext state = new GroupReencryptionContext(grpId);
+    public IgniteInternalFuture schedule(int grpId, boolean skipDirty) throws IgniteCheckedException {
+        GroupReencryptionContext state = new GroupReencryptionContext(grpId, skipDirty);
 
         if (disabled) {
             grps.put(grpId, state);
@@ -287,6 +288,8 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
         private final GridCompoundFuture<Void, Void> fut = new GridCompoundFuture<>();
 
+        private final boolean skipDirty;
+
         private final GridFutureAdapter<Void> cpFut = new GridFutureAdapter<Void>() {
             @Override public boolean cancel() throws IgniteCheckedException {
                 fut.cancel();
@@ -295,12 +298,13 @@ public class CacheGroupReencryption implements DbCheckpointListener {
             }
         };
 
-        private GroupReencryptionContext(int grpId) {
+        private GroupReencryptionContext(int grpId, boolean skipDirty) {
             this.grpId = grpId;
+            this.skipDirty = skipDirty;
         }
 
         private boolean schedulePartition(int partId) throws IgniteCheckedException {
-            IgniteInternalFuture<Void> fut0 = scheduleScanner(grpId, partId, cpFinished::get);
+            IgniteInternalFuture<Void> fut0 = scheduleScanner(grpId, partId, skipDirty ? () -> true : cpFinished::get);
 
             if (fut0 == null)
                 return false;
