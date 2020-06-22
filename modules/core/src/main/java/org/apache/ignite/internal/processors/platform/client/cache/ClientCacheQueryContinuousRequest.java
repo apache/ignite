@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
@@ -27,7 +28,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Continuous query request.
  */
-@SuppressWarnings({"rawtypes"})
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
     /** Query. */
     private final ContinuousQuery qry;
@@ -72,10 +73,15 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
             IgniteCache cache = filterPlatform == ClientPlatform.JAVA && !isKeepBinary() ? rawCache(ctx) : cache(ctx);
 
             ClientCacheQueryContinuousHandle handle = new ClientCacheQueryContinuousHandle(ctx);
-            qry.setLocalListener(handle)
+            qry.setLocalListener(handle);
 
-            // TODO
-            return new ClientCacheQueryContinuousResponse(requestId(), 0, null);
+            QueryCursor cursor = cache.query(qry);
+            long cursorId = ctx.resources().put(cursor);
+
+            handle.setCursor(cursor, cursorId);
+
+            // TODO: Initial query.
+            return new ClientCacheQueryContinuousResponse(requestId(), cursorId, null);
         }
         catch (Exception e) {
             ctx.decrementCursors();
