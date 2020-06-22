@@ -155,15 +155,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         if (isCancelled())
             return;
 
-        nodes.forEach(nodeId -> {
-            try {
-                exchange.cancelOutbox(nodeId, queryId(), srcFragmentId, exchangeId);
-            }
-            catch (IgniteCheckedException e) {
-                // TODO:
-                e.printStackTrace();
-            }
-        });
+        buffers.forEach(Buffer::cancel);
 
         close();
 
@@ -434,6 +426,16 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         /** */
         private Buffer(UUID nodeId) {
             this.nodeId = nodeId;
+        }
+
+        /** */
+        private void cancel() {
+            try {
+                exchange.cancelOutbox(nodeId, queryId(), srcFragmentId, exchangeId);
+            }
+            catch (IgniteCheckedException e) {
+                context().planningContext().logger().warning("Cannot send cancel message", e);
+            }
         }
 
         /** */

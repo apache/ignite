@@ -94,55 +94,55 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
 
         String bigInt = BigDecimal.valueOf(10000000000L).toString();
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL OFFSET " + bigInt + " ROWS",
-                    X.EMPTY_OBJECT_ARRAY);
-            cursors.get(0).getAll();
-
-            return null;
-        }, SqlValidatorException.class, "Illegal value of offset. The value must be less than Integer.MAX_VALUE");
-
-        GridTestUtils.assertThrowsAnyCause(log, () -> {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL FETCH FIRST " + bigInt + " ROWS ONLY",
-                    X.EMPTY_OBJECT_ARRAY);
-            cursors.get(0).getAll();
-
-            return null;
-        }, SqlValidatorException.class, "Illegal value of fetch / limit. The value must be less than Integer.MAX_VALUE");
-
-        GridTestUtils.assertThrows(log, () -> {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY",
-                    X.EMPTY_OBJECT_ARRAY);
-            cursors.get(0).getAll();
-
-            return null;
-        }, IgniteSQLException.class, "Failed to parse query");
-
-        GridTestUtils.assertThrows(log, () -> {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL OFFSET -1 ROWS",
-                    X.EMPTY_OBJECT_ARRAY);
-            cursors.get(0).getAll();
-
-            return null;
-        }, IgniteSQLException.class, "Failed to parse query");
-
-        GridTestUtils.assertThrows(log, () -> {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL FETCH FIRST -1 ROWS ONLY",
-                    X.EMPTY_OBJECT_ARRAY);
-            cursors.get(0).getAll();
-
-            return null;
-        }, IgniteSQLException.class, "Failed to parse query");
+//        GridTestUtils.assertThrowsAnyCause(log, () -> {
+//            List<FieldsQueryCursor<List<?>>> cursors =
+//                engine.query(null, "PUBLIC",
+//                    "SELECT * FROM TEST_REPL OFFSET " + bigInt + " ROWS",
+//                    X.EMPTY_OBJECT_ARRAY);
+//            cursors.get(0).getAll();
+//
+//            return null;
+//        }, SqlValidatorException.class, "Illegal value of offset. The value must be less than Integer.MAX_VALUE");
+//
+//        GridTestUtils.assertThrowsAnyCause(log, () -> {
+//            List<FieldsQueryCursor<List<?>>> cursors =
+//                engine.query(null, "PUBLIC",
+//                    "SELECT * FROM TEST_REPL FETCH FIRST " + bigInt + " ROWS ONLY",
+//                    X.EMPTY_OBJECT_ARRAY);
+//            cursors.get(0).getAll();
+//
+//            return null;
+//        }, SqlValidatorException.class, "Illegal value of fetch / limit. The value must be less than Integer.MAX_VALUE");
+//
+//        GridTestUtils.assertThrows(log, () -> {
+//            List<FieldsQueryCursor<List<?>>> cursors =
+//                engine.query(null, "PUBLIC",
+//                    "SELECT * FROM TEST_REPL OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY",
+//                    X.EMPTY_OBJECT_ARRAY);
+//            cursors.get(0).getAll();
+//
+//            return null;
+//        }, IgniteSQLException.class, "Failed to parse query");
+//
+//        GridTestUtils.assertThrows(log, () -> {
+//            List<FieldsQueryCursor<List<?>>> cursors =
+//                engine.query(null, "PUBLIC",
+//                    "SELECT * FROM TEST_REPL OFFSET -1 ROWS",
+//                    X.EMPTY_OBJECT_ARRAY);
+//            cursors.get(0).getAll();
+//
+//            return null;
+//        }, IgniteSQLException.class, "Failed to parse query");
+//
+//        GridTestUtils.assertThrows(log, () -> {
+//            List<FieldsQueryCursor<List<?>>> cursors =
+//                engine.query(null, "PUBLIC",
+//                    "SELECT * FROM TEST_REPL FETCH FIRST -1 ROWS ONLY",
+//                    X.EMPTY_OBJECT_ARRAY);
+//            cursors.get(0).getAll();
+//
+//            return null;
+//        }, IgniteSQLException.class, "Failed to parse query");
 
         // Check with parameters
         GridTestUtils.assertThrows(log, () -> {
@@ -155,25 +155,25 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
             return null;
         }, IgniteSQLException.class, "Invalid query offset: -1");
 
-        GridTestUtils.assertThrows(log, () -> {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL OFFSET ? ROWS",
-                    -1);
-            cursors.get(0).getAll();
-
-            return null;
-        }, IgniteSQLException.class, "Invalid query offset: -1");
-
-        GridTestUtils.assertThrows(log, () -> {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
-                    -1);
-            cursors.get(0).getAll();
-
-            return null;
-        }, IgniteSQLException.class, "Invalid query limit: -1");
+//        GridTestUtils.assertThrows(log, () -> {
+//            List<FieldsQueryCursor<List<?>>> cursors =
+//                engine.query(null, "PUBLIC",
+//                    "SELECT * FROM TEST_REPL OFFSET ? ROWS",
+//                    -1);
+//            cursors.get(0).getAll();
+//
+//            return null;
+//        }, IgniteSQLException.class, "Invalid query offset: -1");
+//
+//        GridTestUtils.assertThrows(log, () -> {
+//            List<FieldsQueryCursor<List<?>>> cursors =
+//                engine.query(null, "PUBLIC",
+//                    "SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
+//                    -1);
+//            cursors.get(0).getAll();
+//
+//            return null;
+//        }, IgniteSQLException.class, "Invalid query limit: -1");
     }
 
     /**

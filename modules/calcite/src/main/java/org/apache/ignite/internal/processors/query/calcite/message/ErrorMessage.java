@@ -19,13 +19,16 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class ErrorMessage implements ExecutionContextAware {
+public class ErrorMessage implements MarshalableMessage, ExecutionContextAware {
     /** */
     private UUID queryId;
 
@@ -39,16 +42,22 @@ public class ErrorMessage implements ExecutionContextAware {
     private byte[] errBytes;
 
     /** */
+    @GridDirectTransient
+    private Throwable err;
+
+    /** */
     public ErrorMessage() {
         // No-op.
     }
 
     /** */
-    public ErrorMessage(UUID queryId, long fragmentId, long exchangeId, byte[] errBytes) {
+    public ErrorMessage(UUID queryId, long fragmentId, long exchangeId, Throwable err) {
+        assert err != null;
+
         this.queryId = queryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
-        this.errBytes = errBytes;
+        this.err = err;
     }
 
     /** {@inheritDoc} */
@@ -71,8 +80,10 @@ public class ErrorMessage implements ExecutionContextAware {
     /**
      * @return Marshaled Throwable.
      */
-    public byte[] errorBytes() {
-        return errBytes;
+    public Throwable error() {
+        assert err != null;
+
+        return err;
     }
 
     /** {@inheritDoc} */
@@ -169,5 +180,15 @@ public class ErrorMessage implements ExecutionContextAware {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 4;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
+        errBytes = marshaller.marshal(err);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
+        err = marshaller.unmarshal(errBytes, loader);
     }
 }

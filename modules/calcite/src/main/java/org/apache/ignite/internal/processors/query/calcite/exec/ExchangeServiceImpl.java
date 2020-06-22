@@ -131,7 +131,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         Throwable err
     ) throws IgniteCheckedException {
         messageService().send(nodeId,
-            new ErrorMessage(qryId, fragmentId, exchangeId, messageService().marshaller().marshal(err)));
+            new ErrorMessage(qryId, fragmentId, exchangeId, err));
     }
 
     /** {@inheritDoc} */
@@ -199,17 +199,12 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
         assert inbox != null;
 
-        try {
-            inbox.onError(
-                nodeId,
-                msg.queryId(),
-                msg.fragmentId(),
-                msg.exchangeId(),
-                messageService().marshaller().unmarshal(msg.errorBytes(), messageService().classLoader()));
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Error on exception unmarshalling", e);
-        }
+        inbox.onError(
+            nodeId,
+            msg.queryId(),
+            msg.fragmentId(),
+            msg.exchangeId(),
+            msg.error());
     }
 
     /** */

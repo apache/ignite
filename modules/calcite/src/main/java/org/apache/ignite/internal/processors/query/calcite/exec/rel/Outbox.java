@@ -154,15 +154,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         U.error(context().planningContext().logger(),
             "Error occurred during execution: " + X.getFullStackTrace(e));
 
-        dest.targets().forEach(nodeId -> {
-            try {
-                sendError(nodeId, e);
-            }
-            catch (IgniteCheckedException ex) {
-                U.error(context().planningContext().logger(),
-                    "Error occurred during send error message: " + X.getFullStackTrace(e));
-            }
-        });
+        nodeBuffers.values().forEach(b -> b.onError(e));
     }
 
     /** {@inheritDoc} */
@@ -172,6 +164,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
 
         close();
 
+        // Send cancel message for the Inbox to close Inboxes created by batch message race.
         nodeBuffers.values().forEach(Buffer::cancel);
 
         super.cancel();
@@ -330,6 +323,17 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
 
             curr = null;
             sendCancel(nodeId, batchId);
+        }
+
+        /** */
+        public void onError(Throwable e) {
+            try {
+                sendError(nodeId, e);
+            }
+            catch (IgniteCheckedException ex) {
+                U.error(context().planningContext().logger(),
+                    "Error occurred during send error message: " + X.getFullStackTrace(e));
+            }
         }
 
         /**

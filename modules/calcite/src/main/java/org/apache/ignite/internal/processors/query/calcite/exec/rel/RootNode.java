@@ -21,6 +21,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -81,13 +82,17 @@ public class RootNode<Row> extends AbstractNode<Row>
 
     /** {@inheritDoc} */
     @Override public void cancel() {
+       close();
+    }
+
+    /** */
+    private void cancelExecutionTree() {
         checkThread();
 
         if (isCancelled())
             return;
 
         buff.clear();
-        cond.signalAll();
 
         super.cancel();
     }
@@ -111,7 +116,9 @@ public class RootNode<Row> extends AbstractNode<Row>
 
             state = State.CANCELLED;
 
-            context().execute(this::cancel);
+            context().execute(this::cancelExecutionTree);
+
+            cond.signalAll();
         }
         finally {
             lock.unlock();
@@ -171,6 +178,8 @@ public class RootNode<Row> extends AbstractNode<Row>
     /** {@inheritDoc} */
     @Override public void onError(Throwable e) {
         checkThread();
+
+        assert Objects.isNull(ex) : "The error has been handled. Previous error: " + ex;
 
         if (e instanceof IgniteSQLException)
             ex = (IgniteSQLException)e;

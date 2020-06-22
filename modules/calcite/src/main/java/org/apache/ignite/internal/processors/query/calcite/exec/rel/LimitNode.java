@@ -85,8 +85,11 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
             if (offsetSup != null) {
                 offset = offsetSup.get();
 
-                if (offset < 0)
+                if (offset < 0) {
                     onError(new IgniteSQLException("Invalid query offset: " + offset));
+
+                    return;
+                }
             }
             else
                 offset = 0;
@@ -94,8 +97,11 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
             if (limitSup != null) {
                 limit = limitSup.get();
 
-                if (limit < 0)
+                if (limit < 0) {
                     onError(new IgniteSQLException("Invalid query limit: " + limit));
+
+                    return;
+                }
             }
             else
                 limit = LIMIT_NOT_SET;
@@ -143,8 +149,11 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
         rowNum++;
 
-        if (requested > 0 && limit > 0 && rowNum >= limit + offset)
+        if (requested > 0 && limit > 0 && rowNum >= limit + offset) {
+            sources.get(0).cancel();
+
             end();
+        }
 
         if (!ended && requested > 0 && waiting == 0)
             request0(IN_BUFFER_SIZE);
@@ -158,8 +167,6 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
             return;
 
         ended = true;
-
-        sources.get(0).cancel();
 
         assert downstream != null;
 
