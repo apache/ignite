@@ -78,7 +78,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.PartStateViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.PartitionStateViewWalker;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -182,7 +182,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
-import org.apache.ignite.spi.systemview.view.PartStateView;
+import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -230,7 +230,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public static final String PART_STATES_VIEW = "partitionStates";
 
     /** System view description for partition states. */
-    public static final String PART_STATES_VIEW_DESC = "Partition states";
+    public static final String PART_STATES_VIEW_DESC = "Distribution of cache group partitions across cluster nodes";
 
     /** Enables start caches in parallel. */
     private final boolean IGNITE_ALLOW_START_CACHES_IN_PARALLEL =
@@ -607,7 +607,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.systemView().registerFiltrableView(
             PART_STATES_VIEW,
             PART_STATES_VIEW_DESC,
-            new PartStateViewWalker(),
+            new PartitionStateViewWalker(),
             this::partStatesViewSupplier,
             Function.identity()
         );
@@ -5302,16 +5302,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param filter Filter.
      */
-    private Iterable<PartStateView> partStatesViewSupplier(Map<String, Object> filter) {
-        Integer cacheGrpId = (Integer)filter.get(PartStateViewWalker.CACHE_GROUP_ID_FILTER);
-        UUID nodeId = (UUID)filter.get(PartStateViewWalker.NODE_ID_FILTER);
-        Integer partId = (Integer)filter.get(PartStateViewWalker.PARTITION_ID_FILTER);
+    private Iterable<PartitionStateView> partStatesViewSupplier(Map<String, Object> filter) {
+        Integer cacheGrpId = (Integer)filter.get(PartitionStateViewWalker.CACHE_GROUP_ID_FILTER);
+        UUID nodeId = (UUID)filter.get(PartitionStateViewWalker.NODE_ID_FILTER);
+        Integer partId = (Integer)filter.get(PartitionStateViewWalker.PARTITION_ID_FILTER);
 
         return () -> F.concat(F.concat(F.iterator(filteredMap(cacheGrps, cacheGrpId).values(),
             grp -> F.iterator(filteredMap(grp.topology().partitionMap(false), nodeId).entrySet(),
                 nodeToParts -> F.iterator(filteredMap(nodeToParts.getValue().map(),
                     partId == null || partId < 0 ? null : partId).entrySet(),
-                    partToStates -> new PartStateView(
+                    partToStates -> new PartitionStateView(
                         grp.groupId(),
                         nodeToParts.getKey(),
                         partToStates.getKey(),

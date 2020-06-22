@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 /**
  * Partition state representation for a {@link SystemView}.
  */
-public class PartStateView {
+public class PartitionStateView {
     /** Cache group id. */
     private final int cacheGrpId;
 
@@ -48,7 +48,7 @@ public class PartStateView {
      * @param state Partition state.
      * @param primary Is primary partition for node.
      */
-    public PartStateView(int cacheGrpId, UUID nodeId, int partId, GridDhtPartitionState state, boolean primary) {
+    public PartitionStateView(int cacheGrpId, UUID nodeId, int partId, GridDhtPartitionState state, boolean primary) {
         this.cacheGrpId = cacheGrpId;
         this.nodeId = nodeId;
         this.partId = partId;
