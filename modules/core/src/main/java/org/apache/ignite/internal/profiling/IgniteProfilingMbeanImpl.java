@@ -38,12 +38,12 @@ public class IgniteProfilingMbeanImpl implements IgniteProfilingMBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void startProfiling() throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         ctx.metric().startProfiling(DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, DFLT_FLUSH_SIZE);
     }
 
     /** {@inheritDoc} */
-    @Override public void startProfiling(long maxFileSize, int bufferSize, int flushBatchSize)
+    @Override public void start(long maxFileSize, int bufferSize, int flushBatchSize)
         throws IgniteCheckedException {
         A.ensure(maxFileSize > 0, "maxFileSize > 0");
         A.ensure(bufferSize > 0, "bufferSize > 0");
@@ -53,12 +53,12 @@ public class IgniteProfilingMbeanImpl implements IgniteProfilingMBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void stopProfiling() throws IgniteCheckedException {
+    @Override public void stop() throws IgniteCheckedException {
         ctx.metric().stopProfiling().get();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean profilingEnabled() {
+    @Override public boolean enabled() {
         return ctx.metric().profilingEnabled();
     }
 }

@@ -34,11 +34,11 @@ public interface IgniteProfilingMBean {
      * @see FileProfiling#DFLT_FLUSH_SIZE
      */
     @MXBeanDescription("Start profiling in the cluster.")
-    public void startProfiling() throws IgniteCheckedException;
+    public void start() throws IgniteCheckedException;
 
     /** Start profiling in the cluster. */
     @MXBeanDescription("Start profiling in the cluster.")
-    public void startProfiling(
+    public void start(
         @MXBeanParameter(name = "maxFileSize", description = "Maximum file size in bytes.") long maxFileSize,
         @MXBeanParameter(name = "bufferSize", description = "Off heap buffer size in bytes.") int bufferSize,
         @MXBeanParameter(name = "flushBatchSize", description = "Minimal batch size to flush in bytes.") int flushBatchSize)
@@ -46,9 +46,9 @@ public interface IgniteProfilingMBean {
 
     /** Stop profiling in the cluster. */
     @MXBeanDescription("Stop profiling in the cluster.")
-    public void stopProfiling() throws IgniteCheckedException;
+    public void stop() throws IgniteCheckedException;
 
     /** @return {@code True} if profiling enabled. */
     @MXBeanDescription("True if profiling enabled.")
-    public boolean profilingEnabled();
+    public boolean enabled();
 }

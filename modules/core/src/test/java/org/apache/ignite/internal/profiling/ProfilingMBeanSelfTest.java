@@ -31,18 +31,18 @@ public class ProfilingMBeanSelfTest extends AbstractProfilingTest {
         IgniteProfilingMBean profilingMBean0 = getMBean(srv0.name());
         IgniteProfilingMBean profilingMBean1 = getMBean(srv1.name());
 
-        assertFalse(profilingMBean0.profilingEnabled());
-        assertFalse(profilingMBean1.profilingEnabled());
+        assertFalse(profilingMBean0.enabled());
+        assertFalse(profilingMBean1.enabled());
 
-        profilingMBean0.startProfiling();
+        profilingMBean0.start();
 
-        assertTrue(profilingMBean0.profilingEnabled());
-        assertTrue(profilingMBean1.profilingEnabled());
+        assertTrue(profilingMBean0.enabled());
+        assertTrue(profilingMBean1.enabled());
 
-        profilingMBean0.stopProfiling();
+        profilingMBean0.stop();
 
-        assertFalse(profilingMBean0.profilingEnabled());
-        assertFalse(profilingMBean1.profilingEnabled());
+        assertFalse(profilingMBean0.enabled());
+        assertFalse(profilingMBean1.enabled());
     }
 
     /**
