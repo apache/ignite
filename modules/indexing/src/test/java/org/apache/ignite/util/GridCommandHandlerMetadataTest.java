@@ -21,6 +21,11 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Date;
 import java.util.UUID;
 import org.apache.ignite.IgniteBinary;
@@ -154,7 +159,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
         out = testOut.toString();
         assertContains(log, out, "Check arguments.");
         assertContains(log, out, "Type to remove is not specified");
-        assertContains(log, out, "Please add one of the options: --typeName <type_name> or --typeId <type_ID>");
+        assertContains(log, out, "Please add one of the options: --typeName <type_name> or --typeId <type_id>");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove", "--typeId", "0", "--out", "target"));
         out = testOut.toString();
@@ -272,6 +277,82 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
     }
 
     /**
+     * Check the all thin connections are dropped on the command '--meta remove' and '--meta update'.
+     * Steps:
+     * - opens JDBC thin client connection.
+     * - execute: CREATE TABLE test(id INT PRIMARY KEY, objVal OTHER).
+     * - insert the instance of the 'TestValue' class to the table.
+     * - try to insert the instance of the 'TestValuE' class to the table - exception expected.
+     * - remove the type 'TestValue' by cmd line.
+     * - executes any command on JDBC driver to detect disconnect.
+     * - insert the instance of the 'TestValuE' class to the table - success expected.
+     */
+    @Test
+    public void testDropJdbcThinConnectionsOnRemove() throws Exception {
+        injectTestSystemOut();
+
+        Path typeFile = FS.getPath("type0.bin");
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
+            try (final Statement stmt = conn.createStatement()) {
+                stmt.execute("CREATE TABLE test(id INT PRIMARY KEY, objVal OTHER)");
+
+                try (PreparedStatement pstmt = conn.prepareStatement("INSERT INTO test(id, objVal) VALUES (?, ?)")) {
+                    pstmt.setInt(1, 0);
+                    pstmt.setObject(2, new TestValue());
+
+                    pstmt.execute();
+                }
+
+                stmt.execute("DELETE FROM test WHERE id >= 0");
+            }
+
+            // Check that we cannot marshal object with new class.
+            GridTestUtils.assertThrowsAnyCause(log, () -> {
+                try (PreparedStatement pstmt = conn.prepareStatement("INSERT INTO test(id, objVal) VALUES (?, ?)")) {
+                    pstmt.setInt(1, 0);
+                    pstmt.setObject(2, new TestValuE());
+
+                    pstmt.execute();
+                }
+
+                return null;
+            }, BinaryObjectException.class, "Two binary types have duplicate type ID");
+
+            // Repair connection after disconnect on error at the binary protocol (see above check).
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("SELECT * FROM test");
+            }
+
+            assertEquals(EXIT_CODE_OK, execute("--meta", "remove",
+                "--typeName", TestValue.class.getName(),
+                "--out", typeFile.toString()));
+
+            // Executes anu command to check disconnect.
+            GridTestUtils.assertThrows(log, () -> {
+                    try (Statement stmt = conn.createStatement()) {
+                        stmt.execute("SELECT * FROM test");
+                    }
+
+                    return null;
+                },
+                SQLException.class, "Failed to communicate with Ignite cluster");
+
+            // Check that we can marshal object with new class after remove old type.
+            try (PreparedStatement pstmt = conn.prepareStatement("INSERT INTO test(id, objVal) VALUES (?, ?)")) {
+                pstmt.setInt(1, 0);
+                pstmt.setObject(2, new TestValuE());
+
+                pstmt.execute();
+            }
+        }
+        finally {
+            if (Files.exists(typeFile))
+                Files.delete(typeFile);
+        }
+    }
+
+    /**
      * @param t Binary type.
      */
     private void checkTypeDetails(@Nullable IgniteLogger log, String cmdOut, BinaryType t) {
@@ -299,7 +380,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
      * @param val Field value.
      */
     void createType(IgniteBinary bin, String typeName, Object val) {
-        BinaryObjectBuilder bob = bin.builder("Type0");
+        BinaryObjectBuilder bob = bin.builder(typeName);
         bob.setField("fld", val);
         bob.build();
     }
@@ -308,5 +389,21 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
     private ClientConfiguration clientConfiguration() {
         return new ClientConfiguration()
             .setAddresses("127.0.0.1:10800");
+    }
+
+    /**
+     *
+     */
+    public static class TestValue {
+        /** */
+        public final int val = 3;
+    }
+
+    /**
+     *
+     */
+    public static class TestValuE {
+        /** */
+        public final String val = "val";
     }
 }

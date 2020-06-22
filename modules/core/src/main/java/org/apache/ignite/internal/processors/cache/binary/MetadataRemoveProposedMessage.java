@@ -30,8 +30,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * <b>MetadataRemoveProposedMessage</b> and {@link MetadataRemoveAcceptedMessage} messages make a basis for
- * discovery-based protocol for manage {@link BinaryMetadata metadata} describing objects in binary format stored in Ignite caches.
- *
+ * discovery-based protocol for manage {@link BinaryMetadata metadata} describing objects in binary format
+ * stored in Ignite caches.
  */
 public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessage {
     /** */
@@ -97,44 +97,32 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
         this.err = err;
     }
 
-    /**
-     *
-     */
+    /** */
     boolean rejected() {
         return status == ProposalStatus.REJECTED;
     }
 
-    /**
-     *
-     */
+    /** */
     BinaryObjectException rejectionError() {
         return err;
     }
 
-    /**
-     *
-     */
+    /** */
     UUID origNodeId() {
         return origNodeId;
     }
 
-    /**
-     *
-     */
+    /** */
     public int typeId() {
         return typeId;
     }
 
-    /**
-     *
-     */
+    /** */
     public boolean isOnCoordinator() {
         return onCoordinator;
     }
 
-    /**
-     *
-     */
+    /** */
     public void setOnCoordinator(boolean onCoordinator) {
         this.onCoordinator = onCoordinator;
     }

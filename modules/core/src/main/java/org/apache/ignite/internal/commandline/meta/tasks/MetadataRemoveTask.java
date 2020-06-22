@@ -54,6 +54,9 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
 
     /** {@inheritDoc} */
     @Nullable @Override protected MetadataMarshalled reduce0(List<ComputeJobResult> results) {
+        if (results.size() != 1)
+            throw new IgniteException("Invalid job results. Expected exactly 1 result, but was: " + results);
+
         if (results.get(0).getException() != null)
             throw results.get(0).getException();
         else
