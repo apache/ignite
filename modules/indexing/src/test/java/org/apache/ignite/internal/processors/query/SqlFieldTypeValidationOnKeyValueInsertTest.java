@@ -37,7 +37,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
@@ -189,12 +188,6 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
         doInsertSuccess(cache, obj);
 
         assertEquals(obj, cache.withKeepBinary().get(1));
-
-        Throwable t = GridTestUtils.assertThrows(log, () ->
-            grid(0).context().query().querySqlFields(new SqlFieldsQuery(SQL_TEXT)
-            .setSchema(DEFAULT_CACHE_NAME), true).getAll(),
-            CacheException.class,
-            "java.lang.String cannot be cast to java.util.UUID");
     }
 
     /** */
@@ -227,12 +220,6 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
         doInsertSuccess(cache, obj);
 
         assertEquals(obj, cache.get(1));
-
-        GridTestUtils.assertThrows(log, () ->
-            grid(0).context().query().querySqlFields(new SqlFieldsQuery(SQL_TEXT)
-            .setSchema(DEFAULT_CACHE_NAME), true).getAll(),
-            CacheException.class,
-            "java.lang.String cannot be cast to java.util.UUID");
     }
 
     /** */
@@ -264,7 +251,7 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
             runx.runx();
         }
         catch (Exception e) {
-            Throwable t = e.getCause();
+            Throwable t = e;
 
             while (t != null) {
                 if (t.getMessage().contains(message))
@@ -290,7 +277,7 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
         cache.invoke(1, new TestEntryProcessor(obj));
 
         Map<Object, EntryProcessorResult<Void>> m =
-        cache.invokeAll(F.asMap(1, new TestEntryProcessor(obj), 2, new TestEntryProcessor(obj)));
+            cache.invokeAll(F.asMap(1, new TestEntryProcessor(obj), 2, new TestEntryProcessor(obj)));
 
         assertTrue(m == null || m.isEmpty());
 
@@ -340,14 +327,5 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
 
             return null;
         }
-    }
-
-    /** */
-    public enum TestEnum {
-        /** */
-        A,
-
-        /** */
-        B
     }
 }

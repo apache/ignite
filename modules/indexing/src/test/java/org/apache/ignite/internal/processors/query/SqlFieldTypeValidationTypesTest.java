@@ -22,7 +22,6 @@ import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -46,9 +45,6 @@ import java.util.UUID;
  */
 @RunWith(Parameterized.class)
 public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest {
-    /** */
-    private static final String SQL_TEXT = "select id, name from Person where id=1";
-
     /** */
     private static final String ERROR = "Type for a column 'NAME' is not compatible with table definition.";
 
@@ -147,56 +143,6 @@ public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest 
 
     /** */
     @Test
-    public void testSuccess() throws Exception {
-        validate = true;
-
-        startGrid(0);
-
-        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME).withKeepBinary();
-
-        BinaryObject obj = grid(0).binary().builder("Person")
-                .setField("id", 1)
-                .setField("name", okVal)
-                .build();
-
-        cache.put(1, obj);
-
-        assertEquals(obj, cache.withKeepBinary().get(1));
-
-        grid(0).context().query()
-                .querySqlFields(
-                        new SqlFieldsQuery(SQL_TEXT).setSchema(DEFAULT_CACHE_NAME), true)
-                .getAll();
-    }
-
-    /** */
-    @Test
-    public void testSkipValidation() throws Exception {
-        validate = false;
-
-        startGrid(0);
-
-        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME).withKeepBinary();
-
-        BinaryObject obj = grid(0).binary().builder("Person")
-                .setField("id", 1)
-                .setField("name", errVal)
-                .build();
-
-        if (!expectIndexFail()) {
-            cache.put(1, obj);
-
-            assertEquals(obj, cache.get(1));
-        }
-        else {
-            GridTestUtils.assertThrows(log, () -> cache.put(1, obj),
-                IgniteException.class,
-                "Failed to update keys");
-        }
-    }
-
-    /** */
-    @Test
     public void testClassInstanceError() throws Exception {
         validate = true;
 
@@ -207,29 +153,6 @@ public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest 
         GridTestUtils.assertThrows(log, () -> cache.put(1, new Person(errVal)), IgniteException.class, ERROR);
 
         assertNull(cache.withKeepBinary().get(1));
-    }
-
-    /** */
-    @Test
-    public void testClassInstanceSkipValidation() throws Exception {
-        validate = false;
-
-        startGrid(0);
-
-        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
-
-        Person obj = new Person(errVal);
-
-        if (!expectIndexFail()) {
-            cache.put(1, obj);
-
-            assertEquals(obj, cache.get(1));
-        }
-        else {
-            GridTestUtils.assertThrows(log, () -> cache.put(1, obj),
-                IgniteException.class,
-                "Failed to update keys");
-        }
     }
 
     /** */
