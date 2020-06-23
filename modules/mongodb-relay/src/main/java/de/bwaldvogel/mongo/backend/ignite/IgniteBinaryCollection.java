@@ -173,7 +173,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
         // noop   	
     	T2<Object,BinaryObject> obj = this.documentToBinaryObject(key,document);
         
-        boolean rv = dataMap.putIfAbsent(Missing.ofNullable(obj.getKey()), obj.getValue());        
+        dataMap.put(Missing.ofNullable(obj.getKey()), obj.getValue());        
     }
 
 
@@ -261,14 +261,9 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 	}
     
     public static Document binaryObjectToDocument(Object key,BinaryObject obj,String idField){	    	
-    	Document doc = new Document();	
-    	if(key!=null) {
-    		if(key instanceof BinaryObject){
-				BinaryObject $arr = (BinaryObject)key;					
-				key = $arr.deserialize();
-			}	
-    		doc.append(idField, key);
-    	}
+    	
+    	Document doc = new Document();
+		
 	    for(String field: obj.type().fieldNames()){	    	
 	    	String $key =  field;
 	    	Object $value = obj.field(field);
@@ -291,7 +286,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 				}
 				if($value instanceof BinaryObject){
 					BinaryObject $arr = (BinaryObject)$value;					
-					$value = binaryObjectToDocument(null,$arr,idField);
+					$value = binaryObjectToDocument($arr);
 				}	
 				if($value!=null) {
 					doc.append($key, $value);
@@ -302,8 +297,68 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 				e.printStackTrace();
 			}	    	
 	    }
+    	
+    	if(key!=null) {
+    		if(key instanceof BinaryObject){
+				BinaryObject $arr = (BinaryObject)key;					
+				key = $arr.deserialize();
+			}	
+    		doc.append(idField, key);
+    	}
 	    return doc;
-	}    
+	}   
+    
+
+    public static Document binaryObjectToDocument(BinaryObject obj){	    	
+    	Object object = null;
+    	try {
+    		object = obj.deserialize();    		
+    	}
+    	catch(Exception e) {
+    		
+    	}
+    	Document doc = null;	
+    	if(object instanceof Document) {
+    		doc = (Document) object;
+    		return doc;
+    	} 
+    
+		doc = new Document();
+	    for(String field: obj.type().fieldNames()){	    	
+	    	String $key =  field;
+	    	Object $value = obj.field(field);
+			try {
+			
+				if($value instanceof List){
+					List $arr = (List)$value;
+					//-$value = $arr.toArray();
+					$value = ($arr);
+				}
+				else if($value instanceof Set){
+					Set $arr = (Set)$value;
+					//-$value = $arr.toArray();
+					$value = ($arr);
+				}
+				else if($value instanceof Map){
+					Map $arr = (Map)$value;					
+					$value = new Document($arr);
+				}
+				if($value instanceof BinaryObject){
+					BinaryObject $arr = (BinaryObject)$value;					
+					$value = binaryObjectToDocument($arr);
+				}	
+				if($value!=null) {
+					doc.append($key, $value);
+				}
+				
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}	    	
+	    }
+    		
+	    return doc;
+	}   
 
 
     /** {@inheritDoc} */

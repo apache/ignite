@@ -63,6 +63,11 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
             	   if(databaseName2.equalsIgnoreCase(databaseName)) {
    	                	try {
 		   	                Document doc = new Document("name",fullName);
+		   	                
+		   	                String collectionName = extractCollectionNameFromNamespace(fullName);
+		   	                MongoCollection<Object> collection = openOrCreateCollection(collectionName, ID_FIELD);
+		   	                collections.put(collectionName, collection);
+		                 
 		   	                this.namespaces.addDocument(doc);
    	                	}
    	                	catch(MongoServerError e) {
@@ -73,11 +78,13 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
                else {
             	   try {
 	            	 Document doc = new Document("name",fullName);
-	  	             this.namespaces.addDocument(doc);
+	  	             
 	  	               
 	  	             String collectionName = extractCollectionNameFromNamespace(fullName);
 	  	             MongoCollection<Object> collection = openOrCreateCollection(collectionName, ID_FIELD);
 	                 collections.put(collectionName, collection);
+	                 
+	                 this.namespaces.addDocument(doc);
 	                 log.debug("opened collection '{}'", collectionName);
 	               }
 	               catch(MongoServerError e) {
