@@ -29,35 +29,53 @@ import javax.cache.event.CacheEntryEvent;
 @SuppressWarnings("rawtypes")
 public class ClientCacheEntryEventNotification extends ClientNotification {
     /** */
-    private final CacheEntryEvent evt;
+    private final Iterable<CacheEntryEvent<?, ?>> evts;
 
     /**
      * Ctor.
      * @param opCode Operation code.
      * @param rsrcId Resource ID.
+     * @param evts Events.
      */
-    public ClientCacheEntryEventNotification(short opCode, long rsrcId, CacheEntryEvent evt) {
+    public ClientCacheEntryEventNotification(short opCode, long rsrcId, Iterable<CacheEntryEvent<?, ?>> evts) {
         super(opCode, rsrcId);
 
-        assert evt != null;
-        this.evt = evt;
+        assert evts != null;
+        this.evts = evts;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
 
-        writer.writeObjectDetached(evt.getKey());
-        writer.writeObjectDetached(evt.getOldValue());
-        writer.writeObjectDetached(evt.getValue());
+        int pos = writer.reserveInt();
+        int cnt = 0;
 
-        switch (evt.getEventType()) {
-            case CREATED: writer.writeByte((byte) 0); break;
-            case UPDATED: writer.writeByte((byte) 1); break;
-            case REMOVED: writer.writeByte((byte) 2); break;
-            case EXPIRED: writer.writeByte((byte) 3); break;
-            default:
-                throw new IllegalArgumentException("Unknown event type: " + evt.getEventType());
+        for (CacheEntryEvent evt : evts) {
+            writer.writeObjectDetached(evt.getKey());
+            writer.writeObjectDetached(evt.getOldValue());
+            writer.writeObjectDetached(evt.getValue());
+
+            switch (evt.getEventType()) {
+                case CREATED:
+                    writer.writeByte((byte) 0);
+                    break;
+                case UPDATED:
+                    writer.writeByte((byte) 1);
+                    break;
+                case REMOVED:
+                    writer.writeByte((byte) 2);
+                    break;
+                case EXPIRED:
+                    writer.writeByte((byte) 3);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown event type: " + evt.getEventType());
+            }
+
+            cnt++;
         }
+
+        writer.writeInt(pos, cnt);
     }
 }

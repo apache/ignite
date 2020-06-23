@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
-import org.apache.ignite.internal.processors.platform.client.ClientNotification;
 
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -71,11 +70,15 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
                 if (eventBuffer == null)
                     eventBuffer = new ConcurrentLinkedQueue<>();
 
-                for (Object e : iterable)
-                    eventBuffer.add((CacheEntryEvent) e);
+                for (CacheEntryEvent e : iterable)
+                    eventBuffer.add(e);
             } else {
-                // TODO: Include iterable
-                ctx.notifyClient(new ClientNotification(ClientMessageParser.OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION, cursorId));
+                ClientCacheEntryEventNotification notification = new ClientCacheEntryEventNotification(
+                        ClientMessageParser.OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION,
+                        cursorId,
+                        iterable);
+
+                ctx.notifyClient(notification);
             }
         } finally {
             modeLock.unlock();
