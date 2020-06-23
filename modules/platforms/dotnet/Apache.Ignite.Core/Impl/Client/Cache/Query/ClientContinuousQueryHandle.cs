@@ -51,9 +51,19 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// </param>
         protected virtual void Dispose(bool disposing)
         {
-            // TODO: How do we dispose of initial query? It should have it's own Dispose method.
-            _socket.DoOutInOp<object>(ClientOp.ResourceClose,
-                ctx => ctx.Writer.WriteLong(_continuousQueryId), null);
+            lock (_disposeSyncRoot)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                // TODO: How do we dispose of initial query? It should have it's own Dispose method.
+                _socket.DoOutInOp<object>(ClientOp.ResourceClose,
+                    ctx => ctx.Writer.WriteLong(_continuousQueryId), null);
+
+                _disposed = true;
+            }
         }
 
         /** <inheritdoc /> */

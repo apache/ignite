@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         public ICacheEntryEventFilter<TK, TV> Filter { get; set; }
 
         // TODO: POC
-        public IBinaryObject BinaryFilter { get; set; }
+        internal IBinaryObject BinaryFilter { get; set; }
 
         /// <summary>
         /// Buffer size. When a cache update happens, entry is first put into a buffer.
