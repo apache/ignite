@@ -57,9 +57,8 @@ public class LimitConverterRule extends AbstractIgniteConverterRule<LogicalSort>
     /** {@inheritDoc} */
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalSort sort) {
         RelOptCluster cluster = sort.getCluster();
-        RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation());
-        RelTraitSet inTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelNode input = convert(sort.getInput(), inTraits);
+        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        RelNode input = convert(sort.getInput(), traits);
 
         if (!sort.getCollation().getFieldCollations().isEmpty()) {
             // Create a sort with the same sort key, but no offset or fetch.
@@ -73,7 +72,7 @@ public class LimitConverterRule extends AbstractIgniteConverterRule<LogicalSort>
 
         return new IgniteLimit(
             cluster,
-            outTraits,
+            traits,
             input,
             sort.offset, sort.fetch);
     }
