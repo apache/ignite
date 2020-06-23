@@ -19,16 +19,14 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import org.apache.calcite.plan.DeriveMode;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
@@ -40,12 +38,13 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,7 +56,6 @@ import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
  * Relational expression that combines two relational expressions according to
@@ -67,7 +65,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
  * The set of output rows is a subset of the cartesian product of the two
  * inputs; precisely which subset depends on the join condition.
  */
-public class IgniteJoin extends Join implements IgniteRel {
+public class IgniteJoin extends Join implements TraitsAwareIgniteRel {
     /**
      * Creates a Join.
      *
@@ -113,252 +111,270 @@ public class IgniteJoin extends Join implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode passThrough(RelTraitSet required) {
-        required = fixTraits(required);
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
 
-        Pair<RelCollation, RelCollation> inCollations = inCollations(TraitUtils.collation(required));
-        if (inCollations == null)
-            return passThrough(required.replace(RelCollations.EMPTY));
-
-        IgniteDistribution toDistr = TraitUtils.distribution(required);
-
-        Set<Pair<RelTraitSet, List<RelTraitSet>>> traits = new HashSet<>();
-
-        RelOptCluster cluster = getCluster();
-        RelTraitSet outTraits, leftTraits, rightTraits;
-
-        RelDistribution.Type distrType = toDistr.getType();
-        switch (distrType) {
-            case BROADCAST_DISTRIBUTED:
-            case SINGLETON:
-                outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                    .replace(toDistr)
-                    .replace(TraitUtils.collation(required));
-
-                leftTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                    .replace(toDistr)
-                    .replace(inCollations.left);
-
-                rightTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                    .replace(toDistr)
-                    .replace(inCollations.right);
-
-                traits.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                break;
-            case HASH_DISTRIBUTED:
-            case RANDOM_DISTRIBUTED:
-                if (joinType != LEFT && joinType != RIGHT && (joinType != INNER || F.isEmpty(joinInfo.pairs())))
-                    return passThrough(required.replace(IgniteDistributions.single()));
-
-                DistributionFunction function = distrType == HASH_DISTRIBUTED
-                    ? toDistr.function()
-                    : DistributionFunction.HashDistribution.INSTANCE;
-
-                IgniteDistribution outDistr = hash(joinInfo.leftKeys, function);
-
-                if (distrType == HASH_DISTRIBUTED && !outDistr.satisfies(toDistr))
-                    return passThrough(required.replace(IgniteDistributions.single()));
-
-                outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                    .replace(outDistr)
-                    .replace(TraitUtils.collation(required));
-
-                leftTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                    .replace(hash(joinInfo.leftKeys, function))
-                    .replace(inCollations.left);
-                rightTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                    .replace(hash(joinInfo.rightKeys, function))
-                    .replace(inCollations.right);
-
-                traits.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                if (joinType == INNER || joinType == LEFT) {
-                    leftTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                        .replace(hash(joinInfo.leftKeys, function))
-                        .replace(inCollations.left);
-                    rightTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                        .replace(broadcast())
-                        .replace(inCollations.right);
-
-                    traits.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-                }
-
-                if (joinType == INNER || joinType == RIGHT) {
-                    leftTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                        .replace(broadcast())
-                        .replace(inCollations.left);
-                    rightTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                        .replace(hash(joinInfo.rightKeys, function))
-                        .replace(inCollations.right);
-
-                    traits.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-                }
-
-             default:
-                break;
-        }
-
-        List<RelNode> nodes = createNodes(traits);
-
-        RelOptPlanner planner = getCluster().getPlanner();
-        for (int i = 1; i < nodes.size(); i++)
-            planner.register(nodes.get(i), this);
-
-        return F.first(nodes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<RelNode> derive(List<List<RelTraitSet>> inTraits) {
-        Set<Pair<RelTraitSet, List<RelTraitSet>>> traits = new HashSet<>();
-
-        RelOptCluster cluster = getCluster();
-
-        for (Pair<RelTraitSet, RelTraitSet> inTraits0 : inputTraits(inTraits)) {
-            RelCollation leftCollation = TraitUtils.collation(inTraits0.left);
-            RelCollation rightCollation = TraitUtils.collation(inTraits0.right);
-
-            IgniteDistribution leftDistr = TraitUtils.distribution(inTraits0.left);
-            IgniteDistribution rightDistr = TraitUtils.distribution(inTraits0.right);
-
-            RelCollation outCollation = outCollation(leftCollation, rightCollation);
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left, left = pair.right.get(0), right = pair.right.get(1);
 
             RelTraitSet outTraits, leftTraits, rightTraits;
 
-            outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                    .replace(outCollation)
-                    .replace(single());
+            RelCollation collation = TraitUtils.collation(left);
 
-            leftTraits = inTraits0.left.replace(single());
-            rightTraits = inTraits0.right.replace(single());
+            if (joinType == RIGHT || joinType == JoinRelType.FULL) {
+                for (RelFieldCollation field : collation.getFieldCollations()) {
+                    if (RelFieldCollation.NullDirection.LAST != field.nullDirection) {
+                        collation = RelCollations.EMPTY;
+                        break;
+                    }
+                }
+            }
 
-            traits.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+            outTraits = out.replace(collation);
+            leftTraits = left.replace(collation);
+            rightTraits = right.replace(RelCollations.EMPTY);
 
-            outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                .replace(outCollation)
-                .replace(broadcast());
+            traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        }
 
-            leftTraits = inTraits0.left.replace(broadcast());
-            rightTraits = inTraits0.right.replace(broadcast());
+        return traits0;
+    }
 
-            traits.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+    /** {@inheritDoc} */
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left, left = pair.right.get(0), right = pair.right.get(1);
+
+            RewindabilityTrait leftRewindability = TraitUtils.rewindability(left);
+            RewindabilityTrait rightRewindability = TraitUtils.rewindability(right);
+
+            RelTraitSet outTraits, leftTraits, rightTraits;
+
+            outTraits = out.replace(RewindabilityTrait.ONE_WAY);
+            leftTraits = left.replace(RewindabilityTrait.ONE_WAY);
+            rightTraits = right.replace(RewindabilityTrait.ONE_WAY);
+
+            traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+            if (leftRewindability.rewindable() && rightRewindability.rewindable()) {
+                outTraits = out.replace(RewindabilityTrait.REWINDABLE);
+                leftTraits = left.replace(RewindabilityTrait.REWINDABLE);
+                rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
+
+                traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+            }
+        }
+
+        return traits0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left, left = pair.right.get(0), right = pair.right.get(1);
+
+            IgniteDistribution leftDistr = TraitUtils.distribution(left);
+            IgniteDistribution rightDistr = TraitUtils.distribution(right);
+
+            RelTraitSet outTraits, leftTraits, rightTraits;
+
+            outTraits = out.replace(single());
+            leftTraits = left.replace(single());
+            rightTraits = right.replace(single());
+
+            traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+            outTraits = out.replace(broadcast());
+            leftTraits = left.replace(broadcast());
+            rightTraits = right.replace(broadcast());
+
+            traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
 
             if (joinType == LEFT || joinType == RIGHT || (joinType == INNER && !F.isEmpty(joinInfo.pairs()))) {
                 Set<DistributionFunction> functions = new HashSet<>();
 
-                if (leftDistr.getType() == RelDistribution.Type.HASH_DISTRIBUTED
+                if (leftDistr.getType() == HASH_DISTRIBUTED
                     && Objects.equals(joinInfo.leftKeys, leftDistr.getKeys()))
                     functions.add(leftDistr.function());
 
-                if (rightDistr.getType() == RelDistribution.Type.HASH_DISTRIBUTED
+                if (rightDistr.getType() == HASH_DISTRIBUTED
                     && Objects.equals(joinInfo.rightKeys, rightDistr.getKeys()))
                     functions.add(rightDistr.function());
 
                 functions.add(DistributionFunction.HashDistribution.INSTANCE);
 
                 for (DistributionFunction factory : functions) {
-                    outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                        .replace(outCollation)
-                        .replace(hash(joinInfo.leftKeys, factory));
+                    outTraits = out.replace(hash(joinInfo.leftKeys, factory));
+                    leftTraits = left.replace(hash(joinInfo.leftKeys, factory));
+                    rightTraits = right.replace(hash(joinInfo.rightKeys, factory));
 
-                    leftTraits = inTraits0.left.replace(hash(joinInfo.leftKeys, factory));
-                    rightTraits = inTraits0.right.replace(hash(joinInfo.rightKeys, factory));
-
-                    traits.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                    traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
 
                     if (joinType == INNER || joinType == LEFT) {
-                        leftTraits = inTraits0.left.replace(hash(joinInfo.leftKeys, factory));
-                        rightTraits = inTraits0.right.replace(broadcast());
+                        leftTraits = left.replace(hash(joinInfo.leftKeys, factory));
+                        rightTraits = right.replace(broadcast());
 
-                        traits.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                        traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
                     }
 
                     if (joinType == INNER || joinType == RIGHT) {
-                        leftTraits = inTraits0.left.replace(broadcast());
-                        rightTraits = inTraits0.right.replace(hash(joinInfo.rightKeys, factory));
+                        leftTraits = left.replace(broadcast());
+                        rightTraits = right.replace(hash(joinInfo.rightKeys, factory));
 
-                        traits.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                        traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
                     }
                 }
             }
         }
 
-        return createNodes(traits);
+        return traits0;
     }
 
     /** {@inheritDoc} */
-    @Override public DeriveMode getDeriveMode() {
-        return DeriveMode.OMAKASE;
-    }
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
 
-    /** */
-    private RelCollation outCollation(RelCollation left, RelCollation right) {
-        switch (joinType) {
-            case SEMI:
-            case ANTI:
-            case INNER:
-            case LEFT:
-                return left;
-            case RIGHT:
-            case FULL:
-                for (RelFieldCollation field : left.getFieldCollations()) {
-                    if (RelFieldCollation.NullDirection.LAST != field.nullDirection)
-                        return RelCollations.EMPTY;
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left, left = pair.right.get(0), right = pair.right.get(1);
+
+            RelTraitSet outTraits, leftTraits, rightTraits;
+
+            RelCollation collation = TraitUtils.collation(out);
+
+            if (joinType == RIGHT || joinType == JoinRelType.FULL) {
+                for (RelFieldCollation field : collation.getFieldCollations()) {
+                    if (RelFieldCollation.NullDirection.LAST != field.nullDirection) {
+                        collation = RelCollations.EMPTY;
+                        break;
+                    }
                 }
+            }
 
-                return left;
+            outTraits = out.replace(collation);
+            leftTraits = left.replace(collation);
+            rightTraits = right.replace(RelCollations.EMPTY);
+
+            traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
         }
 
-        return RelCollations.EMPTY;
+        return traits0;
     }
 
-    /** */
-    private Pair<RelCollation, RelCollation> inCollations(RelCollation out) {
-        switch (joinType) {
-            case SEMI:
-            case ANTI:
-            case INNER:
-            case LEFT:
-                return Pair.of(out, RelCollations.EMPTY);
-            case RIGHT:
-            case FULL:
-                for (RelFieldCollation field : out.getFieldCollations()) {
-                    if (RelFieldCollation.NullDirection.LAST != field.nullDirection)
-                        return null;
-                }
+    /** {@inheritDoc} */
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
 
-                return Pair.of(out, RelCollations.EMPTY);
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left, left = pair.right.get(0), right = pair.right.get(1);
+
+            RelTraitSet outTraits, leftTraits, rightTraits;
+
+            RewindabilityTrait rewindability = TraitUtils.rewindability(out);
+
+            outTraits = out.replace(rewindability);
+            leftTraits = left.replace(rewindability);
+            rightTraits = right.replace(rewindability);
+
+            traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
         }
 
-        return null;
+        return traits0;
     }
 
-    /** */
-    private Collection<Pair<RelTraitSet, RelTraitSet>> inputTraits(List<List<RelTraitSet>> inputTraits) {
-        assert !F.isEmpty(inputTraits) && inputTraits.size() == 2;
-        int size = inputTraits.get(0).size() * inputTraits.get(1).size();
-        Set<Pair<RelTraitSet, RelTraitSet>> pairs = U.newHashSet(size);
-        for (RelTraitSet left : inputTraits.get(0)) {
-            for (RelTraitSet right : inputTraits.get(1))
-                pairs.add(Pair.of(fixTraits(left), fixTraits(right)));
+    /** {@inheritDoc} */
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left, left = pair.right.get(0), right = pair.right.get(1);
+
+            RelTraitSet outTraits, leftTraits, rightTraits;
+
+            IgniteDistribution distribution = TraitUtils.distribution(out);
+
+            RelDistribution.Type distrType = distribution.getType();
+            switch (distrType) {
+                case BROADCAST_DISTRIBUTED:
+                case SINGLETON:
+                    outTraits = out.replace(distribution);
+                    leftTraits = left.replace(distribution);
+                    rightTraits = right.replace(distribution);
+
+                    traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+                    break;
+                case HASH_DISTRIBUTED:
+                case RANDOM_DISTRIBUTED:
+                    if (joinType != LEFT && joinType != RIGHT && (joinType != INNER || F.isEmpty(joinInfo.pairs()))) {
+                        outTraits = out.replace(single());
+                        leftTraits = left.replace(single());
+                        rightTraits = right.replace(single());
+
+                        traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+                        break;
+                    }
+
+                    DistributionFunction function = distrType == HASH_DISTRIBUTED
+                        ? distribution.function()
+                        : DistributionFunction.HashDistribution.INSTANCE;
+
+                    IgniteDistribution outDistr = hash(joinInfo.leftKeys, function);
+
+                    if (distrType == HASH_DISTRIBUTED && !outDistr.satisfies(distribution)) {
+                        outTraits = out.replace(single());
+                        leftTraits = left.replace(single());
+                        rightTraits = right.replace(single());
+
+                        traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+                        break;
+                    }
+
+                    outTraits = out.replace(outDistr);
+                    leftTraits = left.replace(hash(joinInfo.leftKeys, function));
+                    rightTraits = right.replace(hash(joinInfo.rightKeys, function));
+
+                    traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+                    if (joinType == INNER || joinType == LEFT) {
+                        leftTraits = left.replace(hash(joinInfo.leftKeys, function));
+                        rightTraits = right.replace(broadcast());
+
+                        traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                    }
+
+                    if (joinType == INNER || joinType == RIGHT) {
+                        leftTraits = left.replace(broadcast());
+                        rightTraits = right.replace(hash(joinInfo.rightKeys, function));
+
+                        traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                    }
+
+                    break;
+
+                 default:
+                    break;
+            }
         }
-        return pairs;
+
+        return traits0;
     }
 
-    /** */
-    private List<RelNode> createNodes(Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        List<RelNode> res = new ArrayList<>(traits.size());
-        for (Pair<RelTraitSet, List<RelTraitSet>> p : traits) {
-            int size = getInputs().size();
-            assert size == p.right.size();
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        RelOptCost cost = super.computeSelfCost(planner, mq);
 
-            List<RelNode> list = new ArrayList<>(size);
-            for (int i = 0; i < size; i++)
-                list.add(RelOptRule.convert(getInput(i), p.right.get(i)));
-
-            res.add(copy(p.left, list));
-        }
-
-        return res;
+        return cost;
     }
 }

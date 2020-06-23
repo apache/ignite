@@ -1,43 +1,29 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import com.google.common.collect.Ordering;
 import org.apache.calcite.plan.RelMultipleTrait;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.Util;
 import org.jetbrains.annotations.NotNull;
 
 public class RewindabilityTrait implements RelMultipleTrait {
     /** */
-    public static final RewindabilityTrait NOT_REWINDABLE = canonize(new RewindabilityTrait(null));
+    public static final RewindabilityTrait ONE_WAY = canonize(new RewindabilityTrait(false));
 
     /** */
-    private static final Ordering<Iterable<Integer>> ORDERING =
-        Ordering.<Integer>natural().lexicographical();
+    public static final RewindabilityTrait REWINDABLE = canonize(new RewindabilityTrait(true));
 
     /** */
-    private final ImmutableIntList fields;
+    private final boolean rewindable;
 
     /** */
-    private RewindabilityTrait(ImmutableIntList fields) {
-        this.fields = fields;
-    }
-
-    /** */
-    public static RewindabilityTrait rewindableBy(int... fields) {
-        return canonize(new RewindabilityTrait(ImmutableIntList.of(fields)));
+    private RewindabilityTrait(boolean rewindable) {
+        this.rewindable = rewindable;
     }
 
     /** */
     public boolean rewindable() {
-        return fields() != null;
-    }
-
-    /** */
-    public ImmutableIntList fields() {
-        return fields;
+        return rewindable;
     }
 
     /** {@inheritDoc} */
@@ -48,10 +34,7 @@ public class RewindabilityTrait implements RelMultipleTrait {
     /** {@inheritDoc} */
     @Override public int compareTo(@NotNull RelMultipleTrait o) {
         RewindabilityTrait that = (RewindabilityTrait)o;
-        if (fields == null || that.fields == null)
-            return fields == that.fields ? 0 : fields == null ? 1 : -1;
-
-        return ORDERING.compare(fields, that.fields);
+        return Boolean.compare(that.rewindable, rewindable);
     }
 
     /** {@inheritDoc} */
@@ -62,8 +45,18 @@ public class RewindabilityTrait implements RelMultipleTrait {
     }
 
     /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return (rewindable ? 1 : 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return rewindable ? "rewindable" : "one-way";
+    }
+
+    /** {@inheritDoc} */
     @Override public RelTraitDef<RewindabilityTrait> getTraitDef() {
-        return null;
+        return RewindabilityTraitDef.INSTANCE;
     }
 
     /** {@inheritDoc} */
@@ -76,13 +69,7 @@ public class RewindabilityTrait implements RelMultipleTrait {
 
         RewindabilityTrait trait0 = (RewindabilityTrait)trait;
 
-        if (!trait0.rewindable())
-            return true;
-
-        if (!rewindable())
-            return false;
-
-        return Util.startsWith(fields, trait0.fields);
+        return !trait0.rewindable() || rewindable();
     }
 
     /** {@inheritDoc} */

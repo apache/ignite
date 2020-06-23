@@ -17,28 +17,29 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.calcite.plan.DeriveMode;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Union;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
-public class IgniteUnionAll extends Union implements IgniteRel {
+public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
     /** */
     public IgniteUnionAll(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs) {
         super(cluster, traits, inputs, true);
@@ -65,46 +66,104 @@ public class IgniteUnionAll extends Union implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode passThrough(RelTraitSet required) {
-        IgniteDistribution toDistr = TraitUtils.distribution(required);
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
 
-        // Union erases collation and only distribution trait can be passed through.
-        // So that, it's no use to pass ANY distribution.
-        if (toDistr == any())
-            return null;
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left;
+            RewindabilityTrait rewindability = TraitUtils.rewindability(out);
 
-        RelTraitSet traits = getCluster().traitSetOf(IgniteConvention.INSTANCE)
-            .replace(toDistr);
-
-        List<RelNode> inputs0 = Commons.transform(inputs,
-            input -> RelOptRule.convert(input, traits));
-
-        return copy(traits, inputs0);
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<RelNode> derive(List<List<RelTraitSet>> inputTraits) {
-        RelOptCluster cluster = getCluster();
-
-        Set<RelTraitSet> traits = inputTraits.stream()
-            .flatMap(List::stream)
-            .map(TraitUtils::distribution)
-            .filter(d -> d != any())
-            .map(distr -> cluster.traitSetOf(IgniteConvention.INSTANCE).replace(distr))
-            .collect(Collectors.toSet());
-
-        List<RelNode> res = new ArrayList<>(traits.size());
-        for (RelTraitSet traits0 : traits) {
-            List<RelNode> inputs0 = Commons.transform(inputs,
-                input -> RelOptRule.convert(input, traits0));
-            res.add(copy(traits0, inputs0));
+            traits0.add(Pair.of(out, Commons.transform(pair.right, t -> t.replace(rewindability))));
         }
 
-        return res;
+        return traits0;
     }
 
     /** {@inheritDoc} */
-    @Override public DeriveMode getDeriveMode() {
-        return DeriveMode.OMAKASE;
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left;
+            IgniteDistribution distribution = TraitUtils.distribution(out);
+
+            traits0.add(Pair.of(out, Commons.transform(pair.right, t -> t.replace(distribution))));
+        }
+
+        return traits0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left;
+
+            traits0.add(Pair.of(out.replace(RelCollations.EMPTY),
+                Commons.transform(pair.right, t -> t.replace(RelCollations.EMPTY))));
+        }
+
+        return traits0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left;
+
+            boolean rewindable = pair.right.stream()
+                .map(TraitUtils::rewindability)
+                .allMatch(RewindabilityTrait::rewindable);
+
+            if (rewindable)
+                traits0.add(Pair.of(out.replace(RewindabilityTrait.REWINDABLE), pair.right));
+            else
+                traits0.add(Pair.of(out.replace(RewindabilityTrait.ONE_WAY),
+                    Commons.transform(pair.right, t -> t.replace(RewindabilityTrait.ONE_WAY))));
+        }
+
+        return traits0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left;
+
+            Set<IgniteDistribution> distributions = pair.right.stream()
+                .map(TraitUtils::distribution)
+                .collect(Collectors.toSet());
+
+            for (IgniteDistribution distribution : distributions)
+                traits0.add(Pair.of(out.replace(distribution),
+                    Commons.transform(pair.right, t -> t.replace(distribution))));
+        }
+
+        return traits0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left;
+
+            traits0.add(Pair.of(out.replace(RelCollations.EMPTY),
+                Commons.transform(pair.right, t -> t.replace(RelCollations.EMPTY))));
+        }
+
+        return traits0;
     }
 }

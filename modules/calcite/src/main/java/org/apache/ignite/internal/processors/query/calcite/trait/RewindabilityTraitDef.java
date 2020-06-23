@@ -30,6 +30,6 @@ public class RewindabilityTraitDef extends RelTraitDef<RewindabilityTrait> {
 
     /** {@inheritDoc} */
     @Override public RewindabilityTrait getDefault() {
-        return RewindabilityTrait.NOT_REWINDABLE;
+        return RewindabilityTrait.ONE_WAY;
     }
 }

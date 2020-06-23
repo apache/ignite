@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -119,6 +120,21 @@ public final class Commons {
      * Transforms a given list using map function.
      */
     public static <T,R> List<R> transform(@NotNull List<T> src, @NotNull Function<T,R> mapFun) {
+        if (F.isEmpty(src))
+            return Collections.emptyList();
+
+        List<R> list = new ArrayList<>(src.size());
+
+        for (T t : src)
+            list.add(mapFun.apply(t));
+
+        return list;
+    }
+
+    /**
+     * Transforms a given collection using map function.
+     */
+    public static <T,R> Collection<R> transform(@NotNull Collection<T> src, @NotNull Function<T,R> mapFun) {
         if (F.isEmpty(src))
             return Collections.emptyList();
 

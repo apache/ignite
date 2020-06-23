@@ -30,9 +30,10 @@ import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
@@ -63,6 +64,11 @@ public class IgniteExchange extends Exchange implements IgniteRel {
     }
 
     /** {@inheritDoc} */
+    @Override public RewindabilityTrait rewindability() {
+        return RewindabilityTrait.ONE_WAY;
+    }
+
+    /** {@inheritDoc} */
     @Override public Exchange copy(RelTraitSet traitSet, RelNode newInput, RelDistribution newDistribution) {
         return new IgniteExchange(getCluster(), traitSet, newInput, newDistribution);
     }
@@ -88,7 +94,12 @@ public class IgniteExchange extends Exchange implements IgniteRel {
         if (!distribution().satisfies(distribution))
             return null;
 
-        return Pair.of(required.replace(distribution()), ImmutableList.of(required.replace(IgniteDistributions.any())));
+        RelTraitSet outTraits = required.replace(distribution())
+            .replace(RewindabilityTrait.ONE_WAY);
+        RelTraitSet inTraits = required.replace(any())
+            .replace(RewindabilityTrait.ONE_WAY);
+
+        return Pair.of(outTraits, ImmutableList.of(inTraits));
     }
 
     /** {@inheritDoc} */
@@ -97,7 +108,12 @@ public class IgniteExchange extends Exchange implements IgniteRel {
 
         childTraits = fixTraits(childTraits);
 
-        return Pair.of(childTraits.replace(distribution()), ImmutableList.of(childTraits.replace(IgniteDistributions.any())));
+        RelTraitSet outTraits = childTraits.replace(distribution())
+            .replace(RewindabilityTrait.ONE_WAY);
+        RelTraitSet inTraits = childTraits.replace(any())
+            .replace(RewindabilityTrait.ONE_WAY);
+
+        return Pair.of(outTraits, ImmutableList.of(inTraits));
     }
 
     /** {@inheritDoc} */

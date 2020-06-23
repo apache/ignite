@@ -94,6 +94,8 @@ import org.apache.ignite.internal.processors.query.calcite.schema.TableDescripto
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -474,7 +476,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -616,7 +619,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -707,7 +711,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -939,7 +944,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -1059,8 +1065,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         RelTraitDef<?>[] traitDefs = {
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            DistributionTraitDef.INSTANCE
+            DistributionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -1206,7 +1212,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -1451,7 +1458,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -1703,7 +1711,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -1826,7 +1835,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -1948,7 +1958,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2070,7 +2081,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2189,7 +2201,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2297,7 +2310,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2416,7 +2430,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             ConventionTraitDef.INSTANCE,
             DistributionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2533,7 +2548,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+RewindabilityTraitDef.INSTANCE
 
         };
 
@@ -2645,6 +2661,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelOptCluster cluster = ctx.getCluster();
             RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
                 .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
+                .replaceIf(RewindabilityTraitDef.INSTANCE, () -> RewindabilityTrait.REWINDABLE)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
             return new IgniteTableScan(cluster, traitSet, relOptTbl, "PK", null);
