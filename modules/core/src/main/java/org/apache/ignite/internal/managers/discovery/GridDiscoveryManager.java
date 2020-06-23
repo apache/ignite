@@ -144,7 +144,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBI
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -768,6 +767,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ctx.authentication().onLocalJoin();
 
                         ctx.encryption().onLocalJoin();
+
+                        ctx.cluster().onLocalJoin();
                     }
 
                     IgniteInternalFuture<Boolean> transitionWaitFut = ctx.state().onLocalJoin(discoCache);
@@ -1540,7 +1541,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             if (targetState == null)
                 targetState = ctx.config().isAutoActivationEnabled() ? ACTIVE : INACTIVE;
 
-            if (!active(state.state()) && active(targetState)) {
+            if (!state.state().active() && targetState.active()) {
                 String offlineConsistentIds = "";
 
                 if (bltOffline > 0 && bltOffline <= 5) {

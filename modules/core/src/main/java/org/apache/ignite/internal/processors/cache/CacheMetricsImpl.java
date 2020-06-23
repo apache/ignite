@@ -351,7 +351,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             "Number of partitions need to be cleared before actual rebalance start.");
 
         mreg.register("IsIndexRebuildInProgress", () -> {
-            IgniteInternalFuture fut = cctx.shared().database().indexRebuildFuture(cctx.cacheId());
+            IgniteInternalFuture fut = cctx.shared().kernalContext().query().indexRebuildFuture(cctx.cacheId());
 
             return fut != null && !fut.isDone();
         }, "True if index rebuild is in progress.");
