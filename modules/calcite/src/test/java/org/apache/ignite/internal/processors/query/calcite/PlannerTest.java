@@ -2748,6 +2748,98 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13179")
+    public void testLimitDistribution() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+      TestTable testTbl = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("VAL", f.createJavaType(String.class))
+                .build()) {
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("TEST", testTbl);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "SELECT * FROM TEST AS T0, (SELECT ID FROM TEST LIMIT 2) AS T1 WHERE T0.ID=T1.ID";
+
+        RelTraitDef<?>[] traitDefs = {
+            ConventionTraitDef.INSTANCE,
+            DistributionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .parameters(2)
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        RelRoot relRoot;
+
+        try (IgnitePlanner planner = ctx.planner()) {
+            assertNotNull(planner);
+
+            String qry = ctx.query();
+
+            assertNotNull(qry);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(qry);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            // Transformation chain
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
+
+            RelTraitSet desired = rel.getCluster()
+                .traitSetOf(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single());
+
+            RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+
+            AtomicBoolean limit = new AtomicBoolean();
+            AtomicBoolean sort = new AtomicBoolean();
+
+            relTreeVisit(phys, (node, ordinal, parent) -> {
+                    if (node instanceof IgniteLimit)
+                        limit.set(true);
+
+                    if (node instanceof IgniteSort)
+                        sort.set(true);
+                }
+            );
+
+            System.out.println("+++ "  + RelOptUtil.toString(phys));
+        }
+    }
+
     /** */
     private NodesMapping intermediateMapping(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> filter) {
         List<UUID> nodes = desiredCnt == 1 ? select(this.nodes, 0) : select(this.nodes, 0, 1, 2, 3);
