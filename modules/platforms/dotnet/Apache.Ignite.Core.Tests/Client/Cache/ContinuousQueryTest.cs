@@ -88,6 +88,26 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // do cache updates and compute calls in multiple threads.
         }
 
+        /// <summary>
+        /// Tests that continuous query with filter receives only matching events.
+        /// </summary>
+        [Test]
+        public void TestContinuousQueryWithFilterReceivesOnlyMatchingEvents()
+        {
+            // TODO:
+        }
+
+        /// <summary>
+        /// Tests that server starts sending notifications only when client is ready to receive them.
+        /// There is a brief moment when server starts the continuous query,
+        /// but client has not received the response with query ID yet - server should not send notifications.
+        /// </summary>
+        [Test]
+        public void TestContinuousQueryStartWithBackgroundCacheUpdatesReceivesEventsCorrectly()
+        {
+            // TODO:
+        }
+
         /** */
         private class DelegateListener<TK, TV> : ICacheEntryEventListener<TK, TV>
         {
