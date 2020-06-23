@@ -1578,7 +1578,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetTimeStatClosure<V>(metrics0(), start));
 
         if (profilingEnabled)
-            fut.listen(new ProfileClosure<>(CacheOperationType.GET, start));
+            fut.listen(f -> profile(CacheOperationType.GET, start));
 
         return fut;
     }
@@ -1635,7 +1635,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetTimeStatClosure<EntryGetResult>(metrics0(), start));
 
         if (profilingEnabled)
-            fut.listen(new ProfileClosure<>(CacheOperationType.GET, start));
+            fut.listen(f -> profile(CacheOperationType.GET, start));
 
         return fr;
     }
@@ -1742,7 +1742,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
 
         if (profilingEnabled)
-            fut.listen(new ProfileClosure<>(CacheOperationType.GET_ALL, start));
+            fut.listen(f -> profile(CacheOperationType.GET_ALL, start));
 
         return fut;
     }
@@ -1798,7 +1798,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetTimeStatClosure<Map<K, EntryGetResult>>(metrics0(), start));
 
         if (profilingEnabled)
-            fut.listen(new ProfileClosure<>(CacheOperationType.GET_ALL, start));
+            fut.listen(f -> profile(CacheOperationType.GET_ALL, start));
 
         return rf;
     }
@@ -2570,7 +2570,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
 
         if (profilingEnabled)
-            fut.listen(new ProfileClosure<>(CacheOperationType.GET_AND_PUT, start));
+            fut.listen(f -> profile(CacheOperationType.GET_AND_PUT, start));
 
         return fut;
     }
@@ -3046,7 +3046,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
 
         if (profilingEnabled)
-            fut.listen(new ProfileClosure<>(CacheOperationType.PUT, start));
+            fut.listen(f -> profile(CacheOperationType.PUT, start));
 
         return fut;
     }
@@ -3197,7 +3197,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
 
         if (profilingEnabled)
-            fut.listen(new ProfileClosure<>(CacheOperationType.PUT_ALL, start));
+            fut.listen(f -> profile(CacheOperationType.PUT_ALL, start));
 
         return fut;
     }
@@ -3300,7 +3300,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
 
         if (profilingEnabled)
-            fut.listen(new ProfileClosure<>(CacheOperationType.GET_AND_REMOVE, start));
+            fut.listen(f -> profile(CacheOperationType.GET_AND_REMOVE, start));
 
         return fut;
     }
@@ -3419,7 +3419,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         if (profilingEnabled)
-            fut.listen(new ProfileClosure<>(CacheOperationType.REMOVE_ALL, start));
+            fut.listen(f -> profile(CacheOperationType.REMOVE_ALL, start));
 
         return fut;
     }
@@ -3536,7 +3536,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
 
         if (profilingEnabled)
-            fut.listen(new ProfileClosure<>(CacheOperationType.REMOVE, start));
+            fut.listen(f -> profile(CacheOperationType.REMOVE, start));
 
         return fut;
     }
@@ -6896,41 +6896,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         @Override protected void updateTimeStat() {
             metrics.addInvokeTimeNanos(System.nanoTime() - start);
-        }
-    }
-
-    /** */
-    private class ProfileClosure<T> implements CI1<IgniteInternalFuture<T>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Operation type. */
-        private final CacheOperationType op;
-
-        /** Start time in nanoseconds. */
-        private final long start;
-
-        /**
-         * @param op Operation type.
-         * @param start Start time in nanoseconds.
-         */
-        public ProfileClosure(CacheOperationType op, long start) {
-            this.op = op;
-            this.start = start;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteInternalFuture<T> fut) {
-            try {
-                if (!fut.isCancelled()) {
-                    fut.get();
-
-                    profile(op, start);
-                }
-            }
-            catch (IgniteCheckedException ignore) {
-                //No-op.
-            }
         }
     }
 
