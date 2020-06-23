@@ -78,6 +78,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.PartitionStateViewWalker;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -181,6 +182,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
+import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -223,6 +225,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** System view description for page lists. */
     public static final String CACHE_GRP_PAGE_LIST_VIEW_DESC = "Cache group page lists";
+
+    /** System view name for partition states. */
+    public static final String PART_STATES_VIEW = "partitionStates";
+
+    /** System view description for partition states. */
+    public static final String PART_STATES_VIEW_DESC = "Distribution of cache group partitions across cluster nodes";
 
     /** Enables start caches in parallel. */
     private final boolean IGNITE_ALLOW_START_CACHES_IN_PARALLEL =
@@ -595,6 +603,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             this::pagesListViewSupplier,
             Function.identity()
         );
+
+        ctx.systemView().registerFiltrableView(
+            PART_STATES_VIEW,
+            PART_STATES_VIEW_DESC,
+            new PartitionStateViewWalker(),
+            this::partStatesViewSupplier,
+            Function.identity()
+        );
     }
 
     /**
@@ -924,14 +940,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 reconnected.add(cache);
 
                 if (cache.context().userCache()) {
-                    // Re-create cache structures inside indexing in order to apply recent schema changes.
-                    GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cache.context(), false);
+                    DynamicCacheDescriptor desc = cacheDescriptor(cache.name());
 
-                    DynamicCacheDescriptor desc = cacheDescriptor(cacheInfo.name());
+                    assert desc != null : cache.name();
 
-                    assert desc != null : cacheInfo.name();
+                    if (!QueryUtils.isEnabled(cache.context().config())
+                            && QueryUtils.isEnabled(desc.cacheConfiguration())) {
+                        CacheConfiguration newCfg = desc.cacheConfiguration();
+
+                        cache.context().onSchemaAddQueryEntity(newCfg.getQueryEntities(), newCfg.getSqlSchema(),
+                                newCfg.isSqlEscapeAll(), newCfg.getQueryParallelism());
+                    }
 
                     boolean rmvIdx = !cache.context().group().persistenceEnabled();
+
+                    // Re-create cache structures inside indexing in order to apply recent schema changes.
+                    GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cache.context(), false);
 
                     ctx.query().onCacheStop0(cacheInfo, rmvIdx);
                     ctx.query().onCacheStart0(cacheInfo, desc.schema(), desc.sql());
@@ -5255,25 +5279,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private Iterable<CachePagesListView> pagesListViewSupplier(Map<String, Object> filter) {
         Integer cacheGrpId = (Integer)filter.get(CachePagesListViewWalker.CACHE_GROUP_ID_FILTER);
-
-        Collection<CacheGroupContext> cacheGrps;
-
-        if (cacheGrpId != null) {
-            CacheGroupContext cacheGrp = this.cacheGrps.get(cacheGrpId);
-
-            if (cacheGrp == null)
-                return Collections.emptyList();
-
-            cacheGrps = Collections.singletonList(cacheGrp);
-        }
-        else
-            cacheGrps = this.cacheGrps.values();
-
         Integer partId = (Integer)filter.get(CachePagesListViewWalker.PARTITION_ID_FILTER);
         Integer bucketNum = (Integer)filter.get(CachePagesListViewWalker.BUCKET_NUMBER_FILTER);
 
-        Iterable<IgniteCacheOffheapManager.CacheDataStore> dataStores =
-            F.flat(F.iterator(cacheGrps, grp -> grp.offheap().cacheDataStores(), true));
+        Iterable<IgniteCacheOffheapManager.CacheDataStore> dataStores = F.flat(F.iterator(
+            filteredMap(cacheGrps, cacheGrpId).values(), grp -> grp.offheap().cacheDataStores(), true));
 
         return F.flat(F.iterator(dataStores, dataStore -> {
             RowStore rowStore = dataStore.rowStore();
@@ -5293,6 +5303,62 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 .mapToObj(bucket -> new CachePagesListView(pagesList, bucket, dataStore.partId()))
                 .collect(Collectors.toList());
         }, true, cacheDataStore -> partId == null || cacheDataStore.partId() == partId));
+    }
+
+    /**
+     * Partition states view supplier.
+     *
+     * @param filter Filter.
+     */
+    private Iterable<PartitionStateView> partStatesViewSupplier(Map<String, Object> filter) {
+        Integer cacheGrpId = (Integer)filter.get(PartitionStateViewWalker.CACHE_GROUP_ID_FILTER);
+        UUID nodeId = (UUID)filter.get(PartitionStateViewWalker.NODE_ID_FILTER);
+        Integer partId = (Integer)filter.get(PartitionStateViewWalker.PARTITION_ID_FILTER);
+
+        return () -> F.concat(F.concat(F.iterator(filteredMap(cacheGrps, cacheGrpId).values(),
+            grp -> F.iterator(filteredMap(grp.topology().partitionMap(false), nodeId).entrySet(),
+                nodeToParts -> F.iterator(filteredMap(nodeToParts.getValue().map(),
+                    partId == null || partId < 0 ? null : partId).entrySet(),
+                    partToStates -> new PartitionStateView(
+                        grp.groupId(),
+                        nodeToParts.getKey(),
+                        partToStates.getKey(),
+                        partToStates.getValue(),
+                        isPrimary(grp, nodeToParts.getKey(), partToStates.getKey())),
+                    true),
+                true),
+            true)));
+    }
+
+    /**
+     * Filter map by key.
+     *
+     * @param map Map.
+     * @param key Filtering key.
+     */
+    private static <K, V> Map<K, V> filteredMap(Map<K, V> map, K key) {
+        if (key == null)
+            return map;
+
+        V val = map.get(key);
+
+        return val != null ? F.asMap(key, val) : Collections.emptyMap();
+    }
+
+    /**
+     * @param grp Cache group.
+     * @param nodeId Node id.
+     * @param part Partition.
+     */
+    private static boolean isPrimary(CacheGroupContext grp, UUID nodeId, int part) {
+        List<ClusterNode> nodes = grp.affinity().lastReadyAffinity().get(part);
+
+        if (F.isEmpty(nodes))
+            return false;
+
+        ClusterNode primaryNode = nodes.get(0);
+
+        return primaryNode != null && nodeId.equals(primaryNode.id());
     }
 
     /**
