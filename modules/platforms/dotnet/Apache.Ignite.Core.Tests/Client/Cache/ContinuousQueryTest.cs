@@ -17,12 +17,17 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Cache.Query.Continuous;
     using NUnit.Framework;
 
     /// <summary>
     /// Tests for thin client continuous queries.
     /// </summary>
-    public class ContinuousQueryTest
+    public class ContinuousQueryTest : ClientTestBase
     {
         /// <summary>
         /// Basic continuous query test.
@@ -30,8 +35,44 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestContinuousQueryCallsLocalListener()
         {
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
 
+            var events = new List<ICacheEntryEvent<int, int>>();
+            var qry = new ContinuousQuery<int, int>(new DelegateListener<int, int>(events.Add));
+            using (cache.QueryContinuous(qry))
+            {
+                cache.Put(1, 1);
+                Assert.AreEqual(1, events.Count);
+
+                var evt = events.Single();
+                Assert.AreEqual(1, evt.Key);
+                Assert.AreEqual(1, evt.Value);
+                Assert.IsFalse(evt.HasOldValue);
+                Assert.IsTrue(evt.HasValue);
+                Assert.AreEqual(CacheEntryEventType.Created, evt.EventType);
+            }
         }
 
+        /** */
+        private class DelegateListener<TK, TV> : ICacheEntryEventListener<TK, TV>
+        {
+            /** */
+            private Action<ICacheEntryEvent<TK, TV>> _action;
+
+            /** */
+            public DelegateListener(Action<ICacheEntryEvent<TK, TV>> action)
+            {
+                _action = action;
+            }
+
+            /** */
+            public void OnEvent(IEnumerable<ICacheEntryEvent<TK, TV>> evts)
+            {
+                foreach (var evt in evts)
+                {
+                    _action(evt);
+                }
+            }
+        }
     }
 }
