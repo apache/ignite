@@ -272,6 +272,12 @@ namespace Apache.Ignite.Core.Impl.Client
             ClientNotificationHandler unused;
             var removed = _notificationListeners.TryRemove(notificationId, out unused);
             Debug.Assert(removed);
+
+            var count = Interlocked.Decrement(ref _expectedNotifications);
+            if (count < 0)
+            {
+                throw new IgniteClientException("Negative thin client expected notification count.");
+            }
         }
 
         /// <summary>
@@ -432,12 +438,6 @@ namespace Apache.Ignite.Core.Impl.Client
             if ((flags & ClientFlags.Notification) != ClientFlags.Notification)
             {
                 return false;
-            }
-
-            var count = Interlocked.Decrement(ref _expectedNotifications);
-            if (count < 0)
-            {
-                throw new IgniteClientException("Unexpected thin client notification: " + requestId);
             }
 
             _notificationListeners.GetOrAdd(requestId, _ => new ClientNotificationHandler(_logger))

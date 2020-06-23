@@ -64,6 +64,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                 _socket.DoOutInOp<object>(ClientOp.ResourceClose,
                     ctx => ctx.Writer.WriteLong(_continuousQueryId), null);
 
+                _socket.RemoveNotificationHandler(_continuousQueryId);
+
                 _disposed = true;
             }
         }
