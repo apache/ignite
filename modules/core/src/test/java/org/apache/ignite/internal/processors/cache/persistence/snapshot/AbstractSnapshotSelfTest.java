@@ -135,7 +135,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         dfltCacheCfg = txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
-        persistence = true;
     }
 
     /** @throws Exception If fails. */

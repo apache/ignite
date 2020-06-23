@@ -738,8 +738,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
                 throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
 
-            if (!CU.isPersistenceEnabled(cctx.gridConfig()))
-                throw new IgniteException("Create snapshot request has been rejected. Snapshots on an in-memory clusters are not allowed.");
+            if (!CU.isPersistenceEnabled(cctx.gridConfig())) {
+                throw new IgniteException("Create snapshot request has been rejected. Snapshots on an in-memory " +
+                    "clusters are not allowed.");
+            }
 
             if (!cctx.kernalContext().state().clusterState().state().active())
                 throw new IgniteException("Snapshot operation has been rejected. The cluster is inactive.");
