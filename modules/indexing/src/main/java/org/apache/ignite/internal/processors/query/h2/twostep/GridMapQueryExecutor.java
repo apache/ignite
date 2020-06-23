@@ -301,9 +301,9 @@ public class GridMapQueryExecutor {
         @Nullable final MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled
     ) {
-        boolean profilingEnabled = ctx.metric().profilingEnabled();
+        boolean statsEnabled = ctx.metric().performanceStatisticsEnabled();
 
-        if (profilingEnabled)
+        if (statsEnabled)
             IoStatisticsQueryHelper.startGatheringQueryStatistics();
 
         // Prepare to run queries.
@@ -533,11 +533,11 @@ public class GridMapQueryExecutor {
             if (reserved != null)
                 reserved.release();
 
-            if (profilingEnabled) {
+            if (statsEnabled) {
                 IoStatisticsHolderQuery stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
                 if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
-                    ctx.metric().profiling().queryReads(
+                    ctx.metric().performanceStatistics().queryReads(
                         GridCacheQueryType.SQL_FIELDS,
                         node.id(),
                         reqId,

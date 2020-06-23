@@ -15,40 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.performancestatistics;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.mxbean.MXBeanParameter;
 
 /**
- * MBean provide access to profiling management.
+ * MBean that provides access to performance statistics management.
  */
-@MXBeanDescription("MBean provide access to profiling management.")
-public interface IgniteProfilingMBean {
+@MXBeanDescription("MBean provide access to performance statistics management.")
+public interface IgnitePerformanceStatisticsMBean {
     /**
-     * Start profiling in the cluster with default settings.
+     * Start performance statistics in the cluster with default settings.
      *
-     * @see FileProfiling#DFLT_FILE_MAX_SIZE
-     * @see FileProfiling#DFLT_BUFFER_SIZE
-     * @see FileProfiling#DFLT_FLUSH_SIZE
+     * @see FilePerformanceStatistics#DFLT_FILE_MAX_SIZE
+     * @see FilePerformanceStatistics#DFLT_BUFFER_SIZE
+     * @see FilePerformanceStatistics#DFLT_FLUSH_SIZE
      */
-    @MXBeanDescription("Start profiling in the cluster.")
+    @MXBeanDescription("Start performance statistics in the cluster.")
     public void start() throws IgniteCheckedException;
 
-    /** Start profiling in the cluster. */
-    @MXBeanDescription("Start profiling in the cluster.")
+    /** Start performance statistics in the cluster. */
+    @MXBeanDescription("Start performance statistics in the cluster.")
     public void start(
         @MXBeanParameter(name = "maxFileSize", description = "Maximum file size in bytes.") long maxFileSize,
         @MXBeanParameter(name = "bufferSize", description = "Off heap buffer size in bytes.") int bufferSize,
         @MXBeanParameter(name = "flushBatchSize", description = "Minimal batch size to flush in bytes.") int flushBatchSize)
         throws IgniteCheckedException;
 
-    /** Stop profiling in the cluster. */
-    @MXBeanDescription("Stop profiling in the cluster.")
+    /** Stop performance statistics in the cluster. */
+    @MXBeanDescription("Stop performance statistics in the cluster.")
     public void stop() throws IgniteCheckedException;
 
-    /** @return {@code True} if profiling enabled. */
-    @MXBeanDescription("True if profiling enabled.")
+    /** @return {@code True} if  performance statistics is enabled. */
+    @MXBeanDescription("True if performance statistics is enabled.")
     public boolean enabled();
 }

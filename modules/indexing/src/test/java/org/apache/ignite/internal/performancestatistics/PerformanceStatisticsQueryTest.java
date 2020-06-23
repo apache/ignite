@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.performancestatistics;
 
 import java.util.Collections;
 import org.apache.ignite.IgniteCache;
@@ -36,8 +36,8 @@ import static java.util.regex.Pattern.compile;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 
-/** Tests query profiling. */
-public class ProfilingQueryTest extends AbstractProfilingTest {
+/** Tests query performance statistics. */
+public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatisticsTest {
     /** Cache entry count. */
     private static final int ENTRY_COUNT = 100;
 
@@ -149,13 +149,13 @@ public class ProfilingQueryTest extends AbstractProfilingTest {
         log1.registerListener(lsnr1);
         clientLog.registerListener(clientLsnr);
 
-        startProfiling();
+        startStatistics();
 
         int size = cache.query(qry).getAll().size();
 
         assertEquals(ENTRY_COUNT, size);
 
-        stopProfilingAndCheck(lsnr0, lsnr1, clientLsnr);
+        stopStatisticsAndCheck(lsnr0, lsnr1, clientLsnr);
 
         lsnr0 = readsListener(true, false);
         lsnr1 = readsListener(true, false);
@@ -164,13 +164,13 @@ public class ProfilingQueryTest extends AbstractProfilingTest {
         log0.registerListener(lsnr0);
         log1.registerListener(lsnr1);
 
-        startProfiling();
+        startStatistics();
 
         size = cache.query(qry).getAll().size();
 
         assertEquals(ENTRY_COUNT, size);
 
-        stopProfilingAndCheck(lsnr0, lsnr1, clientLsnr);
+        stopStatisticsAndCheck(lsnr0, lsnr1, clientLsnr);
     }
 
     /** @return Log listener for given reads. */

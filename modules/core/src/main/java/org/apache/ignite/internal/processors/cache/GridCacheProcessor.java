@@ -2248,8 +2248,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", mvcc=" + cacheCtx.mvccEnabled() + ']');
         }
 
-        if (ctx.metric().profilingEnabled()) {
-            ctx.metric().profiling().cacheStart(
+        if (ctx.metric().performanceStatisticsEnabled()) {
+            ctx.metric().performanceStatistics().cacheStart(
                 cacheCtx.cacheId(),
                 System.currentTimeMillis(),
                 cacheCtx.name(),

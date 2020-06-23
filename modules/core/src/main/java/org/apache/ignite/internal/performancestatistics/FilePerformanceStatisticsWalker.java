@@ -15,32 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.performancestatistics;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteUuid;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
-import static org.apache.ignite.internal.profiling.FileProfiling.readIgniteUuid;
-import static org.apache.ignite.internal.profiling.FileProfiling.readUuid;
+import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.readIgniteUuid;
+import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.readUuid;
 
 /**
- * Walker over the profiling file.
+ * Walker over the performance statistics file.
  *
- * @see FileProfiling
+ * @see FilePerformanceStatistics
  */
-public class FileProfilingWalker {
+public class FilePerformanceStatisticsWalker {
     /** File read buffer size. */
     private static final int READ_BUFFER_SIZE = 8 * 1024 * 1024;
 
@@ -48,17 +48,17 @@ public class FileProfilingWalker {
     private static final RandomAccessFileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
     /**
-     * Walks over profiling file.
+     * Walks over performance statistics file.
      *
-     * @param file Profiling file.
+     * @param file Performance statistics file.
      * @param handlers Handlers to process deserialized operation.
      */
-    public static void walkFile(Path file, IgniteProfiling... handlers) throws IOException {
+    public static void walkFile(Path file, IgnitePerformanceStatistics... handlers) throws IOException {
         ByteBuffer buf = allocateDirect(READ_BUFFER_SIZE).order(nativeOrder());
 
         try (
             FileIO io = ioFactory.create(file.toFile());
-            ProfilingDeserializer des = new ProfilingDeserializer(handlers)
+            PerformanceStatisticsDeserializer des = new PerformanceStatisticsDeserializer(handlers)
         ) {
             while (true) {
                 int read = io.read(buf);
@@ -84,22 +84,22 @@ public class FileProfilingWalker {
     }
 
     /**
-     * Profiling operations deserializer.
+     * Performance statistics operations deserializer.
      */
-    private static class ProfilingDeserializer implements AutoCloseable {
+    private static class PerformanceStatisticsDeserializer implements AutoCloseable {
         /** Cached strings by id. */
         private final ConcurrentHashMap<Short, String> stringById = new ConcurrentHashMap<>();
 
         /** Handlers to process deserialized operation. */
-        private final IgniteProfiling[] handlers;
+        private final IgnitePerformanceStatistics[] handlers;
 
         /** @param handlers Handlers to process deserialized operation. */
-        public ProfilingDeserializer(IgniteProfiling... handlers) {
+        public PerformanceStatisticsDeserializer(IgnitePerformanceStatistics... handlers) {
             this.handlers = handlers;
         }
 
         /**
-         * Tries to deserialize profiling operation from buffer.
+         * Tries to deserialize performance statistics operation from buffer.
          *
          * @param buf Buffer.
          * @return {@code True} if operation parsed. {@code False} if not enough bytes.
@@ -112,7 +112,7 @@ public class FileProfilingWalker {
 
             byte opTypeByte = buf.get();
 
-            FileProfiling.OperationType opType = FileProfiling.OperationType.fromOrdinal(opTypeByte);
+            FilePerformanceStatistics.OperationType opType = FilePerformanceStatistics.OperationType.fromOrdinal(opTypeByte);
 
             switch (opType) {
                 case CACHE_OPERATION: {
@@ -124,7 +124,7 @@ public class FileProfilingWalker {
                     long startTime = buf.getLong();
                     long duration = buf.getLong();
 
-                    for (IgniteProfiling handler : handlers)
+                    for (IgnitePerformanceStatistics handler : handlers)
                         handler.cacheOperation(cacheOp, cacheId, startTime, duration);
 
                     return true;
@@ -148,7 +148,7 @@ public class FileProfilingWalker {
                     long duration = buf.getLong();
                     boolean commit = buf.get() != 0;
 
-                    for (IgniteProfiling handler : handlers)
+                    for (IgnitePerformanceStatistics handler : handlers)
                         handler.transaction(cacheIds, startTime, duration, commit);
 
                     return true;
@@ -185,7 +185,7 @@ public class FileProfilingWalker {
                     if (str == null)
                         return true;
 
-                    for (IgniteProfiling handler : handlers)
+                    for (IgnitePerformanceStatistics handler : handlers)
                         handler.query(queryType, str, id, startTime, duration, success);
 
                     return true;
@@ -202,7 +202,7 @@ public class FileProfilingWalker {
                     long logicalReads = buf.getLong();
                     long physicalReads = buf.getLong();
 
-                    for (IgniteProfiling handler : handlers)
+                    for (IgnitePerformanceStatistics handler : handlers)
                         handler.queryReads(queryType, uuid, id, logicalReads, physicalReads);
 
                     return true;
@@ -238,7 +238,7 @@ public class FileProfilingWalker {
                     if (taskName == null)
                         return true;
 
-                    for (IgniteProfiling handler : handlers)
+                    for (IgnitePerformanceStatistics handler : handlers)
                         handler.task(sesId, taskName, startTime, duration, affPartId);
 
                     return true;
@@ -254,7 +254,7 @@ public class FileProfilingWalker {
                     long duration = buf.getLong();
                     boolean timedOut = buf.get() != 0;
 
-                    for (IgniteProfiling handler : handlers)
+                    for (IgnitePerformanceStatistics handler : handlers)
                         handler.job(sesId, queuedTime, startTime, duration, timedOut);
 
                     return true;
@@ -283,7 +283,7 @@ public class FileProfilingWalker {
 
                     boolean userCache = buf.get() != 0;
 
-                    for (IgniteProfiling handler : handlers)
+                    for (IgnitePerformanceStatistics handler : handlers)
                         handler.cacheStart(cacheId, startTime, cacheName, groupName, userCache);
 
                     return true;
@@ -311,7 +311,7 @@ public class FileProfilingWalker {
 
                     long startTime = buf.getLong();
 
-                    for (IgniteProfiling handler : handlers)
+                    for (IgnitePerformanceStatistics handler : handlers)
                         handler.profilingStart(nodeId, instanceName, ver, startTime);
 
                     return true;

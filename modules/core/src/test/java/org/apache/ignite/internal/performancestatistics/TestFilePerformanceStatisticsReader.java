@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.performancestatistics;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -27,19 +27,19 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Test profiling file reader.
+ * Test performance statistics file reader.
  */
-public class TestFileProfilingReader {
+public class TestFilePerformanceStatisticsReader {
     /**
-     * @param file Profiling file to read.
+     * @param file Performance statistics file to read.
      * @param log Log to write operations to.
      */
     public static void readToLog(Path file, IgniteLogger log) throws IOException {
-        FileProfilingWalker.walkFile(file, new LogMessageHandler(log));
+        FilePerformanceStatisticsWalker.walkFile(file, new LogMessageHandler(log));
     }
 
     /** The handler that writes handled operations to the log. */
-    private static class LogMessageHandler implements IgniteProfiling {
+    private static class LogMessageHandler implements IgnitePerformanceStatistics {
         /** Log to write operations to. */
         private final IgniteLogger log;
 

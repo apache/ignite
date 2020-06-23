@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.performancestatistics;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -23,8 +23,8 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-/** The interface represents profiling operations. */
-public interface IgniteProfiling {
+/** The interface represents performance statistics operations. */
+public interface IgnitePerformanceStatistics {
     /**
      * @param type Operation type.
      * @param cacheId Cache id.

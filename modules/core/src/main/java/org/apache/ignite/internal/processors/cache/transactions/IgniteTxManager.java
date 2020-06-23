@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -143,9 +142,9 @@ import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TX;
 import static org.apache.ignite.internal.IgniteFeatures.DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT;
+import static org.apache.ignite.internal.IgniteFeatures.DISTRIBUTED_TX_COLLISIONS_DUMP;
 import static org.apache.ignite.internal.IgniteFeatures.LRT_SYSTEM_USER_TIME_DUMP_SETTINGS;
 import static org.apache.ignite.internal.IgniteFeatures.TRANSACTION_OWNER_THREAD_DUMP_PROVIDING;
-import static org.apache.ignite.internal.IgniteFeatures.DISTRIBUTED_TX_COLLISIONS_DUMP;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -153,8 +152,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.internal.util.IgniteUtils.broadcastToNodesSupportingFeature;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
@@ -1652,7 +1651,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system()) {
                     cctx.txMetrics().onTxCommit();
 
-                    profile(tx, true);
+                    writeStatistics(tx, true);
                 }
 
                 tx.txState().onTxEnd(cctx, tx, true);
@@ -1724,7 +1723,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system()) {
                     cctx.txMetrics().onTxRollback();
 
-                    profile(tx, false);
+                    writeStatistics(tx, false);
                 }
 
                 tx.txState().onTxEnd(cctx, tx, false);
@@ -1779,7 +1778,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     else
                         cctx.txMetrics().onTxRollback();
 
-                    profile(tx, commit);
+                    writeStatistics(tx, commit);
                 }
 
                 tx.txState().onTxEnd(cctx, tx, commit);
@@ -3199,16 +3198,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Profiles transaction.
+     * Writes transaction performance statistics.
      *
      * @param tx Transaction.
      * @param commited {@code True} if transaction commited.
      */
-    private void profile(IgniteInternalTx tx, boolean commited) {
-        if (!cctx.kernalContext().metric().profilingEnabled() || tx.startTimeNanos() == 0)
+    private void writeStatistics(IgniteInternalTx tx, boolean commited) {
+        if (!cctx.kernalContext().metric().performanceStatisticsEnabled() || tx.startTimeNanos() == 0)
             return;
 
-        cctx.kernalContext().metric().profiling().transaction(
+        cctx.kernalContext().metric().performanceStatistics().transaction(
             tx.txState().cacheIds(),
             tx.startTime(),
             System.nanoTime() - tx.startTimeNanos(),

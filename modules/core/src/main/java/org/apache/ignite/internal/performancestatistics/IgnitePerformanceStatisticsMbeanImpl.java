@@ -15,31 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.performancestatistics;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
-import static org.apache.ignite.internal.profiling.FileProfiling.DFLT_BUFFER_SIZE;
-import static org.apache.ignite.internal.profiling.FileProfiling.DFLT_FILE_MAX_SIZE;
-import static org.apache.ignite.internal.profiling.FileProfiling.DFLT_FLUSH_SIZE;
+import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.DFLT_BUFFER_SIZE;
+import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.DFLT_FILE_MAX_SIZE;
+import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.DFLT_FLUSH_SIZE;
 
 /**
- * {@link IgniteProfilingMBean} implementation.
+ * {@link IgnitePerformanceStatisticsMBean} implementation.
  */
-public class IgniteProfilingMbeanImpl implements IgniteProfilingMBean {
+public class IgnitePerformanceStatisticsMbeanImpl implements IgnitePerformanceStatisticsMBean {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
     /** @param ctx Kernal context. */
-    public IgniteProfilingMbeanImpl(GridKernalContext ctx) {
+    public IgnitePerformanceStatisticsMbeanImpl(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.metric().startProfiling(DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, DFLT_FLUSH_SIZE);
+        ctx.metric().startPerformanceStatistics(DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, DFLT_FLUSH_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -49,16 +49,16 @@ public class IgniteProfilingMbeanImpl implements IgniteProfilingMBean {
         A.ensure(bufferSize > 0, "bufferSize > 0");
         A.ensure(flushBatchSize >= 0, "flushBatchSize >= 0");
 
-        ctx.metric().startProfiling(maxFileSize, bufferSize, flushBatchSize);
+        ctx.metric().startPerformanceStatistics(maxFileSize, bufferSize, flushBatchSize);
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteCheckedException {
-        ctx.metric().stopProfiling().get();
+        ctx.metric().stopPerformanceStatistics().get();
     }
 
     /** {@inheritDoc} */
     @Override public boolean enabled() {
-        return ctx.metric().profilingEnabled();
+        return ctx.metric().performanceStatisticsEnabled();
     }
 }

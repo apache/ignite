@@ -15,42 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.performancestatistics;
 
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
-/** Tests {@link IgniteProfilingMbeanImpl}. */
-public class ProfilingMBeanSelfTest extends AbstractProfilingTest {
+/** Tests {@link IgnitePerformanceStatisticsMbeanImpl}. */
+public class PerformanceStatisticsMBeanSelfTest extends AbstractPerformanceStatisticsTest {
     /** @throws Exception If failed. */
     @Test
     public void testStartStop() throws Exception {
         IgniteEx srv0 = startGrid(0);
         IgniteEx srv1 = startGrid(1);
 
-        IgniteProfilingMBean profilingMBean0 = getMBean(srv0.name());
-        IgniteProfilingMBean profilingMBean1 = getMBean(srv1.name());
+        IgnitePerformanceStatisticsMBean statMBean0 = getMBean(srv0.name());
+        IgnitePerformanceStatisticsMBean statMBean1 = getMBean(srv1.name());
 
-        assertFalse(profilingMBean0.enabled());
-        assertFalse(profilingMBean1.enabled());
+        assertFalse(statMBean0.enabled());
+        assertFalse(statMBean1.enabled());
 
-        profilingMBean0.start();
+        statMBean0.start();
 
-        assertTrue(profilingMBean0.enabled());
-        assertTrue(profilingMBean1.enabled());
+        assertTrue(statMBean0.enabled());
+        assertTrue(statMBean1.enabled());
 
-        profilingMBean0.stop();
+        statMBean0.stop();
 
-        assertFalse(profilingMBean0.enabled());
-        assertFalse(profilingMBean1.enabled());
+        assertFalse(statMBean0.enabled());
+        assertFalse(statMBean1.enabled());
     }
 
     /**
      * @param igniteInstanceName Ignite instance name.
-     * @return Ignite profiling MBean.
+     * @return Ignite performance statistics MBean.
      */
-    private IgniteProfilingMBean getMBean(String igniteInstanceName) {
-        return getMxBean(igniteInstanceName, "Profiling", IgniteProfilingMbeanImpl.class,
-            IgniteProfilingMBean.class);
+    private IgnitePerformanceStatisticsMBean getMBean(String igniteInstanceName) {
+        return getMxBean(igniteInstanceName, "Profiling", IgnitePerformanceStatisticsMbeanImpl.class,
+            IgnitePerformanceStatisticsMBean.class);
     }
 }

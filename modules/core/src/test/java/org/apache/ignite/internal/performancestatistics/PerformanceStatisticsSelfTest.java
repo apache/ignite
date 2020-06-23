@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.performancestatistics;
 
 import java.util.Collections;
 import java.util.concurrent.locks.Lock;
@@ -28,7 +28,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType;
+import org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -36,22 +36,22 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.GET;
-import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.GET_ALL;
-import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.INVOKE;
-import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.INVOKE_ALL;
-import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.LOCK;
-import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.PUT;
-import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.PUT_ALL;
-import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.REMOVE;
-import static org.apache.ignite.internal.profiling.IgniteProfiling.CacheOperationType.REMOVE_ALL;
+import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.GET;
+import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.GET_ALL;
+import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.INVOKE;
+import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.INVOKE_ALL;
+import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.LOCK;
+import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.PUT;
+import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.PUT_ALL;
+import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.REMOVE;
+import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.REMOVE_ALL;
 import static org.apache.ignite.testframework.LogListener.matches;
 
 /**
- * Tests profiling.
+ * Tests performance statistics.
  */
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
-public class ProfilingSelfTest extends AbstractProfilingTest {
+public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatisticsTest {
     /** Test entry processor. */
     private static final EntryProcessor<Object, Object, Object> ENTRY_PROC =
         new EntryProcessor<Object, Object, Object>() {
@@ -73,7 +73,7 @@ public class ProfilingSelfTest extends AbstractProfilingTest {
     /** Ignite. */
     private static IgniteEx ignite;
 
-    /** Log to register profiling operations. */
+    /** Log to register performance statistics. */
     private static ListeningTestLogger log;
 
     /** {@inheritDoc} */
@@ -118,17 +118,17 @@ public class ProfilingSelfTest extends AbstractProfilingTest {
 
         log.registerListener(lsnr);
 
-        startProfiling();
+        startStatistics();
 
-        stopProfilingAndCheck(lsnr);
+        stopStatisticsAndCheck(lsnr);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCacheStart() throws Exception {
-        String cacheName = "test-profiling-cache";
+        String cacheName = "test-performance-statistics-cache";
 
-        startProfiling();
+        startStatistics();
 
         ignite.getOrCreateCache(cacheName);
 
@@ -140,7 +140,7 @@ public class ProfilingSelfTest extends AbstractProfilingTest {
 
         log.registerListener(lsnr);
 
-        stopProfilingAndCheck(lsnr);
+        stopStatisticsAndCheck(lsnr);
 
         ignite.destroyCache(cacheName);
     }
@@ -154,7 +154,7 @@ public class ProfilingSelfTest extends AbstractProfilingTest {
         log.registerListener(taskLsnr);
         log.registerListener(jobLsnr);
 
-        startProfiling();
+        startStatistics();
 
         ignite.compute().broadcast(new IgniteRunnable() {
             @Override public void run() {
@@ -162,7 +162,7 @@ public class ProfilingSelfTest extends AbstractProfilingTest {
             }
         });
 
-        stopProfilingAndCheck(taskLsnr, jobLsnr);
+        stopStatisticsAndCheck(taskLsnr, jobLsnr);
     }
 
     /** @throws Exception If failed. */
@@ -223,11 +223,11 @@ public class ProfilingSelfTest extends AbstractProfilingTest {
 
         log.registerListener(lsnr);
 
-        startProfiling();
+        startStatistics();
 
         clo.accept(ignite.cache(DEFAULT_CACHE_NAME));
 
-        stopProfilingAndCheck(lsnr);
+        stopStatisticsAndCheck(lsnr);
     }
 
     /** @throws Exception If failed. */
@@ -248,7 +248,7 @@ public class ProfilingSelfTest extends AbstractProfilingTest {
 
         log.registerListener(lsnr);
 
-        startProfiling();
+        startStatistics();
 
         try (Transaction tx = ignite.transactions().txStart()) {
             for (int i = 0; i < 10; i++)
@@ -260,6 +260,6 @@ public class ProfilingSelfTest extends AbstractProfilingTest {
                 tx.rollback();
         }
 
-        stopProfilingAndCheck(lsnr);
+        stopStatisticsAndCheck(lsnr);
     }
 }

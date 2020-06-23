@@ -17,7 +17,7 @@
 
 /**
  * <!-- Package description. -->
- * Contains classes for Ignite profiling.
+ * Ignite performance statistics tests.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.performancestatistics;

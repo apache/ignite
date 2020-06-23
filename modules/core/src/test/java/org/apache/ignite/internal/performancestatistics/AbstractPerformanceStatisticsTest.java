@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.performancestatistics;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
@@ -25,46 +25,47 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.profiling.FileProfiling.DFLT_BUFFER_SIZE;
-import static org.apache.ignite.internal.profiling.FileProfiling.DFLT_FILE_MAX_SIZE;
-import static org.apache.ignite.internal.profiling.FileProfiling.DFLT_FLUSH_SIZE;
-import static org.apache.ignite.internal.profiling.FileProfiling.PROFILING_DIR;
-import static org.apache.ignite.internal.profiling.FileProfiling.profilingFile;
+import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.DFLT_BUFFER_SIZE;
+import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.DFLT_FILE_MAX_SIZE;
+import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.DFLT_FLUSH_SIZE;
+import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.PERFORMANCE_STATISTICS_DIR;
+import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.perfromanceStatisticsFile;
+import static org.apache.ignite.internal.performancestatistics.TestFilePerformanceStatisticsReader.readToLog;
 
 /**
- * Ignite profiling abstract test.
+ * Ignite performance statistics abstract test.
  */
-public abstract class AbstractProfilingTest extends GridCommonAbstractTest {
+public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PROFILING_DIR, false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PERFORMANCE_STATISTICS_DIR, false));
     }
 
-    /** Starts profiling. */
-    public static void startProfiling() throws Exception {
+    /** Starts performance statistics. */
+    public static void startStatistics() throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
 
         IgniteEx ignite = (IgniteEx)grids.get(0);
 
-        ignite.context().metric().startProfiling(DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, DFLT_FLUSH_SIZE);
+        ignite.context().metric().startPerformanceStatistics(DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, DFLT_FLUSH_SIZE);
     }
 
-    /** Stops profiling and checks listeners on all grids. */
-    public static void stopProfilingAndCheck(LogListener... lsnrs) throws Exception {
+    /** Stops performance statistics and checks listeners on all grids. */
+    public static void stopStatisticsAndCheck(LogListener... lsnrs) throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
 
         IgniteEx ignite = (IgniteEx)grids.get(0);
 
-        ignite.context().metric().stopProfiling().get();
+        ignite.context().metric().stopPerformanceStatistics().get();
 
         for (Ignite grid : grids)
-            TestFileProfilingReader.readToLog(profilingFile(((IgniteEx)grid).context()).toPath(), grid.log());
+            readToLog(perfromanceStatisticsFile(((IgniteEx)grid).context()).toPath(), grid.log());
 
         for (LogListener lsnr : lsnrs)
             assertTrue(lsnr.check());

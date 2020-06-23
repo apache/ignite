@@ -37,12 +37,12 @@ import org.apache.ignite.internal.ThreadPoolMXBeanAdapter;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.managers.encryption.EncryptionMXBeanImpl;
+import org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatisticsMBean;
+import org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatisticsMbeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
-import org.apache.ignite.internal.profiling.IgniteProfilingMBean;
-import org.apache.ignite.internal.profiling.IgniteProfilingMbeanImpl;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
@@ -240,9 +240,9 @@ public class IgniteMBeansManager {
         if (ctx.query().moduleEnabled())
             ctx.query().getIndexing().registerMxBeans(this);
 
-        IgniteProfilingMbeanImpl profilingMbean = new IgniteProfilingMbeanImpl(ctx);
-        registerMBean("Profiling", profilingMbean.getClass().getSimpleName(), profilingMbean,
-            IgniteProfilingMBean.class);
+        IgnitePerformanceStatisticsMbeanImpl performanceStatMbean = new IgnitePerformanceStatisticsMbeanImpl(ctx);
+        registerMBean("PerformanceStatistics", performanceStatMbean.getClass().getSimpleName(), performanceStatMbean,
+            IgnitePerformanceStatisticsMBean.class);
     }
 
     /**

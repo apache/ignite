@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.performancestatistics;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,16 +49,16 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Profiling implementation based on logging statistics to a profiling file.
+ * Performance statistics collector based on logging statistics to a performance statistics file.
  * <p>
- * Each node collects statistics to a profiling file placed under {@link #PROFILING_DIR}.
+ * Each node collects statistics to a file placed under {@link #PERFORMANCE_STATISTICS_DIR}.
  * <p>
- * <b>Note:</b> Start profiling again will erase previous profiling files.
+ * <b>Note:</b> Start again will erase previous performance statistics files.
  * <p>
- * To iterate over records use {@link FileProfilingWalker}.
+ * To iterate over records use {@link FilePerformanceStatisticsWalker}.
  */
-public class FileProfiling implements IgniteProfiling {
-    /** Default Maximum file size in bytes. Profiling will be stopped when the size exceeded. */
+public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
+    /** Default maximum file size in bytes. Performance statistics will be stopped when the size exceeded. */
     public static final long DFLT_FILE_MAX_SIZE = 16 * 1024 * 1024 * 1024L;
 
     /** Default off heap buffer size in bytes. */
@@ -67,16 +67,16 @@ public class FileProfiling implements IgniteProfiling {
     /** Default minimal batch size to flush in bytes. */
     public static final int DFLT_FLUSH_SIZE = 8 * 1024 * 1024;
 
-    /** Directory to store profiling files. Placed under Ignite work directory. */
-    public static final String PROFILING_DIR = "profiling";
+    /** Directory to store performance statistics files. Placed under Ignite work directory. */
+    public static final String PERFORMANCE_STATISTICS_DIR = "performanceStatistics";
 
-    /** Factory to provide I/O interface for profiling file. */
+    /** Factory to provide I/O interface. */
     private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
 
-    /** Profiling enabled flag. */
+    /** Performance statistics enabled flag. */
     private volatile boolean enabled;
 
-    /** Profiling file writer. */
+    /** Performance statistics file writer. */
     @Nullable private volatile FileWriter fileWriter;
 
     /** Kernal context. */
@@ -86,44 +86,44 @@ public class FileProfiling implements IgniteProfiling {
     private final IgniteLogger log;
 
     /** @param ctx Kernal context. */
-    public FileProfiling(GridKernalContext ctx) {
+    public FilePerformanceStatistics(GridKernalContext ctx) {
         log = ctx.log(getClass());
 
         this.ctx = ctx;
     }
 
-    /** @return {@code True} if profiling enabled. */
-    public boolean profilingEnabled() {
+    /** @return {@code True} if performance statistics enabled. */
+    public boolean performanceStatisticsEnabled() {
         return enabled;
     }
 
     /**
-     * Starts profiling.
+     * Starts performance statistics.
      *
      * @param maxFileSize Maximum file size in bytes.
      * @param bufferSize Off heap buffer size in bytes.
      * @param flushBatchSize Minimal batch size to flush in bytes.
      */
-    public synchronized void startProfiling(long maxFileSize, int bufferSize, int flushBatchSize) {
+    public synchronized void start(long maxFileSize, int bufferSize, int flushBatchSize) {
         if (enabled)
             return;
 
         FileWriter writer = fileWriter;
 
-        // Profiling is stopping.
+        // Writer is stopping.
         if (writer != null) {
             try {
                 writer.shutdown().get();
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to wait for previous profiling stopping.", e);
+                throw new IgniteException("Failed to wait for previous writer stopping.", e);
             }
         }
 
         assert fileWriter == null;
 
         try {
-            File file = profilingFile(ctx);
+            File file = perfromanceStatisticsFile(ctx);
 
             U.delete(file);
 
@@ -137,12 +137,12 @@ public class FileProfiling implements IgniteProfiling {
 
             enabled = true;
 
-            log.info("Profiling started [file=" + file.getAbsolutePath() + ']');
+            log.info("Performance statistics writer started [file=" + file.getAbsolutePath() + ']');
         }
         catch (IOException | IgniteCheckedException e) {
-            log.error("Failed to start profiling.", e);
+            log.error("Failed to start performance statistics writer.", e);
 
-            throw new IgniteException("Failed to start profiling.", e);
+            throw new IgniteException("Failed to start performance statistics writer.", e);
         }
 
         profilingStart(ctx.localNodeId(), ctx.igniteInstanceName(), ctx.discovery().localNode().version().toString(),
@@ -154,8 +154,8 @@ public class FileProfiling implements IgniteProfiling {
                 cctx.userCache()));
     }
 
-    /** Stops profiling. */
-    public IgniteInternalFuture<Void> stopProfiling() {
+    /** Stops performance statistics. */
+    public IgniteInternalFuture<Void> stop() {
         synchronized (this) {
             if (!enabled)
                 return new GridFinishedFuture<>();
@@ -163,7 +163,7 @@ public class FileProfiling implements IgniteProfiling {
             enabled = false;
         }
 
-        log.info("Stopping profiling.");
+        log.info("Stopping performance statistics writer.");
 
         FileWriter fileWriter = this.fileWriter;
 
@@ -444,12 +444,12 @@ public class FileProfiling implements IgniteProfiling {
     /**
      * Reserves buffer's write segment.
      *
-     * @return Buffer's write segment or {@code null} if not enought space or profiling stopping.
+     * @return Buffer's write segment or {@code null} if not enought space or writer stopping.
      */
     private SegmentedRingByteBuffer.WriteSegment reserveBuffer(OperationType type, int size) {
         FileWriter fileWriter = this.fileWriter;
 
-        // Profiling stopping.
+        // Writer stopping.
         if (fileWriter == null)
             return null;
 
@@ -461,14 +461,15 @@ public class FileProfiling implements IgniteProfiling {
             return null;
         }
 
-        // Ring buffer closed (profiling stopping) or maximum size reached.
+        // Ring buffer closed (writer stopping) or maximum size reached.
         if (seg.buffer() == null) {
             seg.release();
 
             if (!fileWriter.isCancelled()) {
-                log.warning("The profiling file maximum size is reached. Profiling will be stopped.");
+                log.warning("The performance statistics file maximum size is reached. " +
+                    "Performance statistics will be stopped.");
 
-                ctx.metric().stopProfiling();
+                ctx.metric().stopPerformanceStatistics();
             }
 
             return null;
@@ -481,13 +482,13 @@ public class FileProfiling implements IgniteProfiling {
         return seg;
     }
 
-    /** @return Profiling file. */
-    public static File profilingFile(GridKernalContext ctx) throws IgniteCheckedException {
+    /** @return Performance statistics file. */
+    public static File perfromanceStatisticsFile(GridKernalContext ctx) throws IgniteCheckedException {
         String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
 
-        File profilingDir = U.resolveWorkDirectory(igniteWorkDir, PROFILING_DIR, false);
+        File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERFORMANCE_STATISTICS_DIR, false);
 
-        return new File(profilingDir, "node-" + ctx.localNodeId() + ".prf");
+        return new File(fileDir, "node-" + ctx.localNodeId() + ".prf");
     }
 
     /** Writes {@link UUID} to buffer. */
@@ -515,12 +516,12 @@ public class FileProfiling implements IgniteProfiling {
         return new IgniteUuid(globalId, buf.getLong());
     }
 
-    /** Worker to write to profiling file. */
+    /** Worker to write to performance statistics file. */
     private class FileWriter extends GridWorker {
         /** Maximum cached string count. */
         private static final short MAX_CACHED_STRING_COUNT = Short.MAX_VALUE;
 
-        /** Profiling file I/O. */
+        /** Performance statistics file I/O. */
         private final FileIO fileIo;
 
         /** File write buffer. */
@@ -546,7 +547,7 @@ public class FileProfiling implements IgniteProfiling {
 
         /**
          * @param ctx Kernal context.
-         * @param fileIo Profiling file I/O.
+         * @param fileIo Performance statistics file I/O.
          * @param maxFileSize Maximum file size in bytes.
          * @param bufferSize Off heap buffer size in bytes.
          * @param flushBatchSize Minimal batch size to flush in bytes.
@@ -554,7 +555,7 @@ public class FileProfiling implements IgniteProfiling {
          */
         FileWriter(GridKernalContext ctx, FileIO fileIo, long maxFileSize, int bufferSize, int flushBatchSize,
             IgniteLogger log) {
-            super(ctx.igniteInstanceName(), "profiling-writer%" + ctx.igniteInstanceName(), log);
+            super(ctx.igniteInstanceName(), "performance-statistics-writer%" + ctx.igniteInstanceName(), log);
 
             this.fileIo = fileIo;
             this.flushBatchSize = flushBatchSize;
@@ -597,7 +598,7 @@ public class FileProfiling implements IgniteProfiling {
 
             stopFut.onDone();
 
-            log.info("Profiling stopped.");
+            log.info("Performance statistics writer stopped.");
         }
 
         /** @return Unique per file string identifier. {@code Null} if there is no cached identifier. */
@@ -654,9 +655,9 @@ public class FileProfiling implements IgniteProfiling {
 
                 fileIo.force();
             } catch (IOException e) {
-                log.error("Unable to write to file. Profiling will be stopped.", e);
+                log.error("Unable to write to file. Performance statistics will be stopped.", e);
 
-                stopProfiling();
+                stop();
             }
         }
 
@@ -673,8 +674,10 @@ public class FileProfiling implements IgniteProfiling {
 
         /** Logs warning message about small buffer size if not logged yet. */
         void logSmallBufferMessage() {
-            if (smallBufLogged.compareAndSet(false, true))
-                log.warning("The profiling buffer size is too small. Some operations will not be profiled.");
+            if (smallBufLogged.compareAndSet(false, true)) {
+                log.warning("The performance statistics in-memory buffer size is too small. Some operations " +
+                    "will not be logged.");
+            }
         }
     }
 

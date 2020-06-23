@@ -201,9 +201,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert req.mvccSnapshot() != null || !cctx.mvccEnabled() || req.cancel() ||
             (req.type() == null && !req.fields()) : req; // Last assertion means next page request.
 
-        boolean profilingEnabled = cctx.kernalContext().metric().profilingEnabled();
+        boolean statsEnabled = cctx.kernalContext().metric().performanceStatisticsEnabled();
 
-        if (profilingEnabled)
+        if (statsEnabled)
             IoStatisticsQueryHelper.startGatheringQueryStatistics();
 
         try {
@@ -257,11 +257,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 }
             }
         } finally {
-            if (profilingEnabled) {
+            if (statsEnabled) {
                 IoStatisticsHolderQuery stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
                 if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
-                    cctx.kernalContext().metric().profiling().queryReads(
+                    cctx.kernalContext().metric().performanceStatistics().queryReads(
                         req.type(),
                         sndId,
                         req.id(),
@@ -617,10 +617,10 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert qry.type() == GridCacheQueryType.SCAN : qry;
         assert qry.mvccSnapshot() != null || !cctx.mvccEnabled();
 
-        boolean profilingEnabled = cctx.kernalContext().metric().profilingEnabled();
+        boolean statsEnabled = cctx.kernalContext().metric().performanceStatisticsEnabled();
 
-        long startTime = profilingEnabled ? System.currentTimeMillis() : 0;
-        long startTimeNanos = profilingEnabled ? System.nanoTime() : 0;
+        long startTime = statsEnabled ? System.currentTimeMillis() : 0;
+        long startTimeNanos = statsEnabled ? System.nanoTime() : 0;
 
         GridCloseableIterator locIter0 = null;
 
@@ -695,8 +695,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (fut != null)
                     fut.cancel();
 
-                if (profilingEnabled) {
-                    cctx.kernalContext().metric().profiling().query(
+                if (statsEnabled) {
+                    cctx.kernalContext().metric().performanceStatistics().query(
                         SCAN,
                         cctx.name(),
                         ((GridCacheDistributedQueryFuture)fut).requestId(),

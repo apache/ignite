@@ -362,7 +362,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
 
-        if (cctx.kernalContext().metric().profilingEnabled())
+        if (cctx.kernalContext().metric().performanceStatisticsEnabled())
             startTimeNanos = System.nanoTime();
     }
 
@@ -416,7 +416,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
 
-        if (cctx.kernalContext().metric().profilingEnabled())
+        if (cctx.kernalContext().metric().performanceStatisticsEnabled())
             startTimeNanos = System.nanoTime();
     }
 
