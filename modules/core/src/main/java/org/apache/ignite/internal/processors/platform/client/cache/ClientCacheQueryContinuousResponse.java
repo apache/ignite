@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -24,7 +25,11 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Continuous query response.
  */
+@SuppressWarnings("rawtypes")
 class ClientCacheQueryContinuousResponse extends ClientResponse {
+    /** */
+    private final ClientCacheQueryContinuousHandle handle;
+
     /** */
     private final long continuousQueryId;
 
@@ -34,11 +39,14 @@ class ClientCacheQueryContinuousResponse extends ClientResponse {
     /**
      * Ctor.
      * @param reqId Request id.
+     * @param handle Handle.
      * @param continuousQueryId Continuous query handle id.
      * @param initialQueryId Initial query cursor id.
      */
-    public ClientCacheQueryContinuousResponse(long reqId, long continuousQueryId, Long initialQueryId) {
+    public ClientCacheQueryContinuousResponse(long reqId, ClientCacheQueryContinuousHandle handle,
+                                              long continuousQueryId, Long initialQueryId) {
         super(reqId);
+        this.handle = handle;
 
         this.continuousQueryId = continuousQueryId;
         this.initialQueryId = initialQueryId;
@@ -58,6 +66,6 @@ class ClientCacheQueryContinuousResponse extends ClientResponse {
     @Override public void onSent() {
         super.onSent();
 
-        // TODO: Start sending notifications
+        handle.startNotifications(continuousQueryId);
     }
 }

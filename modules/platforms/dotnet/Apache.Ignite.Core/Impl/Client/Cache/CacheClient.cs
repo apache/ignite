@@ -614,7 +614,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                     var w = ctx.Writer;
                     w.WriteInt(continuousQuery.BufferSize);
                     w.WriteLong((long) continuousQuery.TimeInterval.TotalMilliseconds);
-                    w.WriteBoolean(false);
+                    w.WriteBoolean(false); // Include expired.
                     w.WriteObject<object>(null); // Filter.
                     w.WriteObject<object>(null); // Transformer.
                     w.WriteByte(0); // Initial query type.

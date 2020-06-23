@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
 
@@ -41,10 +40,10 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
     private final Lock modeLock = new ReentrantLock();
 
     /** */
-    private QueryCursor cursor;
+    private boolean notificationsEnabled;
 
     /** */
-    private long cursorId;
+    private long continuousQueryId;
 
     /** Queue to store events while we wait for cursorId to be available. */
     private Queue<CacheEntryEvent<?, ?>> eventBuffer;
@@ -55,7 +54,6 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
      */
     public ClientCacheQueryContinuousHandle(ClientConnectionContext ctx) {
         assert ctx != null;
-        assert cursor != null;
 
         this.ctx = ctx;
     }
@@ -65,20 +63,19 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
         modeLock.lock();
 
         try {
-            if (cursor == null) {
-                // We can't send events to the client until the client has the cursor id. Buffer them.
+            if (notificationsEnabled) {
+                ClientCacheEntryEventNotification notification = new ClientCacheEntryEventNotification(
+                        ClientMessageParser.OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION,
+                        continuousQueryId,
+                        iterable);
+
+                ctx.notifyClient(notification);
+            } else {
                 if (eventBuffer == null)
                     eventBuffer = new ConcurrentLinkedQueue<>();
 
                 for (CacheEntryEvent e : iterable)
                     eventBuffer.add(e);
-            } else {
-                ClientCacheEntryEventNotification notification = new ClientCacheEntryEventNotification(
-                        ClientMessageParser.OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION,
-                        cursorId,
-                        iterable);
-
-                ctx.notifyClient(notification);
             }
         } finally {
             modeLock.unlock();
@@ -87,20 +84,19 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
 
     /**
      * Sets the cursor id.
-     * @param cursor Cursor.
-     * @param cursorId Cursor id.
+     * @param continuousQueryId Cursor id.
      */
-    public void setCursor(QueryCursor cursor, long cursorId) {
+    public void startNotifications(long continuousQueryId) {
         modeLock.lock();
 
         try {
-            this.cursor = cursor;
-            this.cursorId = cursorId;
+            this.continuousQueryId = continuousQueryId;
+            notificationsEnabled = true;
 
             if (eventBuffer != null) {
                 ClientCacheEntryEventNotification notification = new ClientCacheEntryEventNotification(
                         ClientMessageParser.OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION,
-                        cursorId,
+                        continuousQueryId,
                         eventBuffer);
 
                 eventBuffer = null;
