@@ -30,6 +30,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
             _socket = socket;
             _continuousQueryId = continuousQueryId;
             _initialQueryId = initialQueryId;
+
+            // TODO: Set notification listener
         }
 
         public IQueryCursor<ICacheEntry<TK, TV>> GetInitialQueryCursor()

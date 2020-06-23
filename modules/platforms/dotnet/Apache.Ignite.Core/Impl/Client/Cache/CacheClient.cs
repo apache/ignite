@@ -607,9 +607,23 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
 
-            return DoOutInOp(ClientOp.QueryContinuous, w => WriteScanQuery(w.Writer, scanQuery),
-                ctx => new ClientQueryCursor<TK, TV>(
-                    ctx.Socket, ctx.Stream.ReadLong(), _keepBinary, ctx.Stream, ClientOp.QueryScanCursorGetPage));
+            return DoOutInOp(
+                ClientOp.QueryContinuous,
+                ctx =>
+                {
+                    var w = ctx.Writer;
+                    w.WriteInt(continuousQuery.BufferSize);
+                    w.WriteLong((long) continuousQuery.TimeInterval.TotalMilliseconds);
+                    w.WriteBoolean(false);
+                    w.WriteObject<object>(null); // Filter.
+                    w.WriteObject<object>(null); // Transformer.
+                    w.WriteByte(0); // Initial query type.
+                },
+                ctx =>
+                {
+                    var queryId = ctx.Stream.ReadLong();
+                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, queryId, null);
+                });
         }
 
         /** <inheritDoc /> */
