@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
+    using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Client.Cache.Query;
     using Apache.Ignite.Core.Impl.Common;
@@ -606,6 +607,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> continuousQuery)
         {
             IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
+            IgniteArgumentCheck.NotNull(continuousQuery.Listener, "continuousQuery.Listener");
 
             return DoOutInOp(
                 ClientOp.QueryContinuous,
@@ -618,10 +620,23 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                     w.WriteObject<object>(null); // Filter.
                     w.WriteObject<object>(null); // Transformer.
                     w.WriteByte(0); // Initial query type.
+
+                    ctx.Socket.ExpectNotifications();
                 },
                 ctx =>
                 {
                     var queryId = ctx.Stream.ReadLong();
+
+                    ctx.Socket.AddNotificationHandler(queryId, (stream, err) =>
+                    {
+                        Debug.Assert(err == null); // Should not be present.
+
+                        var evts = ContinuousQueryUtils.ReadEvents<TK, TV>(
+                            stream, ctx.Marshaller, _keepBinary);
+
+                        continuousQuery.Listener.OnEvent(evts);
+                    });
+
                     return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, queryId, null);
                 });
         }
