@@ -303,7 +303,7 @@ abstract class TcpDiscoveryImpl {
     /**
      * @return connection check interval.
      */
-    long connectionCheckInterval() {
+    public long connectionCheckInterval() {
         return 0;
     }
 

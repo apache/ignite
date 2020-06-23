@@ -362,7 +362,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override long connectionCheckInterval() {
+    @Override public long connectionCheckInterval() {
         return connCheckInterval;
     }
 
