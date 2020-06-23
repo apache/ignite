@@ -14,18 +14,21 @@ Common requirements
    $IGNITE_HOME/platforms/cpp/DEVNOTES.txt for build instructions and to $IGNITE_HOME/platforms/cpp/odbc/README.txt.
    for installation instructions.
 
-Running examples on Linux
+Running examples on Linux and MacOS
 ----------------------------------
 
 Prerequisites:
- * GCC, g++, autotools, automake, and libtool must be installed.
+ * GCC, g++, CMake >= 3.6 must be installed
+ * Apache Ignite C++ should be installed. Refer to $IGNITE_HOME/platforms/cpp/DEVNOTES.txt for instructions.
 
 To build examples execute the following commands one by one from examples root directory:
- * libtoolize && aclocal && autoheader && automake --add-missing && autoreconf
- * ./configure
+ * mkdir cmake-build-release
+ * cd ./cmake-build-release
+ * cmake -DCMAKE_BUILD_TYPE=[Release|Debug] [-DIGNITE_CPP_DIR=<ignite_install_dir>] ..
  * make
 
-As a result executables will appear in every example's directory.
+If Apache Ignite C++ is installed in default directories (i.e. /usr/local or /usr), setting IGNITE_CPP_DIR property
+is not necessary. As a result executables will be in corresponding subdirectories in cmake-build-release directory.
 
 Before running examples ensure that:
  * LD_LIBRARY_PATH environment variable is set and pointing to a directory with "libjvm.so" library. Typically this
