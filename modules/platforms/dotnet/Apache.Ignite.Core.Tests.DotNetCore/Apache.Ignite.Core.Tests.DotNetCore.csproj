@@ -208,6 +208,9 @@
       <Link>Cache\Store\CacheTestStore.cs</Link>
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\TestReferenceObject.cs" Link="Cache\TestReferenceObject.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\ContinuousQueryTest.cs">
+      <Link>ThinClient\Cache\ContinuousQueryTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\DynamicFieldSetTest.cs">
       <Link>ThinClient\Cache\DynamicFieldSetTest.cs</Link>
     </Compile>

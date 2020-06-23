@@ -100,6 +100,7 @@
     <Compile Include="Impl\Cache\Query\IQueryBaseInternal.cs" />
     <Compile Include="Impl\Cache\Query\PlatformCacheQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\QueryCursorField.cs" />
+    <Compile Include="Impl\Client\Cache\Query\ClientContinuousQueryHandle.cs" />
     <Compile Include="Impl\Client\ClientBitmaskFeature.cs" />
     <Compile Include="Impl\Client\ClientConnection.cs" />
     <Compile Include="Impl\Client\ClientContextBase.cs" />
