@@ -105,6 +105,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Configuration for the 'default' cache. */
     protected volatile CacheConfiguration<Integer, Integer> dfltCacheCfg;
 
+    /** Enable default data region persistence. */
+    protected boolean persistence = true;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -118,7 +121,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setMaxSize(100L * 1024 * 1024)
-                    .setPersistenceEnabled(true))
+                    .setPersistenceEnabled(persistence))
                 .setCheckpointFrequency(3000)
                 .setPageSize(4096))
             .setCacheConfiguration(dfltCacheCfg)
@@ -132,6 +135,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         dfltCacheCfg = txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        persistence = true;
     }
 
     /** @throws Exception If fails. */
@@ -139,7 +143,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     public void afterTestSnapshot() throws Exception {
         try {
             for (Ignite ig : G.allGrids()) {
-                if (ig.configuration().isClientMode())
+                if (ig.configuration().isClientMode() || !persistence)
                     continue;
 
                 File storeWorkDir = ((FilePageStoreManager)((IgniteEx)ig).context()
