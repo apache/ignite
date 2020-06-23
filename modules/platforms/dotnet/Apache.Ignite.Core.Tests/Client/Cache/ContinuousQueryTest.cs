@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Basic continuous query test.
         /// </summary>
         [Test]
-        public void TestContinuousQueryCallsLocalListener()
+        public void TestContinuousQueryCallsLocalListenerWithCorrectEvent()
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
 
@@ -41,16 +41,40 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var qry = new ContinuousQuery<int, int>(new DelegateListener<int, int>(events.Add));
             using (cache.QueryContinuous(qry))
             {
+                // Create.
                 cache.Put(1, 1);
-
                 TestUtils.WaitForTrueCondition(() => events.Count == 1);
 
                 var evt = events.Single();
-                Assert.AreEqual(1, evt.Key);
-                Assert.AreEqual(1, evt.Value);
+                Assert.AreEqual(CacheEntryEventType.Created, evt.EventType);
                 Assert.IsFalse(evt.HasOldValue);
                 Assert.IsTrue(evt.HasValue);
-                Assert.AreEqual(CacheEntryEventType.Created, evt.EventType);
+                Assert.AreEqual(1, evt.Key);
+                Assert.AreEqual(1, evt.Value);
+
+                // Update.
+                cache.Put(1, 2);
+                TestUtils.WaitForTrueCondition(() => events.Count == 2);
+
+                evt = events.Last();
+                Assert.AreEqual(CacheEntryEventType.Updated, evt.EventType);
+                Assert.IsTrue(evt.HasOldValue);
+                Assert.IsTrue(evt.HasValue);
+                Assert.AreEqual(1, evt.Key);
+                Assert.AreEqual(2, evt.Value);
+                Assert.AreEqual(1, evt.OldValue);
+
+                // Remove.
+                cache.Remove(1);
+                TestUtils.WaitForTrueCondition(() => events.Count == 3);
+
+                evt = events.Last();
+                Assert.AreEqual(CacheEntryEventType.Removed, evt.EventType);
+                Assert.IsTrue(evt.HasOldValue);
+                Assert.IsTrue(evt.HasValue);
+                Assert.AreEqual(1, evt.Key);
+                Assert.AreEqual(2, evt.Value);
+                Assert.AreEqual(2, evt.OldValue);
             }
         }
 
