@@ -253,8 +253,6 @@ public class CacheContinuousQueryEventBuffer {
             while (batch != batch0);
         }
 
-        assert res == null && backup;
-
         return res;
     }
 
