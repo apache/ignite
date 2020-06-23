@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Impl.Binary;
@@ -599,6 +600,24 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             // We don't know which connection is going to be used. This connection may not even exist yet.
             // See WriteRequest.
             return new CacheClient<TK, TV>(_ignite, _name, _keepBinary, plc);
+        }
+
+        /** <inheritDoc /> */
+        public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> qry)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> qry, SqlFieldsQuery initialQry)
+        {
+            throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */
