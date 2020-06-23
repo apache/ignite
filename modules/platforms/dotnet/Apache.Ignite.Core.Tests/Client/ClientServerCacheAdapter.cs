@@ -300,17 +300,17 @@ namespace Apache.Ignite.Core.Tests.Client
             throw new NotSupportedException();
         }
 
-        public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> qry)
+        public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> continuousQuery)
         {
             throw new NotImplementedException();
         }
 
-        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry)
+        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, QueryBase initialQry)
         {
             throw new NotImplementedException();
         }
 
-        public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> qry, SqlFieldsQuery initialQry)
+        public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, SqlFieldsQuery initialQry)
         {
             throw new NotImplementedException();
         }

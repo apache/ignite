@@ -440,14 +440,14 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <summary>
         /// Start continuous query execution.
         /// </summary>
-        /// <param name="qry">Continuous query.</param>
+        /// <param name="continuousQuery">Continuous query.</param>
         /// <returns>Handle to stop query execution.</returns>
-        IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> qry);
+        IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> continuousQuery);
 
         /// <summary>
         /// Start continuous query execution.
         /// </summary>
-        /// <param name="qry">Continuous query.</param>
+        /// <param name="continuousQuery">Continuous query.</param>
         /// <param name="initialQry">
         /// The initial query. This query will be executed before continuous listener is registered which allows
         /// to iterate through entries which have already existed at the time continuous query is executed.
@@ -455,12 +455,14 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <returns>
         /// Handle to get initial query cursor or stop query execution.
         /// </returns>
-        IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry);
+        IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(
+            ContinuousQuery<TK, TV> continuousQuery,
+            QueryBase initialQry);
 
         /// <summary>
         /// Start continuous query execution.
         /// </summary>
-        /// <param name="qry">Continuous query.</param>
+        /// <param name="continuousQuery">Continuous query.</param>
         /// <param name="initialQry">
         /// The initial fields query. This query will be executed before continuous listener is registered which allows
         /// to iterate through entries which have already existed at the time continuous query is executed.
@@ -468,6 +470,8 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <returns>
         /// Handle to get initial query cursor or stop query execution.
         /// </returns>
-        IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> qry, SqlFieldsQuery initialQry);
+        IContinuousQueryHandleFields QueryContinuous(
+            ContinuousQuery<TK, TV> continuousQuery,
+            SqlFieldsQuery initialQry);
     }
 }

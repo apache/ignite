@@ -603,19 +603,23 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> qry)
+        public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> continuousQuery)
+        {
+            IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
+
+            return DoOutInOp(ClientOp.QueryContinuous, w => WriteScanQuery(w.Writer, scanQuery),
+                ctx => new ClientQueryCursor<TK, TV>(
+                    ctx.Socket, ctx.Stream.ReadLong(), _keepBinary, ctx.Stream, ClientOp.QueryScanCursorGetPage));
+        }
+
+        /** <inheritDoc /> */
+        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, QueryBase initialQry)
         {
             throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry)
-        {
-            throw new NotImplementedException();
-        }
-
-        /** <inheritDoc /> */
-        public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> qry, SqlFieldsQuery initialQry)
+        public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, SqlFieldsQuery initialQry)
         {
             throw new NotImplementedException();
         }
