@@ -597,6 +597,13 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
+     * @return Last initialized affinity assignment.
+     */
+    public AffinityAssignment lastReadyAffinity() {
+        return head.get();
+    }
+
+    /**
      * @param topVer Topology version.
      * @return Affinity assignment.
      */
