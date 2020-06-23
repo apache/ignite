@@ -1030,7 +1030,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private void HandleContinuousQueryEvents(IBinaryStream stream, Exception err,
             ContinuousQuery<TK, TV> continuousQuery)
         {
-            if (err == null)
+            if (err != null)
             {
                 // Socket is disposed.
                 return;

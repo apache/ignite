@@ -42,7 +42,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             using (cache.QueryContinuous(qry))
             {
                 cache.Put(1, 1);
-                Assert.AreEqual(1, events.Count);
+
+                TestUtils.WaitForTrueCondition(() => events.Count == 1);
 
                 var evt = events.Single();
                 Assert.AreEqual(1, evt.Key);
