@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include "test_server.h"
 #ifdef _WIN32
 #   include <windows.h>
 #endif
@@ -29,7 +30,6 @@
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 
-#include "test_type.h"
 #include "test_utils.h"
 #include "odbc_test_suite.h"
 
@@ -50,7 +50,7 @@ struct ConnectionTestSuiteFixture: odbc::OdbcTestSuite
     ConnectionTestSuiteFixture() :
         OdbcTestSuite()
     {
-        StartNode();
+        // No-op.
     }
 
     /**
@@ -106,6 +106,8 @@ BOOST_FIXTURE_TEST_SUITE(ConnectionTestSuite, ConnectionTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestConnectionRestore)
 {
+    StartNode();
+
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     // Check that query was successfully executed.
@@ -124,6 +126,21 @@ BOOST_AUTO_TEST_CASE(TestConnectionRestore)
 
     // Check that connection was restored.
     BOOST_CHECK_EQUAL(ExecQueryAndReturnError(), "");
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionMemoryLeak)
+{
+    TestServer testServer(11100);
+
+    testServer.PushHandshakeResponse(true);
+    testServer.Start();
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11100;SCHEMA=cache");
+
+    ExecQuery("Select * from Test");
+
+    Disconnect();
+    Disconnect();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

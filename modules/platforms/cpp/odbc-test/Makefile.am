@@ -93,6 +93,7 @@ ignite_odbc_tests_SOURCES = \
     src/odbc_test_suite.cpp \
     src/types_test.cpp \
     src/authentication_test.cpp \
+    src/test_server.cpp \
     ../odbc/src/log.cpp \
     ../odbc/src/cursor.cpp \
     ../odbc/src/diagnostic/diagnostic_record.cpp \
