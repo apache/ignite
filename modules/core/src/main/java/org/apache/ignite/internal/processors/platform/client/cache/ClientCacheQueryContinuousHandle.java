@@ -47,7 +47,7 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
     private long cursorId;
 
     /** Queue to store events while we wait for cursorId to be available. */
-    private Queue<CacheEntryEvent> eventBuffer;
+    private Queue<CacheEntryEvent<?, ?>> eventBuffer;
 
     /**
      * Ctor.
@@ -97,7 +97,16 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
             this.cursor = cursor;
             this.cursorId = cursorId;
 
-            // TODO: Send buffered events
+            if (eventBuffer != null) {
+                ClientCacheEntryEventNotification notification = new ClientCacheEntryEventNotification(
+                        ClientMessageParser.OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION,
+                        cursorId,
+                        eventBuffer);
+
+                eventBuffer = null;
+
+                ctx.notifyClient(notification);
+            }
         } finally {
             modeLock.unlock();
         }
