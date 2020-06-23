@@ -779,7 +779,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /**
      * Stops performance statistics.
      *
-     * @return Future to be completed on profiling stopped.s
+     * @return Future to be completed on performance statistics stopped.
      */
     public IgniteInternalFuture<?> stopPerformanceStatistics() {
         return ctx.closure().broadcast(new PerformanceStatisticsJob(), new T4<>(false, 0L, 0, 0),
