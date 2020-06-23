@@ -260,63 +260,6 @@ public class FilePerformanceStatisticsWalker {
                     return true;
                 }
 
-                case CACHE_START: {
-                    if (buf.remaining() < 4 + 8 + 4)
-                        break;
-
-                    int cacheId = buf.getInt();
-                    long startTime = buf.getLong();
-
-                    int cacheNameLength = buf.getInt();
-
-                    if (buf.remaining() < cacheNameLength + 4)
-                        break;
-
-                    String cacheName = readString(buf, cacheNameLength);
-
-                    int groupNameLength = buf.getInt();
-
-                    if (buf.remaining() < groupNameLength + 1)
-                        break;
-
-                    String groupName = readString(buf, groupNameLength);
-
-                    boolean userCache = buf.get() != 0;
-
-                    for (IgnitePerformanceStatistics handler : handlers)
-                        handler.cacheStart(cacheId, startTime, cacheName, groupName, userCache);
-
-                    return true;
-                }
-
-                case PROFILING_START: {
-                    if (buf.remaining() < 20)
-                        break;
-
-                    UUID nodeId = readUuid(buf);
-
-                    int nameLen = buf.getInt();
-
-                    if (buf.remaining() < nameLen + 4)
-                        break;
-
-                    String instanceName = readString(buf, nameLen);
-
-                    int verLen = buf.getInt();
-
-                    if (buf.remaining() < verLen + 4)
-                        break;
-
-                    String ver = readString(buf, verLen);
-
-                    long startTime = buf.getLong();
-
-                    for (IgnitePerformanceStatistics handler : handlers)
-                        handler.profilingStart(nodeId, instanceName, ver, startTime);
-
-                    return true;
-                }
-
                 default:
                     throw new RuntimeException("Unknown operation type id [typeId=" + opTypeByte + ']');
             }

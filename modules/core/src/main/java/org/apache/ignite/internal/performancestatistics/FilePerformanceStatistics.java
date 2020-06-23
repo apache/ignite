@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -144,14 +143,6 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
 
             throw new IgniteException("Failed to start performance statistics writer.", e);
         }
-
-        profilingStart(ctx.localNodeId(), ctx.igniteInstanceName(), ctx.discovery().localNode().version().toString(),
-            U.currentTimeMillis());
-
-        ctx.cache().context().cacheContexts().stream()
-            .filter(GridCacheContext::started)
-            .forEach(cctx -> cacheStart(cctx.cacheId(), cctx.startTime(), cctx.name(), cctx.config().getGroupName(),
-                cctx.userCache()));
     }
 
     /** Stops performance statistics. */
@@ -373,70 +364,6 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
         buf.putLong(startTime);
         buf.putLong(duration);
         buf.put(timedOut ? (byte)1 : 0);
-
-        seg.release();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cacheStart(int cacheId, long startTime, String cacheName, String groupName,
-        boolean userCache) {
-        byte[] cacheNameBytes = cacheName.getBytes();
-        byte[] groupNameBytes = groupName == null ? new byte[0] : groupName.getBytes();
-
-        int size = /*cacheId*/ 4 +
-            /*startTime*/ 8 +
-            /*cacheName*/ 4 + cacheNameBytes.length +
-            /*groupName*/ 4 + groupNameBytes.length +
-            /*userCacheFlag*/ 1;
-
-        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.CACHE_START, size);
-
-        if (seg == null)
-            return;
-
-        ByteBuffer buf = seg.buffer();
-
-        buf.putInt(cacheId);
-        buf.putLong(startTime);
-
-        buf.putInt(cacheNameBytes.length);
-        buf.put(cacheNameBytes);
-
-        if (groupNameBytes == null)
-            buf.putInt(0);
-        else {
-            buf.putInt(groupNameBytes.length);
-            buf.put(groupNameBytes);
-        }
-
-        buf.put(userCache ? (byte)1 : 0);
-
-        seg.release();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime) {
-        byte[] nameBytes = igniteInstanceName.getBytes();
-        byte[] verBytes = igniteVersion.getBytes();
-
-        int size = /*nodeId*/ 16 +
-            /*igniteInstanceName*/ 4 + nameBytes.length +
-            /*version*/ 4 + verBytes.length +
-            /*profilingStartTime*/ 8;
-
-        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.PROFILING_START, size);
-
-        if (seg == null)
-            return;
-
-        ByteBuffer buf = seg.buffer();
-
-        writeUuid(buf, nodeId);
-        buf.putInt(nameBytes.length);
-        buf.put(nameBytes);
-        buf.putInt(verBytes.length);
-        buf.put(verBytes);
-        buf.putLong(startTime);
 
         seg.release();
     }
@@ -699,13 +626,7 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
         TASK,
 
         /** Job. */
-        JOB,
-
-        /** Cache start. */
-        CACHE_START,
-
-        /** Profiling start. */
-        PROFILING_START;
+        JOB;
 
         /** Values. */
         private static final OperationType[] VALS = values();

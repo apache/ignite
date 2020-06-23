@@ -289,9 +289,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Last remove all job future. */
     private AtomicReference<IgniteInternalFuture<Boolean>> lastRmvAllJobFut = new AtomicReference<>();
 
-    /** Start time. */
-    private volatile long startTime;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -534,8 +531,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      */
     public void onStarted() {
-        startTime = U.currentTimeMillis();
-
         startLatch.countDown();
     }
 
@@ -2360,11 +2355,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public AtomicReference<IgniteInternalFuture<Boolean>> lastRemoveAllJobFut() {
         return lastRmvAllJobFut;
-    }
-
-    /** @return Start time. */
-    public long startTime() {
-        return startTime;
     }
 
     /** {@inheritDoc} */

@@ -21,9 +21,11 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
-/** The interface represents performance statistics operations. */
+/**
+ * The interface represents performance statistics operations collection for purposes of troubleshooting and
+ * performance analysis.
+ */
 public interface IgnitePerformanceStatistics {
     /**
      * @param type Operation type.
@@ -77,23 +79,6 @@ public interface IgnitePerformanceStatistics {
      * @param timedOut {@code True} if job is timed out.
      */
     void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut);
-
-    /**
-     * @param cacheId Cache id.
-     * @param startTime Start time in milliseconds.
-     * @param cacheName Cache name.
-     * @param groupName Group name.
-     * @param userCache User cache flag.
-     */
-    void cacheStart(int cacheId, long startTime, String cacheName, @Nullable String groupName, boolean userCache);
-
-    /**
-     * @param nodeId Node id.
-     * @param igniteInstanceName Ignite instance name.
-     * @param igniteVersion Ignite version.
-     * @param startTime Profiling start time.
-     */
-    void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime);
 
     /** Cache operations types. */
     public enum CacheOperationType {

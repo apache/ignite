@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Test performance statistics file reader.
@@ -84,20 +83,6 @@ public class TestFilePerformanceStatisticsReader {
         @Override public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
             log("job", "sesId", sesId, "queuedTime", queuedTime, "startTime", startTime,
                 "duration", duration, "timedOut", timedOut);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cacheStart(int cacheId, long startTime, String cacheName, @Nullable String groupName,
-            boolean userCache) {
-            log("cacheStart", "cacheId", cacheId, "startTime", startTime, "cacheName", cacheName,
-                "groupName", groupName, "userCache", userCache);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion,
-            long startTime) {
-            log("profilingStart", "nodeId", nodeId, "igniteInstanceName", igniteInstanceName,
-                "igniteVersion", igniteVersion, "startTime", startTime);
         }
 
         /**

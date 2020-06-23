@@ -50,7 +50,7 @@ public class PerformanceStatisticsMBeanSelfTest extends AbstractPerformanceStati
      * @return Ignite performance statistics MBean.
      */
     private IgnitePerformanceStatisticsMBean getMBean(String igniteInstanceName) {
-        return getMxBean(igniteInstanceName, "Profiling", IgnitePerformanceStatisticsMbeanImpl.class,
+        return getMxBean(igniteInstanceName, "PerformanceStatistics", IgnitePerformanceStatisticsMbeanImpl.class,
             IgnitePerformanceStatisticsMBean.class);
     }
 }
