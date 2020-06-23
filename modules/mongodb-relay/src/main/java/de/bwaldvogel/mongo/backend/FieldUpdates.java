@@ -4,6 +4,7 @@ import static de.bwaldvogel.mongo.backend.Constants.ID_FIELD;
 import static de.bwaldvogel.mongo.backend.Utils.describeType;
 import static de.bwaldvogel.mongo.backend.Utils.splitPath;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,7 +16,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import de.bwaldvogel.mongo.bson.BsonTimestamp;
+
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.bson.Json;
 import de.bwaldvogel.mongo.exception.BadValueException;
@@ -393,7 +394,7 @@ class FieldUpdates {
         if (useDate) {
             newValue = now;
         } else {
-            newValue = new BsonTimestamp(now, 0);
+            newValue = new Timestamp(now.getEpochSecond());
         }
 
         changeSubdocumentValue(document, key, newValue);

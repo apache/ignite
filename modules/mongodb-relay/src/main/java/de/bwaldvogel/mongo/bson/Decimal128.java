@@ -2,6 +2,11 @@ package de.bwaldvogel.mongo.bson;
 
 import static java.math.MathContext.DECIMAL128;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -9,7 +14,7 @@ import java.util.Objects;
 
 import de.bwaldvogel.mongo.backend.Assert;
 
-public final class Decimal128 extends Number implements Serializable, Comparable<Decimal128> {
+public final class Decimal128 extends Number implements Externalizable, Comparable<Decimal128> {
 
     private static final long serialVersionUID = 1L;
 
@@ -34,8 +39,14 @@ public final class Decimal128 extends Number implements Serializable, Comparable
     private static final int EXPONENT_OFFSET = 6176;
     private static final int MAX_BIT_LENGTH = 113;
 
-    private final long low;
-    private final long high;
+    private long low;
+    private long high;
+    
+    
+    Decimal128(){
+    	this.low = 0;
+        this.high = 0;
+    }
 
     public Decimal128(long low, long high) {
         this.low = low;
@@ -331,5 +342,24 @@ public final class Decimal128 extends Number implements Serializable, Comparable
         }
         return undiscardedPrecision;
     }
+    
+    //add@byron
+    private Object __writeReplace() throws ObjectStreamException {		
+		return this.toBigDecimalValue();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput out) throws IOException {
+		// TODO Auto-generated method stub
+		out.writeLong(this.high);
+		out.writeLong(this.low);
+	}
+
+	@Override
+	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+		// TODO Auto-generated method stub
+		this.high = in.readLong();
+		this.low = in.readLong();
+	}
 
 }

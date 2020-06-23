@@ -1,17 +1,19 @@
 package de.bwaldvogel.mongo.backend;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 import de.bwaldvogel.mongo.bson.BsonRegularExpression;
-import de.bwaldvogel.mongo.bson.BsonTimestamp;
+
 import de.bwaldvogel.mongo.bson.Decimal128;
 import de.bwaldvogel.mongo.bson.Document;
-import de.bwaldvogel.mongo.bson.LegacyUUID;
+
 import de.bwaldvogel.mongo.bson.MaxKey;
 import de.bwaldvogel.mongo.bson.MinKey;
 import de.bwaldvogel.mongo.bson.ObjectId;
@@ -49,13 +51,13 @@ public class ValueComparator implements Comparator<Object> {
         SORT_PRIORITY.add(String.class);
         SORT_PRIORITY.add(Document.class);
         SORT_PRIORITY.add(List.class);
-        SORT_PRIORITY.add(byte[].class);
-        SORT_PRIORITY.add(LegacyUUID.class);
+        SORT_PRIORITY.add(byte[].class);        
         SORT_PRIORITY.add(UUID.class);
         SORT_PRIORITY.add(ObjectId.class);
         SORT_PRIORITY.add(Boolean.class);
         SORT_PRIORITY.add(Instant.class);
-        SORT_PRIORITY.add(BsonTimestamp.class);
+        SORT_PRIORITY.add(Timestamp.class);
+        SORT_PRIORITY.add(Date.class);
         SORT_PRIORITY.add(BsonRegularExpression.class);
         SORT_PRIORITY.add(MaxKey.class);
     }
@@ -161,9 +163,15 @@ public class ValueComparator implements Comparator<Object> {
             return date1.compareTo(date2);
         }
 
-        if (BsonTimestamp.class.isAssignableFrom(clazz)) {
-            BsonTimestamp bsonTimestamp1 = (BsonTimestamp) value1;
-            BsonTimestamp bsonTimestamp2 = (BsonTimestamp) value2;
+        if (Timestamp.class.isAssignableFrom(clazz)) {
+        	Timestamp bsonTimestamp1 = (Timestamp) value1;
+            Timestamp bsonTimestamp2 = (Timestamp) value2;
+            return bsonTimestamp1.compareTo(bsonTimestamp2);
+        }
+        
+        if (Date.class.isAssignableFrom(clazz)) {
+        	Date bsonTimestamp1 = (Date) value1;
+        	Date bsonTimestamp2 = (Date) value2;
             return bsonTimestamp1.compareTo(bsonTimestamp2);
         }
 
@@ -212,13 +220,7 @@ public class ValueComparator implements Comparator<Object> {
                 return Long.compare(uuid1.getMostSignificantBits(), uuid2.getMostSignificantBits());
             }
         }
-
-        if (LegacyUUID.class.isAssignableFrom(clazz)) {
-            LegacyUUID uuid1 = (LegacyUUID) value1;
-            LegacyUUID uuid2 = (LegacyUUID) value2;
-            return uuid1.compareTo(uuid2);
-        }
-
+    
         if (MaxKey.class.isAssignableFrom(clazz)) {
             return (value2 instanceof MaxKey) ? 0 : 1;
         }

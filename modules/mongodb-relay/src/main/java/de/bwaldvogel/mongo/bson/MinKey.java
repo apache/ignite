@@ -1,5 +1,7 @@
 package de.bwaldvogel.mongo.bson;
 
+import java.io.ObjectStreamException;
+
 public class MinKey implements Bson {
 
     private static final long serialVersionUID = 1L;
@@ -10,6 +12,10 @@ public class MinKey implements Bson {
     }
 
     public static MinKey getInstance() {
+        return INSTANCE;
+    }
+    
+    protected Object readResolve() throws ObjectStreamException {
         return INSTANCE;
     }
 

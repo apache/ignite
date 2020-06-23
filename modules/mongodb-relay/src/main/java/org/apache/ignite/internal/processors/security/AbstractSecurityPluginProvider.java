@@ -86,7 +86,10 @@ public abstract class AbstractSecurityPluginProvider implements PluginProvider {
          this.log = ctx.log(this.getClass());    
          
          this.cfg = new MongoPluginConfiguration();
-         
+         boolean per = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
+         if(per) {
+        	 cfg.setWithBinaryStorage(true);        	 
+         }
          if (igniteCfg.getPluginConfigurations() != null) {
              for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
                  if (pluginCfg instanceof MongoPluginConfiguration) {

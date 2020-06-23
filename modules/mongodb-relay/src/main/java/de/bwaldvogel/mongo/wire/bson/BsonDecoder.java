@@ -1,17 +1,18 @@
 package de.bwaldvogel.mongo.wire.bson;
 
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 import de.bwaldvogel.mongo.bson.BsonJavaScript;
 import de.bwaldvogel.mongo.bson.BsonRegularExpression;
-import de.bwaldvogel.mongo.bson.BsonTimestamp;
 import de.bwaldvogel.mongo.bson.Decimal128;
 import de.bwaldvogel.mongo.bson.Document;
-import de.bwaldvogel.mongo.bson.LegacyUUID;
+
 import de.bwaldvogel.mongo.bson.MaxKey;
 import de.bwaldvogel.mongo.bson.MinKey;
 import de.bwaldvogel.mongo.bson.ObjectId;
@@ -67,13 +68,15 @@ public final class BsonDecoder {
             case BsonConstants.TYPE_BOOLEAN:
                 return decodeBoolean(buffer);
             case BsonConstants.TYPE_UTC_DATETIME:
+            	//-return new Date(buffer.readLongLE());
                 return Instant.ofEpochMilli(buffer.readLongLE());
             case BsonConstants.TYPE_REGEX:
                 return decodePattern(buffer);
             case BsonConstants.TYPE_INT32:
                 return Integer.valueOf(buffer.readIntLE());
-            case BsonConstants.TYPE_TIMESTAMP:
-                return new BsonTimestamp(buffer.readLongLE());
+            case BsonConstants.TYPE_TIMESTAMP:    
+            	return new Timestamp(buffer.readLongLE());
+                //-return new BsonTimestamp(buffer.readLongLE());
             case BsonConstants.TYPE_INT64:
                 return Long.valueOf(buffer.readLongLE());
             case BsonConstants.TYPE_DECIMAL128:
@@ -149,7 +152,7 @@ public final class BsonDecoder {
                 if (length != BsonConstants.LENGTH_UUID) {
                     throw new IllegalArgumentException("Illegal length: " + length);
                 }
-                return new LegacyUUID(buffer.readLongLE(), buffer.readLongLE());
+                return new UUID(buffer.readLongLE(), buffer.readLongLE());
             }
             case BsonConstants.BINARY_SUBTYPE_UUID: {
                 if (length != BsonConstants.LENGTH_UUID) {

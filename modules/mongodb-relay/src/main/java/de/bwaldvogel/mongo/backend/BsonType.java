@@ -1,5 +1,6 @@
 package de.bwaldvogel.mongo.backend;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
@@ -8,10 +9,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-import de.bwaldvogel.mongo.bson.BsonTimestamp;
 import de.bwaldvogel.mongo.bson.Decimal128;
 import de.bwaldvogel.mongo.bson.Document;
-import de.bwaldvogel.mongo.bson.LegacyUUID;
+
 import de.bwaldvogel.mongo.bson.MaxKey;
 import de.bwaldvogel.mongo.bson.MinKey;
 import de.bwaldvogel.mongo.bson.ObjectId;
@@ -23,10 +23,10 @@ enum BsonType {
     STRING(2, "string", String.class),
     OBJECT(3, "object", Document.class),
     ARRAY(4, "array", Collection.class),
-    BIN_DATA(5, "binData", byte[].class, LegacyUUID.class, UUID.class),
+    BIN_DATA(5, "binData", byte[].class, UUID.class),
     OBJECT_ID(7, "objectId", ObjectId.class),
     BOOL(8, "bool", Boolean.class),
-    DATE(9, "date", Instant.class),
+    DATE(9, "date", Instant.class,java.util.Date.class,java.sql.Date.class),
     NULL(10, "null") {
         @Override
         public boolean matches(Object value) {
@@ -35,7 +35,7 @@ enum BsonType {
     },
     REGEX(11, "regex", Pattern.class),
     INT(16, "int", Integer.class),
-    TIMESTAMP(17, "timestamp", BsonTimestamp.class),
+    TIMESTAMP(17, "timestamp", Timestamp.class),
     LONG(18, "long", Long.class),
     DECIMAL128(19, "decimal", Decimal128.class),
     MIN_KEY(-1, "minKey", MinKey.class),

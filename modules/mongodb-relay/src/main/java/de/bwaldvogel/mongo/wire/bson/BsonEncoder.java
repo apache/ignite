@@ -1,20 +1,21 @@
 package de.bwaldvogel.mongo.wire.bson;
 
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import de.bwaldvogel.mongo.bson.BsonJavaScript;
 import de.bwaldvogel.mongo.bson.BsonRegularExpression;
-import de.bwaldvogel.mongo.bson.BsonTimestamp;
 import de.bwaldvogel.mongo.bson.Decimal128;
 import de.bwaldvogel.mongo.bson.Document;
-import de.bwaldvogel.mongo.bson.LegacyUUID;
+
 import de.bwaldvogel.mongo.bson.MaxKey;
 import de.bwaldvogel.mongo.bson.MinKey;
 import de.bwaldvogel.mongo.bson.ObjectId;
@@ -88,21 +89,13 @@ public class BsonEncoder {
                     buffer.writeIntLE(data.length);
                     buffer.writeByte(BsonConstants.BINARY_SUBTYPE_GENERIC);
                     buffer.writeBytes(data);
-                } else if (value instanceof UUID || value instanceof LegacyUUID) {
+                } else if (value instanceof UUID) {
                     buffer.writeIntLE(BsonConstants.LENGTH_UUID);
 
-                    final UUID uuid;
-                    if (value instanceof LegacyUUID) {
-                        buffer.writeByte(BsonConstants.BINARY_SUBTYPE_OLD_UUID);
-                        uuid = ((LegacyUUID) value).getUuid();
-                        buffer.writeLongLE(uuid.getMostSignificantBits());
-                        buffer.writeLongLE(uuid.getLeastSignificantBits());
-                    } else {
-                        buffer.writeByte(BsonConstants.BINARY_SUBTYPE_UUID);
-                        uuid = (UUID) value;
-                        buffer.writeLong(uuid.getMostSignificantBits());
-                        buffer.writeLong(uuid.getLeastSignificantBits());
-                    }
+                    buffer.writeByte(BsonConstants.BINARY_SUBTYPE_UUID);
+                    UUID uuid = (UUID) value;
+                    buffer.writeLong(uuid.getMostSignificantBits());
+                    buffer.writeLong(uuid.getLeastSignificantBits());
                 } else {
                     throw new IllegalArgumentException("Unknown data: " + value.getClass());
                 }
@@ -122,8 +115,14 @@ public class BsonEncoder {
                 }
                 break;
             case BsonConstants.TYPE_UTC_DATETIME:
-                Instant instant = (Instant) value;
-                buffer.writeLongLE(instant.toEpochMilli());
+            	if(value instanceof Instant) {
+            		Instant instant = (Instant) value;
+            		buffer.writeLongLE(instant.toEpochMilli());
+            	}
+            	else {
+            		Date instant = (Date) value;
+            		buffer.writeLongLE(instant.getTime());
+            	}
                 break;
             case BsonConstants.TYPE_REGEX:
                 BsonRegularExpression pattern = (BsonRegularExpression) value;
@@ -134,8 +133,8 @@ public class BsonEncoder {
                 buffer.writeIntLE(((Integer) value).intValue());
                 break;
             case BsonConstants.TYPE_TIMESTAMP:
-                BsonTimestamp timestamp = (BsonTimestamp) value;
-                buffer.writeLongLE(timestamp.getTimestamp());
+            	Timestamp timestamp = (Timestamp) value;
+        		buffer.writeLongLE(timestamp.getTime());
                 break;
             case BsonConstants.TYPE_INT64:
                 buffer.writeLongLE(((Long) value).longValue());
@@ -181,15 +180,15 @@ public class BsonEncoder {
             return BsonConstants.TYPE_UTF8_STRING;
         } else if (value instanceof Boolean) {
             return BsonConstants.TYPE_BOOLEAN;
-        } else if (value instanceof byte[] || value instanceof UUID || value instanceof LegacyUUID) {
+        } else if (value instanceof byte[] || value instanceof UUID) {
             return BsonConstants.TYPE_DATA;
         } else if (value instanceof Collection<?> || value instanceof String[]) {
             return BsonConstants.TYPE_ARRAY;
-        } else if (value instanceof Instant) {
-            return BsonConstants.TYPE_UTC_DATETIME;
-        } else if (value instanceof BsonTimestamp) {
+        } else if (value instanceof Timestamp) {
             return BsonConstants.TYPE_TIMESTAMP;
-        } else if (value instanceof BsonRegularExpression) {
+        } else if (value instanceof Instant || value instanceof Date) {
+            return BsonConstants.TYPE_UTC_DATETIME;
+        }  else if (value instanceof BsonRegularExpression) {
             return BsonConstants.TYPE_REGEX;
         } else if (value instanceof MaxKey) {
             return BsonConstants.TYPE_MAX_KEY;

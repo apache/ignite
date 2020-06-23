@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
@@ -106,7 +107,10 @@ public class IgniteLuceneIndex extends Index<Object>{
 			try {
 				indexAccess = LuceneIndexAccess.getIndexAccess(ctx, cacheName);
 				
-				marshaller = PlatformUtils.marshaller();
+				CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
+
+				marshaller = cacheObjProc.marshaller();
+				//marshaller = PlatformUtils.marshaller();
 				String typeName = IgniteCollection.tableOfCache(cacheName);
 				Map<String, FieldType> fields = indexAccess.fields(typeName);
 		    	for(IndexKey ik: this.getKeys()) {
@@ -141,7 +145,8 @@ public class IgniteLuceneIndex extends Index<Object>{
 	@Override
 	public void add(Document document, Object position, MongoCollection<Object> collection) {
 		// index all field
-		if(collection instanceof IgniteCollection) {
+		
+		if(collection instanceof IgniteCollection) {			
 			IgniteCollection coll = (IgniteCollection) collection;
 			T2<String,String> t2 = IgniteCollection.typeNameAndKeyField(coll.dataMap,document);
 	    	String typeName = t2.get1();    	
