@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.odbc;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import java.security.cert.Certificate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -91,10 +91,10 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      * @return Auth context.
      * @throws IgniteCheckedException If failed.
      */
-    protected AuthorizationContext authenticate(Certificate[] certificates, String user, String pwd)
+    protected AuthorizationContext authenticate(GridNioSession ses, String user, String pwd)
         throws IgniteCheckedException {
         if (ctx.security().enabled())
-            authCtx = authenticateExternal(certificates, user, pwd).authorizationContext();
+            authCtx = authenticateExternal(ses, user, pwd).authorizationContext();
         else if (ctx.authentication().enabled()) {
             if (F.isEmpty(user))
                 throw new IgniteAccessControlException("Unauthenticated sessions are prohibited.");
@@ -113,7 +113,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /**
      * Do 3-rd party authentication.
      */
-    private AuthenticationContext authenticateExternal(Certificate[] certificates, String user, String pwd)
+    private AuthenticationContext authenticateExternal(GridNioSession ses, String user, String pwd)
         throws IgniteCheckedException {
         SecurityCredentials cred = new SecurityCredentials(user, pwd);
 
@@ -123,7 +123,8 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
         authCtx.subjectId(UUID.randomUUID());
         authCtx.nodeAttributes(F.isEmpty(userAttrs) ? Collections.emptyMap() : userAttrs);
         authCtx.credentials(cred);
-        authCtx.certificates(certificates);
+        authCtx.address(ses.remoteAddress());
+        authCtx.certificates(ses.certificates());
 
         secCtx = ctx.security().authenticate(authCtx);
 
