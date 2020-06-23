@@ -78,6 +78,16 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
         }
 
+        /// <summary>
+        /// Tests that Compute notifications and Continuous Query notifications work together correctly.
+        /// </summary>
+        [Test]
+        public void TestComputeWorksWhenContinuousQueryIsActive()
+        {
+            // TODO: Start multiple queries with different filters,
+            // do cache updates and compute calls in multiple threads.
+        }
+
         /** */
         private class DelegateListener<TK, TV> : ICacheEntryEventListener<TK, TV>
         {
