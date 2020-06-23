@@ -627,15 +627,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 {
                     var queryId = ctx.Stream.ReadLong();
 
-                    ctx.Socket.AddNotificationHandler(queryId, (stream, err) =>
-                    {
-                        Debug.Assert(err == null); // Should not be present.
-
-                        var evts = ContinuousQueryUtils.ReadEvents<TK, TV>(
-                            stream, ctx.Marshaller, _keepBinary);
-
-                        continuousQuery.Listener.OnEvent(evts);
-                    });
+                    ctx.Socket.AddNotificationHandler(queryId,
+                        (stream, err) => HandleContinuousQueryEvents(stream, err, continuousQuery));
 
                     return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, queryId, null);
                 });
@@ -1029,6 +1022,41 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             }
 
             return res;
+        }
+
+        /// <summary>
+        /// Handles continuous query events.
+        /// </summary>
+        private void HandleContinuousQueryEvents(IBinaryStream stream, Exception err,
+            ContinuousQuery<TK, TV> continuousQuery)
+        {
+            if (err == null)
+            {
+                // Socket is disposed.
+                return;
+            }
+
+            var flags = (ClientFlags) stream.ReadShort();
+            var opCode = (ClientOp) stream.ReadShort();
+
+            if (opCode != ClientOp.QueryContinuousEventNotification)
+            {
+                // TODO: Log error.
+            }
+            else if ((flags & ClientFlags.Error) == ClientFlags.Error)
+            {
+                var status = (ClientStatusCode) stream.ReadInt();
+                var msg = _marsh.Unmarshal<string>(stream);
+
+                // TODO: Log error
+            }
+            else
+            {
+                var evts = ContinuousQueryUtils.ReadEvents<TK, TV>(
+                    stream, _marsh, _keepBinary);
+
+                continuousQuery.Listener.OnEvent(evts);
+            }
         }
     }
 }
