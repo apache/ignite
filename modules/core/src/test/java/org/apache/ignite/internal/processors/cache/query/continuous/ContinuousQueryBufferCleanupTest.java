@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.cache.query.AbstractContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQuery;
 
@@ -28,7 +30,12 @@ public class ContinuousQueryBufferCleanupTest extends ContinuousQueryBufferClean
     @Override protected AbstractContinuousQuery<Integer, String> getContinuousQuery() {
         ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
 
-        qry.setLocalListener((evts) -> evts.forEach(e -> System.out.println("key=" + e.getKey() + ", val=" + e.getValue())));
+        CacheEntryUpdatedListener<Integer, String> lsnr = (evts) -> {
+            for (CacheEntryEvent<? extends Integer, ? extends String> e : evts)
+                updCntr.incrementAndGet();
+        };
+
+        qry.setLocalListener(lsnr);
 
         return qry;
     }

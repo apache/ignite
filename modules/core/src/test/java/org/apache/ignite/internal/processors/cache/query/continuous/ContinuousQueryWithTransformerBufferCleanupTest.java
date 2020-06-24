@@ -38,7 +38,12 @@ public class ContinuousQueryWithTransformerBufferCleanupTest extends ContinuousQ
 
         qry.setRemoteTransformerFactory(factory);
 
-        qry.setLocalListener((evts) -> evts.forEach(e -> System.out.println("val=" + e)));
+        ContinuousQueryWithTransformer.EventListener<String> lsnr = (evts) -> {
+            for (String e : evts)
+                updCntr.incrementAndGet();
+        };
+
+        qry.setLocalListener(lsnr);
 
         return qry;
     }

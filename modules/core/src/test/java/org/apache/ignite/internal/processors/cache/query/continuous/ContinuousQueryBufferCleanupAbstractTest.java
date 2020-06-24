@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -51,6 +52,9 @@ public abstract class ContinuousQueryBufferCleanupAbstractTest extends GridCommo
 
     /** */
     private static final String BATCH_CLASS_NAME = "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEventBuffer$Batch";
+
+    /** Continuous query updates counter */
+    protected final AtomicInteger updCntr = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -101,7 +105,7 @@ public abstract class ContinuousQueryBufferCleanupAbstractTest extends GridCommo
         for (int i = 0; i < srvCnt; i++)
             srvs[i] = startGrid("srv" + i);
 
-        Ignite queryNode = useClient
+        Ignite qryNode = useClient
             ? startGrid(optimize(getConfiguration("client").setClientMode(true)))
             : srvs[0];
 
@@ -109,7 +113,7 @@ public abstract class ContinuousQueryBufferCleanupAbstractTest extends GridCommo
             .setBackups(backupsCnt)
             .setAffinity(new RendezvousAffinityFunction(32, null));
 
-        IgniteCache<Integer, String> cache = queryNode.getOrCreateCache(cacheCfg);
+        IgniteCache<Integer, String> cache = qryNode.getOrCreateCache(cacheCfg);
 
         AbstractContinuousQuery<Integer, String> qry = getContinuousQuery();
 
@@ -119,6 +123,8 @@ public abstract class ContinuousQueryBufferCleanupAbstractTest extends GridCommo
             cache.put(i, Integer.toString(i));
 
         Thread.sleep(2000);
+
+        assertEquals(RECORDS_CNT, updCntr.get());
 
         for (int i = 0; i < srvCnt; i++)
             validateBuffer(srvs[i], backupsCnt);
@@ -135,9 +141,9 @@ public abstract class ContinuousQueryBufferCleanupAbstractTest extends GridCommo
         if (rmtInfos.values().isEmpty()) {
             ConcurrentMap<UUID, Object> locInfos = GridTestUtils.getFieldValue(contProc, GridContinuousProcessor.class, "locInfos");
 
-            Object localRoutineInfo = locInfos.values().toArray()[0];
+            Object locRoutineInfo = locInfos.values().toArray()[0];
 
-            hnd = GridTestUtils.getFieldValue(localRoutineInfo, Class.forName(LOCAL_ROUTINE_INFO_CLASS_NAME), "hnd");
+            hnd = GridTestUtils.getFieldValue(locRoutineInfo, Class.forName(LOCAL_ROUTINE_INFO_CLASS_NAME), "hnd");
         } else {
             Object rmtRoutineInfo = rmtInfos.values().toArray()[0];
 
