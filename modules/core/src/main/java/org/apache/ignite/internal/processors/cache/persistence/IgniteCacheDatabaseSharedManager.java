@@ -1005,13 +1005,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @return Future that will be completed when indexes for given cache are restored.
-     */
-    @Nullable public IgniteInternalFuture indexRebuildFuture(int cacheId) {
-        return null;
-    }
-
-    /**
      * Reserve update history for exchange.
      *
      * @return Reserved update counters per cache and partition.

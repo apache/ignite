@@ -45,6 +45,8 @@ import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurren
 import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentAtomicReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentTransactionalPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentTransactionalReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicEnableIndexingBasicSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicEnableIndexingConcurrentSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexPartitionedAtomicConcurrentSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexPartitionedTransactionalConcurrentSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexReplicatedAtomicConcurrentSelfTest;
@@ -104,6 +106,9 @@ import org.junit.runners.Suite;
     DynamicColumnsConcurrentTransactionalPartitionedSelfTest.class,
     DynamicColumnsConcurrentAtomicReplicatedSelfTest.class,
     DynamicColumnsConcurrentTransactionalReplicatedSelfTest.class,
+
+    DynamicEnableIndexingBasicSelfTest.class,
+    DynamicEnableIndexingConcurrentSelfTest.class,
 
     // Distributed joins.
     IgniteCacheQueryNodeRestartDistributedJoinSelfTest.class,
