@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.managers.encryption;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -35,6 +37,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -45,9 +48,12 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -255,6 +261,93 @@ public class CacheGroupReencryption implements DbCheckpointListener {
         return reencryptFut.cancel();
     }
 
+    public List<T2<Integer, Integer>> storePagesCount(int grpId) throws IgniteCheckedException {
+        List<T2<Integer, Integer>> offsets = new ArrayList<>();
+
+        CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
+
+        FilePageStoreManager mgr = (FilePageStoreManager)ctx.cache().context().pageStore();
+
+        ctx.cache().context().database().checkpointReadLock();
+
+        try {
+            for (int p = 0; p < grp.affinity().partitions(); p++) {
+                GridDhtLocalPartition part = grp.topology().localPartition(p);
+
+                if (part == null)
+                    continue;
+
+                PageStore pageStore = mgr.getStore(grpId, part.id());
+
+                int pagesCnt = pageStore.pages();
+
+                pageStore.encryptPageCount(pagesCnt);
+                pageStore.encryptPageIndex(0);
+
+                storePagesCountOnMetaPage(grp, p, pagesCnt);
+
+                offsets.add(new T2<>(part.id(), pagesCnt));
+
+                log.info(">xxx> store encr offset " + grp.cacheOrGroupName() + " p=" + part.id() + " total=" + pagesCnt + ", ");
+            }
+
+            PageStore pageStore = mgr.getStore(grpId, INDEX_PARTITION);
+
+            int pagesCnt = pageStore.pages();
+
+            offsets.add(new T2<>(INDEX_PARTITION, pagesCnt));
+
+            pageStore.encryptPageCount(pagesCnt);
+            pageStore.encryptPageIndex(0);
+
+            storePagesCountOnMetaPage(grp, INDEX_PARTITION, pagesCnt);
+        } finally {
+            ctx.cache().context().database().checkpointReadUnlock();
+        }
+
+        return offsets;
+    }
+
+    public void storePagesCountOnMetaPage(CacheGroupContext grp, int partId, int pagesCnt) throws IgniteCheckedException {
+        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+        long pageId = partId == INDEX_PARTITION ? pageMem.metaPageId(grp.groupId()) : pageMem.partitionMetaPageId(grp.groupId(), partId);
+
+        long page = pageMem.acquirePage(grp.groupId(), pageId, grp.statisticsHolderData());
+
+        try {
+            long pageAddr = pageMem.writeLock(grp.groupId(), pageId, page);
+
+            boolean changed = false;
+
+            try {
+                //pageDeltaRecord.applyDelta(pageMem, pageAddr);
+                PageMetaIO metaIO = partId == PageIdAllocator.INDEX_PARTITION ?
+                    PageMetaIO.VERSIONS.forPage(pageAddr) : PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+
+                changed |= metaIO.setEncryptPageCount(pageAddr, pagesCnt);
+                changed |= metaIO.setEncryptPageIndex(pageAddr, 0);
+
+                IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
+
+                // Save snapshot if page is dirty
+                if (pageMem.isDirty(grp.groupId(), pageId, page) && !wal.disabled(grp.groupId()) && !wal.isAlwaysWriteFullPages()) {
+                    byte[] payload = PageUtils.getBytes(pageAddr, 0, pageMem.realPageSize(grp.groupId()));
+
+                    FullPageId fullPageId = new FullPageId(pageId, grp.groupId());
+
+                    wal.log(new PageSnapshot(fullPageId, payload, pageMem.realPageSize(grp.groupId())));
+                }
+            }
+            finally {
+                pageMem.writeUnlock(grp.groupId(), pageId, page, null, changed, true);
+            }
+        }
+        finally {
+            pageMem.releasePage(grp.groupId(), pageId, page);
+        }
+    }
+
     private void complete(int grpId) {
         GroupReencryptionContext state = grps.remove(grpId);
 
@@ -430,18 +523,17 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
                                     long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
 
-                                    boolean dirtyFlag = true;
-
                                     try {
-                                        byte[] payload = PageUtils.getBytes(pageAddr, 0, pageSize);
+                                        if (pageMem.isDirty(grpId, pageId, page) && !wal.disabled(grpId) && !wal.isAlwaysWriteFullPages()) {
+                                            byte[] payload = PageUtils.getBytes(pageAddr, 0, pageSize);
 
-                                        FullPageId fullPageId = new FullPageId(pageId, grpId);
+                                            FullPageId fullPageId = new FullPageId(pageId, grpId);
 
-                                        if (pageMem.isDirty(grpId, pageId, page) && !wal.disabled(grpId))
                                             wal.log(new PageSnapshot(fullPageId, payload, pageSize));
+                                        }
                                     }
                                     finally {
-                                        pageMem.writeUnlock(grpId, pageId, page, null, dirtyFlag, false);
+                                        pageMem.writeUnlock(grpId, pageId, page, null, true, false);
                                     }
                                 }
                                 finally {

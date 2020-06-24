@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -105,7 +104,6 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_GEN_ENC_KEY;
 import static org.apache.ignite.internal.IgniteFeatures.GROUP_KEY_CHANGE;
 import static org.apache.ignite.internal.IgniteFeatures.MASTER_KEY_CHANGE;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.GROUP_KEY_CHANGE_FINISH;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.GROUP_KEY_CHANGE_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_FINISH;
@@ -1130,6 +1128,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metaStorage) throws IgniteCheckedException {
+//        applyEncryptionStatus();
+
         synchronized (metaStorageMux) {
             this.metaStorage = metaStorage;
 
@@ -1151,7 +1151,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         while (itr.hasNext()) {
             int grpId = itr.next();
 
-            storeEncryptedPagesCount(grpId);
+            reencryption.storePagesCount(grpId);
 
             markForReencryption(grpId);
 
@@ -1228,43 +1228,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         fut.nodeId(rndNode.id());
 
         ctx.io().sendToGridTopic(rndNode.id(), TOPIC_GEN_ENC_KEY, req, SYSTEM_POOL);
-    }
-
-    private List<T2<Integer, Integer>> storeEncryptedPagesCount(int grpId) throws IgniteCheckedException {
-        List<T2<Integer, Integer>> offsets = new ArrayList<>();
-
-        CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
-
-        FilePageStoreManager mgr = (FilePageStoreManager)ctx.cache().context().pageStore();
-
-        for (int p = 0; p < grp.affinity().partitions(); p++) {
-            GridDhtLocalPartition part = grp.topology().localPartition(p);
-
-            if (part == null)
-                continue;
-
-            PageStore pageStore = mgr.getStore(grpId, part.id());
-
-            int pagesCnt = pageStore.pages();
-
-            pageStore.encryptPageCount(pagesCnt);
-            pageStore.encryptPageIndex(0);
-
-            offsets.add(new T2<>(part.id(), pagesCnt));
-
-            log.info(">xxx> store encr offset " + grp.cacheOrGroupName() + " p=" + part.id() + " total=" + pagesCnt + ", ");
-        }
-
-        PageStore pageStore = mgr.getStore(grpId, INDEX_PARTITION);
-
-        int pagesCnt = pageStore.pages();
-
-        offsets.add(new T2<>(INDEX_PARTITION, pagesCnt));
-
-        pageStore.encryptPageCount(pagesCnt);
-        pageStore.encryptPageIndex(0);
-
-        return offsets;
     }
 
     /**
@@ -1568,14 +1531,20 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
+    private volatile EncryptionStatusRecord rec;
+
     /**
      * Restart encryption of existing pages with the new key.
      *
      * @param rec Encryption status record.
      */
-    public void applyEncryptionStatus(EncryptionStatusRecord rec) throws IgniteCheckedException {
+    public void applyEncryptionStatusBinaryRestore(EncryptionStatusRecord rec) throws IgniteCheckedException {
         assert !writeToMetaStoreEnabled && !ctx.state().clusterState().active();
 
+        this.rec = rec;
+    }
+
+    public void applyEncryptionStatus(EncryptionStatusRecord rec) throws IgniteCheckedException {
         FilePageStoreManager mgr = (FilePageStoreManager)ctx.cache().context().pageStore();
 
         for (Map.Entry<Integer, List<T2<Integer, Integer>>> entry : rec.groupsStatus().entrySet()) {
@@ -1915,7 +1884,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             try {
                 for (int grpId : grpIds) {
-                    List<T2<Integer, Integer>> offsets = storeEncryptedPagesCount(grpId);
+                    List<T2<Integer, Integer>> offsets = reencryption.storePagesCount(grpId);
 
                     encryptionStatus.put(grpId, offsets);
 

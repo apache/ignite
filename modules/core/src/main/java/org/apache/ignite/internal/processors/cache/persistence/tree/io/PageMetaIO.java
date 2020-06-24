@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.jetbrains.annotations.NotNull;
@@ -294,8 +295,12 @@ public class PageMetaIO extends PageIO {
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setEncryptPageCount(long pageAddr, int pagesCnt) {
+        int partId = PageIdUtils.partId(getPageId(pageAddr));
+
         if (pagesCnt < 0 || getEncryptPageCount(pageAddr) == pagesCnt)
             return false;
+
+        System.out.println(Thread.currentThread().getName() + " (setEncryptPageCount) >>> p=" + partId + " cnt=" + pagesCnt);
 
         PageUtils.putInt(pageAddr, ENCRYPT_PAGE_MAX_OFF, pagesCnt);
 
