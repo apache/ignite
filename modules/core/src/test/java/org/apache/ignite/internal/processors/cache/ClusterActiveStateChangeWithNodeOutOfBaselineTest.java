@@ -29,7 +29,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
-import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 
 /**
@@ -69,7 +68,6 @@ public class ClusterActiveStateChangeWithNodeOutOfBaselineTest extends GridCommo
         super.afterTestsStopped();
     }
 
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -106,8 +104,8 @@ public class ClusterActiveStateChangeWithNodeOutOfBaselineTest extends GridCommo
 
     /** */
     private void check(ClusterState initialState, ClusterState targetState) {
-        assertTrue(initialState + "", active(initialState));
-        assertTrue(targetState + "", active(targetState));
+        assertTrue(String.valueOf(initialState), initialState.active());
+        assertTrue(String.valueOf(targetState), targetState.active());
 
         if (grid(0).cluster().state() != initialState)
             grid(0).cluster().state(initialState);

@@ -23,27 +23,20 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
  * Checks cluster groups for thin client.
  */
-public class ClusterGroupTest extends GridCommonAbstractTest {
-    /** Client connector address. */
-    private static final String CLIENT_CONN_ADDR = "127.0.0.1:" + ClientConnectorConfiguration.DFLT_PORT;
-
+public class ClusterGroupTest extends AbstractThinClientTest {
     /** Grid index attribute name. */
     private static final String GRID_IDX_ATTR_NAME = "GRID_IDX";
 
@@ -66,7 +59,7 @@ public class ClusterGroupTest extends GridCommonAbstractTest {
         startGrid(3, true, null);
         startGrid(4, true, F.asMap(CUSTOM_ATTR_NAME, CUSTOM_ATTR_VAL));
 
-        client = Ignition.startClient(new ClientConfiguration().setAddresses(CLIENT_CONN_ADDR));
+        client = startClient(0);
     }
 
     /** {@inheritDoc} */

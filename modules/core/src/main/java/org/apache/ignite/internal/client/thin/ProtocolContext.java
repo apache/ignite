@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.EnumSet;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 
 /**
  * Protocol Context.
@@ -43,6 +44,17 @@ public class ProtocolContext {
      */
     public boolean isFeatureSupported(ProtocolBitmaskFeature feature) {
         return features.contains(feature);
+    }
+
+    /**
+     * Check that feature is supported by the server.
+     *
+     * @param feature Feature.
+     * @throws ClientFeatureNotSupportedByServerException If feature is not supported by the server.
+     */
+    public void checkFeatureSupported(ProtocolBitmaskFeature feature) throws ClientFeatureNotSupportedByServerException {
+        if (!isFeatureSupported(feature))
+            throw new ClientFeatureNotSupportedByServerException(feature);
     }
 
     /**

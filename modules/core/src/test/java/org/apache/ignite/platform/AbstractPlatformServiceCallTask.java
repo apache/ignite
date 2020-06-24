@@ -27,15 +27,19 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.ServiceDescriptor;
@@ -97,6 +101,11 @@ public abstract class AbstractPlatformServiceCallTask extends ComputeTaskAdapter
     /** */
     protected abstract static class AbstractServiceCallJob extends ComputeJobAdapter {
         /** */
+        @SuppressWarnings("unused")
+        @IgniteInstanceResource
+        protected transient Ignite ignite;
+
+        /** */
         protected final String srvcName;
 
         /**
@@ -121,9 +130,30 @@ public abstract class AbstractPlatformServiceCallTask extends ComputeTaskAdapter
         }
 
         /**
+         * Gets service proxy.
+         */
+        TestPlatformService serviceProxy() {
+            return ignite.services().serviceProxy(srvcName, TestPlatformService.class, false);
+        }
+
+        /**
          * Test method to call platform service.
          */
         abstract void runTest();
+
+        /**
+         * Start thin client connected to current ignite instance.
+         */
+        IgniteClient startClient() {
+            ClusterNode node = ignite.cluster().localNode();
+
+            String addr = F.first(node.addresses()) + ":" + node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
+
+            return Ignition.startClient(new ClientConfiguration()
+                .setAddresses(addr)
+                .setBinaryConfiguration(ignite.configuration().getBinaryConfiguration())
+            );
+        }
     }
 
     /** */

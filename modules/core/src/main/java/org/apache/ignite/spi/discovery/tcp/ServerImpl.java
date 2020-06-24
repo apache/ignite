@@ -6198,17 +6198,12 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Check connection to next node in the ring.
          */
         private void checkConnection() {
-            Boolean hasRemoteSrvNodes = null;
-
             long elapsed = (lastRingMsgSentTime + U.millisToNanos(connCheckInterval)) - System.nanoTime();
 
             if (elapsed > 0)
                 return;
 
-            if (hasRemoteSrvNodes == null)
-                hasRemoteSrvNodes = ring.hasRemoteServerNodes();
-
-            if (hasRemoteSrvNodes)
+            if (ring.hasRemoteServerNodes())
                 sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
         }
 
@@ -6561,6 +6556,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         // half of the message exchange timeout we should consider previous alive. With longer delay, we
                         // should check connection to fasten the failure detection.
                         boolean ok = rcvdTime + effectiveExchangeTimeout() / 2 > now;
+
                         TcpDiscoveryNode previous = null;
 
                         if (!ok) {
