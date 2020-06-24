@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -241,7 +242,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
         }
     }
 
-    public IgniteInternalFuture<Void> encryptionFuture(int grpId) {
+    public IgniteInternalFuture<Void> statusFuture(int grpId) {
         GroupReencryptionContext state = grps.get(grpId);
 
         return state == null ? new GridFinishedFuture<>() : state.cpFut;
@@ -261,6 +262,13 @@ public class CacheGroupReencryption implements DbCheckpointListener {
         return reencryptFut.cancel();
     }
 
+    /**
+     * Save current pages count for reencryption.
+     *
+     * @param grpId Cache group ID.
+     * @return List of partitions with current page count.
+     * @throws IgniteCheckedException If failed.
+     */
     public List<T2<Integer, Integer>> storePagesCount(int grpId) throws IgniteCheckedException {
         List<T2<Integer, Integer>> offsets = new ArrayList<>();
 
@@ -287,8 +295,6 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                 storePagesCountOnMetaPage(grp, p, pagesCnt);
 
                 offsets.add(new T2<>(part.id(), pagesCnt));
-
-                log.info(">xxx> store encr offset " + grp.cacheOrGroupName() + " p=" + part.id() + " total=" + pagesCnt + ", ");
             }
 
             PageStore pageStore = mgr.getStore(grpId, INDEX_PARTITION);
@@ -308,10 +314,11 @@ public class CacheGroupReencryption implements DbCheckpointListener {
         return offsets;
     }
 
-    public void storePagesCountOnMetaPage(CacheGroupContext grp, int partId, int pagesCnt) throws IgniteCheckedException {
+    public void storePagesCountOnMetaPage(CacheGroupContext grp, int partId, int cnt) throws IgniteCheckedException {
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-        long pageId = partId == INDEX_PARTITION ? pageMem.metaPageId(grp.groupId()) : pageMem.partitionMetaPageId(grp.groupId(), partId);
+        long pageId = partId == INDEX_PARTITION ?
+            pageMem.metaPageId(grp.groupId()) : pageMem.partitionMetaPageId(grp.groupId(), partId);
 
         long page = pageMem.acquirePage(grp.groupId(), pageId, grp.statisticsHolderData());
 
@@ -321,17 +328,16 @@ public class CacheGroupReencryption implements DbCheckpointListener {
             boolean changed = false;
 
             try {
-                //pageDeltaRecord.applyDelta(pageMem, pageAddr);
                 PageMetaIO metaIO = partId == PageIdAllocator.INDEX_PARTITION ?
                     PageMetaIO.VERSIONS.forPage(pageAddr) : PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
-                changed |= metaIO.setEncryptPageCount(pageAddr, pagesCnt);
+                changed |= metaIO.setEncryptPageCount(pageAddr, cnt);
                 changed |= metaIO.setEncryptPageIndex(pageAddr, 0);
 
                 IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
 
-                // Save snapshot if page is dirty
-                if (pageMem.isDirty(grp.groupId(), pageId, page) && !wal.disabled(grp.groupId()) && !wal.isAlwaysWriteFullPages()) {
+                // Save snapshot if page is dirty.
+                if (PageHandler.isWalDeltaRecordNeeded(pageMem, grp.groupId(), pageId, page, wal, null)) {
                     byte[] payload = PageUtils.getBytes(pageAddr, 0, pageMem.realPageSize(grp.groupId()));
 
                     FullPageId fullPageId = new FullPageId(pageId, grp.groupId());
@@ -524,7 +530,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                                     long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
 
                                     try {
-                                        if (pageMem.isDirty(grpId, pageId, page) && !wal.disabled(grpId) && !wal.isAlwaysWriteFullPages()) {
+                                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, pageId, page, wal, null)) {
                                             byte[] payload = PageUtils.getBytes(pageAddr, 0, pageSize);
 
                                             FullPageId fullPageId = new FullPageId(pageId, grpId);

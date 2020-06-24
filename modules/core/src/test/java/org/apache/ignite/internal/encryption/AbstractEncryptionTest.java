@@ -317,14 +317,25 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
     /**
      * Load data into cache "{@link #cacheName()}" using node "{@link #GRID_0}".
+     *
      * @param cnt Count of entries.
      */
     protected void loadData(int cnt) {
-        info("Loading " + cnt + " entries into " + cacheName());
+        loadData(cacheName(), cnt);
+    }
 
-        int start = grid(GRID_0).cache(cacheName()).size();
+    /**
+     * Load data into cache using node "{@link #GRID_0}".
+     *
+     * @param cnt Count of entries.
+     * @param cacheName Cache name.
+     */
+    protected void loadData(String cacheName, int cnt) {
+        info("Loading " + cnt + " entries into " + cacheName);
 
-        try (IgniteDataStreamer<Long, Object> streamer = grid(GRID_0).dataStreamer(cacheName())) {
+        int start = grid(GRID_0).cache(cacheName).size();
+
+        try (IgniteDataStreamer<Long, Object> streamer = grid(GRID_0).dataStreamer(cacheName)) {
             for (long i = start; i < (cnt + start); i++)
                 streamer.addData(i, generateValue(i));
         }

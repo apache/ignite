@@ -128,7 +128,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -1906,64 +1905,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }, groupId, partId, exec, semaphore);
 
                     }
-                    break;
-
-                    case ENCRYPTION_STATUS_RECORD:
-                        Map<Integer, List<T2<Integer, Integer>>> map = ((EncryptionStatusRecord)rec).groupsStatus();
-
-                        System.out.println(Thread.currentThread().getName() + " apply status");
-
-                        for (Map.Entry<Integer, List<T2<Integer, Integer>>> entry : map.entrySet()) {
-                            int grpId = entry.getKey();
-
-                            for (T2<Integer, Integer> pair : entry.getValue()) {
-                                int partId = pair.get1();
-
-                                stripedApplyPage((pageMem) -> {
-                                    try {
-                                        long pageId = partId == PageIdAllocator.INDEX_PARTITION ? pageMem.metaPageId(grpId) :
-                                            pageMem.partitionMetaPageId(grpId, partId);
-
-                                        System.out.println(Thread.currentThread().getName() + "p=" + partId + " pageId=" + pageId);
-
-                                        boolean restore = false;
-
-                                        long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, restore);
-
-                                        boolean changed = false;
-
-                                        try {
-                                            long pageAddr = pageMem.writeLock(grpId, pageId, page, restore);
-
-                                            try {
-                                                //pageDeltaRecord.applyDelta(pageMem, pageAddr);
-                                                PageMetaIO metaIO = partId == PageIdAllocator.INDEX_PARTITION ?
-                                                    PageMetaIO.VERSIONS.forPage(pageAddr) : PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
-
-//                                                assert metaIO.getVersion() == 0 : metaIO.getVersion();
-
-                                                changed = metaIO.setEncryptPageCount(pageAddr, pair.get2());
-                                            }
-                                            catch (Exception e) {
-                                                e.printStackTrace();
-                                            }
-                                            finally {
-                                                pageMem.writeUnlock(grpId, pageId, page, null, true, true);
-                                            }
-                                        }
-                                        finally {
-                                            pageMem.releasePage(grpId, pageId, page);
-                                        }
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        e.printStackTrace();
-                                    }
-
-                                    applied.incrementAndGet();
-                                }, grpId, partId, exec, semaphore);
-                            }
-                        }
-
                     break;
 
                     default:

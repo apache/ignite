@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.T2;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTION_STATUS_RECORD;
-
 /**
  * Logical record to restart encryption with the latest encryption key.
  */
@@ -46,15 +44,15 @@ public class EncryptionStatusRecord extends WALRecord {
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return ENCRYPTION_STATUS_RECORD;
+        return RecordType.ENCRYPTION_STATUS_RECORD;
     }
 
     /** @return Record data size. */
     public int dataSize() {
         int size = 4;
 
-        for (List entry : grpStates.values())
-            size += /*grpId*/4 + /*length*/4 + (entry.size() * (2 + 4));
+        for (List list : grpStates.values())
+            size += /*grpId*/4 + /*length*/4 + (list.size() * (/**partId*/2 + /*pagesCnt*/4));
 
         return size;
     }

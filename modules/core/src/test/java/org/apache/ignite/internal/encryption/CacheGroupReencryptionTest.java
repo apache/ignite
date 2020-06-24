@@ -21,12 +21,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -64,6 +68,9 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
 public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     /** */
     private static final String GRID_2 = "grid-2";
+
+    /** */
+    private static final String GRID_3 = "grid-3";
 
     /** Timeout. */
     private static final long MAX_AWAIT_MILLIS = 15_000;
@@ -479,6 +486,76 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         startTestGrids(false);
 
         awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
+    }
+
+    @Test
+    @WithSystemProperty(key = IGNITE_REENCRYPTION_THROTTLE, value = "50")
+    @WithSystemProperty(key = IGNITE_REENCRYPTION_BATCH_SIZE, value = "50")
+    @WithSystemProperty(key = IGNITE_REENCRYPTION_THREAD_POOL_SIZE, value = "1")
+    public void testReencryptionOnUnstableTopology() throws Exception {
+        backups = 1;
+
+        T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
+
+        IgniteEx node0 = nodes.get1();
+        IgniteEx node1 = nodes.get2();
+
+        startGrid(GRID_2);
+        startGrid(GRID_3);
+
+        resetBaselineTopology();
+
+        createEncryptedCache(node0, node1, cacheName(), null);
+
+        String cache2 = "encrypted-2";
+
+        createEncryptedCache(node0, node1, cache2, null);
+
+        loadData(cacheName(), 100_000);
+        loadData(cache2, 100_000);
+
+        List<String> cacheGroups = Arrays.asList(cacheName(), cache2);
+
+        node0.encryption().changeGroupKey(cacheGroups).get();
+
+        while (isReencryptionInProgress(cacheGroups)) {
+            int rndNode = ThreadLocalRandom.current().nextInt(3);
+
+            String gridName = "grid-" + rndNode;
+
+            stopGrid(gridName);
+
+            startGrid(gridName);
+        }
+
+        stopAllGrids();
+
+        startGrid(GRID_0);
+        startGrid(GRID_1);
+        startGrid(GRID_2);
+        startGrid(GRID_3);
+
+        grid(GRID_0).cluster().state(ClusterState.ACTIVE);
+
+        awaitPartitionMapExchange();
+
+        checkGroupKey(CU.cacheId(cacheName()), 1, MAX_AWAIT_MILLIS);
+        checkGroupKey(CU.cacheId(cache2), 1, MAX_AWAIT_MILLIS);
+    }
+
+    /**
+     * @param cacheGroups Cache group names.
+     * @return {@code True} If reencryption of the specified groups is not yet complete.
+     */
+    private boolean isReencryptionInProgress(List<String> cacheGroups) {
+        for (Ignite node : G.allGrids()) {
+            for (String groupName : cacheGroups) {
+                if (isReencryptionInProgress((IgniteEx)node, CU.cacheId(groupName)))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /** @throws Exception If failed. */
