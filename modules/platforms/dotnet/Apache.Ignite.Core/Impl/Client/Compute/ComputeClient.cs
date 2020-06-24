@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
 
                 foreach (var node in nodes)
                 {
-                    writer.WriteGuid(node.Id);
+                    BinaryUtils.WriteGuid(node.Id, ctx.Stream);
                 }
             }
             else
