@@ -44,6 +44,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 public class IgniteClientContainSubjectAddressTest extends CommonSecurityCheckTest {
     /** */
     private boolean containsAddr = false;
+
     /** */
     @Test
     public void testAuthenticate() throws Exception {
