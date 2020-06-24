@@ -43,6 +43,8 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  */
 public class IgniteClientContainSubjectAddressTest extends CommonSecurityCheckTest {
     /** */
+    private boolean containsAddr = false;
+    /** */
     @Test
     public void testAuthenticate() throws Exception {
         startGrid();
@@ -51,6 +53,8 @@ public class IgniteClientContainSubjectAddressTest extends CommonSecurityCheckTe
 
             client.cluster().state(ACTIVE);
         }
+
+        Assert.assertTrue(containsAddr);
     }
 
     /** {@inheritDoc} */
@@ -89,7 +93,7 @@ public class IgniteClientContainSubjectAddressTest extends CommonSecurityCheckTe
         @Override public SecurityContext authenticate(AuthenticationContext authCtx) throws IgniteCheckedException {
             SecurityContext secCtx = super.authenticate(authCtx);
 
-            Assert.assertNotNull(secCtx.subject().address());
+            containsAddr = secCtx.subject().address() != null;
 
             return secCtx;
         }
