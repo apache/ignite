@@ -57,6 +57,7 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
             for (Index<P> index : indexes) {
                 if (index.canHandle(query)) {
                     Iterable<P> positions = index.getPositions(query);
+                    if(positions==null) continue;
                     return matchDocuments(query, positions, orderBy, numberToSkip, numberToReturn);
                 }
             }
@@ -142,7 +143,7 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
             throw new BadValueException("can't use an array for _id");
         }
 
-        if (!document.containsKey(ID_FIELD) && !isSystemCollection()) {
+        if (!document.containsKey(ID_FIELD)) {
             ObjectId generatedObjectId = new ObjectId();
             log.debug("Generated {} for {} in {}", generatedObjectId, document, this);
             document.put(ID_FIELD, generatedObjectId);

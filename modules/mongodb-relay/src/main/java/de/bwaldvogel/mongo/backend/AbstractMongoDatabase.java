@@ -66,16 +66,17 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
 
         if (!namespaces.isEmpty()) {
             for (String name : listCollectionNamespaces()) {
-                log.debug("opening {}", name);
+            	if(isSystemCollection(name)) {
+            		continue;
+            	}
+                log.debug("opening {}", name);                
                 String collectionName = extractCollectionNameFromNamespace(name);
                 MongoCollection<P> collection = openOrCreateCollection(collectionName, ID_FIELD);
                 collections.put(collectionName, collection);
                 log.debug("opened collection '{}'", collectionName);
             }
 
-            MongoCollection<P> indexCollection = openOrCreateCollection(INDEXES_COLLECTION_NAME, ID_FIELD);
-            collections.put(indexCollection.getCollectionName(), indexCollection);
-            this.indexes.set(indexCollection);
+            MongoCollection<P> indexCollection = getOrCreateIndexesCollection();           
             for (Document indexDescription : indexCollection.queryAll()) {
                 openOrCreateIndex(indexDescription);
             }
@@ -205,8 +206,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
             collectionDescription.put("options", collectionOptions);
             collectionDescription.put("info", new Document("readOnly", false));
             collectionDescription.put("type", "collection");
-            collectionDescription.put("idIndex", getPrimaryKeyIndexDescription(namespace)
-            );
+            collectionDescription.put("idIndex", getPrimaryKeyIndexDescription(namespace));
             firstBatch.add(collectionDescription);
         }
 
@@ -702,7 +702,11 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
     private void addNamespace(MongoCollection<P> collection) {
         collections.put(collection.getCollectionName(), collection);
         if (!isSystemCollection(collection.getCollectionName())) {
-            namespaces.addDocument(new Document("name", collection.getFullName()));
+        	try {
+        		namespaces.addDocument(new Document("name", collection.getFullName()));
+        	}catch(MongoServerException e) {
+        		 log.error("failed to add namespace {}", collection.getFullName(), e);
+        	}
         }
     }
 
@@ -745,22 +749,29 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
             indexDescription.put("v", 2);
         }
         openOrCreateIndex(indexDescription);
-        getOrCreateIndexesCollection().addDocument(indexDescription);
+        try {
+        	getOrCreateIndexesCollection().addDocument(indexDescription);
+        }
+        catch(MongoServerError e) {
+        	log.error("failed to addIndex {}", indexDescription, e);
+        }
     }
 
     private MongoCollection<P> getOrCreateIndexesCollection() {
         synchronized (indexes) {
             if (indexes.get() == null) {
                 MongoCollection<P> indexCollection = openOrCreateCollection(INDEXES_COLLECTION_NAME, ID_FIELD);
-                Document indexDescription = new Document("ns",indexCollection.getCollectionName());
+               
+                addNamespace(indexCollection);
+                indexes.set(indexCollection);
+                
+                Document indexDescription = new Document("ns",indexCollection.getDatabaseName()+'.'+indexCollection.getCollectionName());
                 indexDescription.append("unique", 1);
                 indexDescription.append("name", "ns_name_1");
                 Document keys = new Document();
                 keys.append("ns", 1).append("name", 1);
                 indexDescription.append("key", keys);
-                //this.openOrCreateIndex(indexDescription);
-                addNamespace(indexCollection);
-                indexes.set(indexCollection);
+                openOrCreateIndex(indexDescription);
             }
             return indexes.get();
         }
@@ -925,7 +936,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         results.set(results.size() - 1, result);
     }
 
-    private MongoCollection<P> createCollection(String collectionName) {
+    protected MongoCollection<P> createCollection(String collectionName) {
         checkCollectionName(collectionName);
         if (collectionName.contains("$")) {
             throw new MongoServerError(10093, "cannot insert into reserved $ collection");
@@ -1008,7 +1019,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         namespaces.insertDocuments(newDocuments);
     }
 
-    static boolean isSystemCollection(String collectionName) {
+    public static boolean isSystemCollection(String collectionName) {
         return collectionName.startsWith("system.");
     }
 

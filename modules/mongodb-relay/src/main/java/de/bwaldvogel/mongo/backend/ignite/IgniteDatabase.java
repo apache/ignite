@@ -65,7 +65,7 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 		   	                Document doc = new Document("name",fullName);
 		   	                
 		   	                String collectionName = extractCollectionNameFromNamespace(fullName);
-		   	                MongoCollection<Object> collection = openOrCreateCollection(collectionName, ID_FIELD);
+		   	                MongoCollection<Object> collection = createCollectionOrThrowIfExists(collectionName);
 		   	                collections.put(collectionName, collection);
 		                 
 		   	                this.namespaces.addDocument(doc);
@@ -81,7 +81,7 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 	  	             
 	  	               
 	  	             String collectionName = extractCollectionNameFromNamespace(fullName);
-	  	             MongoCollection<Object> collection = openOrCreateCollection(collectionName, ID_FIELD);
+	  	             MongoCollection<Object> collection = createCollectionOrThrowIfExists(collectionName);
 	                 collections.put(collectionName, collection);
 	                 
 	                 this.namespaces.addDocument(doc);

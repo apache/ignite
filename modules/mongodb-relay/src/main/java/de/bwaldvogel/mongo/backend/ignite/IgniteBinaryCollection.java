@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -110,7 +111,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     }
 
     @Override
-    protected Document getDocument(Object position) {
+    protected Document getDocument(Object position) {    	
     	BinaryObject obj = dataMap.get(position);
     	if(obj==null) return null;
     	return this.binaryObjectToDocument(position,obj,idField);
@@ -271,13 +272,30 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 			
 				if($value instanceof List){
 					List $arr = (List)$value;
-					//-$value = $arr.toArray();
-					$value = ($arr);
+					List<Object> $arr2 = new ArrayList<>($arr.size());
+					for(int i=0;i<$arr.size();i++) {
+						Object $valueSlice = $arr.get(i);
+						if($valueSlice instanceof BinaryObject){
+							BinaryObject $arrSlice = (BinaryObject)$valueSlice;					
+							$valueSlice = binaryObjectToDocument($arrSlice);
+						}	
+						$arr2.add($valueSlice);
+					}
+					$value = ($arr2);
 				}
 				else if($value instanceof Set){
 					Set $arr = (Set)$value;
-					//-$value = $arr.toArray();
-					$value = ($arr);
+					Set $arr2 = new HashSet<>($arr.size());
+					Iterator it = $arr.iterator();
+					while(it.hasNext()) {
+						Object $valueSlice = it.next();
+						if($valueSlice instanceof BinaryObject){
+							BinaryObject $arrSlice = (BinaryObject)$valueSlice;					
+							$valueSlice = binaryObjectToDocument($arrSlice);
+						}	
+						$arr2.add($valueSlice);
+					}
+					$value = ($arr2);
 				}
 				else if($value instanceof Map){
 					Map $arr = (Map)$value;
@@ -309,55 +327,58 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 	}   
     
 
-    public static Document binaryObjectToDocument(BinaryObject obj){	    	
+    public static Object binaryObjectToDocument(BinaryObject obj){	    	
     	Object object = null;
     	try {
     		object = obj.deserialize();    		
     	}
-    	catch(Exception e) {
-    		
+    	catch(Exception ex) {
+
+        	Document doc = new Document();
+    	    for(String field: obj.type().fieldNames()){	    	
+    	    	String $key =  field;
+    	    	Object $value = obj.field(field);
+    			try {
+    			
+    				if($value instanceof List){
+    					List $arr = (List)$value;
+    					//-$value = $arr.toArray();
+    					$value = ($arr);
+    				}
+    				else if($value instanceof Set){
+    					Set $arr = (Set)$value;
+    					//-$value = $arr.toArray();
+    					$value = ($arr);
+    				}
+    				else if($value instanceof Map){
+    					Map $arr = (Map)$value;					
+    					$value = new Document($arr);
+    				}
+    				if($value instanceof BinaryObject){
+    					BinaryObject $arr = (BinaryObject)$value;					
+    					$value = binaryObjectToDocument($arr);
+    				}	
+    				if($value!=null) {
+    					doc.append($key, $value);
+    				}
+    				
+    			} catch (Exception e) {
+    				// TODO Auto-generated catch block
+    				e.printStackTrace();
+    			}	    	
+    	    }
+        		
+    	    return doc;
     	}
-    	Document doc = null;	
+    	
     	if(object instanceof Document) {
-    		doc = (Document) object;
-    		return doc;
+    		return object;
     	} 
-    
-		doc = new Document();
-	    for(String field: obj.type().fieldNames()){	    	
-	    	String $key =  field;
-	    	Object $value = obj.field(field);
-			try {
-			
-				if($value instanceof List){
-					List $arr = (List)$value;
-					//-$value = $arr.toArray();
-					$value = ($arr);
-				}
-				else if($value instanceof Set){
-					Set $arr = (Set)$value;
-					//-$value = $arr.toArray();
-					$value = ($arr);
-				}
-				else if($value instanceof Map){
-					Map $arr = (Map)$value;					
-					$value = new Document($arr);
-				}
-				if($value instanceof BinaryObject){
-					BinaryObject $arr = (BinaryObject)$value;					
-					$value = binaryObjectToDocument($arr);
-				}	
-				if($value!=null) {
-					doc.append($key, $value);
-				}
-				
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}	    	
-	    }
-    		
-	    return doc;
+    	
+    	if(object instanceof List) {
+    		return object;
+    	} 
+    	return object;
 	}   
 
 

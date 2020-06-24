@@ -75,7 +75,7 @@ public final class ComposeKeyValue extends KeyValue implements Externalizable {
 		for (int i = 0; i < normalValue.length; i++) {
 			normalValue[i] = Utils.normalizeValue(values[i]);
 		}
-		return new KeyValue(normalValue);
+		return new ComposeKeyValue(normalValue);
 	}
 
 	@Override

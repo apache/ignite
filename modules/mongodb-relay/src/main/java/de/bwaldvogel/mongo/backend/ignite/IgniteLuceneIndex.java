@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
@@ -57,6 +58,7 @@ import org.apache.lucene.util.Version;
 
 
 import de.bwaldvogel.mongo.MongoCollection;
+import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
 import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.backend.CollectionUtils;
 import de.bwaldvogel.mongo.backend.Index;
@@ -68,6 +70,7 @@ import de.bwaldvogel.mongo.backend.ValueComparator;
 import de.bwaldvogel.mongo.backend.ignite.IgniteUniqueIndex.EntrySet;
 import de.bwaldvogel.mongo.bson.BsonRegularExpression;
 import de.bwaldvogel.mongo.bson.Document;
+import de.bwaldvogel.mongo.bson.ObjectId;
 import de.bwaldvogel.mongo.exception.KeyConstraintError;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
@@ -385,11 +388,16 @@ public class IgniteLuceneIndex extends Index<Object>{
 
             List<Object> allKeys = new ArrayList<>();
             for (Object object : queriedObjects) {
+            	
             	 Object keyValue = Utils.normalizeValue(object);
                  List<Object> keys = getPosition(KeyValue.valueOf(keyValue));
                  if (keys != null) {
                      allKeys.addAll(keys);
                  }
+                 else {
+                	 return null;
+                 }
+            	
             }
 
             return allKeys;
@@ -400,11 +408,23 @@ public class IgniteLuceneIndex extends Index<Object>{
 	 
 	 
 	 protected List<Object> getPosition(KeyValue keyValue) {
-		 
-		 LuceneIndexAccess access = indexAccess;
-		
-	    	
 		 List<Object> result = new ArrayList<>();
+		 LuceneIndexAccess access = indexAccess;
+		 Object object = keyValue.get(0);
+		 if(object instanceof ObjectId || object instanceof UUID) {
+			 String collName = this.keys().get(0);
+			
+			 Document query =  new Document(collName,object);
+			
+			 AbstractMongoCollection coll = null;
+			//for(Object obj: coll.handleQuery(query)) {
+			//	 result.add(obj);
+			// }
+			 return null;
+     	}
+     	
+	    	
+		
 	        try {
 	        	
 	        	String cacheName = access.cacheName();

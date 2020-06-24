@@ -52,7 +52,7 @@ TextQuery with filter
  see examples/org.apache.ignite.examples.datagrid.CacheQueryExample.java
     https://github.com/junphine/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheQueryExample.java 
 
-<pre>
+```  
  IgniteBiPredicate<AffinityKey, Person> filter = new IgniteBiPredicate<AffinityKey, Person>() {
  
             @Override public boolean apply(AffinityKey key, Person person) {            
@@ -62,12 +62,30 @@ TextQuery with filter
           
  new TextQuery<Long, Person>(Person.class, "Master",filter)
  
-</pre> 
+ 
+```
 
  
 user define function
 ===================== 
  Support user define function use CREATE ALIAS  like H2.
  CREATE ALIAS <FUNC_NAME> FOR "<package.Class.staticMethod>"
+ 
+ 
+ 
+ Elasticsearch Restful Supported  
+=======================  
+ 
+ Support some elasticsearch restfull interface.
+ such as: _search,_all,_put,_batch  
+ 
+ 
+ MongoDb Backend Supported   
+=======================
+ 
+ Support use mongodb client to connect ignite.
+ Now ignite support redis,memcache,mongodb,elasticsearch
+ see ignite-mongodb-realy
+ 
  
  
