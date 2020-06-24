@@ -682,11 +682,10 @@
 
                                         <echo message="Update ignite.version in C++" />
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(AC_INIT.+\[)\d+\.\d+\.\d+.*?(\].+)" />
+                                            <regexp pattern="(project\(.*\s)\d+\.\d+\.\d+.*?(\))" />
                                             <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/configure.ac" />
-                                                <include name="**/configure.acrel" />
+                                                <include name="**/CMakeLists.txt" />
                                             </fileset>
                                         </replaceregexp>
 
