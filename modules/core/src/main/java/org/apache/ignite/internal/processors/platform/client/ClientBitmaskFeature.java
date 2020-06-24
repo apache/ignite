@@ -37,7 +37,10 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     CLUSTER_GROUP_GET_NODES_ENDPOINTS(3),
 
     /** Cluster groups. */
-    CLUSTER_GROUPS(4);
+    CLUSTER_GROUPS(4),
+
+    /** Service invocation. */
+    SERVICE_INVOKE(5);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =
