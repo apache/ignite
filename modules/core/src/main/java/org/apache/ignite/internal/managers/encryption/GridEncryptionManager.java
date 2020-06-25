@@ -905,15 +905,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     public void onDestroyPartitionStore(int grpId, int partId) {
         try {
-            if (!reencryption.cancel(grpId, partId))
-                return;
-
-            FilePageStoreManager mgr = (FilePageStoreManager)ctx.cache().context().pageStore();
-
-            PageStore pageStore = mgr.getStore(grpId, partId);
-
-            pageStore.encryptPageIndex(0);
-            pageStore.encryptPageCount(0);
+            reencryption.cancel(grpId, partId);
         }
         catch (IgniteCheckedException e) {
             log.warning("Unable to cancel re-encryption [grpId=" + grpId + ", partId=" + partId + "]", e);

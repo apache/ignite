@@ -23,10 +23,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -365,6 +363,19 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         loadData(50_000);
 
+        grid(GRID_0).encryption().changeGroupKey(Collections.singleton(cacheName())).get();
+
+        long walSegment = nodes.get1().context().cache().context().wal().currentSegment();
+
+        for (long n = 0; n <= walSegment; n++)
+            nodes.get1().context().encryption().onWalSegmentRemoved(n);
+
+        walSegment = nodes.get2().context().cache().context().wal().currentSegment();
+
+        for (long n = 0; n <= walSegment; n++)
+            nodes.get2().context().encryption().onWalSegmentRemoved(n);
+
+        // Force checkpoint to prevent logical recovery after key rotation.
         forceCheckpoint();
 
         startGrid(GRID_2);
@@ -373,18 +384,6 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         resetBaselineTopology();
 
         awaitPartitionMapExchange(true, true, null);
-
-        grid(GRID_0).encryption().changeGroupKey(Collections.singleton(cacheName())).get();
-
-        long walSegment = nodes.get1().context().cache().context().wal().currentSegment();
-
-        for (long n = 0; n < walSegment; n++)
-            nodes.get1().context().encryption().onWalSegmentRemoved(n);
-
-        walSegment = nodes.get2().context().cache().context().wal().currentSegment();
-
-        for (long n = 0; n < walSegment; n++)
-            nodes.get2().context().encryption().onWalSegmentRemoved(n);
 
         // Trigger partitions re-create.
         stopGrid(GRID_2);
@@ -574,18 +573,16 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        Set<Long> walSegments = new HashSet<>();
-
-        walSegments.add(node1.context().cache().context().wal().currentSegment());
+        long startIdx = node1.context().cache().context().wal().currentSegment();
 
         node0.encryption().changeGroupKey(Collections.singleton(cacheName())).get();
 
-        walSegments.add(node1.context().cache().context().wal().currentSegment());
+        long endIdx = node1.context().cache().context().wal().currentSegment();
 
         awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
 
         // Simulate that wal was removed.
-        for (long segment : walSegments)
+        for (long segment = startIdx; segment <= endIdx; segment++)
             node1.context().encryption().onWalSegmentRemoved(segment);
 
         stopGrid(GRID_1);

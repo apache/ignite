@@ -360,6 +360,8 @@ public class FilePageStore implements PageStore {
                 Files.delete(pathProvider.apply());
 
                 fileExists = false;
+
+                encryptPageIdx = encryptPageCnt = 0;
             }
         }
         finally {
@@ -407,6 +409,8 @@ public class FilePageStore implements PageStore {
             Files.delete(filePath);
 
             fileExists = false;
+
+            encryptPageIdx = encryptPageCnt = 0;
         }
         catch (IOException e) {
             throw new StorageException("Failed to truncate partition file [file=" + filePath.toAbsolutePath() + "]", e);
@@ -905,11 +909,15 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public int encryptPageCount() {
+        assert encryptPageCnt <= pages();
+
         return encryptPageCnt;
     }
 
     /** {@inheritDoc} */
     @Override public void encryptPageCount(int encPagesCnt) {
+        assert encPagesCnt <= pages();
+
         this.encryptPageCnt = encPagesCnt;
     }
 
