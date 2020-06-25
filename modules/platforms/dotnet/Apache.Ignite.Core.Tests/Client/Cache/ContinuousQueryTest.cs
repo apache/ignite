@@ -120,6 +120,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO
         }
 
+        [Test]
+        public void TestContinuousQueryInBinaryMode()
+        {
+            // TODO
+        }
+
+        [Test]
+        public void TestContinuousQueryWithFilterInBinaryMode()
+        {
+            // TODO: filter operates on binary objects.
+        }
+
         /** */
         private class DelegateListener<TK, TV> : ICacheEntryEventListener<TK, TV>
         {
