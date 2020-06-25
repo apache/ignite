@@ -825,9 +825,10 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             ignite(i).events().stopLocalListen(lsnrs[i]);
     }
 
+    /** */
     @Test
     public void testRemoteListenShouldGetCacheEventFromEveryNode() throws Exception {
-        CountDownLatch[] evts = new CountDownLatch[] { new CountDownLatch(nodeCount()) };
+        CountDownLatch[] evts = new CountDownLatch[] {new CountDownLatch(nodeCount())};
         int[] evtType = new int[] {EVT_CACHE_STARTED};
 
         UUID lsnrId = ignite(0).events().remoteListen((uuid, evt) -> {
