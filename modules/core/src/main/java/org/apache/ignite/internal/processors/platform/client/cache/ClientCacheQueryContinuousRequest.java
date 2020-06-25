@@ -19,12 +19,19 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+
+import javax.cache.event.CacheEntryEventFilter;
 
 /**
  * Continuous query request.
@@ -80,12 +87,26 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         // 1. If Platform == Java, check for PLATFORM_JAVA_OBJECT_FACTORY_PROXY (see getJavaFilter)
         // 2. If Platform == .NET, call platformCtx.createContinuousQueryFilter
         if (filter != null) {
+            if (!(filter instanceof BinaryObject))
+                return new ClientResponse(requestId(), "Filter must be a BinaryObject: " + filter.getClass());
+
+            BinaryObjectImpl bo = (BinaryObjectImpl)filter;
+
             switch (filterPlatform) {
-                case ClientPlatform.JAVA: {
-
-                }
+                case ClientPlatform.JAVA:
+                    qry.setRemoteFilterFactory(bo.deserialize());
                 case ClientPlatform.DOTNET: {
+                    if (bo.typeId() == GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY) {
+                        PlatformJavaObjectFactoryProxy prx = bo.deserialize();
 
+                        CacheEntryEventSerializableFilter rmtFilter =
+                                (CacheEntryEventSerializableFilter) prx.factory(ctx.kernalContext()).create();
+
+                        //noinspection deprecation
+                        qry.setRemoteFilter(rmtFilter);
+                    } else {
+
+                    }
                 }
                 default:
                     return new ClientResponse(requestId(), "Unsupported filter platform: " + filterPlatform);
