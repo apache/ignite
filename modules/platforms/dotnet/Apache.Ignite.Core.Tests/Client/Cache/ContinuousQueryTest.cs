@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Linq;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Impl.Cache.Event;
     using NUnit.Framework;
 
     /// <summary>
@@ -94,7 +95,47 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestContinuousQueryWithFilterReceivesOnlyMatchingEvents()
         {
-            // TODO:
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            
+            ICacheEntryEvent<int, int> lastEvt = null;
+            var listener = new DelegateListener<int, int>(e => lastEvt = e);
+            
+            var qry = new ContinuousQuery<int,int>(listener)
+            {
+                Filter = new OddKeyFilter()
+            };
+
+            using (cache.QueryContinuous(qry))
+            {
+                cache.Put(0, 0);
+                Assert.IsNull(lastEvt);
+                
+                cache.Put(5, 5);
+                Assert.IsNotNull(lastEvt);
+                Assert.AreEqual(5, lastEvt.Key);
+                
+                cache.Put(8, 8);
+                Assert.AreEqual(5, lastEvt.Key);
+            }
+        }
+        
+        /// <summary>
+        /// Tests that continuous query with Java filter receives only matching events.
+        /// </summary>
+        [Test]
+        public void TestContinuousQueryWithJavaFilterReceivesOnlyMatchingEvents()
+        {
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            
+            ICacheEntryEvent<int, int> lastEvt = null;
+            var listener = new DelegateListener<int, int>(e => lastEvt = e);
+            
+            var qry = new ContinuousQuery<int,int>(listener)
+            {
+                Filter = new JavaCacheEntryEventFilter<int, int>("TODO", null)
+            };
+            
+            // TODO
         }
 
         /// <summary>
@@ -151,6 +192,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     _action(evt);
                 }
+            }
+        }
+
+        private class OddKeyFilter : ICacheEntryEventFilter<int, int>
+        {
+            public bool Evaluate(ICacheEntryEvent<int, int> evt)
+            {
+                return evt.Key % 2 == 1;
             }
         }
     }
