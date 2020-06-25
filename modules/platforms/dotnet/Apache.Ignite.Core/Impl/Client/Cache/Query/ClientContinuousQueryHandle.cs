@@ -36,7 +36,11 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
 
         public IQueryCursor<ICacheEntry<TK, TV>> GetInitialQueryCursor()
         {
-            throw new System.NotImplementedException();
+            if (_initialQueryId == null)
+            {
+                // Should not happen since user gets IContinuousQueryHandle in this case.
+                throw new InvalidOperationException("Continuous query does not have initial query.");
+            }
         }
 
         /** <inheritdoc /> */

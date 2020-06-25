@@ -619,39 +619,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             return DoOutInOp(
                 ClientOp.QueryContinuous,
-                ctx =>
-                {
-                    var w = ctx.Writer;
-                    w.WriteInt(continuousQuery.BufferSize);
-                    w.WriteLong((long) continuousQuery.TimeInterval.TotalMilliseconds);
-                    w.WriteBoolean(false); // Include expired.
-
-                    if (continuousQuery.Filter == null)
-                    {
-                        w.WriteObject<object>(null);
-                    }
-                    else
-                    {
-                        var javaFilter = continuousQuery.Filter as PlatformJavaObjectFactoryProxy;
-
-                        if (javaFilter != null)
-                        {
-                            w.WriteObject(javaFilter.GetRawProxy());
-                            w.WriteByte(FilterPlatformJava);
-                        }
-                        else
-                        {
-                            var filterHolder = new ContinuousQueryFilterHolder(continuousQuery.Filter, _keepBinary);
-
-                            w.WriteObject(filterHolder);
-                            w.WriteByte(FilterPlatformDotnet);
-                        }
-                    }
-
-                    w.WriteByte(0); // Initial query type.
-
-                    ctx.Socket.ExpectNotifications();
-                },
+                ctx => WriteContinuousQuery(ctx, continuousQuery),
                 ctx =>
                 {
                     var queryId = ctx.Stream.ReadLong();
@@ -666,7 +634,24 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /** <inheritDoc /> */
         public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, QueryBase initialQry)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
+            IgniteArgumentCheck.NotNull(continuousQuery.Listener, "continuousQuery.Listener");
+            IgniteArgumentCheck.NotNull(initialQry, "initialQry");
+            
+            // TODO: Write initial query.
+            // TODO: Read cursor ID.
+            return DoOutInOp(
+                ClientOp.QueryContinuous,
+                ctx => WriteContinuousQuery(ctx, continuousQuery),
+                ctx =>
+                {
+                    var queryId = ctx.Stream.ReadLong();
+
+                    ctx.Socket.AddNotificationHandler(queryId,
+                        (stream, err) => HandleContinuousQueryEvents(stream, err, continuousQuery));
+
+                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, queryId, null);
+                });
         }
 
         /** <inheritDoc /> */
@@ -1051,6 +1036,42 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             }
 
             return res;
+        }
+        
+        private void WriteContinuousQuery(
+            ClientRequestContext ctx, 
+            ContinuousQuery<TK, TV> continuousQuery)
+        {
+            var w = ctx.Writer;
+            w.WriteInt(continuousQuery.BufferSize);
+            w.WriteLong((long) continuousQuery.TimeInterval.TotalMilliseconds);
+            w.WriteBoolean(false); // Include expired.
+
+            if (continuousQuery.Filter == null)
+            {
+                w.WriteObject<object>(null);
+            }
+            else
+            {
+                var javaFilter = continuousQuery.Filter as PlatformJavaObjectFactoryProxy;
+
+                if (javaFilter != null)
+                {
+                    w.WriteObject(javaFilter.GetRawProxy());
+                    w.WriteByte(FilterPlatformJava);
+                }
+                else
+                {
+                    var filterHolder = new ContinuousQueryFilterHolder(continuousQuery.Filter, _keepBinary);
+
+                    w.WriteObject(filterHolder);
+                    w.WriteByte(FilterPlatformDotnet);
+                }
+            }
+
+            w.WriteByte(0); // Initial query type.
+
+            ctx.Socket.ExpectNotifications();
         }
 
         /// <summary>
