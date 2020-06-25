@@ -9,6 +9,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
     {
         /** Socket. */
         private readonly ClientSocket _socket;
+        
+        /** Keep binary flag. */
+        private readonly bool _keepBinary;
 
         /** Cursor ID. */
         private readonly long _continuousQueryId;
@@ -25,15 +28,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <summary>
         /// Initializes a new instance of <see cref="ClientContinuousQueryHandle{TK, TV}"/>.
         /// </summary>
-        public ClientContinuousQueryHandle(ClientSocket socket, long continuousQueryId, long? initialQueryId)
+        public ClientContinuousQueryHandle(ClientSocket socket, bool keepBinary, long continuousQueryId, long? initialQueryId)
         {
             _socket = socket;
+            _keepBinary = keepBinary;
             _continuousQueryId = continuousQueryId;
             _initialQueryId = initialQueryId;
-
-            // TODO: Set notification listener
         }
 
+        /** <inheritdoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> GetInitialQueryCursor()
         {
             if (_initialQueryId == null)
@@ -41,6 +44,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                 // Should not happen since user gets IContinuousQueryHandle in this case.
                 throw new InvalidOperationException("Continuous query does not have initial query.");
             }
+            
+            return new ClientQueryCursor<TK, TV>(
+                _socket, _initialQueryId.Value, _keepBinary, null, ClientOp.QueryScanCursorGetPage);
         }
 
         /** <inheritdoc /> */
