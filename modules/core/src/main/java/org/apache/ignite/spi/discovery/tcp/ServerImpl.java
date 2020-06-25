@@ -6552,14 +6552,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                         long rcvdTime = lastRingMsgReceivedTime;
                         long now = U.currentTimeMillis();
 
-                        // If previous node has sent TcpDiscoveryConnectionCheckMessage or any other message within
-                        // half of the message exchange timeout we should consider previous alive. With longer delay, we
-                        // should check connection to fasten the failure detection.
-                        boolean ok = rcvdTime + effectiveExchangeTimeout() / 2 > now;
-
+                        // We got message from previous in less than effective exchange timeout.
+                        boolean ok = rcvdTime + effectiveExchangeTimeout() > now;
                         TcpDiscoveryNode previous = null;
 
-                        if (!ok) {
+                        if (ok) {
+                            // Check case when previous node suddenly died. This will speed up
+                            // node failing.
                             Set<TcpDiscoveryNode> failed;
 
                             synchronized (mux) {
@@ -6574,10 +6573,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
                                 Collection<InetSocketAddress> nodeAddrs = spi.getNodeAddresses(previous, false);
 
-                                // The connecting node is waiting for the response for the configured timeout.
-                                // Some time is already spent on new connection, request ant other operations.
-                                // No reason to wait for full timeout. Also, connection checking should be quick.
-                                liveAddr = checkConnection(nodeAddrs, (int)effectiveExchangeTimeout() / 2);
+                                liveAddr = checkConnection(nodeAddrs, (int)(rcvdTime + effectiveExchangeTimeout() - now));
 
                                 if (log.isInfoEnabled())
                                     log.info("Connection check done [liveAddr=" + liveAddr
@@ -7040,36 +7036,26 @@ class ServerImpl extends TcpDiscoveryImpl {
             lastRingMsgReceivedTime = U.currentTimeMillis();
         }
 
-        /**
-         * @return Alive address if was able to connected to. {@code Null} otherwise.
-         */
+        /** @return Alive address if was able to connected to. {@code Null} otherwise. */
         private InetSocketAddress checkConnection(Collection<InetSocketAddress> addrs, int timeout) {
-            List<Socket> sockets = new ArrayList<>(addrs.size());
-
             AtomicReference<InetSocketAddress> liveAddrHolder = new AtomicReference<>();
 
-            CountDownLatch latch = new CountDownLatch(1);
+            CountDownLatch latch = new CountDownLatch(addrs.size());
 
             for (InetSocketAddress addr : addrs) {
-                if (latch.getCount() == 0)
-                    break;
-
                 utilityPool.execute(() -> {
-                    if (latch.getCount() == 0)
-                        return;
-
                     try (Socket sock = new Socket()) {
-                        synchronized (sockets) {
-                            sockets.add(sock);
+                        if (liveAddrHolder.get() == null) {
+                            sock.connect(addr, timeout);
+
+                            liveAddrHolder.compareAndSet(null, addr);
                         }
-
-                        sock.connect(addr, timeout);
-
-                        if (liveAddrHolder.compareAndSet(null, addr))
-                            latch.countDown();
                     }
-                    catch (Exception e) {
+                    catch (Exception ignored) {
                         // No-op.
+                    }
+                    finally {
+                        latch.countDown();
                     }
                 });
             }
@@ -7077,19 +7063,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             try {
                 latch.await(timeout, TimeUnit.MILLISECONDS);
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 // No-op.
-            }
-
-            synchronized (sockets) {
-                for (Socket socket : sockets) {
-                    try {
-                        socket.close();
-                    }
-                    catch (Exception e) {
-                        // No-op.
-                    }
-                }
             }
 
             return liveAddrHolder.get();
