@@ -44,6 +44,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
@@ -169,6 +170,8 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         testOut.reset();
 
         encriptionEnabled = false;
+
+        GridClientFactory.stopAll(false);
     }
 
     /** {@inheritDoc} */

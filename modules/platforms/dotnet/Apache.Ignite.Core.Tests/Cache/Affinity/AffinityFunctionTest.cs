@@ -82,6 +82,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             _ignite = Ignition.Start(cfg);
 
             _ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {IgniteInstanceName = "grid2"});
+
+            AffinityTopologyVersion waitingTop = new AffinityTopologyVersion(2, 1);
+
+            Assert.True(_ignite.WaitTopology(waitingTop), "Failed to wait topology " + waitingTop);
+            Assert.True(_ignite2.WaitTopology(waitingTop), "Failed to wait topology " + waitingTop);
         }
 
         /// <summary>
@@ -140,7 +145,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             var lastCtx = Contexts.Where(x => x.GetPreviousAssignment(1) == null)
                 .OrderBy(x => x.DiscoveryEvent.Timestamp).Last();
 
-            Assert.AreEqual(new AffinityTopologyVersion(2, 1), lastCtx.CurrentTopologyVersion);
+            Assert.AreEqual(new AffinityTopologyVersion(2, 2), lastCtx.CurrentTopologyVersion);
             Assert.AreEqual(5, lastCtx.Backups);
 
             // Verify context for old cache

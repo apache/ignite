@@ -22,12 +22,18 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents information of a progress of a given checkpoint and
  * allows to obtain future to wait for a particular checkpoint state.
  */
 public interface CheckpointProgress {
+    /**
+     * @return Wakeup reason.
+     */
+    public @Nullable String reason();
+
     /** */
     public boolean inProgress();
 
@@ -103,4 +109,13 @@ public interface CheckpointProgress {
      * @param deltha Pages num to update.
      */
     public void updateEvictedPages(int deltha);
+
+    /**
+     * Invokes a callback closure then a checkpoint reaches specific state.
+     * The closure will not be called if an error has happened while transitting to the state.
+     *
+     * @param state State.
+     * @param clo Closure to call.
+     */
+    public void onStateChanged(CheckpointState state, Runnable clo);
 }

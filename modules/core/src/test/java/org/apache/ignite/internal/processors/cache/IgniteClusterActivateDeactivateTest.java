@@ -563,23 +563,17 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         startWithCaches1(srvs, clients);
 
-        AffinityTopologyVersion affTopVer = new AffinityTopologyVersion(srvs + clients);
-
         if (initialState.active()) {
+            // For in-memory grids cluster is already active.
             ignite(0).cluster().state(initialState);
 
             awaitPartitionMapExchange();
-
-            affTopVer = grid(0).cachex(CU.UTILITY_CACHE_NAME).context().topology().readyTopologyVersion();
-
-            assertEquals(srvs + clients, affTopVer.topologyVersion());
         }
 
         if (blockMsgNodes.length == 0)
             blockMsgNodes = new int[] {1};
 
-        final AffinityTopologyVersion STATE_CHANGE_TOP_VER = affTopVer.nextMinorVersion();
-
+        // Block next exchange.
         List<TestRecordingCommunicationSpi> spis = new ArrayList<>();
 
         for (int idx : blockMsgNodes) {
@@ -587,7 +581,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
             spis.add(spi);
 
-            blockExchangeSingleMessage(spi, STATE_CHANGE_TOP_VER);
+            spi.blockMessages(TestRecordingCommunicationSpi.blockSingleExhangeMessage());
         }
 
         IgniteInternalFuture<?> stateChangeFut = runAsync(() -> ignite(stateChangeFrom).cluster().state(targetState));

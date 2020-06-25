@@ -57,7 +57,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -1710,6 +1709,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (readyTopVer.initialized() && readyTopVer.equals(lastTopChangeVer)) {
                     AffinityAssignment aff = grp.affinity().readyAffinity(readyTopVer);
 
+                    // Check evictions while preloading.
+                    // Evictions on exchange are checked in exchange worker thread before rebalancing.
                     if (exchangeVer == null)
                         changed |= checkEvictions(updateSeq, aff);
 
@@ -2804,44 +2805,31 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void ownMoving(AffinityTopologyVersion rebFinishedTopVer) {
-        lock.writeLock().lock();
+    @Override public void ownMoving() {
+        ctx.database().checkpointReadLock();
 
         try {
-            AffinityTopologyVersion lastAffChangeVer = ctx.exchange().lastAffinityChangedTopologyVersion(lastTopChangeVer);
+            lock.writeLock().lock();
 
-            if (lastAffChangeVer.compareTo(rebFinishedTopVer) > 0) {
-                if (log.isInfoEnabled()) {
-                    log.info("Affinity topology changed, no MOVING partitions will be owned " +
-                        "[rebFinishedTopVer=" + rebFinishedTopVer +
-                        ", lastAffChangeVer=" + lastAffChangeVer + "]");
-                }
+            try {
+                for (GridDhtLocalPartition locPart : currentLocalPartitions()) {
+                    if (locPart.state() == MOVING) {
+                        boolean reserved = locPart.reserve();
 
-                if (!((GridDhtPreloader)grp.preloader()).disableRebalancingCancellationOptimization())
-                    grp.preloader().forceRebalance();
-
-                return;
-            }
-
-            for (GridDhtLocalPartition locPart : currentLocalPartitions()) {
-                if (locPart.state() == MOVING) {
-                    boolean reserved = locPart.reserve();
-
-                    try {
-                        if (reserved && locPart.state() == MOVING &&
-                            lastAffChangeVer.compareTo(rebFinishedTopVer) <= 0 &&
-                            rebFinishedTopVer.compareTo(lastTopChangeVer) <= 0)
-                            own(locPart);
-                    }
-                    finally {
-                        if (reserved)
-                            locPart.release();
+                        try {
+                            if (reserved && locPart.state() == MOVING)
+                                own(locPart);
+                        } finally {
+                            if (reserved)
+                                locPart.release();
+                        }
                     }
                 }
+            } finally {
+                lock.writeLock().unlock();
             }
-        }
-        finally {
-            lock.writeLock().unlock();
+        } finally {
+            ctx.database().checkpointReadUnlock();
         }
     }
 

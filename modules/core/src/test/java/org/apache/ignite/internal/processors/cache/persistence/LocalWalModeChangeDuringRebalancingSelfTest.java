@@ -318,7 +318,10 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         assertEquals(1, checkpointsBeforeNodeStarted); // checkpoint on start
         assertEquals(0, checkpointsBeforeRebalance);
-        assertEquals(disableWalDuringRebalancing ? 1 : 0, checkpointsAfterRebalance); // checkpoint if WAL was re-activated
+
+        // Expecting a checkpoint for each group.
+        assertEquals(disableWalDuringRebalancing ? newIgnite.context().cache().cacheGroups().size() : 0,
+            checkpointsAfterRebalance); // checkpoint if WAL was re-activated
     }
 
     /**

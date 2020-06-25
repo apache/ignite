@@ -98,6 +98,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.FinishPreloadingTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
@@ -1183,6 +1184,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionExchangeId exchId) {
         return exchWorker.forceRebalance(exchId);
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param grpId Group id.
+     */
+    public void finishPreloading(AffinityTopologyVersion topVer, int grpId) {
+        exchWorker.finishPreloading(topVer, grpId);
     }
 
     /**
@@ -2930,6 +2939,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /**
+         * @param topVer Topology version.
+         * @param grpId Group id.
+         */
+        void finishPreloading(AffinityTopologyVersion topVer, int grpId) {
+            futQ.add(new FinishPreloadingTask(topVer, grpId));
+        }
+
+        /**
          * @param exchFut Exchange future.
          */
         void addExchangeFuture(GridDhtPartitionsExchangeFuture exchFut) {
@@ -3442,10 +3459,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // Start rebalancing cache groups chain. Each group will be rebalanced
                             // sequentially one by one e.g.:
                             // ignite-sys-cache -> cacheGroupR1 -> cacheGroupP2 -> cacheGroupR3
+                            long rebId = cnt;
+
                             rebFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                                 @Override public void apply(IgniteInternalFuture<Boolean> f) {
                                     U.log(log, "Rebalancing scheduled [order=" + rebList +
                                         ", top=" + finalR.topologyVersion() +
+                                        ", rebalanceId=" + rebId +
                                         ", evt=" + exchId.discoveryEventName() +
                                         ", node=" + exchId.nodeId() + ']');
 

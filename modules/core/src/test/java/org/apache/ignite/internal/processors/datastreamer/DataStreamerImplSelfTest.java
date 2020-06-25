@@ -56,6 +56,7 @@ import org.apache.log4j.Appender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
 import org.apache.log4j.WriterAppender;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -292,6 +293,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-29798")
     public void testAllOperationFinishedBeforeFutureCompletion() throws Exception {
         cnt = 0;
 

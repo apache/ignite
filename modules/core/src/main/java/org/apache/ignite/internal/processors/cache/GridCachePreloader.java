@@ -231,4 +231,11 @@ public interface GridCachePreloader {
      * @return Rebalance message size in bytes.
      */
     public int batchSize();
+
+    /**
+     * Finish preloading for given topology version.
+     *
+     * @param topVer Topology version.
+     */
+    public void finishPreloading(AffinityTopologyVersion topVer);
 }

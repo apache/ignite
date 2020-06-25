@@ -3626,7 +3626,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         return entryGetResult(this.val, ver, false);
 
                     if (newVer == null)
-                        newVer = cctx.versions().next();
+                        newVer = cctx.cache().nextVersion();
 
                     long ttl;
                     long expTime;
@@ -5831,7 +5831,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     entry.deletedUnlocked(true);
             }
             else
-                entry.markObsolete0(cctx.versions().next(), true, null);
+                entry.markObsolete0(cctx.cache().nextVersion(), true, null);
 
             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
                 cctx.events().addEvent(entry.partition(),
@@ -6206,7 +6206,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     entry.deletedUnlocked(true);
             }
             else
-                entry.markObsolete0(cctx.versions().next(), true, null);
+                entry.markObsolete0(cctx.cache().nextVersion(), true, null);
 
             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
                 cctx.events().addEvent(entry.partition(),
@@ -6698,9 +6698,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         false);
                 }
             }
-            else
+            else {
                 assert entry.isStartVersion() || ATOMIC_VER_COMPARATOR.compare(entry.ver, newVer) <= 0 :
-                    "Invalid version for inner update [isNew=" + entry.isStartVersion() + ", entry=" + entry + ", newVer=" + newVer + ']';
+                    "Invalid version for inner update [name=" + cctx.group().cacheOrGroupName() +
+                        ", isNew=" + entry.isStartVersion() + ", entry=" + entry + ", newVer=" + newVer + ']';
+            }
         }
 
         /**

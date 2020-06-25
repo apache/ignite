@@ -1624,19 +1624,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             // 6. Remove obsolete entries from cache.
             removeObsolete(tx);
 
-            // 7. Assign transaction number at the end of transaction.
-            tx.endVersion(cctx.versions().next(tx.topologyVersion()));
-
-            // 8. Remove from per-thread storage.
+            // 7. Remove from per-thread storage.
             clearThreadMap(tx);
 
-            // 9. Unregister explicit locks.
+            // 8. Unregister explicit locks.
             if (!tx.alternateVersions().isEmpty()) {
                 for (GridCacheVersion ver : tx.alternateVersions())
                     idMap.remove(ver);
             }
 
-            // 10. Remove Near-2-DHT mappings.
+            // 9. Remove Near-2-DHT mappings.
             if (tx instanceof GridCacheMappedVersion) {
                 GridCacheVersion mapped = ((GridCacheMappedVersion)tx).mappedVersion();
 
@@ -1644,10 +1641,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     mappedVers.remove(mapped);
             }
 
-            // 11. Clear context.
+            // 10. Clear context.
             resetContext();
 
-            // 12. Update metrics.
+            // 11. Update metrics.
             if (!tx.dht() && tx.local()) {
                 if (!tx.system())
                     cctx.txMetrics().onTxCommit();

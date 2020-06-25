@@ -227,7 +227,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
 
-        lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
+        lockVer = tx != null ? tx.xidVersion() : cctx.cache().nextVersion();
 
         futId = IgniteUuid.randomUuid();
 

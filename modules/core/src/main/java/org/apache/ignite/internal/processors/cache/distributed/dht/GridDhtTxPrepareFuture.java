@@ -1048,8 +1048,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         if (tx.empty() && !req.queryUpdate()) {
             tx.setRollbackOnly();
 
-            onDone((GridNearTxPrepareResponse)null);
-        }
+                onDone((GridNearTxPrepareResponse) null);
+            }
 
         this.req = req;
 
@@ -1062,13 +1062,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         if (validateCache) {
             GridDhtTopologyFuture topFut = cctx.exchange().lastFinishedFuture();
 
-            if (topFut != null) {
-                err = tx.txState().validateTopology(cctx, writesEmpty, topFut);
+                if (topFut != null) {
+                    IgniteCheckedException err = tx.txState().validateTopology(cctx, isEmpty(req.writes()), topFut);
 
-                if (err != null)
-                    onDone(null, err);
+                    if (err != null)
+                        onDone(null, err);
+                }
             }
-        }
 
         boolean ser = tx.serializable() && tx.optimistic();
 
@@ -1303,7 +1303,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             onEntriesLocked();
 
             // We are holding transaction-level locks for entries here, so we can get next write version.
-            tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
+            tx.writeVersion(cctx.cacheContext(tx.txState().firstCacheId()).cache().nextVersion());
 
             TxCounters counters = tx.txCounters(true);
 

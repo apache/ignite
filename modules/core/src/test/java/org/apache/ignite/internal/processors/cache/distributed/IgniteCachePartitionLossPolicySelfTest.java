@@ -202,6 +202,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
+        cfg.setActiveOnStart(false);
+
         return cfg;
     }
 
@@ -271,7 +273,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         if (safe)
             ignite(0).resetLostPartitions(Arrays.asList(CACHES));
 
-        awaitPartitionMapExchange(true, true, null);
+        // Do not wait for evictions because it's not guaranteed in the current implementation.
+        awaitPartitionMapExchange();
 
         for (Ignite ig : G.allGrids()) {
             IgniteCache<Integer, Integer> cache = ig.cache(cacheName);

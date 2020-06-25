@@ -478,7 +478,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         // Version for all loaded entries.
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-        final GridCacheVersion ver0 = ctx.shared().versions().nextForLoad(topVer);
+        final GridCacheVersion ver0 = ctx.shared().versions().nextForLoad(topVer.topologyVersion());
 
         final boolean replicate = ctx.isDrEnabled();
 
@@ -507,7 +507,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         // Version for all loaded entries.
-        final GridCacheVersion ver0 = ctx.shared().versions().nextForLoad(topVer);
+        final GridCacheVersion ver0 = ctx.shared().versions().nextForLoad(topVer.topologyVersion());
 
         final boolean replicate = ctx.isDrEnabled();
 

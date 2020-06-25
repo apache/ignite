@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -109,16 +111,24 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends AbstractIndexingCommo
 
         List<List<Object>> expRes = Arrays.asList(
             Arrays.asList(1, "A"),
-            Arrays.asList(2, "C.B"),
-            Arrays.asList(3, "E.D.F"),
-            Arrays.asList(4, "J.G.I.H"),
-            Arrays.asList(5, "O.L.N.K.M"),
-            Arrays.asList(6, "Q.S.U.P.R.T"));
+            Arrays.asList(2, "B.C"),
+            Arrays.asList(3, "D.E.F"),
+            Arrays.asList(4, "G.H.I.J"),
+            Arrays.asList(5, "K.L.M.N.O"),
+            Arrays.asList(6, "P.Q.R.S.T.U"));
 
         assertEquals(res.size(), expRes.size());
 
-        for (int i = 0; i < res.size(); i++)
-            assertEqualsCollections(expRes.get(i), res.get(i));
+        // Join order is not guaranteed.
+        for (int i = 0; i < res.size(); i++) {
+            List<Object> row = res.get(i);
+
+            Integer idx = (Integer) row.get(0);
+            String s0 = (String) row.get(1);
+            String s1 = Stream.of(s0.split("\\.")).sorted().collect(Collectors.joining("."));
+
+            assertEqualsCollections(expRes.get(idx - 1), Arrays.asList(idx, s1));
+        }
     }
 
     /**

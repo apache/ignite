@@ -1618,7 +1618,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                                     // Entry was not in memory or in swap, so we remove it from cache.
                                     if (v == null) {
-                                        if (isNew && entry.markObsoleteIfEmpty(context().versions().next()))
+                                        if (isNew && entry.markObsoleteIfEmpty(nextVersion()))
                                             removeEntry(entry);
 
                                         success = false;
@@ -2071,7 +2071,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         // Assign next version for update inside entries lock.
         GridCacheVersion ver = dhtUpdRes.dhtFuture() != null /*retry*/ ?
-            dhtUpdRes.dhtFuture().writeVer : ctx.versions().next(top.readyTopologyVersion());
+            dhtUpdRes.dhtFuture().writeVer : ctx.versions().next(top.readyTopologyVersion().topologyVersion());
 
         if (hasNear)
             res.nearVersion(ver);

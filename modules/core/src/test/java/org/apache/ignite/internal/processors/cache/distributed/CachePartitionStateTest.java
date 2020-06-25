@@ -146,6 +146,8 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
     private void partitionState1(int backups, boolean crdAffNode) throws Exception {
         startGrids(3);
 
+        awaitPartitionMapExchange();
+
         blockSupplySend(DEFAULT_CACHE_NAME);
 
         CacheConfiguration ccfg = cacheConfiguration(DEFAULT_CACHE_NAME, backups);
@@ -157,7 +159,7 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
 
         AffinityAssignment assign0 =
             grid(1).context().cache().internalCache(DEFAULT_CACHE_NAME).context().affinity().assignment(
-                new AffinityTopologyVersion(3, 1));
+                new AffinityTopologyVersion(3, 2));
 
         awaitPartitionMapExchange();
 
@@ -196,6 +198,8 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
             grid(1).context().cache().internalCache(DEFAULT_CACHE_NAME).context().affinity().assignment(
                 new AffinityTopologyVersion(5, 1));
 
+        awaitPartitionMapExchange(true, true, null, false);
+
         checkPartitionsState(assign2, DEFAULT_CACHE_NAME, OWNING);
 
         checkRebalance(DEFAULT_CACHE_NAME, true);
@@ -214,6 +218,8 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
         AffinityAssignment assign3 =
             grid(1).context().cache().internalCache(DEFAULT_CACHE_NAME).context().affinity().assignment(
                 new AffinityTopologyVersion(6, 1));
+
+        awaitPartitionMapExchange(true, true, null, false);
 
         checkPartitionsState(assign3, DEFAULT_CACHE_NAME, OWNING);
 
@@ -241,6 +247,8 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
             grid(1).context().cache().internalCache(DEFAULT_CACHE_NAME).context().affinity().assignment(
                 new AffinityTopologyVersion(4, 0));
 
+        awaitPartitionMapExchange(true, true, null, false);
+
         checkPartitionsState(assign0, DEFAULT_CACHE_NAME, OWNING);
 
         checkRebalance(DEFAULT_CACHE_NAME, true);
@@ -260,7 +268,7 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
             grid(1).context().cache().internalCache(DEFAULT_CACHE_NAME).context().affinity().assignment(
                 new AffinityTopologyVersion(5, 1));
 
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(true, true, null, false);
 
         checkPartitionsState(assign1, DEFAULT_CACHE_NAME, OWNING);
 

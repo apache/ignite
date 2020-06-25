@@ -75,7 +75,7 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
     public static List<Object[]> parameters() {
         ArrayList<Object[]> params = new ArrayList<>();
 
-        for (boolean persistent : new boolean[]{false, true}) {
+        for (boolean persistent : new boolean[]{true, false}) {
             params.add(new Object[]{-1, false, persistent, 3});
             params.add(new Object[]{0, false, persistent, 3});
             params.add(new Object[]{2, false, persistent, 3});

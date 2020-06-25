@@ -173,23 +173,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @GridToStringInclude
     protected UUID nodeId;
 
-    /** Transaction counter value at the start of transaction. */
-    @GridToStringInclude
-    protected GridCacheVersion startVer;
-
     /** Cache registry. */
     @GridToStringExclude
     protected GridCacheSharedContext<?, ?> cctx;
 
     /** Need return value. */
     protected boolean needRetVal;
-
-    /**
-     * End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
-     * assigned to this transaction at the end of write phase.
-     */
-    @GridToStringInclude
-    protected GridCacheVersion endVer;
 
     /** Isolation. */
     @GridToStringInclude
@@ -348,8 +337,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
 
-        startVer = cctx.versions().last();
-
         nodeId = cctx.discovery().localNode().id();
 
         threadId = Thread.currentThread().getId();
@@ -392,7 +379,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         this.nodeId = nodeId;
         this.threadId = threadId;
         this.xidVer = xidVer;
-        this.startVer = startVer;
         this.sys = sys;
         this.plc = plc;
         this.concurrency = concurrency;
@@ -1315,11 +1301,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 "Transaction state changed.",
                 type,
                 new TransactionEventProxyImpl((GridNearTxLocal)this)));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void endVersion(GridCacheVersion endVer) {
-        this.endVer = endVer;
     }
 
     /** {@inheritDoc} */
@@ -2505,11 +2486,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> salvageTx() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void endVersion(GridCacheVersion endVer) {
-            // No-op.
         }
 
         /** {@inheritDoc} */

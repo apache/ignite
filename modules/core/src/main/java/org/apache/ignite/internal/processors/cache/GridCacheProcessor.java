@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.FinishPreloadingTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionDefferedDeleteQueueCleanupTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
@@ -426,6 +427,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             WalStateNodeLeaveExchangeTask task0 = (WalStateNodeLeaveExchangeTask)task;
 
             sharedCtx.walState().onNodeLeft(task0.node().id());
+        }
+        else if (task instanceof FinishPreloadingTask) {
+            FinishPreloadingTask task0 = (FinishPreloadingTask) task;
+
+            CacheGroupContext grp = cacheGroup(task0.groupId());
+
+            if (grp != null)
+                grp.preloader().finishPreloading(task0.topologyVersion());
         }
         else
             U.warn(log, "Unsupported custom exchange task: " + task);

@@ -397,6 +397,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return New lock instance associated with passed key.
      * @see Lock#lock()
      * @see Lock#tryLock(long, TimeUnit)
+     * @deprecated It is recommended to use {@link Ignite#reentrantLock(String, boolean, boolean, boolean)} instead.
+     *      This method will be removed in future releases.
      */
     public Lock lockAll(Collection<? extends K> keys);
 
@@ -407,7 +409,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * or access to persistent storage in any way.
      *
      * @param key Key to check.
-     * @param byCurrThread If {@code true} method will check that current thread owns a lock on this key, other vise
+     * @param byCurrThread If {@code true} method will check that current thread owns a lock on this key, otherwise
      *     will check that any thread on any node owns a lock on this key.
      * @return {@code True} if lock is owned by some node.
      */

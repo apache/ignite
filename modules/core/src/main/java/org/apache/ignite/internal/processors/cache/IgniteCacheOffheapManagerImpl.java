@@ -732,7 +732,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     try {
                         if (obsoleteVer == null)
-                            obsoleteVer = ctx.versions().next();
+                            obsoleteVer = cctx.cache().nextVersion();
 
                         GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
@@ -1323,9 +1323,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         partStoreLock.lock(p);
 
         try {
-            boolean removed = partDataStores.remove(p, store);
+            boolean rmv = partDataStores.remove(p, store);
 
-            assert removed;
+            assert rmv;
 
             destroyCacheDataStore0(store);
         }
@@ -1413,7 +1413,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 if (pendingEntries.removex(row)) {
                     if (obsoleteVer == null)
-                        obsoleteVer = ctx.versions().next();
+                        obsoleteVer = cctx.cache().nextVersion();
 
                     GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
 

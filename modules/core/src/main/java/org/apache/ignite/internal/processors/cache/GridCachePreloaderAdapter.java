@@ -202,4 +202,10 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
         return grp.shared().gridConfig().getRebalanceBatchSize() == DFLT_REBALANCE_BATCH_SIZE ?
             grp.config().getRebalanceBatchSize() : grp.shared().gridConfig().getRebalanceBatchSize();
     }
+
+    /** {@inheritDoc} */
+    @Override public void finishPreloading(AffinityTopologyVersion topVer) {
+        // No-op.
+    }
 }
+

@@ -2750,7 +2750,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         if (pendingTree.removex(row)) {
                             if (obsoleteVer == null)
-                                obsoleteVer = ctx.versions().next();
+                                obsoleteVer = cctx.cache().nextVersion();
 
                             GridCacheEntryEx e1 = cctx.cache().entryEx(row.key);
 
