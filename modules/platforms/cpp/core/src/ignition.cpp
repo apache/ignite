@@ -243,6 +243,8 @@ namespace ignite
         // 3. Create classpath.
         std::string cp = CreateIgniteClasspath(cfg.jvmClassPath, home);
 
+        std::cout << "Classpath is " << cp << std::endl;
+
         if (cp.empty())
         {
             err = IgniteError(IgniteError::IGNITE_ERR_JVM_NO_CLASSPATH,
