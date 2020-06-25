@@ -39,11 +39,8 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
@@ -51,17 +48,13 @@ import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
@@ -241,9 +234,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
 
-    /** Performance statistics. */
-    private final FilePerformanceStatistics performanceStatistics;
-
     /**
      * @param ctx Kernal context.
      */
@@ -281,8 +271,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
-
-        performanceStatistics = new FilePerformanceStatistics(ctx);
     }
 
     /** {@inheritDoc} */
@@ -336,9 +324,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         // Stop discovery worker and metrics updater.
         U.closeQuiet(metricsUpdateTask);
-
-        if (performanceStatisticsEnabled())
-            performanceStatistics.stop().get();
     }
 
     /**
@@ -763,40 +748,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /**
-     * Starts performance statistics.
-     *
-     * @param maxFileSize Maximum file size in bytes.
-     * @param bufferSize Off heap buffer size in bytes.
-     * @param flushBatchSize Minimal batch size to flush in bytes.
-     */
-    public void startPerformanceStatistics(long maxFileSize, int bufferSize, int flushBatchSize)
-        throws IgniteCheckedException {
-        ctx.closure().broadcast(new PerformanceStatisticsJob(),
-            new T4<>(true, maxFileSize, bufferSize, flushBatchSize),
-            ctx.discovery().allNodes(), null).get();
-    }
-
-    /**
-     * Stops performance statistics.
-     *
-     * @return Future to be completed on performance statistics stopped.
-     */
-    public IgniteInternalFuture<?> stopPerformanceStatistics() {
-        return ctx.closure().broadcast(new PerformanceStatisticsJob(), new T4<>(false, 0L, 0, 0),
-            ctx.discovery().allNodes(), null);
-    }
-
-    /** @return {@code True} if performance statistics is enabled. */
-    public boolean performanceStatisticsEnabled() {
-        return performanceStatistics.performanceStatisticsEnabled();
-    }
-
-    /** @return Performance statistics collector. */
-    public FilePerformanceStatistics performanceStatistics() {
-        return performanceStatistics;
-    }
-
-    /**
      * @return Total system memory.
      */
     private long totalSysMemory() {
@@ -922,27 +873,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             used.value(usage.getUsed());
             committed.value(usage.getCommitted());
             max.value(usage.getMax());
-        }
-    }
-
-    /** Job to start/stop performance statistics. */
-    @GridInternal
-    private static class PerformanceStatisticsJob extends CX1<T4<Boolean, Long, Integer, Integer>, Void> {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Auto-injected grid instance. */
-        @IgniteInstanceResource
-        private transient IgniteEx ignite;
-
-        /** @param t Tuple with settings. */
-        @Override public Void applyx(T4<Boolean, Long, Integer, Integer> t) throws IgniteCheckedException {
-            if (t.get1())
-                ignite.context().metric().performanceStatistics().start(t.get2(), t.get3(), t.get4());
-            else
-                ignite.context().metric().performanceStatistics().stop().get();
-
-            return null;
         }
     }
 }

@@ -1334,8 +1334,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             if (!worker.isInternal()) {
                 execTasks.increment();
 
-                if (ctx.metric().performanceStatisticsEnabled()) {
-                    ctx.metric().performanceStatistics().task(
+                if (ctx.performanceStatistics().statisticsEnabled()) {
+                    ctx.performanceStatistics().writer().task(
                         ses.getId(),
                         ses.getTaskName(),
                         ses.getStartTime(),

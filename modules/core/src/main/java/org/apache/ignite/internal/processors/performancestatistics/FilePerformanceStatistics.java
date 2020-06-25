@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.performancestatistics;
+package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +48,7 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Performance statistics collector based on logging statistics to a performance statistics file.
+ * Performance statistics collector based on logging to a file.
  * <p>
  * Each node collects statistics to a file placed under {@link #PERFORMANCE_STATISTICS_DIR}.
  * <p>
@@ -58,7 +58,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
     /** Default maximum file size in bytes. Performance statistics will be stopped when the size exceeded. */
-    public static final long DFLT_FILE_MAX_SIZE = 16 * 1024 * 1024 * 1024L;
+    public static final long DFLT_FILE_MAX_SIZE = 32 * 1024 * 1024 * 1024L;
 
     /** Default off heap buffer size in bytes. */
     public static final int DFLT_BUFFER_SIZE = 32 * 1024 * 1024;
@@ -75,7 +75,7 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
     /** Performance statistics enabled flag. */
     private volatile boolean enabled;
 
-    /** Performance statistics file writer. */
+    /** Performance statistics file writer worker. */
     @Nullable private volatile FileWriter fileWriter;
 
     /** Kernal context. */
@@ -91,19 +91,13 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
         this.ctx = ctx;
     }
 
-    /** @return {@code True} if performance statistics enabled. */
+    /** @return {@code True} if collecting performance statistics enabled. */
     public boolean performanceStatisticsEnabled() {
         return enabled;
     }
 
-    /**
-     * Starts performance statistics.
-     *
-     * @param maxFileSize Maximum file size in bytes.
-     * @param bufferSize Off heap buffer size in bytes.
-     * @param flushBatchSize Minimal batch size to flush in bytes.
-     */
-    public synchronized void start(long maxFileSize, int bufferSize, int flushBatchSize) {
+    /** Starts collecting performance statistics. */
+    public synchronized void start() {
         if (enabled)
             return;
 
@@ -122,7 +116,7 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
         assert fileWriter == null;
 
         try {
-            File file = perfromanceStatisticsFile(ctx);
+            File file = statisticsFile(ctx);
 
             U.delete(file);
 
@@ -130,7 +124,7 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
 
             fileIo.position(0);
 
-            fileWriter = new FileWriter(ctx, fileIo, maxFileSize, bufferSize, flushBatchSize, log);
+            fileWriter = new FileWriter(ctx, fileIo, DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, DFLT_FLUSH_SIZE, log);
 
             new IgniteThread(fileWriter).start();
 
@@ -145,7 +139,7 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
         }
     }
 
-    /** Stops performance statistics. */
+    /** Stops collecting performance statistics. */
     public IgniteInternalFuture<Void> stop() {
         synchronized (this) {
             if (!enabled)
@@ -394,9 +388,9 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
 
             if (!fileWriter.isCancelled()) {
                 log.warning("The performance statistics file maximum size is reached. " +
-                    "Performance statistics will be stopped.");
+                    "Performance statistics collecting will be stopped.");
 
-                ctx.metric().stopPerformanceStatistics();
+                ctx.performanceStatistics().stopStatistics();
             }
 
             return null;
@@ -410,7 +404,7 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
     }
 
     /** @return Performance statistics file. */
-    public static File perfromanceStatisticsFile(GridKernalContext ctx) throws IgniteCheckedException {
+    public static File statisticsFile(GridKernalContext ctx) throws IgniteCheckedException {
         String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
 
         File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERFORMANCE_STATISTICS_DIR, false);
@@ -582,9 +576,9 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
 
                 fileIo.force();
             } catch (IOException e) {
-                log.error("Unable to write to file. Performance statistics will be stopped.", e);
+                log.error("Unable to write to file. Performance statistics collecting will be stopped.", e);
 
-                stop();
+                ctx.performanceStatistics().stopStatistics();
             }
         }
 

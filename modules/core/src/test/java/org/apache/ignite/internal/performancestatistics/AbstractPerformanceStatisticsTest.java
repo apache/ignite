@@ -25,12 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.DFLT_BUFFER_SIZE;
-import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.DFLT_FILE_MAX_SIZE;
-import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.DFLT_FLUSH_SIZE;
-import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.PERFORMANCE_STATISTICS_DIR;
-import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.perfromanceStatisticsFile;
 import static org.apache.ignite.internal.performancestatistics.TestFilePerformanceStatisticsReader.readToLog;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.PERFORMANCE_STATISTICS_DIR;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.statisticsFile;
 
 /**
  * Ignite performance statistics abstract test.
@@ -51,7 +48,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         IgniteEx ignite = (IgniteEx)grids.get(0);
 
-        ignite.context().metric().startPerformanceStatistics(DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, DFLT_FLUSH_SIZE);
+        ignite.context().performanceStatistics().startStatistics().get();
     }
 
     /** Stops performance statistics and checks listeners on all grids. */
@@ -62,10 +59,10 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         IgniteEx ignite = (IgniteEx)grids.get(0);
 
-        ignite.context().metric().stopPerformanceStatistics().get();
+        ignite.context().performanceStatistics().stopStatistics().get();
 
         for (Ignite grid : grids)
-            readToLog(perfromanceStatisticsFile(((IgniteEx)grid).context()).toPath(), grid.log());
+            readToLog(statisticsFile(((IgniteEx)grid).context()).toPath(), grid.log());
 
         for (LogListener lsnr : lsnrs)
             assertTrue(lsnr.check());

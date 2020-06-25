@@ -15,15 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.performancestatistics;
+package org.apache.ignite.internal.processors.performancestatistics;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.typedef.internal.A;
-
-import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.DFLT_BUFFER_SIZE;
-import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.DFLT_FILE_MAX_SIZE;
-import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.DFLT_FLUSH_SIZE;
 
 /**
  * {@link IgnitePerformanceStatisticsMBean} implementation.
@@ -39,26 +34,15 @@ public class IgnitePerformanceStatisticsMbeanImpl implements IgnitePerformanceSt
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.metric().startPerformanceStatistics(DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, DFLT_FLUSH_SIZE);
+        ctx.performanceStatistics().startStatistics().get();
     }
-
-    /** {@inheritDoc} */
-    @Override public void start(long maxFileSize, int bufferSize, int flushBatchSize)
-        throws IgniteCheckedException {
-        A.ensure(maxFileSize > 0, "maxFileSize > 0");
-        A.ensure(bufferSize > 0, "bufferSize > 0");
-        A.ensure(flushBatchSize >= 0, "flushBatchSize >= 0");
-
-        ctx.metric().startPerformanceStatistics(maxFileSize, bufferSize, flushBatchSize);
-    }
-
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteCheckedException {
-        ctx.metric().stopPerformanceStatistics().get();
+        ctx.performanceStatistics().stopStatistics().get();
     }
 
     /** {@inheritDoc} */
     @Override public boolean enabled() {
-        return ctx.metric().performanceStatisticsEnabled();
+        return ctx.performanceStatistics().statisticsEnabled();
     }
 }

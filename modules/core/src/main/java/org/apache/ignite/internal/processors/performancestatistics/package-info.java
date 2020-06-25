@@ -20,4 +20,4 @@
  * Contains classes for Ignite performance statistics.
  */
 
-package org.apache.ignite.internal.performancestatistics;
+package org.apache.ignite.internal.processors.performancestatistics;

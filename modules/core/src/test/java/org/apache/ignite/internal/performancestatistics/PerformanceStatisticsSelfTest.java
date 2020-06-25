@@ -28,7 +28,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType;
+import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -36,15 +36,15 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.GET;
-import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.GET_ALL;
-import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.INVOKE;
-import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.INVOKE_ALL;
-import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.LOCK;
-import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.PUT;
-import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.PUT_ALL;
-import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.REMOVE;
-import static org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.REMOVE_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.GET;
+import static org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.GET_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.INVOKE;
+import static org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.INVOKE_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.LOCK;
+import static org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.PUT;
+import static org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.PUT_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.REMOVE;
+import static org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType.REMOVE_ALL;
 import static org.apache.ignite.testframework.LogListener.matches;
 
 /**

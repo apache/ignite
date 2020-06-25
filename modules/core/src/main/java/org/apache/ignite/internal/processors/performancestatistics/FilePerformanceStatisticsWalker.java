@@ -15,25 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.performancestatistics;
+package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics.CacheOperationType;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteUuid;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
-import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.readIgniteUuid;
-import static org.apache.ignite.internal.performancestatistics.FilePerformanceStatistics.readUuid;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.readIgniteUuid;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.readUuid;
 
 /**
  * Walker over the performance statistics file.

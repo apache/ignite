@@ -201,7 +201,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert req.mvccSnapshot() != null || !cctx.mvccEnabled() || req.cancel() ||
             (req.type() == null && !req.fields()) : req; // Last assertion means next page request.
 
-        boolean statsEnabled = cctx.kernalContext().metric().performanceStatisticsEnabled();
+        boolean statsEnabled = cctx.kernalContext().performanceStatistics().statisticsEnabled();
 
         if (statsEnabled)
             IoStatisticsQueryHelper.startGatheringQueryStatistics();
@@ -261,7 +261,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 IoStatisticsHolderQuery stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
                 if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
-                    cctx.kernalContext().metric().performanceStatistics().queryReads(
+                    cctx.kernalContext().performanceStatistics().writer().queryReads(
                         req.type(),
                         sndId,
                         req.id(),
@@ -617,7 +617,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert qry.type() == GridCacheQueryType.SCAN : qry;
         assert qry.mvccSnapshot() != null || !cctx.mvccEnabled();
 
-        boolean statsEnabled = cctx.kernalContext().metric().performanceStatisticsEnabled();
+        boolean statsEnabled = cctx.kernalContext().performanceStatistics().statisticsEnabled();
 
         long startTime = statsEnabled ? System.currentTimeMillis() : 0;
         long startTimeNanos = statsEnabled ? System.nanoTime() : 0;
@@ -696,7 +696,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     fut.cancel();
 
                 if (statsEnabled) {
-                    cctx.kernalContext().metric().performanceStatistics().query(
+                    cctx.kernalContext().performanceStatistics().writer().query(
                         SCAN,
                         cctx.name(),
                         ((GridCacheDistributedQueryFuture)fut).requestId(),

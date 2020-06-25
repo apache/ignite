@@ -25,8 +25,8 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.performancestatistics.IgnitePerformanceStatistics;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics;
+import org.apache.ignite.internal.processors.performancestatistics.PerformaceStatisticsProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -196,10 +196,10 @@ class CacheLockImpl<K, V> implements Lock {
             cntr--;
 
             if (cntr == 0) {
-                GridMetricManager metric = delegate.context().kernalContext().metric();
+                PerformaceStatisticsProcessor stat = delegate.context().kernalContext().performanceStatistics();
 
-                if (metric.performanceStatisticsEnabled()) {
-                    metric.performanceStatistics().cacheOperation(IgnitePerformanceStatistics.CacheOperationType.LOCK,
+                if (stat.statisticsEnabled()) {
+                    stat.writer().cacheOperation(IgnitePerformanceStatistics.CacheOperationType.LOCK,
                         delegate.context().cacheId(),
                         U.currentTimeMillis(),
                         System.nanoTime() - startTime);
