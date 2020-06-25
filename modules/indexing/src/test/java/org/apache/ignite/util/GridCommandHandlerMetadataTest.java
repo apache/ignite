@@ -233,7 +233,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
             assertContains(log, out, "Type 'Type0' with typeId 110843958 has a " +
                 "different/incorrect type for field 'fld'.");
             assertContains(log, out, "Expected 'String' but 'int' was provided. " +
-                "Field type's modification is unsupported");
+                "The type of an existing field can not be changed");
         }
         finally {
             if (Files.exists(typeFile))
