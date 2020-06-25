@@ -457,7 +457,7 @@ namespace Apache.Ignite.Core.Client.Cache
         /// </returns>
         IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(
             ContinuousQuery<TK, TV> continuousQuery,
-            QueryBase initialQry);
+            ScanQuery<TK, TV> initialQry);
 
         /// <summary>
         /// Start continuous query execution.

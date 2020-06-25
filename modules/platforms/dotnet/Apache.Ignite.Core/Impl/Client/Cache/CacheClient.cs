@@ -79,6 +79,16 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             WithExpiryPolicy = 1 << 2
         }
 
+        /// <summary>
+        /// Initial query type.
+        /// </summary>
+        private enum InitialQueryType : byte
+        {
+            None = 0,
+            Scan = 1,
+            SqlFields = 2
+        }
+
         /** Query filter platform code: Java filter. */
         private const byte FilterPlatformJava = 1;
         
@@ -632,25 +642,30 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, QueryBase initialQry)
+        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, 
+            ScanQuery<TK, TV> initialQry)
         {
             IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
             IgniteArgumentCheck.NotNull(continuousQuery.Listener, "continuousQuery.Listener");
             IgniteArgumentCheck.NotNull(initialQry, "initialQry");
             
-            // TODO: Write initial query.
-            // TODO: Read cursor ID.
             return DoOutInOp(
                 ClientOp.QueryContinuous,
-                ctx => WriteContinuousQuery(ctx, continuousQuery),
+                ctx => WriteContinuousQuery(ctx, continuousQuery, () =>
+                {
+                    ctx.Writer.WriteByte((byte) InitialQueryType.Scan);
+                    
+                    WriteScanQuery(ctx.Writer, initialQry);
+                }),
                 ctx =>
                 {
                     var queryId = ctx.Stream.ReadLong();
+                    var initialQueryCursorId = ctx.Stream.ReadLong();
 
                     ctx.Socket.AddNotificationHandler(queryId,
                         (stream, err) => HandleContinuousQueryEvents(stream, err, continuousQuery));
 
-                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId, null);
+                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId, initialQueryCursorId);
                 });
         }
 
@@ -1038,9 +1053,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             return res;
         }
         
-        private void WriteContinuousQuery(
-            ClientRequestContext ctx, 
-            ContinuousQuery<TK, TV> continuousQuery)
+        private void WriteContinuousQuery(ClientRequestContext ctx, ContinuousQuery<TK, TV> continuousQuery,
+            Action writeInitialQueryAction = null)
         {
             var w = ctx.Writer;
             w.WriteInt(continuousQuery.BufferSize);
@@ -1069,7 +1083,14 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 }
             }
 
-            w.WriteByte(0); // Initial query type.
+            if (writeInitialQueryAction != null)
+            {
+                writeInitialQueryAction();
+            }
+            else
+            {
+                w.WriteByte((byte) InitialQueryType.None);
+            }
 
             ctx.Socket.ExpectNotifications();
         }

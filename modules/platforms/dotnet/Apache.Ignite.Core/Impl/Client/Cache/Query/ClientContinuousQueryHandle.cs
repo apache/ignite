@@ -23,12 +23,13 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         private readonly object _disposeSyncRoot = new object();
 
         /** */
-        private bool _disposed = false;
+        private bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ClientContinuousQueryHandle{TK, TV}"/>.
         /// </summary>
-        public ClientContinuousQueryHandle(ClientSocket socket, bool keepBinary, long continuousQueryId, long? initialQueryId)
+        public ClientContinuousQueryHandle(ClientSocket socket, bool keepBinary, long continuousQueryId, 
+            long? initialQueryId)
         {
             _socket = socket;
             _keepBinary = keepBinary;
