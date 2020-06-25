@@ -2836,7 +2836,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 }
             );
 
-            System.out.println("+++ "  + RelOptUtil.toString(phys));
+            System.out.println("+++ " + RelOptUtil.toString(phys));
         }
     }
 
