@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -28,7 +27,11 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
-import org.apache.ignite.internal.processors.platform.client.*;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
 import javax.cache.configuration.Factory;
@@ -49,12 +52,6 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
     /** */
     private final byte filterPlatform;
 
-    /** */
-    private final Object transformer;
-
-    /** */
-    private final byte transformerPlatform;
-
     /**
      * Ctor.
      *
@@ -70,17 +67,14 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         filter = reader.readObjectDetached();
         filterPlatform = filter == null ? 0 : reader.readByte();
 
-        transformer = reader.readObjectDetached();
-        transformerPlatform = transformer == null ? 0 : reader.readByte();
-
         byte initialQueryType = reader.readByte();
         assert initialQueryType == 0; // TODO: 1 = SQL, 2 = SCAN
 
-        qry = new ContinuousQuery()
-                .setPageSize(pageSize)
-                .setTimeInterval(timeInterval);
+        qry = new ContinuousQuery();
 
-        qry.setIncludeExpired(includeExpired);
+        qry.setPageSize(pageSize)
+           .setTimeInterval(timeInterval)
+           .setIncludeExpired(includeExpired);
     }
 
     /** {@inheritDoc} */
@@ -107,10 +101,13 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         }
     }
 
+    /**
+     * Gets the filter factory.
+     *
+     * @param ctx Connection context.
+     * @return Filter factory or null.
+     */
     private Factory<? extends CacheEntryEventFilter> getFilterFactory(ClientConnectionContext ctx) {
-        // TODO: Set filter and transformer.
-        // 1. If Platform == Java, check for PLATFORM_JAVA_OBJECT_FACTORY_PROXY (see getJavaFilter)
-        // 2. If Platform == .NET, call platformCtx.createContinuousQueryFilter
         if (filter == null)
             return null;
 
@@ -125,7 +122,6 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
                 return bo.deserialize();
 
             case ClientPlatform.DOTNET: {
-                // TODO: Reuse this with thick?
                 if (bo.typeId() == GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY) {
                     PlatformJavaObjectFactoryProxy prx = bo.deserialize();
 
