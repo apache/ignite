@@ -47,7 +47,7 @@ public class MavenUtils {
     private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
 
     /** Set this flag to true if running PDS compatibility tests locally. */
-    private static boolean useGgRepo;
+    public static boolean useGgRepo;
 
     /**
      * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId={@code artifactId}.
@@ -158,9 +158,6 @@ public class MavenUtils {
         String localProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
 
         SB mavenCommandArgs = new SB(" org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact);
-
-        if (artifact.contains("org.gridgain"))
-            mavenCommandArgs.a(" -DremoteRepositories=http://www.gridgainsystems.com/nexus/content/repositories/external");
 
         if (!F.isEmpty(localProxyMavenSettingsFromEnv))
             localProxyMavenSettings = Paths.get(localProxyMavenSettingsFromEnv);

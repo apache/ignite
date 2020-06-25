@@ -198,8 +198,6 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                 if (jvmParms != null)
                     filteredJvmArgs.addAll(jvmParms);
 
-                log.info("JVM arguments [filteredJvmArgs=" + filteredJvmArgs + ']');
-
                 return filteredJvmArgs;
             }
         };

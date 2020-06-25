@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.compatibility.persistence.IgnitePersistenceCompatibilityAbstractTest;
 import org.apache.ignite.compatibility.testframework.junits.Dependency;
+import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -81,6 +82,20 @@ public class GridgainPersistenceCompatibilityAbstractTest extends IgnitePersiste
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        MavenUtils.useGgRepo = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        MavenUtils.useGgRepo = false;
+    }
+
+    /** {@inheritDoc} */
     @Override protected @NotNull Collection<Dependency> getDependencies(String igniteVer) {
         final Collection<Dependency> dependencies = new ArrayList<>();
 
@@ -100,11 +115,10 @@ public class GridgainPersistenceCompatibilityAbstractTest extends IgnitePersiste
     }
 
     /**
-     * @param v1 the first version to be compared.
-     * @param v2 the second version to be compared.
-     * @return a negative integer, zero, or a positive integer as the
-     *         first version is less than, equal to, or greater than the
-     *         second.
+     * @param v1 The first version to be compared.
+     * @param v2 The second version to be compared.
+     * @return A negative integer, zero, or a positive integer as the first version is less than, equal to, or greater
+     * than the second.
      */
     public static int compareVersions(String v1, String v2) {
         if (v1.equals(v2))
