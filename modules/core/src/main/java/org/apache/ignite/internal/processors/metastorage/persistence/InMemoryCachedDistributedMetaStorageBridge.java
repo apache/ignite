@@ -178,8 +178,12 @@ class InMemoryCachedDistributedMetaStorageBridge {
 
                     if (valBytes == null)
                         cache.remove(key);
-                    else
+                    else {
+                        if (skipFilter != null && skipFilter.test(valBytes))
+                            continue;
+
                         cache.put(key, valBytes);
+                    }
                 }
             }
 
