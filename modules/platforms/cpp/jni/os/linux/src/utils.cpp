@@ -183,7 +183,7 @@ namespace ignite
         {
             std::string res;
 
-            if (FileExists(path) && (path.find("spring-data") == std::string::npos))
+            if (FileExists(path))
             {
                 // 1. Append "target\classes".
                 std::string classesPath = path + "/target/classes";
