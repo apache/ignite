@@ -108,6 +108,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO:
         }
 
+        [Test]
+        public void TestInitialSqlQuery()
+        {
+            // TODO
+        }
+
+        [Test]
+        public void TestInitialScanQuery()
+        {
+            // TODO
+        }
+
         /** */
         private class DelegateListener<TK, TV> : ICacheEntryEventListener<TK, TV>
         {
