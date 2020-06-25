@@ -67,6 +67,10 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        // TODO: Set filter and transformer.
+        // 1. If Platform == Java, check for PLATFORM_JAVA_OBJECT_FACTORY_PROXY (see getJavaFilter)
+        // 2. If Platform == .NET, call platformCtx.createContinuousQueryFilter
+
         ctx.incrementCursors();
 
         try {
