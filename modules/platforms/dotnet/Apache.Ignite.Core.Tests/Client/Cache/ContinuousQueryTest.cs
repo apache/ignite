@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Event;
     using NUnit.Framework;
@@ -159,10 +160,47 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO
         }
 
+        /// <summary>
+        /// Tests that initial Scan query returns data that existed before the Continuous query has started.
+        /// </summary>
         [Test]
-        public void TestInitialScanQuery()
+        public void TestInitialScanQuery([Values(true, false)]bool getAll)
+        {
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            
+            var initialKeys = Enumerable.Range(1, 10).ToArray();
+            cache.PutAll(initialKeys.ToDictionary(x => x, x => x));
+            
+            ICacheEntryEvent<int, int> lastEvt = null;
+            var qry = new ContinuousQuery<int,int>(new DelegateListener<int, int>(e => lastEvt = e));
+            var initialQry = new ScanQuery<int, int>();
+
+            using (var handle = cache.QueryContinuous(qry, initialQry))
+            {
+                cache.Put(20, 20);
+                
+                using (var cursor = handle.GetInitialQueryCursor())
+                {
+                    var initialItems = getAll ? cursor.GetAll() : cursor.ToList();
+                    CollectionAssert.AreEquivalent(initialKeys, initialItems.Select(e => e.Key));
+                }
+                
+                TestUtils.WaitForTrueCondition(() => lastEvt != null);
+                Assert.AreEqual(20, lastEvt.Key);
+                
+                cache.Put(21, 21);
+                TestUtils.WaitForTrueCondition(() => 21 == lastEvt.Key);
+            }
+        }
+
+        [Test]
+        public void TestInitialScanQueryWithFilter()
         {
             // TODO
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            cache.PutAll(Enumerable.Range(1, 10).ToDictionary(x => x, x => x));
+            
+            var initialQry = new ScanQuery<int, int>();
         }
 
         [Test]
