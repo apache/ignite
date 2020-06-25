@@ -617,8 +617,28 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                     w.WriteInt(continuousQuery.BufferSize);
                     w.WriteLong((long) continuousQuery.TimeInterval.TotalMilliseconds);
                     w.WriteBoolean(false); // Include expired.
-                    w.WriteObject<object>(null); // Filter.
-                    w.WriteObject<object>(null); // Transformer.
+
+                    if (continuousQuery.Filter == null)
+                    {
+                        w.WriteObject<object>(null); // Filter.
+                    }
+                    else
+                    {
+                        var javaFilter = continuousQuery.Filter as PlatformJavaObjectFactoryProxy;
+
+                        if (javaFilter != null)
+                        {
+                            w.WriteObject(javaFilter.GetRawProxy());
+                        }
+                        else
+                        {
+                            var filterHolder = new ContinuousQueryFilterHolder(continuousQuery.Filter, _keepBinary);
+
+                            w.WriteObject(filterHolder);
+                        }
+
+                    }
+
                     w.WriteByte(0); // Initial query type.
 
                     ctx.Socket.ExpectNotifications();
