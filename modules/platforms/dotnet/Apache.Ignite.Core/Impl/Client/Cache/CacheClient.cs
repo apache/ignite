@@ -39,6 +39,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Client.Cache.Query;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Log;
+    using Apache.Ignite.Core.Log;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
@@ -100,6 +102,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
         /** Expiry policy. */
         private readonly IExpiryPolicy _expiryPolicy;
+
+        /** Logger. Lazily initialized. */
+        private ILogger _logger = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheClient{TK, TV}" /> class.
@@ -1065,14 +1070,14 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             if (opCode != ClientOp.QueryContinuousEventNotification)
             {
-                // TODO: Log error.
+                GetLogger().Error("Error while handling Continuous Query notification: unexpected op '{0}'", opCode);
             }
             else if ((flags & ClientFlags.Error) == ClientFlags.Error)
             {
                 var status = (ClientStatusCode) stream.ReadInt();
                 var msg = _marsh.Unmarshal<string>(stream);
 
-                // TODO: Log error
+                GetLogger().Error("Error while handling Continuous Query notification ({0}): {1}", status, msg);
             }
             else
             {
@@ -1081,6 +1086,22 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
                 continuousQuery.Listener.OnEvent(evts);
             }
+        }
+
+        /// <summary>
+        /// Gets the logger.
+        /// </summary>
+        private ILogger GetLogger()
+        {
+            // Don't care about thread safety here, it is ok to initialize multiple times.
+            if (_logger == null)
+            {
+                _logger = _ignite.Configuration.Logger != null 
+                    ? _ignite.Configuration.Logger.GetLogger(GetType()) 
+                    : NoopLogger.Instance;
+            }
+            
+            return _logger;
         }
     }
 }

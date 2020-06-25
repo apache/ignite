@@ -100,9 +100,17 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the socket.
         /// </summary>
-        public ClientFailoverSocket Socket
+        internal ClientFailoverSocket Socket
         {
             get { return _socket; }
+        }
+
+        /// <summary>
+        /// Gets the client configuration.
+        /// </summary>
+        internal IgniteClientConfiguration ClientConfiguration
+        {
+            get { return _configuration; }
         }
 
         /** <inheritDoc /> */
@@ -208,6 +216,7 @@ namespace Apache.Ignite.Core.Impl.Client
             throw GetClientNotSupportedException();
         }
 
+        /** <inheritDoc /> */
         public object GetJavaThreadLocal()
         {
             throw GetClientNotSupportedException();
