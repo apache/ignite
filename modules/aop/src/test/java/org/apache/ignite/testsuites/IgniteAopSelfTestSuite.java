@@ -23,6 +23,7 @@ import org.apache.ignite.gridify.GridifySetToXXXSpringAopSelfTest;
 import org.apache.ignite.gridify.NonSpringAopSelfTest;
 import org.apache.ignite.gridify.SpringAopSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -48,6 +49,8 @@ public class IgniteAopSelfTestSuite {
     /** */
     @BeforeClass
     public static void init() {
+        JUnitTeamcityReporter.suite = IgniteAopSelfTestSuite.class.getName();
+
         // Examples
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP, GridTestUtils.getNextMulticastGroup(IgniteAopSelfTestSuite.class));
     }
