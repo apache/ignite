@@ -429,7 +429,8 @@ public class GridReduceQueryExecutor {
                         .queries(mapQueries)
                         .parameters(params)
                         .flags(queryFlags(qry, enforceJoinOrder, lazy, dataPageScanEnabled))
-                        .timeout(timeoutMillis)
+                        .timeout(timeoutMillis >= 0 ? timeoutMillis : (int)h2.distributedConfiguration().defaultQueryTimeout())
+                        .explicitTimeout(timeoutMillis >= 0)
                         .schemaName(schemaName);
 
                     if (mvccTracker != null)

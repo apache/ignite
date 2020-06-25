@@ -812,10 +812,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Session ses = session(conn);
 
-        if (timeoutMillis > 0)
+        if (timeoutMillis >= 0)
             ses.setQueryTimeout(timeoutMillis);
         else
-            ses.setQueryTimeout(0);
+            ses.setQueryTimeout((int)distrCfg.defaultQueryTimeout());
 
         try {
             return stmt.executeQuery();
@@ -2843,8 +2843,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             .setDistributedJoins(qryDesc.distributedJoins())
             .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
             .setLocal(qryDesc.local())
-            .setPageSize(qryParams.pageSize())
-            .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS);
+            .setPageSize(qryParams.pageSize());
+
+        if (qryParams.timeout() > 0)
+            selectFieldsQry.setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS);
 
         Iterable<List<?>> cur;
 

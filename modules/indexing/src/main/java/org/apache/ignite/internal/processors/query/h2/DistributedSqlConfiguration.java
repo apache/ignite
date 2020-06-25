@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
@@ -56,9 +57,16 @@ public class DistributedSqlConfiguration {
         "CANCEL_SESSION"
     }).collect(Collectors.toSet());
 
+    /** Default value of the default query timeout. */
+    public static final long DFLT_QRY_TIMEOUT = 0;
+
     /** Disabled SQL functions. */
     private final SimpleDistributedProperty<HashSet<String>> disabledSqlFuncs
         = new SimpleDistributedProperty<>("sql.disabledFunctions");
+
+    /** Query timeout. */
+    private final SimpleDistributedProperty<Long> dfltQueryTimeout
+        = new SimpleDistributedProperty<>("sql.defaultQueryTimeout");
 
     /**
      * @param ctx Kernal context
@@ -72,8 +80,10 @@ public class DistributedSqlConfiguration {
             new DistributedConfigurationLifecycleListener() {
                 @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
                     disabledSqlFuncs.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
+                    dfltQueryTimeout.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
 
                     dispatcher.registerProperties(disabledSqlFuncs);
+                    dispatcher.registerProperties(dfltQueryTimeout);
                 }
 
                 @Override public void onReadyToWrite() {
@@ -82,13 +92,19 @@ public class DistributedSqlConfiguration {
                             disabledSqlFuncs,
                             DFLT_DISABLED_FUNCS,
                             log);
+
+                        setDefaultValue(
+                            dfltQueryTimeout,
+                            ctx.config().getSqlConfiguration().getDefaultQueryTimeout(),
+                            log);
                     }
                     else {
                         log.warning("Distributed metastorage is not supported. " +
                             "All distributed SQL configuration parameters are unavailable.");
 
-                        // Set disabled functions to default.
+                        // Set properties to default.
                         disabledSqlFuncs.localUpdate(null);
+                        dfltQueryTimeout.localUpdate(DFLT_QRY_TIMEOUT);
                     }
                 }
             }
@@ -116,5 +132,31 @@ public class DistributedSqlConfiguration {
     /** */
     public void listenDisabledFunctions(DistributePropertyListener<HashSet<String>> lsnr) {
         disabledSqlFuncs.addListener(lsnr);
+    }
+
+    /**
+     * @return Disabled SQL functions.
+     */
+    public long defaultQueryTimeout() {
+        Long t = dfltQueryTimeout.get();
+
+        return t != null ? t : DFLT_QRY_TIMEOUT;
+    }
+
+    /**
+     * @param timeout Default query timeout.
+     * @throws IgniteCheckedException if failed.
+     */
+    public GridFutureAdapter<?> defaultQueryTimeout(long timeout)
+        throws IgniteCheckedException {
+        A.ensure(timeout >= 0 && timeout <= Integer.MAX_VALUE,
+            "default query timeout value should be valid Integer.");
+
+        return dfltQueryTimeout.propagateAsync(timeout);
+    }
+
+    /** */
+    public void listenDefaultQueryTimeout(DistributePropertyListener<Long> lsnr) {
+        dfltQueryTimeout.addListener(lsnr);
     }
 }

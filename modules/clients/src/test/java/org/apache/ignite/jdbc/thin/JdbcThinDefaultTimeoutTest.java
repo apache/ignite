@@ -20,6 +20,7 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.function.Function;
@@ -30,6 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -78,6 +80,9 @@ public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://localhost")) {
             Statement stmt = conn.createStatement();
 
+            // Set infinite timeout explicitly.
+            stmt.setQueryTimeout(0);
+
             ResultSet rs = stmt.executeQuery("select _key, _val, sleepFunc(5) from Integer");
 
             int cnt = 0;
@@ -87,6 +92,25 @@ public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
             assertEquals(ROW_COUNT, cnt);
 
             // assert no exception
+        }
+    }
+
+    /** */
+    @Test
+    public void testDefaultTimeout() throws Exception {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://localhost")) {
+            Statement stmt = conn.createStatement();
+
+            GridTestUtils.assertThrows(log, () -> {
+                    ResultSet rs = stmt.executeQuery("select _key, _val, sleepFunc(5) from Integer");
+
+                    int cnt = 0;
+                    while (rs.next())
+                        cnt++;
+
+                    return null;
+                },
+                SQLException.class, "The query was cancelled while executing");
         }
     }
 

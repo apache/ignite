@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -345,8 +346,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setArgs(args);
         qry.setAutoCommit(autoCommit);
 
-        if (timeout >= 0)
-            qry.setTimeout(timeout, TimeUnit.SECONDS);
+        QueryUtils.copyQueryTimeout(qry, timeout, TimeUnit.SECONDS);
 
         return qry;
     }
