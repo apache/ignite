@@ -108,13 +108,17 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             using (cache.QueryContinuous(qry))
             {
                 cache.Put(0, 0);
+                TestUtils.WaitForTrueCondition(() => OddKeyFilter.LastKey == 0);
                 Assert.IsNull(lastEvt);
                 
                 cache.Put(5, 5);
+                TestUtils.WaitForTrueCondition(() => OddKeyFilter.LastKey == 5);
+                TestUtils.WaitForTrueCondition(() => lastEvt != null);
                 Assert.IsNotNull(lastEvt);
                 Assert.AreEqual(5, lastEvt.Key);
                 
                 cache.Put(8, 8);
+                TestUtils.WaitForTrueCondition(() => OddKeyFilter.LastKey == 8);
                 Assert.AreEqual(5, lastEvt.Key);
             }
         }
@@ -197,8 +201,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         private class OddKeyFilter : ICacheEntryEventFilter<int, int>
         {
+            public static int LastKey; 
+            
             public bool Evaluate(ICacheEntryEvent<int, int> evt)
             {
+                LastKey = evt.Key;
+                
                 return evt.Key % 2 == 1;
             }
         }
