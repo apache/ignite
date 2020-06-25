@@ -26,11 +26,13 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.*;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
+import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEventFilter;
 
 /**
@@ -83,35 +85,7 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        // TODO: Set filter and transformer.
-        // 1. If Platform == Java, check for PLATFORM_JAVA_OBJECT_FACTORY_PROXY (see getJavaFilter)
-        // 2. If Platform == .NET, call platformCtx.createContinuousQueryFilter
-        if (filter != null) {
-            if (!(filter instanceof BinaryObject))
-                return new ClientResponse(requestId(), "Filter must be a BinaryObject: " + filter.getClass());
-
-            BinaryObjectImpl bo = (BinaryObjectImpl)filter;
-
-            switch (filterPlatform) {
-                case ClientPlatform.JAVA:
-                    qry.setRemoteFilterFactory(bo.deserialize());
-                case ClientPlatform.DOTNET: {
-                    if (bo.typeId() == GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY) {
-                        PlatformJavaObjectFactoryProxy prx = bo.deserialize();
-
-                        CacheEntryEventSerializableFilter rmtFilter =
-                                (CacheEntryEventSerializableFilter) prx.factory(ctx.kernalContext()).create();
-
-                        //noinspection deprecation
-                        qry.setRemoteFilter(rmtFilter);
-                    } else {
-
-                    }
-                }
-                default:
-                    return new ClientResponse(requestId(), "Unsupported filter platform: " + filterPlatform);
-            }
-        }
+        qry.setRemoteFilterFactory(getFilterFactory(ctx));
 
         ctx.incrementCursors();
 
@@ -130,6 +104,49 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         catch (Exception e) {
             ctx.decrementCursors();
             throw e;
+        }
+    }
+
+    private Factory<? extends CacheEntryEventFilter> getFilterFactory(ClientConnectionContext ctx) {
+        // TODO: Set filter and transformer.
+        // 1. If Platform == Java, check for PLATFORM_JAVA_OBJECT_FACTORY_PROXY (see getJavaFilter)
+        // 2. If Platform == .NET, call platformCtx.createContinuousQueryFilter
+        if (filter == null)
+            return null;
+
+        if (!(filter instanceof BinaryObject))
+            throw new IgniteClientException(ClientStatus.FAILED,
+                    "Filter must be a BinaryObject: " + filter.getClass());
+
+        BinaryObjectImpl bo = (BinaryObjectImpl) filter;
+
+        switch (filterPlatform) {
+            case ClientPlatform.JAVA:
+                return bo.deserialize();
+
+            case ClientPlatform.DOTNET: {
+                // TODO: Reuse this with thick?
+                if (bo.typeId() == GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY) {
+                    PlatformJavaObjectFactoryProxy prx = bo.deserialize();
+
+                    CacheEntryEventSerializableFilter rmtFilter =
+                            (CacheEntryEventSerializableFilter) prx.factory(ctx.kernalContext()).create();
+
+                    return FactoryBuilder.factoryOf(rmtFilter);
+                }
+
+                PlatformContext platformCtx = ctx.kernalContext().platform().context();
+
+                String curPlatform = platformCtx.platform();
+
+                if (!PlatformUtils.PLATFORM_DOTNET.equals(curPlatform))
+                    throw new IgniteClientException(ClientStatus.FAILED, "ScanQuery filter platform is " +
+                            PlatformUtils.PLATFORM_DOTNET + ", current platform is " + curPlatform);
+
+                return FactoryBuilder.factoryOf(platformCtx.createContinuousQueryFilter(filter));
+            }
+            default:
+                throw new IgniteClientException(ClientStatus.FAILED, "Unsupported filter platform: " + filterPlatform);
         }
     }
 }
