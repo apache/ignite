@@ -73,6 +73,8 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
             cfg.setDataStorageConfiguration(dsCfg);
         }
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
