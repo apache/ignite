@@ -24,18 +24,18 @@ import java.util.stream.Collectors;
 import io.opencensus.trace.SpanId;
 import io.opencensus.trace.export.SpanData;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.tracing.Scope;
+import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.internal.processors.tracing.SpanType;
-import org.apache.ignite.internal.processors.tracing.TracingSpi;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationCoordinates;
-import org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters;
+import org.apache.ignite.spi.tracing.TracingSpi;
+import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
+import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.tracing.Scope.TX;
-import static org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
-import static org.apache.ignite.internal.processors.tracing.configuration.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
+import static org.apache.ignite.spi.tracing.Scope.TX;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 

@@ -2144,7 +2144,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     return;
 
                 Span affCalcSpan = cctx.kernalContext().tracing().create(AFFINITY_CALCULATION, fut.span())
-                    .addTag("cache.group", desc.cacheOrGroupName());
+                    .addTag("cache.group", desc::cacheOrGroupName);
 
                 boolean latePrimary = cache.rebalanceEnabled;
 

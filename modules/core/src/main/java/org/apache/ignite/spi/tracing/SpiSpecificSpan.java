@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.tracing;
+
+package org.apache.ignite.spi.tracing;
 
 import java.util.Map;
 

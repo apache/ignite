@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.tracing;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
+import org.apache.ignite.spi.tracing.Scope;
+import org.apache.ignite.spi.tracing.SpanStatus;
 
 /**
  * Encapsulates concept of a deferred-initialized span. It's used to overcome OpenCensus span implementation, that starts
@@ -34,6 +36,7 @@ public class DeferredSpan implements Span {
      *
      * @param serializedSpan Serialized span bytes.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public DeferredSpan(byte[] serializedSpan) {
         this.serializedSpan = serializedSpan;
     }
@@ -41,27 +44,18 @@ public class DeferredSpan implements Span {
     /**
      * @return Serialized span.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public byte[] serializedSpan() {
         return serializedSpan;
     }
 
     /** {@inheritDoc} */
-    @Override public Span addTag(String tagName, String tagVal) {
+    @Override public Span addTag(String tagName, Supplier<String> tagValSupplier) {
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public Span addTag(String tagName, long tagVal) {
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Span addLog(String logDesc) {
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Span addLog(String logDesc, Map<String, String> attrs) {
+    @Override public Span addLog(Supplier<String> logDescSupplier) {
         return this;
     }
 

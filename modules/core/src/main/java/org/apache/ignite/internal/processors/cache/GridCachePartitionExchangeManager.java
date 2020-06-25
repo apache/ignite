@@ -652,19 +652,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             Span span = cctx.kernalContext().tracing().create(EXCHANGE_FUTURE, evt.span());
 
             if (exchId != null) {
-                span.addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), evt.eventNode().id().toString());
+                GridDhtPartitionExchangeId exchIdf = exchId;
+
+                span.addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> evt.eventNode().id().toString());
                 span.addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
-                    evt.eventNode().consistentId().toString());
-                span.addTag(SpanTags.tag(SpanTags.EVENT, SpanTags.TYPE), evt.type());
-                span.addTag(SpanTags.tag(SpanTags.EXCHANGE, SpanTags.ID), exchId.toString());
+                    () -> evt.eventNode().consistentId().toString());
+                span.addTag(SpanTags.tag(SpanTags.EVENT, SpanTags.TYPE), () -> String.valueOf(evt.type()));
+                span.addTag(SpanTags.tag(SpanTags.EXCHANGE, SpanTags.ID), () -> String.valueOf(exchIdf.toString()));
                 span.addTag(SpanTags.tag(SpanTags.INITIAL, SpanTags.TOPOLOGY_VERSION, SpanTags.MAJOR),
-                    exchId.topologyVersion().topologyVersion());
+                    () -> String.valueOf(exchIdf.topologyVersion().topologyVersion()));
                 span.addTag(SpanTags.tag(SpanTags.INITIAL, SpanTags.TOPOLOGY_VERSION, SpanTags.MINOR),
-                    exchId.topologyVersion().minorTopologyVersion());
+                    () -> String.valueOf(exchIdf.topologyVersion().minorTopologyVersion()));
             }
 
-            span.addTag(SpanTags.NODE_ID, cctx.localNodeId().toString());
-            span.addLog("Created");
+            span.addTag(SpanTags.NODE_ID, () -> cctx.localNodeId().toString());
+            span.addLog(() -> "Created");
 
             exchFut.span(span);
 

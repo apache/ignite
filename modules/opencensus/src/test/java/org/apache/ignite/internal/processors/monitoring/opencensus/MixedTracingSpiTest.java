@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.monitoring.opencensus;
 
 import java.util.List;
-import org.apache.ignite.internal.processors.tracing.NoopTracingSpi;
+import org.apache.ignite.spi.tracing.NoopTracingSpi;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;

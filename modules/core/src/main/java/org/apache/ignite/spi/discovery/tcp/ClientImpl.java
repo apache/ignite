@@ -753,12 +753,14 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(node, discoveryData);
 
+                    TcpDiscoveryNode nodef = node;
+
                     joinReqMsg.spanContainer().span(
                         tracing.create(TraceableMessagesTable.traceName(joinReqMsg.getClass()))
-                            .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), node.id().toString())
+                            .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> nodef.id().toString())
                             .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
-                                node.consistentId().toString())
-                            .addLog("Created")
+                                () -> nodef.consistentId().toString())
+                            .addLog(() -> "Created")
                             .end()
                     );
 

@@ -15,34 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.tracing;
-
 /**
- * Type of the tracing spi.
+ * <!-- Package description. -->
+ * Contains common classes and interfaces for tracing SPI implementations.
  */
-public enum TracingSpiType {
-    /** */
-    NOOP_TRACING_SPI((byte)0),
-
-    /** */
-    OPEN_CENSUS_TRACING_SPI((byte)1);
-
-    /** Byte index of a tracing spi instance. */
-    private final byte idx;
-
-    /**
-     * Constrictor
-     *
-     * @param idx Index.
-     */
-    TracingSpiType(byte idx) {
-        this.idx = idx;
-    }
-
-    /**
-     * @return Index.
-     */
-    public byte index() {
-        return idx;
-    }
-}
+package org.apache.ignite.spi.tracing;

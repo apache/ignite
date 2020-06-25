@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.tracing.configuration;
+package org.apache.ignite.spi.tracing;
 
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
-import org.apache.ignite.internal.processors.tracing.Scope;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,7 +47,7 @@ public class TracingConfigurationParameters implements Serializable {
      * In other words, if the child's span scope is equal to parent's scope
      * or it belongs to the parent's span included scopes, then the given child span will be attached to the current trace,
      * otherwise it'll be skipped.
-     * See {@link Span#isChainable(org.apache.ignite.internal.processors.tracing.Scope)} for more details.
+     * See {@link Span#isChainable(Scope)} for more details.
      */
     private final Set<Scope> includedScopes;
 
@@ -61,7 +60,7 @@ public class TracingConfigurationParameters implements Serializable {
      *  In other words, if child's span scope is equals to parent's scope
      *  or it belongs to the parent's span included scopes, then given child span will be attached to the current trace,
      *  otherwise it'll be skipped.
-     *  See {@link Span#isChainable(org.apache.ignite.internal.processors.tracing.Scope)} for more details.
+     *  See {@link Span#isChainable(Scope)} for more details.
      */
     private TracingConfigurationParameters(double samplingRate,
         Set<Scope> includedScopes) {
@@ -82,7 +81,7 @@ public class TracingConfigurationParameters implements Serializable {
      * In other words, if child's span scope is equals to parent's scope
      * or it belongs to the parent's span included scopes, then given child span will be attached to the current trace,
      * otherwise it'll be skipped.
-     * See {@link Span#isChainable(org.apache.ignite.internal.processors.tracing.Scope)} for more details.
+     * See {@link Span#isChainable(Scope)} for more details.
      * If no scopes are specified, empty set will be returned.
      */
     public @NotNull Set<Scope> includedScopes() {
@@ -137,7 +136,7 @@ public class TracingConfigurationParameters implements Serializable {
          * In other words, if child's span scope is equals to parent's scope
          * or it belongs to the parent's span included scopes, then given child span will be attached to the current trace,
          * otherwise it'll be skipped.
-         * See {@link Span#isChainable(org.apache.ignite.internal.processors.tracing.Scope)} for more details.
+         * See {@link Span#isChainable(Scope)} for more details.
          * @return {@code TracingConfigurationParameters} instance.
          */
         public @NotNull Builder withIncludedScopes(Set<Scope> includedScopes) {

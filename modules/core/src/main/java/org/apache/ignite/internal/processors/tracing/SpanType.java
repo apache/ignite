@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.tracing;
 
+import org.apache.ignite.spi.tracing.Scope;
+
 /**
  * List of span type names used in appropriate sub-systems.
  */
