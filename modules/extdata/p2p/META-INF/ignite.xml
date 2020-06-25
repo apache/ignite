@@ -35,6 +35,6 @@
     <util:list id="tasks">
         <value>org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1</value>
         <value>org.apache.ignite.tests.p2p.P2PTestTaskExternalPath2</value>
-        <value>org.apache.ignite.tests.p2p.SingleSplitTestTask</value>
+        <value>org.apache.ignite.tests.p2p.classic.SingleSplitTestTask</value>
     </util:list>
 </beans>

@@ -1319,6 +1319,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES = "IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES";
 
     /**
+     * When above zero, prints tx key collisions once per interval.
+     * Each transaction besides OPTIMISTIC SERIALIZABLE capture locks on all enlisted keys, for some reasons
+     * per key lock queue may rise. This property sets the interval during which statistics are collected.
+     * Default is 1000 ms.
+     */
+    public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

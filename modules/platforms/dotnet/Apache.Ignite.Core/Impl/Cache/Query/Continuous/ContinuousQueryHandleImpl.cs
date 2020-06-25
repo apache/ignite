@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
@@ -47,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     /// Continuous query handle.
     /// </summary>
     internal class ContinuousQueryHandleImpl<TK, TV> : IContinuousQueryHandleImpl, IContinuousQueryFilter,
-        IContinuousQueryHandle<ICacheEntry<TK, TV>>
+        IContinuousQueryHandle<ICacheEntry<TK, TV>>, IContinuousQueryHandleFields
     {
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -67,8 +68,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** Native query. */
         private readonly IPlatformTargetInternal _nativeQry;
 
+        /** Indicates whether initial query is a Fields query. */
+        private readonly bool _initialQueryIsFields;
+
         /** Initial query cursor. */
-        private volatile IQueryCursor<ICacheEntry<TK, TV>> _initialQueryCursor;
+        private volatile IPlatformTargetInternal _nativeInitialQueryCursor;
 
         /** Disposed flag. */
         private bool _disposed;
@@ -82,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="createTargetCb">The initialization callback.</param>
         /// <param name="initialQry">The initial query.</param>
         public ContinuousQueryHandleImpl(ContinuousQuery<TK, TV> qry, Marshaller marsh, bool keepBinary,
-            Func<Action<BinaryWriter>, IPlatformTargetInternal> createTargetCb, QueryBase initialQry)
+            Func<Action<BinaryWriter>, IPlatformTargetInternal> createTargetCb, IQueryBaseInternal initialQry)
         {
             _marsh = marsh;
             _keepBinary = keepBinary;
@@ -127,7 +131,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 
                     if (initialQry != null)
                     {
-                        writer.WriteInt((int)initialQry.OpId);
+                        writer.WriteInt((int) initialQry.OpId);
 
                         initialQry.Write(writer, _keepBinary);
                     }
@@ -136,10 +140,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 });
 
                 // 4. Initial query.
-                var nativeInitialQryCur = _nativeQry.OutObjectInternal(0);
-                _initialQueryCursor = nativeInitialQryCur == null
-                    ? null
-                    : new QueryCursor<TK, TV>(nativeInitialQryCur, _keepBinary);
+                _nativeInitialQueryCursor = _nativeQry.OutObjectInternal(0);
+                _initialQueryIsFields = initialQry is SqlFieldsQuery;
             }
             catch (Exception)
             {
@@ -149,9 +151,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 if (_nativeQry != null)
                     _nativeQry.Dispose();
 
-                if (_initialQueryCursor != null)
-                    _initialQueryCursor.Dispose();
-                
+                if (_nativeInitialQueryCursor != null)
+                    _nativeInitialQueryCursor.Dispose();
+
                 throw;
             }
         }
@@ -161,7 +163,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         {
             ICacheEntryEvent<TK, TV>[] evts = CQU.ReadEvents<TK, TV>(stream, _marsh, _keepBinary);
 
-            _lsnr.OnEvent(evts); 
+            _lsnr.OnEvent(evts);
         }
 
         /** <inheritdoc /> */
@@ -195,17 +197,38 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** <inheritdoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> GetInitialQueryCursor()
         {
+            if (_initialQueryIsFields)
+            {
+                throw new IgniteException("Initial query is SqlFieldsQuery");
+            }
+
+            return new QueryCursor<TK, TV>(GetInitialQueryCursorInternal(), _keepBinary);
+        }
+
+        /** <inheritdoc /> */
+        IFieldsQueryCursor IContinuousQueryHandleFields.GetInitialQueryCursor()
+        {
+            if (!_initialQueryIsFields)
+            {
+                throw new IgniteException("Initial query is not SqlFieldsQuery");
+            }
+
+            return new FieldsQueryCursor(GetInitialQueryCursorInternal(), _keepBinary);
+        }
+
+        private IPlatformTargetInternal GetInitialQueryCursorInternal()
+        {
             lock (this)
             {
                 if (_disposed)
                     throw new ObjectDisposedException("Continuous query handle has been disposed.");
 
-                var cur = _initialQueryCursor;
+                var cur = _nativeInitialQueryCursor;
 
                 if (cur == null)
                     throw new InvalidOperationException("GetInitialQueryCursor() can be called only once.");
 
-                _initialQueryCursor = null;
+                _nativeInitialQueryCursor = null;
 
                 return cur;
             }

@@ -108,8 +108,6 @@ import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
-
 /**
  * Dummy grid kernal context
  */
@@ -168,7 +166,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         // Fake folder provided to perform processor startup on empty folder.
         if (binaryMetadataFileStoreDir == null)
-            binaryMetadataFileStoreDir = new File(BINARY_META_FOLDER).getAbsoluteFile();
+            binaryMetadataFileStoreDir = new File(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH).getAbsoluteFile();
 
         this.cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 

@@ -32,8 +32,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -232,14 +234,13 @@ public class GridH2Table extends TableBase {
         lock = new ReentrantReadWriteLock();
 
         if (cacheInfo.affinityNode()) {
-            long totalTblSize = rowCount(false);
+            long totalTblSize = cacheSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP);
 
             size.add(totalTblSize);
         }
 
-        // Init stats with the dummy values. This prevents us from scanning index with backup filter when
-        // topology may not be initialized yet.
-        tblStats = new TableStatistics(0, 0);
+        // Init stats with the default values.
+        tblStats = new TableStatistics(10_000, 10_000);
 
         if (desc != null && desc.context() != null) {
             GridKernalContext ctx = desc.context().kernalContext();
@@ -853,7 +854,7 @@ public class GridH2Table extends TableBase {
      * @param clo Closure.
      */
     public void collectIndexesForPartialRebuild(IndexRebuildPartialClosure clo) {
-        for (int i = sysIdxsCnt; i < idxs.size(); i++) {
+        for (int i = 0; i < idxs.size(); i++) {
             Index idx = idxs.get(i);
 
             if (idx instanceof H2TreeIndex) {
@@ -1237,10 +1238,14 @@ public class GridH2Table extends TableBase {
         long curTotalRowCnt = size.sum();
 
         // Update stats if total table size changed significantly since the last stats update.
-        if (needRefreshStats(statsTotalRowCnt, curTotalRowCnt)) {
-            long primaryRowCnt = rowCount(true);
+        if (needRefreshStats(statsTotalRowCnt, curTotalRowCnt) && cacheInfo.affinityNode()) {
+            long primaryRowCnt = cacheSize(CachePeekMode.PRIMARY);
+            long totalRowCnt = cacheSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP);
 
-            tblStats = new TableStatistics(curTotalRowCnt, primaryRowCnt);
+            size.reset();
+            size.add(totalRowCnt);
+
+            tblStats = new TableStatistics(totalRowCnt, primaryRowCnt);
         }
     }
 
@@ -1259,15 +1264,17 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Retrieves partitions rows count for all segments.
+     * Retrieves partitions size.
      *
-     * @param primaryOnly If {@code true}, only primary rows will be counted.
      * @return Rows count.
      */
-    private long rowCount(boolean primaryOnly) {
-        IndexingQueryCacheFilter partsFilter = primaryOnly ? backupFilter() : null;
-
-        return ((GridH2IndexBase)getUniqueIndex()).totalRowCount(partsFilter);
+    private long cacheSize(CachePeekMode... modes) {
+        try {
+            return cacheInfo.cacheContext().cache().localSize(modes);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**

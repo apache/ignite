@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.jdbc.JdbcSQLException;
@@ -326,23 +327,57 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that attempting to create a cache with a pre-existing name yields an error.
+     * Test creating table over existing cache (enabling query).
+     */
+    @Test
+    public void testCreateTableOnExistingCache() {
+        String cacheName = "new";
+
+        try {
+            client().getOrCreateCache(cacheName);
+
+            doTestCustomNames("new", null, null);
+
+            String createTemplate = "CREATE TABLE \"%s\" (id int primary key, x varchar) WITH " +
+                "\"wrap_key,wrap_value,cache_name=%s\"";
+
+            // Fail to create table with same name.
+            GridTestUtils.assertThrows(null, () -> {
+                execute(client(), String.format(createTemplate, "NameTest", cacheName));
+
+                return null;
+            }, IgniteSQLException.class, "Table already exists: NameTest");
+
+            // Fail to create table with different name on indexed cache.
+            GridTestUtils.assertThrows(null, () -> {
+                execute(client(), String.format(createTemplate, "NameTest1", cacheName));
+
+                return null;
+            }, IgniteSQLException.class, "Cache is already indexed: " + cacheName);
+        }
+        finally {
+            client().destroyCache("new");
+        }
+    }
+
+    /**
+     * Test creating table over existing LOCAL cache fails (enabling query).
      * @throws Exception if failed.
      */
     @Test
-    public void testDuplicateCustomCacheName() throws Exception {
-        client().getOrCreateCache("new");
+    public void testCreateTableOnExistingLocalCache() throws Exception {
+        client().getOrCreateCache(new CacheConfiguration<>("local").setCacheMode(CacheMode.LOCAL));
 
         try {
             GridTestUtils.assertThrows(null, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    doTestCustomNames("new", null, null);
+                    doTestCustomNames("local", null, null);
                     return null;
                 }
-            }, IgniteSQLException.class, "Table already exists: NameTest");
+            }, IgniteSQLException.class, "Schema changes are not supported for LOCAL cache");
         }
         finally {
-            client().destroyCache("new");
+            client().destroyCache("local");
         }
     }
 
@@ -757,7 +792,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @Test
     public void testInvalidAtomicity() {
         assertCreateTableWithParamsThrows("atomicity=InvalidValue",
-            "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL or ATOMIC): InvalidValue");
+            "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL, ATOMIC, " +
+            "TRANSACTIONAL_SNAPSHOT): InvalidValue");
     }
 
     /**
@@ -953,6 +989,63 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @Test
     public void testDropMissingTableIfExists() throws Exception {
         execute("DROP TABLE IF EXISTS \"City\"");
+    }
+
+    /**
+     * Tests that attempt to {@code DROP TABLE} that is enabled dynamically will fail.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDropTableEnabledDynamically() throws Exception {
+        String cacheName = "new";
+        String tableName = "NewTable";
+        String createSql = "CREATE TABLE \"" + tableName + "\" (id int primary key, x varchar) WITH " +
+            "\"wrap_key,wrap_value,cache_name=" + cacheName + "\"";
+
+        try {
+            client().getOrCreateCache(cacheName);
+
+            execute(client(), createSql);
+
+            GridTestUtils.assertThrows(null, () -> {
+                execute("DROP TABLE \"" + tableName + "\"");
+
+                return null;
+            }, IgniteSQLException.class, "Only cache created with CREATE TABLE may be removed with DROP TABLE");
+        }
+        finally {
+            client().destroyCache(cacheName);
+        }
+    }
+
+    /**
+     * Tests that after destroying cache with table enabled dynamically that table also is removed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTableEnabledDynamicallyNotExistsIfCacheDestroyed() throws Exception {
+        String cacheName = "new";
+        String tableName = "NewTable";
+        String createSql = "CREATE TABLE \"" + tableName + "\" (id int primary key, x varchar) WITH " +
+            "\"wrap_key,wrap_value,cache_name=" + cacheName + "\"";
+
+        client().getOrCreateCache(cacheName);
+
+        execute(client(), createSql);
+
+        client().destroyCache(cacheName);
+
+        for (Ignite g: G.allGrids()) {
+            IgniteEx node = (IgniteEx)g;
+
+            QueryTypeDescriptorImpl desc = type(node, cacheName, tableName);
+
+            assertNull(desc);
+
+            assertTrue(execute(g, "SELECT * FROM SYS.TABLES WHERE table_name = '" + tableName + "'").isEmpty());
+        }
     }
 
     /**
