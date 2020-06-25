@@ -567,7 +567,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         if (newKeys != null) {
             for (Map.Entry<Integer, byte[]> entry : newKeys.entrySet()) {
-                T2 old = knownEncKeys.putIfAbsent(entry.getKey(), new T2<>(0, entry.getValue()));
+                T2 old = knownEncKeys.putIfAbsent(entry.getKey(), new T2<>(INITIAL_KEY_IDENTIFIER, entry.getValue()));
 
                 assert old == null;
             }
@@ -1129,7 +1129,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             reencryption.storePagesCount(grpId);
 
-            markForReencryption(grpId);
+            reencryptGroups.add(grpId);
 
             itr.remove();
         }
@@ -1161,11 +1161,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /**
      * @param grpId Cache group ID.
      */
-    public void markForReencryption(int grpId) {
-        // todo
-//        assert encryptionTask(grpId).isDone() : " grpId=" + grpId;
-
-        reencryptGroups.add(grpId);
+    public void markForReencryption(int grpId) throws IgniteCheckedException {
+        if (reencryptGroups.add(grpId) && writeToMetaStoreEnabled)
+            startReencryption(Collections.singleton(grpId), true);
     }
 
     /**
@@ -1218,6 +1216,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @throws IgniteCheckedException If failed.
      */
     private void startReencryption(Collection<Integer> grpIds, boolean skipDirty) throws IgniteCheckedException {
+        if (reencryption.disabled())
+            return;
+
         for (int grpId : grpIds) {
             IgniteInternalFuture<?> fut = reencryption.schedule(grpId, skipDirty);
 
@@ -1255,6 +1256,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         boolean changed = grpEncKeys.get(grpId).keySet().removeAll(rmvKeys);
+
+        if (stopped)
+            return;
 
         ctx.cache().context().database().checkpointReadLock();
 
@@ -1524,18 +1528,28 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     public void applyEncryptionStatus(EncryptionStatusRecord rec) throws IgniteCheckedException {
         FilePageStoreManager mgr = (FilePageStoreManager)ctx.cache().context().pageStore();
 
-        for (Map.Entry<Integer, List<T2<Integer, Integer>>> entry : rec.groupsStatus().entrySet()) {
-            int grpId = entry.getKey();
+        ctx.cache().context().database().checkpointReadLock();
 
-            for (T2<Integer, Integer> state : entry.getValue()) {
-                int partId = state.getKey();
+        try {
+            for (Map.Entry<Integer, List<T2<Integer, Integer>>> entry : rec.groupsStatus().entrySet()) {
+                int grpId = entry.getKey();
 
-                PageStore pageStore = mgr.getStore(grpId, partId);
+                CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
-                pageStore.encryptPageCount(state.getValue());
+                for (T2<Integer, Integer> state : entry.getValue()) {
+                    int partId = state.getKey();
+
+                    PageStore pageStore = mgr.getStore(grpId, partId);
+
+                    pageStore.encryptPageCount(state.getValue());
+
+                    reencryption.storePagesCountOnMetaPage(grp, partId, state.getValue());
+                }
+
+                reencryptGroups.add(grpId);
             }
-
-            markForReencryption(grpId);
+        } finally {
+            ctx.cache().context().database().checkpointReadUnlock();
         }
 
         if (log.isInfoEnabled())
@@ -2015,7 +2029,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                         encryptionStatus.put(grpId, offsets);
 
-                        markForReencryption(grpId);
+                        reencryptGroups.add(grpId);
                     }
                 } finally {
                     ctx.cache().context().database().checkpointReadUnlock();

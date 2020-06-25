@@ -398,7 +398,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         checkEncryptedCaches(nodes.get1(), nodes.get2());
 
-        checkGroupKey(CU.cacheId(cacheName()), 1, MAX_AWAIT_MILLIS);
+        checkGroupKey(CU.cacheId(cacheName()), 1, getTestTimeout());
     }
 
     /**
@@ -487,6 +487,9 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     @WithSystemProperty(key = IGNITE_REENCRYPTION_THROTTLE, value = "50")
     @WithSystemProperty(key = IGNITE_REENCRYPTION_BATCH_SIZE, value = "50")

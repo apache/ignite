@@ -355,6 +355,8 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         awaitEncryption(G.allGrids(), grpId, timeout);
 
         for (Ignite g : G.allGrids()) {
+            info("Validating key [node=" + g.cluster().localNode().id() + ", grp=" + grpId + "]");
+
             IgniteEx grid = (IgniteEx)g;
 
             if (grid.context().clientNode())
@@ -366,9 +368,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             forceCheckpoint(g);
 
-            encryption.encryptionTask(grpId).get();
-
-            info("Validating page store [node=" + g.cluster().localNode().id() + ", grp=" + grpId + "]");
+            encryption.encryptionTask(grpId).get(timeout);
 
             CacheGroupContext grp = grid.context().cache().cacheGroup(grpId);
 
