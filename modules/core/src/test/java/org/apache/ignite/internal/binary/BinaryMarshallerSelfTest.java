@@ -3857,10 +3857,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         return false;
     }
 
-        /**
-         * @param marsh Marshaller.
-         * @return Binary context.
-         */
+    /**
+     * @param marsh Marshaller.
+     * @return Binary context.
+     */
     protected BinaryContext binaryContext(BinaryMarshaller marsh) {
         GridBinaryMarshaller impl = U.field(marsh, "impl");
 
