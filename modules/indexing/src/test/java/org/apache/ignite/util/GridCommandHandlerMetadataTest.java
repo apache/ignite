@@ -314,7 +314,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
                 "--typeName", TestValue.class.getName(),
                 "--out", typeFile.toString()));
 
-            // Executes anu command to check disconnect.
+            // Executes any command to check disconnect.
             GridTestUtils.assertThrows(log, () -> {
                     try (Statement stmt = conn.createStatement()) {
                         stmt.execute("SELECT * FROM test");
