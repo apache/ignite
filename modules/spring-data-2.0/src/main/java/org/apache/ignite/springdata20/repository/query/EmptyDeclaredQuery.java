@@ -28,51 +28,43 @@ import org.springframework.util.Assert;
  * @since 2.0.3
  */
 class EmptyDeclaredQuery implements DeclaredQuery {
-
 	/**
 	 * An implementation implementing the NULL-Object pattern for situations where there is no query.
 	 */
 	static final DeclaredQuery EMPTY_QUERY = new EmptyDeclaredQuery();
 
 	/** {@inheritDoc} */
-	@Override
-	public boolean hasNamedParameter() {
+	@Override public boolean hasNamedParameter() {
 		return false;
 	}
 
 	/** {@inheritDoc} */
-	@Override
-	public String getQueryString() {
+	@Override public String getQueryString() {
 		return "";
 	}
 
 	/** {@inheritDoc} */
-	@Override
-	public String getAlias() {
+	@Override public String getAlias() {
 		return null;
 	}
 
 	/** {@inheritDoc} */
-	@Override
-	public boolean hasConstructorExpression() {
+	@Override public boolean hasConstructorExpression() {
 		return false;
 	}
 
 	/** {@inheritDoc} */
-	@Override
-	public boolean isDefaultProjection() {
+	@Override public boolean isDefaultProjection() {
 		return false;
 	}
 
 	/** {@inheritDoc} */
-	@Override
-	public List<StringQuery.ParameterBinding> getParameterBindings() {
+	@Override public List<StringQuery.ParameterBinding> getParameterBindings() {
 		return Collections.emptyList();
 	}
 
 	/** {@inheritDoc} */
-	@Override
-	public DeclaredQuery deriveCountQuery(@Nullable String countQuery, @Nullable String countQueryProjection) {
+	@Override public DeclaredQuery deriveCountQuery(@Nullable String countQuery, @Nullable String countQueryProjection) {
 
 		Assert.hasText(countQuery, "CountQuery must not be empty!");
 
@@ -80,8 +72,7 @@ class EmptyDeclaredQuery implements DeclaredQuery {
 	}
 
 	/** {@inheritDoc} */
-	@Override
-	public boolean usesJdbcStyleParameters() {
+	@Override public boolean usesJdbcStyleParameters() {
 		return false;
 	}
 }

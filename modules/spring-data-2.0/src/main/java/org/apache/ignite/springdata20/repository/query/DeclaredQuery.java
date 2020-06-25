@@ -27,7 +27,6 @@ import org.springframework.util.StringUtils;
  * @since 2.0.3
  */
 interface DeclaredQuery {
-
 	/**
 	 * Creates a {@literal DeclaredQuery} from a query {@literal String}.
 	 *
@@ -41,12 +40,12 @@ interface DeclaredQuery {
 	/**
 	 * @return whether the underlying query has at least one named parameter.
 	 */
-	boolean hasNamedParameter();
+	public boolean hasNamedParameter();
 
 	/**
 	 * Returns the query string.
 	 */
-	String getQueryString();
+	public String getQueryString();
 
 	/**
 	 * Returns the main alias used in the query.
@@ -54,24 +53,24 @@ interface DeclaredQuery {
 	 * @return the alias
 	 */
 	@Nullable
-	String getAlias();
+	public String getAlias();
 
 	/**
 	 * Returns whether the query is using a constructor expression.
 	 *
 	 * @since 1.10
 	 */
-	boolean hasConstructorExpression();
+	public boolean hasConstructorExpression();
 
 	/**
 	 * Returns whether the query uses the default projection, i.e. returns the main alias defined for the query.
 	 */
-	boolean isDefaultProjection();
+	public boolean isDefaultProjection();
 
 	/**
 	 * Returns the {@link StringQuery.ParameterBinding}s registered.
 	 */
-	List<StringQuery.ParameterBinding> getParameterBindings();
+	public List<StringQuery.ParameterBinding> getParameterBindings();
 
 	/**
 	 * Creates a new {@literal DeclaredQuery} representing a count query, i.e. a query returning the number of rows to be
@@ -82,13 +81,13 @@ interface DeclaredQuery {
 	 * @param countQueryProjection an optional return type for the query.
 	 * @return a new {@literal DeclaredQuery} instance.
 	 */
-	DeclaredQuery deriveCountQuery(@Nullable String countQuery, @Nullable String countQueryProjection);
+	public DeclaredQuery deriveCountQuery(@Nullable String countQuery, @Nullable String countQueryProjection);
 
 	/**
 	 * @return whether paging is implemented in the query itself, e.g. using SpEL expressions.
 	 * @since 2.0.6
 	 */
-	default boolean usesPaging() {
+	public default boolean usesPaging() {
 		return false;
 	}
 
@@ -99,5 +98,5 @@ interface DeclaredQuery {
 	 * @return Whether the query uses JDBC style parameters.
 	 * @since 2.0.6
 	 */
-	boolean usesJdbcStyleParameters();
+	public boolean usesJdbcStyleParameters();
 }

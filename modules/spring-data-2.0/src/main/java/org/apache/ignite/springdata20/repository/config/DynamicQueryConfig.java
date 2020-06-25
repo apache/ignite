@@ -31,18 +31,29 @@ package org.apache.ignite.springdata20.repository.config;
  * @author Manuel Núñez Sánchez (manuel.nunez@hawkore.com)
  */
 public class DynamicQueryConfig {
-
+    /** */
     private String value = "";
-    private boolean textQuery = false;
-    private boolean forceFieldsQuery = false;
-    private boolean collocated = false;
+    /** */
+    private boolean textQuery;
+    /** */
+    private boolean forceFieldsQuery;
+    /** */
+    private boolean collocated;
+    /** */
     private int timeout = 0;
-    private boolean enforceJoinOrder = false;
-    private boolean distributedJoins = false;
-    private boolean replicatedOnly = false;
-    private boolean lazy = false;
-    private boolean local = false;
+    /** */
+    private boolean enforceJoinOrder;
+    /** */
+    private boolean distributedJoins;
+    /** */
+    private boolean replicatedOnly;
+    /** */
+    private boolean lazy;
+    /** */
+    private boolean local;
+    /** */
     private int[] parts;
+    /** */
     private int limit;
 
     /**

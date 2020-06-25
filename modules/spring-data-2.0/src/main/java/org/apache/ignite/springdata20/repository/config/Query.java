@@ -30,7 +30,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Query {
-
     /**
      * Query text string. If not provided, Ignite query generator for Spring Data framework will be used
      * to generate one (only if textQuery = false (default))
@@ -136,9 +135,9 @@ public @interface Query {
 
     /**
      * Specify whether the annotated method must provide a non null {@link DynamicQueryConfig} parameter
-     * with a non empty value (query string) or {@link DynamicQueryConfig#textQuery} == true.
+     * with a non empty value (query string) or {@link DynamicQueryConfig#textQuery()} == true.
      * <p>
-     * Please, note that {@link Query} annotation parameters will be ignored in favor of those defined in
+     * Please, note that this annotation parameters will be ignored in favor of those defined in
      * {@link DynamicQueryConfig} parameter if present (runtime ignite query tuning).
      */
     boolean dynamicQuery() default false;

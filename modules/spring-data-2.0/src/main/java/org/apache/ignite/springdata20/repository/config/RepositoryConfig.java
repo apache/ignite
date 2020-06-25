@@ -38,7 +38,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 @Documented
 @Inherited
 public @interface RepositoryConfig {
-
     /**
      * Cache name string.
      *

@@ -56,15 +56,13 @@ public class IgniteQueryGenerator {
         } else {
             sql.append("SELECT ");
 
-            if (parts.isDistinct()) {
+            if (parts.isDistinct())
                 throw new UnsupportedOperationException("DISTINCT clause in not supported.");
-            }
 
-            if (isCountOrFieldQuery) {
+            if (isCountOrFieldQuery)
                 sql.append("COUNT(1) ");
-            } else {
+            else
                 sql.append("* ");
-            }
         }
 
         sql.append("FROM ").append(metadata.getDomainType().getSimpleName());
@@ -168,19 +166,17 @@ public class IgniteQueryGenerator {
         if (types.length > 0) {
             Class<?> type = types[types.length - 1];
 
-            if (Sort.class.isAssignableFrom(type)) {
+            if (Sort.class.isAssignableFrom(type))
                 option = IgniteQuery.Option.SORTING;
-            } else if (Pageable.class.isAssignableFrom(type)) {
+            else if (Pageable.class.isAssignableFrom(type))
                 option = IgniteQuery.Option.PAGINATION;
-            }
         }
 
         for (int i = 0; i < types.length - 1; i++) {
             Class<?> tp = types[i];
 
-            if (tp == Sort.class || tp == Pageable.class) {
+            if (tp == Sort.class || tp == Pageable.class)
                 throw new AssertionError("Sort and Pageable parameters are allowed only in the last position");
-            }
         }
 
         return option;

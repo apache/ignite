@@ -96,9 +96,8 @@ class ExpressionBasedStringQuery extends StringQuery {
         Assert.notNull(metadata, "metadata must not be null!");
         Assert.notNull(parser, "parser must not be null!");
 
-        if (!containsExpression(query)) {
+        if (!containsExpression(query))
             return query;
-        }
 
         StandardEvaluationContext evalContext = new StandardEvaluationContext();
         evalContext.setVariable(ENTITY_NAME, metadata.getDomainType().getSimpleName());
@@ -109,9 +108,8 @@ class ExpressionBasedStringQuery extends StringQuery {
 
         String result = expr.getValue(evalContext, String.class);
 
-        if (result == null) {
+        if (result == null)
             return query;
-        }
 
         return potentiallyUnquoteParameterExpressions(result);
     }

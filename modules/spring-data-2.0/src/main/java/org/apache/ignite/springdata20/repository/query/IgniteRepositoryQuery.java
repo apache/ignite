@@ -267,7 +267,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         this.metadata = metadata;
         this.mtd = mtd;
         this.factory = factory;
-        this.type = metadata.getDomainType();
+        type = metadata.getDomainType();
 
         this.cache = cache;
         this.ignite = ignite;
@@ -275,30 +275,29 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         this.staticQueryConfiguration = staticQueryConfiguration;
         this.staticQuery = staticQuery;
 
-        if (this.staticQuery != null) {
-            this.staticReturnStgy = calcReturnType(mtd, this.staticQuery.isFieldQuery());
-        } else {
-            this.staticReturnStgy = null;
-        }
+        if (this.staticQuery != null)
+            staticReturnStgy = calcReturnType(mtd, this.staticQuery.isFieldQuery());
+        else
+            staticReturnStgy = null;
 
-        this.expressionParser = new SpelExpressionParser();
+        expressionParser = new SpelExpressionParser();
         this.queryMethodEvaluationContextProvider = queryMethodEvaluationContextProvider;
 
-        this.qMethod = this.getQueryMethod();
+        qMethod = getQueryMethod();
 
         // control projection
-        this.hasDynamicProjection = this.getQueryMethod().getParameters().hasDynamicProjection();
-        this.hasProjection = hasDynamicProjection || this.getQueryMethod().getResultProcessor().getReturnedType()
+        hasDynamicProjection = getQueryMethod().getParameters().hasDynamicProjection();
+        hasProjection = hasDynamicProjection || getQueryMethod().getResultProcessor().getReturnedType()
                                                          .isProjecting();
 
-        this.dynamicProjectionIndex = this.qMethod.getParameters().getDynamicProjectionIndex();
+        dynamicProjectionIndex = qMethod.getParameters().getDynamicProjectionIndex();
 
-        this.returnedDomainClass = this.getQueryMethod().getReturnedObjectType();
+        returnedDomainClass = getQueryMethod().getReturnedObjectType();
 
-        this.dynamicQueryConfigurationIndex = getDynamicQueryConfigurationIndex(qMethod);
+        dynamicQueryConfigurationIndex = getDynamicQueryConfigurationIndex(qMethod);
 
         // ensure dynamic query configuration param exists if dynamicQuery = true
-        if (this.dynamicQueryConfigurationIndex == -1 && this.staticQuery == null) {
+        if (dynamicQueryConfigurationIndex == -1 && this.staticQuery == null) {
             throw new IllegalStateException(
                 "When passing dynamicQuery = true via org.apache.ignite.springdata.repository.config.Query "
                     + "annotation, you must provide a non null method parameter of type DynamicQueryConfig");
@@ -312,13 +311,12 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
      *
      * @return the object
      */
-    @Override
-    public Object execute(Object[] values) {
+    @Override public Object execute(Object[] values) {
 
         Object[] parameters = values;
 
         // config via Query annotation (dynamicQuery = false)
-        DynamicQueryConfig config = this.staticQueryConfiguration;
+        DynamicQueryConfig config = staticQueryConfiguration;
 
         // or condition to allow query tunning
         if (config == null || dynamicQueryConfigurationIndex != -1) {
@@ -349,8 +347,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     }
 
     /** {@inheritDoc} @return the query method */
-    @Override
-    public QueryMethod getQueryMethod() {
+    @Override  public QueryMethod getQueryMethod() {
         return new QueryMethod(mtd, metadata, factory);
     }
 
@@ -374,18 +371,22 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         return index;
     }
 
+    /**
+     *
+     */
     private synchronized IgniteBinaryImpl binary() {
-        if (this.igniteBinary == null) {
-            this.igniteBinary = (IgniteBinaryImpl)this.ignite.binary();
-        }
-        return this.igniteBinary;
+        if (igniteBinary == null)
+            igniteBinary = (IgniteBinaryImpl)ignite.binary();
+        return igniteBinary;
     }
 
+    /**
+     *
+     */
     private synchronized BinaryType binType() {
-        if (this.igniteBinType == null) {
-            this.igniteBinType = binary().type(this.type);
-        }
-        return this.igniteBinType;
+        if (igniteBinType == null)
+            igniteBinType = binary().type(type);
+        return igniteBinType;
     }
 
     /**
@@ -438,15 +439,13 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
         Type genericReturnType = mtd.getGenericReturnType();
 
-        if (!(genericReturnType instanceof ParameterizedType)) {
+        if (!(genericReturnType instanceof ParameterizedType))
             return false;
-        }
 
         Type[] actualTypeArguments = ((ParameterizedType)genericReturnType).getActualTypeArguments();
 
-        if (actualTypeArguments.length == 0) {
+        if (actualTypeArguments.length == 0)
             return false;
-        }
 
         if (actualTypeArguments[0] instanceof ParameterizedType) {
             ParameterizedType type = (ParameterizedType)actualTypeArguments[0];
@@ -467,28 +466,29 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
     /*
      * when select fields by query H2 returns Timestamp for types java.util.Date
-     * and java.qryStr.Timestamp
+     * and java.sql.Timestamp
      *
      * @see org.apache.ignite.internal.processors.query.h2.H2DatabaseType
      * map.put(Timestamp.class, TIMESTAMP) map.put(java.util.Date.class,
-     * TIMESTAMP) map.put(java.qryStr.Date.class, DATE)
+     * TIMESTAMP) map.put(java.sql.Date.class, DATE)
      */
     private static <T> T fixExpectedType(final Object object, final Class<T> expected) {
-        if (expected != null && object instanceof java.sql.Timestamp && expected.equals(java.util.Date.class)) {
+        if (expected != null && object instanceof java.sql.Timestamp && expected.equals(java.util.Date.class))
             return (T)new java.util.Date(((java.sql.Timestamp)object).getTime());
-        }
+
         return (T)object;
     }
 
     private IgniteQuery getQuery(@Nullable DynamicQueryConfig config) {
-        if (this.staticQuery != null) {
-            return this.staticQuery;
-        }
+        if (staticQuery != null)
+            return staticQuery;
+
         if (config != null && (StringUtils.hasText(config.value()) || config.textQuery())) {
             return new IgniteQuery(config.value(),
                 !config.textQuery() && (isFieldQuery(config.value()) || config.forceFieldsQuery()), config.textQuery(),
                 false, IgniteQueryGenerator.getOptions(mtd));
         }
+
         throw new IllegalStateException("Unable to obtain a valid query. When passing dynamicQuery = true via org"
                                             + ".apache.ignite.springdata.repository.config.Query annotation, you must"
                                             + " provide a non null method parameter of type DynamicQueryConfig with a "
@@ -496,12 +496,12 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     }
 
     private ReturnStrategy getReturnStgy(IgniteQuery qry) {
-        if (this.staticReturnStgy != null) {
-            return this.staticReturnStgy;
-        }
-        if (qry != null) {
+        if (staticReturnStgy != null)
+            return staticReturnStgy;
+
+        if (qry != null)
             return calcReturnType(mtd, qry.isFieldQuery());
-        }
+
         throw new IllegalStateException("Unable to obtain a valid return strategy. When passing dynamicQuery = true "
                                             + "via org.apache.ignite.springdata.repository.config.Query annotation, "
                                             + "you must provide a non null method parameter of type "
@@ -567,7 +567,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                         cWrapperTransformFunction = row -> row.get(0);
                     } else {
                         // Map row -> projection class
-                        cWrapperTransformFunction = row -> this.factory
+                        cWrapperTransformFunction = row -> factory
                                                                .createProjection(returnClass, rowToMap(row, meta));
                     }
                 } else {
@@ -608,7 +608,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
             Function<CacheEntryImpl, ?> cWrapperTransformFunction = null;
 
             if (hasProjection && !type.equals(returnClass)) {
-                cWrapperTransformFunction = row -> this.factory.createProjection(returnClass, row.getValue());
+                cWrapperTransformFunction = row -> factory.createProjection(returnClass, row.getValue());
             } else {
                 cWrapperTransformFunction = row -> row.getValue();
             }
@@ -704,7 +704,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
             if (p.isExpression()) {
                 // Evaluate SpEl expressions (synthetic parameter value) , example ?#{#customer.firstname}
-                newValues[i] = this.expressionParser.parseExpression(p.getExpression()).getValue(queryEvalContext);
+                newValues[i] = expressionParser.parseExpression(p.getExpression()).getValue(queryEvalContext);
             } else {
                 // Extract parameter value by name or position respectively from invoking values
                 newValues[i] = values[methodParams.get(
@@ -739,12 +739,12 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
             if (!qry.isAutogenerated()) {
                 StringQuery squery = new ExpressionBasedStringQuery(queryString, metadata, expressionParser);
                 queryString = squery.getQueryString();
-                parameters = extractBindableValues(parameters, this.getQueryMethod().getParameters(),
+                parameters = extractBindableValues(parameters, getQueryMethod().getParameters(),
                     squery.getParameterBindings());
             } else {
                 // remove dynamic projection from parameters
-                if (this.hasDynamicProjection) {
-                    parameters = ArrayUtils.remove(parameters, this.dynamicProjectionIndex);
+                if (hasDynamicProjection) {
+                    parameters = ArrayUtils.remove(parameters, dynamicProjectionIndex);
                 }
             }
 
@@ -811,10 +811,10 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
             // check if queryString contains SpEL template expressions and evaluate them if any
             if (queryString.contains("#{")) {
                 EvaluationContext queryEvalContext = queryMethodEvaluationContextProvider
-                                                         .getEvaluationContext(this.getQueryMethod().getParameters(),
+                                                         .getEvaluationContext(getQueryMethod().getParameters(),
                                                              values);
 
-                Object eval = this.expressionParser.parseExpression(queryString, ParserContext.TEMPLATE_EXPRESSION)
+                Object eval = expressionParser.parseExpression(queryString, ParserContext.TEMPLATE_EXPRESSION)
                                   .getValue(queryEvalContext);
 
                 if (!(eval instanceof String)) {
@@ -993,13 +993,13 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         @Override
         public Iterator<V> iterator() {
 
-            final Iterator<T> it = this.delegate.iterator();
+            final Iterator<T> it = delegate.iterator();
 
             return new Iterator<V>() {
                 @Override
                 public boolean hasNext() {
                     if (!it.hasNext()) {
-                        U.closeQuiet(QueryCursorWrapper.this.delegate);
+                        U.closeQuiet(delegate);
                         return false;
                     }
                     return true;
@@ -1007,7 +1007,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
                 @Override
                 public V next() {
-                    final V r = QueryCursorWrapper.this.transformer.apply(it.next());
+                    final V r = transformer.apply(it.next());
                     if (r != null) {
                         return r;
                     }
@@ -1019,15 +1019,15 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         /** {@inheritDoc} */
         @Override
         public void close() {
-            U.closeQuiet(this.delegate);
+            U.closeQuiet(delegate);
         }
 
         /** {@inheritDoc} @return the all */
         @Override
         public List<V> getAll() {
             final List<V> data = new ArrayList<>();
-            this.delegate.forEach(i -> data.add(this.transformer.apply(i)));
-            U.closeQuiet(this.delegate);
+            delegate.forEach(i -> data.add(transformer.apply(i)));
+            U.closeQuiet(delegate);
             return data;
         }
 

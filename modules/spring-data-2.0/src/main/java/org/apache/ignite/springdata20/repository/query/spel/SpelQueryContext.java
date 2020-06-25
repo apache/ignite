@@ -193,9 +193,7 @@ public class SpelQueryContext {
 			while (matcher.find()) {
 
 				if (quotedAreas.isQuoted(matcher.start())) {
-
-					resultQuery.append(query.substring(matchedUntil, matcher.end()));
-
+					resultQuery.append(query, matchedUntil, matcher.end());
 				} else {
 
 					String spelExpression = matcher.group(EXPRESSION_GROUP_INDEX);
@@ -273,9 +271,8 @@ public class SpelQueryContext {
 		 */
 		public QuotationMap(@Nullable String query) {
 
-			if (query == null) {
+			if (query == null)
 				return;
-			}
 
 			Character inQuotation = null;
 			int start = 0;

@@ -42,6 +42,11 @@ public class SpelEvaluator {
     private final Parameters<?, ?> parameters;
     private final SpelExtractor extractor;
 
+    /**
+     * @param evaluationContextProvider Evaluation context provider.
+     * @param parameters Parameters.
+     * @param extractor Extractor.
+     */
     public SpelEvaluator(EvaluationContextProvider evaluationContextProvider,
         Parameters<?, ?> parameters,
         SpelExtractor extractor) {
@@ -72,12 +77,16 @@ public class SpelEvaluator {
     /**
      * Returns the query string produced by the intermediate SpEL expression collection step.
      *
-     * @return
+     * @return the query string
      */
     public String getQueryString() {
         return extractor.getQueryString();
     }
 
+    /**
+     * @param evaluationContext Evaluation context.
+     * @param expression Expression.
+     */
     @Nullable
     private static Object getSpElValue(EvaluationContext evaluationContext, String expression) {
         return PARSER.parseExpression(expression).getValue(evaluationContext);
