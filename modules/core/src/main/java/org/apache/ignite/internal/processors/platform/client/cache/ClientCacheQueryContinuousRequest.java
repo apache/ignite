@@ -43,6 +43,15 @@ import javax.cache.event.CacheEntryEventFilter;
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
+    /** */
+    private static final byte INITIAL_QRY_TYPE_NONE = 0;
+
+    /** */
+    private static final byte INITIAL_QRY_TYPE_SCAN = 1;
+
+    /** */
+    private static final byte INITIAL_QRY_TYPE_SQL = 2;
+
     /** Query. */
     private final ContinuousQuery qry;
 
@@ -67,8 +76,23 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         filter = reader.readObjectDetached();
         filterPlatform = filter == null ? 0 : reader.readByte();
 
-        byte initialQueryType = reader.readByte();
-        assert initialQueryType == 0; // TODO: 1 = SQL, 2 = SCAN
+        byte initQryType = reader.readByte();
+
+        switch (initQryType) {
+            case INITIAL_QRY_TYPE_NONE:
+                break;
+
+            case INITIAL_QRY_TYPE_SCAN:
+                // TODO
+                break;
+
+            case INITIAL_QRY_TYPE_SQL:
+                // TODO
+                break;
+
+            default:
+                throw new IgniteClientException(ClientStatus.FAILED, "Invalid initial query type: " + initQryType);
+        }
 
         qry = new ContinuousQuery();
 

@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             None = 0,
             Scan = 1,
-            SqlFields = 2
+            Sql = 2
         }
 
         /** Query filter platform code: Java filter. */
