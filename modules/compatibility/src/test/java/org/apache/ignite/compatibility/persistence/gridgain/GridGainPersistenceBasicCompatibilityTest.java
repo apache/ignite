@@ -94,7 +94,7 @@ public class GridGainPersistenceBasicCompatibilityTest extends GridgainPersisten
             }
         });
 
-        stopAllGrids();
+        stopAllGrids(false);
 
         // Start Ignite and validate metastorage.
         IgniteEx ignite = startGrid(0);
@@ -150,7 +150,7 @@ public class GridGainPersistenceBasicCompatibilityTest extends GridgainPersisten
             }
         });
 
-        stopAllGrids();
+        stopAllGrids(false);
 
         IgniteEx ignite = startGrid(0);
 
