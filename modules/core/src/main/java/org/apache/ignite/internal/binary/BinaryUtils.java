@@ -1046,7 +1046,7 @@ public class BinaryUtils {
                                 + "'. Expected '" + oldFieldTypeName + "' but '" + newFieldTypeName
                                 + "' was provided. The type of an existing field can not be changed. " +
                                 "Use a different field name or follow this procedure to reuse the current name:\n" +
-                                "- Delete data records that use the old field type;" +
+                                "- Delete data records that use the old field type;\n" +
                                 "- Remove metadata by the command: " +
                                 "'control.sh --meta remove --typeId " + oldMeta.typeId() + "'."
                         );
