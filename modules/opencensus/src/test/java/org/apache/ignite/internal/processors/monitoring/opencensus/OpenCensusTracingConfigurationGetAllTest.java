@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.monitoring.opencensus;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.spi.tracing.TracingSpi;
@@ -53,12 +54,10 @@ public class OpenCensusTracingConfigurationGetAllTest extends AbstractTracingTes
      */
     @Test
     public void testThatDefaultScopeSpecificConfigurationReturnsIfScopeIsSpecifiedAndCustomConfigurationNotSet() {
-        Map<TracingConfigurationCoordinates, TracingConfigurationParameters> expTracingCfg = new HashMap<>();
-
-        expTracingCfg.put(TX_SCOPE_SPECIFIC_COORDINATES, TracingConfigurationManager.DEFAULT_TX_CONFIGURATION);
-
         assertEquals(
-            expTracingCfg,
+            Collections.singletonMap(
+                TX_SCOPE_SPECIFIC_COORDINATES,
+                TracingConfigurationManager.DEFAULT_TX_CONFIGURATION),
             grid(0).tracingConfiguration().getAll(TX));
     }
 

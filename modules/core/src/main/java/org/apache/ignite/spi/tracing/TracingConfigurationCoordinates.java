@@ -21,11 +21,17 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Serializable;
+
 /**
  * Specifies to which traces, specific configuration will be applied. In other words it's a sort of tracing
  * configuration locator.
  */
-public class TracingConfigurationCoordinates {
+public class TracingConfigurationCoordinates implements Serializable {
+
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Specifies the {@link Scope} of a trace's root span to which some specific tracing configuration will be applied.
      * It's a mandatory attribute.

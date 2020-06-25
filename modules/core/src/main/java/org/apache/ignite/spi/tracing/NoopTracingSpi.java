@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.tracing;
 
+import org.apache.ignite.internal.tracing.TracingSpiType;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -29,30 +30,25 @@ import org.jetbrains.annotations.Nullable;
  */
 @IgniteSpiMultipleInstancesSupport(value = true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class NoopTracingSpi extends IgniteSpiAdapter implements TracingSpi {
+public class NoopTracingSpi extends IgniteSpiAdapter implements TracingSpi<NoopSpiSpecificSpan> {
     /** Noop serialized span. */
     private static final byte[] NOOP_SPI_SPECIFIC_SERIALIZED_SPAN = new byte[0];
 
     /** {@inheritDoc} */
-    @Override public SpiSpecificSpan create(@NotNull String name, @Nullable SpiSpecificSpan parentSpan) {
+    @Override public NoopSpiSpecificSpan create(@NotNull String name, @Nullable byte[] serializedSpan) {
         return NoopSpiSpecificSpan.INSTANCE;
     }
 
     /** {@inheritDoc} */
-    @Override public SpiSpecificSpan create(@NotNull String name, @Nullable byte[] serializedSpan) {
-        return NoopSpiSpecificSpan.INSTANCE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull SpiSpecificSpan create(
+    @Override public @NotNull NoopSpiSpecificSpan create(
         @NotNull String name,
-        @Nullable SpiSpecificSpan parentSpan,
+        @Nullable NoopSpiSpecificSpan parentSpan,
         double samplingRate) {
         return NoopSpiSpecificSpan.INSTANCE;
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] serialize(@NotNull SpiSpecificSpan span) {
+    @Override public byte[] serialize(@NotNull NoopSpiSpecificSpan span) {
         return NOOP_SPI_SPECIFIC_SERIALIZED_SPAN;
     }
 
@@ -67,7 +63,7 @@ public class NoopTracingSpi extends IgniteSpiAdapter implements TracingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public TracingSpiType type() {
-        return TracingSpiType.NOOP_TRACING_SPI;
+    @Override public byte type() {
+        return TracingSpiType.NOOP_TRACING_SPI.index();
     }
 }

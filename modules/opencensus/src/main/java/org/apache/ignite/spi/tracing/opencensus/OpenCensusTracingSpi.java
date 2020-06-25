@@ -20,15 +20,12 @@ package org.apache.ignite.spi.tracing.opencensus;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import io.opencensus.trace.BlankSpan;
 import io.opencensus.trace.Sampler;
 import io.opencensus.trace.Tracing;
 import io.opencensus.trace.export.SpanExporter;
 import io.opencensus.trace.samplers.Samplers;
-import org.apache.ignite.spi.tracing.SpiSpecificSpan;
+import org.apache.ignite.internal.tracing.TracingSpiType;
 import org.apache.ignite.spi.tracing.TracingSpi;
-import org.apache.ignite.spi.tracing.TracingSpiType;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.opencensus.spi.tracing.OpenCensusTraceExporter;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
@@ -60,7 +57,7 @@ import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPL
  */
 @IgniteSpiMultipleInstancesSupport(value = true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class OpenCensusTracingSpi extends IgniteSpiAdapter implements TracingSpi {
+public class OpenCensusTracingSpi extends IgniteSpiAdapter implements TracingSpi<OpenCensusSpanAdapter> {
     /** Configured exporters. */
     private final List<OpenCensusTraceExporter> exporters;
 
@@ -92,32 +89,11 @@ public class OpenCensusTracingSpi extends IgniteSpiAdapter implements TracingSpi
     }
 
     /** {@inheritDoc} */
-    @Override public SpiSpecificSpan create(@NotNull String name, @Nullable SpiSpecificSpan parentSpan) {
-        try {
-            io.opencensus.trace.Span openCensusParent = null;
-
-            if (parentSpan instanceof OpenCensusSpanAdapter)
-                openCensusParent = ((OpenCensusSpanAdapter)parentSpan).impl();
-
-            return new OpenCensusSpanAdapter(
-                Tracing.getTracer().spanBuilderWithExplicitParent(
-                    name,
-                    openCensusParent
-                )
-                    .setSampler(Samplers.alwaysSample())
-                    .startSpan()
-            );
-        }
-        catch (Exception e) {
-            LT.warn(log, "Failed to create span from parent " +
-                "[spanName=" + name + ", parentSpan=" + parentSpan + "]");
-
-            return new OpenCensusSpanAdapter(BlankSpan.INSTANCE);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public SpiSpecificSpan create(@NotNull String name, @Nullable byte[] parentSerializedSpan) throws Exception {
+    @Override public OpenCensusSpanAdapter create(
+        @NotNull String name,
+        @Nullable byte[] parentSerializedSpan
+    ) throws Exception
+    {
         return new OpenCensusSpanAdapter(
             Tracing.getTracer().spanBuilderWithRemoteParent(
                 name,
@@ -129,15 +105,15 @@ public class OpenCensusTracingSpi extends IgniteSpiAdapter implements TracingSpi
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull SpiSpecificSpan create(
+    @Override public @NotNull OpenCensusSpanAdapter create(
         @NotNull String name,
-        @Nullable SpiSpecificSpan parentSpan,
+        @Nullable OpenCensusSpanAdapter parentSpan,
         double samplingRate) {
         try {
             io.opencensus.trace.Span openCensusParent = null;
 
-            if (parentSpan instanceof OpenCensusSpanAdapter)
-                openCensusParent = ((OpenCensusSpanAdapter)parentSpan).impl();
+            if (parentSpan != null)
+                openCensusParent = parentSpan.impl();
 
             Sampler sampler;
 
@@ -169,9 +145,8 @@ public class OpenCensusTracingSpi extends IgniteSpiAdapter implements TracingSpi
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] serialize(@NotNull SpiSpecificSpan span) {
-        return Tracing.getPropagationComponent().getBinaryFormat().
-            toByteArray(((OpenCensusSpanAdapter) span).impl().getContext());
+    @Override public byte[] serialize(@NotNull OpenCensusSpanAdapter span) {
+        return Tracing.getPropagationComponent().getBinaryFormat().toByteArray(span.impl().getContext());
     }
 
     /** {@inheritDoc} */
@@ -194,7 +169,7 @@ public class OpenCensusTracingSpi extends IgniteSpiAdapter implements TracingSpi
     }
 
     /** {@inheritDoc} */
-    @Override public TracingSpiType type() {
-        return TracingSpiType.OPEN_CENSUS_TRACING_SPI;
+    @Override public byte type() {
+        return TracingSpiType.OPEN_CENSUS_TRACING_SPI.index();
     }
 }

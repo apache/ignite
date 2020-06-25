@@ -352,12 +352,12 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
     public void testCustomEventContainsMessageClassTag() throws Exception {
         IgniteEx ignite = grid(0);
 
-        ignite.createCache("New cache");
+        startGrid(GRID_CNT).createCache("New cache");
 
         handler().flush();
 
         // Only root discovery.custom.event spans have message.class tag.
-        List<SpanData> rootCustomEventSpans = handler().allSpans().
+        List<SpanData> rootCustomEvtSpans = handler().allSpans().
             filter(spanData ->
                 DISCOVERY_CUSTOM_EVENT.spanName().equals(spanData.getName()) &&
                     spanData.getParentSpanId() == null).
@@ -365,8 +365,8 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
 
         // Check that there's at least one discovery.custom.event span with tag "message.class"
         // and value "CacheAffinityChangeMessage"
-        assertTrue(rootCustomEventSpans.stream().anyMatch(
-            span -> "DynamicCacheChangeBatch".equals(
+        assertTrue(rootCustomEvtSpans.stream().anyMatch(
+            span -> "CacheAffinityChangeMessage".equals(
                 attributeValueToString(span.getAttributes().getAttributeMap().get(SpanTags.MESSAGE_CLASS)))));
     }
 }

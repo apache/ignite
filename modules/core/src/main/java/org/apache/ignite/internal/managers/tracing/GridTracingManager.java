@@ -178,7 +178,14 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
 
     /** {@inheritDoc} */
     @Override public Span create(@NotNull SpanType spanType, @Nullable Span parentSpan) {
+        // Optimization for noop spi.
         if (noop)
+            return NoopSpan.INSTANCE;
+
+        // Optimization for zero sampling rate == 0.
+        if ((parentSpan == NoopSpan.INSTANCE || parentSpan == null) &&
+            tracingConfiguration.get(new TracingConfigurationCoordinates.Builder(spanType.scope()).build()).
+                samplingRate() == SAMPLING_RATE_NEVER)
             return NoopSpan.INSTANCE;
 
         return enrichWithLocalNodeParameters(
@@ -190,7 +197,14 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
 
     /** {@inheritDoc} */
     @Override public Span create(@NotNull SpanType spanType, @Nullable byte[] serializedParentSpan) {
+        // Optimization for noop spi.
         if (noop)
+            return NoopSpan.INSTANCE;
+
+        // Optimization for zero sampling rate == 0.
+        if ((serializedParentSpan.length == 0 || serializedParentSpan == null) &&
+            tracingConfiguration.get(new TracingConfigurationCoordinates.Builder(spanType.scope()).build()).
+                samplingRate() == SAMPLING_RATE_NEVER)
             return NoopSpan.INSTANCE;
 
         // 1 byte: special flags;
@@ -206,14 +220,14 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
         Span span;
 
         try {
-            if (serializedParentSpan == null || serializedParentSpan == NoopTracing.NOOP_SERIALIZED_SPAN)
+            if (serializedParentSpan == null || serializedParentSpan.length == 0)
                 return create(spanType, NoopSpan.INSTANCE);
 
             // First byte of the serializedSpan is reserved for special flags - it's not used right now.
 
             // Deserialize and compare spi types. If they don't match (span was serialized with another spi) then
             // propagate serializedSpan as DeferredSpan.
-            if (serializedParentSpan[SPI_TYPE_OFF] != getSpi().type().index())
+            if (serializedParentSpan[SPI_TYPE_OFF] != getSpi().type())
                 return new DeferredSpan(serializedParentSpan);
 
             // Deserialize and check major protocol version,
@@ -321,7 +335,15 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
         @Nullable Span parentSpan,
         @Nullable String lb
     ) {
+        // Optimization for noop spi.
         if (noop)
+            return NoopSpan.INSTANCE;
+
+        // Optimization for zero sampling rate == 0.
+        if ((parentSpan == NoopSpan.INSTANCE || parentSpan == null) &&
+            tracingConfiguration.get(
+                new TracingConfigurationCoordinates.Builder(spanType.scope()).withLabel(lb).build()).
+                samplingRate() == SAMPLING_RATE_NEVER)
             return NoopSpan.INSTANCE;
 
         return enrichWithLocalNodeParameters(
@@ -332,8 +354,14 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public byte[] serialize(@NotNull Span span) {
+        // Optimization for noop spi.
         if (noop)
+            return NoopTracing.NOOP_SERIALIZED_SPAN;
+
+        // Optimization for NoopSpan.
+        if (span == NoopSpan.INSTANCE)
             return NoopTracing.NOOP_SERIALIZED_SPAN;
 
         // 1 byte: special flags;
@@ -349,10 +377,6 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
         if (span instanceof DeferredSpan)
             return ((DeferredSpan)span).serializedSpan();
 
-        // Optimization for NoopSpan.
-        if (span == NoopSpan.INSTANCE)
-            return NoopTracing.NOOP_SERIALIZED_SPAN;
-
         // Spi specific serialized span.
         byte[] spiSpecificSerializedSpan = getSpi().serialize(((SpanImpl)span).spiSpecificSpan());
 
@@ -365,7 +389,7 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
         // Skip special flags bytes.
 
         // Spi type idx.
-        serializedSpanBytes[SPI_TYPE_OFF] = getSpi().type().index();
+        serializedSpanBytes[SPI_TYPE_OFF] = getSpi().type();
 
         // Major protocol version;
         serializedSpanBytes[MAJOR_PROTOCOL_VERSION_OFF] = MAJOR_PROTOCOL_VERSION;
@@ -432,6 +456,7 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
      * @param spanTypeToCreate Span type to create.
      * @param lb Label.
      */
+    @SuppressWarnings("unchecked")
     private @NotNull Span generateSpan(
         @Nullable Span parentSpan,
         @NotNull SpanType spanTypeToCreate,
@@ -440,7 +465,7 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
         if (parentSpan instanceof DeferredSpan)
             return create(spanTypeToCreate, ((DeferredSpan)parentSpan).serializedSpan());
 
-        if (parentSpan == null || parentSpan == NoopSpan.INSTANCE) {
+        if (parentSpan == NoopSpan.INSTANCE || parentSpan == null) {
             if (spanTypeToCreate.rootSpan()) {
                 // Get tracing configuration.
                 TracingConfigurationParameters tracingConfigurationParameters = tracingConfiguration.get(
@@ -488,6 +513,7 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
 
     /** {@inheritDoc} */
     @Override public TraceableMessagesHandler messages() {
+        // Optimization for noop spi.
         if (noop)
             return NOOP_TRACEABLE_MSG_HANDLER;
 

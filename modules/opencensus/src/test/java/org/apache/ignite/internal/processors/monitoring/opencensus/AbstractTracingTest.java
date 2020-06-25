@@ -244,6 +244,9 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
      * @param attributeVal Attribute value.
      */
     protected static String attributeValueToString(AttributeValue attributeVal) {
+        if (attributeVal == null)
+            return null;
+
         return attributeVal.match(
             Functions.returnToString(),
             Functions.returnToString(),

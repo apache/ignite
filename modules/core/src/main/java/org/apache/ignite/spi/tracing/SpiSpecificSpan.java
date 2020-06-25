@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spi.tracing;
 
-import java.util.Map;
-
 /**
  * Logical piece of a trace that insulates spi specific logic.
  */
@@ -33,27 +31,11 @@ public interface SpiSpecificSpan {
     SpiSpecificSpan addTag(String tagName, String tagVal);
 
     /**
-     * Adds tag to span with {@code long} value.
-     *
-     * @param tagName Tag name.
-     * @param tagVal Tag value.
-     */
-    SpiSpecificSpan addTag(String tagName, long tagVal);
-
-    /**
      * Logs work to span.
      *
      * @param logDesc Log description.
      */
     SpiSpecificSpan addLog(String logDesc);
-
-    /**
-     * Adds log to span with additional attributes.
-     *
-     * @param logDesc Log description.
-     * @param attrs Attributes.
-     */
-    SpiSpecificSpan addLog(String logDesc, Map<String, String> attrs);
 
     /**
      * Explicitly set status for span.

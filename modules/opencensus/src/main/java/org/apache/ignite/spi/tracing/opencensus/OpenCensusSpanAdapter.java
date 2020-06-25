@@ -17,9 +17,6 @@
 
 package org.apache.ignite.spi.tracing.opencensus;
 
-import java.util.Map;
-import java.util.stream.Collectors;
-import io.opencensus.trace.Annotation;
 import io.opencensus.trace.AttributeValue;
 import org.apache.ignite.spi.tracing.SpanStatus;
 import org.apache.ignite.spi.tracing.SpiSpecificSpan;
@@ -56,29 +53,8 @@ public class OpenCensusSpanAdapter implements SpiSpecificSpan {
     }
 
     /** {@inheritDoc} */
-    @Override public SpiSpecificSpan addTag(String tagName, long tagVal) {
-        span.putAttribute(tagName, AttributeValue.longAttributeValue(tagVal));
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
     @Override public OpenCensusSpanAdapter addLog(String logDesc) {
         span.addAnnotation(logDesc);
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public OpenCensusSpanAdapter addLog(String logDesc, Map<String, String> attrs) {
-        span.addAnnotation(Annotation.fromDescriptionAndAttributes(
-            logDesc,
-            attrs.entrySet().stream()
-                .collect(Collectors.toMap(
-                    Map.Entry::getKey,
-                    e -> AttributeValue.stringAttributeValue(e.getValue())
-                ))
-        ));
 
         return this;
     }
