@@ -627,7 +627,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                     ctx.Socket.AddNotificationHandler(queryId,
                         (stream, err) => HandleContinuousQueryEvents(stream, err, continuousQuery));
 
-                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, queryId, null);
+                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId, null);
                 });
         }
 
@@ -650,7 +650,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                     ctx.Socket.AddNotificationHandler(queryId,
                         (stream, err) => HandleContinuousQueryEvents(stream, err, continuousQuery));
 
-                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, queryId, null);
+                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId, null);
                 });
         }
 
