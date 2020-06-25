@@ -235,6 +235,9 @@
                             <jvmArg>-Xms512m</jvmArg>
                             <jvmArg>-Xmx1024m</jvmArg>
                         </jvmArgs>
+                        <args>
+                            <arg>-nobootcp</arg>
+                        </args>
                     </configuration>
                     <executions>
                         <execution>
