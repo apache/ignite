@@ -137,7 +137,7 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
         metastorage.write(COMMON_KEY_PREFIX + "dummy1", "val1");
         metastorage.write(COMMON_KEY_PREFIX + "dummy2", "val2");
 
-        bridge.readInitialData(metastorage);
+        bridge.readInitialData(metastorage, null);
 
         assertArrayEquals(DistributedMetaStorageKeyValuePair.EMPTY_ARRAY, bridge.localFullData());
     }
@@ -153,7 +153,7 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
 
         metastorage.write(historyItemKey(1), histItem);
 
-        bridge.readInitialData(metastorage);
+        bridge.readInitialData(metastorage, null);
 
         assertEquals(1, bridge.localFullData().length);
 
@@ -172,7 +172,7 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
         metastorage.write(historyItemKey(1), histItem);
         metastorage.write(versionKey(), INITIAL_VERSION.nextVersion(histItem));
 
-        bridge.readInitialData(metastorage);
+        bridge.readInitialData(metastorage, null);
 
         assertEquals(1, bridge.localFullData().length);
 
@@ -192,7 +192,7 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
         metastorage.write(versionKey(), INITIAL_VERSION.nextVersion(histItem));
         metastorage.write(localKey("key1"), "wrongValue");
 
-        bridge.readInitialData(metastorage);
+        bridge.readInitialData(metastorage, null);
 
         assertEquals(1, bridge.localFullData().length);
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
@@ -364,11 +365,17 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             lock.writeLock().lock();
 
             try {
-                ver = bridge.readInitialData(metastorage);
+                ver = bridge.readInitialData(metastorage, valBytes -> !canBeUnmarshalled(valBytes));
 
                 metastorage.iterate(
                     historyItemPrefix(),
-                    (key, val) -> addToHistoryCache(historyItemVer(key), (DistributedMetaStorageHistoryItem)val),
+                    (key, val) -> {
+                        DistributedMetaStorageHistoryItem histItem =
+                            withSkipUnknownKeys((DistributedMetaStorageHistoryItem)val);
+
+                        if (histItem != null)
+                            addToHistoryCache(historyItemVer(key), histItem);
+                    },
                     true
                 );
             }
@@ -1352,5 +1359,51 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /** Checkpoint read unlock. */
     private void localMetastorageUnlock() {
         ctx.cache().context().database().checkpointReadUnlock();
+    }
+
+    /** */
+    private DistributedMetaStorageHistoryItem withSkipUnknownKeys(DistributedMetaStorageHistoryItem histItem) {
+        ArrayList<Integer> skipped = new ArrayList<>(0);
+
+        for (int i = 0; i < histItem.keys().length; i++) {
+            if (!canBeUnmarshalled(histItem.valuesBytesArray()[i]))
+                skipped.add(i);
+        }
+
+        if (skipped.isEmpty())
+            return histItem;
+
+        int newCnt = histItem.keys().length - skipped.size();
+
+        if (newCnt == 0)
+            return null;
+
+        String[] newKeys = new String[newCnt];
+        byte[][] newValBytesArr = new byte[newCnt][];
+
+        for (int src = 0, dst = 0; src < histItem.keys().length; src++) {
+            if (skipped.contains(src))
+                continue;
+
+            newKeys[dst] = histItem.keys()[src];
+            newValBytesArr[dst] = histItem.valuesBytesArray()[src];
+
+            dst++;
+        }
+
+        return new DistributedMetaStorageHistoryItem(newKeys, newValBytesArr);
+    }
+
+    /** @return {@code True} if value can be unmarshalled. {@code False} otherwice. */
+    private boolean canBeUnmarshalled(byte[] valBytes) {
+        try {
+            marshaller.unmarshal(valBytes, U.gridClassLoader());
+
+            return true;
+        } catch (Exception e) {
+            log.warning("Distributed metastorage value cannot be unmarshalled and will be skipped.", e);
+
+            return false;
+        }
     }
 }
