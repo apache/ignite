@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -34,7 +35,13 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
     private final ContinuousQuery qry;
 
     /** */
+    private final Object filter;
+
+    /** */
     private final byte filterPlatform;
+
+    /** */
+    private final Object transformer;
 
     /** */
     private final byte transformerPlatform;
@@ -50,12 +57,14 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         int pageSize = reader.readInt();
         long timeInterval = reader.readLong();
         boolean includeExpired = reader.readBoolean();
-        Object filter = reader.readObjectDetached();
-        filterPlatform = filter == null ? 0 : reader.readByte();
-        Object transformer = reader.readObjectDetached();
-        transformerPlatform = transformer == null ? 0 : reader.readByte();
-        byte initialQueryType = reader.readByte();
 
+        filter = reader.readObjectDetached();
+        filterPlatform = filter == null ? 0 : reader.readByte();
+
+        transformer = reader.readObjectDetached();
+        transformerPlatform = transformer == null ? 0 : reader.readByte();
+
+        byte initialQueryType = reader.readByte();
         assert initialQueryType == 0; // TODO: 1 = SQL, 2 = SCAN
 
         qry = new ContinuousQuery()
@@ -70,6 +79,18 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         // TODO: Set filter and transformer.
         // 1. If Platform == Java, check for PLATFORM_JAVA_OBJECT_FACTORY_PROXY (see getJavaFilter)
         // 2. If Platform == .NET, call platformCtx.createContinuousQueryFilter
+        if (filter != null) {
+            switch (filterPlatform) {
+                case ClientPlatform.JAVA: {
+
+                }
+                case ClientPlatform.DOTNET: {
+
+                }
+                default:
+                    return new ClientResponse(requestId(), "Unsupported filter platform: " + filterPlatform);
+            }
+        }
 
         ctx.incrementCursors();
 
