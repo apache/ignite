@@ -697,7 +697,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
 
         /** */
         public QueryChecker containsScan(String schema, String tblName, String idxName) {
-            String idxScanName = "IgniteTableScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxName + ']';
+            String idxScanName = "IgniteIndexScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxName + ']';
 
             return containsSubPlan(idxScanName);
         }
@@ -706,7 +706,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         public QueryChecker containsAnyScan(String schema, String tblName, String... idxNames) {
             String[] idxScanNames = new String[idxNames.length];
             for (int i = 0; i < idxNames.length; i++)
-                idxScanNames[i] = "IgniteTableScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxNames[i] + ']';
+                idxScanNames[i] = "IgniteIndexScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxNames[i] + ']';
 
             return containsAnySubPlan(idxScanNames);
         }

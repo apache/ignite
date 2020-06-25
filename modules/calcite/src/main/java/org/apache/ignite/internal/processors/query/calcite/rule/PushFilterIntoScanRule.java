@@ -29,7 +29,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitor;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -42,7 +42,7 @@ public class PushFilterIntoScanRule extends RelOptRule {
 
     private PushFilterIntoScanRule(Class<? extends RelNode> clazz, String desc) {
         super(operand(clazz,
-            operand(IgniteTableScan.class, none())),
+            operand(IgniteIndexScan.class, none())),
             RelFactories.LOGICAL_BUILDER,
             desc);
     }
@@ -50,7 +50,7 @@ public class PushFilterIntoScanRule extends RelOptRule {
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
         LogicalFilter filter = call.rel(0);
-        IgniteTableScan scan = call.rel(1);
+        IgniteIndexScan scan = call.rel(1);
 
         RexNode cond = filter.getCondition();
 
@@ -70,7 +70,7 @@ public class PushFilterIntoScanRule extends RelOptRule {
         }
 
         call.transformTo(
-            new IgniteTableScan(scan.getCluster(), scan.getTraitSet(), scan.getTable(), scan.indexName(), cond));
+            new IgniteIndexScan(scan.getCluster(), scan.getTraitSet(), scan.getTable(), scan.indexName(), cond));
     }
 
     /** Visitor for replacing input refs to local refs. We need it for proper plan serialization. */

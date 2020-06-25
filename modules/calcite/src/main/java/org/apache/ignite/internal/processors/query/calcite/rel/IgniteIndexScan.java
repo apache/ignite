@@ -37,6 +37,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexDynamicParam;
@@ -58,12 +59,13 @@ import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.OR;
+import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl.PK_INDEX_NAME;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
  * Relational operator that returns the contents of a table.
  */
-public class IgniteTableScan extends TableScan implements IgniteRel {
+public class IgniteIndexScan extends TableScan implements IgniteRel {
     /** Supported index operations. */
     public static final Set<SqlKind> TREE_INDEX_COMPARISON =
         EnumSet.of(
@@ -97,7 +99,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
      *
      * @param input Serialized representation.
      */
-    public IgniteTableScan(RelInput input) {
+    public IgniteIndexScan(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
         idxName = input.getString("index");
         cond = input.getExpression("filters");
@@ -115,7 +117,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
      * @param idxName Index name.
      * @param cond Filters for scan.
      */
-    public IgniteTableScan(
+    public IgniteIndexScan(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
@@ -388,9 +390,12 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rows = estimateRowCount(mq);
+        double rowCount = estimateRowCount(mq);
 
-        return planner.getCostFactory().makeCost(rows, 0, 0);
+        if (!PK_INDEX_NAME.equals(indexName()))
+            rowCount = RelMdUtil.addEpsilon(rowCount);
+
+        return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
 
     /** {@inheritDoc} */

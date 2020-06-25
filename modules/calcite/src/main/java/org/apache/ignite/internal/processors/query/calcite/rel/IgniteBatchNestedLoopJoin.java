@@ -34,10 +34,12 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelNodes;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -55,6 +57,7 @@ import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.random;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
 /**
@@ -65,7 +68,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
  * The set of output rows is a subset of the cartesian product of the two
  * inputs; precisely which subset depends on the join condition.
  */
-public class IgniteJoin extends Join implements TraitsAwareIgniteRel {
+public class IgniteBatchNestedLoopJoin extends Join implements TraitsAwareIgniteRel {
     /**
      * Creates a Join.
      *
@@ -79,12 +82,14 @@ public class IgniteJoin extends Join implements TraitsAwareIgniteRel {
      *                         LHS and used by the RHS and are not available to
      *                         nodes above this Join in the tree
      */
-    public IgniteJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
+    public IgniteBatchNestedLoopJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
         super(cluster, traitSet, left, right, condition, variablesSet, joinType);
+
+        assert joinType != RIGHT && joinType != JoinRelType.FULL;
     }
 
     /** */
-    public IgniteJoin(RelInput input) {
+    public IgniteBatchNestedLoopJoin(RelInput input) {
         this(input.getCluster(),
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInputs().get(0),
@@ -96,7 +101,7 @@ public class IgniteJoin extends Join implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
-        return new IgniteJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType);
+        return new IgniteBatchNestedLoopJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType);
     }
 
     /** {@inheritDoc} */
@@ -218,15 +223,29 @@ public class IgniteJoin extends Join implements TraitsAwareIgniteRel {
                     traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
 
                     if (joinType == INNER || joinType == LEFT) {
+                        outTraits = out.replace(hash(joinInfo.leftKeys, factory));
                         leftTraits = left.replace(hash(joinInfo.leftKeys, factory));
+                        rightTraits = right.replace(broadcast());
+
+                        traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+                        outTraits = out.replace(random());
+                        leftTraits = left.replace(random());
                         rightTraits = right.replace(broadcast());
 
                         traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
                     }
 
                     if (joinType == INNER || joinType == RIGHT) {
+                        outTraits = out.replace(hash(joinInfo.rightKeys, factory));
                         leftTraits = left.replace(broadcast());
                         rightTraits = right.replace(hash(joinInfo.rightKeys, factory));
+
+                        traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+                        outTraits = out.replace(random());
+                        leftTraits = left.replace(broadcast());
+                        rightTraits = right.replace(random());
 
                         traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
                     }
@@ -373,8 +392,35 @@ public class IgniteJoin extends Join implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        RelOptCost cost = super.computeSelfCost(planner, mq);
+        double rowCount = mq.getRowCount(this);
 
+        // Joins can be flipped, and for many algorithms, both versions are viable
+        // and have the same cost. To make the results stable between versions of
+        // the planner, make one of the versions slightly more expensive.
+        switch (joinType) {
+            case SEMI:
+            case ANTI:
+                // SEMI and ANTI join cannot be flipped
+                break;
+            case RIGHT:
+                rowCount = RelMdUtil.addEpsilon(rowCount);
+                break;
+            default:
+                if (RelNodes.COMPARATOR.compare(left, right) > 0)
+                    rowCount = RelMdUtil.addEpsilon(rowCount);
+        }
+
+        final double rightRowCount = right.estimateRowCount(mq);
+        final double leftRowCount = left.estimateRowCount(mq);
+
+        if (Double.isInfinite(leftRowCount))
+            rowCount = leftRowCount;
+        if (Double.isInfinite(rightRowCount))
+            rowCount = rightRowCount;
+
+        RelOptCost cost = planner.getCostFactory().makeCost(rowCount, 0, 0);
+        // Give it some penalty
+        cost = cost.multiplyBy(10);
         return cost;
     }
 }

@@ -17,39 +17,36 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Modifier;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ConfigurationBuilder;
 
 /**
  * See {@link RelMetadataQuery}
  */
 public class RelMetadataQueryEx extends RelMetadataQuery {
     static {
-        JaninoRelMetadataProvider.DEFAULT.register(
-            ImmutableList.of(
-                IgniteExchange.class,
-                IgniteReceiver.class,
-                IgniteSender.class,
-                IgniteFilter.class,
-                IgniteProject.class,
-                IgniteJoin.class,
-                IgniteTableScan.class,
-                IgniteValues.class,
-                IgniteTableModify.class,
-                IgniteSort.class));
+        ConfigurationBuilder cfg = new ConfigurationBuilder()
+            .forPackages("org.apache.ignite.internal.processors.query.calcite.rel")
+            .addClassLoaders(U.gridClassLoader())
+            .addScanners(new SubTypesScanner());
+
+        List<Class<? extends RelNode>> types = new Reflections(cfg)
+            .getSubTypesOf(IgniteRel.class).stream()
+            .filter(type -> !type.isInterface())
+            .filter(type -> !Modifier.isAbstract(type.getModifiers()))
+            .collect(Collectors.toList());
+
+        JaninoRelMetadataProvider.DEFAULT.register(types);
     }
 
     /** */

@@ -20,10 +20,27 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
-import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 import org.apache.calcite.rel.metadata.Metadata;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
+import org.apache.calcite.rel.metadata.RelMdAllPredicates;
+import org.apache.calcite.rel.metadata.RelMdCollation;
+import org.apache.calcite.rel.metadata.RelMdColumnOrigins;
+import org.apache.calcite.rel.metadata.RelMdColumnUniqueness;
+import org.apache.calcite.rel.metadata.RelMdDistinctRowCount;
+import org.apache.calcite.rel.metadata.RelMdExplainVisibility;
+import org.apache.calcite.rel.metadata.RelMdExpressionLineage;
+import org.apache.calcite.rel.metadata.RelMdMaxRowCount;
+import org.apache.calcite.rel.metadata.RelMdMemory;
+import org.apache.calcite.rel.metadata.RelMdMinRowCount;
+import org.apache.calcite.rel.metadata.RelMdNodeTypes;
+import org.apache.calcite.rel.metadata.RelMdParallelism;
+import org.apache.calcite.rel.metadata.RelMdPopulationSize;
+import org.apache.calcite.rel.metadata.RelMdPredicates;
+import org.apache.calcite.rel.metadata.RelMdSelectivity;
+import org.apache.calcite.rel.metadata.RelMdSize;
+import org.apache.calcite.rel.metadata.RelMdTableReferences;
+import org.apache.calcite.rel.metadata.RelMdUniqueKeys;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
@@ -35,9 +52,35 @@ public class IgniteMetadata {
     public static final RelMetadataProvider METADATA_PROVIDER =
         ChainedRelMetadataProvider.of(
             ImmutableList.of(
-                IgniteMdDistribution.SOURCE,
+                // Ignite specific providers
                 IgniteMdNodesMapping.SOURCE,
-                DefaultRelMetadataProvider.INSTANCE));
+
+                // Ignite overriden providers
+                IgniteMdDistribution.SOURCE,
+                IgniteMdPercentageOriginalRows.SOURCE,
+                IgniteMdCumulativeCost.SOURCE,
+                IgniteMdNonCumulativeCost.SOURCE,
+                IgniteMdRowCount.SOURCE,
+
+                // Basic providers
+                RelMdColumnOrigins.SOURCE,
+                RelMdExpressionLineage.SOURCE,
+                RelMdTableReferences.SOURCE,
+                RelMdNodeTypes.SOURCE,
+                RelMdMaxRowCount.SOURCE,
+                RelMdMinRowCount.SOURCE,
+                RelMdUniqueKeys.SOURCE,
+                RelMdColumnUniqueness.SOURCE,
+                RelMdPopulationSize.SOURCE,
+                RelMdSize.SOURCE,
+                RelMdParallelism.SOURCE,
+                RelMdMemory.SOURCE,
+                RelMdDistinctRowCount.SOURCE,
+                RelMdSelectivity.SOURCE,
+                RelMdExplainVisibility.SOURCE,
+                RelMdPredicates.SOURCE,
+                RelMdAllPredicates.SOURCE,
+                RelMdCollation.SOURCE));
 
     public interface NodesMappingMetadata extends Metadata {
         MetadataDef<NodesMappingMetadata> DEF = MetadataDef.of(NodesMappingMetadata.class,

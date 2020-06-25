@@ -85,8 +85,8 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -109,7 +109,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
@@ -712,7 +711,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -945,7 +944,7 @@ RewindabilityTraitDef.INSTANCE
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -1002,7 +1001,6 @@ RewindabilityTraitDef.INSTANCE
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12819")
     public void testSplitterCollocatedPartitionedPartitioned() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -1060,13 +1058,13 @@ RewindabilityTraitDef.INSTANCE
             "FROM PUBLIC.Developer d JOIN (" +
             "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
             ") p " +
-            "ON d.id = p.id0 " +
-            "WHERE (d.projectId + 1) > ?";
+            "ON d.id = p.id0";
 
         RelTraitDef<?>[] traitDefs = {
             ConventionTraitDef.INSTANCE,
             DistributionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            RelCollationTraitDef.INSTANCE,
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -1213,7 +1211,7 @@ RewindabilityTraitDef.INSTANCE
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -1459,7 +1457,7 @@ RewindabilityTraitDef.INSTANCE
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -1712,7 +1710,7 @@ RewindabilityTraitDef.INSTANCE
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -1779,7 +1777,7 @@ RewindabilityTraitDef.INSTANCE
      * @throws Exception If failed.
      */
     @Test
-    public void testSplitterCollocatedReplicatedAndPartitioned() throws Exception {
+    public void testSplitterPartiallyCollocatedReplicatedAndPartitioned() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable developer = new TestTable(
@@ -1836,7 +1834,7 @@ RewindabilityTraitDef.INSTANCE
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -1891,12 +1889,13 @@ RewindabilityTraitDef.INSTANCE
         MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
+        assertEquals(2, plan.fragments().size());
 
         plan.init(this::intermediateMapping, ctx);
 
         assertNotNull(plan);
 
-        assertEquals(2, plan.fragments().size());
+        assertEquals(3, plan.fragments().size());
     }
 
     /**
@@ -1959,7 +1958,7 @@ RewindabilityTraitDef.INSTANCE
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2082,7 +2081,7 @@ RewindabilityTraitDef.INSTANCE
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2138,13 +2137,14 @@ RewindabilityTraitDef.INSTANCE
 
         assertNotNull(plan);
 
+        assertEquals(2, plan.fragments().size());
+
         plan.init(this::intermediateMapping, ctx);
 
         assertNotNull(plan);
 
-        assertEquals(2, plan.fragments().size());
+        assertEquals(3, plan.fragments().size());
     }
-
 
     /**
      * @throws Exception If failed.
@@ -2202,7 +2202,7 @@ RewindabilityTraitDef.INSTANCE
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2311,7 +2311,7 @@ RewindabilityTraitDef.INSTANCE
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2431,7 +2431,7 @@ RewindabilityTraitDef.INSTANCE
             ConventionTraitDef.INSTANCE,
             DistributionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2543,13 +2543,13 @@ RewindabilityTraitDef.INSTANCE
 
         String sql = "select d.deptno, e.deptno " +
             "from dept d, emp e " +
-            "where d.deptno + 10 = e.deptno * 2";
+            "where d.deptno + e.deptno = 2";
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE
 
         };
 
@@ -2588,12 +2588,12 @@ RewindabilityTraitDef.INSTANCE
 
             assertNotNull(rel);
             assertEquals("" +
-                    "LogicalFilter(condition=[=(+($0, 10), *($1, 2))])\n" +
+                    "LogicalFilter(condition=[=(CAST(+($0, $1)):INTEGER, 2)])\n" +
                     "  LogicalJoin(condition=[true], joinType=[inner])\n" +
                     "    LogicalProject(DEPTNO=[$0])\n" +
-                    "      IgniteTableScan(table=[[PUBLIC, DEPT]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n" +
+                    "      IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n" +
                     "    LogicalProject(DEPTNO=[$2])\n" +
-                    "      IgniteTableScan(table=[[PUBLIC, EMP]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n",
+                    "      IgniteIndexScan(table=[[PUBLIC, EMP]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n",
                 RelOptUtil.toString(rel));
 
             // Transformation chain
@@ -2606,11 +2606,11 @@ RewindabilityTraitDef.INSTANCE
 
             assertNotNull(phys);
             assertEquals("" +
-                    "IgniteJoin(condition=[=(+($0, 10), *($1, 2))], joinType=[inner])\n" +
+                    "IgniteNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
                     "  IgniteProject(DEPTNO=[$0])\n" +
-                    "    IgniteTableScan(table=[[PUBLIC, DEPT]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n" +
+                    "    IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n" +
                     "  IgniteProject(DEPTNO=[$2])\n" +
-                    "    IgniteTableScan(table=[[PUBLIC, EMP]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n",
+                    "    IgniteIndexScan(table=[[PUBLIC, EMP]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n",
                 RelOptUtil.toString(phys));
         }
     }
@@ -2664,16 +2664,16 @@ RewindabilityTraitDef.INSTANCE
                 .replaceIf(RewindabilityTraitDef.INSTANCE, () -> RewindabilityTrait.REWINDABLE)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-            return new IgniteTableScan(cluster, traitSet, relOptTbl, "PK", null);
+            return new IgniteIndexScan(cluster, traitSet, relOptTbl, "PK", null);
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
+        @Override public IgniteIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
             RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
                 .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-            return new IgniteTableScan(cluster, traitSet, relOptTbl, "PK", null);
+            return new IgniteIndexScan(cluster, traitSet, relOptTbl, "PK", null);
         }
 
         /** {@inheritDoc} */

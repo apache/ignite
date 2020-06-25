@@ -42,6 +42,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.util.typedef.F;
@@ -94,6 +95,8 @@ public class TraitUtils {
             return convertCollation(planner, (RelCollation)toTrait, rel);
         else if (converter == DistributionTraitDef.INSTANCE)
             return convertDistribution(planner, (IgniteDistribution)toTrait, rel);
+        else if (converter == RewindabilityTraitDef.INSTANCE)
+            return convertRewindability(planner, (RewindabilityTrait)toTrait, rel);
         else if (converter.canConvert(planner, fromTrait, toTrait))
             return converter.convert(planner, rel, toTrait, true);
 
@@ -134,6 +137,15 @@ public class TraitUtils {
     }
 
     /** */
+    @Nullable public static RelNode convertRewindability(RelOptPlanner planner,
+        RewindabilityTrait toTrait, RelNode rel) {
+        if (toTrait.rewindable() && !rewindability(rel.getTraitSet()).rewindable())
+            return null; // TODO IndexSpoon
+
+        return rel;
+    }
+
+    /** */
     public static RelTraitSet fixTraits(RelTraitSet traits) {
         if (distribution(traits) == any())
             traits = traits.replace(single());
@@ -142,13 +154,34 @@ public class TraitUtils {
     }
 
     /** */
+    public static IgniteDistribution distribution(RelNode rel) {
+        return rel instanceof IgniteRel
+            ? ((IgniteRel)rel).distribution()
+            : distribution(rel.getTraitSet());
+    }
+
+    /** */
     public static IgniteDistribution distribution(RelTraitSet traits) {
         return traits.getTrait(DistributionTraitDef.INSTANCE);
     }
 
     /** */
+    public static RelCollation collation(RelNode rel) {
+        return rel instanceof IgniteRel
+            ? ((IgniteRel)rel).collation()
+            : collation(rel.getTraitSet());
+    }
+
+    /** */
     public static RelCollation collation(RelTraitSet traits) {
         return traits.getTrait(RelCollationTraitDef.INSTANCE);
+    }
+
+    /** */
+    public static RewindabilityTrait rewindability(RelNode rel) {
+        return rel instanceof IgniteRel
+            ? ((IgniteRel)rel).rewindability()
+            : rewindability(rel.getTraitSet());
     }
 
     /** */

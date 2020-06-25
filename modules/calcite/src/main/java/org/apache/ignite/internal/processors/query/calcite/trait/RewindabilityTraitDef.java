@@ -20,12 +20,12 @@ public class RewindabilityTraitDef extends RelTraitDef<RewindabilityTrait> {
 
     /** {@inheritDoc} */
     @Override public RelNode convert(RelOptPlanner planner, RelNode rel, RewindabilityTrait toTrait, boolean allowInfiniteCostConverters) {
-        return null;
+        return TraitUtils.convertRewindability(planner, toTrait, rel);
     }
 
     /** {@inheritDoc} */
     @Override public boolean canConvert(RelOptPlanner planner, RewindabilityTrait fromTrait, RewindabilityTrait toTrait) {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */

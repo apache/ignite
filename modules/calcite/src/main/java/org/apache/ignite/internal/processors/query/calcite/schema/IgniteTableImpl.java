@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -115,7 +115,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
+    @Override public IgniteIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
         RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replace(distribution())
             .replace(RewindabilityTrait.REWINDABLE);
@@ -127,7 +127,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
         traitSet = traitSet.replace(idx.collation());
 
-        return new IgniteTableScan(cluster, traitSet, relOptTbl, idxName, null);
+        return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName, null);
     }
 
     /** {@inheritDoc} */
