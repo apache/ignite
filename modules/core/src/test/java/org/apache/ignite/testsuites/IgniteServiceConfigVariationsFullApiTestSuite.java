@@ -39,7 +39,7 @@ public class IgniteServiceConfigVariationsFullApiTestSuite {
     /** */
     @BeforeClass
     public static void init() {
-        JUnitTeamcityReporter.suite = IgniteServiceGridTestSuite.class.getName();
+        JUnitTeamcityReporter.suite = IgniteServiceConfigVariationsFullApiTestSuite.class.getName();
     }
 
     /** */
