@@ -537,7 +537,7 @@ public class GridMapQueryExecutor {
                 IoStatisticsHolderQuery stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
                 if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
-                    ctx.performanceStatistics().writer().queryReads(
+                    ctx.performanceStatistics().queryReads(
                         GridCacheQueryType.SQL_FIELDS,
                         node.id(),
                         reqId,

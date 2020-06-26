@@ -199,7 +199,7 @@ public class RunningQueryManager {
         }
 
         if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
-            ctx.performanceStatistics().writer().query(
+            ctx.performanceStatistics().query(
                 qry.queryType(),
                 qry.query(),
                 qryId,

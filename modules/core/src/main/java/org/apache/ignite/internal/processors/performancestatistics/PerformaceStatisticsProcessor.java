@@ -26,12 +26,15 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.PERFORMANCE_STAT_PROC;
@@ -43,7 +46,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  * <p>
  * Manages collecting statistics.
  */
-public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
+public class PerformaceStatisticsProcessor extends GridProcessorAdapter implements IgnitePerformanceStatistics {
     /** Process to start/stop statistics. */
     private final DistributedProcess<Boolean, Boolean> proc;
 
@@ -94,11 +97,6 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
                 }
             }
         });
-    }
-
-    /** @return Performance statistics writer. */
-    public IgnitePerformanceStatistics writer() {
-        return writer;
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */
@@ -157,6 +155,38 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         proc.start(uuid, false);
 
         return fut;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
+        writer.cacheOperation(type, cacheId, startTime, duration);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commit) {
+        writer.transaction(cacheIds, startTime, duration, commit);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void query(GridCacheQueryType type, String text, long id, long startTime, long duration,
+        boolean success) {
+        writer.query(type, text, id, startTime, duration, success);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
+        long physicalReads) {
+        writer.queryReads(type, queryNodeId, id, logicalReads, physicalReads);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
+        writer.task(sesId, taskName, startTime, duration, affPartId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
+        writer.job(sesId, queuedTime, startTime, duration, timedOut);
     }
 
     /** {@inheritDoc} */

@@ -6906,7 +6906,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param start Start time in nanoseconds.
      */
     private void writeStatistics(CacheOperationType op, long start) {
-        ctx.kernalContext().performanceStatistics().writer().cacheOperation(
+        ctx.kernalContext().performanceStatistics().cacheOperation(
             op,
             ctx.cacheId(),
             U.currentTimeMillis(),

@@ -261,7 +261,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 IoStatisticsHolderQuery stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
                 if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
-                    cctx.kernalContext().performanceStatistics().writer().queryReads(
+                    cctx.kernalContext().performanceStatistics().queryReads(
                         req.type(),
                         sndId,
                         req.id(),
@@ -696,7 +696,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     fut.cancel();
 
                 if (performanceStatsEnabled) {
-                    cctx.kernalContext().performanceStatistics().writer().query(
+                    cctx.kernalContext().performanceStatistics().query(
                         SCAN,
                         cctx.name(),
                         ((GridCacheDistributedQueryFuture)fut).requestId(),

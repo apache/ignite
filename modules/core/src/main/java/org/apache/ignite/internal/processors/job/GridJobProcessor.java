@@ -2022,7 +2022,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 }
 
                 if (ctx.performanceStatistics().enabled()) {
-                    ctx.performanceStatistics().writer().job(ses.getId(),
+                    ctx.performanceStatistics().job(ses.getId(),
                         worker.getQueuedTime(),
                         worker.getStartTime(),
                         worker.getExecuteTime(),

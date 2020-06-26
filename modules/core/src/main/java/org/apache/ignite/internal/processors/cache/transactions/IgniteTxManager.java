@@ -3207,7 +3207,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (!cctx.kernalContext().performanceStatistics().enabled() || tx.startTimeNanos() == 0)
             return;
 
-        cctx.kernalContext().performanceStatistics().writer().transaction(
+        cctx.kernalContext().performanceStatistics().transaction(
             tx.txState().cacheIds(),
             tx.startTime(),
             System.nanoTime() - tx.startTimeNanos(),
