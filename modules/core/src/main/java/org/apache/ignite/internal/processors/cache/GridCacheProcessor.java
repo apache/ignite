@@ -1692,6 +1692,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteInternalFuture<?> res = sharedCtx.affinity().initCachesOnLocalJoin(
             locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
 
+        for (DynamicCacheDescriptor d: locJoinCtx.cacheDescriptors().values())
+            ctx.coordinators().validateCacheConfiguration(d.cacheConfiguration());
+
         List<StartCacheInfo> startCacheInfos = locJoinCtx.caches().stream()
             .map(cacheInfo -> new StartCacheInfo(cacheInfo.get1(), cacheInfo.get2(), exchTopVer, false))
             .collect(Collectors.toList());
