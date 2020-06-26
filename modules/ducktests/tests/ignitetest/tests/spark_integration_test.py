@@ -13,14 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ducktape.tests.test import Test
-
+from ignitetest.benchmarks.ignite_test import IgniteTest
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.ignite_client_app import IgniteClientApp, SparkIgniteClientApp
+from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.ignite_spark_app import SparkIgniteApplicationService
 from ignitetest.services.spark import SparkService
 
 
-class SparkIntegrationTest(Test):
+class SparkIntegrationTest(IgniteTest):
     """
     Test performs:
     1. Start of Spark cluster.
@@ -28,13 +28,18 @@ class SparkIntegrationTest(Test):
     3. Checks results of client application.
     """
 
+    @staticmethod
+    def properties(client_mode="false"):
+        return """
+            <property name="clientMode" value="{client_mode}"/>
+        """.format(client_mode=client_mode)
+
     def __init__(self, test_context):
         super(SparkIntegrationTest, self).__init__(test_context=test_context)
         self.spark = SparkService(test_context, num_nodes=2)
         self.ignite = IgniteService(test_context, num_nodes=1)
 
     def setUp(self):
-        # starting all nodes except last.
         self.spark.start()
         self.ignite.start()
 
@@ -43,9 +48,16 @@ class SparkIntegrationTest(Test):
         self.ignite.stop()
 
     def test_spark_client(self):
-        self.logger.info("Spark integration test.")
+        self.stage("Starting sample data generator")
 
-        IgniteClientApp(self.test_context,
-                        java_class_name="org.apache.ignite.internal.test.IgniteApplication").run()
+        IgniteApplicationService(self.test_context,
+                                 java_class_name="org.apache.ignite.internal.test.SampleDataStreamerApplication",
+                                 params="cache,1000",
+                                 properties=self.properties(client_mode="true")).run()
 
-        SparkIgniteClientApp(self.test_context, self.spark.nodes[0]).run()
+        self.stage("Starting Spark application")
+
+        SparkIgniteApplicationService(self.test_context,
+                                      "org.apache.ignite.internal.test.SparkApplication",
+                                      params="spark://" + self.spark.nodes[0].account.hostname + ":7077",
+                                      timeout_sec=120).run()

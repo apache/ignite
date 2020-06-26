@@ -19,7 +19,7 @@
 #
 # Builds project.
 # Run in Ignite sources root directory.
-# Usage: ./scripts/build.sh
+# Usage: ./scripts/build-module.sh ducktests
 #
 
-mvn clean package -Pall-java,all-scala -DskipTests -Dmaven.javadoc.skip=true
+mvn clean package -pl :ignite-$1 -Pall-java,all-scala -DskipTests -Dmaven.javadoc.skip=true -am

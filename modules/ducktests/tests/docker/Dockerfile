@@ -20,7 +20,7 @@ MAINTAINER Apache Ignite dev@ignite.apache.org
 VOLUME ["/opt/ignite-dev"]
 
 # Set the timezone.
-ENV TZ="/usr/share/zoneinfo/America/Los_Angeles"
+ENV TZ="/usr/share/zoneinfo/Europe/Moscow"
 
 # Do not ask for confirmations when running apt-get, etc.
 ENV DEBIAN_FRONTEND noninteractive
@@ -48,14 +48,13 @@ ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install binary test dependencies.
-ARG IGNITE_VERSION="2.8.0"
-ARG IGNITE_NAME="ignite-$IGNITE_VERSION"
-ARG IGNITE_RELEASE_NAME="apache-ignite-$IGNITE_VERSION-bin"
+ADD $APACHE_ARCHIVE/ignite/2.7.6/apache-ignite-2.7.6-bin.zip /opt/
+RUN cd /opt && unzip apache-ignite-2.7.6-bin.zip && mv /opt/apache-ignite-2.7.6-bin /opt/ignite-2.7.6 && chmod a+wr /opt/$IGNITE_NAME -R
 
-ADD $APACHE_ARCHIVE/ignite/$IGNITE_VERSION/$IGNITE_RELEASE_NAME.zip /opt/
-RUN cd /opt && unzip $IGNITE_RELEASE_NAME.zip && rm $IGNITE_RELEASE_NAME.zip
-RUN mv /opt/$IGNITE_RELEASE_NAME /opt/$IGNITE_NAME
-RUN chmod a+wr /opt/$IGNITE_NAME -R
+ADD $APACHE_ARCHIVE/ignite/2.8.0/apache-ignite-2.8.0-bin.zip /opt/
+RUN cd /opt && unzip apache-ignite-2.8.0-bin.zip && mv /opt/apache-ignite-2.8.0-bin /opt/ignite-2.8.0 && chmod a+wr /opt/$IGNITE_NAME -R
+
+RUN rm /opt/apache-ignite-*-bin.zip
 
 # Install spark
 ARG SPARK_VERSION="2.3.4"
