@@ -659,6 +659,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (cctx.kernalContext().clientNode())
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
+        if (locSnpDir == null)
+            return Collections.emptyList();
+
         synchronized (snpOpMux) {
             return Arrays.stream(locSnpDir.listFiles(File::isDirectory))
                 .map(File::getName)
@@ -734,6 +737,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
                 throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
+
+            if (!CU.isPersistenceEnabled(cctx.gridConfig())) {
+                throw new IgniteException("Create snapshot request has been rejected. Snapshots on an in-memory " +
+                    "clusters are not allowed.");
+            }
 
             if (!cctx.kernalContext().state().clusterState().state().active())
                 throw new IgniteException("Snapshot operation has been rejected. The cluster is inactive.");
