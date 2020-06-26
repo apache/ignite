@@ -2020,14 +2020,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         rwLock.readUnlock();
                     }
                 }
+            }
 
-                if (ctx.performanceStatistics().enabled()) {
-                    ctx.performanceStatistics().job(ses.getId(),
-                        worker.getQueuedTime(),
-                        worker.getStartTime(),
-                        worker.getExecuteTime(),
-                        worker.isTimedOut());
-                }
+            if (ctx.performanceStatistics().enabled()) {
+                ctx.performanceStatistics().job(ses.getId(),
+                    worker.getQueuedTime(),
+                    worker.getStartTime(),
+                    worker.getExecuteTime(),
+                    worker.isTimedOut());
             }
         }
     }

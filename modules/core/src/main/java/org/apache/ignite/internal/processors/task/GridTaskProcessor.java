@@ -1331,18 +1331,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
             release(worker.getDeployment());
 
-            if (!worker.isInternal()) {
+            if (!worker.isInternal())
                 execTasks.increment();
-
-                if (ctx.performanceStatistics().enabled()) {
-                    ctx.performanceStatistics().task(
-                        ses.getId(),
-                        ses.getTaskName(),
-                        ses.getStartTime(),
-                        U.currentTimeMillis() - ses.getStartTime(),
-                        worker.affPartId());
-                }
-            }
 
             // Unregister job message listener from all job topics.
             if (ses.isFullSupport()) {
@@ -1356,6 +1346,15 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 catch (IgniteException e) {
                     U.error(log, "Failed to unregister job communication message listeners and counters.", e);
                 }
+            }
+
+            if (ctx.performanceStatistics().enabled()) {
+                ctx.performanceStatistics().task(
+                    ses.getId(),
+                    ses.getTaskName(),
+                    ses.getStartTime(),
+                    U.currentTimeMillis() - ses.getStartTime(),
+                    worker.affPartId());
             }
         }
     }
