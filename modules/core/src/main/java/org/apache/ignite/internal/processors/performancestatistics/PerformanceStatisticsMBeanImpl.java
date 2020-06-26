@@ -19,17 +19,17 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.mxbean.IgnitePerformanceStatisticsMBean;
+import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
 
 /**
- * {@link IgnitePerformanceStatisticsMBean} implementation.
+ * {@link PerformanceStatisticsMBean} implementation.
  */
-public class IgnitePerformanceStatisticsMBeanImpl implements IgnitePerformanceStatisticsMBean {
+public class PerformanceStatisticsMBeanImpl implements PerformanceStatisticsMBean {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
     /** @param ctx Kernal context. */
-    public IgnitePerformanceStatisticsMBeanImpl(GridKernalContext ctx) {
+    public PerformanceStatisticsMBeanImpl(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 

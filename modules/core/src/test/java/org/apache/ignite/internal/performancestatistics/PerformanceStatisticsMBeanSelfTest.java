@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.performancestatistics;
 
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatisticsMBeanImpl;
-import org.apache.ignite.mxbean.IgnitePerformanceStatisticsMBean;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsMBeanImpl;
+import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
 import org.junit.Test;
 
-/** Tests {@link IgnitePerformanceStatisticsMBeanImpl}. */
+/** Tests {@link PerformanceStatisticsMBeanImpl}. */
 public class PerformanceStatisticsMBeanSelfTest extends AbstractPerformanceStatisticsTest {
     /** @throws Exception If failed. */
     @Test
@@ -30,8 +30,8 @@ public class PerformanceStatisticsMBeanSelfTest extends AbstractPerformanceStati
         IgniteEx srv0 = startGrid(0);
         IgniteEx srv1 = startGrid(1);
 
-        IgnitePerformanceStatisticsMBean statMBean0 = getMBean(srv0.name());
-        IgnitePerformanceStatisticsMBean statMBean1 = getMBean(srv1.name());
+        PerformanceStatisticsMBean statMBean0 = getMBean(srv0.name());
+        PerformanceStatisticsMBean statMBean1 = getMBean(srv1.name());
 
         assertFalse(statMBean0.enabled());
         assertFalse(statMBean1.enabled());
@@ -51,8 +51,8 @@ public class PerformanceStatisticsMBeanSelfTest extends AbstractPerformanceStati
      * @param igniteInstanceName Ignite instance name.
      * @return Ignite performance statistics MBean.
      */
-    private IgnitePerformanceStatisticsMBean getMBean(String igniteInstanceName) {
-        return getMxBean(igniteInstanceName, "PerformanceStatistics", IgnitePerformanceStatisticsMBeanImpl.class,
-            IgnitePerformanceStatisticsMBean.class);
+    private PerformanceStatisticsMBean getMBean(String igniteInstanceName) {
+        return getMxBean(igniteInstanceName, "PerformanceStatistics", PerformanceStatisticsMBeanImpl.class,
+            PerformanceStatisticsMBean.class);
     }
 }

@@ -26,7 +26,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  */
 @IgniteExperimental
 @MXBeanDescription("MBean provide access to performance statistics management.")
-public interface IgnitePerformanceStatisticsMBean {
+public interface PerformanceStatisticsMBean {
     /**
      * Start collecting performance statistics in the cluster with default settings.
      *
