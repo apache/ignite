@@ -163,6 +163,6 @@ class ClientCacheQueryContinuousInitialQuery {
      */
     public ClientCacheQueryCursor getClientCursor(QueryCursor cursor, ClientConnectionContext ctx) {
         // TODO: Switch on type.
-        return new ClientCacheEntryQueryCursor(cursor, pageSize, ctx);
+        return new ClientCacheEntryQueryCursor(cursor, pageSize, ctx, false);
     }
 }

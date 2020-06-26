@@ -37,8 +37,9 @@ class ClientCacheFieldsQueryCursor extends ClientCacheQueryCursor<List> {
      * @param pageSize Page size.
      * @param ctx      Context.
      */
-    ClientCacheFieldsQueryCursor(FieldsQueryCursor<List> cursor, int pageSize, ClientConnectionContext ctx) {
-        super(cursor, pageSize, ctx);
+    ClientCacheFieldsQueryCursor(FieldsQueryCursor<List> cursor, int pageSize, ClientConnectionContext ctx,
+                                 boolean releaseResourceOnIteratorEnd) {
+        super(cursor, pageSize, ctx, releaseResourceOnIteratorEnd);
 
         columnCount = cursor.getColumnsCount();
     }
