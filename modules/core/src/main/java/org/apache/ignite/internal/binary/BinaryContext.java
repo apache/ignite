@@ -1450,6 +1450,13 @@ public class BinaryContext {
     }
 
     /**
+     * @param typeId Type ID.
+     */
+    public synchronized void removeType(int typeId) {
+        schemas.remove(typeId);
+    }
+
+    /**
      * Type descriptors.
      */
     private static class TypeDescriptors {

@@ -73,7 +73,10 @@ public enum SecurityPermission {
     CACHE_DESTROY,
 
     /** Join as server node permission. */
-    JOIN_AS_SERVER;
+    JOIN_AS_SERVER,
+
+    /** Administration operation with cluster metadata (REMOVE, UPDATE). */
+    ADMIN_METADATA_OPS;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

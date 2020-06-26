@@ -242,12 +242,12 @@ public class CommonArgParser {
                         break;
 
                     case CMD_PING_INTERVAL:
-                        pingInterval = argIter.nextLongArg("ping interval");
+                        pingInterval = argIter.nextNonNegativeLongArg("ping interval");
 
                         break;
 
                     case CMD_PING_TIMEOUT:
-                        pingTimeout = argIter.nextLongArg("ping timeout");
+                        pingTimeout = argIter.nextNonNegativeLongArg("ping timeout");
 
                         break;
 

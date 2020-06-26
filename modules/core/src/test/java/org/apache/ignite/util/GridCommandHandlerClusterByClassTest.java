@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +43,6 @@ import java.util.logging.Logger;
 import java.util.logging.StreamHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Collection;
-import java.util.EnumMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -98,6 +98,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
+import static org.apache.ignite.internal.commandline.CommandList.METADATA;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
@@ -1592,6 +1593,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         Map<CommandList, Collection<String>> cmdArgs = new EnumMap<>(CommandList.class);
 
         cmdArgs.put(WAL, asList("print", "delete"));
+        cmdArgs.put(METADATA, asList("help", "list"));
 
         String warning = String.format(
             "For use experimental command add %s=true to JVM_OPTS in %s",
@@ -1600,7 +1602,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         );
 
         stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
-            .peek(cmd -> assertTrue(cmdArgs.containsKey(cmd)))
+            .peek(cmd -> assertTrue("Not contains " + cmd, cmdArgs.containsKey(cmd)))
             .forEach(cmd -> cmdArgs.get(cmd).forEach(cmdArg -> {
                 assertEquals(EXIT_CODE_OK, execute(cmd.text(), cmdArg));
 
