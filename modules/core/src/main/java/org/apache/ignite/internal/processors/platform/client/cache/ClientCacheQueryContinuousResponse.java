@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -25,7 +24,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Continuous query response.
  */
-@SuppressWarnings("rawtypes")
 class ClientCacheQueryContinuousResponse extends ClientResponse {
     /** */
     private final ClientCacheQueryContinuousHandle handle;
