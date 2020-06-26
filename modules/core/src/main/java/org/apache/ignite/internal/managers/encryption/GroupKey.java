@@ -19,21 +19,35 @@ package org.apache.ignite.internal.managers.encryption;
 
 import java.io.Serializable;
 
-/** */
+/**
+ * Cache encryption group key with identifier.
+ */
 public class GroupKey {
+    /** Encryption key ID. */
     private final int id;
 
+    /** Encryption key. */
     private final Serializable key;
 
+    /**
+     * @param key Encryption key.
+     * @param id Encryption key ID.
+     */
     public GroupKey(Serializable key, int id) {
         this.id = id;
         this.key = key;
     }
 
+    /**
+     * @return Encryption key ID.
+     */
     public byte id() {
         return (byte)id;
     }
 
+    /**
+     * @return Encryption key.
+     */
     public Serializable key() {
         return key;
     }

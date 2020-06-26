@@ -30,10 +30,10 @@ public class ChangeCacheEncryptionRequest implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Request id. */
+    /** Request ID. */
     private final UUID reqId = UUID.randomUUID();
 
-    /** Encrypted master key name. */
+    /** Cache group IDs. */
     private final int[] grpIds;
 
     /** Encryption keys. */

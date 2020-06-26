@@ -1874,17 +1874,32 @@ public final class IgniteSystemProperties {
         "IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP";
 
     /**
-     * todo
+     * The number of pages that is scanned during reencryption under checkpoint lock.
      */
-    public static final String IGNITE_ACTIVE_KEY_ID_FOR_GROUP = "IGNITE_ACTIVE_KEY_ID_FOR_GROUP_";
-
     public static final String IGNITE_REENCRYPTION_BATCH_SIZE = "IGNITE_REENCRYPTION_BATCH_SIZE";
 
+    /**
+     * The number of threads used to scan partitions when re-encrypting a cache group.
+     */
     public static final String IGNITE_REENCRYPTION_THREAD_POOL_SIZE = "IGNITE_REENCRYPTION_THREAD_POOL_SIZE";
 
+    /**
+     * Set up this property to disable background reencryption.
+     */
     public static final String IGNITE_REENCRYPTION_DISABLED = "IGNITE_REENCRYPTION_DISABLED";
 
+    /**
+     * Defines the delay in milliseconds between batches during a partition scanning.
+     */
     public static final String IGNITE_REENCRYPTION_THROTTLE = "IGNITE_REENCRYPTION_THROTTLE";
+
+    /**
+     * Cache group encryption key identifier that the node will use during the recovery.
+     * <p>
+     * If a node fails during cache group key rotation it will not be able to join the cluster with the old key.
+     * Set up this property with the new key identifier to complete key rotation on node startup.
+     */
+    public static final String IGNITE_ACTIVE_KEY_ID_FOR_GROUP = "IGNITE_ACTIVE_KEY_ID_FOR_GROUP_";
 
     /**
      * Enables extended logging of indexes create/rebuild process. Default {@code false}.

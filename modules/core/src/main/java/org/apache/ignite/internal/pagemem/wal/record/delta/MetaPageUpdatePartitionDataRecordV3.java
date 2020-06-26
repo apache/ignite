@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Partition meta page delta recordm includes encryption status data.
+ * Partition meta page delta record includes encryption status data.
  */
 public class MetaPageUpdatePartitionDataRecordV3 extends MetaPageUpdatePartitionDataRecordV2 {
     /** Index of the last reencrypted page. */

@@ -66,7 +66,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_REENCRYPTION_THREA
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REENCRYPTION_THROTTLE;
 
 /**
- *
+ * Cache group reencryption manager.
  */
 public class CacheGroupReencryption implements DbCheckpointListener {
     /** Thread prefix for reencryption tasks. */
@@ -78,32 +78,32 @@ public class CacheGroupReencryption implements DbCheckpointListener {
     /** Timeout between batches. */
     private final long timeoutBetweenBatches = IgniteSystemProperties.getLong(IGNITE_REENCRYPTION_THROTTLE, 0);
 
-    /** Disable background re-encryption. */
+    /** Disable background reencryption. */
     private final boolean disabled = IgniteSystemProperties.getBoolean(IGNITE_REENCRYPTION_DISABLED, false);
 
-    /** */
+    /** Number of threads for partition scanning. */
     private final int threadsCnt = IgniteSystemProperties.getInteger(IGNITE_REENCRYPTION_THREAD_POOL_SIZE,
         Runtime.getRuntime().availableProcessors());
 
-    /** */
+    /** Kernal context. */
     private final GridKernalContext ctx;
 
-    /** */
+    /** Logger. */
     private final IgniteLogger log;
 
-    /** */
-    private final ReentrantLock initLock = new ReentrantLock();
+    /** Lock. */
+    private final ReentrantLock lock = new ReentrantLock();
 
-    /** */
+    /** Mapping of cache group ID to reencryption context. */
     private final Map<Integer, GroupReencryptionContext> grps = new ConcurrentHashMap<>();
 
-    /** */
-    private final Queue<Integer> completedGrps = new ConcurrentLinkedQueue<>();
+    /** Queue of groups waiting for a checkpoint. */
+    private final Queue<Integer> cpWaitGrps = new ConcurrentLinkedQueue<>();
 
-    /** */
+    /** Executor to start partition scan tasks. */
     private final IgniteThreadPoolExecutor execSvc;
 
-    /** */
+    /** Stop flag. */
     private boolean stopped;
 
     /**
@@ -127,20 +127,20 @@ public class CacheGroupReencryption implements DbCheckpointListener {
     }
 
     /**
-     * Shutdown re-encryption and disable new tasks scheduling.
+     * Shutdown reencryption and disable new tasks scheduling.
      */
     public void stop() throws IgniteCheckedException {
-        initLock.lock();
+        lock.lock();
 
         try {
             stopped = true;
 
-            for (GroupReencryptionContext state : grps.values())
-                state.fut.cancel();
+            for (GroupReencryptionContext ctx0 : grps.values())
+                ctx0.finishFuture().cancel();
 
             execSvc.shutdown();
         } finally {
-            initLock.unlock();
+            lock.unlock();
         }
     }
 
@@ -150,27 +150,29 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
         Integer grpId;
 
-        while ((grpId = completedGrps.poll()) != null)
+        while ((grpId = cpWaitGrps.poll()) != null)
             completeCandidates.add(grpId);
 
         ctx0.finishedStateFut().listen(
             f -> {
                 if (f.error() != null || f.isCancelled()) {
-                    completedGrps.addAll(completeCandidates);
+                    cpWaitGrps.addAll(completeCandidates);
 
                     return;
                 }
 
-                initLock.lock();
+                lock.lock();
 
                 try {
                     for (int groupId : completeCandidates) {
                         GroupReencryptionContext scanCtx = grps.remove(groupId);
 
-                        scanCtx.finish();
+                        boolean finished = scanCtx.finish();
+
+                        assert finished : groupId;
 
                         if (log.isInfoEnabled())
-                            log.info("Cache group re-encryption is finished [grpId=" + groupId + "]");
+                            log.info("Cache group reencryption is finished [grpId=" + groupId + "]");
                     }
 
                     if (!grps.isEmpty())
@@ -180,7 +182,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                         removeCheckpointListener(this);
                 }
                 finally {
-                    initLock.unlock();
+                    lock.unlock();
                 }
             }
         );
@@ -213,22 +215,22 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
     /**
      * @param grpId Cache group ID.
-     * @param skipDirty Skip dirty pages.
+     * @param skipDirty Dirty page skip flag.
      */
     public IgniteInternalFuture schedule(int grpId, boolean skipDirty) throws IgniteCheckedException {
         if (disabled)
-            throw new IgniteCheckedException("Re-encryption is disabled.");
+            throw new IgniteCheckedException("Reencryption is disabled.");
 
         CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
         if (grp == null) {
             if (log.isDebugEnabled())
-                log.debug("Skip re-encryption, group was destroyed [grp=" + grpId + "]");
+                log.debug("Skip reencryption, group was destroyed [grp=" + grpId + "]");
 
             return new GridFinishedFuture();
         }
 
-        initLock.lock();
+        lock.lock();
 
         try {
             if (stopped)
@@ -241,7 +243,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
             if (prevState != null) {
                 if (log.isDebugEnabled())
-                    log.debug("Re-encryption already scheduled [grpId=" + grpId + "]");
+                    log.debug("Reencryption already scheduled [grpId=" + grpId + "]");
 
                 return prevState.finishFuture();
             }
@@ -252,8 +254,6 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
             forEachPartition(grp.affinity().partitions(), new IgniteInClosureX<Integer>() {
                 @Override public void applyx(Integer partId) throws IgniteCheckedException {
-                    int grpId = ctx0.groupId();
-
                     if (!pageStoreMgr.exists(grpId, partId))
                         return;
 
@@ -261,12 +261,12 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
                     if (pageStore.encryptPageCount() == 0) {
                         if (log.isDebugEnabled())
-                            log.debug("Skipping partition re-encryption [grp=" + grpId + ", p=" + partId + "]");
+                            log.debug("Skipping partition reencryption [grp=" + grpId + ", p=" + partId + "]");
 
                         return;
                     }
 
-                    PageStoreScanner scan = new PageStoreScanner(ctx0, partId, pageStore);
+                    PageStoreScanTask scan = new PageStoreScanTask(ctx0, partId, pageStore);
 
                     ctx0.add(partId, scan);
 
@@ -278,48 +278,55 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                 Throwable t = f.error();
 
                 if (t != null) {
-                    log.error("Re-encryption is failed [grpId=" + grpId + "]", t);
+                    log.error("Reencryption is failed [grpId=" + grpId + "]", t);
 
                     ctx0.cpFut.onDone(t);
 
                     return;
                 }
 
-                boolean added = completedGrps.offer(grpId);
+                boolean added = cpWaitGrps.offer(grpId);
 
                 assert added;
             });
 
             if (log.isInfoEnabled())
-                log.info("Scheduled re-encryption [grpId=" + grpId + "]");
+                log.info("Scheduled reencryption [grpId=" + grpId + "]");
 
             grps.put(grpId, ctx0);
 
             return ctx0.finishFuture();
         }
         finally {
-            initLock.unlock();
+            lock.unlock();
         }
     }
 
+    /**
+     * @param grpId Cache group ID.
+     * @return Future that will be completed when the reencryption of the specified group ends.
+     */
     public IgniteInternalFuture<Void> statusFuture(int grpId) {
         GroupReencryptionContext state = grps.get(grpId);
 
         return state == null ? new GridFinishedFuture<>() : state.cpFut;
     }
 
+    /**
+     * Stop reencryption of the specified partition.
+     *
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     * @return {@code True} if reencryption was cancelled.
+     * @throws IgniteCheckedException If failed.
+     */
     public boolean cancel(int grpId, int partId) throws IgniteCheckedException {
-        GroupReencryptionContext encryptCtx = grps.get(grpId);
+        GroupReencryptionContext ctx = grps.get(grpId);
 
-        if (encryptCtx == null)
+        if (ctx == null)
             return false;
 
-        IgniteInternalFuture<Void> reencryptFut = encryptCtx.futMap.get(partId);
-
-        if (reencryptFut == null)
-            return false;
-
-        return reencryptFut.cancel();
+        return ctx.cancel(partId);
     }
 
     /**
@@ -424,69 +431,133 @@ public class CacheGroupReencryption implements DbCheckpointListener {
         hnd.applyx(PageIdAllocator.INDEX_PARTITION);
     }
 
+    /**
+     * Cache group reencryption context.
+     */
     private static class GroupReencryptionContext {
+        /** Partition scanning futures. */
         private final Map<Integer, IgniteInternalFuture<Void>> futMap = new ConcurrentHashMap<>();
 
-        private final GridCompoundFuture<Void, Void> fut = new GridCompoundFuture<>();
+        /** Compound future, that will be completed when all partitions scanned. */
+        private final GridCompoundFuture<Void, Void> compFut = new GridCompoundFuture<>();
 
+        /** Cache group ID. */
         private final int grpId;
 
+        /** Dirty page skip flag. */
         private volatile boolean skipDirty;
 
+        /** Future that ends after all partitions are done and a checkpoint is finished. */
         private final GridFutureAdapter<Void> cpFut = new GridFutureAdapter<Void>() {
             @Override public boolean cancel() throws IgniteCheckedException {
-                fut.cancel();
+                compFut.cancel();
 
                 return onDone(null, null, true);
             }
         };
 
+        /**
+         * @param grpId Cache group ID.
+         * @param skipDirty Dirty page skip flag.
+         */
         public GroupReencryptionContext(int grpId, boolean skipDirty) {
             this.grpId = grpId;
             this.skipDirty = skipDirty;
         }
 
+        /**
+         * @return Cache group ID.
+         */
         public int groupId() {
             return grpId;
         }
 
+        /**
+         * @return Dirty page skip flag.
+         */
         public boolean skipDirty() {
             return skipDirty;
         }
 
+        /**
+         * @param skipDirty Dirty page skip flag.
+         */
         public void skipDirty(boolean skipDirty) {
             this.skipDirty = skipDirty;
         }
 
+        /**
+         * @param partId Partition ID.
+         * @param fut Partition scanning future.
+         */
+        public void add(int partId, IgniteInternalFuture<Void> fut) {
+            compFut.add(fut);
+
+            futMap.put(partId, fut);
+        }
+
+        /**
+         * @return Compound future, that will be completed when all partitions scanned.
+         */
+        public IgniteInternalFuture<Void> initialize() {
+            return compFut.markInitialized();
+        }
+
+        /**
+         * @return Future that ends after all partitions are done and a checkpoint is finished.
+         */
         public IgniteInternalFuture<Void> finishFuture() {
             return cpFut;
         }
 
+        /**
+         * Finish reencryption future.
+         *
+         * @return {@code True} if the future was finished by this call.
+         */
         public boolean finish() {
-            return cpFut.onDone(fut.result());
+            return cpFut.onDone(compFut.result());
         }
 
-        public void add(int partId, IgniteInternalFuture<Void> fut0) {
-            fut.add(fut0);
+        /**
+         * Stop reencryption of the specified partition.
+         *
+         * @param partId Partition ID.
+         * @return {@code True} if reencryption was cancelled.
+         * @throws IgniteCheckedException If failed.
+         */
+        public boolean cancel(int partId) throws IgniteCheckedException {
+            IgniteInternalFuture<Void> fut = futMap.get(partId);
 
-            futMap.put(partId, fut0);
-        }
+            if (fut == null)
+                return false;
 
-        public IgniteInternalFuture<Void> initialize() {
-            return fut.markInitialized();
+            return fut.cancel();
         }
     }
 
-    private class PageStoreScanner extends GridFutureAdapter<Void> implements Runnable {
+    /**
+     * Page store scanning task.
+     */
+    private class PageStoreScanTask extends GridFutureAdapter<Void> implements Runnable {
+        /** Partiion ID. */
         private final int partId;
 
+        /** Cancel mutex. */
         private final Object cancelMux = new Object();
 
+        /** Page store. */
         private final PageStore store;
 
+        /** Cache group reencryption context. */
         private final GroupReencryptionContext scanCtx;
 
-        public PageStoreScanner(GroupReencryptionContext scanCtx, int partId, PageStore store) {
+        /**
+         * @param scanCtx Cache group reencryption context.
+         * @param partId Partition ID.
+         * @param store Page store.
+         */
+        public PageStoreScanTask(GroupReencryptionContext scanCtx, int partId, PageStore store) {
             this.scanCtx = scanCtx;
             this.partId = partId;
             this.store = store;
@@ -504,6 +575,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
         @Override public void run() {
             try {
                 int grpId = scanCtx.groupId();
+
                 CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
                 if (grp == null) {
@@ -522,7 +594,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                 assert cnt <= store.pages() : "cnt=" + cnt + ", max=" + store.pages();
 
                 if (log.isDebugEnabled()) {
-                    log.debug("Partition re-encryption is started [" +
+                    log.debug("Partition reencryption is started [" +
                         "p=" + partId + ", remain=" + (cnt - pageNum) + ", total=" + cnt + "]");
                 }
 
@@ -543,20 +615,26 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
                                 long page = pageMem.acquirePage(grpId, pageId);
 
+                                boolean skipDirty = scanCtx.skipDirty();
+
                                 try {
-                                    if (scanCtx.skipDirty() && pageMem.isDirty(grpId, pageId, page))
+                                    // Can skip rewriting a dirty page if the checkpoint has been completed.
+                                    if (skipDirty && pageMem.isDirty(grpId, pageId, page))
                                         continue;
 
                                     long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
 
                                     try {
-                                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, pageId, page, wal, null)) {
-                                            byte[] payload = PageUtils.getBytes(pageAddr, 0, pageSize);
+                                        if (skipDirty ||
+                                            !PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, pageId, page, wal, null))
+                                            continue;
 
-                                            FullPageId fullPageId = new FullPageId(pageId, grpId);
+                                        // If checkpoint has not been completed and the page is dirty - save snapshot.
+                                        byte[] payload = PageUtils.getBytes(pageAddr, 0, pageSize);
 
-                                            wal.log(new PageSnapshot(fullPageId, payload, pageSize));
-                                        }
+                                        FullPageId fullPageId = new FullPageId(pageId, grpId);
+
+                                        wal.log(new PageSnapshot(fullPageId, payload, pageSize));
                                     }
                                     finally {
                                         pageMem.writeUnlock(grpId, pageId, page, null, true, false);
@@ -580,7 +658,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                 }
 
                 if (log.isDebugEnabled()) {
-                    log.debug("Partition re-encryption is finished " +
+                    log.debug("Partition reencryption is finished " +
                         "[p=" + partId +
                         ", remain=" + (cnt - pageNum) +
                         ", total=" + cnt +

@@ -242,13 +242,13 @@ public abstract class WALRecord {
         /** Ecnrypted data record. */
         ENCRYPTED_DATA_RECORD_V2(63, LOGICAL),
 
-        /** */
+        /** Logical record to restart encryption with the latest encryption key. */
         ENCRYPTION_STATUS_RECORD(64, LOGICAL),
 
-        /** */
+        /** Partition meta page delta record includes encryption status data. */
         PARTITION_META_PAGE_UPDATE_COUNTERS_V3(65, PHYSICAL),
 
-        /** */
+        /** Meta page delta record includes encryption status data. */
         META_PAGE_DELTA_RECORD(66, PHYSICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */

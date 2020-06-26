@@ -343,7 +343,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
-        // Stop re-encryption.
+        // Stop reencryption.
         reencryption.stop();
     }
 
@@ -823,7 +823,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /**
      * @param grpId Cache group ID.
-     * @return Future that will be completed when re-encryption of specified group is finished.
+     * @return Future that will be completed when reencryption of specified group is finished.
      */
     public IgniteInternalFuture<Void> encryptionTask(int grpId) {
         return reencryption.statusFuture(grpId);
@@ -882,7 +882,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 fut.cancel();
             }
             catch (IgniteCheckedException e) {
-                log.warning("Unable to cancel re-encryption [grpId=" + grpId + "]", e);
+                log.warning("Unable to cancel reencryption [grpId=" + grpId + "]", e);
             }
         }
     }
@@ -908,7 +908,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             reencryption.cancel(grpId, partId);
         }
         catch (IgniteCheckedException e) {
-            log.warning("Unable to cancel re-encryption [grpId=" + grpId + ", partId=" + partId + "]", e);
+            log.warning("Unable to cancel reencryption [grpId=" + grpId + ", partId=" + partId + "]", e);
         }
     }
 
@@ -989,48 +989,46 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                         grpEncKeys.put(grpId, keyMap);
                     }
 
-                    Byte activeKey = (Byte)metastorage.read(ENCRYPTION_ACTIVE_KEY_PREFIX + grpId);
+                    Byte savedKeyId = (Byte)metastorage.read(ENCRYPTION_ACTIVE_KEY_PREFIX + grpId);
 
-                    if (activeKey == null)
-                        activeKey = 0;
+                    int activeKeyId = savedKeyId == null ? INITIAL_KEY_IDENTIFIER : savedKeyId & 0xff;
 
                     String sysProp = IGNITE_ACTIVE_KEY_ID_FOR_GROUP + grpId;
 
-                    int activeGrpKey =
-                        IgniteSystemProperties.getInteger(sysProp, Integer.MIN_VALUE);
+                    int overridenKeyId = IgniteSystemProperties.getInteger(sysProp, Integer.MIN_VALUE);
 
-                    if (activeGrpKey != Integer.MIN_VALUE) {
-                        if (activeGrpKey == activeKey) {
+                    if (overridenKeyId != Integer.MIN_VALUE) {
+                        if (overridenKeyId == activeKeyId) {
                             log.warning("Restored group key idenitifier equals to identifier of system property " +
                                 sysProp + ". It is strongly recommended to remove this " +
-                                "system property [keyId=" + activeGrpKey + ']');
+                                "system property [keyId=" + overridenKeyId + ']');
                         }
                         else {
                             Map<Integer, Serializable> keyMap = grpEncKeys.get(grpId);
 
-                            if (keyMap != null && keyMap.containsKey(activeGrpKey)) {
-                                if (activeGrpKey < (activeKey & 0xff)) {
+                            if (keyMap != null && keyMap.containsKey(overridenKeyId)) {
+                                if (overridenKeyId < activeKeyId) {
                                     log.warning("Group key idenitifier that was set using system property " +
                                         sysProp + " may be incorrect, if node cannot join cluster, remove this " +
-                                        "property [curr=" + (activeKey & 0xff) + ", new=" + activeGrpKey + "]");
+                                        "property [curr=" + activeKeyId + ", new=" + overridenKeyId + "]");
                                 }
 
                                 if (log.isInfoEnabled()) {
                                     log.info("Group key idenitifier is set using system property " + sysProp +
-                                        " [prev=" + (activeKey & 0xff) + ", new=" + activeGrpKey + "]");
+                                        " [prev=" + activeKeyId + ", new=" + overridenKeyId + "]");
                                 }
 
                                 reencryptGroupsForced.add(grpId);
 
-                                activeKey = (byte)activeGrpKey;
+                                activeKeyId = overridenKeyId;
                             } else {
                                 log.error("Incorrect value was set for system property " + sysProp +
-                                    " [value=" + activeGrpKey + ", available=" + keyMap.keySet() + "]");
+                                    " [value=" + overridenKeyId + ", available=" + keyMap.keySet() + "]");
                             }
                         }
                     }
 
-                    Integer prevKeyId = grpEncActiveIds.put(grpId, activeKey & 0xff);
+                    Integer prevKeyId = grpEncActiveIds.put(grpId, activeKeyId);
 
                     if (prevKeyId != null) {
                         assert !reencryptGroupsForced.isEmpty();
@@ -1060,23 +1058,24 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                 for (Map.Entry<Integer, Serializable> entry : singleGrpEncKeys.entrySet()) {
                     Map<Integer, Serializable> keysMap = new ConcurrentHashMap<>(1);
-                    keysMap.put(0, entry.getValue());
+
+                    keysMap.put(INITIAL_KEY_IDENTIFIER, entry.getValue());
 
                     grpEncKeys.put(entry.getKey(), keysMap);
 
-                    grpEncActiveIds.put(entry.getKey(), 0);
+                    grpEncActiveIds.put(entry.getKey(), INITIAL_KEY_IDENTIFIER);
                 }
             }
 
-            Map<Long, Map<Integer, Set<Integer>>> map =
-                (Map<Long, Map<Integer, Set<Integer>>>)metastorage.read(REENCRYPTED_WAL_SEGMENTS);
+            Serializable savedSegments = metastorage.read(REENCRYPTED_WAL_SEGMENTS);
 
-            if (map != null)
-                walSegments.putAll(map);
+            if (savedSegments != null)
+                walSegments.putAll(((Map<Long, Map<Integer, Set<Integer>>>)savedSegments));
 
             if (!grpEncKeys.isEmpty()) {
                 U.quietAndInfo(log, "Encryption keys loaded from metastore. [grps=" +
-                    F.concat(grpEncKeys.keySet(), ",") + ", masterKeyName=" + getSpi().getMasterKeyName() + ']');
+                    F.concat(grpEncActiveIds.entrySet(), ",") +
+                    ", masterKeyName=" + getSpi().getMasterKeyName() + ']');
             }
         }
         catch (IgniteCheckedException e) {
@@ -1121,7 +1120,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             recoveryMasterKeyName = false;
         }
 
-        // Key ID for specifid groups was changed manually, we need schedule re-encryption with the new key.
+        // Key ID for specifid groups was changed manually, we need schedule reencryption with the new key.
         Iterator<Integer> itr = reencryptGroupsForced.iterator();
 
         while (itr.hasNext()) {
@@ -1212,7 +1211,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /**
      * @param grpIds Cache group IDs.
-     * @param skipDirty Skip dirty pages.
+     * @param skipDirty Dirty page skip flag.
      * @throws IgniteCheckedException If failed.
      */
     private void startReencryption(Collection<Integer> grpIds, boolean skipDirty) throws IgniteCheckedException {
@@ -1361,6 +1360,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
+    /**
+     * @param grpId Cache group ID.
+     * @return Encrypted keys with identifiers for the specified .
+     */
     private HashMap<Integer, byte[]> groupKeysEncrypted(int grpId) {
         Map<Integer, Serializable> keys = grpEncKeys.get(grpId);
         HashMap<Integer, byte[]> keysEncrypted = new HashMap<>();
@@ -1553,7 +1556,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         if (log.isInfoEnabled())
-            log.info("Re-encryption status applied [grpIds=" + rec.groupsStatus().keySet() + "]");
+            log.info("Reencryption status applied [grpIds=" + rec.groupsStatus().keySet() + "]");
     }
 
     /**
@@ -1925,9 +1928,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 for (int i = 0; i < grpIds.length; i++) {
                     int grpId = grpIds[i];
 
-                    if (!encryptionTask(grpId).isDone())
+                    if (!encryptionTask(grpId).isDone()) {
                         return new GridFinishedFuture<>(
                             new IgniteException("Reencryption is in progress [grpId=" + grpId + "]"));
+                    }
 
                     int newKeyId = req.keyIdentifiers()[i] & 0xff;
 
@@ -1997,7 +2001,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         /**
-         * Sets new encrpytion key as active (for writing) and starts background re-encryption.
+         * Sets new encrpytion key as active (for writing) and starts background reencryption.
          *
          * @param req Request.
          * @return Result future.
