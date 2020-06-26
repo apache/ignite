@@ -43,14 +43,6 @@ import javax.cache.event.CacheEntryEventFilter;
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
-    /** */
-    private static final byte INITIAL_QRY_TYPE_NONE = 0;
-
-    /** */
-    private static final byte INITIAL_QRY_TYPE_SCAN = 1;
-
-    /** */
-    private static final byte INITIAL_QRY_TYPE_SQL = 2;
 
     /** Query. */
     private final ContinuousQuery qry;
@@ -60,24 +52,6 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
 
     /** */
     private final byte filterPlatform;
-
-    /** */
-    private final byte initQryType;
-
-    /** */
-    private final Object initialQryFilter;
-
-    /** */
-    private final byte initialQryFilterPlatform;
-
-    /** */
-    private final int initialQryPageSize;
-
-    /** */
-    private final Integer initialQryPart;
-
-    /** */
-    private final boolean initialQryLoc;
 
     /**
      * Ctor.
@@ -93,34 +67,6 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
 
         filter = reader.readObjectDetached();
         filterPlatform = filter == null ? 0 : reader.readByte();
-
-        initQryType = reader.readByte();
-
-        switch (initQryType) {
-            case INITIAL_QRY_TYPE_NONE:
-                break;
-
-            case INITIAL_QRY_TYPE_SCAN:
-                initialQryFilter = reader.readObjectDetached();
-
-                initialQryFilterPlatform = initialQryFilter == null ? 0 : reader.readByte();
-
-                initialQryPageSize = reader.readInt();
-
-                int part0 = reader.readInt();
-                initialQryPart = part0 < 0 ? null : part0;
-
-                initialQryLoc = reader.readBoolean();
-
-                break;
-
-            case INITIAL_QRY_TYPE_SQL:
-                // TODO
-                break;
-
-            default:
-                throw new IgniteClientException(ClientStatus.FAILED, "Invalid initial query type: " + initQryType);
-        }
 
         qry = new ContinuousQuery();
 
