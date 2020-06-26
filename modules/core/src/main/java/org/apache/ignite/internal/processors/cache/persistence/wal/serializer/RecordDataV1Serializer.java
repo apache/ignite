@@ -305,8 +305,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         byte[] clData = encSpi.decrypt(encData, key);
 
-//        System.out.println("read encrypted: " + clData.length);
-
         return new T3<>(new ByteBufferBackedDataInputImpl().buffer(ByteBuffer.wrap(clData)), grpId, plainRecType);
     }
 
@@ -344,9 +342,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      */
     private void writeEncryptedData(int grpId, @Nullable RecordType plainRecType, ByteBuffer clData, ByteBuffer dst) {
         int dtSz = encSpi.encryptedSize(clData.capacity());
-
-//        System.out.println(">>> cap = " + clData.capacity());
-//        System.out.println(">>> dtSz = " + dtSz);
 
         dst.putInt(grpId);
         dst.putInt(dtSz);
@@ -1247,8 +1242,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                     in.readFully(grpKey);
 
-                    System.out.println(">>> read wal grp=" + grpId + " id=" + keyId);
-
                     grpKeys.add(new T3<>(grpId, keyId, grpKey));
                 }
 
@@ -1259,16 +1252,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case ENCRYPTION_STATUS_RECORD:
                 int grpsCnt = in.readInt();
 
-                Map<Integer, List<T2<Integer, Integer>>> map = new HashMap<>(U.capacity(grpsCnt));
+                Map<Integer, Map<Integer, Integer>> map = new HashMap<>(U.capacity(grpsCnt));
 
                 for (int i = 0; i < grpsCnt; i++) {
                     int grpId = in.readInt();
                     int partsCnt = in.readInt();
 
-                    List<T2<Integer, Integer>> parts = new ArrayList<>(partsCnt);
+                    Map<Integer, Integer> parts = new HashMap<>(partsCnt);
 
                     for (int j = 0; j < partsCnt; j++)
-                        parts.add( new T2<>(in.readShort() & 0xffff, in.readInt()));
+                        parts.put( in.readShort() & 0xffff, in.readInt());
 
                     map.put(grpId, parts);
                 }
@@ -1883,8 +1876,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putInt(grpKeys.size());
 
                 for (T3<Integer, Byte, byte[]> entry : grpKeys) {
-                    System.out.println(">>> write wal " + entry.get1() + " " + entry.get2());
-
                     buf.putInt(entry.get1());
                     buf.put(entry.get2());
 
@@ -1897,18 +1888,18 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case ENCRYPTION_STATUS_RECORD:
                 EncryptionStatusRecord statusRecord = (EncryptionStatusRecord)rec;
 
-                Map<Integer, List<T2<Integer, Integer>>> map = statusRecord.groupsStatus();
+                Map<Integer, Map<Integer, Integer>> map = statusRecord.groupsStatus();
 
                 buf.putInt(map.size());
 
-                for (Map.Entry<Integer, List<T2<Integer, Integer>>> e : map.entrySet()) {
-                    List<T2<Integer, Integer>> parts = e.getValue();
+                for (Map.Entry<Integer, Map<Integer, Integer>> e : map.entrySet()) {
+                    Map<Integer, Integer> parts = e.getValue();
 
                     buf.putInt(e.getKey());
                     buf.putInt(parts.size());
 
-                    for (T2<Integer, Integer> state : parts) {
-                        buf.putShort((short)state.get1().intValue());
+                    for (Map.Entry<Integer, Integer> state : parts.entrySet()) {
+                        buf.putShort((short)state.getKey().intValue());
                         buf.putInt(state.getValue());
                     }
                 }

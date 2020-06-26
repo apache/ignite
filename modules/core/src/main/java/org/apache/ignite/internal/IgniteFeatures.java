@@ -112,7 +112,7 @@ public enum IgniteFeatures {
     DISTRIBUTED_TX_COLLISIONS_DUMP(37),
 
     /** Master key change. See {@link IgniteEncryption#changeGroupKey(Collection)}. */
-    GROUP_KEY_CHANGE(31),
+    GROUP_KEY_CHANGE(38),
 
     /** Remove metadata from cluster for specified type. */
     REMOVE_METADATA(39),

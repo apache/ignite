@@ -909,14 +909,16 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public int encryptPageCount() {
-        assert encryptPageCnt <= pages() || pages() == 0 : "cnt=" + encryptPageCnt + " max=" + pages();
+        // todo remove
+        assert encryptPageCnt <= pages() || pages() == 0 : "cnt=" + encryptPageCnt + " max=" + pages() + " path=" + getFileAbsolutePath();
 
         return encryptPageCnt;
     }
 
     /** {@inheritDoc} */
     @Override public void encryptPageCount(int encPagesCnt) {
-        assert encPagesCnt <= pages() || pages() == 0 : "cnt=" + encPagesCnt + " max=" + pages();
+        // todo remove
+        assert encPagesCnt <= pages() || pages() == 0 : "cnt=" + encPagesCnt + " max=" + pages() + " path=" + getFileAbsolutePath();
 
         this.encryptPageCnt = encPagesCnt;
     }

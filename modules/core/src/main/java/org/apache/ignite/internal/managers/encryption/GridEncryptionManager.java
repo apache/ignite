@@ -248,6 +248,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     // todo walidx -> <grp -> keyIds>
     private final Map<Long, Map<Integer, Set<Integer>>> walSegments = new ConcurrentHashMap<>();
 
+    /** Recovered partitions pages count to be reencrypted. */
+    private final Map<Integer, Map<Integer, Integer>> recoveredPartPagesCnt = new ConcurrentHashMap<>(0);
+
     /** Cache group reencryption manager. */
     private CacheGroupReencryption reencryption;
 
@@ -641,6 +644,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         return keys.get(keyId);
     }
 
+    /**
+     * Gets information about existing encryption keys for the specified cache group.
+     *
+     * @param grpId Cache group ID.
+     * @return Map of the key identifier with hash code of encryption key.
+     */
     @Nullable public Map<Integer, Integer> groupKeysInfo(int grpId) {
         Map<Integer, Serializable> map = grpEncKeys.get(grpId);
 
@@ -1105,6 +1114,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metaStorage) throws IgniteCheckedException {
+        recoverPartitionPageCount();
+
         synchronized (metaStorageMux) {
             this.metaStorage = metaStorage;
 
@@ -1524,29 +1535,52 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Restart encryption of existing pages with the new key.
+     * Apply encrypted pages count for partitions during the recovery phase.
      *
      * @param rec Encryption status record.
      */
-    public void applyEncryptionStatus(EncryptionStatusRecord rec) throws IgniteCheckedException {
+    public void applyEncryptionStatus(EncryptionStatusRecord rec) {
+        assert !writeToMetaStoreEnabled;
+
+        for (Map.Entry<Integer, Map<Integer, Integer>> e : rec.groupsStatus().entrySet())
+            recoveredPartPagesCnt.computeIfAbsent(e.getKey(), v -> new ConcurrentHashMap<>()).putAll(e.getValue());
+    }
+
+    /**
+     * Apply encrypted pages count for partitions collected during recovery phase.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void recoverPartitionPageCount() throws IgniteCheckedException {
+        if (recoveredPartPagesCnt.isEmpty())
+            return;
+
         FilePageStoreManager mgr = (FilePageStoreManager)ctx.cache().context().pageStore();
 
         ctx.cache().context().database().checkpointReadLock();
 
         try {
-            for (Map.Entry<Integer, List<T2<Integer, Integer>>> entry : rec.groupsStatus().entrySet()) {
+            for (Map.Entry<Integer, Map<Integer, Integer>> entry : recoveredPartPagesCnt.entrySet()) {
                 int grpId = entry.getKey();
 
                 CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
-                for (T2<Integer, Integer> state : entry.getValue()) {
-                    int partId = state.getKey();
+                for (Map.Entry<Integer, Integer> partPagesCnt : entry.getValue().entrySet()) {
+                    int partId = partPagesCnt.getKey();
+
+                    if (!mgr.exists(grpId, partId))
+                        continue;
 
                     PageStore pageStore = mgr.getStore(grpId, partId);
 
-                    pageStore.encryptPageCount(state.getValue());
+                    int totalPages = pageStore.pages();
+                    int savedPages = partPagesCnt.getValue();
 
-                    reencryption.storePagesCountOnMetaPage(grp, partId, state.getValue());
+                    assert totalPages != 0 : "grpId=" + grpId + ", p=" + partId;
+
+                    pageStore.encryptPageCount(Math.min(savedPages, totalPages));
+
+                    reencryption.storePagesCountOnMetaPage(grp, partId, savedPages);
                 }
 
                 reencryptGroups.add(grpId);
@@ -1556,7 +1590,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         if (log.isInfoEnabled())
-            log.info("Reencryption status applied [grpIds=" + rec.groupsStatus().keySet() + "]");
+            log.info("Reencryption status applied [grpIds=" + recoveredPartPagesCnt.keySet() + "]");
+
+        recoveredPartPagesCnt.clear();
     }
 
     /**
@@ -2023,13 +2059,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                 int[] grpIds = req.groups();
 
-                Map<Integer, List<T2<Integer, Integer>>> encryptionStatus = new HashMap<>();
+                Map<Integer, Map<Integer, Integer>> encryptionStatus = new HashMap<>();
 
                 ctx.cache().context().database().checkpointReadLock();
 
                 try {
                     for (int grpId : grpIds) {
-                        List<T2<Integer, Integer>> offsets = reencryption.storePagesCount(grpId);
+                        Map<Integer, Integer> offsets = reencryption.storePagesCount(grpId);
 
                         encryptionStatus.put(grpId, offsets);
 

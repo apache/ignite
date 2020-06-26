@@ -17,28 +17,26 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.util.List;
 import java.util.Map;
-import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Logical record to restart encryption with the latest encryption key.
  */
 public class EncryptionStatusRecord extends WALRecord {
     /** Mapping the cache group ID to a list of partitions with the number of encrypted pages. */
-    private final Map<Integer, List<T2<Integer, Integer>>> grpStates;
+    private final Map<Integer, Map<Integer, Integer>> grpStates;
 
     /**
      * @param grpStates Mapping the cache group ID to a list of partitions with the number of encrypted pages.
      */
-    public EncryptionStatusRecord(Map<Integer, List<T2<Integer, Integer>>> grpStates) {
+    public EncryptionStatusRecord(Map<Integer, Map<Integer, Integer>> grpStates) {
         this.grpStates = grpStates;
     }
 
     /**
      * @return Mapping the cache group ID to a list of partitions with the number of encrypted pages.
      */
-    public Map<Integer, List<T2<Integer, Integer>>> groupsStatus() {
+    public Map<Integer, Map<Integer, Integer>> groupsStatus() {
         return grpStates;
     }
 
@@ -51,8 +49,8 @@ public class EncryptionStatusRecord extends WALRecord {
     public int dataSize() {
         int size = 4;
 
-        for (List list : grpStates.values())
-            size += /*grpId*/4 + /*length*/4 + (list.size() * (/**partId*/2 + /*pagesCnt*/4));
+        for (Map map : grpStates.values())
+            size += /*grpId*/4 + /*length*/4 + (map.size() * (/**partId*/2 + /*pagesCnt*/4));
 
         return size;
     }

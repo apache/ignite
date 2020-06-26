@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.managers.encryption;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -54,7 +53,6 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -333,11 +331,11 @@ public class CacheGroupReencryption implements DbCheckpointListener {
      * Save current pages count for reencryption.
      *
      * @param grpId Cache group ID.
-     * @return List of partitions with current page count.
+     * @return Map of partitions with current page count.
      * @throws IgniteCheckedException If failed.
      */
-    public List<T2<Integer, Integer>> storePagesCount(int grpId) throws IgniteCheckedException {
-        List<T2<Integer, Integer>> offsets = new ArrayList<>();
+    public Map<Integer, Integer> storePagesCount(int grpId) throws IgniteCheckedException {
+        Map<Integer, Integer> offsets = new HashMap<>();
 
         CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
@@ -360,7 +358,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
                     storePagesCountOnMetaPage(grp, p, pagesCnt);
 
-                    offsets.add(new T2<>(p, pagesCnt));
+                    offsets.put(p, pagesCnt);
                 }
             });
         } finally {
