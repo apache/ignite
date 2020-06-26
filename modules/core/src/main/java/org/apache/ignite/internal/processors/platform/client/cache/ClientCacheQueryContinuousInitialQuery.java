@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
@@ -29,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Initial query holder.
  */
-@SuppressWarnings("rawtypes")
+@SuppressWarnings({"rawtypes", "unchecked"})
 class ClientCacheQueryContinuousInitialQuery {
     /** */
     private static final byte TYPE_NONE = 0;
@@ -79,7 +80,7 @@ class ClientCacheQueryContinuousInitialQuery {
             @Nullable Object filter,
             byte filterPlatform,
             int pageSize,
-            Integer part,
+            @Nullable Integer part,
             boolean loc,
             @Nullable String sql) {
         assert type > TYPE_NONE && type <= TYPE_SQL;
@@ -112,7 +113,7 @@ class ClientCacheQueryContinuousInitialQuery {
                 int pageSize = reader.readInt();
 
                 int part0 = reader.readInt();
-                int part = part0 < 0 ? null : part0;
+                Integer part = part0 < 0 ? null : part0;
 
                 boolean loc = reader.readBoolean();
 
@@ -133,10 +134,14 @@ class ClientCacheQueryContinuousInitialQuery {
      *
      * @return Query.
      */
-    public Query getQuery() {
+    public Query getQuery(GridKernalContext ctx) {
         switch (type) {
             case TYPE_SCAN:
-                return new ScanQuery();
+                return new ScanQuery()
+                        .setFilter(ClientCacheScanQueryRequest.createFilter(ctx, filter, filterPlatform))
+                        .setPageSize(pageSize)
+                        .setLocal(loc)
+                        .setPartition(part);
 
             case TYPE_SQL:
                 // TODO

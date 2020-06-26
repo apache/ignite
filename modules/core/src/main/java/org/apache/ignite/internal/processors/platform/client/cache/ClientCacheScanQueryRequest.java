@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -79,7 +80,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
             .setLocal(loc)
             .setPageSize(pageSize)
             .setPartition(part)
-            .setFilter(createFilter(ctx));
+            .setFilter(createFilter(ctx.kernalContext(), filterObj, filterPlatform));
 
         ctx.incrementCursors();
 
@@ -107,7 +108,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
      * @return Filter.
      * @param ctx Context.
      */
-    private IgniteBiPredicate createFilter(ClientConnectionContext ctx) {
+    public static IgniteBiPredicate createFilter(GridKernalContext ctx, Object filterObj, byte filterPlatform) {
         if (filterObj == null)
             return null;
 
@@ -116,7 +117,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
                 return ((BinaryObject)filterObj).deserialize();
 
             case ClientPlatform.DOTNET:
-                PlatformContext platformCtx = ctx.kernalContext().platform().context();
+                PlatformContext platformCtx = ctx.platform().context();
 
                 String curPlatform = platformCtx.platform();
 
