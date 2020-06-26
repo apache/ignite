@@ -215,48 +215,47 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 else
                     removeQueryResult(sndId, req.id());
             }
-            else {
-                if (!cancelIds.contains(new CancelMessageId(req.id(), sndId))) {
-                    if (!F.eq(req.cacheName(), cctx.name())) {
-                        GridCacheQueryResponse res = new GridCacheQueryResponse(
-                            cctx.cacheId(),
-                            req.id(),
-                            new IgniteCheckedException("Received request for incorrect cache [expected=" + cctx.name() +
-                                ", actual=" + req.cacheName()),
-                            cctx.deploymentEnabled());
+            else if (!cancelIds.contains(new CancelMessageId(req.id(), sndId))) {
+                if (!F.eq(req.cacheName(), cctx.name())) {
+                    GridCacheQueryResponse res = new GridCacheQueryResponse(
+                        cctx.cacheId(),
+                        req.id(),
+                        new IgniteCheckedException("Received request for incorrect cache [expected=" + cctx.name() +
+                            ", actual=" + req.cacheName()),
+                        cctx.deploymentEnabled());
 
-                        sendQueryResponse(sndId, res, 0);
+                    sendQueryResponse(sndId, res, 0);
+                }
+                else {
+                    threads.put(req.id(), Thread.currentThread());
+
+                    try {
+                        GridCacheQueryInfo info = distributedQueryInfo(sndId, req);
+
+                        if (info == null)
+                            return;
+
+                        if (req.fields())
+                            runFieldsQuery(info);
+                        else
+                            runQuery(info);
                     }
-                    else {
-                        threads.put(req.id(), Thread.currentThread());
+                    catch (Throwable e) {
+                        U.error(log(), "Failed to run query.", e);
 
-                        try {
-                            GridCacheQueryInfo info = distributedQueryInfo(sndId, req);
+                        sendQueryResponse(sndId, new GridCacheQueryResponse(cctx.cacheId(), req.id(), e.getCause(),
+                            cctx.deploymentEnabled()), 0);
 
-                            if (info == null)
-                                return;
-
-                            if (req.fields())
-                                runFieldsQuery(info);
-                            else
-                                runQuery(info);
-                        }
-                        catch (Throwable e) {
-                            U.error(log(), "Failed to run query.", e);
-
-                            sendQueryResponse(sndId, new GridCacheQueryResponse(cctx.cacheId(), req.id(), e.getCause(),
-                                cctx.deploymentEnabled()), 0);
-
-                            if (e instanceof Error)
-                                throw (Error)e;
-                        }
-                        finally {
-                            threads.remove(req.id());
-                        }
+                        if (e instanceof Error)
+                            throw (Error)e;
+                    }
+                    finally {
+                        threads.remove(req.id());
                     }
                 }
             }
-        } finally {
+        }
+        finally {
             if (performanceStatsEnabled) {
                 IoStatisticsHolderQuery stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
