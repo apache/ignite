@@ -97,7 +97,7 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
             QueryCursor cursor = cache.query(qry);
             long cursorId = initQry == null
                     ? ctx.resources().put(cursor)
-                    : ctx.resources().put(initQry.getClientCursor(cursor));
+                    : ctx.resources().put(initQry.getClientCursor(cursor, ctx));
 
             return new ClientCacheQueryContinuousResponse(requestId(), handle, cursorId);
         }
