@@ -637,7 +637,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                     ctx.Socket.AddNotificationHandler(queryId,
                         (stream, err) => HandleContinuousQueryEvents(stream, err, continuousQuery));
 
-                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId, null);
+                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId);
                 });
         }
 
@@ -649,6 +649,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(continuousQuery.Listener, "continuousQuery.Listener");
             IgniteArgumentCheck.NotNull(initialQry, "initialQry");
             
+            // TODO: Deduplicate with above.
             return DoOutInOp(
                 ClientOp.QueryContinuous,
                 ctx => WriteContinuousQuery(ctx, continuousQuery, () =>
@@ -660,12 +661,11 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 ctx =>
                 {
                     var queryId = ctx.Stream.ReadLong();
-                    var initialQueryCursorId = ctx.Stream.ReadLong();
 
                     ctx.Socket.AddNotificationHandler(queryId,
                         (stream, err) => HandleContinuousQueryEvents(stream, err, continuousQuery));
 
-                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId, initialQueryCursorId);
+                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId);
                 });
         }
 
