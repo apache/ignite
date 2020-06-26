@@ -390,7 +390,7 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
                 log.warning("The performance statistics file maximum size is reached. " +
                     "Performance statistics collecting will be stopped.");
 
-                ctx.performanceStatistics().stopStatistics();
+                ctx.performanceStatistics().stopCollectStatistics();
             }
 
             return null;
@@ -578,7 +578,7 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
             } catch (IOException e) {
                 log.error("Unable to write to file. Performance statistics collecting will be stopped.", e);
 
-                ctx.performanceStatistics().stopStatistics();
+                ctx.performanceStatistics().stopCollectStatistics();
             }
         }
 

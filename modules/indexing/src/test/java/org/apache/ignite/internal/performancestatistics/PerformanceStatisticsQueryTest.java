@@ -149,13 +149,13 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         log1.registerListener(lsnr1);
         clientLog.registerListener(clientLsnr);
 
-        startStatistics();
+        startCollectStatistics();
 
         int size = cache.query(qry).getAll().size();
 
         assertEquals(ENTRY_COUNT, size);
 
-        stopStatisticsAndCheck(lsnr0, lsnr1, clientLsnr);
+        stopCollectStatisticsAndCheck(lsnr0, lsnr1, clientLsnr);
 
         lsnr0 = readsListener(true, false);
         lsnr1 = readsListener(true, false);
@@ -164,13 +164,13 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         log0.registerListener(lsnr0);
         log1.registerListener(lsnr1);
 
-        startStatistics();
+        startCollectStatistics();
 
         size = cache.query(qry).getAll().size();
 
         assertEquals(ENTRY_COUNT, size);
 
-        stopStatisticsAndCheck(lsnr0, lsnr1, clientLsnr);
+        stopCollectStatisticsAndCheck(lsnr0, lsnr1, clientLsnr);
     }
 
     /** @return Log listener for given reads. */

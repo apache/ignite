@@ -40,26 +40,26 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PERFORMANCE_STAT_DIR, false));
     }
 
-    /** Starts performance statistics. */
-    public static void startStatistics() throws Exception {
+    /** Starts collecting performance statistics. */
+    public static void startCollectStatistics() throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
 
         IgniteEx ignite = (IgniteEx)grids.get(0);
 
-        ignite.context().performanceStatistics().startStatistics().get();
+        ignite.context().performanceStatistics().startCollectStatistics().get();
     }
 
-    /** Stops performance statistics and checks listeners on all grids. */
-    public static void stopStatisticsAndCheck(LogListener... lsnrs) throws Exception {
+    /** Stops collecting performance statistics and checks listeners on all grids. */
+    public static void stopCollectStatisticsAndCheck(LogListener... lsnrs) throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
 
         IgniteEx ignite = (IgniteEx)grids.get(0);
 
-        ignite.context().performanceStatistics().stopStatistics().get();
+        ignite.context().performanceStatistics().stopCollectStatistics().get();
 
         for (Ignite grid : grids)
             readToLog(statisticsFile(((IgniteEx)grid).context()).toPath(), grid.log());

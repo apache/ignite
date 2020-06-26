@@ -198,7 +198,7 @@ class CacheLockImpl<K, V> implements Lock {
             if (cntr == 0) {
                 PerformaceStatisticsProcessor stat = delegate.context().kernalContext().performanceStatistics();
 
-                if (stat.statisticsEnabled()) {
+                if (stat.enabled()) {
                     stat.writer().cacheOperation(CacheOperationType.LOCK,
                         delegate.context().cacheId(),
                         U.currentTimeMillis(),

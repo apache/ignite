@@ -201,9 +201,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert req.mvccSnapshot() != null || !cctx.mvccEnabled() || req.cancel() ||
             (req.type() == null && !req.fields()) : req; // Last assertion means next page request.
 
-        boolean statsEnabled = cctx.kernalContext().performanceStatistics().statisticsEnabled();
+        boolean performanceStatsEnabled = cctx.kernalContext().performanceStatistics().enabled();
 
-        if (statsEnabled)
+        if (performanceStatsEnabled)
             IoStatisticsQueryHelper.startGatheringQueryStatistics();
 
         try {
@@ -257,7 +257,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 }
             }
         } finally {
-            if (statsEnabled) {
+            if (performanceStatsEnabled) {
                 IoStatisticsHolderQuery stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
                 if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
@@ -617,10 +617,10 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert qry.type() == GridCacheQueryType.SCAN : qry;
         assert qry.mvccSnapshot() != null || !cctx.mvccEnabled();
 
-        boolean statsEnabled = cctx.kernalContext().performanceStatistics().statisticsEnabled();
+        boolean performanceStatsEnabled = cctx.kernalContext().performanceStatistics().enabled();
 
-        long startTime = statsEnabled ? System.currentTimeMillis() : 0;
-        long startTimeNanos = statsEnabled ? System.nanoTime() : 0;
+        long startTime = performanceStatsEnabled ? System.currentTimeMillis() : 0;
+        long startTimeNanos = performanceStatsEnabled ? System.nanoTime() : 0;
 
         GridCloseableIterator locIter0 = null;
 
@@ -695,7 +695,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (fut != null)
                     fut.cancel();
 
-                if (statsEnabled) {
+                if (performanceStatsEnabled) {
                     cctx.kernalContext().performanceStatistics().writer().query(
                         SCAN,
                         cctx.name(),

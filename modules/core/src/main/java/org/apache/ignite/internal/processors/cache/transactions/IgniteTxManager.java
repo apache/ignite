@@ -3204,7 +3204,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param commited {@code True} if transaction commited.
      */
     private void writeStatistics(IgniteInternalTx tx, boolean commited) {
-        if (!cctx.kernalContext().performanceStatistics().statisticsEnabled() || tx.startTimeNanos() == 0)
+        if (!cctx.kernalContext().performanceStatistics().enabled() || tx.startTimeNanos() == 0)
             return;
 
         cctx.kernalContext().performanceStatistics().writer().transaction(

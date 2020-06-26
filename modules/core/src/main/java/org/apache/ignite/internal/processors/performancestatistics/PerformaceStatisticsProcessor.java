@@ -80,7 +80,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
 
             return writer.stop().chain(f -> true);
         }, (uuid, res, err) -> {
-            if (!F.isEmpty(err) && statisticsEnabled())
+            if (!F.isEmpty(err) && enabled())
                 writer.stop();
 
             synchronized (mux) {
@@ -102,7 +102,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */
-    public boolean statisticsEnabled() {
+    public boolean enabled() {
         return writer.performanceStatisticsEnabled();
     }
 
@@ -111,7 +111,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
      *
      * @return Future to be completed on collecting started.
      */
-    public IgniteInternalFuture<Void> startStatistics() {
+    public IgniteInternalFuture<Void> startCollectStatistics() {
         if (!allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.PERFORMANCE_STATISTICS)) {
             return new GridFinishedFuture<>(
                 new IllegalStateException("Not all nodes in the cluster support collecting performance statistics."));
@@ -140,7 +140,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
      *
      * @return Future to be completed on collecting stopped.
      */
-    public IgniteInternalFuture<Void> stopStatistics() {
+    public IgniteInternalFuture<Void> stopCollectStatistics() {
         GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
         UUID uuid = UUID.randomUUID();
@@ -161,10 +161,10 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (!statisticsEnabled() || dataBag.commonDataCollectedFor(PERFORMANCE_STAT_PROC.ordinal()))
+        if (!enabled() || dataBag.commonDataCollectedFor(PERFORMANCE_STAT_PROC.ordinal()))
             return;
 
-        dataBag.addNodeSpecificData(PERFORMANCE_STAT_PROC.ordinal(), new DiscoveryData(statisticsEnabled()));
+        dataBag.addNodeSpecificData(PERFORMANCE_STAT_PROC.ordinal(), new DiscoveryData(enabled()));
     }
 
     /** {@inheritDoc} */
@@ -172,12 +172,12 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         DiscoveryData discoData = (DiscoveryData)data.commonData();
 
         if (discoData.statEnabled)
-            startStatistics();
+            startCollectStatistics();
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (statisticsEnabled())
+        if (enabled())
             writer.stop();
 
         synchronized (mux) {

@@ -149,7 +149,7 @@ public class RunningQueryManager {
             qryType,
             schemaName,
             System.currentTimeMillis(),
-            ctx.performanceStatistics().statisticsEnabled() ? System.nanoTime() : 0,
+            ctx.performanceStatistics().enabled() ? System.nanoTime() : 0,
             cancel,
             loc
         );
@@ -198,7 +198,7 @@ public class RunningQueryManager {
             }
         }
 
-        if (ctx.performanceStatistics().statisticsEnabled() && qry.startTimeNanos() > 0) {
+        if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
             ctx.performanceStatistics().writer().query(
                 qry.queryType(),
                 qry.query(),

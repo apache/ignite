@@ -115,7 +115,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         log.registerListener(taskLsnr);
         log.registerListener(jobLsnr);
 
-        startStatistics();
+        startCollectStatistics();
 
         ignite.compute().broadcast(new IgniteRunnable() {
             @Override public void run() {
@@ -123,7 +123,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
             }
         });
 
-        stopStatisticsAndCheck(taskLsnr, jobLsnr);
+        stopCollectStatisticsAndCheck(taskLsnr, jobLsnr);
     }
 
     /** @throws Exception If failed. */
@@ -184,11 +184,11 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
         log.registerListener(lsnr);
 
-        startStatistics();
+        startCollectStatistics();
 
         clo.accept(ignite.cache(DEFAULT_CACHE_NAME));
 
-        stopStatisticsAndCheck(lsnr);
+        stopCollectStatisticsAndCheck(lsnr);
     }
 
     /** @throws Exception If failed. */
@@ -209,7 +209,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
         log.registerListener(lsnr);
 
-        startStatistics();
+        startCollectStatistics();
 
         try (Transaction tx = ignite.transactions().txStart()) {
             for (int i = 0; i < 10; i++)
@@ -221,6 +221,6 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
                 tx.rollback();
         }
 
-        stopStatisticsAndCheck(lsnr);
+        stopCollectStatisticsAndCheck(lsnr);
     }
 }
