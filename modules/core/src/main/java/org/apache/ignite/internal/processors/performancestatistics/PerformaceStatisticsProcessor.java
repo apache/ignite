@@ -35,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.mxbean.IgnitePerformanceStatistics;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.PERFORMANCE_STAT_PROC;

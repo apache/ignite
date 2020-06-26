@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.performancestatistics;
 
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatisticsMBean;
 import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatisticsMBeanImpl;
+import org.apache.ignite.mxbean.IgnitePerformanceStatisticsMBean;
 import org.junit.Test;
 
 /** Tests {@link IgnitePerformanceStatisticsMBeanImpl}. */

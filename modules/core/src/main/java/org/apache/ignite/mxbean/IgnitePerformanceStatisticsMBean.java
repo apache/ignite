@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.performancestatistics;
+package org.apache.ignite.mxbean;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.lang.IgniteExperimental;
-import org.apache.ignite.mxbean.MXBeanDescription;
 
 /**
  * MBean that provides access to performance statistics management.

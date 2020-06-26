@@ -37,11 +37,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.OperationType;
+import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.mxbean.IgnitePerformanceStatistics;
-import org.apache.ignite.mxbean.IgnitePerformanceStatistics.CacheOperationType;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.ByteBuffer.allocateDirect;
