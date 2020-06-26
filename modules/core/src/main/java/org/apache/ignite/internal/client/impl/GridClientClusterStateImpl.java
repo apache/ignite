@@ -27,7 +27,6 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
-import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.impl.id_and_tag.IdAndTagViewTask;
 import org.apache.ignite.internal.client.impl.id_and_tag.IdAndTagViewTaskResult;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
