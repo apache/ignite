@@ -177,9 +177,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             using (var handle = cache.QueryContinuous(qry, initialQry))
             {
-                // TODO: this key occurs in Initial query cursor, why?
-                // cache.Put(-1, -1);
-                
                 using (var cursor = handle.GetInitialQueryCursor())
                 {
                     var initialItems = getAll ? cursor.GetAll() : cursor.ToList();
