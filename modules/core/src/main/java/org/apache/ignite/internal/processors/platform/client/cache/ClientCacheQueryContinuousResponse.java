@@ -33,23 +33,18 @@ class ClientCacheQueryContinuousResponse extends ClientResponse {
     /** */
     private final long continuousQueryId;
 
-    /** */
-    private final Long initialQueryId;
-
     /**
      * Ctor.
      * @param reqId Request id.
      * @param handle Handle.
      * @param continuousQueryId Continuous query handle id.
-     * @param initialQueryId Initial query cursor id.
      */
     public ClientCacheQueryContinuousResponse(long reqId, ClientCacheQueryContinuousHandle handle,
-                                              long continuousQueryId, Long initialQueryId) {
+                                              long continuousQueryId) {
         super(reqId);
         this.handle = handle;
 
         this.continuousQueryId = continuousQueryId;
-        this.initialQueryId = initialQueryId;
     }
 
     /** {@inheritDoc} */
@@ -57,9 +52,6 @@ class ClientCacheQueryContinuousResponse extends ClientResponse {
         super.encode(ctx, writer);
 
         writer.writeLong(continuousQueryId);
-
-        if (initialQueryId != null)
-            writer.writeLong(initialQueryId);
     }
 
     /** {@inheritDoc} */

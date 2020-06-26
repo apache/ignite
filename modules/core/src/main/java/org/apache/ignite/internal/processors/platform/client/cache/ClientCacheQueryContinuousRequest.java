@@ -53,6 +53,9 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
     /** */
     private final byte filterPlatform;
 
+    /** */
+    private final ClientCacheQueryContinuousInitialQuery initQry;
+
     /**
      * Ctor.
      *
@@ -67,6 +70,7 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
 
         filter = reader.readObjectDetached();
         filterPlatform = filter == null ? 0 : reader.readByte();
+        initQry = ClientCacheQueryContinuousInitialQuery.read(reader);
 
         qry = new ContinuousQuery();
 
@@ -87,11 +91,13 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
             ClientCacheQueryContinuousHandle handle = new ClientCacheQueryContinuousHandle(ctx);
             qry.setLocalListener(handle);
 
+            if (initQry != null)
+                qry.setInitialQuery(initQry.getQuery(ctx.kernalContext()));
+
             QueryCursor cursor = cache.query(qry);
             long cursorId = ctx.resources().put(cursor);
 
-            // TODO: Initial query.
-            return new ClientCacheQueryContinuousResponse(requestId(), handle, cursorId, null);
+            return new ClientCacheQueryContinuousResponse(requestId(), handle, cursorId);
         }
         catch (Exception e) {
             ctx.decrementCursors();
