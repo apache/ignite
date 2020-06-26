@@ -96,7 +96,7 @@ final class DistributedMetaStorageHistoryCache {
                 expandBuffer();
         }
         else {
-            assert ver == startingVer + size() - 1 : startingVer + " " + from + " " + to + " " + ver;
+            assert ver == startingVer + size() - 1 : startingVer + " " + from + " " + to + " " + ver; //1 0 1 3
             assert items[(to - 1) & (items.length - 1)].equals(item);
         }
     }

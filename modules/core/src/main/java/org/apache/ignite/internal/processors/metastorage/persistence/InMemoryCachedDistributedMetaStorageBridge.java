@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -85,13 +84,7 @@ class InMemoryCachedDistributedMetaStorageBridge {
             if (!entry.getKey().startsWith(globalKeyPrefix))
                 break;
 
-            Serializable val = unmarshal(marshaller, entry.getValue());
-
-            // Skip value with unknown class.
-            if (val == null)
-                continue;
-
-            cb.accept(entry.getKey(), val);
+            cb.accept(entry.getKey(), unmarshal(marshaller, entry.getValue()));
         }
     }
 
@@ -132,8 +125,7 @@ class InMemoryCachedDistributedMetaStorageBridge {
 
     /** */
     public DistributedMetaStorageVersion readInitialData(
-        ReadOnlyMetastorage metastorage,
-        Predicate<byte[]> skipFilter
+        ReadOnlyMetastorage metastorage
     ) throws IgniteCheckedException {
         if (metastorage.readRaw(cleanupGuardKey()) != null)
             return DistributedMetaStorageVersion.INITIAL_VERSION;
@@ -161,12 +153,7 @@ class InMemoryCachedDistributedMetaStorageBridge {
 
             metastorage.iterate(
                 localKeyPrefix(),
-                (key, val) -> {
-                    if (skipFilter != null && skipFilter.test((byte[])val))
-                        return;
-
-                    cache.put(globalKey(key), (byte[])val);
-                },
+                (key, val) -> cache.put(globalKey(key), (byte[])val),
                 false
             );
 
@@ -178,12 +165,8 @@ class InMemoryCachedDistributedMetaStorageBridge {
 
                     if (valBytes == null)
                         cache.remove(key);
-                    else {
-                        if (skipFilter != null && skipFilter.test(valBytes))
-                            continue;
-
+                    else
                         cache.put(key, valBytes);
-                    }
                 }
             }
 

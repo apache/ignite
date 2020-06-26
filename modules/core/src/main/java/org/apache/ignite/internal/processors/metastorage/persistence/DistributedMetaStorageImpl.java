@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
@@ -26,6 +25,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
@@ -75,8 +75,10 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage.isSupported;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemPrefix;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemVer;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKeyPrefix;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.marshal;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.unmarshal;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageVersion.INITIAL_VERSION;
@@ -177,6 +179,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Worker that will write data on disk asynchronously. Makes sence for persistent nodes only.
      */
     private final DmsDataWriterWorker worker;
+
+    /** List of keys that should be skipped due to marshalling porpose. */
+    private final ConcurrentSkipListSet<String> skippedKeys = new ConcurrentSkipListSet<>();
 
     /**
      * @param ctx Kernal context.
@@ -365,17 +370,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             lock.writeLock().lock();
 
             try {
-                ver = bridge.readInitialData(metastorage, valBytes -> !canBeUnmarshalled(valBytes));
+                prepareSkippedKeys(metastorage);
+
+                ver = bridge.readInitialData(metastorage);
 
                 metastorage.iterate(
                     historyItemPrefix(),
-                    (key, val) -> {
-                        DistributedMetaStorageHistoryItem histItem =
-                            withSkipUnknownKeys((DistributedMetaStorageHistoryItem)val);
-
-                        if (histItem != null)
-                            addToHistoryCache(historyItemVer(key), histItem);
-                    },
+                    (key, val) -> addToHistoryCache(historyItemVer(key), (DistributedMetaStorageHistoryItem)val),
                     true
                 );
             }
@@ -714,6 +715,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private String validatePayload(DistributedMetaStorageJoiningNodeData joiningData) {
         for (DistributedMetaStorageHistoryItem item : joiningData.hist) {
             for (int i = 0; i < item.keys().length; i++) {
+                if (skippedKeys.contains(item.keys()[i]))
+                    continue;
+
                 try {
                     unmarshal(marshaller, item.valuesBytesArray()[i]);
                 }
@@ -1331,7 +1335,27 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @param oldVal Old value.
      * @param newVal New value.
      */
+    private void notifyListeners(String key, Serializable oldValBytes, Serializable newValBytes) {
+        if (skippedKeys.contains(key))
+            return;
+
+        Serializable oldVal = oldValBytes == null ? null : unmarshal(marshaller, oldValBytes);
+        Serializable newVal
+
+        notifyListeners
+    }
+
+    /**
+     * Notify listeners.
+     *
+     * @param key The key.
+     * @param oldVal Old value.
+     * @param newVal New value.
+     */
     private void notifyListeners(String key, Serializable oldVal, Serializable newVal) {
+        if (skippedKeys.contains(key))
+            return;
+
         for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : lsnrs) {
             if (entry.get1().test(key)) {
                 try {
@@ -1362,36 +1386,28 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** */
-    private DistributedMetaStorageHistoryItem withSkipUnknownKeys(DistributedMetaStorageHistoryItem histItem) {
-        ArrayList<Integer> skipped = new ArrayList<>(0);
+    private void prepareSkippedKeys(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
+        metastorage.iterate(
+            historyItemPrefix(),
+            (key, val) -> {
+                DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)val;
 
-        for (int i = 0; i < histItem.keys().length; i++) {
-            if (!canBeUnmarshalled(histItem.valuesBytesArray()[i]))
-                skipped.add(i);
-        }
+                for (int i = 0; i < histItem.keys().length; i++) {
+                    if (!canBeUnmarshalled(histItem.valuesBytesArray()[i]))
+                        skippedKeys.add(histItem.keys()[i]);
+                }
+            },
+            true
+        );
 
-        if (skipped.isEmpty())
-            return histItem;
-
-        int newCnt = histItem.keys().length - skipped.size();
-
-        if (newCnt == 0)
-            return null;
-
-        String[] newKeys = new String[newCnt];
-        byte[][] newValBytesArr = new byte[newCnt][];
-
-        for (int src = 0, dst = 0; src < histItem.keys().length; src++) {
-            if (skipped.contains(src))
-                continue;
-
-            newKeys[dst] = histItem.keys()[src];
-            newValBytesArr[dst] = histItem.valuesBytesArray()[src];
-
-            dst++;
-        }
-
-        return new DistributedMetaStorageHistoryItem(newKeys, newValBytesArr);
+        metastorage.iterate(
+            localKeyPrefix(),
+            (key, val) -> {
+                if (!canBeUnmarshalled((byte[])val))
+                    skippedKeys.add(globalKey(key));
+            },
+            false
+        );
     }
 
     /** @return {@code True} if value can be unmarshalled. {@code False} otherwice. */
