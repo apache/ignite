@@ -40,6 +40,8 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 
 /**
  * Performance statistics processor.
+ * <p>
+ * Manages collecting statistics.
  */
 public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     /** Process to start/stop statistics. */
@@ -94,7 +96,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         });
     }
 
-    /** @return Performance statistics collector. */
+    /** @return Performance statistics writer. */
     public IgnitePerformanceStatistics writer() {
         return writer;
     }
@@ -104,7 +106,11 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         return writer.performanceStatisticsEnabled();
     }
 
-    /** Starts collecting performance statistics. */
+    /**
+     * Starts collecting performance statistics.
+     *
+     * @return Future to be completed on collecting started.
+     */
     public IgniteInternalFuture<Void> startStatistics() {
         if (!allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.PERFORMANCE_STATISTICS)) {
             return new GridFinishedFuture<>(

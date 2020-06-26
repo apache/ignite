@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Performance statistics collector based on logging to a file.
  * <p>
- * Each node collects statistics to a file placed under {@link #PERFORMANCE_STATISTICS_DIR}.
+ * Each node collects statistics to a file placed under {@link #PERFORMANCE_STAT_DIR}.
  * <p>
  * <b>Note:</b> Start again will erase previous performance statistics files.
  * <p>
@@ -67,7 +67,7 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
     public static final int DFLT_FLUSH_SIZE = 8 * 1024 * 1024;
 
     /** Directory to store performance statistics files. Placed under Ignite work directory. */
-    public static final String PERFORMANCE_STATISTICS_DIR = "performanceStatistics";
+    public static final String PERFORMANCE_STAT_DIR = "performanceStatistics";
 
     /** Factory to provide I/O interface. */
     private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
@@ -407,7 +407,7 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
     public static File statisticsFile(GridKernalContext ctx) throws IgniteCheckedException {
         String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
 
-        File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERFORMANCE_STATISTICS_DIR, false);
+        File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERFORMANCE_STAT_DIR, false);
 
         return new File(fileDir, "node-" + ctx.localNodeId() + ".prf");
     }

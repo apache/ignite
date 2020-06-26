@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.performancestatistics.TestFilePerformanceStatisticsReader.readToLog;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.PERFORMANCE_STATISTICS_DIR;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.PERFORMANCE_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.statisticsFile;
 
 /**
@@ -37,7 +37,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PERFORMANCE_STATISTICS_DIR, false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PERFORMANCE_STAT_DIR, false));
     }
 
     /** Starts performance statistics. */

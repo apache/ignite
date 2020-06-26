@@ -427,7 +427,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private DurableBackgroundTasksProcessor durableBackgroundTasksProcessor;
 
-    /** */
+    /** Performance statistics processor. */
     @GridToStringExclude
     private PerformaceStatisticsProcessor perfStatProc;
 

@@ -36,6 +36,7 @@ public class IgnitePerformanceStatisticsMbeanImpl implements IgnitePerformanceSt
     @Override public void start() throws IgniteCheckedException {
         ctx.performanceStatistics().startStatistics().get();
     }
+
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteCheckedException {
         ctx.performanceStatistics().stopStatistics().get();
