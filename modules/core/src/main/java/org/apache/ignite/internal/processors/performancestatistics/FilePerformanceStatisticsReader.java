@@ -17,21 +17,35 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.OperationType;
 import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
+import static java.nio.file.Files.walkFileTree;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.readIgniteUuid;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.readUuid;
 
@@ -44,8 +58,43 @@ public class FilePerformanceStatisticsReader {
     /** File read buffer size. */
     private static final int READ_BUFFER_SIZE = 8 * 1024 * 1024;
 
+    /** Uuid as string pattern. */
+    private static final String UUID_STR_PATTERN =
+        "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
+
+    /** File name pattern. */
+    private static final Pattern FILE_PATTERN = Pattern.compile("^node-("+ UUID_STR_PATTERN + ").prf$");
+
     /** IO factory. */
     private static final RandomAccessFileIOFactory ioFactory = new RandomAccessFileIOFactory();
+
+    /**
+     * Walks over performance statistics files.
+     *
+     * @param filesOrDirs Files or directories.
+     * @param handlers Handlers to process deserialized operation.
+     */
+    public static void read(List<File> filesOrDirs, PerformanceStatisticsHandler... handlers) throws IOException {
+        ByteBuffer buf = allocateDirect(READ_BUFFER_SIZE).order(nativeOrder());
+
+        try {
+            List<File> files = resolveFiles(filesOrDirs);
+
+            if (files.isEmpty())
+                return;
+
+            for (File file : files) {
+                UUID nodeId = checkFileName(file);
+
+                for (PerformanceStatisticsHandler handler : handlers)
+                    handler.nodeId(nodeId);
+
+                readFile(file, handlers);
+            }
+        } finally {
+            GridUnsafe.cleanDirectBuffer(buf);
+        }
+    }
 
     /**
      * Walks over performance statistics file.
@@ -53,11 +102,11 @@ public class FilePerformanceStatisticsReader {
      * @param file Performance statistics file.
      * @param handlers Handlers to process deserialized operation.
      */
-    public static void read(Path file, IgnitePerformanceStatistics... handlers) throws IOException {
+    private static void readFile(File file, PerformanceStatisticsHandler... handlers) throws IOException {
         ByteBuffer buf = allocateDirect(READ_BUFFER_SIZE).order(nativeOrder());
 
         try (
-            FileIO io = ioFactory.create(file.toFile());
+            FileIO io = ioFactory.create(file);
             PerformanceStatisticsDeserializer des = new PerformanceStatisticsDeserializer(handlers)
         ) {
             while (true) {
@@ -78,9 +127,46 @@ public class FilePerformanceStatisticsReader {
         }
     }
 
-    /**
-     * Performance statistics operations deserializer.
-     */
+    /** Resolves performance statistics files. */
+    private static List<File> resolveFiles(List<File> filesOrDirs) throws IOException {
+        if (filesOrDirs == null || filesOrDirs.isEmpty())
+            return Collections.emptyList();
+
+        List<File> files = new LinkedList<>();
+
+        for (File file : filesOrDirs) {
+            if (file.isDirectory()) {
+                walkFileTree(file.toPath(), EnumSet.noneOf(FileVisitOption.class), 1,
+                    new SimpleFileVisitor<Path>() {
+                        @Override public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+                            if (checkFileName(path.toFile()) != null)
+                                files.add(path.toFile());
+
+                            return FileVisitResult.CONTINUE;
+                        }
+                    });
+
+                continue;
+            }
+
+            if (checkFileName(file) != null)
+                files.add(file);
+        }
+
+        return files;
+    }
+
+    /** @return UUID node of file. {@code Null} if this is not a statistics file. */
+    @Nullable private static UUID checkFileName(File file) {
+        Matcher matcher = FILE_PATTERN.matcher(file.getName());
+
+        if (matcher.matches())
+            return UUID.fromString(matcher.group(1));
+
+        return null;
+    }
+
+    /** Performance statistics operations deserializer. */
     private static class PerformanceStatisticsDeserializer implements AutoCloseable {
         /** Cached strings by id. */
         private final ConcurrentHashMap<Short, String> stringById = new ConcurrentHashMap<>();
@@ -107,7 +193,7 @@ public class FilePerformanceStatisticsReader {
 
             byte opTypeByte = buf.get();
 
-            FilePerformanceStatistics.OperationType opType = FilePerformanceStatistics.OperationType.fromOrdinal(opTypeByte);
+            OperationType opType = OperationType.fromOrdinal(opTypeByte);
 
             switch (opType) {
                 case CACHE_OPERATION: {
@@ -276,6 +362,22 @@ public class FilePerformanceStatisticsReader {
         /** {@inheritDoc} */
         @Override public void close() {
             stringById.clear();
+        }
+    }
+
+    /** Performance statistics handler. */
+    public abstract static class PerformanceStatisticsHandler implements IgnitePerformanceStatistics {
+        /** Node id. */
+        private UUID nodeId;
+
+        /** @return Current node id. */
+        public UUID nodeId() {
+            return nodeId;
+        }
+
+        /** Set current node id. */
+        private void nodeId(UUID nodeId) {
+            this.nodeId = nodeId;
         }
     }
 }

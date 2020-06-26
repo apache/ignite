@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.performancestatistics;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
+import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader;
-import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics;
+import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader.PerformanceStatisticsHandler;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -35,12 +36,12 @@ public class TestFilePerformanceStatisticsReader {
      * @param file Performance statistics file to read.
      * @param log Log to write operations to.
      */
-    public static void readToLog(Path file, IgniteLogger log) throws IOException {
-        FilePerformanceStatisticsReader.read(file, new LogMessageHandler(log));
+    public static void readToLog(File file, IgniteLogger log) throws IOException {
+        FilePerformanceStatisticsReader.read(Collections.singletonList(file), new LogMessageHandler(log));
     }
 
     /** The handler that writes handled operations to the log. */
-    private static class LogMessageHandler implements IgnitePerformanceStatistics {
+    private static class LogMessageHandler extends PerformanceStatisticsHandler {
         /** Log to write operations to. */
         private final IgniteLogger log;
 
@@ -103,9 +104,10 @@ public class TestFilePerformanceStatisticsReader {
             for (int i = 0; i < tuples.length; i += 2) {
                 sb.append(tuples[i]).append("=").append(tuples[i + 1]);
 
-                if (i < tuples.length - 2)
-                    sb.append(", ");
+                sb.append(", ");
             }
+
+            sb.append("nodeId=").append(nodeId());
 
             sb.append(']');
 

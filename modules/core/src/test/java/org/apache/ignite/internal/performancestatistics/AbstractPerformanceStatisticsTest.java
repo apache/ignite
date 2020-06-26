@@ -62,7 +62,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         ignite.context().performanceStatistics().stopCollectStatistics().get();
 
         for (Ignite grid : grids)
-            readToLog(statisticsFile(((IgniteEx)grid).context()).toPath(), grid.log());
+            readToLog(statisticsFile(((IgniteEx)grid).context()), grid.log());
 
         for (LogListener lsnr : lsnrs)
             assertTrue(lsnr.check());
