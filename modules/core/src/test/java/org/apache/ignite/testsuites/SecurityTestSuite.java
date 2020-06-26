@@ -57,6 +57,8 @@ import org.apache.ignite.internal.processors.security.sandbox.MessagingSandboxTe
 import org.apache.ignite.internal.processors.security.sandbox.IgnitionComponentProxyTest;
 import org.apache.ignite.internal.processors.security.sandbox.SecuritySubjectPermissionsTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
+import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -111,4 +113,9 @@ import org.junit.runners.Suite;
     MultipleSSLContextsTest.class
 })
 public class SecurityTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
+        JUnitTeamcityReporter.suite = SecurityTestSuite.class.getName();
+    }
 }
