@@ -42,7 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
 import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatisticsMBean;
-import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatisticsMbeanImpl;
+import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatisticsMBeanImpl;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
@@ -240,7 +240,7 @@ public class IgniteMBeansManager {
         if (ctx.query().moduleEnabled())
             ctx.query().getIndexing().registerMxBeans(this);
 
-        IgnitePerformanceStatisticsMbeanImpl performanceStatMbean = new IgnitePerformanceStatisticsMbeanImpl(ctx);
+        IgnitePerformanceStatisticsMBeanImpl performanceStatMbean = new IgnitePerformanceStatisticsMBeanImpl(ctx);
         registerMBean("PerformanceStatistics", performanceStatMbean.getClass().getSimpleName(), performanceStatMbean,
             IgnitePerformanceStatisticsMBean.class);
     }

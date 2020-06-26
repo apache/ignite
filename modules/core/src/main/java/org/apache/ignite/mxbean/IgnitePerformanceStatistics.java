@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.performancestatistics;
+package org.apache.ignite.mxbean;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;

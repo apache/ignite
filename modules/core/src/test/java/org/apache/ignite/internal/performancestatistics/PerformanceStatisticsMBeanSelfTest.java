@@ -19,10 +19,10 @@ package org.apache.ignite.internal.performancestatistics;
 
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatisticsMBean;
-import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatisticsMbeanImpl;
+import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatisticsMBeanImpl;
 import org.junit.Test;
 
-/** Tests {@link IgnitePerformanceStatisticsMbeanImpl}. */
+/** Tests {@link IgnitePerformanceStatisticsMBeanImpl}. */
 public class PerformanceStatisticsMBeanSelfTest extends AbstractPerformanceStatisticsTest {
     /** @throws Exception If failed. */
     @Test
@@ -52,7 +52,7 @@ public class PerformanceStatisticsMBeanSelfTest extends AbstractPerformanceStati
      * @return Ignite performance statistics MBean.
      */
     private IgnitePerformanceStatisticsMBean getMBean(String igniteInstanceName) {
-        return getMxBean(igniteInstanceName, "PerformanceStatistics", IgnitePerformanceStatisticsMbeanImpl.class,
+        return getMxBean(igniteInstanceName, "PerformanceStatistics", IgnitePerformanceStatisticsMBeanImpl.class,
             IgnitePerformanceStatisticsMBean.class);
     }
 }

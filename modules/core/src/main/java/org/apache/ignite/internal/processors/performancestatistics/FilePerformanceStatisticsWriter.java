@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.IgnitePerformanceStatistics;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
-public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
+public class FilePerformanceStatisticsWriter implements IgnitePerformanceStatistics {
     /** Default maximum file size in bytes. Performance statistics will be stopped when the size exceeded. */
     public static final long DFLT_FILE_MAX_SIZE = 32 * 1024 * 1024 * 1024L;
 
@@ -85,7 +86,7 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
     private final IgniteLogger log;
 
     /** @param ctx Kernal context. */
-    public FilePerformanceStatistics(GridKernalContext ctx) {
+    public FilePerformanceStatisticsWriter(GridKernalContext ctx) {
         log = ctx.log(getClass());
 
         this.ctx = ctx;
@@ -386,12 +387,8 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
         if (seg.buffer() == null) {
             seg.release();
 
-            if (!fileWriter.isCancelled()) {
-                log.warning("The performance statistics file maximum size is reached. " +
-                    "Performance statistics collecting will be stopped.");
-
-                ctx.performanceStatistics().stopCollectStatistics();
-            }
+            if (!fileWriter.isCancelled())
+                fileWriter.onMaxFileSizeReached();
 
             return null;
         }
@@ -465,6 +462,9 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
 
         /** {@code True} if the small buffer warning message logged. */
         private final AtomicBoolean smallBufLogged = new AtomicBoolean();
+
+        /** {@code True} if worker stopped due to maximum file size reached. */
+        private final AtomicBoolean stopByMaxSize = new AtomicBoolean();
 
         /**
          * @param ctx Kernal context.
@@ -598,6 +598,18 @@ public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
             if (smallBufLogged.compareAndSet(false, true)) {
                 log.warning("The performance statistics in-memory buffer size is too small. Some operations " +
                     "will not be logged.");
+            }
+        }
+
+        /** Logs warning message and stops collecting statistics. */
+        void onMaxFileSizeReached() {
+            if (stopByMaxSize.compareAndSet(false, true)) {
+                fileWriter.shutdown();
+
+                ctx.performanceStatistics().stopCollectStatistics();
+
+                log.warning("The performance statistics file maximum size is reached. " +
+                    "Performance statistics collecting will be stopped.");
             }
         }
     }

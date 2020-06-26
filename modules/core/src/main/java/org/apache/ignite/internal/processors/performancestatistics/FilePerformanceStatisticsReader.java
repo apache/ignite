@@ -36,23 +36,24 @@ import java.util.regex.Pattern;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.OperationType;
-import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType;
+import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.OperationType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.IgnitePerformanceStatistics;
+import org.apache.ignite.mxbean.IgnitePerformanceStatistics.CacheOperationType;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.file.Files.walkFileTree;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.readIgniteUuid;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.readUuid;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.readIgniteUuid;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.readUuid;
 
 /**
  * Walker over the performance statistics file.
  *
- * @see FilePerformanceStatistics
+ * @see FilePerformanceStatisticsWriter
  */
 public class FilePerformanceStatisticsReader {
     /** File read buffer size. */

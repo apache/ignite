@@ -23,12 +23,12 @@ import org.apache.ignite.internal.GridKernalContext;
 /**
  * {@link IgnitePerformanceStatisticsMBean} implementation.
  */
-public class IgnitePerformanceStatisticsMbeanImpl implements IgnitePerformanceStatisticsMBean {
+public class IgnitePerformanceStatisticsMBeanImpl implements IgnitePerformanceStatisticsMBean {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
     /** @param ctx Kernal context. */
-    public IgnitePerformanceStatisticsMbeanImpl(GridKernalContext ctx) {
+    public IgnitePerformanceStatisticsMBeanImpl(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 

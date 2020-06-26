@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.IgnitePerformanceStatistics;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.PERFORMANCE_STAT_PROC;
@@ -51,7 +52,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter implemen
     private final DistributedProcess<Boolean, Boolean> proc;
 
     /** Performance statistics writer. */
-    private final FilePerformanceStatistics writer;
+    private final FilePerformanceStatisticsWriter writer;
 
     /** Synchronization mutex for request futures. */
     private final Object mux = new Object();
@@ -69,7 +70,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter implemen
     public PerformaceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        writer = new FilePerformanceStatistics(ctx);
+        writer = new FilePerformanceStatisticsWriter(ctx);
 
         proc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS, start -> {
             if (start) {

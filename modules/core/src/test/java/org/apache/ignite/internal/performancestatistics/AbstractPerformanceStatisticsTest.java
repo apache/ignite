@@ -26,8 +26,8 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.performancestatistics.TestFilePerformanceStatisticsReader.readToLog;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.PERFORMANCE_STAT_DIR;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatistics.statisticsFile;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERFORMANCE_STAT_DIR;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.statisticsFile;
 
 /**
  * Ignite performance statistics abstract test.
