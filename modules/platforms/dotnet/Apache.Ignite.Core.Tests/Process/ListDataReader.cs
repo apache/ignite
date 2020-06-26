@@ -32,6 +32,11 @@ namespace Apache.Ignite.Core.Tests.Process
         /** <inheritdoc /> */
         public void OnOutput(Process proc, string data, bool err)
         {
+            if (string.IsNullOrEmpty(data))
+            {
+                return;
+            }
+
             lock (_list)
             {
                 _list.Add(data);

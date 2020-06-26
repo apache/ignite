@@ -107,8 +107,11 @@ public enum IgniteFeatures {
     /** Distributed propagation of tx collisions dump interval. */
     DISTRIBUTED_TX_COLLISIONS_DUMP(37),
 
+    /** Remove metadata from cluster for specified type. */
+    REMOVE_METADATA(39),
+
     /** Collecting performance statistics. */
-    PERFORMANCE_STATISTICS(38);
+    PERFORMANCE_STATISTICS(40);
 
     /**
      * Unique feature identifier.

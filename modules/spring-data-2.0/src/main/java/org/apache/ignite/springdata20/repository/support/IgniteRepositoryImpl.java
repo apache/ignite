@@ -17,7 +17,6 @@
 package org.apache.ignite.springdata20.repository.support;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -29,6 +28,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.springdata20.repository.IgniteRepository;
 import org.springframework.context.annotation.Conditional;
+
+import static java.util.Collections.emptySet;
 
 /**
  * General Apache Ignite repository implementation.
@@ -105,20 +106,37 @@ public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteR
         };
     }
 
+    /**
+     * @param ids Collection of IDs.
+     * @return Collection transformed to set.
+     */
+    private Set<ID> toSet(Iterable<ID> ids) {
+        if (ids instanceof Set)
+            return (Set<ID>)ids;
+
+        Iterator<ID> itr = ids.iterator();
+
+        if (!itr.hasNext())
+            return emptySet();
+
+        ID key = itr.next();
+
+        Set<ID> keys = key instanceof Comparable ? new TreeSet<>() : new HashSet<>();
+
+        keys.add(key);
+
+        while (itr.hasNext()) {
+            key = itr.next();
+
+            keys.add(key);
+        }
+
+        return keys;
+    }
+
     /** {@inheritDoc} */
     @Override public Iterable<T> findAllById(Iterable<ID> ids) {
-        if (ids instanceof Set)
-            return cache.getAll((Set<ID>)ids).values();
-
-        if (ids instanceof Collection)
-            return cache.getAll(new HashSet<>((Collection<ID>)ids)).values();
-
-        TreeSet<ID> keys = new TreeSet<>();
-
-        for (ID id : ids)
-            keys.add(id);
-
-        return cache.getAll(keys).values();
+        return cache.getAll(toSet(ids)).values();
     }
 
     /** {@inheritDoc} */
@@ -143,18 +161,7 @@ public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteR
 
     /** {@inheritDoc} */
     @Override public void deleteAllById(Iterable<ID> ids) {
-        if (ids instanceof Set)
-            cache.removeAll((Set<ID>)ids);
-
-        if (ids instanceof Collection)
-            cache.removeAll(new HashSet<>((Collection<ID>)ids));
-
-        TreeSet<ID> keys = new TreeSet<>();
-
-        for (ID id : ids)
-            keys.add(id);
-
-        cache.removeAll(keys);
+        cache.removeAll(toSet(ids));
     }
 
     /** {@inheritDoc} */
