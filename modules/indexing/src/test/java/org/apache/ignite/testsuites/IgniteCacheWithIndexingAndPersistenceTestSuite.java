@@ -26,6 +26,7 @@ import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassWithSSLTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingWithSSLTest;
+import org.apache.ignite.util.GridCommandHandlerMetadataTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -42,7 +43,8 @@ import org.junit.runners.Suite;
     GridCommandHandlerIndexingCheckSizeTest.class,
     GridCommandHandlerCheckIndexesInlineSizeTest.class,
     StartCachesInParallelTest.class,
-    IoStatisticsBasicIndexSelfTest.class
+    IoStatisticsBasicIndexSelfTest.class,
+    GridCommandHandlerMetadataTest.class
 })
 public class IgniteCacheWithIndexingAndPersistenceTestSuite {
 }

@@ -40,6 +40,13 @@ namespace Apache.Ignite.Core.Tests.Services
         private const string CheckCollectionsTaskName = "org.apache.ignite.platform.PlatformServiceCallCollectionsTask";
         
         /** */
+        private const string CheckThinTaskName = "org.apache.ignite.platform.PlatformServiceCallThinTask";
+
+        /** */
+        private const string CheckCollectionsThinTaskName =
+            "org.apache.ignite.platform.PlatformServiceCallCollectionsThinTask";
+
+        /** */
         protected IIgnite Grid1;
 
         /** */
@@ -70,11 +77,13 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests call a platform service by invoking a special compute java task,
         /// in which real invocation of the service is made.
         /// <para/>
-        /// Tests common methods.
         /// <param name="local">If true call on local node.</param>
+        /// <param name="taskName">Task to test.</param>
         /// </summary>
         [Test]
-        public void TestCallPlatformService([Values(true, false)] bool local)
+        public void TestCallPlatformService([Values(true, false)] bool local,
+            [Values(CheckTaskName, CheckCollectionsTaskName, CheckThinTaskName, CheckCollectionsThinTaskName)]
+            string taskName)
         {
             var cfg = new ServiceConfiguration
             {
@@ -85,31 +94,9 @@ namespace Apache.Ignite.Core.Tests.Services
             
             Grid1.GetServices().Deploy(cfg);
 
-            Grid1.GetCompute().ExecuteJavaTask<object>(CheckTaskName, new object[] { ServiceName, local });
+            Grid1.GetCompute().ExecuteJavaTask<object>(taskName, new object[] { ServiceName, local });
         }
-        
-        /// <summary>
-        /// Tests call a platform service by invoking a special compute java task,
-        /// in which real invocation of the service is made.
-        /// <para/>
-        /// Tests collections method.
-        /// <param name="local">If true call on local node.</param>
-        /// </summary>
-        [Test]
-        public void TestCallPlatformServiceCollections([Values(true, false)] bool local)
-        {
-            var cfg = new ServiceConfiguration
-            {
-                Name = ServiceName,
-                TotalCount = 1,
-                Service = new TestPlatformService()
-            };
-            
-            Grid1.GetServices().Deploy(cfg);
 
-            Grid1.GetCompute().ExecuteJavaTask<object>(CheckCollectionsTaskName, new object[] { ServiceName, local });
-        }
-        
         /// <summary>
         /// Starts the grids.
         /// </summary>
