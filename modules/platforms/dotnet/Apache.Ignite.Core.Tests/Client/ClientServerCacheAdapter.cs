@@ -305,7 +305,7 @@ namespace Apache.Ignite.Core.Tests.Client
             throw new NotImplementedException();
         }
 
-        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, QueryBase initialQry)
+        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, ScanQuery<TK, TV> initialQry)
         {
             throw new NotImplementedException();
         }
