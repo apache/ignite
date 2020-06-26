@@ -235,6 +235,9 @@
                             <jvmArg>-Xms512m</jvmArg>
                             <jvmArg>-Xmx1024m</jvmArg>
                         </jvmArgs>
+                        <args>
+                            <arg>-nobootcp</arg>
+                        </args>
                     </configuration>
                     <executions>
                         <execution>
@@ -921,6 +924,8 @@
                                         <!--platforms-->
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.jar</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</exclude>
+                                        <exclude>**/*.cmake</exclude>
+                                        <exclude>**/CMakeLists.txt</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
                                         <exclude>**/Makefile.amrel</exclude>

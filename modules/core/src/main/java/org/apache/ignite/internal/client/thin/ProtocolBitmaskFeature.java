@@ -37,7 +37,10 @@ public enum ProtocolBitmaskFeature {
     CLUSTER_STATES(2),
 
     /** Cluster groups. */
-    CLUSTER_GROUPS(4);
+    CLUSTER_GROUPS(4),
+
+    /** Invoke service methods. */
+    SERVICE_INVOKE(5);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =
