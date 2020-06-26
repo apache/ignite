@@ -146,6 +146,12 @@
             </includes>
         </fileSet>
 
+        <!-- Move CMake modules. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/cmake</directory>
+            <outputDirectory>/platforms/cpp/cmake</outputDirectory>
+        </fileSet>
+
         <!-- Move CPP "common" module. -->
         <fileSet>
             <directory>modules/platforms/cpp/common</directory>
