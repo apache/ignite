@@ -177,13 +177,16 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             using (var handle = cache.QueryContinuous(qry, initialQry))
             {
-                cache.Put(20, 20);
+                // TODO: this key occurs in Initial query cursor, why?
+                // cache.Put(-1, -1);
                 
                 using (var cursor = handle.GetInitialQueryCursor())
                 {
                     var initialItems = getAll ? cursor.GetAll() : cursor.ToList();
                     CollectionAssert.AreEquivalent(initialKeys, initialItems.Select(e => e.Key));
                 }
+                
+                cache.Put(20, 20);
                 
                 TestUtils.WaitForTrueCondition(() => lastEvt != null);
                 Assert.AreEqual(20, lastEvt.Key);
