@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
@@ -31,6 +32,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// </summary>
     public class ContinuousQueryTest : ClientTestBase
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="ContinuousQueryTest"/>.
+        /// </summary>
+        public ContinuousQueryTest() : base(2)
+        {
+            // No-op.
+        }
+
         /// <summary>
         /// Basic continuous query test.
         /// </summary>
@@ -158,6 +167,35 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestInitialSqlQuery()
         {
             // TODO
+        }
+
+        [Test]
+        public void TestBackPressure()
+        {
+            const int count = 10000;
+            
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+
+            var receiveCount = 0;
+            
+            var listener = new DelegateListener<int, int>(e =>
+            {
+                Console.WriteLine("Receive: " + e.Key);
+
+                Interlocked.Increment(ref receiveCount);
+            });
+
+            cache.QueryContinuous(new ContinuousQuery<int, int>(listener));
+
+            var serverCache = Ignition.GetIgnite("1").GetCache<int, int>(cache.Name);
+
+            for (int i = 0; i < count; i++)
+            {
+                Console.WriteLine("Produce: " + i);
+                serverCache.Put(i, i);
+            }
+            
+            TestUtils.WaitForTrueCondition(() => receiveCount == count);
         }
 
         /// <summary>
