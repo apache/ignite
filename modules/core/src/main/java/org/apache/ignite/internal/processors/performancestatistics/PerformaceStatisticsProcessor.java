@@ -87,7 +87,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter implemen
                 writer.stop();
 
             synchronized (mux) {
-                GridFutureAdapter<Void> fut = reqFuts.get(uuid);
+                GridFutureAdapter<Void> fut = reqFuts.remove(uuid);
 
                 if (fut != null) {
                     if (!F.isEmpty(err))
@@ -243,6 +243,8 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter implemen
     private void cancelFutures(String msg) {
         synchronized (mux) {
             reqFuts.forEach((uuid, fut) -> fut.onDone(new IgniteFutureCancelledException(msg)));
+
+            reqFuts.clear();
         }
     }
 
