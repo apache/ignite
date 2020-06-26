@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.FilePe
  *
  * @see FilePerformanceStatistics
  */
-public class FilePerformanceStatisticsWalker {
+public class FilePerformanceStatisticsReader {
     /** File read buffer size. */
     private static final int READ_BUFFER_SIZE = 8 * 1024 * 1024;
 
@@ -53,7 +53,7 @@ public class FilePerformanceStatisticsWalker {
      * @param file Performance statistics file.
      * @param handlers Handlers to process deserialized operation.
      */
-    public static void walkFile(Path file, IgnitePerformanceStatistics... handlers) throws IOException {
+    public static void read(Path file, IgnitePerformanceStatistics... handlers) throws IOException {
         ByteBuffer buf = allocateDirect(READ_BUFFER_SIZE).order(nativeOrder());
 
         try (
@@ -68,12 +68,7 @@ public class FilePerformanceStatisticsWalker {
                 if (read <= 0)
                     break;
 
-                while (true) {
-                    boolean deserialized = des.deserialize(buf);
-
-                    if (!deserialized)
-                        break;
-                }
+                while (des.deserialize(buf));
 
                 buf.compact();
             }

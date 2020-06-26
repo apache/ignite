@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWalker;
+import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader;
 import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
@@ -36,7 +36,7 @@ public class TestFilePerformanceStatisticsReader {
      * @param log Log to write operations to.
      */
     public static void readToLog(Path file, IgniteLogger log) throws IOException {
-        FilePerformanceStatisticsWalker.walkFile(file, new LogMessageHandler(log));
+        FilePerformanceStatisticsReader.read(file, new LogMessageHandler(log));
     }
 
     /** The handler that writes handled operations to the log. */

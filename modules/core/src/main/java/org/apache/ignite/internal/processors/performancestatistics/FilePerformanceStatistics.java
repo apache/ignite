@@ -54,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * <b>Note:</b> Start again will erase previous performance statistics files.
  * <p>
- * To iterate over records use {@link FilePerformanceStatisticsWalker}.
+ * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
 public class FilePerformanceStatistics implements IgnitePerformanceStatistics {
     /** Default maximum file size in bytes. Performance statistics will be stopped when the size exceeded. */
