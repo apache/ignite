@@ -143,7 +143,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void onCheckpointBegin(Context ctx0) {
+    @Override public void onCheckpointBegin(Context cpCtx) {
         Set<Integer> completeCandidates = new HashSet<>();
 
         Integer grpId;
@@ -151,7 +151,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
         while ((grpId = cpWaitGrps.poll()) != null)
             completeCandidates.add(grpId);
 
-        ctx0.finishedStateFut().listen(
+        cpCtx.finishedStateFut().listen(
             f -> {
                 if (f.error() != null || f.isCancelled()) {
                     cpWaitGrps.addAll(completeCandidates);
@@ -163,9 +163,9 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
                 try {
                     for (int groupId : completeCandidates) {
-                        GroupReencryptionContext scanCtx = grps.remove(groupId);
+                        GroupReencryptionContext encrCtx = grps.remove(groupId);
 
-                        boolean finished = scanCtx.finish();
+                        boolean finished = encrCtx.finish();
 
                         assert finished : groupId;
 
@@ -187,14 +187,14 @@ public class CacheGroupReencryption implements DbCheckpointListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeCheckpointBegin(Context ctx) {
-        for (GroupReencryptionContext scanCtx : grps.values()) {
-            if (scanCtx.skipDirty())
+    @Override public void beforeCheckpointBegin(Context cpCtx) {
+        for (GroupReencryptionContext encrCtx : grps.values()) {
+            if (encrCtx.skipDirty())
                 return;
 
-            ctx.finishedStateFut().listen(f -> {
+            cpCtx.finishedStateFut().listen(f -> {
                 if (f.error() == null && !f.isCancelled())
-                    scanCtx.skipDirty(true);
+                    encrCtx.skipDirty(true);
             });
         }
     }
@@ -541,38 +541,32 @@ public class CacheGroupReencryption implements DbCheckpointListener {
         /** Partiion ID. */
         private final int partId;
 
-        /** Cancel mutex. */
-        private final Object cancelMux = new Object();
-
         /** Page store. */
         private final PageStore store;
 
         /** Cache group reencryption context. */
-        private final GroupReencryptionContext scanCtx;
+        private final GroupReencryptionContext encrCtx;
 
         /**
-         * @param scanCtx Cache group reencryption context.
+         * @param encrCtx Cache group reencryption context.
          * @param partId Partition ID.
          * @param store Page store.
          */
-        public PageStoreScanTask(GroupReencryptionContext scanCtx, int partId, PageStore store) {
-            this.scanCtx = scanCtx;
+        public PageStoreScanTask(GroupReencryptionContext encrCtx, int partId, PageStore store) {
+            this.encrCtx = encrCtx;
             this.partId = partId;
             this.store = store;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean cancel() throws IgniteCheckedException {
-            synchronized (cancelMux) {
-                // todo cancel properly
-                return onDone();
-            }
+        @Override public synchronized boolean cancel() throws IgniteCheckedException {
+            return onDone();
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                int grpId = scanCtx.groupId();
+                int grpId = encrCtx.groupId();
 
                 CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
@@ -597,7 +591,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                 }
 
                 while (pageNum < cnt) {
-                    synchronized (cancelMux) {
+                    synchronized (this) {
                         ctx.cache().context().database().checkpointReadLock();
 
                         try {
@@ -613,7 +607,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
                                 long page = pageMem.acquirePage(grpId, pageId);
 
-                                boolean skipDirty = scanCtx.skipDirty();
+                                boolean skipDirty = encrCtx.skipDirty();
 
                                 try {
                                     // Can skip rewriting a dirty page if the checkpoint has been completed.
@@ -675,4 +669,3 @@ public class CacheGroupReencryption implements DbCheckpointListener {
         }
     }
 }
-
