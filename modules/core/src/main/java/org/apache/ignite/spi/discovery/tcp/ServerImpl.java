@@ -65,6 +65,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -3003,7 +3004,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         new Thread(new Runnable() {
                             @Override public void run() {
                                 try {
-                                    IgnitionEx.stop(ignite.name(), true, true);
+                                    IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
 
                                     U.log(log, "Stopped the node successfully in response to TcpDiscoverySpi's " +
                                         "message worker thread abnormal termination.");

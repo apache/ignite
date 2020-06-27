@@ -68,7 +68,10 @@ public enum CommandList {
     CLUSTER_CHANGE_TAG("--change-tag", new ClusterChangeTagCommand()),
 
     /** Metadata commands. */
-    METADATA("--meta", new MetadataCommand());
+    METADATA("--meta", new MetadataCommand()),
+
+    /** */
+    SHUTDOWN_POLICY("--shutdown-policy", new ShutdownPolicyCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

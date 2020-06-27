@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
@@ -51,6 +52,7 @@ import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.CommandList.CLUSTER_CHANGE_TAG;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
+import static org.apache.ignite.internal.commandline.CommandList.SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
@@ -66,6 +68,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -329,6 +332,26 @@ public class CommandHandlerParsingTest {
         String rnd = UUID.randomUUID().toString();
 
         assertParseArgsThrows("Unexpected action " + rnd + " for " + WAL.text(), WAL.text(), rnd);
+    }
+
+    /**
+     * Tets checks a parser of shutdown policy command.
+     */
+    @Test
+    public void tesParseShutdownPolicyParameters() {
+        ConnectionAndSslParameters args = parseArgs(asList(SHUTDOWN_POLICY.text()));
+
+        assertEquals(SHUTDOWN_POLICY.command(), args.command());
+
+        assertNull(((ShutdownPolicyCommand)args.command()).arg().getShutdown());
+
+        for (ShutdownPolicy policy : ShutdownPolicy.values()) {
+            args = parseArgs(asList(SHUTDOWN_POLICY.text(), String.valueOf(policy)));
+
+            assertEquals(SHUTDOWN_POLICY.command(), args.command());
+
+            assertSame(policy, ((ShutdownPolicyCommand)args.command()).arg().getShutdown());
+        }
     }
 
     /**
