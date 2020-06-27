@@ -195,6 +195,11 @@ public class GracefulShutdownTest extends GridCacheDhtPreloadWaitForBackupsWithP
 
         spi.waitForBlocked();
 
+        for (CacheGroupContext grp: ((IgniteEx)ignite2).context().cache().cacheGroups()) {
+            GridTestUtils.waitForCondition(() ->
+                !grp.topology().partitionMap(false).get(((IgniteEx)ignite2).localNode().id()).hasMovingPartitions(), 30_000);
+        }
+
         LogListener lnsr = LogListener.matches("This node is waiting for backups of local partitions for group")
             .build();
 
