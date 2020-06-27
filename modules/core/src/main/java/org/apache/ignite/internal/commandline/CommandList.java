@@ -65,7 +65,10 @@ public enum CommandList {
     SNAPSHOT("--snapshot", new SnapshotCommand()),
 
     /** Metadata commands. */
-    METADATA("--meta", new MetadataCommand());
+    METADATA("--meta", new MetadataCommand()),
+
+    /** */
+    SHUTDOWN_POLICY("--shutdown-policy", new ShutdownPolicyCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

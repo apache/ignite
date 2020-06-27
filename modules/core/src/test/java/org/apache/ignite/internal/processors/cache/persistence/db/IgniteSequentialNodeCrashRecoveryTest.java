@@ -41,6 +41,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -267,7 +268,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
                     @Override public void run() {
                         U.error(ignite.log(), "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
 
-                        IgnitionEx.stop(ignite.name(), true, true);
+                        IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
 
                         stopLatch.countDown();
                     }

@@ -57,7 +57,7 @@ public class HistoricalReservationTest extends GridCommonAbstractTest {
                 .setCheckpointFrequency(300_000)
                 .setWalCompactionEnabled(true)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setMaxSize(200 * 1024 * 1024)
+                    .setMaxSize(200L * 1024 * 1024)
                     .setPersistenceEnabled(true)));
     }
 

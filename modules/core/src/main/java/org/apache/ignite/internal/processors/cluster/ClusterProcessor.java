@@ -172,6 +172,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
 
         isp.registerDistributedMetastorageListener(this);
+
+        cluster.start();
     }
 
     /** {@inheritDoc} */

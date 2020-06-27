@@ -37,6 +37,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.AsyncSupportAdapter;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -419,6 +420,16 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
      */
     public IgniteFuture<?> baselineAutoAdjustTimeoutAsync(long baselineAutoAdjustTimeout) {
         return cluster.baselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ShutdownPolicy shutdownPolicy() {
+        return cluster.shutdownPolicy();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void shutdownPolicy(ShutdownPolicy policy) {
+        cluster.shutdownPolicy(policy);
     }
 
     /** {@inheritDoc} */

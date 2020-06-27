@@ -31,6 +31,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
@@ -240,7 +241,7 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
                 "Consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is " + DISCO_HISTORY_SIZE);
         }
         finally {
-            IgnitionEx.stop(getTestIgniteInstanceName(1), true, true);
+            IgnitionEx.stop(getTestIgniteInstanceName(1), true, ShutdownPolicy.IMMEDIATE, true);
 
             srvFuts.forEach(f -> {
                 try {

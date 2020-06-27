@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -60,7 +61,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  * Class for supplying partitions to demanding nodes.
  */
-class GridDhtPartitionSupplier {
+public class GridDhtPartitionSupplier {
     /** */
     private final CacheGroupContext grp;
 
@@ -159,6 +160,15 @@ class GridDhtPartitionSupplier {
                 }
             }
         }
+    }
+
+    /**
+     * Check is cache having any active context for supply.
+     *
+     * @return True if a node supplies a cache to some other, otherwise is false.
+     */
+    public boolean isSupply() {
+        return !F.isEmpty(scMap);
     }
 
     /**
