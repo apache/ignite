@@ -29,7 +29,6 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.processor.EntryProcessor;
 import javax.management.MBeanServer;
 import javax.net.ssl.SSLContext;
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
