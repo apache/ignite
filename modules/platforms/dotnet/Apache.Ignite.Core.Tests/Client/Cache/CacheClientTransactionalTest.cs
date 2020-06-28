@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
-        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/>.
+        /// Test Ignite thin client transaction enlistment in ambient <see cref="TransactionScope"/>.
         /// </summary>
         [Test]
         public void TestTransactionScopeSingleCache()
@@ -170,6 +170,130 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.AreEqual(10, cache[1]);
             Assert.AreEqual(20, cache[2]);
+        }
+
+        /// <summary>
+        /// Test Ignite thin client transaction enlistment in ambient <see cref="TransactionScope"/>
+        /// with multiple participating caches.
+        /// </summary>
+        [Test]
+        public void TestTransactionScopeMultiCache()
+        {
+            var cache1 = TransactionalCache();
+
+            var cache2 = TransactionalCache(cache1.Name + "1");
+
+            cache1[1] = 1;
+            cache2[1] = 2;
+
+            // Commit.
+            using (var ts = new TransactionScope())
+            {
+                cache1.Put(1, 10);
+                cache2.Put(1, 20);
+
+                ts.Complete();
+            }
+
+            Assert.AreEqual(10, cache1[1]);
+            Assert.AreEqual(20, cache2[1]);
+
+            // Rollback.
+            using (new TransactionScope())
+            {
+                cache1.Put(1, 100);
+                cache2.Put(1, 200);
+            }
+
+            Assert.AreEqual(10, cache1[1]);
+            Assert.AreEqual(20, cache2[1]);
+        }
+
+        /// <summary>
+        /// Test Ignite thin client transaction enlistment in ambient <see cref="TransactionScope"/>
+        /// when Ignite tx is started manually.
+        /// </summary>
+        [Test]
+        public void TestTransactionScopeWithManualIgniteTx()
+        {
+            var cache = TransactionalCache();
+            var transactions = Client.Transactions;
+
+            cache[1] = 1;
+
+            // When Ignite tx is started manually, it won't be enlisted in TransactionScope.
+            using (var tx = transactions.TxStart())
+            {
+                using (new TransactionScope())
+                {
+                    cache[1] = 2;
+                }  // Revert transaction scope.
+
+                tx.Commit();  // Commit manual tx.
+            }
+
+            Assert.AreEqual(2, cache[1]);
+        }
+
+        /// <summary>
+        /// Test Ignite transaction with <see cref="TransactionScopeOption.Suppress"/> option.
+        /// </summary>
+        [Test]
+        public void TestSuppressedTransactionScope()
+        {
+            var cache = TransactionalCache();
+
+            cache[1] = 1;
+
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                cache[1] = 2;
+            }
+
+            // Even though transaction is not completed, the value is updated, because tx is suppressed.
+            Assert.AreEqual(2, cache[1]);
+        }
+
+        /// <summary>
+        /// Test Ignite thin client transaction enlistment in ambient <see cref="TransactionScope"/> with nested scopes.
+        /// </summary>
+        [Test]
+        public void TestNestedTransactionScope()
+        {
+            var cache = TransactionalCache();
+
+            cache[1] = 1;
+
+            foreach (var option in new[] {TransactionScopeOption.Required, TransactionScopeOption.RequiresNew})
+            {
+                // Commit.
+                using (var ts1 = new TransactionScope())
+                {
+                    using (var ts2 = new TransactionScope(option))
+                    {
+                        cache[1] = 2;
+                        ts2.Complete();
+                    }
+
+                    cache[1] = 3;
+                    ts1.Complete();
+                }
+
+                Assert.AreEqual(3, cache[1]);
+
+                // Rollback.
+                using (new TransactionScope())
+                {
+                    using (new TransactionScope(option))
+                        cache[1] = 4;
+
+                    cache[1] = 5;
+                }
+
+                // In case with Required option there is a single tx
+                // that gets aborted, second put executes outside the tx.
+                Assert.AreEqual(option == TransactionScopeOption.Required ? 5 : 3, cache[1], option.ToString());
+            }
         }
 
         /// <summary>

@@ -49,6 +49,14 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// </summary>
         public void StartTxIfNeeded()
         {
+            if (_transactions.CurrentTx != null)
+            {
+                // Ignite transaction is already present.
+                // We have either enlisted it already, or it has been started manually and should not be enlisted.
+                // Java enlists existing Ignite tx in this case (see CacheJtaManager.java), but we do not.
+                return;
+            }
+
             if (_enlistment.Value != null)
             {
                 // We are already enlisted.
