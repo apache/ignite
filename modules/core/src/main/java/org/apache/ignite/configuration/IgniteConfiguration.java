@@ -1162,7 +1162,7 @@ public class IgniteConfiguration {
 
     /**
      * Get shutdown policy.
-     * If policy was not set default policy will be return {@link IgniteCluster.DEFAULT_SHUTDOWN_POLICY}.
+     * If policy was not set default policy will be return {@code IgniteCluster.DEFAULT_SHUTDOWN_POLICY}.
      *
      * @return Shutdown policy.
      */
