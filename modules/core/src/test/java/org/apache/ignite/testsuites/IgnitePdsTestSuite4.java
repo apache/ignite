@@ -22,13 +22,14 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cache.BreakRebalanceChainTest;
 import org.apache.ignite.cache.NotOptimizedRebalanceTest;
-import org.apache.ignite.cache.RebalanceCompleteDuringExchangeTest;
 import org.apache.ignite.cache.RebalanceCancellationTest;
+import org.apache.ignite.cache.RebalanceCompleteDuringExchangeTest;
 import org.apache.ignite.cache.ResetLostPartitionTest;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
 import org.apache.ignite.internal.processors.cache.distributed.CachePageWriteLockUnlockTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.IgniteRebalanceOnCachesStoppingOrDestroyingTest;
 import org.apache.ignite.internal.processors.cache.persistence.CorruptedTreeFailureHandlingTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheEntriesExpirationTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRemoveDuringRebalancingTest;
@@ -36,10 +37,12 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRestartA
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSpuriousRebalancingOnNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheWalDisabledOnRebalancingTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionDuringPartitionClearTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageReplacementDuringPartitionClearTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsStartWIthEmptyArchive;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.HistoricalReservationTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRebalanceRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManagerTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessorTest;
@@ -84,6 +87,7 @@ public class IgnitePdsTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, RebalanceCancellationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, NotOptimizedRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, BreakRebalanceChainTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, WalRebalanceRestartTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsRestartAfterFailedToWriteMetaPageTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsRemoveDuringRebalancingTest.class, ignoredTests);
@@ -98,6 +102,9 @@ public class IgnitePdsTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, HeapArrayLockStackTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OffHeapLockLogTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OffHeapLockStackTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, HistoricalReservationTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheEntriesExpirationTest.class, ignoredTests);
 
         return suite;
     }
@@ -110,7 +117,7 @@ public class IgnitePdsTestSuite4 {
      */
     private static void addRealPageStoreTestsNotForDirectIo(List<Class<?>> suite, Collection<Class> ignoredTests) {
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsTransactionsHangTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsPageEvictionDuringPartitionClearTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsPageReplacementDuringPartitionClearTest.class, ignoredTests);
 
         // Rebalancing test
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class, ignoredTests);

@@ -227,7 +227,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts =
         new ConcurrentSkipListMap<>();
 
-    /** */
+    /** Used for mapping client exchange topology versions to server exchange topology versions. */
     private final ConcurrentNavigableMap<AffinityTopologyVersion, AffinityTopologyVersion> lastAffTopVers =
         new ConcurrentSkipListMap<>();
 
@@ -403,8 +403,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             return;
                         }
                     }
+                    else {
+                        GridDhtPartitionsExchangeFuture cur = lastTopologyFuture();
 
-                    preprocessSingleMessage(node, msg);
+                        if (!cur.isDone() && cur.changedAffinity() && !msg.restoreState()) {
+                            cur.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                                    if (fut.error() == null)
+                                        processSinglePartitionUpdate(node, msg);
+                                }
+                            });
+
+                            return;
+                        }
+                    }
+
+                    processSinglePartitionUpdate(node, msg);
                 }
             });
 
@@ -494,34 +508,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         rebalanced = clusterReg.booleanMetric(REBALANCED,
             "True if the cluster has achieved fully rebalanced state. Note that an inactive cluster always has" +
             " this metric in False regardless of the real partitions state.");
-    }
-
-    /**
-     * Preprocess {@code msg} which was sended by {@code node}.
-     *
-     * @param node Cluster node.
-     * @param msg Message.
-     */
-    private void preprocessSingleMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
-        if (!crdInitFut.isDone() && !msg.restoreState()) {
-            GridDhtPartitionExchangeId exchId = msg.exchangeId();
-
-            if (log.isInfoEnabled()) {
-                log.info("Waiting for coordinator initialization [node=" + node.id() +
-                    ", nodeOrder=" + node.order() +
-                    ", ver=" + (exchId != null ? exchId.topologyVersion() : null) + ']');
-            }
-
-            crdInitFut.listen(new CI1<IgniteInternalFuture>() {
-                @Override public void apply(IgniteInternalFuture fut) {
-                    processSinglePartitionUpdate(node, msg);
-                }
-            });
-
-            return;
-        }
-
-        processSinglePartitionUpdate(node, msg);
     }
 
     /**
@@ -984,7 +970,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             aff.partitions());
 
         GridClientPartitionTopology old = clientTops.putIfAbsent(grpId,
-            top = new GridClientPartitionTopology(cctx, discoCache, grpId, aff.partitions(), affKey));
+            top = new GridClientPartitionTopology(cctx, discoCache, grpId, aff.partitions(), affKey,
+                ccfg.getPartitionLossPolicy()));
 
         return old != null ? old : top;
     }
@@ -1480,6 +1467,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         m.addPartitionUpdateCounters(grp.groupId(),
                             CachePartitionFullCountersMap.toCountersMap(cntrsMap));
                     }
+
+                    // Lost partitions can be skipped on node left or activation.
+                    m.addLostPartitions(grp.groupId(), grp.topology().lostPartitions());
                 }
             }
         }
@@ -1503,6 +1493,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (!partSizesMap.isEmpty())
                     partsSizes.put(top.groupId(), partSizesMap);
+
+                m.addLostPartitions(top.groupId(), top.lostPartitions());
             }
         }
 
@@ -1875,8 +1867,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             msg.partsToReload(cctx.localNodeId(), grpId),
                             partsSizes.getOrDefault(grpId, Collections.emptyMap()),
                             msg.topologyVersion(),
-                            null
-                        );
+                            null,
+                            null);
                     }
                 }
 
@@ -2100,6 +2092,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (diagCtx != null)
             diagCtx.send(cctx.kernalContext(), null);
+    }
+
+    /**
+     * Force checking of rebalance state.
+     */
+    public void checkRebalanceState() {
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (!grp.isLocal()) {
+                GridDhtPartitionTopology top = grp.topology();
+
+                if (top != null)
+                    cctx.affinity().checkRebalanceState(top, grp.groupId());
+            }
+        }
     }
 
     /**

@@ -44,13 +44,14 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
-import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
@@ -169,8 +170,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public GridDhtPreloaderAssignments generateAssignments(
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut
+    ) {
         assert exchFut == null || exchFut.isDone();
 
         // No assignments for disabled preloader.
@@ -239,13 +242,18 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     part.resetUpdateCounter();
                 }
 
+                if (part.state() != MOVING && part.state() != OWNING) {
+                    throw new AssertionError("Partition has invalid state for rebalance "
+                        + aff.topologyVersion() + " " + part);
+                }
+
                 ClusterNode histSupplier = null;
 
                 if (grp.persistenceEnabled() && exchFut != null) {
-                    UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
+                    List<UUID> nodeIds = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
 
-                    if (nodeId != null)
-                        histSupplier = ctx.discovery().node(nodeId);
+                    if (!F.isEmpty(nodeIds))
+                        histSupplier = ctx.discovery().node(nodeIds.get(p % nodeIds.size()));
                 }
 
                 if (histSupplier != null && !exchFut.isClearingPartition(grp, p)) {
@@ -263,26 +271,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     }
 
                     // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11790
-                    msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
+                    msg.partitions().
+                        addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
                 }
                 else {
                     List<ClusterNode> picked = remoteOwners(p, topVer);
 
-                    if (picked.isEmpty()) {
-                        top.own(part);
-
-                        if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                            grp.addRebalanceEvent(p,
-                                EVT_CACHE_REBALANCE_PART_DATA_LOST,
-                                exchId.eventNode(),
-                                exchId.event(),
-                                exchId.eventTimestamp());
-                        }
-
-                        if (log.isDebugEnabled())
-                            log.debug("Owning partition as there are no other owners: " + part);
-                    }
-                    else {
+                    if (!picked.isEmpty()) {
                         ClusterNode n = picked.get(p % picked.size());
 
                         GridDhtPartitionDemandMessage msg = assignments.get(n);

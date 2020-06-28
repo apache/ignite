@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
@@ -35,6 +36,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Cache.Platform;
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Client.Cluster;
+    using Apache.Ignite.Core.Impl.Client.Compute;
     using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
@@ -71,6 +73,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Cluster. */
         private readonly ClientCluster _cluster;
 
+        /** Compute. */
+        private readonly ComputeClient _compute;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClient"/> class.
         /// </summary>
@@ -92,7 +97,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _binary = new Binary(_marsh);
             
-            _cluster = new ClientCluster(this, _marsh);
+            _cluster = new ClientCluster(this);
+            
+            _compute = new ComputeClient(this, ComputeClientFlags.None, TimeSpan.Zero, null);
 
             _transactions = new ClientTransactions(this);
         }
@@ -249,6 +256,12 @@ namespace Apache.Ignite.Core.Impl.Client
         public IEnumerable<IClientConnection> GetConnections()
         {
             return _socket.GetConnections();
+        }
+
+        /** <inheritDoc /> */
+        public IComputeClient GetCompute()
+        {
+            return _compute;
         }
 
         /** <inheritDoc /> */

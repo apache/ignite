@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Client
     using System.Net;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Client.Transactions;
 
     /// <summary>
@@ -141,5 +142,10 @@ namespace Apache.Ignite.Core.Client
         /// <see cref="IgniteClientConfiguration.EnablePartitionAwareness"/> is true.
         /// </summary>
         IEnumerable<IClientConnection> GetConnections();
+
+        /// <summary>
+        /// Gets the compute API.
+        /// </summary>
+        IComputeClient GetCompute();
     }
 }

@@ -43,8 +43,8 @@ public class ClientClusterGetStateRequest extends ClientRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         ClusterState state = ctx.kernalContext().grid().cluster().state();
 
-        return ctx.currentProtocolContext().isFeatureSupported(ClientBitmaskFeature.CLUSTER_API) ?
+        return ctx.currentProtocolContext().isFeatureSupported(ClientBitmaskFeature.CLUSTER_STATES) ?
             new ClientByteResponse(requestId(), (byte)state.ordinal()) :
-            new ClientBooleanResponse(requestId(), ClusterState.active(state));
+            new ClientBooleanResponse(requestId(), state.active());
     }
 }

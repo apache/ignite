@@ -180,6 +180,8 @@
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTestsSsl.cs" />
     <Compile Include="Client\Cluster\ClientClusterGroupTests.cs" />
     <Compile Include="Client\Cluster\ClientClusterTests.cs" />
+    <Compile Include="Client\Compute\ComputeClientDisabledTests.cs" />
+    <Compile Include="Client\Compute\ComputeClientTests.cs" />
     <Compile Include="Client\EndpointTest.cs" />
     <Compile Include="Client\RawSecureSocketTest.cs" />
     <Compile Include="Client\RawSocketTest.cs" />
@@ -238,6 +240,8 @@
     <Compile Include="EnvVar.cs" />
     <Compile Include="EventsTestLocalListeners.cs" />
     <Compile Include="FailureHandlerTest.cs" />
+    <Compile Include="IgniteLockFailoverTests.cs" />
+    <Compile Include="IgniteLockTests.cs" />
     <Compile Include="IgniteUtilsTest.cs" />
     <Compile Include="Impl\Compute\ComputeImplTest.cs" />
     <Compile Include="JavaServer.cs" />
@@ -365,6 +369,7 @@
     <Compile Include="Query\ImplicitBinarizablePerson.cs" />
     <Compile Include="Query\NoDefBinarizablePerson.cs" />
     <Compile Include="Query\BinarizablePerson.cs" />
+    <Compile Include="Services\CallPlatformServiceTest.cs" />
     <Compile Include="Services\ServicesTest.cs" />
     <Compile Include="Services\ServicesTestAsync.cs" />
     <Compile Include="Services\ServiceProxyTest.cs" />

@@ -43,6 +43,7 @@ import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -514,9 +515,22 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /**
+     * Finds a suitable method in a class.
+     *
+     * @param clazz Class.
+     * @param mthdName Name.
+     * @param args Args.
+     * @return Method.
+     * @throws NoSuchMethodException On error.
+     */
+    public static Method getMethod(Class<?> clazz, String mthdName, Object[] args) throws NoSuchMethodException {
+        return ServiceProxyHolder.getMethod(clazz, mthdName, args);
+    }
+
+    /**
      * Proxy holder.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static class ServiceProxyHolder extends PlatformAbstractTarget {
         /** */
         private final Object proxy;
@@ -580,6 +594,26 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = PlatformUtils.unwrapBinariesInArray(args);
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
+
+                // Convert Object[] to T[] when required:
+                // Ignite loses array item types when passing arguments through GridServiceProxy.
+                for (int i = 0; i < args.length; i++) {
+                    Object arg = args[i];
+
+                    if (arg instanceof Object[]) {
+                        Class<?> parameterType = mtd.getParameterTypes()[i];
+
+                        if (parameterType.isArray() && parameterType != Object[].class) {
+                            Object[] arr = (Object[])arg;
+                            Object newArg = Array.newInstance(parameterType.getComponentType(), arr.length);
+
+                            for (int j = 0; j < arr.length; j++)
+                                Array.set(newArg, j, arr[j]);
+
+                            args[i] = newArg;
+                        }
+                    }
+                }
 
                 try {
                     return ((GridServiceProxy)proxy).invokeMethod(mtd, args);

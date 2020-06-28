@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -137,18 +135,7 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
             executeSql(ignite, "INSERT INTO " + tblName + " (id, name, age, city) VALUES(?, 'name', 3, 'city')", i);
 
         // Blocking configuration local snapshot sender.
-        List<BlockingExecutor> execs = new ArrayList<>();
-
-        for (Ignite grid : G.allGrids()) {
-            IgniteSnapshotManager mgr = snp((IgniteEx)grid);
-            Function<String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
-
-            BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
-            execs.add(block);
-
-            mgr.localSnapshotSenderFactory((snpName) ->
-                new DelegateSnapshotSender(log, block, old.apply(snpName)));
-        }
+        List<BlockingExecutor> execs = setBlockingSnapshotExecutor(G.allGrids());
 
         IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 

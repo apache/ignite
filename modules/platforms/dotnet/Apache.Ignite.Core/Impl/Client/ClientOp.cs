@@ -81,6 +81,10 @@ namespace Apache.Ignite.Core.Impl.Client
         ClusterGetWalState = 5003,
         ClusterGroupGetNodeIds = 5100,
         ClusterGroupGetNodesInfo = 5101,
-        ClusterGroupGetNodesEndpoints = 5102
+        ClusterGroupGetNodesEndpoints = 5102,
+        
+        // Compute.
+        ComputeTaskExecute = 6000,
+        ComputeTaskFinished = 6001
     }
 }

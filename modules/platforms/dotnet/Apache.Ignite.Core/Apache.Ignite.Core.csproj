@@ -56,8 +56,10 @@
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Cache\Configuration\PlatformCacheConfiguration.cs" />
     <Compile Include="Cache\IQueryMetrics.cs" />
+    <Compile Include="Cache\Query\Continuous\IContinuousQueryHandleFields.cs" />
     <Compile Include="Cache\Query\IQueryCursorField.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
+    <Compile Include="Client\Compute\IComputeClient.cs" />
     <Compile Include="Client\IClientCluster.cs" />
     <Compile Include="Client\IClientClusterGroup.cs" />
     <Compile Include="Client\IClientClusterNode.cs" />
@@ -84,16 +86,20 @@
     <Compile Include="Client\IIgniteClient.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
     <Compile Include="Configuration\ExecutorConfiguration.cs" />
+    <Compile Include="Configuration\LockConfiguration.cs" />
     <Compile Include="Failure\IFailureHandler.cs" />
     <Compile Include="Failure\NoOpFailureHandler.cs" />
     <Compile Include="Failure\StopNodeFailureHandler.cs" />
     <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
+    <Compile Include="IIgniteLock.cs" />
     <Compile Include="Impl\Binary\BinaryHashCodeUtils.cs" />
+    <Compile Include="Impl\Binary\IgniteBiTuple.cs" />
     <Compile Include="Impl\Cache\Platform\IPlatformCache.cs" />
     <Compile Include="Impl\Cache\Platform\PlatformCache.cs" />
     <Compile Include="Impl\Cache\Platform\PlatformCacheEntry.cs" />
     <Compile Include="Impl\Cache\Platform\PlatformCacheManager.cs" />
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
+    <Compile Include="Impl\Cache\Query\IQueryBaseInternal.cs" />
     <Compile Include="Impl\Cache\Query\PlatformCacheQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\QueryCursorField.cs" />
     <Compile Include="Impl\Client\ClientBitmaskFeature.cs" />
@@ -101,6 +107,7 @@
     <Compile Include="Impl\Client\ClientContextBase.cs" />
     <Compile Include="Impl\Client\ClientDiscoveryNode.cs" />
     <Compile Include="Impl\Client\ClientFeatures.cs" />
+    <Compile Include="Impl\Client\ClientNotificationHandler.cs" />
     <Compile Include="Impl\Client\ClientRequestContext.cs" />
     <Compile Include="Impl\Client\ClientResponseContext.cs" />
     <Compile Include="Impl\Client\Cluster\ClientCluster.cs" />
@@ -112,6 +119,8 @@
     <Compile Include="Impl\Client\Cluster\ClientClusterGroup.cs" />
     <Compile Include="Impl\Client\Cluster\ClientClusterGroupProjection.cs" />
     <Compile Include="Impl\Client\Cluster\ClientClusterNode.cs" />
+    <Compile Include="Impl\Client\Compute\ComputeClient.cs" />
+    <Compile Include="Impl\Client\Compute\ComputeClientFlags.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
     <Compile Include="Impl\Client\Transactions\ClientCacheTransactionManager.cs" />
@@ -122,6 +131,7 @@
     <Compile Include="Impl\Client\Transactions\ClientTransactions.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />
     <Compile Include="Impl\Compute\ComputeRunner.cs" />
+    <Compile Include="Impl\IgniteLock.cs" />
     <Compile Include="Impl\Log\NoopLogger.cs" />
     <Compile Include="Impl\Transactions\TransactionCollectionImpl.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedThread.cs" />

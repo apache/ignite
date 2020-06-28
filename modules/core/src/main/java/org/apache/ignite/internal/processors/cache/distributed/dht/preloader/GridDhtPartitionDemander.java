@@ -317,8 +317,6 @@ public class GridDhtPartitionDemander {
 
                 ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
 
-                ctx.exchange().scheduleResendPartitions();
-
                 return null;
             }
 
@@ -1593,7 +1591,7 @@ public class GridDhtPartitionDemander {
 
                 if (log.isDebugEnabled())
                     log.debug("Partitions have been scheduled to resend [reason=" +
-                        "Rebalance is done [grp=" + grp.cacheOrGroupName() + "]");
+                        "Rebalance is done, grp=" + grp.cacheOrGroupName() + "]");
 
                 if (!cancelled)
                     ctx.exchange().scheduleResendPartitions();
@@ -1606,9 +1604,12 @@ public class GridDhtPartitionDemander {
                 }
 
                 if (!m.isEmpty()) {
-                    U.log(log, ("Reassigning partitions that were missed: " + m));
+                    U.log(log, "Reassigning partitions that were missed [parts=" + m +
+                        ", grpId=" + grp.groupId() +
+                        ", grpName=" + grp.cacheOrGroupName() +
+                        ", topVer=" + topVer + ']');
 
-                    onDone(false); //Finished but has missed partitions, will force dummy exchange
+                    onDone(false); // Finished but has missed partitions, will force dummy exchange
 
                     ctx.exchange().forceReassign(exchId);
 

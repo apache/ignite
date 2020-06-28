@@ -40,6 +40,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import javax.cache.CacheException;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -53,6 +54,7 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -70,11 +72,13 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.PartitionStateViewWalker;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -84,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
@@ -162,6 +167,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -176,9 +182,11 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
+import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.String.format;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -205,6 +213,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
     /** */
+    public static final String CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT =
+        "Failed to perform %s operation (cluster is in read-only mode) [cacheGrp=%s, cache=%s]";
+
+    /** */
     private static final String CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT =
         "Cannot start/stop cache within lock or transaction [cacheNames=%s, operation=%s]";
 
@@ -213,6 +225,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** System view description for page lists. */
     public static final String CACHE_GRP_PAGE_LIST_VIEW_DESC = "Cache group page lists";
+
+    /** System view name for partition states. */
+    public static final String PART_STATES_VIEW = "partitionStates";
+
+    /** System view description for partition states. */
+    public static final String PART_STATES_VIEW_DESC = "Distribution of cache group partitions across cluster nodes";
 
     /** Enables start caches in parallel. */
     private final boolean IGNITE_ALLOW_START_CACHES_IN_PARALLEL =
@@ -585,6 +603,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             this::pagesListViewSupplier,
             Function.identity()
         );
+
+        ctx.systemView().registerFiltrableView(
+            PART_STATES_VIEW,
+            PART_STATES_VIEW_DESC,
+            new PartitionStateViewWalker(),
+            this::partStatesViewSupplier,
+            Function.identity()
+        );
     }
 
     /**
@@ -914,14 +940,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 reconnected.add(cache);
 
                 if (cache.context().userCache()) {
-                    // Re-create cache structures inside indexing in order to apply recent schema changes.
-                    GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cache.context(), false);
+                    DynamicCacheDescriptor desc = cacheDescriptor(cache.name());
 
-                    DynamicCacheDescriptor desc = cacheDescriptor(cacheInfo.name());
+                    assert desc != null : cache.name();
 
-                    assert desc != null : cacheInfo.name();
+                    if (!QueryUtils.isEnabled(cache.context().config())
+                            && QueryUtils.isEnabled(desc.cacheConfiguration())) {
+                        CacheConfiguration newCfg = desc.cacheConfiguration();
+
+                        cache.context().onSchemaAddQueryEntity(newCfg.getQueryEntities(), newCfg.getSqlSchema(),
+                                newCfg.isSqlEscapeAll(), newCfg.getQueryParallelism());
+                    }
 
                     boolean rmvIdx = !cache.context().group().persistenceEnabled();
+
+                    // Re-create cache structures inside indexing in order to apply recent schema changes.
+                    GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cache.context(), false);
 
                     ctx.query().onCacheStop0(cacheInfo, rmvIdx);
                     ctx.query().onCacheStart0(cacheInfo, desc.schema(), desc.sql());
@@ -1657,6 +1691,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteInternalFuture<?> res = sharedCtx.affinity().initCachesOnLocalJoin(
             locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
+
+        for (DynamicCacheDescriptor d: locJoinCtx.cacheDescriptors().values())
+            ctx.coordinators().validateCacheConfiguration(d.cacheConfiguration());
 
         List<StartCacheInfo> startCacheInfos = locJoinCtx.caches().stream()
             .map(cacheInfo -> new StartCacheInfo(cacheInfo.get1(), cacheInfo.get2(), exchTopVer, false))
@@ -3438,7 +3475,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (checkThreadTx) {
             sharedCtx.tm().checkEmptyTransactions(
-                () -> String.format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheName, "dynamicStartCache"));
+                () -> format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheName, "dynamicStartCache"));
         }
 
         GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
@@ -3480,6 +3517,93 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         catch (Exception e) {
             return new GridFinishedFuture<>(e);
+        }
+    }
+
+    /**
+     * Checks that cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
+     *
+     * @param opName Operation name.
+     * @param cfgs Stored cache configurations.
+     * @throws CacheException If cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
+     */
+    private void checkReadOnlyState(String opName, Collection<StoredCacheData> cfgs) {
+        IgniteOutClosure<String> cacheNameClo = null;
+        IgniteOutClosure<String> cacheGrpNameClo = null;
+
+        if (!F.isEmpty(cfgs)) {
+            if (cfgs.size() == 1) {
+                CacheConfiguration cfg = cfgs.iterator().next().config();
+
+                cacheNameClo = cfg::getName;
+                cacheGrpNameClo = cfg::getGroupName;
+            }
+            else {
+                cacheNameClo = () -> cfgs.stream()
+                    .map(StoredCacheData::config)
+                    .map(CacheConfiguration::getName)
+                    .collect(Collectors.toList()).toString();
+
+                cacheGrpNameClo = () -> cfgs.stream()
+                    .map(StoredCacheData::config)
+                    .map(CacheConfiguration::getGroupName)
+                    .collect(Collectors.toList()).toString();
+            }
+        }
+
+        checkReadOnlyState(opName, cacheGrpNameClo, cacheNameClo);
+    }
+
+    /**
+     * Checks that cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
+     *
+     * @param opName Operation name.
+     * @param cfgs Cache configurations.
+     * @throws CacheException If cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
+     */
+    public void checkReadOnlyState(String opName, CacheConfiguration... cfgs) {
+        IgniteOutClosure<String> cacheNameClo = null;
+        IgniteOutClosure<String> cacheGrpNameClo = null;
+
+        if (!F.isEmpty(cfgs)) {
+            if (cfgs.length == 1) {
+                cacheNameClo = () -> cfgs[0] == null ? null : cfgs[0].getName();
+                cacheGrpNameClo = () -> cfgs[0] == null ? null : cfgs[0].getGroupName();
+            }
+            else {
+                cacheNameClo = () -> Stream.of(cfgs)
+                    .map(CacheConfiguration::getName)
+                    .collect(Collectors.toList()).toString();
+
+                cacheGrpNameClo = () -> Stream.of(cfgs)
+                    .map(CacheConfiguration::getGroupName)
+                    .collect(Collectors.toList()).toString();
+            }
+        }
+
+        checkReadOnlyState(opName, cacheGrpNameClo, cacheNameClo);
+    }
+
+    /**
+     * Checks that cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
+     *
+     * @param opName Operation name.
+     * @param cacheGrpNameClo Closure for getting cache group name, if it needed (optional).
+     * @param cacheNameClo Closure for getting cache name, if it needed (optional).
+     * @throws CacheException If cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
+     */
+    private void checkReadOnlyState(
+        String opName,
+        @Nullable IgniteOutClosure<String> cacheGrpNameClo,
+        @Nullable IgniteOutClosure<String> cacheNameClo
+    ) {
+        if (sharedCtx.readOnlyMode()) {
+            String cacheName = cacheNameClo == null ? null : cacheNameClo.apply();
+            String cacheGrpName = cacheGrpNameClo == null ? null : cacheGrpNameClo.apply();
+
+            String errorMsg = format(CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT, opName, cacheGrpName, cacheName);
+
+            throw new CacheException(new IgniteClusterReadOnlyException(errorMsg));
         }
     }
 
@@ -3598,7 +3722,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     .map(CacheConfiguration::getName)
                     .collect(Collectors.toList());
 
-                return String.format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheNames, "dynamicStartCachesByStoredConf");
+                return format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheNames, "dynamicStartCachesByStoredConf");
             });
         }
 
@@ -3706,8 +3830,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (checkThreadTx) {
             sharedCtx.tm().checkEmptyTransactions(
-                () -> String.format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheName, "dynamicDestroyCache"));
+                () -> format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheName, "dynamicDestroyCache"));
         }
+
+        checkReadOnlyState("dynamic destroy cache", null, cacheName::toString);
 
         DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, sql, true);
 
@@ -3741,8 +3867,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) {
         if (checkThreadTx) {
             sharedCtx.tm().checkEmptyTransactions(
-                () -> String.format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheNames, "dynamicDestroyCaches"));
+                () -> format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheNames, "dynamicDestroyCaches"));
         }
+
+        if (!F.isEmpty(cacheNames))
+            checkReadOnlyState("dynamic destroy caches", null, cacheNames::toString);
 
         return dynamicChangeCaches(
             cacheNames.stream().map(cacheName -> createStopRequest(cacheName, false, null, destroy))
@@ -3793,7 +3922,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return new GridFinishedFuture<>(); // No-op.
 
         sharedCtx.tm().checkEmptyTransactions(
-            () -> String.format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheName, "dynamicCloseCache"));
+            () -> format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheName, "dynamicCloseCache"));
 
         if (proxy.context().isLocal())
             return dynamicDestroyCache(cacheName, false, true, false, null);
@@ -3807,19 +3936,30 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheNames Cache names.
      * @return Future that will be completed when state is changed for all caches.
      */
-    public IgniteInternalFuture<?> resetCacheState(Collection<String> cacheNames) {
+    public IgniteInternalFuture<?> resetCacheState(Collection<String> cacheNames) throws ClusterTopologyCheckedException {
         sharedCtx.tm().checkEmptyTransactions(
-            () -> String.format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheNames, "resetCacheState"));
+            () -> format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheNames, "resetCacheState"));
 
         Collection<DynamicCacheChangeRequest> reqs = new ArrayList<>(cacheNames.size());
 
         for (String cacheName : cacheNames) {
-            DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
+            final IgniteInternalCache<Object, Object> cache0 = internalCache(cacheName);
 
-            if (desc == null) {
-                U.warn(log, "Failed to find cache for reset lost partition request, cache does not exist: " + cacheName);
-
+            if (cache0 == null)
                 continue;
+
+            // Check if all lost partitions has at least one affinity owner.
+            final Collection<Integer> lostParts = cache0.lostPartitions();
+
+            if (lostParts.isEmpty())
+                continue;
+
+            for (Integer part : lostParts) {
+                final Collection<ClusterNode> owners = cache0.affinity().mapPartitionToPrimaryAndBackups(part);
+
+                if (owners.isEmpty())
+                    throw new ClusterTopologyCheckedException("Cannot reset lost partitions because no baseline nodes " +
+                        "are online [cache=" + cacheName + ", partition=" + part + ']');
             }
 
             DynamicCacheChangeRequest req = DynamicCacheChangeRequest.resetLostPartitions(ctx, cacheName);
@@ -5142,25 +5282,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private Iterable<CachePagesListView> pagesListViewSupplier(Map<String, Object> filter) {
         Integer cacheGrpId = (Integer)filter.get(CachePagesListViewWalker.CACHE_GROUP_ID_FILTER);
-
-        Collection<CacheGroupContext> cacheGrps;
-
-        if (cacheGrpId != null) {
-            CacheGroupContext cacheGrp = this.cacheGrps.get(cacheGrpId);
-
-            if (cacheGrp == null)
-                return Collections.emptyList();
-
-            cacheGrps = Collections.singletonList(cacheGrp);
-        }
-        else
-            cacheGrps = this.cacheGrps.values();
-
         Integer partId = (Integer)filter.get(CachePagesListViewWalker.PARTITION_ID_FILTER);
         Integer bucketNum = (Integer)filter.get(CachePagesListViewWalker.BUCKET_NUMBER_FILTER);
 
-        Iterable<IgniteCacheOffheapManager.CacheDataStore> dataStores =
-            F.flat(F.iterator(cacheGrps, grp -> grp.offheap().cacheDataStores(), true));
+        Iterable<IgniteCacheOffheapManager.CacheDataStore> dataStores = F.flat(F.iterator(
+            filteredMap(cacheGrps, cacheGrpId).values(), grp -> grp.offheap().cacheDataStores(), true));
 
         return F.flat(F.iterator(dataStores, dataStore -> {
             RowStore rowStore = dataStore.rowStore();
@@ -5180,6 +5306,62 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 .mapToObj(bucket -> new CachePagesListView(pagesList, bucket, dataStore.partId()))
                 .collect(Collectors.toList());
         }, true, cacheDataStore -> partId == null || cacheDataStore.partId() == partId));
+    }
+
+    /**
+     * Partition states view supplier.
+     *
+     * @param filter Filter.
+     */
+    private Iterable<PartitionStateView> partStatesViewSupplier(Map<String, Object> filter) {
+        Integer cacheGrpId = (Integer)filter.get(PartitionStateViewWalker.CACHE_GROUP_ID_FILTER);
+        UUID nodeId = (UUID)filter.get(PartitionStateViewWalker.NODE_ID_FILTER);
+        Integer partId = (Integer)filter.get(PartitionStateViewWalker.PARTITION_ID_FILTER);
+
+        return () -> F.concat(F.concat(F.iterator(filteredMap(cacheGrps, cacheGrpId).values(),
+            grp -> F.iterator(filteredMap(grp.topology().partitionMap(false), nodeId).entrySet(),
+                nodeToParts -> F.iterator(filteredMap(nodeToParts.getValue().map(),
+                    partId == null || partId < 0 ? null : partId).entrySet(),
+                    partToStates -> new PartitionStateView(
+                        grp.groupId(),
+                        nodeToParts.getKey(),
+                        partToStates.getKey(),
+                        partToStates.getValue(),
+                        isPrimary(grp, nodeToParts.getKey(), partToStates.getKey())),
+                    true),
+                true),
+            true)));
+    }
+
+    /**
+     * Filter map by key.
+     *
+     * @param map Map.
+     * @param key Filtering key.
+     */
+    private static <K, V> Map<K, V> filteredMap(Map<K, V> map, K key) {
+        if (key == null)
+            return map;
+
+        V val = map.get(key);
+
+        return val != null ? F.asMap(key, val) : Collections.emptyMap();
+    }
+
+    /**
+     * @param grp Cache group.
+     * @param nodeId Node id.
+     * @param part Partition.
+     */
+    private static boolean isPrimary(CacheGroupContext grp, UUID nodeId, int part) {
+        List<ClusterNode> nodes = grp.affinity().lastReadyAffinity().get(part);
+
+        if (F.isEmpty(nodes))
+            return false;
+
+        ClusterNode primaryNode = nodes.get(0);
+
+        return primaryNode != null && nodeId.equals(primaryNode.id());
     }
 
     /**
