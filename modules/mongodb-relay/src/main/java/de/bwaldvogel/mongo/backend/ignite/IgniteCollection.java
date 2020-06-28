@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.stream.StreamVisitor;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,9 +52,7 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
 
     private static final Logger log = LoggerFactory.getLogger(IgniteCollection.class);
 
-    public final IgniteCache<Object, Document> dataMap;
-    
-    HashMap<String,FieldType> fields = new HashMap<>();
+    public final IgniteCache<Object, Document> dataMap;  
     
     public IgniteCollection(IgniteDatabase database, String collectionName, String idField, IgniteCache<Object, Document> dataMap) {
         super(database, collectionName, idField);
@@ -191,23 +190,5 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
     	return new T2(typeName,keyField);
     }
     
-    public HashMap<String,FieldType> fields(){
-    	if(fields.size()>0) return fields;
-    	
-		for(Index<Object> idx: this.getIndexes()) {
-			if(idx instanceof IgniteLuceneIndex) {
-				IgniteLuceneIndex igniteIndex = (IgniteLuceneIndex) idx;
-				if(fields.isEmpty()) {
-					igniteIndex.setFirstIndex(true);
-				}
-				else {
-					igniteIndex.setFirstIndex(false);
-				}
-				for(IndexKey ik: idx.getKeys()) {
-					fields.put(ik.getKey(), TextField.TYPE_NOT_STORED);
-				}
-			}
-		}
-		return fields;
-    }
+    
 }

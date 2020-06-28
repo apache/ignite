@@ -27,6 +27,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -58,6 +59,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
@@ -92,21 +94,19 @@ public class GridLuceneIndex implements AutoCloseable {
     /** Field name for string representation of value. */
     public static final String VAL_STR_FIELD_NAME = "_TEXT";//modify@byron "_gg_val_str__";  
     
-  
-   
     /** */
     private final String cacheName;
 
-    /** */
+    /** table name */
     private final GridQueryTypeDescriptor type;  
 
-    /** */
+    /** text field */
     private String[] idxdFields;   
+    
+    private FieldType[] idxdTypes;
 
     /** */
     private final GridKernalContext ctx; 
-    
-    private FullTextQueryIndex textIdx;
     
     private LuceneIndexAccess indexAccess;
 
@@ -136,20 +136,26 @@ public class GridLuceneIndex implements AutoCloseable {
     }
 
 	private void init() {
-		QueryIndex qtextIdx = ((QueryIndexDescriptorImpl) type.textIndex()).getQueryIndex();
-		if (qtextIdx instanceof FullTextQueryIndex) {
-			this.textIdx = (FullTextQueryIndex) qtextIdx;
-			Set<String> fields = indexAccess.init(type).keySet();
+		QueryIndexDescriptorImpl qtextIdx = ((QueryIndexDescriptorImpl) type.textIndex());
+		if (qtextIdx!=null) {
+		
+			Map<String,FieldType> fields = indexAccess.init(type);
 			idxdFields = new String[fields.size() + 1];
-
-			fields.toArray(idxdFields);
+			idxdTypes = new FieldType[fields.size() + 1];
+			int i = 0;
+			for(Map.Entry<String,FieldType> ft: fields.entrySet()) {
+				idxdFields[i] = ft.getKey();
+				idxdTypes[i++] = ft.getValue();
+			}			
 		} else {
 			assert type.valueTextIndex() || type.valueClass() == String.class;
 
 			idxdFields = new String[1];
+			idxdTypes = new FieldType[1];
 		}
 
 		idxdFields[idxdFields.length - 1] = VAL_STR_FIELD_NAME;
+		idxdTypes[idxdTypes.length - 1] = indexAccess.config.isStoreValue()? TextField.TYPE_STORED:TextField.TYPE_NOT_STORED;
 	}
     /**
      * @return Cache object context.
@@ -173,9 +179,7 @@ public class GridLuceneIndex implements AutoCloseable {
     @SuppressWarnings("ConstantConditions")
     public void store(CacheObject k, CacheObject v, GridCacheVersion ver, long expires) throws IgniteCheckedException {
         CacheObjectContext coctx = objectContext();
-        
-        Field.Store storeText = indexAccess.config.isStoreTextFieldValue()?  Field.Store.YES : Field.Store.NO;
-
+      
         Object key = k.isPlatformType() ? k.value(coctx, false) : k;
         Object val = v.isPlatformType() ? v.value(coctx, false) : v;
 
@@ -208,7 +212,7 @@ public class GridLuceneIndex implements AutoCloseable {
         try {
             final Term term = new Term(KEY_FIELD_NAME, keyByteRef);
             // build doc body
-            stringsFound = FullTextLucene.FullTextTrigger.buildDocument(doc,this.idxdFields,null,row,storeText); 
+            stringsFound = FullTextLucene.buildDocument(doc,this.idxdFields,this.idxdTypes,null,row); 
             
             if (!stringsFound) {
             	indexAccess.writer.deleteDocuments(term);

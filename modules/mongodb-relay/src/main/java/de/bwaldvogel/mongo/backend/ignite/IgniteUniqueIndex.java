@@ -32,7 +32,7 @@ public class IgniteUniqueIndex extends AbstractUniqueIndex<Object> {
     protected final QueryMatcher matcher = new DefaultQueryMatcher();
 
     IgniteUniqueIndex(IgniteCache<KeyValue, Object> mvMap, String name, List<IndexKey> keys, boolean sparse) {
-        super(name, keys, sparse);
+        super(name, keys, true);
         this.mvMap = mvMap;
     }
 

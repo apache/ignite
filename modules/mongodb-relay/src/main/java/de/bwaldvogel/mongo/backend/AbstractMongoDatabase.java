@@ -801,9 +801,9 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         } else if (Utils.isTrue(indexDescription.get("unique"))) {
             List<IndexKey> keys = new ArrayList<>();
             for (Entry<String, Object> entry : key.entrySet()) {
-                String field = entry.getKey();
+                String field = entry.getKey();                
                 boolean ascending = isAscending(entry.getValue());
-                keys.add(new IndexKey(field, ascending));
+                keys.add(new IndexKey(field, ascending, false));
             }
 
             boolean sparse = Utils.isTrue(indexDescription.get("sparse"));
@@ -816,7 +816,8 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
             for (Entry<String, Object> entry : key.entrySet()) {
                 String field = entry.getKey();
                 boolean ascending = isAscending(entry.getValue());
-                keys.add(new IndexKey(field, ascending));
+                boolean isText = isTextIndex(entry.getValue());
+                keys.add(new IndexKey(field, ascending,isText));
             }
 
             boolean sparse = Utils.isTrue(indexDescription.get("sparse"));
@@ -833,12 +834,16 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         }
     }
 
+    private static boolean isTextIndex(Object keyValue) {
+        return Objects.equals(Utils.normalizeValue(keyValue), "text");
+    }
+    
     private static boolean isAscending(Object keyValue) {
         return Objects.equals(Utils.normalizeValue(keyValue), Double.valueOf(1.0));
     }
 
     private Index<P> openOrCreateIdIndex(String collectionName, String indexName, boolean ascending) {
-        return openOrCreateUniqueIndex(collectionName, indexName, Collections.singletonList(new IndexKey(ID_FIELD, ascending)), false);
+        return openOrCreateUniqueIndex(collectionName, indexName, Collections.singletonList(new IndexKey(ID_FIELD, ascending,false)), false);
     }
 
     protected Index<P> openOrCreateIndex(String collectionName, String indexName, List<IndexKey> keys, boolean sparse) {

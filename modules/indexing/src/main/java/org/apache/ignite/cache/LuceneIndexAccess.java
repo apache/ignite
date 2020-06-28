@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
@@ -133,19 +134,21 @@ public class LuceneIndexAccess {
 		
 		try{        		
 			QueryIndex qtextIdx = ((QueryIndexDescriptorImpl)type.textIndex()).getQueryIndex();  
-			FullTextQueryIndex textIdx = null;
+			
             if(qtextIdx instanceof FullTextQueryIndex){
-           	 	textIdx = (FullTextQueryIndex)qtextIdx;
+            	FullTextQueryIndex textIdx = (FullTextQueryIndex)qtextIdx;
+           	 	
+           	   if(textIdx!=null && textIdx.getAnalyzer()!=null)
+     			   this.config.setIndexAnalyzer(springCtx.getBean(textIdx.getAnalyzer(),Analyzer.class));
+           	   if(textIdx!=null && textIdx.getQueryAnalyzer()!=null)
+     			   this.config.setQueryAnalyzer(springCtx.getBean(textIdx.getQueryAnalyzer(),Analyzer.class));
+     		
             }
-    		if(textIdx!=null && textIdx.getAnalyzer()!=null)
-    			this.config.setIndexAnalyzer(springCtx.getBean(textIdx.getAnalyzer(),Analyzer.class));
-    		if(textIdx!=null && textIdx.getQueryAnalyzer()!=null)
-    			this.config.setQueryAnalyzer(springCtx.getBean(textIdx.getQueryAnalyzer(),Analyzer.class));
-    		
-    		     
-        	if(textIdx!=null){
+    		  
+            Field.Store storeText = config.isStoreTextFieldValue()?  Field.Store.YES : Field.Store.NO;     
+        	if(qtextIdx!=null){
         		//-fields.clear();
-        		for(String field: textIdx.getFieldNames()) {
+        		for(String field: type.textIndex().fields()) {
         			if(config.isStoreTextFieldValue()) {
         				fields.put(field,TextField.TYPE_STORED);
         			}
