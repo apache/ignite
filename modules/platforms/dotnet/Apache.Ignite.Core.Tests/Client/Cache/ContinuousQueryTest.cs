@@ -261,6 +261,24 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO: filter operates on binary objects.
         }
 
+        [Test]
+        public void TestExceptionInFilterResultsInCorrectErrorMessage()
+        {
+            // TODO
+        }
+
+        [Test]
+        public void TestExceptionInInitialQueryFilterResultsInCorrectErrorMessage()
+        {
+            // TODO
+        }
+
+        [Test]
+        public void TestInvalidInitialSqlQueryResultsInCorrectErrorMessage()
+        {
+            // TODO
+        }
+
         /** */
         private class DelegateListener<TK, TV> : ICacheEntryEventListener<TK, TV>
         {
