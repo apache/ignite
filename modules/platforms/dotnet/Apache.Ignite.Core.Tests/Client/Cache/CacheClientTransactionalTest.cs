@@ -192,7 +192,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestTransactionScopeMultiCache()
         {
             var cache1 = TransactionalCache();
-
             var cache2 = TransactionalCache(cache1.Name + "1");
 
             cache1[1] = 1;
@@ -346,13 +345,21 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Gets cache name.
+        /// </summary>
+        protected virtual string GetCacheName()
+        {
+            return "client_transactional";
+        }
+
+        /// <summary>
         /// Gets or creates transactional cache
         /// </summary>
-        private ICacheClient<int, int> TransactionalCache(string name = "client_transactional")
+        private ICacheClient<int, int> TransactionalCache(string cacheName = null)
         {
             return Client.GetOrCreateCache<int, int>(new CacheClientConfiguration
             {
-                Name = name,
+                Name = cacheName ?? GetCacheName(),
                 AtomicityMode = CacheAtomicityMode.Transactional
             });
         }
