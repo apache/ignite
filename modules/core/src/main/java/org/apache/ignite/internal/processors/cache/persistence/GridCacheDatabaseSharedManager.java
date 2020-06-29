@@ -1814,27 +1814,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 switch (rec.type()) {
                     case PAGE_RECORD:
                         if (restoreBinaryState.needApplyBinaryUpdate()) {
-
-//                            System.out.println(">>> need ApplyBinaryUpdate");
-
                             PageSnapshot pageSnapshot = (PageSnapshot)rec;
 
                             // Here we do not require tag check because we may be applying memory changes after
                             // several repetitive restarts and the same pages may have changed several times.
                             int groupId = pageSnapshot.fullPageId().groupId();
-
-//                            System.out.println(">>> apply " + pageSnapshot.fullPageId());
-
                             int partId = partId(pageSnapshot.fullPageId().pageId());
-
-                            PageMemoryEx mem = getPageMemoryForCacheGroup(groupId);
-
-                            if (mem != null) {
-                                if (mem.partitionMetaPageId(groupId, partId) == pageSnapshot.fullPageId().pageId())
-//                                    break;
-                                    System.out.println(">>> restore snapshot p=" + partId);
-                            }
-
 
                             if (skipRemovedIndexUpdates(groupId, partId))
                                 break;

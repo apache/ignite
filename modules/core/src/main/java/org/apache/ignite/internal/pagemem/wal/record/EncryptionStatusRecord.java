@@ -20,7 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.util.Map;
 
 /**
- * Logical record to restart encryption with the latest encryption key.
+ * Logical record to restart reencryption with the latest encryption key.
  */
 public class EncryptionStatusRecord extends WALRecord {
     /** Mapping the cache group ID to a list of partitions with the number of encrypted pages. */

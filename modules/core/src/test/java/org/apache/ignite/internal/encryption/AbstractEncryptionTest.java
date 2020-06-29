@@ -368,7 +368,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             forceCheckpoint(g);
 
-            encryption.encryptionTask(grpId).get(timeout);
+            encryption.reencryptionFuture(grpId).get(timeout);
 
             CacheGroupContext grp = grid.context().cache().cacheGroup(grpId);
 

@@ -271,7 +271,7 @@ public class PageMetaIO extends PageIO {
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setEncryptedPageIndex(long pageAddr, int pageIdx) {
-        if (getEncryptedPageIndex(pageAddr) == pageIdx)
+        if (pageIdx < 0 || getEncryptedPageIndex(pageAddr) == pageIdx)
             return false;
 
         PageUtils.putLong(pageAddr, ENCRYPT_PAGE_IDX_OFF, pageIdx);
@@ -294,7 +294,7 @@ public class PageMetaIO extends PageIO {
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setEncryptedPageCount(long pageAddr, int pagesCnt) {
-        if (getEncryptedPageCount(pageAddr) == pagesCnt)
+        if (pagesCnt < 0 || getEncryptedPageCount(pageAddr) == pagesCnt)
             return false;
 
         PageUtils.putInt(pageAddr, ENCRYPT_PAGE_MAX_OFF, pagesCnt);

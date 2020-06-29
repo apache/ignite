@@ -439,8 +439,14 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
          */
         END_SNAPSHOT,
 
-        GROUP_KEY_CHANGE_PREPARE,
+        /**
+         * Cache group encyption key change prepare phase.
+         */
+        CACHE_GROUP_KEY_CHANGE_PREPARE,
 
-        GROUP_KEY_CHANGE_FINISH
+        /**
+         * Cache group encyption key change perform phase.
+         */
+        CACHE_GROUP_KEY_CHANGE_FINISH
     }
 }

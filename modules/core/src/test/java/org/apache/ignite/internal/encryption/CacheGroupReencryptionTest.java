@@ -148,7 +148,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         failing.set(true);
 
-        nodes.get1().encryption().changeGroupKey(Collections.singleton(cacheName())).get();
+        nodes.get1().encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
         awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
 
@@ -204,7 +204,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        nodes.get1().encryption().changeGroupKey(Collections.singleton(cacheName())).get();
+        nodes.get1().encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
         forceCheckpoint();
 
@@ -247,9 +247,9 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         IgniteCache cache = node0.cache(cacheName());
 
-        node0.encryption().changeGroupKey(Collections.singleton(cacheName())).get();
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
-        IgniteInternalFuture<Void> fut0 = node0.context().encryption().encryptionTask(CU.cacheId(cacheName()));
+        IgniteInternalFuture<Void> fut0 = node0.context().encryption().reencryptionFuture(CU.cacheId(cacheName()));
 
         assertFalse(fut0.isDone());
         assertTrue(isReencryptionInProgress(node0, CU.cacheId(cacheName())));
@@ -300,7 +300,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        node0.encryption().changeGroupKey(Collections.singleton(cacheName())).get();
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
         stopAllGrids();
 
@@ -331,7 +331,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         forceCheckpoint();
 
-        nodes.get1().encryption().changeGroupKey(Collections.singleton(cacheName())).get();
+        nodes.get1().encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
         startGrid(GRID_2);
 
@@ -363,7 +363,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         loadData(50_000);
 
-        grid(GRID_0).encryption().changeGroupKey(Collections.singleton(cacheName())).get();
+        grid(GRID_0).encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
         long walSegment = nodes.get1().context().cache().context().wal().currentSegment();
 
@@ -423,7 +423,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        node0.encryption().changeGroupKey(Collections.singleton(cacheName())).get();
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
         awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
 
@@ -464,7 +464,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        node0.encryption().changeGroupKey(Collections.singleton(cacheName())).get();
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
         forceCheckpoint();
 
@@ -518,7 +518,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         List<String> cacheGroups = Arrays.asList(cacheName(), cache2);
 
-        node0.encryption().changeGroupKey(cacheGroups).get();
+        node0.encryption().changeCacheGroupKey(cacheGroups).get();
 
         while (isReencryptionInProgress(cacheGroups)) {
             int rndNode = ThreadLocalRandom.current().nextInt(3);
@@ -578,7 +578,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         long startIdx = node1.context().cache().context().wal().currentSegment();
 
-        node0.encryption().changeGroupKey(Collections.singleton(cacheName())).get();
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
         long endIdx = node1.context().cache().context().wal().currentSegment();
 

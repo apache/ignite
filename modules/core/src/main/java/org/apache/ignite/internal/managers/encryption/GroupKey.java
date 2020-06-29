@@ -20,7 +20,7 @@ package org.apache.ignite.internal.managers.encryption;
 import java.io.Serializable;
 
 /**
- * Cache encryption group key with identifier.
+ * Cache group encryption key with identifier.
  */
 public class GroupKey {
     /** Encryption key ID. */

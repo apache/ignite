@@ -421,12 +421,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     }
 
                     // Do not save meta for evicted partitions on next checkpoints.
-                    if (state == null) {
-                        if (log.isInfoEnabled())
-                            log.info("Skip savemeta [p=" + store.partId() + "]");
-
+                    if (state == null)
                         return;
-                    }
                 }
 
                 int grpId = grp.groupId();

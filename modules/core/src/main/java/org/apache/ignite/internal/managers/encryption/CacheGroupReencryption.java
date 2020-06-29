@@ -37,7 +37,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -52,7 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -248,15 +247,8 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
             GroupReencryptionContext ctx0 = new GroupReencryptionContext(grpId, skipDirty);
 
-            IgnitePageStoreManager pageStoreMgr = ctx.cache().context().pageStore();
-
-            forEachPartition(grp.affinity().partitions(), new IgniteInClosureX<Integer>() {
-                @Override public void applyx(Integer partId) throws IgniteCheckedException {
-                    if (!pageStoreMgr.exists(grpId, partId))
-                        return;
-
-                    PageStore pageStore = ((FilePageStoreManager)pageStoreMgr).getStore(grpId, partId);
-
+            forEachPageStore(grp, new IgniteInClosure2X<Integer, PageStore>() {
+                @Override public void applyx(Integer partId, PageStore pageStore) {
                     if (pageStore.encryptedPageCount() == 0) {
                         if (log.isDebugEnabled())
                             log.debug("Skipping partition reencryption [grp=" + grpId + ", p=" + partId + "]");
@@ -278,7 +270,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                 if (t != null) {
                     log.error("Reencryption is failed [grpId=" + grpId + "]", t);
 
-                    ctx0.cpFut.onDone(t);
+                    ctx0.fail(t);
 
                     return;
                 }
@@ -305,9 +297,9 @@ public class CacheGroupReencryption implements DbCheckpointListener {
      * @return Future that will be completed when the reencryption of the specified group ends.
      */
     public IgniteInternalFuture<Void> statusFuture(int grpId) {
-        GroupReencryptionContext state = grps.get(grpId);
+        GroupReencryptionContext ctx0 = grps.get(grpId);
 
-        return state == null ? new GridFinishedFuture<>() : state.cpFut;
+        return ctx0 == null ? new GridFinishedFuture<>() : ctx0.finishFuture();
     }
 
     /**
@@ -339,26 +331,19 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
         CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
-        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)ctx.cache().context().pageStore();
-
         ctx.cache().context().database().checkpointReadLock();
 
         try {
-            forEachPartition(grp.affinity().partitions(), new IgniteInClosureX<Integer>() {
-                @Override public void applyx(Integer p) throws IgniteCheckedException {
-                    if (!pageStoreMgr.exists(grpId, p))
-                        return;
-
-                    PageStore pageStore = pageStoreMgr.getStore(grpId, p);
-
+            forEachPageStore(grp, new IgniteInClosure2X<Integer, PageStore>() {
+                @Override public void applyx(Integer partId, PageStore pageStore) throws IgniteCheckedException {
                     int pagesCnt = pageStore.pages();
 
                     pageStore.encryptedPageCount(pagesCnt);
                     pageStore.encryptedPageIndex(0);
 
-                    storePagesCountOnMetaPage(grp, p, pagesCnt);
+                    storePagesCountOnMetaPage(grp, partId, pagesCnt);
 
-                    offsets.put(p, pagesCnt);
+                    offsets.put(partId, pagesCnt);
                 }
             });
         } finally {
@@ -400,14 +385,15 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
                 IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
 
+                if (!PageHandler.isWalDeltaRecordNeeded(pageMem, grp.groupId(), pageId, page, wal, null))
+                    return;
+
                 // Save snapshot if page is dirty.
-                if (PageHandler.isWalDeltaRecordNeeded(pageMem, grp.groupId(), pageId, page, wal, null)) {
-                    byte[] payload = PageUtils.getBytes(pageAddr, 0, pageMem.realPageSize(grp.groupId()));
+                byte[] payload = PageUtils.getBytes(pageAddr, 0, pageMem.realPageSize(grp.groupId()));
 
-                    FullPageId fullPageId = new FullPageId(pageId, grp.groupId());
+                FullPageId fullPageId = new FullPageId(pageId, grp.groupId());
 
-                    wal.log(new PageSnapshot(fullPageId, payload, pageMem.realPageSize(grp.groupId())));
-                }
+                wal.log(new PageSnapshot(fullPageId, payload, pageMem.realPageSize(grp.groupId())));
             }
             finally {
                 pageMem.writeUnlock(grp.groupId(), pageId, page, null, changed, true);
@@ -419,14 +405,26 @@ public class CacheGroupReencryption implements DbCheckpointListener {
     }
 
     /**
-     * @param partCnt Parttiion count.
-     * @param hnd Handler.
+     * @param grp Cache group context.
+     * @param hnd Page store handler.
      */
-    private void forEachPartition(int partCnt, IgniteInClosureX<Integer> hnd) throws IgniteCheckedException {
-        for (int p = 0; p < partCnt; p++)
-            hnd.applyx(p);
+    private void forEachPageStore(CacheGroupContext grp, IgniteInClosure2X<Integer, PageStore> hnd) throws IgniteCheckedException {
+        int parts = grp.affinity().partitions();
 
-        hnd.applyx(PageIdAllocator.INDEX_PARTITION);
+        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)ctx.cache().context().pageStore();
+
+        for (int p = 0; p < parts; p++) {
+            if (!pageStoreMgr.exists(grp.groupId(), p))
+                continue;
+
+            PageStore pageStore = pageStoreMgr.getStore(grp.groupId(), p);
+
+            hnd.applyx(p, pageStore);
+        }
+
+        PageStore idxStore = pageStoreMgr.getStore(grp.groupId(), PageIdAllocator.INDEX_PARTITION);
+
+        hnd.applyx(PageIdAllocator.INDEX_PARTITION, idxStore);
     }
 
     /**
@@ -531,6 +529,13 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                 return false;
 
             return fut.cancel();
+        }
+
+        /**
+         * @param t Throwable.
+         */
+        public void fail(Throwable t) {
+            cpFut.onDone(t);
         }
     }
 

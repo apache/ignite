@@ -111,14 +111,14 @@ public enum IgniteFeatures {
     /** Distributed propagation of tx collisions dump interval. */
     DISTRIBUTED_TX_COLLISIONS_DUMP(37),
 
-    /** Master key change. See {@link IgniteEncryption#changeGroupKey(Collection)}. */
-    GROUP_KEY_CHANGE(38),
-
     /** Remove metadata from cluster for specified type. */
     REMOVE_METADATA(39),
 
+    /** Cache encryption key change. See {@link IgniteEncryption#changeCacheGroupKey(Collection)}. */
+    CACHE_GROUP_KEY_CHANGE(40),
+
     /** Support policy of shutdown. */
-    SHUTDOWN_POLICY(40),
+    SHUTDOWN_POLICY(41),
 
     /** Force rebuild, list or request indexes rebuild status from control script. */
     INDEXES_MANIPULATIONS_FROM_CONTROL_SCRIPT(42),
