@@ -18,16 +18,15 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.query.Query;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * Initial query holder.
@@ -162,7 +161,15 @@ class ClientCacheQueryContinuousInitialQuery {
      * @return Client cache query cursor according to query type.
      */
     public ClientCacheQueryCursor getClientCursor(QueryCursor cursor, ClientConnectionContext ctx) {
-        // TODO: Switch on type.
-        return new ClientCacheEntryQueryCursor(cursor, pageSize, ctx, false);
+        switch (type) {
+            case TYPE_SCAN:
+                return new ClientCacheEntryQueryCursor(cursor, pageSize, ctx, false);
+
+            case TYPE_SQL:
+                return new ClientCacheFieldsQueryCursor((FieldsQueryCursor) cursor, pageSize, ctx, false);
+
+            default:
+                throw new IgniteException("Invalid initial query type: " + type);
+        }
     }
 }
