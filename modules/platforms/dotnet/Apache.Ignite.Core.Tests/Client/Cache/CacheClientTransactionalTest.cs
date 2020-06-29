@@ -17,10 +17,14 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System;
+    using System.Linq;
     using System.Transactions;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Impl.Client.Transactions;
+    using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
     /// <summary>
@@ -29,12 +33,20 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     public class CacheClientTransactionalTest : ClientTestBase
     {
         /** */
-        private const int ServerCount = 3;
+        private const int DEFAULT_SERVER_COUNT = 1;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheClientTransactionalTest" /> class.
         /// </summary>
-        public CacheClientTransactionalTest() : base(ServerCount)
+        public CacheClientTransactionalTest() : this(DEFAULT_SERVER_COUNT)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheClientTransactionalTest" /> class.
+        /// </summary>
+        public CacheClientTransactionalTest(int serverCount) : base(serverCount)
         {
             // No-op.
         }
@@ -293,6 +305,43 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 // In case with Required option there is a single tx
                 // that gets aborted, second put executes outside the tx.
                 Assert.AreEqual(option == TransactionScopeOption.Required ? 5 : 3, cache[1], option.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Test that ambient <see cref="TransactionScope"/> options propagate to Ignite transaction.
+        /// </summary>
+        [Test]
+        public void TestTransactionScopeOptions()
+        {
+            var cache = TransactionalCache();
+            var transactions = (IClientTransactionsInternal) Client.Transactions;
+
+            var modes = new[]
+            {
+                Tuple.Create(IsolationLevel.Serializable, TransactionIsolation.Serializable),
+                Tuple.Create(IsolationLevel.RepeatableRead, TransactionIsolation.RepeatableRead),
+                Tuple.Create(IsolationLevel.ReadCommitted, TransactionIsolation.ReadCommitted),
+                Tuple.Create(IsolationLevel.ReadUncommitted, TransactionIsolation.ReadCommitted),
+                Tuple.Create(IsolationLevel.Snapshot, TransactionIsolation.ReadCommitted),
+                Tuple.Create(IsolationLevel.Chaos, TransactionIsolation.ReadCommitted),
+            };
+
+            foreach (var mode in modes)
+            {
+                using (new TransactionScope(TransactionScopeOption.Required, new TransactionOptions
+                {
+                    IsolationLevel = mode.Item1
+                }))
+                {
+                    cache[1] = 1;
+
+                    var tx = GetIgnite().GetTransactions()
+                       .GetLocalActiveTransactions()
+                       .Single();
+                    Assert.AreEqual(mode.Item2, tx.Isolation);
+                    Assert.AreEqual(transactions.DefaultTxConcurrency, tx.Concurrency);
+                }
             }
         }
 

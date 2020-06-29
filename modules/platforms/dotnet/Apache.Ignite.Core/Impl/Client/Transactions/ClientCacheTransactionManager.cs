@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
             if (ambientTx != null && ambientTx.TransactionInformation.Status == TransactionStatus.Active)
             {
-                _transactions.TxStart(TransactionConcurrency.Optimistic, // todo 
+                _transactions.TxStart(_transactions.DefaultTxConcurrency, 
                     ConvertTransactionIsolation(ambientTx.IsolationLevel));
 
                 _enlistment.Value = ambientTx.EnlistVolatile(this, EnlistmentOptions.None);

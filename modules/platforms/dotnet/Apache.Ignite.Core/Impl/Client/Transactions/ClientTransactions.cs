@@ -85,9 +85,16 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             }
         }
 
+        /** <inheritDoc /> */
         public void StartTxIfNeeded()
         {
             _txManager.StartTxIfNeeded();
+        }
+
+        /** <inheritDoc /> */
+        public TransactionConcurrency DefaultTxConcurrency
+        {
+            get { return _dfltConcurrency; }
         }
 
         /** <inheritDoc /> */

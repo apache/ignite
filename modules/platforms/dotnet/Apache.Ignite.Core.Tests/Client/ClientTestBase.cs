@@ -122,6 +122,18 @@ namespace Apache.Ignite.Core.Tests.Client
         public IIgniteClient Client { get; set; }
 
         /// <summary>
+        /// Gets Ignite.
+        /// </summary>
+        protected static IIgnite GetIgnite(int? idx = null)
+        {
+            if (idx == null)
+            {
+                return Ignition.GetAll().First();
+            }
+            return Ignition.GetIgnite(idx.ToString());
+        }
+
+        /// <summary>
         /// Gets the cache.
         /// </summary>
         protected static ICache<int, T> GetCache<T>()
