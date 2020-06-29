@@ -47,7 +47,8 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// <summary>
         /// If ambient transaction is present, starts an Ignite transaction and enlists it.
         /// </summary>
-        public void StartTxIfNeeded()
+        /// <param name="label">Label.</param>
+        public void StartTxIfNeeded(string label = null)
         {
             if (_transactions.CurrentTx != null)
             {
@@ -71,8 +72,10 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
 
             if (ambientTx != null && ambientTx.TransactionInformation.Status == TransactionStatus.Active)
             {
-                _transactions.TxStart(_transactions.DefaultTxConcurrency, 
-                    ConvertTransactionIsolation(ambientTx.IsolationLevel));
+                _transactions.TxStart(_transactions.DefaultTxConcurrency,
+                    ConvertTransactionIsolation(ambientTx.IsolationLevel),
+                    _transactions.DefaultTimeout,
+                    label);
 
                 _enlistment.Value = ambientTx.EnlistVolatile(this, EnlistmentOptions.None);
             }

@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Client.Transactions
         /// <param name="timeout">Timeout. TimeSpan. Zero for indefinite timeout.</param>
         /// <returns>New transaction.</returns>
         IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation, TimeSpan timeout);
-        
+
         /// <summary>
         /// Returns instance of <see cref="IClientTransactions"/>> to mark a transaction with a special label.
         /// </summary>

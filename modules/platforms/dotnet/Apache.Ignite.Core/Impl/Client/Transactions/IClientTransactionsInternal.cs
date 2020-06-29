@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
+    using System;
     using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Transactions;
 
@@ -36,5 +37,28 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Default transaction concurrency.
         /// </summary>
         TransactionConcurrency DefaultTxConcurrency {get;}
+
+        /// <summary>
+        /// Default transaction isolation.
+        /// </summary>
+        TransactionIsolation DefaultTxIsolation { get; }
+
+        /// <summary>
+        /// Default transaction timeout.
+        /// </summary>
+        TimeSpan DefaultTimeout { get; }
+
+        /// <summary>
+        /// Starts new transaction with the specified concurrency, isolation, timeout and label.
+        /// </summary>
+        /// <param name="concurrency">Concurrency.</param>
+        /// <param name="isolation">Isolation.</param>
+        /// <param name="timeout">Timeout. TimeSpan. Zero for indefinite timeout.</param>
+        /// <param name="label">Label.</param>
+        /// <returns>New transaction.</returns>
+        IClientTransaction TxStart(TransactionConcurrency concurrency,
+            TransactionIsolation isolation,
+            TimeSpan timeout,
+            string label);
     }
 }

@@ -34,9 +34,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** Ignite. */
         private readonly IgniteClient _ignite;
 
-        /** Label. */
-        private readonly string _label;
-
         /** Default transaction concurrency. */
         private const TransactionConcurrency _dfltConcurrency = TransactionConcurrency.Pessimistic;
 
@@ -56,11 +53,9 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Constructor.
         /// </summary>
         /// <param name="ignite">Ignite.</param>
-        /// <param name="label">Label.</param>
-        public ClientTransactions(IgniteClient ignite, string label = null)
+        public ClientTransactions(IgniteClient ignite)
         {
             _ignite = ignite;
-            _label = label;
             _txManager = new ClientCacheTransactionManager(this);
         }
 
@@ -98,6 +93,18 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         }
 
         /** <inheritDoc /> */
+        public TransactionIsolation DefaultTxIsolation
+        {
+            get { return _dfltIsolation; }
+        }
+
+        /** <inheritDoc /> */
+        public TimeSpan DefaultTimeout
+        {
+            get { return _dfltTimeout; }
+        }
+
+        /** <inheritDoc /> */
         public IClientTransaction TxStart()
         {
             return TxStart(_dfltConcurrency, _dfltIsolation);
@@ -113,6 +120,14 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         public IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
             TimeSpan timeout)
         {
+            return TxStart(concurrency, isolation, timeout, null);
+        }
+
+        public IClientTransaction TxStart(TransactionConcurrency concurrency,
+            TransactionIsolation isolation,
+            TimeSpan timeout,
+            string label)
+        {
             if (CurrentTx != null)
             {
                 throw new IgniteClientException("A transaction has already been started by the current thread.");
@@ -125,7 +140,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                     ctx.Writer.WriteByte((byte) concurrency);
                     ctx.Writer.WriteByte((byte) isolation);
                     ctx.Writer.WriteTimeSpanAsLong(timeout);
-                    ctx.Writer.WriteString(_label);
+                    ctx.Writer.WriteString(label);
                 },
                 ctx => ctx.Reader.ReadInt()
             );
@@ -139,7 +154,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         {
             IgniteArgumentCheck.NotNullOrEmpty(label, "label");
 
-            return new ClientTransactions(_ignite, _label); 
+            return new ClientTransactionsWithLabel(this, label); 
         }
 
         /** <inheritDoc /> */
@@ -149,6 +164,93 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         public void Dispose()
         {
             _currentTx.Dispose();
+        }
+
+        /// <summary>
+        /// Wrapper for transactions with label.
+        /// </summary>
+        private class ClientTransactionsWithLabel : IClientTransactionsInternal
+        {
+            /** Transactions. */
+            private readonly ClientTransactions _transactions;
+
+            /** Label. */
+            private readonly string _label;
+
+            /// <summary>
+            /// Client transactions wrapper with label.
+            /// </summary>
+            public ClientTransactionsWithLabel(ClientTransactions transactions, string label)
+            {
+                _transactions = transactions;
+                _label = label;
+            }
+
+            /** <inheritDoc /> */
+            public IClientTransaction TxStart()
+            {
+                return TxStart(DefaultTxConcurrency, DefaultTxIsolation);
+            }
+
+            /** <inheritDoc /> */
+            public IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation)
+            {
+                return TxStart(concurrency, isolation, DefaultTimeout);
+            }
+
+            /** <inheritDoc /> */
+            public IClientTransaction TxStart(
+                TransactionConcurrency concurrency, 
+                TransactionIsolation isolation, 
+                TimeSpan timeout)
+            {
+                return _transactions.TxStart(concurrency, isolation, timeout, _label);
+            }
+
+            /** <inheritDoc /> */
+            public IClientTransactions WithLabel(string label)
+            {
+                return new ClientTransactionsWithLabel(_transactions, label);
+            }
+
+            /** <inheritDoc /> */
+            public ClientTransaction CurrentTx
+            {
+                get { return _transactions.CurrentTx; }
+            }
+
+            /** <inheritDoc /> */
+            public void StartTxIfNeeded()
+            {
+                _transactions._txManager.StartTxIfNeeded(_label);
+            }
+
+            /** <inheritDoc /> */
+            public TransactionConcurrency DefaultTxConcurrency
+            {
+                get { return _transactions.DefaultTxConcurrency; }
+            }
+
+            /** <inheritDoc /> */
+            public TransactionIsolation DefaultTxIsolation
+            {
+                get { return _transactions.DefaultTxIsolation; }
+            }
+
+            /** <inheritDoc /> */
+            public TimeSpan DefaultTimeout
+            {
+                get { return _transactions.DefaultTimeout; }
+            }
+
+            /** <inheritDoc /> */
+            public IClientTransaction TxStart(TransactionConcurrency concurrency,
+                TransactionIsolation isolation,
+                TimeSpan timeout,
+                string label)
+            {
+                return _transactions.TxStart(concurrency, isolation, timeout, label);
+            }
         }
     }
 }
