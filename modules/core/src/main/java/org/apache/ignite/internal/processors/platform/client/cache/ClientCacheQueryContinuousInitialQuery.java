@@ -28,8 +28,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-
 /**
  * Initial query holder.
  */
@@ -125,7 +123,7 @@ class ClientCacheQueryContinuousInitialQuery {
             }
 
             case TYPE_SQL: {
-                // TODO
+                // TODO: Split this class to avoid switching and data mixup
                 String schema = reader.readString();
                 int pageSize = reader.readInt();
                 String sql = reader.readString();
