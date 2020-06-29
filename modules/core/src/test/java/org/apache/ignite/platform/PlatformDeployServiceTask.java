@@ -18,6 +18,11 @@
 package org.apache.ignite.platform;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -33,12 +38,6 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 import static java.util.Calendar.JANUARY;
 
@@ -365,7 +364,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        public Object[] testBinarizableArray(Object[] arg) {
+        public Object[] testBinarizableArrayOfObjects(Object[] arg) {
             if (arg == null)
                 return null;
 
@@ -378,13 +377,29 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
+        public PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] arg) {
+            return (PlatformComputeBinarizable[])testBinarizableArrayOfObjects(arg);
+        }
+
+        /** */
+        public BinaryObject[] testBinaryObjectArray(BinaryObject[] arg) {
+            for (int i = 0; i < arg.length; i++) {
+                int field = arg[i].field("Field");
+
+                arg[i] = arg[i].toBuilder().setField("Field", field + 1).build();
+            }
+
+            return arg;
+        }
+
+        /** */
         public Collection testBinarizableCollection(Collection arg) {
             if (arg == null)
                 return null;
 
             Collection<PlatformComputeBinarizable> res = new ArrayList<>(arg.size());
 
-            for(Object x : arg)
+            for (Object x : arg)
                 res.add(new PlatformComputeBinarizable(((PlatformComputeBinarizable)x).field + 1));
 
             return res;

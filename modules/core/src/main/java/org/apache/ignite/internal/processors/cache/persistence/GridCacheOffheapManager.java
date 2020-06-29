@@ -1009,23 +1009,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (grp.mvccEnabled()) // TODO IGNITE-7384
             return super.historicalIterator(partCntrs, missing);
 
-        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
-
-        FileWALPointer minPtr = null;
+        Map<Integer, Long> partsCounters = new HashMap<>();
 
         for (int i = 0; i < partCntrs.size(); i++) {
             int p = partCntrs.partitionAt(i);
             long initCntr = partCntrs.initialUpdateCounterAt(i);
 
-            FileWALPointer startPtr = (FileWALPointer)database.checkpointHistory().searchPartitionCounter(
-                grp.groupId(), p, initCntr);
-
-            if (startPtr == null)
-                throw new IgniteCheckedException("Could not find start pointer for partition [part=" + p + ", partCntrSince=" + initCntr + "]");
-
-            if (minPtr == null || startPtr.compareTo(minPtr) < 0)
-                minPtr = startPtr;
+            partsCounters.put(p, initCntr);
         }
+
+        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
+
+        FileWALPointer minPtr = (FileWALPointer)database.checkpointHistory().searchEarliestWalPointer(grp.groupId(), partsCounters);
 
         WALIterator it = grp.shared().wal().replay(minPtr);
 
@@ -1669,7 +1664,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return Name of pending entires tree.
          */
         private String pendingEntriesTreeName() {
-            return grp.cacheOrGroupName() + "-" +"PendingEntries-" + partId;
+            return grp.cacheOrGroupName() + "-" + "PendingEntries-" + partId;
         }
 
         /**
@@ -2380,7 +2375,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             boolean retVal) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccRemove(cctx, key, mvccVer,filter,  primary, needHistory, needOldVal, retVal);
+            return delegate.mvccRemove(cctx, key, mvccVer,filter, primary, needHistory, needOldVal, retVal);
         }
 
         /** {@inheritDoc} */
@@ -2707,19 +2702,24 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
             int amount
         ) throws IgniteCheckedException {
-            GridDhtLocalPartition part = cctx.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
+            GridDhtLocalPartition part = null;
 
-            // Skip non-owned partitions.
-            if (part == null || part.state() != OWNING)
-                return 0;
+            if (!grp.isLocal()) {
+                part = cctx.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
+
+                // Skip non-owned partitions.
+                if (part == null || part.state() != OWNING)
+                    return 0;
+            }
 
             cctx.shared().database().checkpointReadLock();
+
             try {
-                if (!part.reserve())
+                if (part != null && !part.reserve())
                     return 0;
 
                 try {
-                    if (part.state() != OWNING)
+                    if (part != null && part.state() != OWNING)
                         return 0;
 
                     long now = U.currentTimeMillis();
@@ -2765,7 +2765,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     return cleared;
                 }
                 finally {
-                    part.release();
+                    if (part != null)
+                        part.release();
                 }
             }
             finally {

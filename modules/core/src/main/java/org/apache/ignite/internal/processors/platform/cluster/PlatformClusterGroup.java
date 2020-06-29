@@ -365,7 +365,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 return TRUE;
             }
 
-            case OP_CLEAR_STATISTICS:{
+            case OP_CLEAR_STATISTICS: {
                 Collection<String> cacheNames = PlatformUtils.readStrings(reader);
 
                 platformCtx.kernalContext().grid().cluster().clearStatistics(cacheNames);

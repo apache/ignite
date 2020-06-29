@@ -389,7 +389,7 @@ public class TcpDiscoveryStatistics {
         Long sentTs = ringMsgsSndTs.get(msg.id());
 
         if (sentTs != null) {
-            long duration  = U.currentTimeMillis() - sentTs;
+            long duration = U.currentTimeMillis() - sentTs;
 
             if (maxRingMsgTime < duration) {
                 maxRingMsgTime = duration;
@@ -551,7 +551,7 @@ public class TcpDiscoveryStatistics {
      *
      * @return Max message processing time.
      */
-    public synchronized long maxMessageProcessingTime(){
+    public synchronized long maxMessageProcessingTime() {
         return maxMsgProcTime;
     }
 

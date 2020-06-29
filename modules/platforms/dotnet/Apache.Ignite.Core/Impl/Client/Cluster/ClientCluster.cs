@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
 {
     using System;
     using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -31,10 +30,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         /// Constructor.
         /// </summary>
         /// <param name="ignite">Ignite.</param>
-        /// <param name="marsh">Marshaller.</param>
-        public ClientCluster(IgniteClient ignite, Marshaller marsh)
-            : base(ignite, marsh)
+        public ClientCluster(IgniteClient ignite)
+            : base(ignite)
         {
+            // No-op.
         }
 
         /** <inheritdoc /> */

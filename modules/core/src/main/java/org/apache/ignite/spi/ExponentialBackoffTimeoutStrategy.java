@@ -100,7 +100,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
         long remainingTime = remainingTime(System.nanoTime());
 
         if (remainingTime <= 0)
-            throw new IgniteSpiOperationTimeoutException("Operation timed out [timeoutStrategy= " +this +"]");
+            throw new IgniteSpiOperationTimeoutException("Operation timed out [timeoutStrategy= " + this + "]");
 
         /*
             If timeout is zero that means we need return current verified timeout and calculate next timeout.

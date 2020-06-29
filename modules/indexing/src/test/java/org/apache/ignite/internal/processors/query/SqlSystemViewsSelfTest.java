@@ -56,9 +56,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.ClusterMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -82,6 +84,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
 
 /**
@@ -195,10 +198,17 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testSchemasView() throws Exception {
-        IgniteEx srv = startGrid(getConfiguration().setSqlSchemas("PREDIFINED_SCHEMA_1"));
+        IgniteEx srv = startGrid(getConfiguration()
+            .setSqlConfiguration(new SqlConfiguration()
+                .setSqlSchemas("PREDIFINED_SCHEMA_1")
+            )
+        );
 
-        IgniteEx client =
-            startClientGrid(getConfiguration().setIgniteInstanceName("CLIENT").setSqlSchemas("PREDIFINED_SCHEMA_2"));
+        IgniteEx client = startClientGrid(getConfiguration().setIgniteInstanceName("CLIENT")
+            .setSqlConfiguration(new SqlConfiguration()
+                .setSqlSchemas("PREDIFINED_SCHEMA_2")
+            )
+        );
 
         srv.createCache(cacheConfiguration("TST1"));
 
@@ -298,7 +308,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
             {"2584860", "TST1", "TST1", "VALUECLASS", "TST1_INDEX", "BTREE", "\"KEY\" ASC, \"_KEY\" ASC", "false", "false", "10"},
             {"2584860", "TST1", "TST1", "VALUECLASS", "TST1_INDEX_proxy", "BTREE", "\"_KEY\" ASC, \"KEY\" ASC", "false", "false", "0"},
-            {"2584860", "TST1", "TST1", "VALUECLASS", "_key_PK", "BTREE", "\"_KEY\" ASC", "true", "true", "10"},
+            {"2584860", "TST1", "TST1", "VALUECLASS", "_key_PK", "BTREE", "\"_KEY\" ASC", "true", "true", "5"},
             {"2584860", "TST1", "TST1", "VALUECLASS", "_key_PK__SCAN_", "SCAN", "null", "false", "false", "0"},
             {"2584860", "TST1", "TST1", "VALUECLASS", "_key_PK_hash", "HASH", "\"_KEY\" ASC", "true", "true", "0"},
             {"2584860", "TST1", "TST1", "VALUECLASS", "_key_PK_proxy", "BTREE", "\"KEY\" ASC", "false", "false", "0"}
@@ -336,7 +346,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         String cacheSqlName2 = "SQL_PUBLIC_" + cacheName2;
 
         execSql("CREATE TABLE " + cacheName1 + " (ID1 INT PRIMARY KEY, MY_VAL VARCHAR)");
-        execSql("CREATE INDEX IDX_1 ON "+ cacheName1 + " (MY_VAL DESC)");
+        execSql("CREATE INDEX IDX_1 ON " + cacheName1 + " (MY_VAL DESC)");
 
         execSql("CREATE TABLE " + cacheName2 + " (ID INT PRIMARY KEY, MY_VAL VARCHAR)");
         execSql("CREATE INDEX IDX_2 ON " + cacheName2 + " (ID DESC)");
@@ -383,21 +393,23 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      * @param cacheName Cache name.
      * @param rebuild Is indexes rebuild in progress.
      */
-    private void checkIndexRebuild(String cacheName, boolean rebuild) {
+    private void checkIndexRebuild(String cacheName, boolean rebuild) throws IgniteInterruptedCheckedException {
         String idxSql = "SELECT IS_INDEX_REBUILD_IN_PROGRESS FROM " + systemSchemaName() + ".TABLES " +
             "WHERE TABLE_NAME = ?";
 
-        List<List<?>> res = execSql(grid(), idxSql, cacheName);
+        assertTrue(waitForCondition(() -> {
+            List<List<?>> res = execSql(grid(), idxSql, cacheName);
 
-        assertFalse(res.isEmpty());
+            assertFalse(res.isEmpty());
 
-        assertTrue(res.stream().allMatch(row -> {
-            assertEquals(1, row.size());
+            return res.stream().allMatch(row -> {
+                assertEquals(1, row.size());
 
-            Boolean isIndexRebuildInProgress = (Boolean)row.get(0);
+                Boolean isIndexRebuildInProgress = (Boolean)row.get(0);
 
-            return isIndexRebuildInProgress == rebuild;
-        }));
+                return isIndexRebuildInProgress == rebuild;
+            });
+        }, 5_000));
     }
 
     /**
@@ -497,8 +509,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         GridTestUtils.assertThrows(log,
             () ->
-                cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll()
-            , CacheException.class,
+                cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll(),
+            CacheException.class,
             "Exception calling user-defined function");
 
         String sqlHist = "SELECT SCHEMA_NAME, SQL, LOCAL, EXECUTIONS, FAILURES, DURATION_MIN, DURATION_MAX, LAST_START_TIME " +
@@ -1776,7 +1788,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         }
 
         @Override public String toString() {
-            if(attempts++ > attemptsBeforeException)
+            if (attempts++ > attemptsBeforeException)
                 throw new NullPointerException("Oops... incorrect customer realization.");
 
             return "CUSTOM_NODE_FILTER";

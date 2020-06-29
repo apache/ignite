@@ -26,18 +26,16 @@ import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.TRANSACTIONS;
 
 /**
  * Implementation of {@link ClientTransactions} over TCP protocol.
  */
 class TcpClientTransactions implements ClientTransactions {
-    /** Transaction label. */
-    private String lb;
-
     /** Channel. */
     private final ReliableChannel ch;
 
@@ -65,18 +63,18 @@ class TcpClientTransactions implements ClientTransactions {
 
     /** {@inheritDoc} */
     @Override public ClientTransaction txStart() {
-        return txStart0(null, null, null);
+        return txStart0(null, null, null, null);
     }
 
     /** {@inheritDoc} */
     @Override public ClientTransaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation) {
-        return txStart0(concurrency, isolation, null);
+        return txStart0(concurrency, isolation, null, null);
     }
 
     /** {@inheritDoc} */
     @Override public ClientTransaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
         long timeout) {
-        return txStart0(concurrency, isolation, timeout);
+        return txStart0(concurrency, isolation, timeout, null);
     }
 
     /**
@@ -84,17 +82,20 @@ class TcpClientTransactions implements ClientTransactions {
      * @param isolation Isolation.
      * @param timeout Timeout.
      */
-    private ClientTransaction txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation, Long timeout) {
+    private ClientTransaction txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation, Long timeout,
+        String lb) {
         TcpClientTransaction tx0 = tx();
 
         if (tx0 != null)
-            throw new ClientException("A transaction has already started by the current thread.");
+            throw new ClientException("A transaction has already been started by the current thread.");
 
         tx0 = ch.service(ClientOperation.TX_START,
             req -> {
-                if (req.clientChannel().serverVersion().compareTo(V1_5_0) < 0) {
-                    throw new ClientProtocolError(String.format("Transactions have not supported by the server's " +
-                        "protocol version %s, required version %s", req.clientChannel().serverVersion(), V1_5_0));
+                ProtocolContext protocolCtx = req.clientChannel().protocolCtx();
+
+                if (!protocolCtx.isFeatureSupported(TRANSACTIONS)) {
+                    throw new ClientProtocolError(String.format("Transactions are not supported by the server's " +
+                        "protocol version %s, required version %s", protocolCtx.version(), TRANSACTIONS.verIntroduced()));
                 }
 
                 try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), req.out(), null, null)) {
@@ -116,14 +117,9 @@ class TcpClientTransactions implements ClientTransactions {
 
     /** {@inheritDoc} */
     @Override public ClientTransactions withLabel(String lb) {
-        if (lb == null)
-            throw new NullPointerException();
+        A.notNull(lb, "lb");
 
-        TcpClientTransactions txs = new TcpClientTransactions(ch, marsh, txCfg);
-
-        txs.lb = lb;
-
-        return txs;
+        return new ClientTransactionsWithLabel(lb);
     }
 
     /**
@@ -139,6 +135,48 @@ class TcpClientTransactions implements ClientTransactions {
 
         // Also check isClosed() flag, since transaction can be closed by another thread.
         return tx0 == null || tx0.isClosed() ? null : tx0;
+    }
+
+    /**
+     * Transactions "withLabel" facade.
+     */
+    private class ClientTransactionsWithLabel implements ClientTransactions {
+        /** Transaction label. */
+        private final String lb;
+
+        /**
+         * @param lb Transaction's label.
+         */
+        ClientTransactionsWithLabel(String lb) {
+            this.lb = lb;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClientTransaction txStart() throws ClientServerError, ClientException {
+            return txStart0(null, null, null, lb);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClientTransaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation)
+            throws ClientServerError, ClientException {
+            return txStart0(concurrency, isolation, null, lb);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClientTransaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
+            long timeout) throws ClientServerError, ClientException {
+            return txStart0(concurrency, isolation, timeout, lb);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClientTransactions withLabel(String lb) throws ClientException {
+            A.notNull(lb, "lb");
+
+            if (lb.equals(this.lb))
+                return this;
+
+            return new ClientTransactionsWithLabel(lb);
+        }
     }
 
     /**

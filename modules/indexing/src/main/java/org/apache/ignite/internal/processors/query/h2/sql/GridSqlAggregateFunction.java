@@ -136,7 +136,7 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
      * @return {@code true} in case GROUP_CONCAT function contains ORDER BY expressions.
      */
     public boolean hasGroupConcatOrder() {
-        return ! F.isEmpty(groupConcatOrderExpression);
+        return !F.isEmpty(groupConcatOrderExpression);
     }
 
     /**

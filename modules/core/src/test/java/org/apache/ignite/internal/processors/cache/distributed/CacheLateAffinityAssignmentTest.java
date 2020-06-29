@@ -479,7 +479,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         int nodes = 1;
 
-        for (int i = 0;  i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             log.info("Iteration [iter=" + i + ", topVer=" + topVer + ']');
 
             topVer++;
@@ -982,7 +982,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             final int NODES = 5;
 
-            for (int i = 0 ; i < NODES; i++)
+            for (int i = 0; i < NODES; i++)
                 startServer(i, i + 1);
 
             int majorVer = NODES;
@@ -1329,7 +1329,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         });
 
-        checkAffinity(cnt, topVer(ord - 1, 1), true);
+        AffinityTopologyVersion currentTop = ignite(0).context().cache().context().exchange().readyAffinityVersion();
+
+        checkAffinity(cnt, currentTop, true);
 
         stopNode(stopId, ord);
 
@@ -1508,7 +1510,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < NODES; i++) {
             TestRecordingCommunicationSpi spi =
-                    (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+                (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
 
             spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
@@ -1524,8 +1526,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> stopFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                while (!joined.get())
-                    U.sleep(10);
+                for (int j = 1; j < NODES; j++) {
+                    TestRecordingCommunicationSpi spi =
+                        (TestRecordingCommunicationSpi)ignite(j).configuration().getCommunicationSpi();
+
+                    spi.waitForBlocked();
+                }
 
                 for (int i = 0; i < NODES; i++)
                     stopGrid(getTestIgniteInstanceName(i), false, false);
@@ -2147,6 +2153,30 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         for (int i = 0; i < ITERATIONS; i++) {
             log.info("Iteration: " + i);
 
+            TestRecordingCommunicationSpi[] testSpis = new TestRecordingCommunicationSpi[NODES];
+
+            for (int j = 0; j < NODES; j++) {
+                testSpis[j] = new TestRecordingCommunicationSpi();
+
+                testSpis[j].blockMessages((node, msg) -> msg instanceof GridDhtPartitionsSingleMessage);
+            }
+
+            //Ensure exchanges merge.
+            spiC = igniteInstanceName -> testSpis[getTestIgniteInstanceIndex(igniteInstanceName)];
+
+            GridTestUtils.runAsync(() -> {
+                try {
+                    for (int j = 1; j < NODES; j++)
+                        testSpis[j].waitForBlocked();
+                }
+                catch (InterruptedException e) {
+                    log.error("Thread interrupted.", e);
+                }
+
+                for (TestRecordingCommunicationSpi testSpi : testSpis)
+                    testSpi.stopBlock();
+            });
+
             startGridsMultiThreaded(NODES);
 
             for (int t = 0; t < NODES; t++)
@@ -2458,7 +2488,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Ignite node = grid(name);
 
-        assert  node != null;
+        assert node != null;
 
         return node;
     }
@@ -2581,7 +2611,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @return Exchange future.
      */
     private IgniteInternalFuture<?> affinityReadyFuture(AffinityTopologyVersion topVer, Ignite node) {
-        IgniteInternalFuture<?> fut =  ((IgniteKernal)node).context().cache().context().exchange().
+        IgniteInternalFuture<?> fut = ((IgniteKernal)node).context().cache().context().exchange().
             affinityReadyFuture(topVer);
 
         return fut != null ? fut : new GridFinishedFuture<>();

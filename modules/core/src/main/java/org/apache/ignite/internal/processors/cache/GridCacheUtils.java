@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -604,7 +605,7 @@ public class GridCacheUtils {
             private final LongAdder res = new LongAdder();
 
             @Override public boolean collect(Long l) {
-                if(l != null)
+                if (l != null)
                     res.add(l);
 
                 return true;
@@ -1178,7 +1179,7 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static <K, V> void inTx(IgniteInternalCache<K, V> cache, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K ,V>> clo) throws IgniteCheckedException {
+        TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K, V>> clo) throws IgniteCheckedException {
 
         try (GridNearTxLocal tx = cache.txStartEx(concurrency, isolation)) {
             clo.applyx(cache);
@@ -1197,7 +1198,7 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static <K, V> void inTx(Ignite ignite, IgniteCache<K, V> cache, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, IgniteInClosureX<IgniteCache<K ,V>> clo) throws IgniteCheckedException {
+        TransactionIsolation isolation, IgniteInClosureX<IgniteCache<K, V>> clo) throws IgniteCheckedException {
 
         try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
             clo.applyx(cache);
@@ -2122,9 +2123,46 @@ public class GridCacheUtils {
     }
 
     /**
+     * Patch cache configuration with {@link SchemaAddQueryEntityOperation}.
+     *
+     * @param oldCfg Old cache config.
+     * @param op Schema add query entity operation.
+     */
+    public static <K, V> CacheConfiguration<K, V> patchCacheConfiguration(
+        CacheConfiguration<K, V> oldCfg,
+        SchemaAddQueryEntityOperation op
+    ) {
+        return patchCacheConfiguration(oldCfg, op.entities(), op.schemaName(), op.isSqlEscape(),
+                op.queryParallelism());
+    }
+
+    /**
+     * Patch cache configuration with {@link SchemaAddQueryEntityOperation}.
+     *
+     * @param oldCfg Old cache config.
+     * @param entities New query entities.
+     * @param sqlSchema Sql schema name.
+     * @param isSqlEscape Sql escape flag.
+     * @param qryParallelism Query parallelism parameter.
+     */
+    public static <K, V> CacheConfiguration<K, V> patchCacheConfiguration(
+        CacheConfiguration<K, V> oldCfg,
+        Collection<QueryEntity> entities,
+        String sqlSchema,
+        boolean isSqlEscape,
+        int qryParallelism
+    ) {
+        return new CacheConfiguration<>(oldCfg)
+                .setQueryEntities(entities)
+                .setSqlSchema(sqlSchema)
+                .setSqlEscapeAll(isSqlEscape)
+                .setQueryParallelism(qryParallelism);
+    }
+
+    /**
      *
      */
     public interface BackupPostProcessingClosure extends IgniteInClosure<Collection<GridCacheEntryInfo>>,
-        IgniteBiInClosure<CacheObject, GridCacheVersion>{
+        IgniteBiInClosure<CacheObject, GridCacheVersion> {
     }
 }

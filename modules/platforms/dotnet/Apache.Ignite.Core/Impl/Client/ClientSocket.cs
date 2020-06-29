@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Collections;
     using System.Collections.Concurrent;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -48,9 +49,6 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Version 1.2.0. */
         public static readonly ClientProtocolVersion Ver120 = new ClientProtocolVersion(1, 2, 0);
-
-        /** Version 1.3.0. */
-        public static readonly ClientProtocolVersion Ver130 = new ClientProtocolVersion(1, 3, 0);
 
         /** Version 1.4.0. */
         public static readonly ClientProtocolVersion Ver140 = new ClientProtocolVersion(1, 4, 0);
@@ -90,12 +88,19 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Callback checker guard. */
         private volatile bool _checkingTimeouts;
 
-        /** Server protocol version. */
-        public ClientProtocolVersion ServerVersion { get; private set; }
+        /** Read timeout flag. */
+        private bool _isReadTimeoutEnabled;
 
         /** Current async operations, map from request id. */
         private readonly ConcurrentDictionary<long, Request> _requests
             = new ConcurrentDictionary<long, Request>();
+
+        /** Server -> Client notification listeners. */
+        private readonly ConcurrentDictionary<long, ClientNotificationHandler> _notificationListeners
+            = new ConcurrentDictionary<long, ClientNotificationHandler>();
+
+        /** Expected notifications counter. */
+        private long _expectedNotifications;
 
         /** Request id generator. */
         private long _requestId;
@@ -105,6 +110,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Locker. */
         private readonly object _sendRequestSyncRoot = new object();
+
+        /** Locker. */
+        private readonly object _receiveMessageSyncRoot = new object();
 
         /** Background socket receiver trigger. */
         private readonly ManualResetEventSlim _listenerEvent = new ManualResetEventSlim();
@@ -123,6 +131,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
+
+        /** Features. */
+        private readonly ClientFeatures _features;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
@@ -155,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             Validate(clientConfiguration);
 
-            Handshake(clientConfiguration, ServerVersion);
+            _features = Handshake(clientConfiguration, ServerVersion);
 
             // Check periodically if any request has timed out.
             if (_timeout > TimeSpan.Zero)
@@ -204,7 +215,7 @@ namespace Apache.Ignite.Core.Impl.Client
             var reqMsg = WriteMessage(writeAction, opId);
 
             // Send.
-            var response = SendRequest(ref reqMsg);
+            var response = SendRequest(ref reqMsg) ?? SendRequestAsync(ref  reqMsg).Result;
 
             // Decode.
             return DecodeResponse(response, readFunc, errorFunc);
@@ -227,6 +238,48 @@ namespace Apache.Ignite.Core.Impl.Client
             // which runs DecodeResponse (and any user continuations) on a thread pool thread,
             // so that WaitForMessages thread does not do anything except reading from the socket.
             return task.ContWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc));
+        }
+
+        /// <summary>
+        /// Enables notifications on this socket.
+        /// </summary>
+        public void ExpectNotifications()
+        {
+            Interlocked.Increment(ref _expectedNotifications);
+        }
+
+        /// <summary>
+        /// Adds a notification handler.
+        /// </summary>
+        /// <param name="notificationId">Notification id.</param>
+        /// <param name="handler">Handler delegate.</param>
+        public void AddNotificationHandler(long notificationId, ClientNotificationHandler.Handler handler)
+        {
+            _notificationListeners.AddOrUpdate(notificationId,
+                _ => new ClientNotificationHandler(_logger, handler),
+                (_, oldHandler) => oldHandler.SetHandler(handler));
+
+            _listenerEvent.Set();
+        }
+
+        /// <summary>
+        /// Removes a notification handler with the given id.
+        /// </summary>
+        /// <param name="notificationId">Notification id.</param>
+        /// <returns>True when removed, false otherwise.</returns>
+        public void RemoveNotificationHandler(long notificationId)
+        {
+            ClientNotificationHandler unused;
+            var removed = _notificationListeners.TryRemove(notificationId, out unused);
+            Debug.Assert(removed);
+        }
+
+        /// <summary>
+        /// Gets the features.
+        /// </summary>
+        public ClientFeatures Features
+        {
+            get { return _features; }
         }
 
         /// <summary>
@@ -253,18 +306,44 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
+        /// Gets the server protocol version.
+        /// </summary>
+        public ClientProtocolVersion ServerVersion { get; private set; }
+
+        /// <summary>
+        /// Gets the marshaller.
+        /// </summary>
+        public Marshaller Marshaller
+        {
+            get { return _marsh; }
+        }
+
+        /// <summary>
+        /// Gets a value indicating that this socket is in async mode:
+        /// async requests are pending, or notifications are expected.
+        /// <para />
+        /// We have sync and async modes because sync mode is faster.
+        /// </summary>
+        private bool IsAsyncMode
+        {
+            get { return !_requests.IsEmpty || Interlocked.Read(ref _expectedNotifications) > 0; }
+        }
+
+        /// <summary>
         /// Starts waiting for the new message.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void WaitForMessages()
         {
+            _logger.Trace("Receiver thread #{0} started.", Thread.CurrentThread.ManagedThreadId);
+
             try
             {
                 // Null exception means active socket.
                 while (_exception == null)
                 {
-                    // Do not call Receive if there are no async requests pending.
-                    while (_requests.IsEmpty)
+                    // Do not call Receive if there are no pending async requests or notification listeners.
+                    while (!IsAsyncMode)
                     {
                         // Wait with a timeout so we check for disposed state periodically.
                         _listenerEvent.Wait(1000);
@@ -277,8 +356,19 @@ namespace Apache.Ignite.Core.Impl.Client
                         _listenerEvent.Reset();
                     }
 
-                    var msg = ReceiveMessage();
-                    HandleResponse(msg);
+                    lock (_receiveMessageSyncRoot)
+                    {
+                        // Async operations should not have a read timeout.
+                        if (_isReadTimeoutEnabled)
+                        {
+                            _stream.ReadTimeout = Timeout.Infinite;
+                            _isReadTimeoutEnabled = false;
+                        }
+
+                        var msg = ReceiveMessage();
+
+                        HandleResponse(msg);
+                    }
                 }
             }
             catch (Exception ex)
@@ -289,6 +379,10 @@ namespace Apache.Ignite.Core.Impl.Client
                 _exception = ex;
                 Dispose();
             }
+            finally
+            {
+                _logger.Trace("Receiver thread #{0} stopped.", Thread.CurrentThread.ManagedThreadId);
+            }
         }
 
         /// <summary>
@@ -298,6 +392,11 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             var stream = new BinaryHeapStream(response);
             var requestId = stream.ReadLong();
+
+            if (HandleNotification(requestId, stream))
+            {
+                return;
+            }
 
             Request req;
             if (!_requests.TryRemove(requestId, out req))
@@ -315,6 +414,36 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 req.CompletionSource.TrySetResult(stream);
             }
+        }
+
+        /// <summary>
+        /// Handles the notification message, if present in the given stream.
+        /// </summary>
+        private bool HandleNotification(long requestId, BinaryHeapStream stream)
+        {
+            if (ServerVersion < Ver160)
+            {
+                return false;
+            }
+
+            var flags = (ClientFlags) stream.ReadShort();
+            stream.Seek(-2, SeekOrigin.Current);
+
+            if ((flags & ClientFlags.Notification) != ClientFlags.Notification)
+            {
+                return false;
+            }
+
+            var count = Interlocked.Decrement(ref _expectedNotifications);
+            if (count < 0)
+            {
+                throw new IgniteClientException("Unexpected thin client notification: " + requestId);
+            }
+
+            _notificationListeners.GetOrAdd(requestId, _ => new ClientNotificationHandler(_logger))
+                .Handle(stream, null);
+
+            return true;
         }
 
         /// <summary>
@@ -349,8 +478,8 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (statusCode == ClientStatusCode.Success)
             {
-                return readFunc != null 
-                    ? readFunc(new ClientResponseContext(stream, _marsh, ServerVersion)) 
+                return readFunc != null
+                    ? readFunc(new ClientResponseContext(stream, this))
                     : default(T);
             }
 
@@ -367,9 +496,10 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Performs client protocol handshake.
         /// </summary>
-        private void Handshake(IgniteClientConfiguration clientConfiguration, ClientProtocolVersion version)
+        private ClientFeatures Handshake(IgniteClientConfiguration clientConfiguration, ClientProtocolVersion version)
         {
-            bool auth = version >= Ver110 && clientConfiguration.UserName != null;
+            var hasAuth = version >= Ver110 && clientConfiguration.UserName != null;
+            var hasFeatures = version >= Ver170;
 
             // Send request.
             int messageLen;
@@ -386,19 +516,21 @@ namespace Apache.Ignite.Core.Impl.Client
                 // Client type: platform.
                 stream.WriteByte(ClientType);
 
-                // TODO User attributes
-                if (version >= Ver170)
-                    stream.WriteByte(BinaryUtils.HdrNull);
+                // Writing features.
+                if (hasFeatures)
+                {
+                    BinaryUtils.Marshaller.Marshal(stream,
+                        w => w.WriteByteArray(ClientFeatures.AllFeatures));
+                }
 
                 // Authentication data.
-                if (auth)
+                if (hasAuth)
                 {
-                    var writer = BinaryUtils.Marshaller.StartMarshal(stream);
-
-                    writer.WriteString(clientConfiguration.UserName);
-                    writer.WriteString(clientConfiguration.Password);
-
-                    BinaryUtils.Marshaller.FinishMarshal(writer);
+                    BinaryUtils.Marshaller.Marshal(stream, writer =>
+                    {
+                        writer.WriteString(clientConfiguration.UserName);
+                        writer.WriteString(clientConfiguration.Password);
+                    });
                 }
             }, 12, out messageLen);
 
@@ -414,17 +546,24 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (success)
                 {
+                    BitArray featureBits = null;
+
+                    if (hasFeatures)
+                    {
+                        featureBits = new BitArray(BinaryUtils.Marshaller.Unmarshal<byte[]>(stream));
+                    }
+
                     if (version >= Ver140)
                     {
                         ServerNodeId = BinaryUtils.Marshaller.Unmarshal<Guid>(stream);
                     }
 
                     ServerVersion = version;
-                    
-                    _logger.Debug("Handshake completed on {0}, protocol version = {1}", 
+
+                    _logger.Debug("Handshake completed on {0}, protocol version = {1}",
                         _socket.RemoteEndPoint, version);
 
-                    return;
+                    return new ClientFeatures(version, featureBits);
                 }
 
                 ServerVersion =
@@ -456,17 +595,15 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (retry)
                 {
-                    _logger.Debug("Retrying handshake on {0} with protocol version {1}", 
+                    _logger.Debug("Retrying handshake on {0} with protocol version {1}",
                         _socket.RemoteEndPoint, ServerVersion);
-                    
-                    Handshake(clientConfiguration, ServerVersion);
+
+                    return Handshake(clientConfiguration, ServerVersion);
                 }
-                else
-                {
-                    throw new IgniteClientException(string.Format(
-                        "Client handshake failed: '{0}'. Client version: {1}. Server version: {2}",
-                        errMsg, version, ServerVersion), null, errCode);
-                }
+
+                throw new IgniteClientException(string.Format(
+                    "Client handshake failed: '{0}'. Client version: {1}. Server version: {2}",
+                    errMsg, version, ServerVersion), null, errCode);
             }
         }
 
@@ -521,37 +658,62 @@ namespace Apache.Ignite.Core.Impl.Client
 
             // If there are no pending async requests, we can execute this operation synchronously,
             // which is more efficient.
-            var lockTaken = false;
+            if (IsAsyncMode)
+            {
+                return null;
+            }
+
+            var sendLockTaken = false;
+            var receiveLockTaken = false;
             try
             {
-                Monitor.TryEnter(_sendRequestSyncRoot, 0, ref lockTaken);
-                if (lockTaken)
+                Monitor.TryEnter(_sendRequestSyncRoot, 0, ref sendLockTaken);
+                if (!sendLockTaken)
                 {
-                    CheckException();
-
-                    if (_requests.IsEmpty)
-                    {
-                        SocketWrite(reqMsg.Buffer, reqMsg.Length);
-
-                        var respMsg = ReceiveMessage();
-                        var response = new BinaryHeapStream(respMsg);
-                        var responseId = response.ReadLong();
-                        Debug.Assert(responseId == reqMsg.Id);
-
-                        return response;
-                    }
+                    return null;
                 }
+
+                Monitor.TryEnter(_receiveMessageSyncRoot, 0, ref receiveLockTaken);
+                if (!receiveLockTaken)
+                {
+                    return null;
+                }
+
+                CheckException();
+
+                if (IsAsyncMode)
+                {
+                    return null;
+                }
+
+                SocketWrite(reqMsg.Buffer, reqMsg.Length);
+
+                // Sync operations rely on stream timeout.
+                if (!_isReadTimeoutEnabled)
+                {
+                    _stream.ReadTimeout = _stream.WriteTimeout;
+                    _isReadTimeoutEnabled = true;
+                }
+
+                var respMsg = ReceiveMessage();
+                var response = new BinaryHeapStream(respMsg);
+                var responseId = response.ReadLong();
+                Debug.Assert(responseId == reqMsg.Id);
+
+                return response;
             }
             finally
             {
-                if (lockTaken)
+                if (sendLockTaken)
                 {
                     Monitor.Exit(_sendRequestSyncRoot);
                 }
-            }
 
-            // Fallback to async mechanism.
-            return SendRequestAsync(ref reqMsg).Result;
+                if (receiveLockTaken)
+                {
+                    Monitor.Exit(_receiveMessageSyncRoot);
+                }
+            }
         }
 
         /// <summary>
@@ -598,13 +760,13 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private RequestMessage WriteMessage(Action<ClientRequestContext> writeAction, ClientOp opId)
         {
-            ClientUtils.ValidateOp(opId, ServerVersion);
-            
+            _features.ValidateOp(opId);
+
             var requestId = Interlocked.Increment(ref _requestId);
-            
+
             // Potential perf improvements:
             // * ArrayPool<T>
-            // * Write to socket stream directly (not trivial because of unknown size) 
+            // * Write to socket stream directly (not trivial because of unknown size)
             var stream = new BinaryHeapStream(256);
 
             stream.WriteInt(0); // Reserve message size.
@@ -613,7 +775,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (writeAction != null)
             {
-                var ctx = new ClientRequestContext(stream, _marsh, ServerVersion);
+                var ctx = new ClientRequestContext(stream, this);
                 writeAction(ctx);
                 ctx.FinishMarshal();
             }
@@ -668,8 +830,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 NoDelay = cfg.TcpNoDelay,
                 Blocking = true,
-                SendTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
-                ReceiveTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
+                SendTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
             };
 
             if (cfg.SocketSendBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
@@ -685,7 +846,7 @@ namespace Apache.Ignite.Core.Impl.Client
             logger.Debug("Socket connection attempt: {0}", endPoint);
 
             socket.Connect(endPoint);
-            
+
             logger.Debug("Socket connection established: {0} -> {1}", socket.LocalEndPoint, socket.RemoteEndPoint);
 
             return socket;
@@ -698,7 +859,6 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             var stream = new NetworkStream(socket)
             {
-                ReadTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
                 WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
             };
 
@@ -767,7 +927,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (ex != null)
             {
-                throw ex;
+                throw new IgniteClientException("Client connection has failed. Examine InnerException for details", ex);
             }
         }
 
@@ -787,6 +947,18 @@ namespace Apache.Ignite.Core.Impl.Client
                     if (_requests.TryRemove(reqId, out req) && req != null)
                     {
                         req.CompletionSource.TrySetException(ex);
+                    }
+                }
+            }
+
+            while (!_notificationListeners.IsEmpty)
+            {
+                foreach (var id in _notificationListeners.Keys)
+                {
+                    ClientNotificationHandler handler;
+                    if (_notificationListeners.TryRemove(id, out handler))
+                    {
+                        handler.Handle(null, ex);
                     }
                 }
             }

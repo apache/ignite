@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -73,7 +74,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.FALSE;
 import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.TRUE;
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 
 /**
  * Platform processor.
@@ -190,6 +190,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** */
     private static final int OP_GET_THREAD_LOCAL = 37;
+
+    /** */
+    private static final int OP_GET_OR_CREATE_LOCK = 38;
 
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -521,7 +524,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             }
 
             case OP_ADD_CACHE_CONFIGURATION:
-                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader, DEFAULT_VER);
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
                 ctx.grid().addCacheConfiguration(cfg);
 
@@ -571,7 +574,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         if (type == OP_GET_CACHE_CONFIG) {
             int cacheId = reader.readInt();
             CacheConfiguration cfg = ctx.cache().cacheDescriptor(cacheId).cacheConfiguration();
-            PlatformConfigurationUtils.writeCacheConfiguration(writer, cfg, DEFAULT_VER);
+            PlatformConfigurationUtils.writeCacheConfiguration(writer, cfg);
 
             return;
         }
@@ -610,7 +613,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             }
 
             case OP_CREATE_CACHE_FROM_CONFIG: {
-                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader, DEFAULT_VER);
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
                 IgniteCacheProxy cache = reader.readBoolean()
                         ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
@@ -622,7 +625,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             }
 
             case OP_GET_OR_CREATE_CACHE_FROM_CONFIG: {
-                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader, DEFAULT_VER);
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
                 IgniteCacheProxy cache = reader.readBoolean()
                         ? (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg,
@@ -726,6 +729,17 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 return new PlatformTransactions(platformCtx, lbl);
             }
+
+            case OP_GET_OR_CREATE_LOCK: {
+                String name = reader.readString();
+                boolean failoverSafe = reader.readBoolean();
+                boolean fair = reader.readBoolean();
+                boolean create = reader.readBoolean();
+
+                IgniteLock lock = ctx.grid().reentrantLock(name, failoverSafe, fair, create);
+
+                return lock == null ? null : new PlatformLock(platformCtx, lock);
+            }
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
@@ -743,7 +757,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_IGNITE_CONFIGURATION: {
-                PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration(), DEFAULT_VER);
+                PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration());
 
                 return;
             }
@@ -881,7 +895,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             PlatformCacheExtension[] res = new PlatformCacheExtension[maxExtId + 1];
 
             for (PlatformCacheExtension cacheExt : cacheExts)
-                res[cacheExt.id()]= cacheExt;
+                res[cacheExt.id()] = cacheExt;
 
             return res;
         }
@@ -922,7 +936,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             PlatformPluginExtension[] res = new PlatformPluginExtension[maxExtId + 1];
 
             for (PlatformPluginExtension ext : exts)
-                res[ext.id()]= ext;
+                res[ext.id()] = ext;
 
             return res;
         }

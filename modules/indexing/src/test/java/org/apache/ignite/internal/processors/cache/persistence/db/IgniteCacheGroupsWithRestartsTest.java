@@ -69,7 +69,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * Testing corner cases in cache group functionality: -stopping cache in shared group and immediate node leaving;
  * -starting cache in shared group with the same name as destroyed one; -etc.
  */
-@WithSystemProperty(key=IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value="true")
+@WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
 public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
     /** Group name. */
@@ -282,7 +282,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         crd.cluster().state(ACTIVE);
 
         String cacheName = "test-cache-3rd-party-write-behind-and-ignite-persistence";
-        CacheConfiguration  ccfg = new CacheConfiguration(cacheName)
+        CacheConfiguration ccfg = new CacheConfiguration(cacheName)
             .setWriteBehindEnabled(true)
             .setWriteThrough(true)
             .setReadThrough(true)
@@ -324,6 +324,8 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         IgniteEx ex1 = startGrid(2);
 
         assertNull(ignite.cachex(getCacheName(0)));
+
+        ignite.resetLostPartitions(Arrays.asList(getCacheName(0), getCacheName(1), getCacheName(2)));
 
         awaitPartitionMapExchange();
 

@@ -159,6 +159,12 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal archive directory. */
     public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
 
+    /** Default path (relative to working directory) of binary metadata folder */
+    public static final String DFLT_BINARY_METADATA_PATH = "db/binary_meta";
+
+    /** Default path (relative to working directory) of marshaller mappings folder */
+    public static final String DFLT_MARSHALLER_PATH = "db/marshaller";
+
     /** Default write throttling enabled. */
     public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
 
@@ -610,10 +616,13 @@ public class DataStorageConfiguration implements Serializable {
      * Sets a number of WAL segments to work with. For performance reasons,
      * the whole WAL is split into files of fixed length called segments.
      *
-     * @param walSegments Number of WAL segments.
+     * @param walSegments Number of WAL segments. Value must be greater than 1.
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalSegments(int walSegments) {
+        if (walSegments != 0)
+            A.ensure(walSegments > 1, "Number of WAL segments must be greater than 1.");
+
         this.walSegments = walSegments;
 
         return this;

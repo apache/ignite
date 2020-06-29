@@ -89,13 +89,13 @@ public abstract class ObjectHistogram<T> implements Histogram<T, ObjectHistogram
     @Override public boolean isEqualTo(ObjectHistogram<T> other) {
         Set<Integer> totalBuckets = new HashSet<>(buckets());
         totalBuckets.addAll(other.buckets());
-        if(totalBuckets.size() != buckets().size())
+        if (totalBuckets.size() != buckets().size())
             return false;
 
-        for(Integer bucketId : totalBuckets) {
+        for (Integer bucketId : totalBuckets) {
             double leftVal = hist.get(bucketId);
             double rightVal = other.hist.get(bucketId);
-            if(Math.abs(leftVal - rightVal) > 0.001)
+            if (Math.abs(leftVal - rightVal) > 0.001)
                 return false;
         }
 

@@ -76,7 +76,6 @@
         <module>modules/kafka</module>
         <module>modules/yarn</module>
         <module>modules/jms11</module>
-        <module>modules/twitter</module>
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>
@@ -89,7 +88,6 @@
         <module>modules/web/ignite-websphere-test</module>
         <module>modules/cassandra</module>
         <module>modules/kubernetes</module>
-        <module>modules/rocketmq</module>
         <module>modules/sqlline</module>
         <module>modules/ml</module>
         <module>modules/ml/spark-model-parser</module>

@@ -102,7 +102,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
             addr += row.key().putValue(addr);
         }
         else
-            addr += (2 + mvccInfoSize + cacheIdSize  + row.key().valueBytesLength(null));
+            addr += (2 + mvccInfoSize + cacheIdSize + row.key().valueBytesLength(null));
 
         addr += row.value().putValue(addr);
 
@@ -447,7 +447,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     private void writeVersionFragment(ByteBuffer buf, GridCacheVersion ver, int rowOff, int len, int prevLen) {
         int verSize = CacheVersionIO.size(ver, false);
 
-        assert len <= verSize: len;
+        assert len <= verSize : len;
 
         if (verSize == len) { // Here we check for equality but not <= because version is the last.
             // Here we can write version directly.

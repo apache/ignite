@@ -369,7 +369,7 @@ public class BinaryUtils {
      * @return Field type name or {@code null} if unknown.
      */
     public static String fieldTypeName(int typeId) {
-        if(typeId < 0 || typeId >= FIELD_TYPE_NAMES.length)
+        if (typeId < 0 || typeId >= FIELD_TYPE_NAMES.length)
             return null;
 
         return FIELD_TYPE_NAMES[typeId];
@@ -713,7 +713,7 @@ public class BinaryUtils {
         if (obj == null)
             return false;
 
-        Class<?> cls= obj.getClass();
+        Class<?> cls = obj.getClass();
 
         return cls == KeyCacheObjectImpl.class ||
             cls == BinaryObjectImpl.class ||
@@ -733,7 +733,7 @@ public class BinaryUtils {
         if (arr == null)
             return false;
 
-        Class<?> cls =  arr.getClass();
+        Class<?> cls = arr.getClass();
 
         return cls == byte[].class || cls == short[].class || cls == int[].class || cls == long[].class ||
             cls == float[].class || cls == double[].class || cls == char[].class || cls == boolean[].class ||
@@ -1044,8 +1044,11 @@ public class BinaryUtils {
                             "Type '" + oldMeta.typeName() + "' with typeId " + oldMeta.typeId()
                                 + " has a different/incorrect type for field '" + newField.getKey()
                                 + "'. Expected '" + oldFieldTypeName + "' but '" + newFieldTypeName
-                                + "' was provided. Field type's modification is unsupported, clean {root_path}/marshaller " +
-                                "and {root_path}/binary_meta directories if the type change is required."
+                                + "' was provided. The type of an existing field can not be changed. " +
+                                "Use a different field name or follow this procedure to reuse the current name:\n" +
+                                "- Delete data records that use the old field type;\n" +
+                                "- Remove metadata by the command: " +
+                                "'control.sh --meta remove --typeId " + oldMeta.typeId() + "'."
                         );
                     }
                 }
@@ -1840,7 +1843,7 @@ public class BinaryUtils {
 
                     in.position(handlePos);
 
-                    obj = unmarshal(in, ctx, ldr, handles);
+                    obj = unmarshal(in, ctx, ldr, handles, detach);
 
                     in.position(retPos);
                 }
@@ -1961,13 +1964,13 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                return doReadObjectArray(in, ctx, ldr, handles, false);
+                return doReadObjectArray(in, ctx, ldr, handles, detach, false);
 
             case GridBinaryMarshaller.COL:
-                return doReadCollection(in, ctx, ldr, handles, false, null);
+                return doReadCollection(in, ctx, ldr, handles, detach, false, null);
 
             case GridBinaryMarshaller.MAP:
-                return doReadMap(in, ctx, ldr, handles, false, null);
+                return doReadMap(in, ctx, ldr, handles, detach, false, null);
 
             case GridBinaryMarshaller.BINARY_OBJ:
                 return doReadBinaryObject(in, ctx, detach);
@@ -2000,12 +2003,13 @@ public class BinaryUtils {
      * @param ctx Binary context.
      * @param ldr Class loader.
      * @param handles Holder for handles.
+     * @param detach Detach flag.
      * @param deserialize Deep flag.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
     public static Object[] doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean deserialize) throws BinaryObjectException {
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
         Class compType = doReadClass(in, ctx, ldr, deserialize);
@@ -2017,7 +2021,7 @@ public class BinaryUtils {
         handles.setHandle(arr, hPos);
 
         for (int i = 0; i < len; i++)
-            arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
+            arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
         return arr;
     }
@@ -2030,7 +2034,7 @@ public class BinaryUtils {
      */
     @SuppressWarnings("unchecked")
     public static Collection<?> doReadCollection(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean deserialize, BinaryCollectionFactory factory)
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryCollectionFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
@@ -2089,7 +2093,7 @@ public class BinaryUtils {
         handles.setHandle(col, hPos);
 
         for (int i = 0; i < size; i++)
-            col.add(deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize));
+            col.add(deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize));
 
         return colType == GridBinaryMarshaller.SINGLETON_LIST ? U.convertToSingletonList(col) : col;
     }
@@ -2102,7 +2106,7 @@ public class BinaryUtils {
      */
     @SuppressWarnings("unchecked")
     public static Map<?, ?> doReadMap(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean deserialize, BinaryMapFactory factory)
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryMapFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
@@ -2141,8 +2145,8 @@ public class BinaryUtils {
         handles.setHandle(map, hPos);
 
         for (int i = 0; i < size; i++) {
-            Object key = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
-            Object val = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
+            Object key = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+            Object val = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
             map.put(key, val);
         }
@@ -2157,8 +2161,8 @@ public class BinaryUtils {
      * @return Result.
      */
     private static Object deserializeOrUnmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean deserialize) {
-        return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles);
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
+        return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles, detach);
     }
 
     /**
@@ -2384,7 +2388,7 @@ public class BinaryUtils {
             }
             else {
                 arr[position++] = (byte)(0xC0 | ((c >> 6) & 0x1F));
-                arr[position++] = (byte)(0x80 | (c  & 0x3F));
+                arr[position++] = (byte)(0x80 | (c & 0x3F));
             }
         }
 

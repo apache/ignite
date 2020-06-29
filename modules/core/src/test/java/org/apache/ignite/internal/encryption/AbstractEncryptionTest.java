@@ -76,6 +76,9 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     /** */
     public static final String MASTER_KEY_NAME_3 = "ignite.master.key3";
 
+    /** */
+    public static final String MASTER_KEY_NAME_MULTIBYTE_ENCODED = "мастер.ключ.1";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
@@ -160,7 +163,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         assertNotNull(cache);
 
-        for (long i=0; i<100; i++)
+        for (long i = 0; i < 100; i++)
             assertEquals("" + i, cache.get(i));
     }
 
@@ -233,7 +236,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         gen.init(KeystoreEncryptionSpi.DEFAULT_KEY_SIZE);
 
-        String[] keyNames = {DEFAULT_MASTER_KEY_NAME, MASTER_KEY_NAME_2, MASTER_KEY_NAME_3};
+        String[] keyNames = {DEFAULT_MASTER_KEY_NAME, MASTER_KEY_NAME_2, MASTER_KEY_NAME_3, MASTER_KEY_NAME_MULTIBYTE_ENCODED};
 
         for (String name : keyNames) {
             SecretKey key = gen.generateKey();

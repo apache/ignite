@@ -64,6 +64,51 @@ Ignite expects for boost libraries and header to be found under default system p
 it is recommended to use package repository for your OS to install boost package for the
 development.
 
+Building on Linux and Mac OS X with CMake
+----------------------------------
+
+Common Requirements:
+
+ * GCC, g++, CMake >= 3.6 must be installed
+ * Java Development Kit (JDK) must be installed: https://java.com/en/download/index.jsp
+ * JAVA_HOME environment variable must be set pointing to Java installation directory.
+ * IGNITE_HOME environment variable must be set to Ignite installation directory.
+
+By default building tests, ODBC and thin-client are disabled.
+ * OpenSSL, 1.0 or later required for building ODBC and thin-client.
+ * UnixODBX required for building ODBC.
+ * For building tests, boost framework is required. The following boost libraries are used:
+   * boost_unit_test_framework
+   * boost_thread
+   * boost_system
+   * boost_chrono
+
+On Mac OS X all dependencies can be installed using Homebrew.
+
+Building and installing the Apache Ignite C++ components:
+ * Navigate to the directory $IGNITE_HOME/platforms/cpp
+ * Execute the following commands one by one to build the project:
+ * mkdir cmake-build-[release|debug]
+ * cd ./cmake-build-[release|debug]
+ * cmake -DCMAKE_BUILD_TYPE=[Release|Debug] [-DCMAKE_INSTALL_PREFIX=<install_dir>] ..
+ * make
+ * make install
+
+ * For building ODBC add to cmake option -DWITH_ODBC=ON
+ * For building thin client add to cmake option -DWITH_THIN_CLIENT=ON
+ * For building with tests add to cmake option -DWITH_TESTS=ON
+
+Running test:
+ * For core tests: ctest -V -R IgniteCoreTest
+ * For thin-client tests: ctest -V -R IgniteThinClientTest
+ * For ODBC tests: ctest -V -R IgniteOdbcTest
+ * For all tests: ctest -V
+
+WARNING!
+ * For running ODBC tests, ODBC driver must be installed in driver manager. See odbc/README.txt for details.
+ * On Mac OS X Homebrew doesn't create symlinks for OpenSSL, so they should be created or as alternative
+   OPEN_SSL_HOME should be set before running ODBC or thin-client tests.
+
 Building on Windows with Visual Studio (tm)
 ----------------------------------
 

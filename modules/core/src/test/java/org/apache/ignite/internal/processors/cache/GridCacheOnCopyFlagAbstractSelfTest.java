@@ -242,7 +242,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
             for (int i = 0; i < ITER_CNT; i++)
                 cache.put(new TestKey(i, i), new TestValue(i));
 
-            interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>(){
+            interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>() {
                 @Override public TestValue onBeforePut(Cache.Entry<TestKey, TestValue> entry, TestValue newVal) {
                     // Check that we have correct value and key.
                     assertEquals(entry.getKey().key(), entry.getKey().field());
@@ -496,7 +496,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
         /**
          * @return key Key.
          */
-        public int key(){
+        public int key() {
             return key;
         }
 

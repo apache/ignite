@@ -30,13 +30,13 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Platform;
-    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Datastream;
@@ -100,7 +100,8 @@ namespace Apache.Ignite.Core.Impl
             GetBaselineAutoAdjustTimeout = 34,
             SetBaselineAutoAdjustTimeout = 35,
             GetCacheConfig = 36,
-            GetThreadLocal = 37
+            GetThreadLocal = 37,
+            GetOrCreateLock = 38
         }
 
         /** */
@@ -518,7 +519,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 var w = BinaryUtils.Marshaller.StartMarshal(s);
 
-                configuration.Write(w, ClientSocket.CurrentProtocolVersion);
+                configuration.Write(w);
 
                 if (nearConfiguration != null)
                 {
@@ -746,8 +747,7 @@ namespace Apache.Ignite.Core.Impl
         public IgniteConfiguration GetConfiguration()
         {
             return DoInOp((int) Op.GetIgniteConfiguration,
-                s => new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(s), _cfg,
-                    ClientSocket.CurrentProtocolVersion));
+                s => new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(s), _cfg));
         }
 
         /** <inheritdoc /> */
@@ -795,8 +795,7 @@ namespace Apache.Ignite.Core.Impl
         {
             return Target.InStreamOutStream((int) Op.GetCacheConfig,
                 w => w.WriteInt(cacheId),
-                s => new CacheConfiguration(
-                    BinaryUtils.Marshaller.StartUnmarshal(s), ClientSocket.CurrentProtocolVersion));
+                s => new CacheConfiguration(BinaryUtils.Marshaller.StartUnmarshal(s)));
         }
 
         /** <inheritdoc /> */
@@ -994,7 +993,40 @@ namespace Apache.Ignite.Core.Impl
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp((int) Op.AddCacheConfiguration,
-                s => configuration.Write(BinaryUtils.Marshaller.StartMarshal(s), ClientSocket.CurrentProtocolVersion));
+                s => configuration.Write(BinaryUtils.Marshaller.StartMarshal(s)));
+        }
+
+        /** <inheritdoc /> */
+        public IIgniteLock GetOrCreateLock(string name)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            var configuration = new LockConfiguration
+            {
+                Name = name
+            };
+            
+            return GetOrCreateLock(configuration, true);
+        }
+
+        /** <inheritdoc /> */
+        public IIgniteLock GetOrCreateLock(LockConfiguration configuration, bool create)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+            IgniteArgumentCheck.NotNullOrEmpty(configuration.Name, "configuration.Name");
+            
+            // Create a copy to ignore modifications from outside.
+            var cfg = new LockConfiguration(configuration);
+
+            var target = DoOutOpObject((int) Op.GetOrCreateLock, w =>
+            {
+                w.WriteString(configuration.Name);
+                w.WriteBoolean(configuration.IsFailoverSafe);
+                w.WriteBoolean(configuration.IsFair);
+                w.WriteBoolean(create);
+            });
+            
+            return target == null ? null : new IgniteLock(target, cfg);
         }
 
         /// <summary>
