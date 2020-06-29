@@ -17,15 +17,17 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Cache.Query
 {
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
 
-    internal class ClientContinuousQueryHandle<TK, TV> : IContinuousQueryHandle<ICacheEntry<TK, TV>>
+    internal class ClientContinuousQueryHandle<TK, TV> : IContinuousQueryHandle<ICacheEntry<TK, TV>>,
+        IContinuousQueryHandleFields
     {
         /** Socket. */
         private readonly ClientSocket _socket;
-        
+
         /** Keep binary flag. */
         private readonly bool _keepBinary;
 
@@ -52,6 +54,14 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         public IQueryCursor<ICacheEntry<TK, TV>> GetInitialQueryCursor()
         {
             return new ClientQueryCursor<TK, TV>(_socket, _queryId, _keepBinary, null, ClientOp.QueryScanCursorGetPage);
+        }
+
+        /** <inheritdoc /> */
+        IFieldsQueryCursor IContinuousQueryHandleFields.GetInitialQueryCursor()
+        {
+            IList<string> columns = null; // TODO: ???
+            return new ClientFieldsQueryCursor(_socket, _queryId, _keepBinary, null,
+                ClientOp.QuerySqlFieldsCursorGetPage, columns);
         }
 
         /** <inheritdoc /> */

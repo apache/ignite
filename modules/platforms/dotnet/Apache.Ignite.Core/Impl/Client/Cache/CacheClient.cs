@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private readonly IExpiryPolicy _expiryPolicy;
 
         /** Logger. Lazily initialized. */
-        private ILogger _logger = null;
+        private ILogger _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheClient{TK, TV}" /> class.
@@ -647,9 +647,16 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, SqlFieldsQuery initialQry)
+        public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> continuousQuery,
+            SqlFieldsQuery initialQry)
         {
-            throw new NotImplementedException();
+            return QueryContinuousInternal(continuousQuery, ctx =>
+            {
+                ctx.Writer.WriteByte((byte) InitialQueryType.Sql);
+
+                // TODO: Use a different method without deprecated and unused stuff.
+                WriteSqlFieldsQuery(ctx.Writer, initialQry);
+            });
         }
 
         /** <inheritDoc /> */
@@ -1031,7 +1038,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
 
-        private IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuousInternal(
+        private ClientContinuousQueryHandle<TK, TV> QueryContinuousInternal(
             ContinuousQuery<TK, TV> continuousQuery,
             Action<ClientRequestContext> writeInitialQueryAction = null)
         {
