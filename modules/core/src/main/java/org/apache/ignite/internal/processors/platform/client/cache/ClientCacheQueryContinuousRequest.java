@@ -25,18 +25,19 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.internal.processors.platform.client.ClientStatus;
-import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.internal.processors.platform.client.*;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEventFilter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Continuous query request.
@@ -99,12 +100,33 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
                     ? ctx.resources().put(cursor)
                     : ctx.resources().put(initQry.getClientCursor(cursor, ctx));
 
-            return new ClientCacheQueryContinuousResponse(requestId(), handle, cursorId);
+            return new ClientCacheQueryContinuousResponse(requestId(), handle, cursorId, getColumnNames(cursor));
         }
         catch (Exception e) {
             ctx.decrementCursors();
             throw e;
         }
+    }
+
+
+    /**
+     * Gets column names.
+     *
+     * @param cursor Cursor.
+     * @return Column names.
+     */
+    private Collection<String> getColumnNames(QueryCursor cursor) {
+        List<GridQueryFieldMetadata> meta = ((QueryCursorEx) cursor).fieldsMeta();
+
+        if (meta == null)
+            return null;
+
+        Collection<String> res = new ArrayList<>(meta.size());
+
+        for (GridQueryFieldMetadata fieldMeta : meta)
+            res.add(fieldMeta.fieldName());
+
+        return res;
     }
 
     /**
