@@ -125,6 +125,9 @@ This utility can do the following commands:
     Parameters:
       snapshot_name  - Snapshot name.
 
+  Change cluster tag to new value:
+    control.(sh|bat) --change-tag newTagValue [--yes]
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 
