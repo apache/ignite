@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Transactions;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -341,6 +342,145 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     Assert.AreEqual(mode.Item2, tx.Isolation);
                     Assert.AreEqual(transactions.DefaultTxConcurrency, tx.Concurrency);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Tests all synchronous transactional operations with <see cref="TransactionScope"/>.
+        /// </summary>
+        [Test]
+        public void TestTransactionScopeAllOperationsSync()
+        {
+            CheckTxOp((cache, key) => cache.Put(key, -5));
+
+            CheckTxOp((cache, key) => cache.PutAll(new Dictionary<int, int> {{key, -7}}));
+
+            CheckTxOp((cache, key) =>
+            {
+                cache.Remove(key);
+                cache.PutIfAbsent(key, -10);
+            });
+
+            CheckTxOp((cache, key) => cache.GetAndPut(key, -9));
+
+            CheckTxOp((cache, key) =>
+            {
+                cache.Remove(key);
+                cache.GetAndPutIfAbsent(key, -10);
+            });
+
+            CheckTxOp((cache, key) => cache.GetAndRemove(key));
+
+            CheckTxOp((cache, key) => cache.GetAndReplace(key, -11));
+
+            CheckTxOp((cache, key) => cache.Remove(key));
+
+            CheckTxOp((cache, key) => cache.RemoveAll(new[] {key}));
+
+            CheckTxOp((cache, key) => cache.Replace(key, 100));
+
+            CheckTxOp((cache, key) => cache.Replace(key, cache[key], 100));
+        }
+
+        /// <summary>
+        /// Tests all transactional async operations with <see cref="TransactionScope"/>.
+        /// </summary>
+        [Test]
+        [Ignore("Async thin client transactional operations not supported.")]
+        public void TestTransactionScopeAllOperationsAsync()
+        {
+            CheckTxOp((cache, key) => cache.PutAsync(key, -5));
+
+            CheckTxOp((cache, key) => cache.PutAllAsync(new Dictionary<int, int> {{key, -7}}));
+
+            CheckTxOp((cache, key) =>
+            {
+                cache.Remove(key);
+                cache.PutIfAbsentAsync(key, -10);
+            });
+
+            CheckTxOp((cache, key) => cache.GetAndPutAsync(key, -9));
+
+            CheckTxOp((cache, key) =>
+            {
+                cache.Remove(key);
+                cache.GetAndPutIfAbsentAsync(key, -10);
+            });
+
+            CheckTxOp((cache, key) => cache.GetAndRemoveAsync(key));
+
+            CheckTxOp((cache, key) => cache.GetAndReplaceAsync(key, -11));
+
+            CheckTxOp((cache, key) => cache.RemoveAsync(key));
+
+            CheckTxOp((cache, key) => cache.RemoveAllAsync(new[] {key}));
+
+            CheckTxOp((cache, key) => cache.ReplaceAsync(key, 100));
+
+            CheckTxOp((cache, key) => cache.ReplaceAsync(key, cache[key], 100));
+        }
+
+        /// <summary>
+        /// Checks that cache operation behaves transactionally.
+        /// </summary>
+        private void CheckTxOp(Action<ICacheClient<int, int>, int> act)
+        {
+            var isolationLevels = new[]
+            {
+                IsolationLevel.Serializable, IsolationLevel.RepeatableRead, IsolationLevel.ReadCommitted,
+                IsolationLevel.ReadUncommitted, IsolationLevel.Snapshot, IsolationLevel.Chaos
+            };
+
+            foreach (var isolationLevel in isolationLevels)
+            {
+                var txOpts = new TransactionOptions {IsolationLevel = isolationLevel};
+                const TransactionScopeOption scope = TransactionScopeOption.Required;
+
+                var cache = TransactionalCache();
+
+                cache[1] = 1;
+                cache[2] = 2;
+
+                // Rollback.
+                using (new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+
+                    Assert.IsNotNull(((IClientTransactionsInternal)Client.Transactions).CurrentTx,
+                        "Transaction has not started.");
+                }
+
+                Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(2, cache[2]);
+
+                using (new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+                    act(cache, 2);
+                }
+
+                Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(2, cache[2]);
+
+                // Commit.
+                using (var ts = new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+                    ts.Complete();
+                }
+
+                Assert.IsTrue(!cache.ContainsKey(1) || cache[1] != 1);
+                Assert.AreEqual(2, cache[2]);
+
+                using (var ts = new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+                    act(cache, 2);
+                    ts.Complete();
+                }
+
+                Assert.IsTrue(!cache.ContainsKey(1) || cache[1] != 1);
+                Assert.IsTrue(!cache.ContainsKey(2) || cache[2] != 2);
             }
         }
 
