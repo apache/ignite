@@ -180,7 +180,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      */
     private final DmsDataWriterWorker worker;
 
-    /** List of keys that should be skipped due to marshalling porpose. */
+    /** Set of keys that should be skipped due to marshalling porpose. */
     private final ConcurrentSkipListSet<String> skippedKeys = new ConcurrentSkipListSet<>();
 
     /**
@@ -244,7 +244,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 /** {@inheritDoc} */
                 @Override public void onReadyForReadWrite(
                     ReadWriteMetastorage metastorage
-                ) {
+                )  throws IgniteCheckedException {
                     onMetaStorageReadyForWrite(metastorage);
                 }
             });
@@ -397,8 +397,24 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      *
      * @param metastorage Local metastorage instance available for writing.
      */
-    private void onMetaStorageReadyForWrite(ReadWriteMetastorage metastorage) {
+    private void onMetaStorageReadyForWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
         assert isPersistenceEnabled;
+
+        localMetastorageLock();
+
+        try {
+            lock.writeLock().lock();
+
+            try {
+                prepareSkippedKeys(metastorage);
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
+        }
+        finally {
+            localMetastorageUnlock();
+        }
 
         worker.setMetaStorage(metastorage);
 
@@ -818,7 +834,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             DistributedMetaStorageVersion locVer = ver;
 
             if (remoteVer.id() >= locVer.id()) {
-                Serializable nodeData = new DistributedMetaStorageClusterNodeData(remoteVer, null, null, null);
+                Serializable nodeData = new DistributedMetaStorageClusterNodeData(remoteVer, null, null, null, null);
 
                 dataBag.addGridCommonData(COMPONENT_ID, nodeData);
             }
@@ -826,7 +842,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 if (locVer.id() - remoteVer.id() <= histCache.size() && !dataBag.isJoiningNodeClient()) {
                     DistributedMetaStorageHistoryItem[] updates = history(remoteVer.id() + 1, locVer.id());
 
-                    Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, updates);
+                    Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, updates,
+                        skippedKeys);
 
                     dataBag.addGridCommonData(COMPONENT_ID, nodeData);
                 }
@@ -842,7 +859,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     else
                         hist = history(ver.id() - histCache.size() + 1, locVer.id());
 
-                    Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver0, fullData, hist, null);
+                    Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver0, fullData, hist, null,
+                        skippedKeys);
 
                     dataBag.addGridCommonData(COMPONENT_ID, nodeData);
                 }
@@ -958,6 +976,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)data.commonData();
 
             if (nodeData != null) {
+                if (nodeData.skippedKeys != null)
+                    skippedKeys.addAll(nodeData.skippedKeys);
+
                 if (nodeData.fullData != null) {
                     ver = nodeData.ver;
 
@@ -1141,7 +1162,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             ver = ver.nextVersion(histItem);
 
             for (int i = 0, len = histItem.keys().length; i < len; i++)
-                notifyListeners(histItem.keys()[i], bridge.read(histItem.keys()[i]), unmarshal(marshaller, histItem.valuesBytesArray()[i]));
+                notifyListeners(histItem.keys()[i], bridge.readMarshalled(histItem.keys()[i]), histItem.valuesBytesArray()[i]);
 
             for (int i = 0, len = histItem.keys().length; i < len; i++)
                 bridge.write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
@@ -1299,21 +1320,17 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             int c = oldKey.compareTo(newKey);
 
             if (c < 0) {
-                notifyListeners(oldKey, unmarshal(marshaller, oldValBytes), null);
+                notifyListeners(oldKey, oldValBytes, null);
 
                 ++oldIdx;
             }
             else if (c > 0) {
-                notifyListeners(newKey, null, unmarshal(marshaller, newValBytes));
+                notifyListeners(newKey, null, newValBytes);
 
                 ++newIdx;
             }
             else {
-                Serializable oldVal = unmarshal(marshaller, oldValBytes);
-
-                Serializable newVal = Arrays.equals(oldValBytes, newValBytes) ? oldVal : unmarshal(marshaller, newValBytes);
-
-                notifyListeners(oldKey, oldVal, newVal);
+                notifyListeners(oldKey, oldValBytes, newValBytes);
 
                 ++oldIdx;
 
@@ -1322,27 +1339,27 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
 
         for (; oldIdx < oldData.length; ++oldIdx)
-            notifyListeners(oldData[oldIdx].key, unmarshal(marshaller, oldData[oldIdx].valBytes), null);
+            notifyListeners(oldData[oldIdx].key, oldData[oldIdx].valBytes, null);
 
         for (; newIdx < newData.length; ++newIdx)
-            notifyListeners(newData[newIdx].key, null, unmarshal(marshaller, newData[newIdx].valBytes));
+            notifyListeners(newData[newIdx].key, null, newData[newIdx].valBytes);
     }
 
     /**
      * Notify listeners.
      *
      * @param key The key.
-     * @param oldVal Old value.
-     * @param newVal New value.
+     * @param oldValBytes Old value bytes.
+     * @param newValBytes New value bytes.
      */
-    private void notifyListeners(String key, Serializable oldValBytes, Serializable newValBytes) {
+    private void notifyListeners(String key, byte[] oldValBytes, byte[] newValBytes) throws IgniteCheckedException {
         if (skippedKeys.contains(key))
             return;
 
         Serializable oldVal = oldValBytes == null ? null : unmarshal(marshaller, oldValBytes);
-        Serializable newVal
+        Serializable newVal = newValBytes == null ? null : unmarshal(marshaller, newValBytes);
 
-        notifyListeners
+        notifyListeners(key, oldVal, newVal);
     }
 
     /**
@@ -1353,9 +1370,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @param newVal New value.
      */
     private void notifyListeners(String key, Serializable oldVal, Serializable newVal) {
-        if (skippedKeys.contains(key))
-            return;
-
         for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : lsnrs) {
             if (entry.get1().test(key)) {
                 try {
@@ -1385,7 +1399,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ctx.cache().context().database().checkpointReadUnlock();
     }
 
-    /** */
+    /** Prepares set of keys that should be skipped due to marshalling porpose. */
     private void prepareSkippedKeys(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         metastorage.iterate(
             historyItemPrefix(),
