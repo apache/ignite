@@ -357,7 +357,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         @Override protected void writeToSocket(Socket sock, byte[] data,
                                                long timeout) throws IOException {
             if (blockAll || block && sock.getPort() == 47500)
-                throw new SocketException("Test discoIgniteTcpCommunicationConnectOnInitTestvery exception");
+                throw new SocketException("Test discovery exception");
 
             super.writeToSocket(sock, data, timeout);
         }
