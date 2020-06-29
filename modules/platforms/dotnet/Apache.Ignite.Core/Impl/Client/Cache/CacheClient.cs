@@ -654,8 +654,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             {
                 ctx.Writer.WriteByte((byte) InitialQueryType.Sql);
 
-                // TODO: Use a different method without deprecated and unused stuff.
-                WriteSqlFieldsQuery(ctx.Writer, initialQry);
+                WriteSqlFieldsInitialQuery(ctx.Writer, initialQry);
             });
         }
 
@@ -939,7 +938,30 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteBoolean(qry.Lazy);
             writer.WriteTimeSpanAsLong(qry.Timeout);
             writer.WriteBoolean(includeColumns);
+        }
 
+        /// <summary>
+        /// Writes the SQL fields query.
+        /// </summary>
+        private static void WriteSqlFieldsInitialQuery(IBinaryRawWriter writer, SqlFieldsQuery qry)
+        {
+            Debug.Assert(qry != null);
+
+            writer.WriteString(qry.Schema);
+            writer.WriteInt(qry.PageSize);
+            writer.WriteString(qry.Sql);
+            QueryBase.WriteQueryArgs(writer, qry.Arguments);
+
+            // .NET client does not discern between different statements for now.
+            // We could have ExecuteNonQuery method, which uses StatementType.Update, for example.
+            writer.WriteByte((byte) StatementType.Any);
+
+            writer.WriteBoolean(qry.EnableDistributedJoins);
+            writer.WriteBoolean(qry.Local);
+            writer.WriteBoolean(qry.EnforceJoinOrder);
+            writer.WriteBoolean(qry.Colocated);
+            writer.WriteBoolean(qry.Lazy);
+            writer.WriteTimeSpanAsLong(qry.Timeout);
         }
 
         /// <summary>
