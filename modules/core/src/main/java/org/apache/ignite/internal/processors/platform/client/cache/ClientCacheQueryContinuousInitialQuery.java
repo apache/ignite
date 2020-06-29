@@ -21,6 +21,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
@@ -108,7 +110,7 @@ class ClientCacheQueryContinuousInitialQuery {
             case TYPE_NONE:
                 return null;
 
-            case TYPE_SCAN:
+            case TYPE_SCAN: {
                 Object filter = reader.readObjectDetached();
                 byte filterPlatform = filter == null ? 0 : reader.readByte();
                 int pageSize = reader.readInt();
@@ -120,10 +122,24 @@ class ClientCacheQueryContinuousInitialQuery {
 
                 return new ClientCacheQueryContinuousInitialQuery(typ, filter, filterPlatform, pageSize,
                         part, loc, null);
+            }
 
-            case TYPE_SQL:
+            case TYPE_SQL: {
                 // TODO
+                String schema = reader.readString();
+                int pageSize = reader.readInt();
+                String sql = reader.readString();
+                Object[] args = PlatformCache.readQueryArgs(reader);
+                JdbcStatementType stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
+                boolean distributedJoins = reader.readBoolean();
+                boolean loc = reader.readBoolean();
+                boolean enforceJoinOrder = reader.readBoolean();
+                boolean collocated = reader.readBoolean();
+                boolean lazy = reader.readBoolean();
+                int timeout = (int) reader.readLong();
+
                 return null;
+            }
 
             default:
                 throw new IgniteClientException(ClientStatus.FAILED, "Invalid initial query type: " + typ);
