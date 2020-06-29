@@ -48,6 +48,7 @@ import org.apache.ignite.spi.discovery.ClusterRebalancedMetricTest;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.thread.GridThreadTest;
 import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
+import org.apache.ignite.thread.ThreadPoolMetricsTest;
 import org.apache.ignite.util.GridConcurrentLinkedDequeMultiThreadedTest;
 import org.apache.ignite.util.GridIntListSelfTest;
 import org.apache.ignite.util.GridLogThrottleTest;
@@ -113,6 +114,7 @@ import org.junit.runners.Suite;
     ClusterMetricsSnapshotSerializeCompatibilityTest.class,
     ClusterMetricsSelfTest.class,
     ClusterRebalancedMetricTest.class,
+    ThreadPoolMetricsTest.class,
 
     // Unsafe.
     GridUnsafeMemorySelfTest.class,

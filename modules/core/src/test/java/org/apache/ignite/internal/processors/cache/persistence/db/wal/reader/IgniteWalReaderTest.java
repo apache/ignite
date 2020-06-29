@@ -1303,9 +1303,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         String workDir,
         String subfolderName
     ) throws IgniteCheckedException {
-        File binaryMeta = U.resolveWorkDirectory(workDir, "binary_meta", false);
+        File binaryMeta = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
+            false);
         File binaryMetaWithConsId = new File(binaryMeta, subfolderName);
-        File marshallerMapping = U.resolveWorkDirectory(workDir, "marshaller", false);
+        File marshallerMapping = U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
 
         return new IteratorParametersBuilder()
             .binaryMetadataFileStoreDir(binaryMetaWithConsId)
