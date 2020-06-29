@@ -244,7 +244,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 /** {@inheritDoc} */
                 @Override public void onReadyForReadWrite(
                     ReadWriteMetastorage metastorage
-                )  throws IgniteCheckedException {
+                ) throws IgniteCheckedException {
                     onMetaStorageReadyForWrite(metastorage);
                 }
             });
