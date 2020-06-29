@@ -334,8 +334,10 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         String expectedMsg = String.format(
             "Type '%s' with typeId %d has a different/incorrect type for field '%s'. Expected 'int' but 'long' was " +
-                "provided. Field type's modification is unsupported, clean {root_path}/marshaller and " +
-                "{root_path}/db/binary_meta directories if the type change is required.",
+                "provided. The type of an existing field can not be changed. Use a different field name or follow " +
+                "this procedure to reuse the current name:\n" +
+                "- Delete data records that use the old field type;\n" +
+                "- Remove metadata by the command: 'control.sh --meta remove --typeId " + createdTypeId + "'.",
             DYNAMIC_TYPE_NAME,
             createdTypeId,
             decimalFieldName);
