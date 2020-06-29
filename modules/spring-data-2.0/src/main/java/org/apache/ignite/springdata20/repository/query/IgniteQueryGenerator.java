@@ -18,7 +18,6 @@
 package org.apache.ignite.springdata20.repository.query;
 
 import java.lang.reflect.Method;
-
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -31,13 +30,12 @@ import org.springframework.data.repository.query.parser.PartTree;
  */
 public class IgniteQueryGenerator {
 
-    private IgniteQueryGenerator() {}
+    private IgniteQueryGenerator() {
+    }
 
     /**
-     * @param mtd
-     *     Method.
-     * @param metadata
-     *     Metadata.
+     * @param mtd      Method.
+     * @param metadata Metadata.
      * @return Generated ignite query.
      */
     @NotNull
@@ -53,7 +51,8 @@ public class IgniteQueryGenerator {
 
             // For the DML queries aside from SELECT *, they should run over SqlFieldQuery
             isCountOrFieldQuery = true;
-        } else {
+        }
+        else {
             sql.append("SELECT ");
 
             if (parts.isDistinct())
@@ -99,10 +98,8 @@ public class IgniteQueryGenerator {
     /**
      * Add a dynamic part of query for the sorting support.
      *
-     * @param sql
-     *     SQL text string.
-     * @param sort
-     *     Sort method.
+     * @param sql  SQL text string.
+     * @param sort Sort method.
      * @return Sorting criteria in StringBuilder.
      */
     public static StringBuilder addSorting(StringBuilder sql, Sort sort) {
@@ -137,10 +134,8 @@ public class IgniteQueryGenerator {
     /**
      * Add a dynamic part of a query for the pagination support.
      *
-     * @param sql
-     *     Builder instance.
-     * @param pageable
-     *     Pageable instance.
+     * @param sql      Builder instance.
+     * @param pageable Pageable instance.
      * @return Builder instance.
      */
     public static StringBuilder addPaging(StringBuilder sql, Pageable pageable) {
@@ -155,8 +150,7 @@ public class IgniteQueryGenerator {
     /**
      * Determines whether query is dynamic or not (by list of method parameters)
      *
-     * @param mtd
-     *     Method.
+     * @param mtd Method.
      * @return type of options
      */
     public static IgniteQuery.Option getOptions(Method mtd) {
@@ -224,7 +218,7 @@ public class IgniteQueryGenerator {
             case TRUE:
                 sql.append(" = TRUE");
                 break;
-                //TODO: review this legacy code, LIKE should be -> LIKE ?
+            //TODO: review this legacy code, LIKE should be -> LIKE ?
             case LIKE:
             case CONTAINING:
                 sql.append(" LIKE '%' || ? || '%'");

@@ -18,7 +18,6 @@
 package org.apache.ignite.springdata22.repository.query;
 
 import java.lang.reflect.Method;
-
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -31,13 +30,12 @@ import org.springframework.data.repository.query.parser.PartTree;
  */
 public class IgniteQueryGenerator {
 
-    private IgniteQueryGenerator() {}
+    private IgniteQueryGenerator() {
+    }
 
     /**
-     * @param mtd
-     *     Method.
-     * @param metadata
-     *     Metadata.
+     * @param mtd      Method.
+     * @param metadata Metadata.
      * @return Generated ignite query.
      */
     @NotNull
@@ -53,18 +51,17 @@ public class IgniteQueryGenerator {
 
             // For the DML queries aside from SELECT *, they should run over SqlFieldQuery
             isCountOrFieldQuery = true;
-        } else {
+        }
+        else {
             sql.append("SELECT ");
 
-            if (parts.isDistinct()) {
+            if (parts.isDistinct())
                 throw new UnsupportedOperationException("DISTINCT clause in not supported.");
-            }
 
-            if (isCountOrFieldQuery) {
+            if (isCountOrFieldQuery)
                 sql.append("COUNT(1) ");
-            } else {
+            else
                 sql.append("* ");
-            }
         }
 
         sql.append("FROM ").append(metadata.getDomainType().getSimpleName());
@@ -101,10 +98,8 @@ public class IgniteQueryGenerator {
     /**
      * Add a dynamic part of query for the sorting support.
      *
-     * @param sql
-     *     SQL text string.
-     * @param sort
-     *     Sort method.
+     * @param sql  SQL text string.
+     * @param sort Sort method.
      * @return Sorting criteria in StringBuilder.
      */
     public static StringBuilder addSorting(StringBuilder sql, Sort sort) {
@@ -139,10 +134,8 @@ public class IgniteQueryGenerator {
     /**
      * Add a dynamic part of a query for the pagination support.
      *
-     * @param sql
-     *     Builder instance.
-     * @param pageable
-     *     Pageable instance.
+     * @param sql      Builder instance.
+     * @param pageable Pageable instance.
      * @return Builder instance.
      */
     public static StringBuilder addPaging(StringBuilder sql, Pageable pageable) {
@@ -157,8 +150,7 @@ public class IgniteQueryGenerator {
     /**
      * Determines whether query is dynamic or not (by list of method parameters)
      *
-     * @param mtd
-     *     Method.
+     * @param mtd Method.
      * @return type of options
      */
     public static IgniteQuery.Option getOptions(Method mtd) {
@@ -168,19 +160,17 @@ public class IgniteQueryGenerator {
         if (types.length > 0) {
             Class<?> type = types[types.length - 1];
 
-            if (Sort.class.isAssignableFrom(type)) {
+            if (Sort.class.isAssignableFrom(type))
                 option = IgniteQuery.Option.SORTING;
-            } else if (Pageable.class.isAssignableFrom(type)) {
+            else if (Pageable.class.isAssignableFrom(type))
                 option = IgniteQuery.Option.PAGINATION;
-            }
         }
 
         for (int i = 0; i < types.length - 1; i++) {
             Class<?> tp = types[i];
 
-            if (tp == Sort.class || tp == Pageable.class) {
+            if (tp == Sort.class || tp == Pageable.class)
                 throw new AssertionError("Sort and Pageable parameters are allowed only in the last position");
-            }
         }
 
         return option;

@@ -32,22 +32,31 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  * Test with using repository which is configured by Spring EL
  */
 public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTest {
-
-    /** Number of entries to store */
+    /**
+     * Number of entries to store
+     */
     private static final int CACHE_SIZE = 1000;
-    /** Repository. */
+
+    /**
+     * Repository.
+     */
     private static PersonExpressionRepository repo;
-    /** Context. */
+
+    /**
+     * Context.
+     */
     private static AnnotationConfigApplicationContext ctx;
+
     /**
      *
      */
     @Rule
     public final ExpectedException expected = ExpectedException.none();
 
-    /** {@inheritDoc} */
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         ctx = new AnnotationConfigApplicationContext();
@@ -57,9 +66,10 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         repo = ctx.getBean(PersonExpressionRepository.class);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    protected void beforeTest() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         fillInRepository();
@@ -67,9 +77,10 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         assertEquals(CACHE_SIZE, repo.count());
     }
 
-    /** {@inheritDoc} */
-    @Override
-    protected void afterTest() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override protected void afterTest() throws Exception {
         repo.deleteAll();
 
         assertEquals(0, repo.count());
@@ -82,8 +93,8 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
      */
     private void fillInRepository() {
         for (int i = 0; i < CACHE_SIZE - 5; i++) {
-            repo.save(i,
-                new Person("person" + Integer.toHexString(i), "lastName" + Integer.toHexString((i + 16) % 256)));
+            repo.save(i, new Person("person" + Integer.toHexString(i),
+                "lastName" + Integer.toHexString((i + 16) % 256)));
         }
 
         repo.save((int)repo.count(), new Person("uniquePerson", "uniqueLastName"));
@@ -93,9 +104,10 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
     }
 
-    /** {@inheritDoc} */
-    @Override
-    protected void afterTestsStopped() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override protected void afterTestsStopped() {
         ctx.close();
     }
 
@@ -131,7 +143,8 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         assertFalse("The SpEL \"#{cacheNames.personCacheName}\" isn't processed!",
             cacheNames.contains("#{cacheNames.personCacheName}"));
 
-        assertTrue("Cache \"PersonCache\" isn't found!", cacheNames.contains("PersonCache"));
+        assertTrue("Cache \"PersonCache\" isn't found!",
+            cacheNames.contains("PersonCache"));
     }
 
     @Test
@@ -143,7 +156,7 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         assertFalse("The SpEL \"#{cacheNames.personCacheName}\" isn't processed!",
             cacheNames.contains("#{cacheNames.personCacheName}"));
 
-        assertTrue("Cache \"PersonCache\" isn't found!", cacheNames.contains("PersonCache"));
+        assertTrue("Cache \"PersonCache\" isn't found!",
+            cacheNames.contains("PersonCache"));
     }
-
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.springdata20.repository.support;
 
 import java.io.Serializable;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata20.repository.IgniteRepository;
 import org.springframework.beans.BeansException;
@@ -31,9 +30,9 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
 
 /**
  * Apache Ignite repository factory bean.
- *
- * The {@link org.apache.ignite.springdata20.repository.config.RepositoryConfig} requires to define one of the parameters below in your Spring application configuration in order
- * to get an access to Apache Ignite cluster:
+ * <p>
+ * The {@link org.apache.ignite.springdata20.repository.config.RepositoryConfig} requires to define one of the
+ * parameters below in your Spring application configuration in order to get an access to Apache Ignite cluster:
  * <ul>
  * <li>{@link Ignite} instance bean named "igniteInstance" by default</li>
  * <li>{@link IgniteConfiguration} bean named "igniteCfg" by default</li>
@@ -41,27 +40,33 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
  * <ul/>
  *
  * @param <T> Repository type, {@link IgniteRepository}
- * @param <S> Domain object class.
- * @param <ID> Domain object key, super expects {@link Serializable}.
+ * @param <V> Domain object class.
+ * @param <K> Domain object key, super expects {@link Serializable}.
  */
-public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID extends Serializable>
-    extends RepositoryFactoryBeanSupport<T, S, ID> implements ApplicationContextAware {
-    /** Application context. */
+public class IgniteRepositoryFactoryBean<T extends Repository<V, K>, V, K extends Serializable>
+    extends RepositoryFactoryBeanSupport<T, V, K> implements ApplicationContextAware {
+    /**
+     * Application context.
+     */
     private ApplicationContext ctx;
 
     /**
-     * @param repositoryInterface Repository interface.
+     * @param repoInterface Repository interface.
      */
-    protected IgniteRepositoryFactoryBean(Class<? extends T> repositoryInterface) {
-        super(repositoryInterface);
+    protected IgniteRepositoryFactoryBean(Class<? extends T> repoInterface) {
+        super(repoInterface);
     }
 
-    /** {@inheritDoc} */
-    @Override public void setApplicationContext(ApplicationContext context) throws BeansException {
-        this.ctx = context;
+    /**
+     * {@inheritDoc}
+     */
+    @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
+        this.ctx = ctx;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected RepositoryFactorySupport createRepositoryFactory() {
         return new IgniteRepositoryFactory(ctx);
     }

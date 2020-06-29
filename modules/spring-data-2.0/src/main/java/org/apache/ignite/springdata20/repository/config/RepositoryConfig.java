@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.springdata20.repository.config;
 
 import java.lang.annotation.Documented;
@@ -23,7 +22,6 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
@@ -68,7 +66,7 @@ public @interface RepositoryConfig {
 
     /**
      * Auto create cache. Default false to enforce control over cache creation and to avoid cache creation by mistake
-     *
+     * <p>
      * Tells to Ignite Repository factory wether cache should be auto created if not exists.
      *
      * @return the boolean

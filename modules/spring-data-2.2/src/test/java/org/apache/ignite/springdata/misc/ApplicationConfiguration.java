@@ -39,6 +39,7 @@ public class ApplicationConfiguration {
     public static final String IGNITE_INSTANCE_ONE = "IGNITE_INSTANCE_ONE";
 
     public static final String IGNITE_INSTANCE_TWO = "IGNITE_INSTANCE_TWO";
+
     /**
      * The bean with cache names
      */

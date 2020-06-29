@@ -17,7 +17,6 @@ package org.apache.ignite.springdata22.repository.query;
 
 import java.util.Collections;
 import java.util.List;
-
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -28,60 +27,65 @@ import org.springframework.util.Assert;
  * @since 2.0.3
  */
 class EmptyDeclaredQuery implements DeclaredQuery {
+    /**
+     * An implementation implementing the NULL-Object pattern for situations where there is no query.
+     */
+    static final DeclaredQuery EMPTY_QUERY = new EmptyDeclaredQuery();
 
-	/**
-	 * An implementation implementing the NULL-Object pattern for situations where there is no query.
-	 */
-	static final DeclaredQuery EMPTY_QUERY = new EmptyDeclaredQuery();
+    /**
+     * {@inheritDoc}
+     */
+    @Override public boolean hasNamedParameter() {
+        return false;
+    }
 
-	/** {@inheritDoc} */
-	@Override
-	public boolean hasNamedParameter() {
-		return false;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override public String getQueryString() {
+        return "";
+    }
 
-	/** {@inheritDoc} */
-	@Override
-	public String getQueryString() {
-		return "";
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override public String getAlias() {
+        return null;
+    }
 
-	/** {@inheritDoc} */
-	@Override
-	public String getAlias() {
-		return null;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override public boolean hasConstructorExpression() {
+        return false;
+    }
 
-	/** {@inheritDoc} */
-	@Override
-	public boolean hasConstructorExpression() {
-		return false;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override public boolean isDefaultProjection() {
+        return false;
+    }
 
-	/** {@inheritDoc} */
-	@Override
-	public boolean isDefaultProjection() {
-		return false;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override public List<StringQuery.ParameterBinding> getParameterBindings() {
+        return Collections.emptyList();
+    }
 
-	/** {@inheritDoc} */
-	@Override
-	public List<StringQuery.ParameterBinding> getParameterBindings() {
-		return Collections.emptyList();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override public DeclaredQuery deriveCountQuery(@Nullable String cntQry, @Nullable String cntQryProjection) {
+        Assert.hasText(cntQry, "CountQuery must not be empty!");
+        return DeclaredQuery.of(cntQry);
+    }
 
-	/** {@inheritDoc} */
-	@Override
-	public DeclaredQuery deriveCountQuery(@Nullable String countQuery, @Nullable String countQueryProjection) {
-
-		Assert.hasText(countQuery, "CountQuery must not be empty!");
-
-		return DeclaredQuery.of(countQuery);
-	}
-
-	/** {@inheritDoc} */
-	@Override
-	public boolean usesJdbcStyleParameters() {
-		return false;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override public boolean usesJdbcStyleParameters() {
+        return false;
+    }
 }

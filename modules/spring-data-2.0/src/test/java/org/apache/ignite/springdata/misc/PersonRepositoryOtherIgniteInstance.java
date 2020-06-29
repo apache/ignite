@@ -36,15 +36,19 @@ import org.springframework.data.repository.query.Param;
 public interface PersonRepositoryOtherIgniteInstance extends IgniteRepository<Person, Integer> {
     /** */
     public List<Person> findByFirstName(String val);
+
     /** */
     @Query("firstName = ?")
     public List<PersonProjection> queryByFirstNameWithProjection(String val);
+
     /** */
     @Query("firstName = :firstname")
     public List<PersonProjection> queryByFirstNameWithProjectionNamedParameter(@Param("firstname") String val);
+
     /** */
     @Query("firstName = ?#{[1]}")
     public List<PersonProjection> queryByFirstNameWithProjectionNamedIndexedParameter(@Param("notUsed") String notUsed, @Param("firstname") String val);
+
     /** */
     @Query(textQuery = true, value = "#{#firstname}", limit = 2)
     public List<PersonProjection> textQueryByFirstNameWithProjectionNamedParameter(@Param("firstname") String val);

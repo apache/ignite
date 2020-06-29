@@ -18,7 +18,6 @@ package org.apache.ignite.springdata22.repository;
 
 import java.io.Serializable;
 import java.util.Map;
-
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -28,95 +27,83 @@ import org.springframework.lang.Nullable;
 /**
  * Apache Ignite repository that extends basic capabilities of {@link CrudRepository}.
  *
+ * @param <V> the cache value type
+ * @param <K> the cache key type
  * @author Apache Ignite Team
  * @author Manuel Núñez (manuel.nunez@hawkore.com)
  */
-public interface IgniteRepository<T, ID extends Serializable> extends CrudRepository<T, ID> {
-
+public interface IgniteRepository<V, K extends Serializable> extends CrudRepository<V, K> {
     /**
      * Returns the Ignite instance bound to the repository
      *
      * @return the Ignite instance bound to the repository
      */
-    Ignite ignite();
+    public Ignite ignite();
 
     /**
      * Returns the Ignite Cache bound to the repository
      *
      * @return the Ignite Cache bound to the repository
      */
-    IgniteCache<ID, T> cache();
+    public IgniteCache<K, V> cache();
 
     /**
      * Saves a given entity using provided key.
      * </p>
-     * It's suggested to use this method instead of default {@link CrudRepository#save(Object)} that generates
-     * IDs (keys) that are not unique cluster wide.
+     * It's suggested to use this method instead of default {@link CrudRepository#save(Object)} that generates IDs
+     * (keys) that are not unique cluster wide.
      *
-     * @param key
-     *     Entity's key.
-     * @param entity
-     *     Entity to save.
-     * @param <S>
-     *     Entity type.
+     * @param <S>    Entity type.
+     * @param key    Entity's key.
+     * @param entity Entity to save.
      * @return Saved entity.
      */
-    <S extends T> S save(ID key, S entity);
+    public <S extends V> S save(K key, S entity);
 
     /**
      * Saves all given keys and entities combinations.
      * </p>
-     * It's suggested to use this method instead of default {@link CrudRepository#save(Object)} that generates
-     * IDs (keys) that are not unique cluster wide.
+     * It's suggested to use this method instead of default {@link CrudRepository#save(Object)} that generates IDs
+     * (keys) that are not unique cluster wide.
      *
-     * @param entities
-     *     Map of key-entities pairs to save.
-     * @param <S>
-     *     type of entities.
+     * @param <S>      type of entities.
+     * @param entities Map of key-entities pairs to save.
      * @return Saved entities.
      */
-    <S extends T> Iterable<S> save(Map<ID, S> entities);
+    public <S extends V> Iterable<S> save(Map<K, S> entities);
 
     /**
      * Saves a given entity using provided key with expiry policy
      * </p>
-     * It's suggested to use this method instead of default {@link CrudRepository#save(Object)} that generates
-     * IDs (keys) that are not unique cluster wide.
+     * It's suggested to use this method instead of default {@link CrudRepository#save(Object)} that generates IDs
+     * (keys) that are not unique cluster wide.
      *
-     * @param key
-     *     Entity's key.
-     * @param entity
-     *     Entity to save.
-     * @param expiryPolicy
-     *     ExpiryPolicy to apply, if not null.
-     * @param <S>
-     *     Entity type.
+     * @param <S>       Entity type.
+     * @param key       Entity's key.
+     * @param entity    Entity to save.
+     * @param expiryPlc ExpiryPolicy to apply, if not null.
      * @return Saved entity.
      */
-    <S extends T> S save(ID key, S entity, @Nullable ExpiryPolicy expiryPolicy);
+    public <S extends V> S save(K key, S entity, @Nullable ExpiryPolicy expiryPlc);
 
     /**
      * Saves all given keys and entities combinations with expiry policy
      * </p>
-     * It's suggested to use this method instead of default {@link CrudRepository#save(Object)} that generates
-     * IDs (keys) that are not unique cluster wide.
+     * It's suggested to use this method instead of default {@link CrudRepository#save(Object)} that generates IDs
+     * (keys) that are not unique cluster wide.
      *
-     * @param entities
-     *     Map of key-entities pairs to save.
-     * @param expiryPolicy
-     *     ExpiryPolicy to apply, if not null.
-     * @param <S>
-     *     type of entities.
+     * @param <S>       type of entities.
+     * @param entities  Map of key-entities pairs to save.
+     * @param expiryPlc ExpiryPolicy to apply, if not null.
      * @return Saved entities.
      */
-    <S extends T> Iterable<S> save(Map<ID, S> entities, @Nullable ExpiryPolicy expiryPolicy);
+    public <S extends V> Iterable<S> save(Map<K, S> entities, @Nullable ExpiryPolicy expiryPlc);
 
     /**
      * Deletes all the entities for the provided ids.
      *
-     * @param ids
-     *     List of ids to delete.
+     * @param ids List of ids to delete.
      */
-    void deleteAllById(Iterable<ID> ids);
+    public void deleteAllById(Iterable<K> ids);
 
 }

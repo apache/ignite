@@ -27,22 +27,30 @@ import org.springframework.data.repository.config.RepositoryConfigurationExtensi
  * Apache Ignite specific implementation of {@link RepositoryConfigurationExtension}.
  */
 public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurationExtensionSupport {
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public String getModuleName() {
         return "Apache Ignite";
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected String getModulePrefix() {
         return "ignite";
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public String getRepositoryFactoryBeanClassName() {
         return IgniteRepositoryFactoryBean.class.getName();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected Collection<Class<?>> getIdentifyingTypes() {
         return Collections.singleton(IgniteRepository.class);
     }

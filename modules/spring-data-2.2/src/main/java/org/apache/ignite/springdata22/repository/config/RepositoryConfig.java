@@ -38,7 +38,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 @Documented
 @Inherited
 public @interface RepositoryConfig {
-
     /**
      * Cache name string.
      *
@@ -69,7 +68,7 @@ public @interface RepositoryConfig {
 
     /**
      * Auto create cache. Default false to enforce control over cache creation and to avoid cache creation by mistake
-     *
+     * <p>
      * Tells to Ignite Repository factory wether cache should be auto created if not exists.
      *
      * @return the boolean

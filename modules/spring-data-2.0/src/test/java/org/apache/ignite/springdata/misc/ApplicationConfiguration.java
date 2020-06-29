@@ -28,6 +28,7 @@ import org.apache.ignite.springdata20.repository.config.EnableIgniteRepositories
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.repository.query.spi.EvaluationContextExtension;
+
 /**
  *
  */
@@ -38,6 +39,7 @@ public class ApplicationConfiguration {
     public static final String IGNITE_INSTANCE_ONE = "IGNITE_INSTANCE_ONE";
 
     public static final String IGNITE_INSTANCE_TWO = "IGNITE_INSTANCE_TWO";
+
     /**
      * The bean with cache names
      */

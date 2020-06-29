@@ -61,20 +61,20 @@ import org.springframework.data.repository.query.spi.EvaluationContextExtensionS
 public class SampleEvaluationContextExtension extends EvaluationContextExtensionSupport {
 
     private static final SamplePassParamExtension SAMPLE_PASS_PARAM_EXTENSION_INSTANCE = new SamplePassParamExtension();
+
     private static final Map<String, Object> properties = new HashMap<>();
+
     private static final String SAMPLE_EXTENSION_SPEL_VAR = "sampleExtension";
 
     static {
         properties.put(SAMPLE_EXTENSION_SPEL_VAR, SAMPLE_PASS_PARAM_EXTENSION_INSTANCE);
     }
 
-    @Override
-    public String getExtensionId() {
+    @Override public String getExtensionId() {
         return "HK-SAMPLE-PASS-PARAM-EXTENSION";
     }
 
-    @Override
-    public Map<String, Object> getProperties() {
+    @Override public Map<String, Object> getProperties() {
         return properties;
     }
 

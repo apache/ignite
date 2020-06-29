@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.springdata.misc;
 
 import java.util.Collection;
@@ -35,21 +33,27 @@ import org.springframework.data.repository.query.Param;
 public interface PersonRepository extends IgniteRepository<Person, Integer> {
     /** */
     public List<Person> findByFirstName(String val);
+
     /** */
     @Query("firstName = ?")
     public List<PersonProjection> queryByFirstNameWithProjection(String val);
+
     /** */
     @Query("firstName = :firstname")
     public List<PersonProjection> queryByFirstNameWithProjectionNamedParameter(@Param("firstname") String val);
-    /*+ */
+
+    /** */
     @Query("firstName = :firstname")
     public <P> List<P> queryByFirstNameWithProjectionNamedParameter(Class<P> dynamicProjection, @Param("firstname") String val);
+
     /** */
     @Query("firstName = :firstname")
     public <P> P queryOneByFirstNameWithProjectionNamedParameter(Class<P> dynamicProjection, @Param("firstname") String val);
+
     /** */
     @Query("firstName = ?#{[1]}")
     public List<PersonProjection> queryByFirstNameWithProjectionNamedIndexedParameter(@Param("notUsed") String notUsed, @Param("firstname") String val);
+
     /** */
     @Query(textQuery = true, value = "#{#firstname}", limit = 2)
     public List<PersonProjection> textQueryByFirstNameWithProjectionNamedParameter(@Param("firstname") String val);

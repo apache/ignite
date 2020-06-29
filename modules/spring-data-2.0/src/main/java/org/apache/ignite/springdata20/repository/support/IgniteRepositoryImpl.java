@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
@@ -35,126 +34,163 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.lang.Nullable;
 
 /**
- * General Apache Ignite repository implementation.
- * This bean should've never been loaded by context directly, only via {@link IgniteRepositoryFactory}
+ * General Apache Ignite repository implementation. This bean should've never been loaded by context directly, only via
+ * {@link IgniteRepositoryFactory}
  *
+ * @param <V> the cache value type
+ * @param <K> the cache key type
  * @author Apache Ignite Team
  * @author Manuel Núñez (manuel.nunez@hawkore.com)
  */
 @Conditional(ConditionFalse.class)
-public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteRepository<T, ID> {
+public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRepository<V, K> {
+    /**
+     * Ignite Cache bound to the repository
+     */
+    private final IgniteCache<K, V> cache;
 
-    /** Ignite Cache bound to the repository */
-    private final IgniteCache<ID, T> cache;
-    /** Ignite instance bound to the repository */
+    /**
+     * Ignite instance bound to the repository
+     */
     private final Ignite ignite;
 
     /**
      * Repository constructor.
      *
-     * @param cache
-     *     Initialized cache instance.
+     * @param ignite the ignite
+     * @param cache  Initialized cache instance.
      */
-    public IgniteRepositoryImpl(Ignite ignite, IgniteCache<ID, T> cache) {
+    public IgniteRepositoryImpl(Ignite ignite, IgniteCache<K, V> cache) {
         this.cache = cache;
         this.ignite = ignite;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public IgniteCache<ID, T> cache() {
+    /**
+     * {@inheritDoc} @return the ignite cache
+     */
+    @Override public IgniteCache<K, V> cache() {
         return cache;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public Ignite ignite() {
+    /**
+     * {@inheritDoc} @return the ignite
+     */
+    @Override public Ignite ignite() {
         return ignite;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public <S extends T> S save(ID key, S entity) {
+    /**
+     * {@inheritDoc} @param <S>  the type parameter
+     *
+     * @param key    the key
+     * @param entity the entity
+     * @return the s
+     */
+    @Override public <S extends V> S save(K key, S entity) {
         cache.put(key, entity);
 
         return entity;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public <S extends T> Iterable<S> save(Map<ID, S> entities) {
+    /**
+     * {@inheritDoc} @param <S>  the type parameter
+     *
+     * @param entities the entities
+     * @return the iterable
+     */
+    @Override public <S extends V> Iterable<S> save(Map<K, S> entities) {
         cache.putAll(entities);
 
         return entities.values();
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public <S extends T> S save(ID key, S entity, @Nullable ExpiryPolicy expiryPolicy) {
-        if (expiryPolicy != null) {
-            cache.withExpiryPolicy(expiryPolicy).put(key, entity);
-        } else {
+    /**
+     * {@inheritDoc} @param <S>  the type parameter
+     *
+     * @param key       the key
+     * @param entity    the entity
+     * @param expiryPlc the expiry policy
+     * @return the s
+     */
+    @Override public <S extends V> S save(K key, S entity, @Nullable ExpiryPolicy expiryPlc) {
+        if (expiryPlc != null)
+            cache.withExpiryPolicy(expiryPlc).put(key, entity);
+        else
             cache.put(key, entity);
-        }
         return entity;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public <S extends T> Iterable<S> save(Map<ID, S> entities, @Nullable ExpiryPolicy expiryPolicy) {
-        if (expiryPolicy != null) {
-            cache.withExpiryPolicy(expiryPolicy).putAll(entities);
-        } else {
+    /**
+     * {@inheritDoc} @param <S>  the type parameter
+     *
+     * @param entities  the entities
+     * @param expiryPlc the expiry policy
+     * @return the iterable
+     */
+    @Override public <S extends V> Iterable<S> save(Map<K, S> entities, @Nullable ExpiryPolicy expiryPlc) {
+        if (expiryPlc != null)
+            cache.withExpiryPolicy(expiryPlc).putAll(entities);
+        else
             cache.putAll(entities);
-        }
         return entities.values();
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public <S extends T> S save(S entity) {
+    /**
+     * {@inheritDoc} @param <S>  the type parameter
+     *
+     * @param entity the entity
+     * @return the s
+     */
+    @Override public <S extends V> S save(S entity) {
         throw new UnsupportedOperationException("Use IgniteRepository.save(key,value) method instead.");
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public <S extends T> Iterable<S> saveAll(Iterable<S> entities) {
+    /**
+     * {@inheritDoc} @param <S>  the type parameter
+     *
+     * @param entities the entities
+     * @return the iterable
+     */
+    @Override public <S extends V> Iterable<S> saveAll(Iterable<S> entities) {
         throw new UnsupportedOperationException("Use IgniteRepository.save(Map<keys,value>) method instead.");
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public Optional<T> findById(ID id) {
+    /**
+     * {@inheritDoc} @param id the id
+     *
+     * @return the optional
+     */
+    @Override public Optional<V> findById(K id) {
         return Optional.ofNullable(cache.get(id));
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public boolean existsById(ID id) {
+    /**
+     * {@inheritDoc} @param id the id
+     *
+     * @return the boolean
+     */
+    @Override public boolean existsById(K id) {
         return cache.containsKey(id);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public Iterable<T> findAll() {
-        final Iterator<Cache.Entry<ID, T>> iter = cache.iterator();
+    /**
+     * {@inheritDoc} @return the iterable
+     */
+    @Override public Iterable<V> findAll() {
+        final Iterator<Cache.Entry<K, V>> iter = cache.iterator();
 
-        return new Iterable<T>() {
-            @Override
-            public Iterator<T> iterator() {
-                return new Iterator<T>() {
-                    @Override
-                    public boolean hasNext() {
+        return new Iterable<V>() {
+            @Override public Iterator<V> iterator() {
+                return new Iterator<V>() {
+                    @Override public boolean hasNext() {
                         return iter.hasNext();
                     }
 
-                    @Override
-                    public T next() {
+                    @Override public V next() {
                         return iter.next().getValue();
                     }
 
-                    @Override
-                    public void remove() {
+                    @Override public void remove() {
                         iter.remove();
                     }
                 };
@@ -162,75 +198,80 @@ public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteR
         };
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public Iterable<T> findAllById(Iterable<ID> ids) {
-        if (ids instanceof Set) {
-            return cache.getAll((Set<ID>)ids).values();
-        }
+    /**
+     * {@inheritDoc} @param ids the ids
+     *
+     * @return the iterable
+     */
+    @Override public Iterable<V> findAllById(Iterable<K> ids) {
+        if (ids instanceof Set)
+            return cache.getAll((Set<K>)ids).values();
 
-        if (ids instanceof Collection) {
-            return cache.getAll(new HashSet<>((Collection<ID>)ids)).values();
-        }
+        if (ids instanceof Collection)
+            return cache.getAll(new HashSet<>((Collection<K>)ids)).values();
 
-        TreeSet<ID> keys = new TreeSet<>();
+        TreeSet<K> keys = new TreeSet<>();
 
-        for (ID id : ids) {
+        for (K id : ids)
             keys.add(id);
-        }
 
         return cache.getAll(keys).values();
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public long count() {
+    /**
+     * {@inheritDoc} @return the long
+     */
+    @Override public long count() {
         return cache.size(CachePeekMode.PRIMARY);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void deleteById(ID id) {
+    /**
+     * {@inheritDoc} @param id the id
+     */
+    @Override public void deleteById(K id) {
         cache.remove(id);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void delete(T entity) {
+    /**
+     * {@inheritDoc} @param entity the entity
+     */
+    @Override public void delete(V entity) {
         throw new UnsupportedOperationException("Use IgniteRepository.deleteById(key) method instead.");
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void deleteAll(Iterable<? extends T> entities) {
+    /**
+     * {@inheritDoc} @param entities the entities
+     */
+    @Override public void deleteAll(Iterable<? extends V> entities) {
         throw new UnsupportedOperationException("Use IgniteRepository.deleteAllById(keys) method instead.");
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void deleteAllById(Iterable<ID> ids) {
+    /**
+     * {@inheritDoc} @param ids the ids
+     */
+    @Override public void deleteAllById(Iterable<K> ids) {
         if (ids instanceof Set) {
-            cache.removeAll((Set<ID>)ids);
+            cache.removeAll((Set<K>)ids);
             return;
         }
 
         if (ids instanceof Collection) {
-            cache.removeAll(new HashSet<>((Collection<ID>)ids));
+            cache.removeAll(new HashSet<>((Collection<K>)ids));
             return;
         }
 
-        TreeSet<ID> keys = new TreeSet<>();
+        TreeSet<K> keys = new TreeSet<>();
 
-        for (ID id : ids) {
+        for (K id : ids)
             keys.add(id);
-        }
 
         cache.removeAll(keys);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void deleteAll() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override public void deleteAll() {
         cache.clear();
     }
 

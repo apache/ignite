@@ -31,28 +31,73 @@ package org.apache.ignite.springdata22.repository.config;
  * @author Manuel Núñez Sánchez (manuel.nunez@hawkore.com)
  */
 public class DynamicQueryConfig {
-
+    /**
+     * Value.
+     */
     private String value = "";
-    private boolean textQuery = false;
-    private boolean forceFieldsQuery = false;
-    private boolean collocated = false;
-    private int timeout = 0;
-    private boolean enforceJoinOrder = false;
-    private boolean distributedJoins = false;
-    private boolean replicatedOnly = false;
-    private boolean lazy = false;
-    private boolean local = false;
+
+    /**
+     * Text query.
+     */
+    private boolean textQuery;
+
+    /**
+     * Force fields query.
+     */
+    private boolean forceFieldsQry;
+
+    /**
+     * Collocated.
+     */
+    private boolean collocated;
+
+    /**
+     * Timeout.
+     */
+    private int timeout;
+
+    /**
+     * Enforce join order.
+     */
+    private boolean enforceJoinOrder;
+
+    /**
+     * Distributed joins.
+     */
+    private boolean distributedJoins;
+
+    /**
+     * Replicated only.
+     */
+    private boolean replicatedOnly;
+
+    /**
+     * Lazy.
+     */
+    private boolean lazy;
+
+    /**
+     * Local.
+     */
+    private boolean local;
+
+    /**
+     * Parts.
+     */
     private int[] parts;
+
+    /**
+     * Limit.
+     */
     private int limit;
 
     /**
      * From Query annotation.
      *
-     * @param queryConfiguration
-     *     the query configuration
+     * @param queryConfiguration the query configuration
      * @return the dynamic query config
      */
-    public static DynamicQueryConfig fromQueryAnnotation(org.apache.ignite.springdata22.repository.config.Query queryConfiguration) {
+    public static DynamicQueryConfig fromQueryAnnotation(Query queryConfiguration) {
         DynamicQueryConfig config = new DynamicQueryConfig();
         if (queryConfiguration != null) {
             config.value = queryConfiguration.value();
@@ -88,23 +133,23 @@ public class DynamicQueryConfig {
     }
 
     /**
-     * Force SqlFieldsQuery type, deactivating auto-detection based on SELECT statement.
-     * Useful for non SELECT statements or to not return hidden fields on SELECT * statements.
+     * Force SqlFieldsQuery type, deactivating auto-detection based on SELECT statement. Useful for non SELECT
+     * statements or to not return hidden fields on SELECT * statements.
      *
      * @return the boolean
      */
     public boolean forceFieldsQuery() {
-        return forceFieldsQuery;
+        return forceFieldsQry;
     }
 
     /**
      * Sets flag defining if this query is collocated.
      * <p>
-     * Collocation flag is used for optimization purposes of queries with GROUP BY statements.
-     * Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.
-     * If you know in advance that the elements of your query selection are collocated together on the same node and
-     * you group by collocated key (primary or affinity key), then Ignite can make significant performance and network
-     * optimizations by grouping data on remote nodes.
+     * Collocation flag is used for optimization purposes of queries with GROUP BY statements. Whenever Ignite executes
+     * a distributed query, it sends sub-queries to individual cluster members. If you know in advance that the elements
+     * of your query selection are collocated together on the same node and you group by collocated key (primary or
+     * affinity key), then Ignite can make significant performance and network optimizations by grouping data on remote
+     * nodes.
      *
      * <p>
      * Only applicable to SqlFieldsQuery
@@ -116,9 +161,8 @@ public class DynamicQueryConfig {
     }
 
     /**
-     * Query timeout in millis.
-     * Sets the query execution timeout.
-     * Query will be automatically cancelled if the execution timeout is exceeded. Zero value disables timeout
+     * Query timeout in millis. Sets the query execution timeout. Query will be automatically cancelled if the execution
+     * timeout is exceeded. Zero value disables timeout
      *
      * <p>
      * Only applicable to SqlFieldsQuery and SqlQuery
@@ -130,12 +174,11 @@ public class DynamicQueryConfig {
     }
 
     /**
-     * Sets flag to enforce join order of tables in the query. If set to {@code true}
-     * query optimizer will not reorder tables in join. By default is {@code false}.
+     * Sets flag to enforce join order of tables in the query. If set to {@code true} query optimizer will not reorder
+     * tables in join. By default is {@code false}.
      * <p>
-     * It is not recommended to enable this property until you are sure that
-     * your indexes and the query itself are correct and tuned as much as possible but
-     * query optimizer still produces wrong join order.
+     * It is not recommended to enable this property until you are sure that your indexes and the query itself are
+     * correct and tuned as much as possible but query optimizer still produces wrong join order.
      *
      * <p>
      * Only applicable to SqlFieldsQuery
@@ -158,8 +201,7 @@ public class DynamicQueryConfig {
     }
 
     /**
-     * Specify if the query contains only replicated tables.
-     * This is a hint for potentially more effective execution.
+     * Specify if the query contains only replicated tables. This is a hint for potentially more effective execution.
      * <p>
      * Only applicable to SqlFieldsQuery and SqlQuery
      *
@@ -174,8 +216,8 @@ public class DynamicQueryConfig {
     /**
      * Sets lazy query execution flag.
      * <p>
-     * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small
-     * and medium result sets this provides optimal performance and minimize duration of internal database locks, thus
+     * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small and
+     * medium result sets this provides optimal performance and minimize duration of internal database locks, thus
      * increasing concurrency.
      * <p>
      * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
@@ -202,8 +244,8 @@ public class DynamicQueryConfig {
     }
 
     /**
-     * Sets partitions for a query.
-     * The query will be executed only on nodes which are primary for specified partitions.
+     * Sets partitions for a query. The query will be executed only on nodes which are primary for specified
+     * partitions.
      * <p>
      * Note what passed array'll be sorted in place for performance reasons, if it wasn't sorted yet.
      * <p>
@@ -227,8 +269,7 @@ public class DynamicQueryConfig {
     /**
      * Sets value.
      *
-     * @param value
-     *     the value
+     * @param value the value
      * @return this for chaining
      */
     public DynamicQueryConfig setValue(String value) {
@@ -239,8 +280,7 @@ public class DynamicQueryConfig {
     /**
      * Sets text query.
      *
-     * @param textQuery
-     *     the text query
+     * @param textQuery the text query
      * @return this for chaining
      */
     public DynamicQueryConfig setTextQuery(boolean textQuery) {
@@ -251,20 +291,18 @@ public class DynamicQueryConfig {
     /**
      * Sets force fields query.
      *
-     * @param forceFieldsQuery
-     *     the force fields query
+     * @param forceFieldsQuery the force fields query
      * @return this for chaining
      */
     public DynamicQueryConfig setForceFieldsQuery(boolean forceFieldsQuery) {
-        this.forceFieldsQuery = forceFieldsQuery;
+        forceFieldsQry = forceFieldsQuery;
         return this;
     }
 
     /**
      * Sets collocated.
      *
-     * @param collocated
-     *     the collocated
+     * @param collocated the collocated
      * @return this for chaining
      */
     public DynamicQueryConfig setCollocated(boolean collocated) {
@@ -275,8 +313,7 @@ public class DynamicQueryConfig {
     /**
      * Sets timeout.
      *
-     * @param timeout
-     *     the timeout
+     * @param timeout the timeout
      * @return this for chaining
      */
     public DynamicQueryConfig setTimeout(int timeout) {
@@ -287,8 +324,7 @@ public class DynamicQueryConfig {
     /**
      * Sets enforce join order.
      *
-     * @param enforceJoinOrder
-     *     the enforce join order
+     * @param enforceJoinOrder the enforce join order
      * @return this for chaining
      */
     public DynamicQueryConfig setEnforceJoinOrder(boolean enforceJoinOrder) {
@@ -299,8 +335,7 @@ public class DynamicQueryConfig {
     /**
      * Sets distributed joins.
      *
-     * @param distributedJoins
-     *     the distributed joins
+     * @param distributedJoins the distributed joins
      * @return this for chaining
      */
     public DynamicQueryConfig setDistributedJoins(boolean distributedJoins) {
@@ -311,8 +346,7 @@ public class DynamicQueryConfig {
     /**
      * Sets replicated only.
      *
-     * @param replicatedOnly
-     *     the replicated only
+     * @param replicatedOnly the replicated only
      * @return this for chaining
      */
     public DynamicQueryConfig setReplicatedOnly(boolean replicatedOnly) {
@@ -323,8 +357,7 @@ public class DynamicQueryConfig {
     /**
      * Sets lazy.
      *
-     * @param lazy
-     *     the lazy
+     * @param lazy the lazy
      * @return this for chaining
      */
     public DynamicQueryConfig setLazy(boolean lazy) {
@@ -335,8 +368,7 @@ public class DynamicQueryConfig {
     /**
      * Sets local.
      *
-     * @param local
-     *     the local
+     * @param local the local
      * @return this for chaining
      */
     public DynamicQueryConfig setLocal(boolean local) {
@@ -347,8 +379,7 @@ public class DynamicQueryConfig {
     /**
      * Sets parts.
      *
-     * @param parts
-     *     the parts
+     * @param parts the parts
      * @return this for chaining
      */
     public DynamicQueryConfig setParts(int[] parts) {

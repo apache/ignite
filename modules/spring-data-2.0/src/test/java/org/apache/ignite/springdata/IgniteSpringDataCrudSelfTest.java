@@ -23,17 +23,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
-
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.query.RunningQueryManager;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.FullNameProjection;
 import org.apache.ignite.springdata.misc.Person;
-import org.apache.ignite.springdata.misc.PersonKey;
 import org.apache.ignite.springdata.misc.PersonProjection;
 import org.apache.ignite.springdata.misc.PersonRepository;
-import org.apache.ignite.springdata.misc.PersonRepositoryWithCompoundKey;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -44,9 +38,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /** Repository. */
     private static PersonRepository repo;
-
-    /** Repository. */
-    private static PersonRepositoryWithCompoundKey repoWithCompoundKey;
 
     /** Context. */
     private static AnnotationConfigApplicationContext ctx;
@@ -65,8 +56,6 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         ctx.refresh();
 
         repo = ctx.getBean(PersonRepository.class);
-
-        repoWithCompoundKey = ctx.getBean(PersonRepositoryWithCompoundKey.class);
     }
 
     /** {@inheritDoc} */
@@ -343,6 +332,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         List<Person> person = repo.findByFirstName("uniquePerson");
         assertEquals(person.get(0).getSecondName(), "updatedUniqueSecondName");
     }
+
     /**
      * Update with a @Query a record
      */
@@ -356,6 +346,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         List<PersonProjection> person = repo.queryByFirstNameWithProjection("uniquePerson");
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName1");
     }
+
     @Test
     public void testUpdateQueryMixedCaseProjectionNamedParameter() {
         final String newSecondName = "updatedUniqueSecondName2";
@@ -366,6 +357,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedParameter("uniquePerson");
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName2");
     }
+
     @Test
     public void testUpdateQueryMixedCaseDynamicProjectionNamedParameter() {
         final String newSecondName = "updatedUniqueSecondName2";
@@ -379,6 +371,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         List<FullNameProjection> personFullName = repo.queryByFirstNameWithProjectionNamedParameter(FullNameProjection.class, "uniquePerson");
         assertEquals(personFullName.get(0).getFullName(), "uniquePerson updatedUniqueSecondName2");
     }
+
     @Test
     public void testUpdateQueryOneMixedCaseDynamicProjectionNamedParameter() {
         final String newSecondName = "updatedUniqueSecondName2";
@@ -392,6 +385,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         FullNameProjection personFullName = repo.queryOneByFirstNameWithProjectionNamedParameter(FullNameProjection.class, "uniquePerson");
         assertEquals(personFullName.getFullName(), "uniquePerson updatedUniqueSecondName2");
     }
+
     @Test
     public void testUpdateQueryMixedCaseProjectionIndexedParameter() {
         final String newSecondName = "updatedUniqueSecondName3";
@@ -402,6 +396,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedIndexedParameter("notUsed","uniquePerson");
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName3");
     }
+
     @Test
     public void testUpdateQueryMixedCaseProjectionIndexedParameterLuceneTextQuery() {
         final String newSecondName = "updatedUniqueSecondName4";
@@ -412,6 +407,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         List<PersonProjection> person = repo.textQueryByFirstNameWithProjectionNamedParameter("uniquePerson");
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName4");
     }
+
     @Test
     public void testUpdateQueryMixedCaseProjectionNamedParameterAndTemplateDomainEntityVariable() {
         final String newSecondName = "updatedUniqueSecondName5";
@@ -422,6 +418,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedParameterAndTemplateDomainEntityVariable("uniquePerson");
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName5");
     }
+
     @Test
     public void testUpdateQueryMixedCaseProjectionNamedParameterWithSpELExtension() {
         final String newSecondName = "updatedUniqueSecondName6";
@@ -433,6 +430,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName6");
         assertEquals(person.get(0).getFirstName(), person.get(0).getFirstNameTransformed());
     }
+
     /**
      * Update with a wrong @Query
      */
@@ -443,7 +441,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         try {
             rowsUpdated = repo.setWrongFixedSecondName(newSecondName, "uniquePerson");
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             //expected
         }
 
@@ -451,70 +449,5 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         List<Person> person = repo.findByFirstName("uniquePerson");
         assertEquals(person.get(0).getSecondName(), "uniqueLastName");
-    }
-
-    /** */
-    @Test
-    public void shouldDeleteAllById() {
-        List<PersonKey> ids = prepareDataWithNonComparableKeys();
-
-        repoWithCompoundKey.deleteAllById(ids);
-
-        assertEquals(0, repoWithCompoundKey.count());
-    }
-
-    /** */
-    @Test
-    public void shouldFindAllById() {
-        List<PersonKey> ids = prepareDataWithNonComparableKeys();
-
-        Iterable<Person> res = repoWithCompoundKey.findAllById(ids);
-
-        assertEquals(2, res.spliterator().estimateSize());
-    }
-
-    /** */
-    private List<PersonKey> prepareDataWithNonComparableKeys() {
-        List<PersonKey> ids = new ArrayList<>();
-
-        PersonKey key = new PersonKey(1, 1);
-        ids.add(key);
-
-        repoWithCompoundKey.save(key, new Person("test1", "test1"));
-
-        key = new PersonKey(2, 2);
-        ids.add(key);
-
-        repoWithCompoundKey.save(key, new Person("test2", "test2"));
-
-        assertEquals(2, repoWithCompoundKey.count());
-
-        return ids;
-    }
-
-    /** */
-    @Test
-    public void shouldNotLeakCursorsInRunningQueryManager() {
-        RunningQueryManager runningQryMgr = ((IgniteH2Indexing)((IgniteKernal)repo.ignite()).context().query().getIndexing()).runningQueryManager();
-
-        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
-
-        List<Person> res = repo.simpleQuery("person0");
-
-        assertEquals(1, res.size());
-
-        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
-
-        PersonProjection person = repo.findTopBySecondNameStartingWith("lastName");
-
-        assertNotNull(person);
-
-        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
-
-        long cnt = repo.countByFirstName("person0");
-
-        assertEquals(1, cnt);
-
-        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
     }
 }

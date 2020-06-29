@@ -17,7 +17,6 @@ package org.apache.ignite.springdata20.repository.query.spel;
 
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.springdata20.repository.query.spel.SpelQueryContext.SpelExtractor;
 import org.springframework.data.repository.query.EvaluationContextProvider;
 import org.springframework.data.repository.query.Parameters;
@@ -36,21 +35,35 @@ import org.springframework.util.Assert;
  * @since spring data 2.1 - transition code (borrowed and adapted code from version 2.1)
  */
 public class SpelEvaluator {
-
+    /**
+     * Parser.
+     */
     private static final SpelExpressionParser PARSER = new SpelExpressionParser();
-    private final EvaluationContextProvider evaluationContextProvider;
+
+    /**
+     * Evaluation context provider.
+     */
+    private final EvaluationContextProvider evaluationCtxProvider;
+
+    /**
+     * Parameters.
+     */
     private final Parameters<?, ?> parameters;
+
+    /**
+     * Extractor.
+     */
     private final SpelExtractor extractor;
 
     /**
-     * @param evaluationContextProvider Evaluation context provider.
-     * @param parameters Parameters.
-     * @param extractor Extractor.
+     * @param evaluationCtxProvider Evaluation context provider.
+     * @param parameters            Parameters.
+     * @param extractor             Extractor.
      */
-    public SpelEvaluator(EvaluationContextProvider evaluationContextProvider,
+    public SpelEvaluator(EvaluationContextProvider evaluationCtxProvider,
         Parameters<?, ?> parameters,
         SpelExtractor extractor) {
-        this.evaluationContextProvider = evaluationContextProvider;
+        this.evaluationCtxProvider = evaluationCtxProvider;
         this.parameters = parameters;
         this.extractor = extractor;
     }
@@ -58,38 +71,37 @@ public class SpelEvaluator {
     /**
      * Evaluate all the SpEL expressions in {@link #parameters} based on values provided as an argument.
      *
-     * @param values
-     *     Parameter values. Must not be {@literal null}.
+     * @param values Parameter values. Must not be {@literal null}.
      * @return a map from parameter name to evaluated value. Guaranteed to be not {@literal null}.
      */
     public Map<String, Object> evaluate(Object[] values) {
 
         Assert.notNull(values, "Values must not be null.");
 
-        EvaluationContext evaluationContext = evaluationContextProvider.getEvaluationContext(parameters, values);
+        EvaluationContext evaluationCtx = evaluationCtxProvider.getEvaluationContext(parameters, values);
 
         return extractor.getParameters().collect(Collectors.toMap(//
-            it -> it.getKey(), //
-            it -> getSpElValue(evaluationContext, it.getValue()) //
+            Map.Entry::getKey, //
+            it -> getSpElValue(evaluationCtx, it.getValue()) //
         ));
     }
 
     /**
      * Returns the query string produced by the intermediate SpEL expression collection step.
      *
-     * @return the query string
+     * @return the query string produced by the intermediate SpEL expression collection step
      */
     public String getQueryString() {
         return extractor.getQueryString();
     }
 
     /**
-     * @param evaluationContext Evaluation context.
-     * @param expression Expression.
+     * @param evaluationCtx Evaluation context.
+     * @param expression    Expression.
      */
     @Nullable
-    private static Object getSpElValue(EvaluationContext evaluationContext, String expression) {
-        return PARSER.parseExpression(expression).getValue(evaluationContext);
+    private static Object getSpElValue(EvaluationContext evaluationCtx, String expression) {
+        return PARSER.parseExpression(expression).getValue(evaluationCtx);
     }
 
 }

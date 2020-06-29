@@ -16,7 +16,6 @@
 package org.apache.ignite.springdata20.repository.query;
 
 import java.util.List;
-
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
@@ -27,76 +26,76 @@ import org.springframework.util.StringUtils;
  * @since 2.0.3
  */
 interface DeclaredQuery {
-	/**
-	 * Creates a {@literal DeclaredQuery} from a query {@literal String}.
-	 *
-	 * @param query might be {@literal null} or empty.
-	 * @return a {@literal DeclaredQuery} instance even for a {@literal null} or empty argument.
-	 */
-	static DeclaredQuery of(@Nullable String query) {
-		return StringUtils.isEmpty(query) ? EmptyDeclaredQuery.EMPTY_QUERY : new StringQuery(query);
-	}
+    /**
+     * Creates a {@literal DeclaredQuery} from a query {@literal String}.
+     *
+     * @param qry might be {@literal null} or empty.
+     * @return a {@literal DeclaredQuery} instance even for a {@literal null} or empty argument.
+     */
+    public static DeclaredQuery of(@Nullable String qry) {
+        return StringUtils.isEmpty(qry) ? EmptyDeclaredQuery.EMPTY_QUERY : new StringQuery(qry);
+    }
 
-	/**
-	 * @return whether the underlying query has at least one named parameter.
-	 */
-	public boolean hasNamedParameter();
+    /**
+     * @return whether the underlying query has at least one named parameter.
+     */
+    public boolean hasNamedParameter();
 
-	/**
-	 * Returns the query string.
-	 */
-	public String getQueryString();
+    /**
+     * Returns the query string.
+     */
+    public String getQueryString();
 
-	/**
-	 * Returns the main alias used in the query.
-	 *
-	 * @return the alias
-	 */
-	@Nullable
-	public String getAlias();
+    /**
+     * Returns the main alias used in the query.
+     *
+     * @return the alias
+     */
+    @Nullable
+    public String getAlias();
 
-	/**
-	 * Returns whether the query is using a constructor expression.
-	 *
-	 * @since 1.10
-	 */
-	public boolean hasConstructorExpression();
+    /**
+     * Returns whether the query is using a constructor expression.
+     *
+     * @since 1.10
+     */
+    public boolean hasConstructorExpression();
 
-	/**
-	 * Returns whether the query uses the default projection, i.e. returns the main alias defined for the query.
-	 */
-	public boolean isDefaultProjection();
+    /**
+     * Returns whether the query uses the default projection, i.e. returns the main alias defined for the query.
+     */
+    public boolean isDefaultProjection();
 
-	/**
-	 * Returns the {@link StringQuery.ParameterBinding}s registered.
-	 */
-	public List<StringQuery.ParameterBinding> getParameterBindings();
+    /**
+     * Returns the {@link StringQuery.ParameterBinding}s registered.
+     */
+    public List<StringQuery.ParameterBinding> getParameterBindings();
 
-	/**
-	 * Creates a new {@literal DeclaredQuery} representing a count query, i.e. a query returning the number of rows to be
-	 * expected from the original query, either derived from the query wrapped by this instance or from the information
-	 * passed as arguments.
-	 *
-	 * @param countQuery an optional query string to be used if present.
-	 * @param countQueryProjection an optional return type for the query.
-	 * @return a new {@literal DeclaredQuery} instance.
-	 */
-	public DeclaredQuery deriveCountQuery(@Nullable String countQuery, @Nullable String countQueryProjection);
+    /**
+     * Creates a new {@literal DeclaredQuery} representing a count query, i.e. a query returning the number of rows to
+     * be expected from the original query, either derived from the query wrapped by this instance or from the
+     * information passed as arguments.
+     *
+     * @param cntQry           an optional query string to be used if present.
+     * @param cntQryProjection an optional return type for the query.
+     * @return a new {@literal DeclaredQuery} instance.
+     */
+    public DeclaredQuery deriveCountQuery(@Nullable String cntQry, @Nullable String cntQryProjection);
 
-	/**
-	 * @return whether paging is implemented in the query itself, e.g. using SpEL expressions.
-	 * @since 2.0.6
-	 */
-	public default boolean usesPaging() {
-		return false;
-	}
+    /**
+     * @return whether paging is implemented in the query itself, e.g. using SpEL expressions.
+     * @since 2.0.6
+     */
+    public default boolean usesPaging() {
+        return false;
+    }
 
-	/**
-	 * Returns whether the query uses JDBC style parameters, i.e. parameters denoted by a simple ? without any index or
-	 * name.
-	 *
-	 * @return Whether the query uses JDBC style parameters.
-	 * @since 2.0.6
-	 */
-	public boolean usesJdbcStyleParameters();
+    /**
+     * Returns whether the query uses JDBC style parameters, i.e. parameters denoted by a simple ? without any index or
+     * name.
+     *
+     * @return Whether the query uses JDBC style parameters.
+     * @since 2.0.6
+     */
+    public boolean usesJdbcStyleParameters();
 }

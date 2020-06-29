@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.springdata20.repository.config;
 
 import java.lang.annotation.Documented;
@@ -31,8 +30,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface Query {
     /**
-     * Query text string. If not provided, Ignite query generator for Spring Data framework will be used
-     * to generate one (only if textQuery = false (default))
+     * Query text string. If not provided, Ignite query generator for Spring Data framework will be used to generate one
+     * (only if textQuery = false (default))
      */
     String value() default "";
 
@@ -42,19 +41,19 @@ public @interface Query {
     boolean textQuery() default false;
 
     /**
-     * Force SqlFieldsQuery type, deactivating auto-detection based on SELECT statement.
-     * Useful for non SELECT statements or to not return hidden fields on SELECT * statements.
+     * Force SqlFieldsQuery type, deactivating auto-detection based on SELECT statement. Useful for non SELECT
+     * statements or to not return hidden fields on SELECT * statements.
      */
     boolean forceFieldsQuery() default false;
 
     /**
      * Sets flag defining if this query is collocated.
      * <p>
-     * Collocation flag is used for optimization purposes of queries with GROUP BY statements.
-     * Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.
-     * If you know in advance that the elements of your query selection are collocated together on the same node and
-     * you group by collocated key (primary or affinity key), then Ignite can make significant performance and network
-     * optimizations by grouping data on remote nodes.
+     * Collocation flag is used for optimization purposes of queries with GROUP BY statements. Whenever Ignite executes
+     * a distributed query, it sends sub-queries to individual cluster members. If you know in advance that the elements
+     * of your query selection are collocated together on the same node and you group by collocated key (primary or
+     * affinity key), then Ignite can make significant performance and network optimizations by grouping data on remote
+     * nodes.
      *
      * <p>
      * Only applicable to SqlFieldsQuery
@@ -62,9 +61,8 @@ public @interface Query {
     boolean collocated() default false;
 
     /**
-     * Query timeout in millis.
-     * Sets the query execution timeout.
-     * Query will be automatically cancelled if the execution timeout is exceeded. Zero value disables timeout
+     * Query timeout in millis. Sets the query execution timeout. Query will be automatically cancelled if the execution
+     * timeout is exceeded. Zero value disables timeout
      *
      * <p>
      * Only applicable to SqlFieldsQuery and SqlQuery
@@ -72,12 +70,11 @@ public @interface Query {
     int timeout() default 0;
 
     /**
-     * Sets flag to enforce join order of tables in the query. If set to {@code true}
-     * query optimizer will not reorder tables in join. By default is {@code false}.
+     * Sets flag to enforce join order of tables in the query. If set to {@code true} query optimizer will not reorder
+     * tables in join. By default is {@code false}.
      * <p>
-     * It is not recommended to enable this property until you are sure that
-     * your indexes and the query itself are correct and tuned as much as possible but
-     * query optimizer still produces wrong join order.
+     * It is not recommended to enable this property until you are sure that your indexes and the query itself are
+     * correct and tuned as much as possible but query optimizer still produces wrong join order.
      *
      * <p>
      * Only applicable to SqlFieldsQuery
@@ -92,10 +89,10 @@ public @interface Query {
     boolean distributedJoins() default false;
 
     /**
-     * Specify if the query contains only replicated tables.
-     * This is a hint for potentially more effective execution.
+     * Specify if the query contains only replicated tables. This is a hint for potentially more effective execution.
      * <p>
      * Only applicable to SqlFieldsQuery and SqlQuery
+     *
      * @deprecated No longer used as of Apache Ignite 2.8.
      */
     @Deprecated
@@ -104,8 +101,8 @@ public @interface Query {
     /**
      * Sets lazy query execution flag.
      * <p>
-     * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small
-     * and medium result sets this provides optimal performance and minimize duration of internal database locks, thus
+     * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small and
+     * medium result sets this provides optimal performance and minimize duration of internal database locks, thus
      * increasing concurrency.
      * <p>
      * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
@@ -124,8 +121,8 @@ public @interface Query {
     boolean local() default false;
 
     /**
-     * Sets partitions for a query.
-     * The query will be executed only on nodes which are primary for specified partitions.
+     * Sets partitions for a query. The query will be executed only on nodes which are primary for specified
+     * partitions.
      * <p>
      * Note what passed array'll be sorted in place for performance reasons, if it wasn't sorted yet.
      * <p>
@@ -134,11 +131,11 @@ public @interface Query {
     int[] parts() default {};
 
     /**
-     * Specify whether the annotated method must provide a non null {@link DynamicQueryConfig} parameter
-     * with a non empty value (query string) or {@link DynamicQueryConfig#textQuery()} == true.
+     * Specify whether the annotated method must provide a non null {@link DynamicQueryConfig} parameter with a non
+     * empty value (query string) or {@link DynamicQueryConfig#textQuery()} == true.
      * <p>
-     * Please, note that this annotation parameters will be ignored in favor of those defined in
-     * {@link DynamicQueryConfig} parameter if present (runtime ignite query tuning).
+     * Please, note that  {@link DynamicQueryConfig#textQuery()} annotation parameters will be ignored in favor of those
+     * defined in {@link DynamicQueryConfig} parameter if present (runtime ignite query tuning).
      */
     boolean dynamicQuery() default false;
 

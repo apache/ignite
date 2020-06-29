@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.springframework.data.util.Streamable;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -45,45 +44,77 @@ import static java.util.regex.Pattern.compile;
  * @author Reda.Housni -Alaoui
  */
 public abstract class QueryUtils {
-
     /**
      * The constant COUNT_QUERY_STRING.
      */
     public static final String COUNT_QUERY_STRING = "select count(%s) from %s x";
+
     /**
      * The constant DELETE_ALL_QUERY_STRING.
      */
     public static final String DELETE_ALL_QUERY_STRING = "delete from %s x";
-    // Used Regex/Unicode categories (see http://www.unicode.org/reports/tr18/#General_Category_Property):
-    // Z Separator
-    // Cc Control
-    // Cf Format
-    // P Punctuation
+
+    /**
+     * Used Regex/Unicode categories (see http://www.unicode.org/reports/tr18/#General_Category_Property): Z Separator
+     * Cc Control Cf Format P Punctuation
+     */
     private static final String IDENTIFIER = "[._[\\P{Z}&&\\P{Cc}&&\\P{Cf}&&\\P{P}]]+";
+
     /**
      * The Colon no double colon.
      */
     static final String COLON_NO_DOUBLE_COLON = "(?<![:\\\\]):";
+
     /**
      * The Identifier group.
      */
     static final String IDENTIFIER_GROUP = String.format("(%s)", IDENTIFIER);
+
+    /** */
     private static final String COUNT_REPLACEMENT_TEMPLATE = "select count(%s) $5$6$7";
+
+    /** */
     private static final String SIMPLE_COUNT_VALUE = "$2";
+
+    /** */
     private static final String COMPLEX_COUNT_VALUE = "$3$6";
+
+    /** */
     private static final String ORDER_BY_PART = "(?iu)\\s+order\\s+by\\s+.*$";
+
+    /** */
     private static final Pattern ALIAS_MATCH;
+
+    /** */
     private static final Pattern COUNT_MATCH;
+
+    /** */
     private static final Pattern PROJECTION_CLAUSE = Pattern
-                                                         .compile("select\\s+(.+)\\s+from", Pattern.CASE_INSENSITIVE);
+        .compile("select\\s+(.+)\\s+from", Pattern.CASE_INSENSITIVE);
+
+    /** */
     private static final String JOIN = "join\\s+(fetch\\s+)?" + IDENTIFIER + "\\s+(as\\s+)?" + IDENTIFIER_GROUP;
+
+    /** */
     private static final Pattern JOIN_PATTERN = Pattern.compile(JOIN, Pattern.CASE_INSENSITIVE);
+
+    /** */
     private static final String EQUALS_CONDITION_STRING = "%s.%s = :%s";
+
+    /** */
     private static final Pattern NAMED_PARAMETER = Pattern.compile(
         COLON_NO_DOUBLE_COLON + IDENTIFIER + "|\\#" + IDENTIFIER, CASE_INSENSITIVE);
+
+    /** */
     private static final Pattern CONSTRUCTOR_EXPRESSION;
+
+    /** */
     private static final int QUERY_JOIN_ALIAS_GROUP_INDEX = 3;
+
+    /** */
     private static final int VARIABLE_NAME_GROUP_INDEX = 4;
+
+    /** */
     private static final Pattern FUNCTION_PATTERN;
 
     static {
@@ -140,35 +171,30 @@ public abstract class QueryUtils {
     /**
      * Returns the query string to execute an exists query for the given id attributes.
      *
-     * @param entityName
-     *     the name of the entity to create the query for, must not be {@literal null}.
-     * @param countQueryPlaceHolder
-     *     the placeholder for the count clause, must not be {@literal null}.
-     * @param idAttributes
-     *     the id attributes for the entity, must not be {@literal null}.
+     * @param entityName        the name of the entity to create the query for, must not be {@literal null}.
+     * @param cntQryPlaceHolder the placeholder for the count clause, must not be {@literal null}.
+     * @param idAttrs           the id attributes for the entity, must not be {@literal null}.
      * @return the exists query string
      */
     public static String getExistsQueryString(String entityName,
-        String countQueryPlaceHolder,
-        Iterable<String> idAttributes) {
+        String cntQryPlaceHolder,
+        Iterable<String> idAttrs) {
 
-        String whereClause = Streamable.of(idAttributes).stream() //
-                                 .map(idAttribute -> String.format(EQUALS_CONDITION_STRING, "x", idAttribute,
-                                     idAttribute)) //
-                                 .collect(Collectors.joining(" AND ", " WHERE ", ""));
+        String whereClause = Streamable.of(idAttrs).stream() //
+            .map(idAttribute -> String.format(EQUALS_CONDITION_STRING, "x", idAttribute,
+                idAttribute)) //
+            .collect(Collectors.joining(" AND ", " WHERE ", ""));
 
-        return String.format(COUNT_QUERY_STRING, countQueryPlaceHolder, entityName) + whereClause;
+        return String.format(COUNT_QUERY_STRING, cntQryPlaceHolder, entityName) + whereClause;
     }
 
     /**
      * Returns the query string for the given class name.
      *
-     * @param template
-     *     must not be {@literal null}.
-     * @param entityName
-     *     must not be {@literal null}.
+     * @param template   must not be {@literal null}.
+     * @param entityName must not be {@literal null}.
      * @return the template with placeholders replaced by the {@literal entityName}. Guaranteed to be not {@literal
-     *     null}.
+     * null}.
      */
     public static String getQueryString(String template, String entityName) {
 
@@ -180,21 +206,19 @@ public abstract class QueryUtils {
     /**
      * Returns the aliases used for {@code left (outer) join}s.
      *
-     * @param query
-     *     a query string to extract the aliases of joins from. Must not be {@literal null}.
+     * @param qry a query string to extract the aliases of joins from. Must not be {@literal null}.
      * @return a {@literal Set} of aliases used in the query. Guaranteed to be not {@literal null}.
      */
-    static Set<String> getOuterJoinAliases(String query) {
+    static Set<String> getOuterJoinAliases(String qry) {
 
         Set<String> result = new HashSet<>();
-        Matcher matcher = JOIN_PATTERN.matcher(query);
+        Matcher matcher = JOIN_PATTERN.matcher(qry);
 
         while (matcher.find()) {
 
             String alias = matcher.group(QUERY_JOIN_ALIAS_GROUP_INDEX);
-            if (StringUtils.hasText(alias)) {
+            if (StringUtils.hasText(alias))
                 result.add(alias);
-            }
         }
 
         return result;
@@ -203,22 +227,20 @@ public abstract class QueryUtils {
     /**
      * Returns the aliases used for aggregate functions like {@code SUM, COUNT, ...}.
      *
-     * @param query
-     *     a {@literal String} containing a query. Must not be {@literal null}.
+     * @param qry a {@literal String} containing a query. Must not be {@literal null}.
      * @return a {@literal Set} containing all found aliases. Guaranteed to be not {@literal null}.
      */
-    static Set<String> getFunctionAliases(String query) {
+    static Set<String> getFunctionAliases(String qry) {
 
         Set<String> result = new HashSet<>();
-        Matcher matcher = FUNCTION_PATTERN.matcher(query);
+        Matcher matcher = FUNCTION_PATTERN.matcher(qry);
 
         while (matcher.find()) {
 
             String alias = matcher.group(1);
 
-            if (StringUtils.hasText(alias)) {
+            if (StringUtils.hasText(alias))
                 result.add(alias);
-            }
         }
 
         return result;
@@ -227,16 +249,15 @@ public abstract class QueryUtils {
     /**
      * Resolves the alias for the entity to be retrieved from the given JPA query.
      *
-     * @param query
-     *     must not be {@literal null}.
+     * @param qry must not be {@literal null}.
      * @return Might return {@literal null}.
      * @deprecated use {@link DeclaredQuery#getAlias()} instead.
      */
     @Nullable
     @Deprecated
-    public static String detectAlias(String query) {
+    public static String detectAlias(String qry) {
 
-        Matcher matcher = ALIAS_MATCH.matcher(query);
+        Matcher matcher = ALIAS_MATCH.matcher(qry);
 
         return matcher.find() ? matcher.group(2) : null;
     }
@@ -244,46 +265,43 @@ public abstract class QueryUtils {
     /**
      * Creates a count projected query from the given original query.
      *
-     * @param originalQuery
-     *     must not be {@literal null} or empty.
+     * @param originalQry must not be {@literal null} or empty.
      * @return Guaranteed to be not {@literal null}.
      * @deprecated use {@link DeclaredQuery#deriveCountQuery(String, String)} instead.
      */
     @Deprecated
-    public static String createCountQueryFor(String originalQuery) {
-        return createCountQueryFor(originalQuery, null);
+    public static String createCountQueryFor(String originalQry) {
+        return createCountQueryFor(originalQry, null);
     }
 
     /**
      * Creates a count projected query from the given original query.
      *
-     * @param originalQuery
-     *     must not be {@literal null}.
-     * @param countProjection
-     *     may be {@literal null}.
+     * @param originalQry   must not be {@literal null}.
+     * @param cntProjection may be {@literal null}.
      * @return a query String to be used a count query for pagination. Guaranteed to be not {@literal null}.
      * @since 1.6
      * @deprecated use {@link DeclaredQuery#deriveCountQuery(String, String)} instead.
      */
     @Deprecated
-    public static String createCountQueryFor(String originalQuery, @Nullable String countProjection) {
+    public static String createCountQueryFor(String originalQry, @Nullable String cntProjection) {
 
-        Assert.hasText(originalQuery, "OriginalQuery must not be null or empty!");
+        Assert.hasText(originalQry, "OriginalQuery must not be null or empty!");
 
-        Matcher matcher = COUNT_MATCH.matcher(originalQuery);
-        String countQuery = null;
+        Matcher matcher = COUNT_MATCH.matcher(originalQry);
+        String countQuery;
 
-        if (countProjection == null) {
+        if (cntProjection == null) {
 
             String variable = matcher.matches() ? matcher.group(VARIABLE_NAME_GROUP_INDEX) : null;
             boolean useVariable = variable != null && StringUtils.hasText(variable) && !variable.startsWith("new")
-                                      && !variable.startsWith("count(") && !variable.contains(",");
+                && !variable.startsWith("count(") && !variable.contains(",");
 
             String replacement = useVariable ? SIMPLE_COUNT_VALUE : COMPLEX_COUNT_VALUE;
             countQuery = matcher.replaceFirst(String.format(COUNT_REPLACEMENT_TEMPLATE, replacement));
-        } else {
-            countQuery = matcher.replaceFirst(String.format(COUNT_REPLACEMENT_TEMPLATE, countProjection));
         }
+        else
+            countQuery = matcher.replaceFirst(String.format(COUNT_REPLACEMENT_TEMPLATE, cntProjection));
 
         return countQuery.replaceFirst(ORDER_BY_PART, "");
     }
@@ -291,43 +309,40 @@ public abstract class QueryUtils {
     /**
      * Returns whether the given query contains named parameters.
      *
-     * @param query
-     *     can be {@literal null} or empty.
+     * @param qry can be {@literal null} or empty.
      * @return whether the given query contains named parameters.
      */
     @Deprecated
-    static boolean hasNamedParameter(@Nullable String query) {
-        return StringUtils.hasText(query) && NAMED_PARAMETER.matcher(query).find();
+    static boolean hasNamedParameter(@Nullable String qry) {
+        return StringUtils.hasText(qry) && NAMED_PARAMETER.matcher(qry).find();
     }
 
     /**
      * Returns whether the given JPQL query contains a constructor expression.
      *
-     * @param query
-     *     must not be {@literal null} or empty.
+     * @param qry must not be {@literal null} or empty.
      * @return boolean
      * @since 1.10
      */
-    public static boolean hasConstructorExpression(String query) {
+    public static boolean hasConstructorExpression(String qry) {
 
-        Assert.hasText(query, "Query must not be null or empty!");
+        Assert.hasText(qry, "Query must not be null or empty!");
 
-        return CONSTRUCTOR_EXPRESSION.matcher(query).find();
+        return CONSTRUCTOR_EXPRESSION.matcher(qry).find();
     }
 
     /**
      * Returns the projection part of the query, i.e. everything between {@code select} and {@code from}.
      *
-     * @param query
-     *     must not be {@literal null} or empty.
+     * @param qry must not be {@literal null} or empty.
      * @return projection
      * @since 1.10.2
      */
-    public static String getProjection(String query) {
+    public static String getProjection(String qry) {
 
-        Assert.hasText(query, "Query must not be null or empty!");
+        Assert.hasText(qry, "Query must not be null or empty!");
 
-        Matcher matcher = PROJECTION_CLAUSE.matcher(query);
+        Matcher matcher = PROJECTION_CLAUSE.matcher(qry);
         String projection = matcher.find() ? matcher.group(1) : "";
         return projection.trim();
     }

@@ -15,7 +15,6 @@
  */
 package org.apache.ignite.springdata20.repository.query.spel;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,7 +27,6 @@ import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
 import org.springframework.data.domain.Range;
 import org.springframework.data.domain.Range.Bound;
 import org.springframework.data.repository.query.EvaluationContextProvider;
@@ -44,273 +42,329 @@ import org.springframework.util.Assert;
  * @since spring data 2.1 - transition code (borrowed and adapted code from version 2.1)
  */
 public class SpelQueryContext {
+    /**
+     * Spel pattern string.
+     */
+    private static final String SPEL_PATTERN_STRING = "([:?])#\\{([^}]+)}";
 
-	private static final String SPEL_PATTERN_STRING = "([:?])#\\{([^}]+)}";
-	private static final Pattern SPEL_PATTERN = Pattern.compile(SPEL_PATTERN_STRING);
+    /**
+     * Spel pattern.
+     */
+    private static final Pattern SPEL_PATTERN = Pattern.compile(SPEL_PATTERN_STRING);
 
-	/**
-	 * A function from the index of a SpEL expression in a query and the actual SpEL expression to the parameter name to
-	 * be used in place of the SpEL expression. A typical implementation is expected to look like
-	 * <code>(index, spel) -> "__some_placeholder_" + index</code>
-	 */
-	private final BiFunction<Integer, String, String> parameterNameSource;
+    /**
+     * A function from the index of a SpEL expression in a query and the actual SpEL expression to the parameter name to
+     * be used in place of the SpEL expression. A typical implementation is expected to look like
+     * <code>(index, spel) -> "__some_placeholder_" + index</code>
+     */
+    private final BiFunction<Integer, String, String> paramNameSrc;
 
-	/**
-	 * A function from a prefix used to demarcate a SpEL expression in a query and a parameter name as returned from
-	 * {@link #parameterNameSource} to a {@literal String} to be used as a replacement of the SpEL in the query. The
-	 * returned value should normally be interpretable as a bind parameter by the underlying persistence mechanism. A
-	 * typical implementation is expected to look like <code>(prefix, name) -> prefix + name</code> or
-	 * <code>(prefix, name) -> "{" + name + "}"</code>
-	 */
-	private final BiFunction<String, String, String> replacementSource;
+    /**
+     * A function from a prefix used to demarcate a SpEL expression in a query and a parameter name as returned from
+     * {@link #paramNameSrc} to a {@literal String} to be used as a replacement of the SpEL in the query. The returned
+     * value should normally be interpretable as a bind parameter by the underlying persistence mechanism. A typical
+     * implementation is expected to look like <code>(prefix, name) -> prefix + name</code> or
+     * <code>(prefix, name) -> "{" + name + "}"</code>
+     */
+    private final BiFunction<String, String, String> replacementSrc;
 
-	private SpelQueryContext (BiFunction<Integer, String, String> parameterNameSource,
-		BiFunction<String, String, String> replacementSource) {
-		this.parameterNameSource = parameterNameSource;
-		this.replacementSource = replacementSource;
-	}
+    private SpelQueryContext(BiFunction<Integer, String, String> paramNameSrc,
+        BiFunction<String, String, String> replacementSrc) {
+        this.paramNameSrc = paramNameSrc;
+        this.replacementSrc = replacementSrc;
+    }
 
-	public static SpelQueryContext of(BiFunction<Integer, String, String> parameterNameSource,
-		BiFunction<String, String, String> replacementSource) {
-		return new SpelQueryContext(parameterNameSource,replacementSource);
-	}
+    /**
+     * Of spel query context.
+     *
+     * @param parameterNameSource the parameter name source
+     * @param replacementSource   the replacement source
+     * @return the spel query context
+     */
+    public static SpelQueryContext of(BiFunction<Integer, String, String> parameterNameSource,
+        BiFunction<String, String, String> replacementSource) {
+        return new SpelQueryContext(parameterNameSource, replacementSource);
+    }
 
-	/**
-	 * Parses the query for SpEL expressions using the pattern:
-	 *
-	 * <pre>
-	 * &lt;prefix&gt;#{&lt;spel&gt;}
-	 * </pre>
-	 *
-	 * with prefix being the character ':' or '?'. Parsing honors quoted {@literal String}s enclosed in single or double
-	 * quotation marks.
-	 *
-	 * @param query a query containing SpEL expressions in the format described above. Must not be {@literal null}.
-	 * @return A {@link SpelExtractor} which makes the query with SpEL expressions replaced by bind parameters and a map
-	 *         from bind parameter to SpEL expression available. Guaranteed to be not {@literal null}.
-	 */
-	public SpelExtractor parse(String query) {
-		return new SpelExtractor(query);
-	}
+    /**
+     * Parses the query for SpEL expressions using the pattern:
+     *
+     * <pre>
+     * &lt;prefix&gt;#{&lt;spel&gt;}
+     * </pre>
+     * <p>
+     * with prefix being the character ':' or '?'. Parsing honors quoted {@literal String}s enclosed in single or double
+     * quotation marks.
+     *
+     * @param qry a query containing SpEL expressions in the format described above. Must not be {@literal null}.
+     * @return A {@link SpelExtractor} which makes the query with SpEL expressions replaced by bind parameters and a map
+     * from bind parameter to SpEL expression available. Guaranteed to be not {@literal null}.
+     */
+    public SpelExtractor parse(String qry) {
+        return new SpelExtractor(qry);
+    }
 
-	/**
-	 * Createsa {@link EvaluatingSpelQueryContext} from the current one and the given
-	 * {@link EvaluationContextProvider}.
-	 *
-	 * @param provider must not be {@literal null}.
-	 * @return
-	 */
-	public EvaluatingSpelQueryContext withEvaluationContextProvider(EvaluationContextProvider provider) {
+    /**
+     * Createsa {@link EvaluatingSpelQueryContext} from the current one and the given {@link
+     * EvaluationContextProvider}*.
+     *
+     * @param provider must not be {@literal null}.
+     * @return Evaluating Spel QueryContext
+     */
+    public EvaluatingSpelQueryContext withEvaluationContextProvider(EvaluationContextProvider provider) {
 
-		Assert.notNull(provider, "EvaluationContextProvider must not be null!");
+        Assert.notNull(provider, "EvaluationContextProvider must not be null!");
 
-		return new EvaluatingSpelQueryContext(provider, parameterNameSource, replacementSource);
-	}
+        return new EvaluatingSpelQueryContext(provider, paramNameSrc, replacementSrc);
+    }
 
-	/**
-	 * An extension of {@link SpelQueryContext} that can create {@link SpelEvaluator} instances as it also knows about a
-	 * {@link EvaluationContextProvider}.
-	 *
-	 * @author Oliver Gierke
-	 * @since 2.1
-	 */
-	public static class EvaluatingSpelQueryContext extends SpelQueryContext {
+    /**
+     * An extension of {@link SpelQueryContext} that can create {@link SpelEvaluator} instances as it also knows about a
+     * {@link EvaluationContextProvider}.
+     *
+     * @author Oliver Gierke
+     * @since 2.1
+     */
+    public static class EvaluatingSpelQueryContext extends SpelQueryContext {
 
-		private final EvaluationContextProvider evaluationContextProvider;
+        private final EvaluationContextProvider evaluationContextProvider;
 
-		/**
-		 * Creates a new {@link EvaluatingSpelQueryContext} for the given {@link EvaluationContextProvider},
-		 * parameter name source and replacement source.
-		 *
-		 * @param evaluationContextProvider must not be {@literal null}.
-		 * @param parameterNameSource must not be {@literal null}.
-		 * @param replacementSource must not be {@literal null}.
-		 */
-		private EvaluatingSpelQueryContext(EvaluationContextProvider evaluationContextProvider,
-				BiFunction<Integer, String, String> parameterNameSource, BiFunction<String, String, String> replacementSource) {
+        /**
+         * Creates a new {@link EvaluatingSpelQueryContext} for the given {@link EvaluationContextProvider}, parameter
+         * name source and replacement source.
+         *
+         * @param evaluationCtxProvider must not be {@literal null}.
+         * @param paramNameSrc          must not be {@literal null}.
+         * @param replacementSrc        must not be {@literal null}.
+         */
+        private EvaluatingSpelQueryContext(EvaluationContextProvider evaluationCtxProvider,
+            BiFunction<Integer, String, String> paramNameSrc, BiFunction<String, String, String> replacementSrc) {
 
-			super(parameterNameSource, replacementSource);
+            super(paramNameSrc, replacementSrc);
 
-			this.evaluationContextProvider = evaluationContextProvider;
-		}
+            evaluationContextProvider = evaluationCtxProvider;
+        }
 
-		/**
-		 * Parses the query for SpEL expressions using the pattern:
-		 *
-		 * <pre>
-		 * &lt;prefix&gt;#{&lt;spel&gt;}
-		 * </pre>
-		 *
-		 * with prefix being the character ':' or '?'. Parsing honors quoted {@literal String}s enclosed in single or double
-		 * quotation marks.
-		 *
-		 * @param query a query containing SpEL expressions in the format described above. Must not be {@literal null}.
-		 * @param parameters a {@link Parameters} instance describing query method parameters
-		 * @return A {@link SpelEvaluator} which allows to evaluate the SpEL expressions. Will never be {@literal null}.
-		 */
-		public SpelEvaluator parse(String query, Parameters<?, ?> parameters) {
-			return new SpelEvaluator(evaluationContextProvider, parameters, parse(query));
-		}
-	}
+        /**
+         * Parses the query for SpEL expressions using the pattern:
+         *
+         * <pre>
+         * &lt;prefix&gt;#{&lt;spel&gt;}
+         * </pre>
+         * <p>
+         * with prefix being the character ':' or '?'. Parsing honors quoted {@literal String}s enclosed in single or
+         * double quotation marks.
+         *
+         * @param qry        a query containing SpEL expressions in the format described above. Must not be {@literal
+         *                   null}.
+         * @param parameters a {@link Parameters} instance describing query method parameters
+         * @return A {@link SpelEvaluator} which allows to evaluate the SpEL expressions. Will never be {@literal null}.
+         */
+        public SpelEvaluator parse(String qry, Parameters<?, ?> parameters) {
+            return new SpelEvaluator(evaluationContextProvider, parameters, parse(qry));
+        }
+    }
 
-	/**
-	 * Parses a query string, identifies the contained SpEL expressions, replaces them with bind parameters and offers a
-	 * {@link Map} from those bind parameters to the spel expression.
-	 * <p>
-	 * The parser detects quoted parts of the query string and does not detect SpEL expressions inside such quoted parts
-	 * of the query.
-	 *
-	 * @author Jens Schauder
-	 * @author Oliver Gierke
-	 * @since 2.1
-	 */
-	public class SpelExtractor {
+    /**
+     * Parses a query string, identifies the contained SpEL expressions, replaces them with bind parameters and offers a
+     * {@link Map} from those bind parameters to the spel expression.
+     * <p>
+     * The parser detects quoted parts of the query string and does not detect SpEL expressions inside such quoted parts
+     * of the query.
+     *
+     * @author Jens Schauder
+     * @author Oliver Gierke
+     * @since 2.1
+     */
+    public class SpelExtractor {
 
-		private static final int PREFIX_GROUP_INDEX = 1;
-		private static final int EXPRESSION_GROUP_INDEX = 2;
+        /**
+         * Prefix group index.
+         */
+        private static final int PREFIX_GROUP_INDEX = 1;
 
-		private final String query;
-		private final Map<String, String> expressions;
-		private final QuotationMap quotations;
+        /**
+         * Expression group index.
+         */
+        private static final int EXPRESSION_GROUP_INDEX = 2;
 
-		/**
-		 * Creates a SpelExtractor from a query String.
-		 *
-		 * @param query must not be {@literal null}.
-		 */
-		SpelExtractor(String query) {
+        /**
+         * Query.
+         */
+        private final String query;
 
-			Assert.notNull(query, "Query must not be null");
+        /**
+         * Expressions.
+         */
+        private final Map<String, String> expressions;
 
-			Map<String, String> expressions = new HashMap<>();
-			Matcher matcher = SPEL_PATTERN.matcher(query);
-			StringBuilder resultQuery = new StringBuilder();
-			QuotationMap quotedAreas = new QuotationMap(query);
+        /**
+         * Quotations.
+         */
+        private final QuotationMap quotations;
 
-			int expressionCounter = 0;
-			int matchedUntil = 0;
+        /**
+         * Creates a SpelExtractor from a query String.
+         *
+         * @param qry must not be {@literal null}.
+         */
+        SpelExtractor(String qry) {
 
-			while (matcher.find()) {
+            Assert.notNull(qry, "Query must not be null");
 
-				if (quotedAreas.isQuoted(matcher.start())) {
-					resultQuery.append(query, matchedUntil, matcher.end());
-				} else {
+            Map<String, String> exps = new HashMap<>();
+            Matcher matcher = SPEL_PATTERN.matcher(qry);
+            StringBuilder resultQry = new StringBuilder();
+            QuotationMap quotedAreas = new QuotationMap(qry);
 
-					String spelExpression = matcher.group(EXPRESSION_GROUP_INDEX);
-					String prefix = matcher.group(PREFIX_GROUP_INDEX);
+            int expressionCounter = 0;
+            int matchedUntil = 0;
 
-					String parameterName = parameterNameSource.apply(expressionCounter, spelExpression);
-					String replacement = replacementSource.apply(prefix, parameterName);
+            while (matcher.find()) {
 
-					resultQuery.append(query.substring(matchedUntil, matcher.start()));
-					resultQuery.append(replacement);
+                if (quotedAreas.isQuoted(matcher.start()))
+                    resultQry.append(qry, matchedUntil, matcher.end());
+                else {
 
-					expressions.put(parameterName, spelExpression);
-					expressionCounter++;
-				}
+                    String spelExpression = matcher.group(EXPRESSION_GROUP_INDEX);
+                    String prefix = matcher.group(PREFIX_GROUP_INDEX);
 
-				matchedUntil = matcher.end();
-			}
+                    String paramName = paramNameSrc.apply(expressionCounter, spelExpression);
+                    String replacement = replacementSrc.apply(prefix, paramName);
 
-			resultQuery.append(query.substring(matchedUntil));
+                    resultQry.append(qry, matchedUntil, matcher.start());
+                    resultQry.append(replacement);
 
-			this.expressions = Collections.unmodifiableMap(expressions);
-			this.query = resultQuery.toString();
-			this.quotations = quotedAreas;
-		}
+                    exps.put(paramName, spelExpression);
+                    expressionCounter++;
+                }
 
-		/**
-		 * The query with all the SpEL expressions replaced with bind parameters.
-		 *
-		 * @return Guaranteed to be not {@literal null}.
-		 */
-		public String getQueryString() {
-			return query;
-		}
+                matchedUntil = matcher.end();
+            }
 
-		public boolean isQuoted(int index) {
-			return quotations.isQuoted(index);
-		}
+            resultQry.append(qry.substring(matchedUntil));
 
-		public String getParameter(String name) {
-			return expressions.get(name);
-		}
+            expressions = Collections.unmodifiableMap(exps);
+            query = resultQry.toString();
+            quotations = quotedAreas;
+        }
 
-		/**
-		 * A {@literal Map} from parameter name to SpEL expression.
-		 *
-		 * @return Guaranteed to be not {@literal null}.
-		 */
-		Map<String, String> getParameterMap() {
-			return expressions;
-		}
+        /**
+         * The query with all the SpEL expressions replaced with bind parameters.
+         *
+         * @return Guaranteed to be not {@literal null}.
+         */
+        public String getQueryString() {
+            return query;
+        }
 
-		Stream<Entry<String, String>> getParameters() {
-			return expressions.entrySet().stream();
-		}
-	}
+        /**
+         * Is quoted.
+         *
+         * @param idx the idx
+         * @return the boolean
+         */
+        public boolean isQuoted(int idx) {
+            return quotations.isQuoted(idx);
+        }
 
-	/**
-	 * Value object to analyze a {@link String} to determine the parts of the {@link String} that are quoted and offers an
-	 * API to query that information.
-	 *
-	 * @author Jens Schauder
-	 * @author Oliver Gierke
-	 * @since 2.1
-	 */
-	static class QuotationMap {
+        /**
+         * Gets parameter.
+         *
+         * @param name the name
+         * @return the parameter
+         */
+        public String getParameter(String name) {
+            return expressions.get(name);
+        }
 
-		private static final Collection<Character> QUOTING_CHARACTERS = Arrays.asList('"', '\'');
+        /**
+         * A {@literal Map} from parameter name to SpEL expression.
+         *
+         * @return Guaranteed to be not {@literal null}.
+         */
+        Map<String, String> getParameterMap() {
+            return expressions;
+        }
 
-		private final List<Range<Integer>> quotedRanges = new ArrayList<>();
+        /**
+         * Gets parameters.
+         *
+         * @return the parameters
+         */
+        Stream<Entry<String, String>> getParameters() {
+            return expressions.entrySet().stream();
+        }
+    }
 
-		/**
-		 * Creates a new {@link QuotationMap} for the query.
-		 *
-		 * @param query can be {@literal null}.
-		 */
-		public QuotationMap(@Nullable String query) {
+    /**
+     * Value object to analyze a {@link String} to determine the parts of the {@link String} that are quoted and offers
+     * an API to query that information.
+     *
+     * @author Jens Schauder
+     * @author Oliver Gierke
+     * @since 2.1
+     */
+    static class QuotationMap {
 
-			if (query == null)
-				return;
+        /**
+         * Quoting characters.
+         */
+        private static final Collection<Character> QUOTING_CHARACTERS = Arrays.asList('"', '\'');
 
-			Character inQuotation = null;
-			int start = 0;
+        /**
+         * Quoted ranges.
+         */
+        private final List<Range<Integer>> quotedRanges = new ArrayList<>();
 
-			for (int i = 0; i < query.length(); i++) {
+        /**
+         * Creates a new {@link QuotationMap} for the query.
+         *
+         * @param qry can be {@literal null}.
+         */
+        public QuotationMap(@Nullable String qry) {
 
-				char currentChar = query.charAt(i);
+            if (qry == null)
+                return;
 
-				if (QUOTING_CHARACTERS.contains(currentChar)) {
+            Character inQuotation = null;
+            int start = 0;
 
-					if (inQuotation == null) {
+            for (int i = 0; i < qry.length(); i++) {
 
-						inQuotation = currentChar;
-						start = i;
+                char curChar = qry.charAt(i);
 
-					} else if (currentChar == inQuotation) {
+                if (QUOTING_CHARACTERS.contains(curChar)) {
 
-						inQuotation = null;
+                    if (inQuotation == null) {
 
-						quotedRanges.add(Range.from(Bound.inclusive(start)).to(Bound.inclusive(i)));
-					}
-				}
-			}
+                        inQuotation = curChar;
+                        start = i;
 
-			if (inQuotation != null) {
-				throw new IllegalArgumentException(
-						String.format("The string <%s> starts a quoted range at %d, but never ends it.", query, start));
-			}
-		}
+                    }
+                    else if (curChar == inQuotation) {
 
-		/**
-		 * Checks if a given index is within a quoted range.
-		 *
-		 * @param index to check if it is part of a quoted range.
-		 * @return whether the query contains a quoted range at {@literal index}.
-		 */
-		public boolean isQuoted(int index) {
-			return quotedRanges.stream().anyMatch(r -> r.contains(index));
-		}
-	}
+                        inQuotation = null;
+
+                        quotedRanges.add(Range.from(Bound.inclusive(start)).to(Bound.inclusive(i)));
+                    }
+                }
+            }
+
+            if (inQuotation != null) {
+                throw new IllegalArgumentException(
+                    String.format("The string <%s> starts a quoted range at %d, but never ends it.", qry, start));
+            }
+        }
+
+        /**
+         * Checks if a given index is within a quoted range.
+         *
+         * @param idx to check if it is part of a quoted range.
+         * @return whether the query contains a quoted range at {@literal index}.
+         */
+        public boolean isQuoted(int idx) {
+            return quotedRanges.stream().anyMatch(r -> r.contains(idx));
+        }
+    }
 }
