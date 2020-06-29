@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.tracing;
 
+import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesHandler;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.NotNull;
@@ -65,5 +67,10 @@ public class NoopTracing implements Tracing {
     /** {@inheritDoc} */
     @Override public byte[] serialize(@NotNull Span span) {
         return NOOP_SERIALIZED_SPAN;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull TracingConfigurationManager configuration() {
+        return NoopTracingConfigurationManager.INSTANCE;
     }
 }

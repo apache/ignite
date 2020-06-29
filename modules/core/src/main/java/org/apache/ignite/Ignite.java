@@ -31,11 +31,14 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Main entry-point for all Ignite APIs.
@@ -741,4 +744,18 @@ public interface Ignite extends AutoCloseable {
      * @return Snapshot manager.
      */
     public IgniteSnapshot snapshot();
+
+    /**
+     * Returns the {@link TracingConfigurationManager} instance that allows to
+     * <ul>
+     *     <li>Configure tracing parameters such as sampling rate for the specific tracing coordinates
+     *          such as scope and label.</li>
+     *     <li>Retrieve the most specific tracing parameters for the specified tracing coordinates (scope and label)</li>
+     *     <li>Restore the tracing parameters for the specified tracing coordinates to the default.</li>
+     *     <li>List all pairs of tracing configuration coordinates and tracing configuration parameters.</li>
+     * </ul>
+     * @return {@link TracingConfigurationManager} instance.
+     */
+    @IgniteExperimental
+    public @NotNull TracingConfigurationManager tracingConfiguration();
 }
