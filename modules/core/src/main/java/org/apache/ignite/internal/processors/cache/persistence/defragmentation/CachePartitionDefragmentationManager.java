@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.PageStoreCollection;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 
 import java.io.File;
@@ -32,7 +33,7 @@ import java.util.Collection;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 
-public class CachePartitionDefragmentationManager {
+public class CachePartitionDefragmentationManager implements PageStoreCollection {
     public static final String DEFRAGMENTED_PARTITION_FILE_TEMPLATE = "part-dfrg-%d.bin";
 
     /** */
@@ -100,5 +101,15 @@ public class CachePartitionDefragmentationManager {
         GridCacheDataStore cacheDataStore = new GridCacheDataStore(newContext, p, true, defrgCtx.busyLock(), defrgCtx.log);
 
         cacheDataStore.init();
+    }
+
+    /** {@inheritDoc} */
+    @Override public PageStore getStore(int grpId, int partId) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<PageStore> getStores(int grpId) throws IgniteCheckedException {
+        return null;
     }
 }

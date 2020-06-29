@@ -103,7 +103,8 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_I
 /**
  * File page store manager.
  */
-public class FilePageStoreManager extends GridCacheSharedManagerAdapter implements IgnitePageStoreManager {
+public class FilePageStoreManager extends GridCacheSharedManagerAdapter implements IgnitePageStoreManager,
+    PageStoreCollection {
     /** File suffix. */
     public static final String FILE_SUFFIX = ".bin";
 
@@ -1287,7 +1288,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Collection of related page stores.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<PageStore> getStores(int grpId) throws IgniteCheckedException {
+    @Override public Collection<PageStore> getStores(int grpId) throws IgniteCheckedException {
         return getHolder(grpId);
     }
 
@@ -1299,7 +1300,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      *
      * Note: visible for testing.
      */
-    public PageStore getStore(int grpId, int partId) throws IgniteCheckedException {
+    @Override public PageStore getStore(int grpId, int partId) throws IgniteCheckedException {
         CacheStoreHolder holder = getHolder(grpId);
 
         if (holder == null)
