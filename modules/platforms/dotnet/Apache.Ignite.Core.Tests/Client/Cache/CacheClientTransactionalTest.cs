@@ -152,6 +152,87 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Test Ignite thin client transaction with label.
+        /// </summary>
+        [Test]
+        public void TestWithLabel()
+        {
+            const string label1 = "label1";
+            const string label2 = "label2";
+
+            var cache = TransactionalCache();
+            cache.Put(1, 1);
+            cache.Put(2, 2);
+
+            using (Client.Transactions.WithLabel(label1).TxStart())
+            {
+                var igniteTx = GetIgnite().GetTransactions()
+                   .GetLocalActiveTransactions()
+                   .Single();
+
+                Assert.AreEqual(igniteTx.Label, label1);
+
+                cache.Put(1, 10);
+                cache.Put(2, 20);
+            }
+
+            Assert.AreEqual(1, cache.Get(1));
+            Assert.AreEqual(2, cache.Get(2));
+
+            using (var tx = Client.Transactions.WithLabel(label1).TxStart())
+            {
+                var igniteTx = GetIgnite().GetTransactions()
+                   .GetLocalActiveTransactions()
+                   .Single();
+
+                Assert.AreEqual(igniteTx.Label, label1);
+
+                cache.Put(1, 10);
+                cache.Put(2, 20);
+                tx.Commit();
+            }
+
+            Assert.AreEqual(10, cache.Get(1));
+            Assert.AreEqual(20, cache.Get(2));
+
+            using (Client.Transactions.WithLabel(label1).WithLabel(label2).TxStart())
+            {
+                var tx = GetIgnite().GetTransactions()
+                   .GetLocalActiveTransactions()
+                   .Single();
+
+                Assert.AreEqual(tx.Label, label2);
+            }
+
+            Assert.Throws<IgniteClientException>(() =>
+            {
+                using (Client.Transactions.WithLabel(label1).TxStart())
+                using (Client.Transactions.TxStart())
+                {
+                    // No-op.
+                }
+            });
+            
+            Assert.Throws<IgniteClientException>(() =>
+            {
+                using (Client.Transactions.TxStart())
+                using (Client.Transactions.WithLabel(label1).TxStart())
+                {
+                    // No-op.
+                }
+            });
+            
+            Assert.Throws<IgniteClientException>(() =>
+            {
+                using (Client.Transactions.WithLabel(label1).TxStart())
+                using (Client.Transactions.WithLabel(label1).TxStart())
+                {
+                    // No-op.
+                }
+            });
+        }
+
+        /// <summary>
         /// Test Ignite thin client transaction enlistment in ambient <see cref="TransactionScope"/>.
         /// </summary>
         [Test]
