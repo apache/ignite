@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
         /** Query filter platform code: Java filter. */
         private const byte FilterPlatformJava = 1;
-        
+
         /** Query filter platform code: .NET filter. */
         private const byte FilterPlatformDotnet = 2;
 
@@ -627,46 +627,23 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
             IgniteArgumentCheck.NotNull(continuousQuery.Listener, "continuousQuery.Listener");
 
-            return DoOutInOp(
-                ClientOp.QueryContinuous,
-                ctx => WriteContinuousQuery(ctx, continuousQuery),
-                ctx =>
-                {
-                    var queryId = ctx.Stream.ReadLong();
-
-                    ctx.Socket.AddNotificationHandler(queryId,
-                        (stream, err) => HandleContinuousQueryEvents(stream, err, continuousQuery));
-
-                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId);
-                });
+            return QueryContinuousInternal(continuousQuery);
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, 
+        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery,
             ScanQuery<TK, TV> initialQry)
         {
             IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
             IgniteArgumentCheck.NotNull(continuousQuery.Listener, "continuousQuery.Listener");
             IgniteArgumentCheck.NotNull(initialQry, "initialQry");
-            
-            // TODO: Deduplicate with above.
-            return DoOutInOp(
-                ClientOp.QueryContinuous,
-                ctx => WriteContinuousQuery(ctx, continuousQuery, () =>
-                {
-                    ctx.Writer.WriteByte((byte) InitialQueryType.Scan);
-                    
-                    WriteScanQuery(ctx.Writer, initialQry);
-                }),
-                ctx =>
-                {
-                    var queryId = ctx.Stream.ReadLong();
 
-                    ctx.Socket.AddNotificationHandler(queryId,
-                        (stream, err) => HandleContinuousQueryEvents(stream, err, continuousQuery));
+            return QueryContinuousInternal(continuousQuery, ctx =>
+            {
+                ctx.Writer.WriteByte((byte) InitialQueryType.Scan);
 
-                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId);
-                });
+                WriteScanQuery(ctx.Writer, initialQry);
+            });
         }
 
         /** <inheritDoc /> */
@@ -1052,9 +1029,28 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             return res;
         }
-        
+
+
+        private IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuousInternal(
+            ContinuousQuery<TK, TV> continuousQuery,
+            Action<ClientRequestContext> writeInitialQueryAction = null)
+        {
+            return DoOutInOp(
+                ClientOp.QueryContinuous,
+                ctx => WriteContinuousQuery(ctx, continuousQuery, writeInitialQueryAction),
+                ctx =>
+                {
+                    var queryId = ctx.Stream.ReadLong();
+
+                    ctx.Socket.AddNotificationHandler(queryId,
+                        (stream, err) => HandleContinuousQueryEvents(stream, err, continuousQuery));
+
+                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId);
+                });
+        }
+
         private void WriteContinuousQuery(ClientRequestContext ctx, ContinuousQuery<TK, TV> continuousQuery,
-            Action writeInitialQueryAction = null)
+            Action<ClientRequestContext> writeInitialQueryAction = null)
         {
             var w = ctx.Writer;
             w.WriteInt(continuousQuery.BufferSize);
@@ -1085,7 +1081,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             if (writeInitialQueryAction != null)
             {
-                writeInitialQueryAction();
+                writeInitialQueryAction(ctx);
             }
             else
             {
@@ -1138,11 +1134,11 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             // Don't care about thread safety here, it is ok to initialize multiple times.
             if (_logger == null)
             {
-                _logger = _ignite.Configuration.Logger != null 
-                    ? _ignite.Configuration.Logger.GetLogger(GetType()) 
+                _logger = _ignite.Configuration.Logger != null
+                    ? _ignite.Configuration.Logger.GetLogger(GetType())
                     : NoopLogger.Instance;
             }
-            
+
             return _logger;
         }
     }
