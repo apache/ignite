@@ -106,10 +106,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestContinuousQueryWithFilterReceivesOnlyMatchingEvents()
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            
+
             ICacheEntryEvent<int, int> lastEvt = null;
             var listener = new DelegateListener<int, int>(e => lastEvt = e);
-            
+
             var qry = new ContinuousQuery<int,int>(listener)
             {
                 Filter = new OddKeyFilter()
@@ -120,19 +120,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 cache.Put(0, 0);
                 TestUtils.WaitForTrueCondition(() => OddKeyFilter.LastKey == 0);
                 Assert.IsNull(lastEvt);
-                
+
                 cache.Put(5, 5);
                 TestUtils.WaitForTrueCondition(() => OddKeyFilter.LastKey == 5);
                 TestUtils.WaitForTrueCondition(() => lastEvt != null);
                 Assert.IsNotNull(lastEvt);
                 Assert.AreEqual(5, lastEvt.Key);
-                
+
                 cache.Put(8, 8);
                 TestUtils.WaitForTrueCondition(() => OddKeyFilter.LastKey == 8);
                 Assert.AreEqual(5, lastEvt.Key);
             }
         }
-        
+
         /// <summary>
         /// Tests that continuous query with Java filter receives only matching events.
         /// </summary>
@@ -140,15 +140,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestContinuousQueryWithJavaFilterReceivesOnlyMatchingEvents()
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            
+
             ICacheEntryEvent<int, int> lastEvt = null;
             var listener = new DelegateListener<int, int>(e => lastEvt = e);
-            
+
             var qry = new ContinuousQuery<int,int>(listener)
             {
                 Filter = new JavaCacheEntryEventFilter<int, int>("TODO", null)
             };
-            
+
             // TODO
         }
 
@@ -170,32 +170,30 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         [Test]
-        public void TestBackPressure()
+        public void TestClientContinuousQueryReceivesEventsFromServerCache()
         {
             const int count = 10000;
-            
+
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
 
             var receiveCount = 0;
-            
+
             var listener = new DelegateListener<int, int>(e =>
             {
-                Console.WriteLine("Receive: " + e.Key);
-
                 Interlocked.Increment(ref receiveCount);
             });
 
-            cache.QueryContinuous(new ContinuousQuery<int, int>(listener));
-
-            var serverCache = Ignition.GetIgnite("1").GetCache<int, int>(cache.Name);
-
-            for (int i = 0; i < count; i++)
+            using (cache.QueryContinuous(new ContinuousQuery<int, int>(listener)))
             {
-                Console.WriteLine("Produce: " + i);
-                serverCache.Put(i, i);
+                var serverCache = Ignition.GetIgnite("1").GetCache<int, int>(cache.Name);
+
+                for (var i = 0; i < count; i++)
+                {
+                    serverCache.Put(i, i);
+                }
+
+                TestUtils.WaitForTrueCondition(() => receiveCount == count);
             }
-            
-            TestUtils.WaitForTrueCondition(() => receiveCount == count);
         }
 
         /// <summary>
@@ -205,10 +203,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestInitialScanQuery([Values(true, false)]bool getAll)
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            
+
             var initialKeys = Enumerable.Range(1, 10).ToArray();
             cache.PutAll(initialKeys.ToDictionary(x => x, x => x));
-            
+
             ICacheEntryEvent<int, int> lastEvt = null;
             var qry = new ContinuousQuery<int,int>(new DelegateListener<int, int>(e => lastEvt = e));
             var initialQry = new ScanQuery<int, int>();
@@ -220,12 +218,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     var initialItems = getAll ? cursor.GetAll() : cursor.ToList();
                     CollectionAssert.AreEquivalent(initialKeys, initialItems.Select(e => e.Key));
                 }
-                
+
                 cache.Put(20, 20);
-                
+
                 TestUtils.WaitForTrueCondition(() => lastEvt != null);
                 Assert.AreEqual(20, lastEvt.Key);
-                
+
                 cache.Put(21, 21);
                 TestUtils.WaitForTrueCondition(() => 21 == lastEvt.Key);
             }
@@ -238,7 +236,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestInitialScanQueryInBinaryMode([Values(true, false)] bool getAll)
         {
-            // TODO: 
+            // TODO:
         }
 
         [Test]
@@ -247,7 +245,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
             cache.PutAll(Enumerable.Range(1, 10).ToDictionary(x => x, x => x));
-            
+
             var initialQry = new ScanQuery<int, int>();
         }
 
@@ -287,12 +285,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         private class OddKeyFilter : ICacheEntryEventFilter<int, int>
         {
-            public static int LastKey; 
-            
+            public static int LastKey;
+
             public bool Evaluate(ICacheEntryEvent<int, int> evt)
             {
                 LastKey = evt.Key;
-                
+
                 return evt.Key % 2 == 1;
             }
         }
