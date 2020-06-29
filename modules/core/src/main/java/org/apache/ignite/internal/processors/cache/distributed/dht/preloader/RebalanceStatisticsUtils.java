@@ -17,31 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.HashMap;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 
 import static java.time.ZoneId.systemDefault;
 import static java.time.format.DateTimeFormatter.ofPattern;
-import static java.util.Comparator.comparing;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_WRITE_REBALANCE_PARTITION_DISTRIBUTION_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.IgniteSystemProperties.getLong;
 
 /**
  * Utility class for rebalance statistics.
@@ -116,60 +105,6 @@ public class RebalanceStatisticsUtils {
         nodeId = 0;
         for (ClusterNode supNode : supStats.keySet())
             sb.a(supInfo(nodeId++, supNode));
-
-        String thresholdPropName = IGNITE_WRITE_REBALANCE_PARTITION_DISTRIBUTION_THRESHOLD;
-        long threshold = getLong(thresholdPropName, MINUTES.toMillis(10));
-
-        if ((stat.end() - stat.start()) < threshold)
-            return sb.toString();
-
-        sb.a("Rebalance duration was greater than ").a(threshold).a(" ms, printing detailed information about " +
-            "partitions distribution (threshold can be changed by setting number of milliseconds into " +
-            thresholdPropName + ") ");
-
-        SortedMap<Integer, Boolean> parts = new TreeMap<>();
-        for (SupplierRebalanceStatistics supStat : supStats.values())
-            parts.putAll(supStat.partitions());
-
-        AffinityAssignment aff = cacheGrpCtx.affinity().cachedAffinity(top);
-
-        Map<ClusterNode, Integer> affNodes = new HashMap<>();
-        nodeId = 0;
-        for (ClusterNode affNode : aff.nodes())
-            affNodes.put(affNode, nodeId++);
-
-        SortedSet<ClusterNode> partNodes = new TreeSet<>(comparing(affNodes::get));
-        boolean f;
-
-        for (Entry<Integer, Boolean> part : parts.entrySet()) {
-            partNodes.clear();
-
-            int p = part.getKey();
-            partNodes.addAll(aff.get(p));
-
-            f = true;
-
-            sb.a(p).a(" = ");
-            for (ClusterNode partNode : partNodes) {
-                if (!f)
-                    sb.a(',');
-                else
-                    f = false;
-
-                sb.a('[').a(affNodes.get(partNode)).a(aff.primaryPartitions(partNode.id()).contains(p) ? ",pr" : ",bu")
-                    .a(supStats.containsKey(partNode) ? ",su" : "").a("]");
-
-            }
-            sb.a(!part.getValue() ? " h " : " ");
-        }
-
-        sb.a("Aliases: pr - primary, bu - backup, su - supplier node, h - historical, nodeId mapping ")
-            .a("(nodeId=id,consistentId) ");
-
-        partNodes.addAll(affNodes.keySet());
-
-        for (ClusterNode affNode : partNodes)
-            sb.a(supInfo(affNodes.get(affNode), affNode));
 
         return sb.toString();
     }

@@ -82,7 +82,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -156,6 +155,8 @@ public class GridDhtPartitionDemander {
             rebalanceFut.onDone(true);
             syncFut.onDone();
         }
+
+        Map<Integer, Object> tops = new HashMap<>();
 
         String metricGroupName = metricName(CACHE_GROUP_METRICS_PREFIX, grp.cacheOrGroupName());
 
@@ -339,7 +340,15 @@ public class GridDhtPartitionDemander {
                 return null;
             }
 
-            final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId, next, lastCancelledTime);
+            final RebalanceFuture fut = new RebalanceFuture(
+                grp,
+                assignments,
+                log,
+                rebalanceId,
+                next,
+                oldFut,
+                lastCancelledTime
+            );
 
             if (!grp.localWalEnabled()) {
                 fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
@@ -348,6 +357,7 @@ public class GridDhtPartitionDemander {
                             ctx.walState().onGroupRebalanceFinished(grp.groupId());
                     }
                 });
+            }
 
             if (!oldFut.isInitial())
                 oldFut.tryCancel();
@@ -400,7 +410,7 @@ public class GridDhtPartitionDemander {
             return fut;
         }
         else if (delay > 0) {
-            for (GridCacheContext<?, ?> cctx : grp.caches()) {
+            for (GridCacheContext cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
                     final CacheMetricsImpl metrics = cctx.cache().metrics0();
 
@@ -418,10 +428,8 @@ public class GridDhtPartitionDemander {
             assert exchFut != null : "Delaying rebalance process without topology event.";
 
             obj = new GridTimeoutObjectAdapter(delay) {
-                /** {@inheritDoc} */
                 @Override public void onTimeout() {
                     exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        /** {@inheritDoc} */
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> f) {
                             ctx.exchange().forceRebalance(exchFut.exchangeId());
                         }
@@ -480,6 +488,9 @@ public class GridDhtPartitionDemander {
         AffinityTopologyVersion topVer = supplyMsg.topologyVersion();
 
         final RebalanceFuture fut = rebalanceFut;
+        final RebalanceStatistics stat = fut.stat;
+
+        ClusterNode node = null;
 
         fut.cancelLock.readLock().lock();
 
@@ -491,7 +502,7 @@ public class GridDhtPartitionDemander {
                 return;
             }
 
-            ClusterNode node = ctx.node(nodeId);
+            node = ctx.node(nodeId);
 
             if (node == null) {
                 if (log.isDebugEnabled())
@@ -549,7 +560,7 @@ public class GridDhtPartitionDemander {
                 }
             }
             else {
-                GridCacheContext<?, ?> cctx = grp.singleCacheContext();
+                GridCacheContext cctx = grp.singleCacheContext();
 
                 if (cctx.statisticsEnabled()) {
                     if (supplyMsg.estimatedKeysCount() != -1)
@@ -612,7 +623,7 @@ public class GridDhtPartitionDemander {
 
                                 try {
                                     if (grp.mvccEnabled())
-                                        mvccPreloadEntries(topVer, supplierNode, p, infos, entryCnt, byteCnt);
+                                        mvccPreloadEntries(topVer, node, p, infos, entryCnt, byteCnt);
                                     else
                                         preloadEntries(topVer, p, infos, entryCnt, byteCnt);
                                 }
@@ -621,9 +632,9 @@ public class GridDhtPartitionDemander {
                                         log.debug("Partition became invalid during rebalancing (will ignore): " + p);
                                 }
 
-                                if (nonNull(rebalanceStat)) {
-                                    rebalanceStat.update(
-                                        supplierNode,
+                                if (nonNull(stat)) {
+                                    stat.update(
+                                        node,
                                         p,
                                         entryInfoCol.historical(),
                                         entryCnt.get(),
@@ -631,7 +642,7 @@ public class GridDhtPartitionDemander {
                                     );
                                 }
 
-                                rebalanceFut.processed.get(p).increment();
+                                fut.processed.get(p).increment();
 
                                 // If message was last for this partition, then we take ownership.
                                 if (last)
@@ -704,13 +715,13 @@ public class GridDhtPartitionDemander {
             }
         }
         finally {
-            rebalanceFut.cancelLock.readLock().unlock();
+            fut.cancelLock.readLock().unlock();
 
-            if (nonNull(rebalanceStat)) {
-                if (nonNull(supplierNode))
-                    rebalanceStat.end(supplierNode, U.currentTimeMillis());
+            if (nonNull(stat)) {
+                if (nonNull(node))
+                    stat.end(node, U.currentTimeMillis());
                 else
-                    rebalanceStat.end(supplierNodeId, U.currentTimeMillis());
+                    stat.end(nodeId, U.currentTimeMillis());
             }
         }
     }
@@ -757,7 +768,7 @@ public class GridDhtPartitionDemander {
      */
     private void mvccPreloadEntries(
         AffinityTopologyVersion topVer,
-        ClusterNode supplierNode,
+        ClusterNode node,
         int p,
         Iterator<GridCacheEntryInfo> infos,
         AtomicLong entryCnt,
@@ -768,7 +779,7 @@ public class GridDhtPartitionDemander {
 
         List<GridCacheMvccEntryInfo> entryHist = new ArrayList<>();
 
-        GridCacheContext<?, ?> cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
+        GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
 
         // Loop through all received entries and try to preload them.
         while (infos.hasNext() || !entryHist.isEmpty()) {
@@ -1147,13 +1158,12 @@ public class GridDhtPartitionDemander {
         private final Map<ClusterNode, Set<Integer>> rebalancingParts;
 
         /**
-         * Constructor.
-         *
-         * @param grp Cache group context.
+         * @param grp Cache group.
          * @param assignments Assignments.
          * @param log Logger.
          * @param rebalanceId Rebalance id.
          * @param next Next rebalance future.
+         * @param previous Previous rebalance future.
          * @param lastCancelledTime Cancelled time.
          */
         RebalanceFuture(
@@ -1162,6 +1172,7 @@ public class GridDhtPartitionDemander {
             IgniteLogger log,
             long rebalanceId,
             RebalanceFuture next,
+            RebalanceFuture previous,
             AtomicLong lastCancelledTime) {
             assert assignments != null;
 
