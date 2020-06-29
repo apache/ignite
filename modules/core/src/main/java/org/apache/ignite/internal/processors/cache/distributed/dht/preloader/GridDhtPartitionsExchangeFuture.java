@@ -3464,7 +3464,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
-            //No one reservation matched for this partition.
+            // No one reservation matched for this partition.
             if (!haveHistory.contains(p)) {
                 list.add(new SupplyPartitionInfo(
                     p,
@@ -4114,38 +4114,43 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param supplyInfoMap Map contains information about supplying partitions.
      */
     private void printPartitionRebalancingFully(Map<String, List<SupplyPartitionInfo>> supplyInfoMap) {
-        if (hasPartitonToLog(supplyInfoMap, false)) {
-            log.info("Partitions weren't present in any history reservation: [" +
-                supplyInfoMap.entrySet().stream().map(entry ->
-                    "[grp=" + entry.getKey() + " part=[" + S.compact(entry.getValue().stream()
-                        .filter(info -> !info.isHistoryReserved())
-                        .map(info -> info.part()).collect(Collectors.toSet())) + "]]"
-                ).collect(Collectors.joining(", ")) + ']');
-        }
+        try {
+            if (hasPartitionToLog(supplyInfoMap, false)) {
+                log.info("Partitions weren't present in any history reservation: [" +
+                    supplyInfoMap.entrySet().stream().map(entry ->
+                        "[grp=" + entry.getKey() + " part=[" + S.compact(entry.getValue().stream()
+                            .filter(info -> !info.isHistoryReserved())
+                            .map(info -> info.part()).collect(Collectors.toSet())) + "]]"
+                    ).collect(Collectors.joining(", ")) + ']');
+            }
 
-        if (hasPartitonToLog(supplyInfoMap, true)) {
-            log.info("Partitions were reserved, but maximum available counter is greater than demanded: [" +
-                supplyInfoMap.entrySet().stream().map(entry ->
-                    "[grp=" + entry.getKey() + ' ' +
-                        entry.getValue().stream().filter(SupplyPartitionInfo::isHistoryReserved).map(info ->
-                            "[part=" + info.part() +
-                                ", minCntr=" + info.minCntr() +
-                                ", maxReserved=" + info.maxReserved() +
-                                ", maxReservedNodeId=" + info.maxReservedNodeId() + ']'
-                        ).collect(Collectors.joining(", ")) + ']'
-                ).collect(Collectors.joining(", ")) + ']');
+            if (hasPartitionToLog(supplyInfoMap, true)) {
+                log.info("Partitions were reserved, but maximum available counter is greater than demanded: [" +
+                    supplyInfoMap.entrySet().stream().map(entry ->
+                        "[grp=" + entry.getKey() + ' ' +
+                            entry.getValue().stream().filter(SupplyPartitionInfo::isHistoryReserved).map(info ->
+                                "[part=" + info.part() +
+                                    ", minCntr=" + info.minCntr() +
+                                    ", maxReserved=" + info.maxReserved() +
+                                    ", maxReservedNodeId=" + info.maxReservedNodeId() + ']'
+                            ).collect(Collectors.joining(", ")) + ']'
+                    ).collect(Collectors.joining(", ")) + ']');
+            }
+        }
+        catch (Exception e) {
+            log.error("An error happened during printing partitions that have no history.", e);
         }
     }
 
     /**
      * Does information contain partitions which will print to log.
      *
-     * @param supplayInfoMap Map contains information about supplying partitions.
+     * @param supplyInfoMap Map contains information about supplying partitions.
      * @param reserved Reservation flag.
      * @return True if map has partitions with same reserved flag, false otherwise.
      */
-    private boolean hasPartitonToLog(Map<String, List<SupplyPartitionInfo>> supplayInfoMap, boolean reserved) {
-        for (List<SupplyPartitionInfo> infos : supplayInfoMap.values()) {
+    private boolean hasPartitionToLog(Map<String, List<SupplyPartitionInfo>> supplyInfoMap, boolean reserved) {
+        for (List<SupplyPartitionInfo> infos : supplyInfoMap.values()) {
             for (SupplyPartitionInfo info : infos) {
                 if (info.isHistoryReserved() == reserved)
                     return true;

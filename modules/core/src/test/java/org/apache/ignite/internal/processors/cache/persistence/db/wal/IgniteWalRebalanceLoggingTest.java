@@ -113,7 +113,7 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "1")
     public void testHistoricalRebalanceLogMsg() throws Exception {
         LogListener expMsgsLsnr = LogListener.matches(str ->
-            str.startsWith("Reserved cache groups with first reserved checkpoint IDs and reasons why previous checkpoint was inapplicable:") &&
+            str.startsWith("Cache groups with earliest reserved checkpoint and a reason why a previous checkpoint was inapplicable:") &&
                 str.contains("cache_group1") && str.contains("cache_group2")).times(3).
             andMatches(str -> str.startsWith("Starting rebalance routine") &&
                 (str.contains("cache_group1") || str.contains("cache_group2")) &&

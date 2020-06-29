@@ -1754,13 +1754,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (Map.Entry<Integer, T2</*reason*/ReservationReason, Map</*partId*/Integer, CheckpointEntry>>> e : earliestValidCheckpoints.entrySet()) {
             int grpId = e.getKey();
 
-            if (e.getValue().get2() == null) {
-                if (log.isDebugEnabled())
-                    log.debug("This group does not have a history reservation [grpId=" +
-                        e.getKey() + ", " + "reason=" + e.getValue().get1() + ']');
-
+            if (e.getValue().get2() == null)
                 continue;
-            }
 
             for (Map.Entry<Integer, CheckpointEntry> e0 : e.getValue().get2().entrySet()) {
                 CheckpointEntry cpEntry = e0.getValue();
@@ -1795,43 +1790,47 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void printReservationToLog(
         Map<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> earliestValidCheckpoints) {
+        try {
+            Map<ReservationReason, List<Integer>> notReservedCachesToPrint = new HashMap<>();
+            Map<ReservationReason, List<T2<Integer, CheckpointEntry>>> reservedCachesToPrint = new HashMap<>();
 
-        Map<ReservationReason, List<Integer>> notReservedCachesToPrint = new HashMap<>();
-        Map<ReservationReason, List<T2<Integer, CheckpointEntry>>> reservedCachesToPrint = new HashMap<>();
-
-        for (Map.Entry<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> entry : earliestValidCheckpoints.entrySet()) {
-            if (entry.getValue().get2() == null) {
-                notReservedCachesToPrint.computeIfAbsent(entry.getValue().get1(), reason -> new ArrayList<>())
-                    .add(entry.getKey());
+            for (Map.Entry<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> entry : earliestValidCheckpoints.entrySet()) {
+                if (entry.getValue().get2() == null) {
+                    notReservedCachesToPrint.computeIfAbsent(entry.getValue().get1(), reason -> new ArrayList<>())
+                        .add(entry.getKey());
+                }
+                else {
+                    reservedCachesToPrint.computeIfAbsent(entry.getValue().get1(), reason -> new ArrayList<>())
+                        .add(new T2(entry.getKey(), entry.getValue().get2().values().stream().min(
+                            Comparator.comparingLong(CheckpointEntry::timestamp)).get()));
+                }
             }
-            else {
-                reservedCachesToPrint.computeIfAbsent(entry.getValue().get1(), reason -> new ArrayList<>())
-                    .add(new T2(entry.getKey(), entry.getValue().get2().values().stream().min((cp1, cp2) ->
-                        Long.compare(cp1.timestamp(), cp2.timestamp())).get()));
+
+            if (!F.isEmpty(notReservedCachesToPrint)) {
+                log.info("Cache groups were not reserved [" +
+                    notReservedCachesToPrint.entrySet().stream()
+                        .map(entry -> '[' +
+                            entry.getValue().stream().map(grpId -> "[grpId=" + grpId +
+                                ", grpName=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ']')
+                                .collect(Collectors.joining(", ")) +
+                            ", reason=" + entry.getKey() + ']')
+                        .collect(Collectors.joining(", ")) + ']');
+            }
+
+            if (!F.isEmpty(reservedCachesToPrint)) {
+                log.info("Cache groups with earliest reserved checkpoint and a reason why a previous checkpoint was inapplicable: [" +
+                    reservedCachesToPrint.entrySet().stream()
+                        .map(entry -> '[' +
+                            entry.getValue().stream().map(grpCp -> "[grpId=" + grpCp.get1() +
+                                ", grpName=" + cctx.cache().cacheGroup(grpCp.get1()).cacheOrGroupName() +
+                                ", cp=(" + grpCp.get2().checkpointId() + ", " + U.format(grpCp.get2().timestamp()) + ")]")
+                                .collect(Collectors.joining(", ")) +
+                            ", reason=" + entry.getKey() + ']')
+                        .collect(Collectors.joining(", ")) + ']');
             }
         }
-
-        if (!F.isEmpty(notReservedCachesToPrint)) {
-            log.info("Following caches were not reserved [" +
-                notReservedCachesToPrint.entrySet().stream()
-                    .map(entry -> '[' +
-                        entry.getValue().stream().map(grpId -> "[grpId=" + grpId +
-                            ", grpName=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ']')
-                            .collect(Collectors.joining(", ")) +
-                        ", reason=" + entry.getKey() + ']')
-                    .collect(Collectors.joining(", ")) + ']');
-        }
-
-        if (!F.isEmpty(reservedCachesToPrint)) {
-            log.info("Reserved cache groups with first reserved checkpoint IDs and reasons why previous checkpoint was inapplicable: [" +
-                reservedCachesToPrint.entrySet().stream()
-                    .map(entry -> '[' +
-                        entry.getValue().stream().map(grpCp -> "[grpId=" + grpCp.get1() +
-                            ", grpName=" + cctx.cache().cacheGroup(grpCp.get1()).cacheOrGroupName() +
-                            ", cp=(" + grpCp.get2().checkpointId() + ", " + U.format(grpCp.get2().timestamp()) + ")]")
-                            .collect(Collectors.joining(", ")) +
-                        ", reason=" + entry.getKey() + ']')
-                    .collect(Collectors.joining(", ")) + ']');
+        catch (Exception e) {
+            log.error("An error happened during printing partitions that were reserved for potential historical rebalance.", e);
         }
     }
 
