@@ -125,10 +125,10 @@ public class FilePageStore implements PageStore {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** Total pages to be reencrypted. */
-    private volatile int encryptPageCnt;
+    private volatile int encryptedPageCnt;
 
     /** Index of the last reencrypted page. */
-    private volatile int encryptPageIdx;
+    private volatile int encryptedPageIdx;
 
     /** */
     public FilePageStore(
@@ -361,7 +361,7 @@ public class FilePageStore implements PageStore {
 
                 fileExists = false;
 
-                encryptPageIdx = encryptPageCnt = 0;
+                encryptedPageIdx = encryptedPageCnt = 0;
             }
         }
         finally {
@@ -410,7 +410,7 @@ public class FilePageStore implements PageStore {
 
             fileExists = false;
 
-            encryptPageIdx = encryptPageCnt = 0;
+            encryptedPageIdx = encryptedPageCnt = 0;
         }
         catch (IOException e) {
             throw new StorageException("Failed to truncate partition file [file=" + filePath.toAbsolutePath() + "]", e);
@@ -909,27 +909,21 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public int encryptedPageCount() {
-        // todo remove
-        assert encryptPageCnt <= pages() || pages() == 0 : "cnt=" + encryptPageCnt + " max=" + pages() + " path=" + getFileAbsolutePath();
-
-        return encryptPageCnt;
+        return encryptedPageCnt;
     }
 
     /** {@inheritDoc} */
-    @Override public void encryptedPageCount(int encPagesCnt) {
-        // todo remove
-        assert encPagesCnt <= pages() || pages() == 0 : "cnt=" + encPagesCnt + " max=" + pages() + " path=" + getFileAbsolutePath();
-
-        this.encryptPageCnt = encPagesCnt;
+    @Override public void encryptedPageCount(int pageCnt) {
+        encryptedPageCnt = pageCnt;
     }
 
     /** {@inheritDoc} */
     @Override public int encryptedPageIndex() {
-        return encryptPageIdx;
+        return encryptedPageIdx;
     }
 
     /** {@inheritDoc} */
     @Override public void encryptedPageIndex(int pageIdx) {
-        this.encryptPageIdx = pageIdx;
+        encryptedPageIdx = pageIdx;
     }
 }

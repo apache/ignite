@@ -187,7 +187,7 @@ public interface PageStore extends Closeable {
     public int encryptedPageCount();
 
     /**
-     * @param pagesCnt Total pages to be reencrypted.
+     * @param pageCnt Total pages to be reencrypted.
      */
-    public void encryptedPageCount(int pagesCnt);
+    public void encryptedPageCount(int pageCnt);
 }
