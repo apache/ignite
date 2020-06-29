@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ignitetest.benchmarks.ignite_test import IgniteTest
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.ignite_spark_app import SparkIgniteApplicationService
 from ignitetest.services.spark import SparkService
+from ignitetest.tests.utils.ignite_test import IgniteTest
 
 
 class SparkIntegrationTest(IgniteTest):
@@ -51,13 +51,13 @@ class SparkIntegrationTest(IgniteTest):
         self.stage("Starting sample data generator")
 
         IgniteApplicationService(self.test_context,
-                                 java_class_name="org.apache.ignite.internal.test.SampleDataStreamerApplication",
+                                 java_class_name="org.apache.ignite.internal.ducktest.SampleDataStreamerApplication",
                                  params="cache,1000",
                                  properties=self.properties(client_mode="true")).run()
 
         self.stage("Starting Spark application")
 
         SparkIgniteApplicationService(self.test_context,
-                                      "org.apache.ignite.internal.test.SparkApplication",
+                                      "org.apache.ignite.internal.ducktest.SparkApplication",
                                       params="spark://" + self.spark.nodes[0].account.hostname + ":7077",
                                       timeout_sec=120).run()

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.test.utils;
+package org.apache.ignite.internal.ducktest.utils;
 
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
@@ -110,7 +110,7 @@ public abstract class IgniteAwareApplication {
     /**
      *
      */
-    protected void markSyncExecutionComplete(){
+    protected void markSyncExecutionComplete() {
         markInitialized();
         markFinished();
     }

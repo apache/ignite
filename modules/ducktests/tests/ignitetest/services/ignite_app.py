@@ -27,7 +27,7 @@ class IgniteApplicationService(IgniteAwareApplicationService):
     def __init__(self, context, java_class_name, version=DEV_BRANCH, properties="", params="", timeout_sec=60):
         IgniteAwareApplicationService.__init__(
             self, context, java_class_name, version, properties, params, timeout_sec,
-            service_java_class_name="org.apache.ignite.internal.test.utils.IgniteApplicationService")
+            service_java_class_name="org.apache.ignite.internal.ducktest.utils.IgniteApplicationService")
 
     def start(self):
         Service.start(self)

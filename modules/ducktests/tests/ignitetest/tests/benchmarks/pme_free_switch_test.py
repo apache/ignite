@@ -17,9 +17,9 @@ import time
 from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
 
-from ignitetest.benchmarks.ignite_test import IgniteTest
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.tests.utils.ignite_test import IgniteTest
 from ignitetest.version import DEV_BRANCH, V_2_7_6, V_2_8_0, IgniteVersion
 
 
@@ -72,7 +72,7 @@ class PmeFreeSwitchTest(IgniteTest):
 
         long_tx_streamer = IgniteApplicationService(
             self.test_context,
-            java_class_name="org.apache.ignite.internal.test.LongTxStreamerApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.LongTxStreamerApplication",
             properties=self.properties(client_mode="true"),
             params="test-cache",
             version=ignite_version)
@@ -83,7 +83,7 @@ class PmeFreeSwitchTest(IgniteTest):
 
         single_key_tx_streamer = IgniteApplicationService(
             self.test_context,
-            java_class_name="org.apache.ignite.internal.test.SingleKeyTxStreamerApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.SingleKeyTxStreamerApplication",
             properties=self.properties(client_mode="true"),
             params="test-cache,1000",
             version=ignite_version)

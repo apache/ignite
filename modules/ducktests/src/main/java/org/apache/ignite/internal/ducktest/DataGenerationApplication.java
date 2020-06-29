@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.test;
+package org.apache.ignite.internal.ducktest;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.internal.test.utils.IgniteAwareApplication;
+import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
  *

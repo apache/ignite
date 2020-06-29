@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.test;
+package org.apache.ignite.internal.ducktest;
 
-import org.apache.ignite.internal.test.utils.IgniteAwareApplication;
+import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.spark.IgniteDataFrameSettings;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
