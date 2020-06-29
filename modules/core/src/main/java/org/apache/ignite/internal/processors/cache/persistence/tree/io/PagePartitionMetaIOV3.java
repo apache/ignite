@@ -23,7 +23,10 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
-/** */
+/**
+ * IO for partition metadata pages.
+ * Persistent partition contains it's own PendingTree.
+ */
 public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
     /** */
     private static final int SIZE_OFF = PageMetaIO.END_OF_PAGE_META_V2;
@@ -244,8 +247,8 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
         sb.a(",\n\tlastSuccessfulSnapshotTag=").a(getLastSuccessfulSnapshotTag(pageAddr));
         sb.a(",\n\tlastAllocatedPageCount=").a(getLastAllocatedPageCount(pageAddr));
         sb.a(",\n\tcandidatePageCount=").a(getCandidatePageCount(pageAddr));
-        sb.a(",\n\tencryptPageIndex=").a(getEncryptedPageIndex(pageAddr));
-        sb.a(",\n\tencryptPageCount=").a(getEncryptedPageCount(pageAddr));
+        sb.a(",\n\tencryptedPageIndex=").a(getEncryptedPageIndex(pageAddr));
+        sb.a(",\n\tencryptedPageCount=").a(getEncryptedPageCount(pageAddr));
         sb.a(",\n\tsize=").a(getSize(pageAddr));
         sb.a(",\n\tupdateCounter=").a(getUpdateCounter(pageAddr));
         sb.a(",\n\tglobalRemoveId=").a(getGlobalRemoveId(pageAddr));
@@ -256,7 +259,7 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
     }
 
     /**
-     * Upgrade page to PagePartitionMetaIOV2
+     * Upgrade page to PagePartitionMetaIOV3.
      *
      * @param pageAddr Page address.
      */

@@ -82,7 +82,7 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
      * @param pageAddr Page address.
      * @return Partition size.
      */
-    @Override public long getGapsLink(long pageAddr) {
+    public long getGapsLink(long pageAddr) {
         return PageUtils.getLong(pageAddr, GAPS_LINK);
     }
 
@@ -92,7 +92,7 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    @Override public boolean setGapsLink(long pageAddr, long link) {
+    public boolean setGapsLink(long pageAddr, long link) {
         if (getGapsLink(pageAddr) == link)
             return false;
 

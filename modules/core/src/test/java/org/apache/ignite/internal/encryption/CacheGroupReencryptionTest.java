@@ -318,7 +318,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      */
     @Test
     @WithSystemProperty(key = IGNITE_REENCRYPTION_THROTTLE, value = "50")
-    @WithSystemProperty(key = IGNITE_REENCRYPTION_BATCH_SIZE, value = "2")
+    @WithSystemProperty(key = IGNITE_REENCRYPTION_BATCH_SIZE, value = "10")
     @WithSystemProperty(key = IGNITE_REENCRYPTION_THREAD_POOL_SIZE, value = "2")
     public void testPartitionFileDestroy() throws Exception {
         backups = 1;
@@ -341,6 +341,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         awaitPartitionMapExchange(true, true, null);
 
         forceCheckpoint();
+
+        assertTrue(isReencryptionInProgress(Collections.singleton(cacheName())));
 
         checkGroupKey(CU.cacheId(cacheName()), 1, getTestTimeout());
     }
@@ -549,7 +551,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      * @param cacheGroups Cache group names.
      * @return {@code True} If reencryption of the specified groups is not yet complete.
      */
-    private boolean isReencryptionInProgress(List<String> cacheGroups) {
+    private boolean isReencryptionInProgress(Iterable<String> cacheGroups) {
         for (Ignite node : G.allGrids()) {
             for (String groupName : cacheGroups) {
                 if (isReencryptionInProgress((IgniteEx)node, CU.cacheId(groupName)))

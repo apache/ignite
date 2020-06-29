@@ -488,11 +488,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         changed |= io.setGlobalRemoveId(partMetaPageAddr, rmvId);
                         changed |= io.setSize(partMetaPageAddr, size);
 
-                        int encryptIdx = -1;
-                        int encryptCnt = -1;
+                        int encryptIdx = 0;
+                        int encryptCnt = 0;
 
-                        if (!encryptionDisabled && grp.persistenceEnabled() && !beforeDestroy) {
-                            PageStore pageStore = ((FilePageStoreManager)this.ctx.pageStore()).getStore(grpId, part.id());
+                        if (!encryptionDisabled && grp.persistenceEnabled()) {
+                            PageStore pageStore =
+                                ((FilePageStoreManager)this.ctx.pageStore()).getStore(grpId, store.partId());
 
                             encryptIdx = pageStore.encryptedPageIndex();
                             encryptCnt = pageStore.encryptedPageCount();
@@ -1304,14 +1305,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @throws IgniteCheckedException If failed.
      */
     private boolean saveIndexReencryptionStatus(int grpId) throws IgniteCheckedException {
-        boolean changed = false;
-
         PageStore pageStore = ((FilePageStoreManager)ctx.pageStore()).getStore(grpId, PageIdAllocator.INDEX_PARTITION);
 
         int pagesCnt = pageStore.encryptedPageCount();
 
         if (pagesCnt == 0)
             return false;
+
+        boolean changed = false;
 
         int pageOffset = pageStore.encryptedPageIndex();
 
@@ -1356,20 +1357,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (cnt == 0)
             return false;
 
-        boolean changed = false;
-
         if (off == cnt) {
-            off = 0;
-            cnt = 0;
+            off = cnt = 0;
 
             pageStore.encryptedPageIndex(off);
             pageStore.encryptedPageCount(cnt);
         }
 
-        changed |= io.setEncryptedPageIndex(pageAddr, off);
-        changed |= io.setEncryptedPageCount(pageAddr, cnt);
-
-        return changed;
+        return io.setEncryptedPageIndex(pageAddr, off) | io.setEncryptedPageCount(pageAddr, cnt);
     }
 
     /**

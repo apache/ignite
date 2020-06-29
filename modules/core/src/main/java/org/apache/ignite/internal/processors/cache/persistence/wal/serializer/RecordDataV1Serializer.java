@@ -195,7 +195,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int clSz = plainSize(record);
 
         if (needEncryption(record))
-            return encSpi.encryptedSize(clSz) + 4 /* groupId */ + 4 /* data size */ + REC_TYPE_SIZE + 1;
+            return encSpi.encryptedSize(clSz) + 4 /* groupId */ + 4 /* data size */ + 1 /* key ID */ + REC_TYPE_SIZE;
 
         return clSz;
     }
@@ -1252,16 +1252,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case ENCRYPTION_STATUS_RECORD:
                 int grpsCnt = in.readInt();
 
-                Map<Integer, Map<Integer, Integer>> map = new HashMap<>(U.capacity(grpsCnt));
+                Map<Integer, Map<Integer, Integer>> map = U.newHashMap(grpsCnt);
 
                 for (int i = 0; i < grpsCnt; i++) {
                     int grpId = in.readInt();
                     int partsCnt = in.readInt();
 
-                    Map<Integer, Integer> parts = new HashMap<>(partsCnt);
+                    Map<Integer, Integer> parts = U.newHashMap(partsCnt);
 
                     for (int j = 0; j < partsCnt; j++)
-                        parts.put( in.readShort() & 0xffff, in.readInt());
+                        parts.put(in.readShort() & 0xffff, in.readInt());
 
                     map.put(grpId, parts);
                 }
@@ -2220,7 +2220,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             int clSz = entrySize(entry);
 
             if (!encryptionDisabled && needEncryption(cctx.cacheContext(entry.cacheId()).groupId()))
-                sz += encSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */ + 4 /* data size */ + 1 /* key identifier */;
+                sz += encSpi.encryptedSize(clSz) + 1 /*encrypted flag*/ + 4 /*groupId*/ + 4 /*data size*/ + 1 /*key ID*/;
             else {
                 sz += clSz;
 

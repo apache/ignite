@@ -54,10 +54,10 @@ public class PageMetaIO extends PageIO {
     /** End of page meta. */
     static final int END_OF_PAGE_META = CANDIDATE_PAGE_COUNT_OFF + 4;
 
-    /** */
+    /** Total pages for reencryption offset. */
     private static final int ENCRYPT_PAGE_IDX_OFF = END_OF_PAGE_META;
 
-    /** */
+    /** Last reencrypted page index offset. */
     private static final int ENCRYPT_PAGE_MAX_OFF = ENCRYPT_PAGE_IDX_OFF + 4;
 
     /** End of page meta. */
@@ -271,7 +271,7 @@ public class PageMetaIO extends PageIO {
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setEncryptedPageIndex(long pageAddr, int pageIdx) {
-        if (pageIdx < 0 || getEncryptedPageIndex(pageAddr) == pageIdx)
+        if (getEncryptedPageIndex(pageAddr) == pageIdx)
             return false;
 
         PageUtils.putLong(pageAddr, ENCRYPT_PAGE_IDX_OFF, pageIdx);
@@ -294,7 +294,7 @@ public class PageMetaIO extends PageIO {
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setEncryptedPageCount(long pageAddr, int pagesCnt) {
-        if (pagesCnt < 0 || getEncryptedPageCount(pageAddr) == pagesCnt)
+        if (getEncryptedPageCount(pageAddr) == pagesCnt)
             return false;
 
         PageUtils.putInt(pageAddr, ENCRYPT_PAGE_MAX_OFF, pagesCnt);
@@ -311,8 +311,8 @@ public class PageMetaIO extends PageIO {
             .a(",\n\tlastSuccessfulSnapshotTag=").a(getLastSuccessfulSnapshotTag(addr))
             .a(",\n\tlastAllocatedPageCount=").a(getLastAllocatedPageCount(addr))
             .a(",\n\tcandidatePageCount=").a(getCandidatePageCount(addr))
-            .a(",\n\tencryptPageIndex=").a(getEncryptedPageIndex(addr))
-            .a(",\n\tencryptPageCount=").a(getEncryptedPageCount(addr))
+            .a(",\n\tencryptedPageIndex=").a(getEncryptedPageIndex(addr))
+            .a(",\n\tencryptedPageCount=").a(getEncryptedPageCount(addr))
             .a("\n]");
     }
 }

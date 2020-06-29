@@ -238,7 +238,7 @@ public class EncryptedFileIO implements FileIO {
 
         srcBuf.limit(srcBuf.position() + plainDataSize());
 
-        GroupKey grpKey = key();
+        GroupKey grpKey = encMgr.groupKey(groupId);
 
         encSpi.encryptNoPadding(srcBuf, grpKey.key(), res);
 
@@ -291,6 +291,8 @@ public class EncryptedFileIO implements FileIO {
      * Checks encrypted data integrity.
      *
      * @param encrypted Encrypted data buffer.
+     * @return Encryption key identifier.
+     * @throws IOException If data integrity is broken.
      */
     private int checkCRC(ByteBuffer encrypted) throws IOException {
         int crc = FastCrc.calcCrc(encrypted, encryptedDataSize());
@@ -304,12 +306,12 @@ public class EncryptedFileIO implements FileIO {
 
         if (crc != storedCrc) {
             throw new IOException("Content of encrypted page is broken. [StoredCrc=" + storedCrc +
-                ", calculatedCrd=" + crc + "]");
+                ", calculatedCrc=" + crc + "]");
         }
 
         int keyId = encrypted.get() & 0xff;
 
-        encrypted.position(encrypted.position() - (encryptedDataSize() + 4 /* CRC size. */ + 1 /* key identifier */));
+        encrypted.position(encrypted.position() - (encryptedDataSize() + 4 /* CRC size. */ + 1 /* key identifier. */));
 
         return keyId;
     }
@@ -340,13 +342,6 @@ public class EncryptedFileIO implements FileIO {
         src.position(srcPos);
 
         return true;
-    }
-
-    /**
-     * @return Encryption key.
-     */
-    private GroupKey key() {
-        return encMgr.groupKey(groupId);
     }
 
     /** {@inheritDoc} */
