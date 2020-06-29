@@ -498,8 +498,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         if (!encryptionDisabled && grp.persistenceEnabled() && !beforeDestroy) {
                             PageStore pageStore = ((FilePageStoreManager)this.ctx.pageStore()).getStore(grpId, part.id());
 
-                            encryptIdx = pageStore.encryptPageIndex();
-                            encryptCnt = pageStore.encryptPageCount();
+                            encryptIdx = pageStore.encryptedPageIndex();
+                            encryptCnt = pageStore.encryptedPageCount();
 
                             changed |= saveReencryptionStatus(pageStore, partMetaPageAddr, io, encryptIdx, encryptCnt);
                         }
@@ -1091,14 +1091,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     metastoreRoot = pageIO.getTreeRoot(pageAddr);
                     reuseListRoot = pageIO.getReuseListRoot(pageAddr);
 
-                    int encrPageCnt = pageIO.getEncryptPageCount(pageAddr);
+                    int encrPageCnt = pageIO.getEncryptedPageCount(pageAddr);
 
                     if (encrPageCnt > 0) {
                         PageStore pageStore =
                             ((FilePageStoreManager)ctx.pageStore()).getStore(grpId, PageIdAllocator.INDEX_PARTITION);
 
-                        pageStore.encryptPageCount(encrPageCnt);
-                        pageStore.encryptPageIndex(pageIO.getEncryptPageIndex(pageAddr));
+                        pageStore.encryptedPageCount(encrPageCnt);
+                        pageStore.encryptedPageIndex(pageIO.getEncryptedPageIndex(pageAddr));
 
                         ctx.kernalContext().encryption().markForReencryption(grpId);
                     }
@@ -1314,12 +1314,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         PageStore pageStore = ((FilePageStoreManager)ctx.pageStore()).getStore(grpId, PageIdAllocator.INDEX_PARTITION);
 
-        int pagesCnt = pageStore.encryptPageCount();
+        int pagesCnt = pageStore.encryptedPageCount();
 
         if (pagesCnt == 0)
             return false;
 
-        int pageOffset = pageStore.encryptPageIndex();
+        int pageOffset = pageStore.encryptedPageIndex();
 
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
@@ -1372,12 +1372,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             off = 0;
             cnt = 0;
 
-            pageStore.encryptPageIndex(off);
-            pageStore.encryptPageCount(cnt);
+            pageStore.encryptedPageIndex(off);
+            pageStore.encryptedPageCount(cnt);
         }
 
-        changed |= io.setEncryptPageIndex(pageAddr, off);
-        changed |= io.setEncryptPageCount(pageAddr, cnt);
+        changed |= io.setEncryptedPageIndex(pageAddr, off);
+        changed |= io.setEncryptedPageCount(pageAddr, cnt);
 
         return changed;
     }
@@ -2095,13 +2095,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                 delegate0.restoreState(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes, data);
 
-                                int encrPageCnt = io.getEncryptPageCount(pageAddr);
+                                int encrPageCnt = io.getEncryptedPageCount(pageAddr);
 
                                 if (encrPageCnt > 0) {
                                     PageStore pageStore = ((FilePageStoreManager)ctx.pageStore()).getStore(grpId, partId);
 
-                                    pageStore.encryptPageCount(encrPageCnt);
-                                    pageStore.encryptPageIndex(io.getEncryptPageIndex(pageAddr));
+                                    pageStore.encryptedPageCount(encrPageCnt);
+                                    pageStore.encryptedPageIndex(io.getEncryptedPageIndex(pageAddr));
 
                                     ctx.kernalContext().encryption().markForReencryption(grpId);
                                 }

@@ -908,7 +908,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public int encryptPageCount() {
+    @Override public int encryptedPageCount() {
         // todo remove
         assert encryptPageCnt <= pages() || pages() == 0 : "cnt=" + encryptPageCnt + " max=" + pages() + " path=" + getFileAbsolutePath();
 
@@ -916,7 +916,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void encryptPageCount(int encPagesCnt) {
+    @Override public void encryptedPageCount(int encPagesCnt) {
         // todo remove
         assert encPagesCnt <= pages() || pages() == 0 : "cnt=" + encPagesCnt + " max=" + pages() + " path=" + getFileAbsolutePath();
 
@@ -924,12 +924,12 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public int encryptPageIndex() {
+    @Override public int encryptedPageIndex() {
         return encryptPageIdx;
     }
 
     /** {@inheritDoc} */
-    @Override public void encryptPageIndex(int pageIdx) {
+    @Override public void encryptedPageIndex(int pageIdx) {
         this.encryptPageIdx = pageIdx;
     }
 }

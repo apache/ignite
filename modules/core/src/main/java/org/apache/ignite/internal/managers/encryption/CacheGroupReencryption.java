@@ -257,7 +257,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
                     PageStore pageStore = ((FilePageStoreManager)pageStoreMgr).getStore(grpId, partId);
 
-                    if (pageStore.encryptPageCount() == 0) {
+                    if (pageStore.encryptedPageCount() == 0) {
                         if (log.isDebugEnabled())
                             log.debug("Skipping partition reencryption [grp=" + grpId + ", p=" + partId + "]");
 
@@ -353,8 +353,8 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
                     int pagesCnt = pageStore.pages();
 
-                    pageStore.encryptPageCount(pagesCnt);
-                    pageStore.encryptPageIndex(0);
+                    pageStore.encryptedPageCount(pagesCnt);
+                    pageStore.encryptedPageIndex(0);
 
                     storePagesCountOnMetaPage(grp, p, pagesCnt);
 
@@ -395,8 +395,8 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                 PageMetaIO metaIO = partId == PageIdAllocator.INDEX_PARTITION ?
                     PageMetaIO.VERSIONS.forPage(pageAddr) : PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
-                changed |= metaIO.setEncryptPageCount(pageAddr, cnt);
-                changed |= metaIO.setEncryptPageIndex(pageAddr, 0);
+                changed |= metaIO.setEncryptedPageCount(pageAddr, cnt);
+                changed |= metaIO.setEncryptedPageIndex(pageAddr, 0);
 
                 IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
 
@@ -580,8 +580,8 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                 PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
                 long metaPageId = pageMem.partitionMetaPageId(grpId, partId);
                 int pageSize = pageMem.realPageSize(grpId);
-                int pageNum = store.encryptPageIndex();
-                int cnt = store.encryptPageCount();
+                int pageNum = store.encryptedPageIndex();
+                int cnt = store.encryptedPageCount();
 
                 assert cnt <= store.pages() : "cnt=" + cnt + ", max=" + store.pages();
 
@@ -595,7 +595,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                         ctx.cache().context().database().checkpointReadLock();
 
                         try {
-                            if (isDone() || store.encryptPageCount() == 0)
+                            if (isDone() || store.encryptedPageCount() == 0)
                                 break;
 
                             int end = Math.min(pageNum + batchSize, cnt);
@@ -643,7 +643,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                         }
                     }
 
-                    store.encryptPageIndex(pageNum);
+                    store.encryptedPageIndex(pageNum);
 
                     if (timeoutBetweenBatches != 0 && !isDone())
                         U.sleep(timeoutBetweenBatches);

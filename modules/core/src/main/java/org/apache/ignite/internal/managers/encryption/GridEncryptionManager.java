@@ -1553,7 +1553,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                     assert totalPages != 0 : "grpId=" + grpId + ", p=" + partId;
 
-                    pageStore.encryptPageCount(Math.min(savedPages, totalPages));
+                    pageStore.encryptedPageCount(Math.min(savedPages, totalPages));
 
                     reencryption.storePagesCountOnMetaPage(grp, partId, savedPages);
                 }

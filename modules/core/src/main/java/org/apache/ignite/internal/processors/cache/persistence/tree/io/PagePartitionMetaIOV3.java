@@ -244,8 +244,8 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
         sb.a(",\n\tlastSuccessfulSnapshotTag=").a(getLastSuccessfulSnapshotTag(pageAddr));
         sb.a(",\n\tlastAllocatedPageCount=").a(getLastAllocatedPageCount(pageAddr));
         sb.a(",\n\tcandidatePageCount=").a(getCandidatePageCount(pageAddr));
-        sb.a(",\n\tencryptPageIndex=").a(getEncryptPageIndex(pageAddr));
-        sb.a(",\n\tencryptPageCount=").a(getEncryptPageCount(pageAddr));
+        sb.a(",\n\tencryptPageIndex=").a(getEncryptedPageIndex(pageAddr));
+        sb.a(",\n\tencryptPageCount=").a(getEncryptedPageCount(pageAddr));
         sb.a(",\n\tsize=").a(getSize(pageAddr));
         sb.a(",\n\tupdateCounter=").a(getUpdateCounter(pageAddr));
         sb.a(",\n\tglobalRemoveId=").a(getGlobalRemoveId(pageAddr));
@@ -273,7 +273,7 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
 
         PageUtils.putBytes(pageAddr, END_OF_PAGE_META_V2, bytes);
 
-        setEncryptPageIndex(pageAddr, 0);
-        setEncryptPageCount(pageAddr, 0);
+        setEncryptedPageIndex(pageAddr, 0);
+        setEncryptedPageCount(pageAddr, 0);
     }
 }

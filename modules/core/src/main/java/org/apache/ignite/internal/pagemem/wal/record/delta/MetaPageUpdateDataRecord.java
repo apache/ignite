@@ -53,8 +53,8 @@ public class MetaPageUpdateDataRecord extends PageDeltaRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PageMetaIO io = PageMetaIO.VERSIONS.forPage(pageAddr);
 
-        io.setEncryptPageIndex(pageAddr, encryptPageIdx);
-        io.setEncryptPageCount(pageAddr, encryptPageCnt);
+        io.setEncryptedPageIndex(pageAddr, encryptPageIdx);
+        io.setEncryptedPageCount(pageAddr, encryptPageCnt);
     }
 
     /** {@inheritDoc} */

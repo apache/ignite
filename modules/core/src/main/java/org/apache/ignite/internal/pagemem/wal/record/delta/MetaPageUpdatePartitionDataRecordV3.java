@@ -32,10 +32,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class MetaPageUpdatePartitionDataRecordV3 extends MetaPageUpdatePartitionDataRecordV2 {
     /** Index of the last reencrypted page. */
-    private int encryptPageIdx;
+    private int encryptedPageIdx;
 
     /** Total pages to be reencrypted. */
-    private int encryptPageCnt;
+    private int encryptedPageCnt;
 
     /**
      * @param grpId Group id.
@@ -47,8 +47,8 @@ public class MetaPageUpdatePartitionDataRecordV3 extends MetaPageUpdatePartition
      * @param state State.
      * @param allocatedIdxCandidate Allocated index candidate.
      * @param link Link.
-     * @param encryptPageIdx Index of the last reencrypted page.
-     * @param encryptPageCnt Total pages to be reencrypted.
+     * @param encryptedPageIdx Index of the last reencrypted page.
+     * @param encryptedPageCnt Total pages to be reencrypted.
      */
     public MetaPageUpdatePartitionDataRecordV3(
         int grpId,
@@ -60,12 +60,12 @@ public class MetaPageUpdatePartitionDataRecordV3 extends MetaPageUpdatePartition
         byte state,
         int allocatedIdxCandidate,
         long link,
-        int encryptPageIdx,
-        int encryptPageCnt) {
+        int encryptedPageIdx,
+        int encryptedPageCnt) {
         super(grpId, pageId, updateCntr, globalRmvId, partSize, cntrsPageId, state, allocatedIdxCandidate, link);
 
-        this.encryptPageIdx = encryptPageIdx;
-        this.encryptPageCnt = encryptPageCnt;
+        this.encryptedPageIdx = encryptedPageIdx;
+        this.encryptedPageCnt = encryptedPageCnt;
     }
 
     /**
@@ -74,8 +74,8 @@ public class MetaPageUpdatePartitionDataRecordV3 extends MetaPageUpdatePartition
     public MetaPageUpdatePartitionDataRecordV3(DataInput in) throws IOException {
         super(in);
 
-        encryptPageIdx = in.readInt();
-        encryptPageCnt = in.readInt();
+        encryptedPageIdx = in.readInt();
+        encryptedPageCnt = in.readInt();
     }
 
     /** {@inheritDoc} */
@@ -84,30 +84,30 @@ public class MetaPageUpdatePartitionDataRecordV3 extends MetaPageUpdatePartition
 
         PagePartitionMetaIOV3 io = (PagePartitionMetaIOV3)PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
-        io.setEncryptPageIndex(pageAddr, encryptPageIdx);
-        io.setEncryptPageCount(pageAddr, encryptPageCnt);
+        io.setEncryptedPageIndex(pageAddr, encryptedPageIdx);
+        io.setEncryptedPageCount(pageAddr, encryptedPageCnt);
     }
 
     /**
      * @return Index of the last reencrypted page.
      */
-    public int encryptPageIndex() {
-        return encryptPageIdx;
+    public int encryptedPageIndex() {
+        return encryptedPageIdx;
     }
 
     /**
      * @return Total pages to be reencrypted.
      */
-    public int encryptPagesCount() {
-        return encryptPageCnt;
+    public int encryptedPageCount() {
+        return encryptedPageCnt;
     }
 
     /** {@inheritDoc} */
     @Override public void toBytes(ByteBuffer buf) {
         super.toBytes(buf);
 
-        buf.putInt(encryptPageIndex());
-        buf.putInt(encryptPagesCount());
+        buf.putInt(encryptedPageIndex());
+        buf.putInt(encryptedPageCount());
     }
 
     /** {@inheritDoc} */

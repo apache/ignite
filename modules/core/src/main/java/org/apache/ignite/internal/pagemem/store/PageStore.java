@@ -174,20 +174,20 @@ public interface PageStore extends Closeable {
     /**
      * @return Index of the last reencrypted page.
      */
-    public int encryptPageIndex();
+    public int encryptedPageIndex();
 
     /**
      * @param pageIdx Index of the last reencrypted page.
      */
-    public void encryptPageIndex(int pageIdx);
+    public void encryptedPageIndex(int pageIdx);
 
     /**
      * @return Total pages to be reencrypted.
      */
-    public int encryptPageCount();
+    public int encryptedPageCount();
 
     /**
      * @param pagesCnt Total pages to be reencrypted.
      */
-    public void encryptPageCount(int pagesCnt);
+    public void encryptedPageCount(int pagesCnt);
 }
