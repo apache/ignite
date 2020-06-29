@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.monitoring.opencensus;
+package org.apache.ignite.opencensus.spi.metric;
 
 import io.opencensus.exporter.stats.prometheus.PrometheusStatsCollector;
 import io.prometheus.client.exporter.HTTPServer;
@@ -31,12 +31,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
-import org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi;
 import org.junit.Test;
 
-import static org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi.CONSISTENT_ID_TAG;
-import static org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi.INSTANCE_NAME_TAG;
-import static org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi.NODE_ID_TAG;
+import static org.apache.ignite.opencensus.spi.metric.OpenCensusMetricExporterSpi.CONSISTENT_ID_TAG;
+import static org.apache.ignite.opencensus.spi.metric.OpenCensusMetricExporterSpi.INSTANCE_NAME_TAG;
+import static org.apache.ignite.opencensus.spi.metric.OpenCensusMetricExporterSpi.NODE_ID_TAG;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */

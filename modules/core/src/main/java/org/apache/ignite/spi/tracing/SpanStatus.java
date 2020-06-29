@@ -15,12 +15,16 @@
  * limitations under the License.
  */
 
-/**
- *
- */
-package org.apache.ignite.spi.metric.opencensus;
+package org.apache.ignite.spi.tracing;
 
 /**
- * <!-- Package description. -->
- * Contains Opencensus based implementation of MetricExporterSpi.
+ * Various statuses for Spans execution.
  */
+public enum SpanStatus {
+    /** Ok. */
+    OK,
+    /** Cancelled. */
+    CANCELLED,
+    /** Aborted. */
+    ABORTED
+}
