@@ -34,7 +34,7 @@ public class IgniteSpiOperationTimeoutHelper {
     // We need to reuse new logic ExponentialBackoffTimeout logic in TcpDiscovery instead of this class.
 
     /** */
-    private long lastOperationTime;
+    private long lastOperStartNanos;
 
     /** Nanos left. */
     private long leftNanos;
@@ -43,7 +43,7 @@ public class IgniteSpiOperationTimeoutHelper {
     private final boolean timeoutEnabled;
 
     /** Given timeout on operation in nanos. */
-    private final long timeout;
+    private final long timeoutNanos;
 
     /** Absolute time threshold (nanos) which must not be reached. Ignired if negative or 0. */
     private long absolteThreshold;
@@ -57,7 +57,7 @@ public class IgniteSpiOperationTimeoutHelper {
     public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp) {
         timeoutEnabled = adapter.failureDetectionTimeoutEnabled();
 
-        timeout = U.millisToNanos(srvOp ? adapter.failureDetectionTimeout() :
+        timeoutNanos = U.millisToNanos(srvOp ? adapter.failureDetectionTimeout() :
             adapter.clientFailureDetectionTimeout());
     }
 
@@ -71,10 +71,10 @@ public class IgniteSpiOperationTimeoutHelper {
     public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp, long lastOperationNanos) {
         this(adapter, srvOp);
 
-        lastOperationTime = lastOperationNanos;
+        lastOperStartNanos = lastOperationNanos;
 
         if (lastOperationNanos > 0)
-            leftNanos = timeout;
+            leftNanos = timeoutNanos;
     }
 
     /**
@@ -92,17 +92,17 @@ public class IgniteSpiOperationTimeoutHelper {
         if (!timeoutEnabled)
             return checkedLeft(U.millisToNanos(dfltTimeout));
 
-        if (lastOperationTime <= 0) {
-            lastOperationTime = System.nanoTime();
+        if (lastOperStartNanos <= 0) {
+            lastOperStartNanos = System.nanoTime();
 
-            leftNanos = timeout;
+            leftNanos = timeoutNanos;
         }
         else {
             long curNanos = System.nanoTime();
 
-            leftNanos -= curNanos - lastOperationTime;
+            leftNanos -= curNanos - lastOperStartNanos;
 
-            lastOperationTime = curNanos;
+            lastOperStartNanos = curNanos;
         }
 
         return checkedLeft(leftNanos);
@@ -110,8 +110,8 @@ public class IgniteSpiOperationTimeoutHelper {
 
     /** If the absolute time threshold is set, checks it is not reached. */
     private long checkedLeft(long left) throws IgniteSpiOperationTimeoutException {
-        if (left > 0 && absolteThreshold > 0 && lastOperationTime + left > absolteThreshold)
-            left = absolteThreshold - lastOperationTime;
+        if (left > 0 && absolteThreshold > 0 && lastOperStartNanos + left > absolteThreshold)
+            left = absolteThreshold - lastOperStartNanos;
 
         left = U.nanosToMillis(left);
 
@@ -143,6 +143,6 @@ public class IgniteSpiOperationTimeoutHelper {
         if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
             return true;
 
-        return leftNanos <= 0 || (absolteThreshold > 0 && lastOperationTime >= absolteThreshold);
+        return leftNanos <= 0 || (absolteThreshold > 0 && lastOperStartNanos >= absolteThreshold);
     }
 }
