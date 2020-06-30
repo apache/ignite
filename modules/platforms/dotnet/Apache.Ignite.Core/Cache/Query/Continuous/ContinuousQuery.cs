@@ -129,9 +129,6 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// </summary>
         public ICacheEntryEventFilter<TK, TV> Filter { get; set; }
 
-        // TODO: POC
-        internal IBinaryObject BinaryFilter { get; set; }
-
         /// <summary>
         /// Buffer size. When a cache update happens, entry is first put into a buffer.
         /// Entries from buffer will be sent to the master node only if the buffer is

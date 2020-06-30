@@ -108,30 +108,21 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 {
                     writer.WriteLong(_hnd);
                     writer.WriteBoolean(qry.Local);
+                    writer.WriteBoolean(_filter != null);
 
-                    if (qry.BinaryFilter != null)
+                    var javaFilter = _filter as PlatformJavaObjectFactoryProxy;
+
+                    if (javaFilter != null)
                     {
-                        writer.WriteBoolean(true);
-                        writer.WriteObject(qry.BinaryFilter);
+                        writer.WriteObject(javaFilter.GetRawProxy());
                     }
                     else
                     {
-                        writer.WriteBoolean(_filter != null);
+                        var filterHolder = _filter == null || qry.Local
+                            ? null
+                            : new ContinuousQueryFilterHolder(_filter, _keepBinary);
 
-                        var javaFilter = _filter as PlatformJavaObjectFactoryProxy;
-
-                        if (javaFilter != null)
-                        {
-                            writer.WriteObject(javaFilter.GetRawProxy());
-                        }
-                        else
-                        {
-                            var filterHolder = _filter == null || qry.Local
-                                ? null
-                                : new ContinuousQueryFilterHolder(_filter, _keepBinary);
-
-                            writer.WriteObject(filterHolder);
-                        }
+                        writer.WriteObject(filterHolder);
                     }
 
                     writer.WriteInt(qry.BufferSize);

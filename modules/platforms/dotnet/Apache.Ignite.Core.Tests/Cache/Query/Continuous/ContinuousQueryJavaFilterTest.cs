@@ -153,33 +153,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Tests filter created as a Binary Object
-        /// </summary>
-        [Test]
-        public void TestFilterAsBinaryObject()
-        {
-            // org.apache.ignite.platform.PlatformCacheEntryEventFilter
-            var cache = _ignite.GetOrCreateCache<int, int>(TestUtils.TestName);
-
-            var qry = new ContinuousQuery<int, int>(new QueryListener<int>(), false)
-            {
-                BinaryFilter = _ignite.GetBinary()
-                    .GetBuilder("org.apache.ignite.platform.PlatformCacheEntryEventFilter")
-                    .SetByteField("byteField", 1)
-                    .Build()
-            };
-
-            using (cache.QueryContinuous(qry))
-            {
-                cache[1] = 123;
-
-                TestUtils.WaitForCondition(() => _lastEvent != null, 20000);
-
-                Assert.AreEqual(123, _lastEvent.Item2);
-            }
-        }
-
-        /// <summary>
         /// Tests the factory class.
         /// </summary>
         [Test]
