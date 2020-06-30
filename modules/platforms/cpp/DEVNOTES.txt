@@ -8,7 +8,7 @@ further instructions.
 For details on ODBC driver installation and usage please refer to
 $IGNITE_HOME/platforms/cpp/odbc/README.txt.
 
-Building on Linux and Mac OS X with CMake
+Building on Linux and Mac OS X with CMake (Windows currently not yet supported)
 ----------------------------------
 
 Common Requirements:
