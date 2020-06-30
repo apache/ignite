@@ -18,11 +18,11 @@ package org.apache.ignite.springdata20.repository.query.spel;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.springdata20.repository.query.spel.SpelQueryContext.SpelExtractor;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.data.repository.query.EvaluationContextProvider;
 import org.springframework.data.repository.query.Parameters;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**

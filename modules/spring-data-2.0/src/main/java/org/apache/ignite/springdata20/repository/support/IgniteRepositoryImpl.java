@@ -30,8 +30,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.springdata20.repository.IgniteRepository;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.lang.Nullable;
 
 /**
  * General Apache Ignite repository implementation. This bean should've never been loaded by context directly, only via

@@ -27,11 +27,11 @@ import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.data.domain.Range;
 import org.springframework.data.domain.Range.Bound;
 import org.springframework.data.repository.query.EvaluationContextProvider;
 import org.springframework.data.repository.query.Parameters;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**

@@ -21,8 +21,8 @@ import java.util.Map;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.lang.Nullable;
 
 /**
  * Apache Ignite repository that extends basic capabilities of {@link CrudRepository}.

@@ -17,7 +17,7 @@ package org.apache.ignite.springdata22.repository.query;
 
 import java.util.Collections;
 import java.util.List;
-import org.springframework.lang.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
