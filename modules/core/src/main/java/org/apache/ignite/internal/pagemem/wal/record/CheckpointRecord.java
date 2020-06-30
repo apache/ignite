@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 

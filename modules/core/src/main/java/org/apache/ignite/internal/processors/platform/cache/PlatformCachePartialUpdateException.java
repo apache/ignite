@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
+import java.util.Collection;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-
-import java.util.Collection;
 
 /**
  * Interop cache partial update exception.

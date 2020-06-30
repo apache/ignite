@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.cursor;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -24,10 +27,6 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
 
 /**
  * Truth with prediction cursor based on a locally stored data.

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLock;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * Platform wrapper for {@link IgniteLock}.

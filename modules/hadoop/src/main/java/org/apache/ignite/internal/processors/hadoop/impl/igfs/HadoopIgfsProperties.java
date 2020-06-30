@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.util.Map;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
-
-import java.util.Map;
 
 /**
  * Hadoop file system properties.
