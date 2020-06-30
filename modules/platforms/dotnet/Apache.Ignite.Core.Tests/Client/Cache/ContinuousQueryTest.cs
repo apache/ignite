@@ -343,6 +343,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO
         }
 
+        [Test]
+        public void TestServerNodeFailureCausesExceptionInContinuousQueryListener()
+        {
+            // TODO: Stop server node which hosts the query.
+        }
+
         /** */
         private class DelegateListener<TK, TV> : ICacheEntryEventListener<TK, TV>
         {
