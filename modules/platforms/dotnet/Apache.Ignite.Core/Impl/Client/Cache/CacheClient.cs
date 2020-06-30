@@ -956,11 +956,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteInt(qry.PageSize);
             writer.WriteString(qry.Sql);
             QueryBase.WriteQueryArgs(writer, qry.Arguments);
-
-            // .NET client does not discern between different statements for now.
-            // We could have ExecuteNonQuery method, which uses StatementType.Update, for example.
-            writer.WriteByte((byte) StatementType.Any);
-
             writer.WriteBoolean(qry.EnableDistributedJoins);
             writer.WriteBoolean(qry.Local);
             writer.WriteBoolean(qry.EnforceJoinOrder);
