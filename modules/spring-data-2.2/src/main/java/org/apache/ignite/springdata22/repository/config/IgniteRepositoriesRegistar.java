@@ -17,6 +17,7 @@
 package org.apache.ignite.springdata22.repository.config;
 
 import java.lang.annotation.Annotation;
+
 import org.springframework.data.repository.config.RepositoryBeanDefinitionRegistrarSupport;
 import org.springframework.data.repository.config.RepositoryConfigurationExtension;
 
@@ -24,12 +25,16 @@ import org.springframework.data.repository.config.RepositoryConfigurationExtensi
  * Apache Ignite specific implementation of {@link RepositoryBeanDefinitionRegistrarSupport}.
  */
 public class IgniteRepositoriesRegistar extends RepositoryBeanDefinitionRegistrarSupport {
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected Class<? extends Annotation> getAnnotation() {
         return EnableIgniteRepositories.class;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected RepositoryConfigurationExtension getExtension() {
         return new IgniteRepositoryConfigurationExtension();
     }

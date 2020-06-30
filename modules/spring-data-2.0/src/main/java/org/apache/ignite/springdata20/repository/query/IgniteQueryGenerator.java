@@ -29,12 +29,17 @@ import org.springframework.data.repository.query.parser.PartTree;
  * Ignite query generator for Spring Data framework.
  */
 public class IgniteQueryGenerator {
+
+    private IgniteQueryGenerator() {
+    }
+
     /**
-     * @param mtd Method.
+     * @param mtd      Method.
      * @param metadata Metadata.
      * @return Generated ignite query.
      */
-    @NotNull public static IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
+    @NotNull
+    public static IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
         PartTree parts = new PartTree(mtd.getName(), metadata.getDomainType());
 
         boolean isCountOrFieldQuery = parts.isCountProjection();
@@ -56,7 +61,7 @@ public class IgniteQueryGenerator {
             if (isCountOrFieldQuery)
                 sql.append("COUNT(1) ");
             else
-                sql.append(" * ");
+                sql.append("* ");
         }
 
         sql.append("FROM ").append(metadata.getDomainType().getSimpleName());
@@ -87,13 +92,13 @@ public class IgniteQueryGenerator {
             sql.append(parts.getMaxResults().intValue());
         }
 
-        return new IgniteQuery(sql.toString(), isCountOrFieldQuery, getOptions(mtd));
+        return new IgniteQuery(sql.toString(), isCountOrFieldQuery, false, true, getOptions(mtd));
     }
 
     /**
      * Add a dynamic part of query for the sorting support.
      *
-     * @param sql SQL text string.
+     * @param sql  SQL text string.
      * @param sort Sort method.
      * @return Sorting criteria in StringBuilder.
      */
@@ -114,6 +119,7 @@ public class IgniteQueryGenerator {
                         case NULLS_LAST:
                             sql.append("LAST");
                             break;
+                        default:
                     }
                 }
                 sql.append(", ");
@@ -128,13 +134,13 @@ public class IgniteQueryGenerator {
     /**
      * Add a dynamic part of a query for the pagination support.
      *
-     * @param sql Builder instance.
+     * @param sql      Builder instance.
      * @param pageable Pageable instance.
      * @return Builder instance.
      */
     public static StringBuilder addPaging(StringBuilder sql, Pageable pageable) {
-        if (pageable.getSort() != null)
-            addSorting(sql, pageable.getSort());
+
+        addSorting(sql, pageable.getSort());
 
         sql.append(" LIMIT ").append(pageable.getPageSize()).append(" OFFSET ").append(pageable.getOffset());
 
@@ -171,7 +177,7 @@ public class IgniteQueryGenerator {
     }
 
     /**
-     * Transform part to sql expression
+     * Transform part to qryStr expression
      */
     private static void handleQueryPart(StringBuilder sql, Part part) {
         sql.append("(");
@@ -212,15 +218,13 @@ public class IgniteQueryGenerator {
             case TRUE:
                 sql.append(" = TRUE");
                 break;
+            //TODO: review this legacy code, LIKE should be -> LIKE ?
+            case LIKE:
             case CONTAINING:
                 sql.append(" LIKE '%' || ? || '%'");
                 break;
             case NOT_CONTAINING:
-                sql.append(" NOT LIKE '%' || ? || '%'");
-                break;
-            case LIKE:
-                sql.append(" LIKE '%' || ? || '%'");
-                break;
+                //TODO: review this legacy code, NOT_LIKE should be -> NOT LIKE ?
             case NOT_LIKE:
                 sql.append(" NOT LIKE '%' || ? || '%'");
                 break;
@@ -249,4 +253,5 @@ public class IgniteQueryGenerator {
 
         sql.append(")");
     }
+
 }

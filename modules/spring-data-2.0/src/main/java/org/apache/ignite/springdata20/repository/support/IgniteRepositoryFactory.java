@@ -20,15 +20,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata20.repository.IgniteRepository;
+import org.apache.ignite.springdata20.repository.config.DynamicQueryConfig;
 import org.apache.ignite.springdata20.repository.config.Query;
 import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 import org.apache.ignite.springdata20.repository.query.IgniteQuery;
 import org.apache.ignite.springdata20.repository.query.IgniteQueryGenerator;
 import org.apache.ignite.springdata20.repository.query.IgniteRepositoryQuery;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
@@ -45,74 +49,99 @@ import org.springframework.util.StringUtils;
 
 /**
  * Crucial for spring-data functionality class. Create proxies for repositories.
+ * <p>
+ * Supports multiple Ignite Instances on same JVM.
+ * <p>
+ * This is pretty useful working with Spring repositories bound to different Ignite intances within same application.
+ *
+ * @author Apache Ignite Team
+ * @author Manuel Núñez (manuel.nunez@hawkore.com)
  */
 public class IgniteRepositoryFactory extends RepositoryFactorySupport {
-    /** Ignite instance */
-    private Ignite ignite;
+    /**
+     * Spring application context
+     */
+    private final ApplicationContext ctx;
 
-    /** Spring application context */
-    private ApplicationContext ctx;
+    /**
+     * Spring application bean factory
+     */
+    private final DefaultListableBeanFactory beanFactory;
 
-    /** Spring application bean factory */
-    private DefaultListableBeanFactory beanFactory;
+    /**
+     * Spring application expression resolver
+     */
+    private final StandardBeanExpressionResolver resolver = new StandardBeanExpressionResolver();
 
-    /** Spring application expression resolver */
-    private StandardBeanExpressionResolver resolver = new StandardBeanExpressionResolver();
+    /**
+     * Spring application bean expression context
+     */
+    private final BeanExpressionContext beanExpressionContext;
 
-    /** Spring application bean expression context */
-    private BeanExpressionContext beanExpressionContext;
-
-    /** Mapping of a repository to a cache. */
+    /**
+     * Mapping of a repository to a cache.
+     */
     private final Map<Class<?>, String> repoToCache = new HashMap<>();
+
+    /**
+     * Mapping of a repository to a ignite instance.
+     */
+    private final Map<Class<?>, Ignite> repoToIgnite = new HashMap<>();
 
     /**
      * Creates the factory with initialized {@link Ignite} instance.
      *
-     * @param ignite
+     * @param ctx the ctx
      */
-    public IgniteRepositoryFactory(Ignite ignite, ApplicationContext ctx) {
-        this.ignite = ignite;
-
+    public IgniteRepositoryFactory(ApplicationContext ctx) {
         this.ctx = ctx;
 
-        this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
+        beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
 
-        this.beanExpressionContext = new BeanExpressionContext(beanFactory, null);
+        beanExpressionContext = new BeanExpressionContext(beanFactory, null);
+    }
+
+    private Ignite igniteForRepoConfig(RepositoryConfig config) {
+        try {
+            String igniteInstanceName = evaluateExpression(config.igniteInstance());
+            return (Ignite)ctx.getBean(igniteInstanceName);
+        }
+        catch (BeansException ex) {
+            try {
+                String igniteConfigName = evaluateExpression(config.igniteCfg());
+                IgniteConfiguration cfg = (IgniteConfiguration)ctx.getBean(igniteConfigName);
+                try {
+                    // first try to attach to existing ignite instance
+                    return Ignition.ignite(cfg.getIgniteInstanceName());
+                }
+                catch (Exception ignored) {
+                    // nop
+                }
+                return Ignition.start(cfg);
+            }
+            catch (BeansException ex2) {
+                try {
+                    String igniteSpringCfgPath = evaluateExpression(config.igniteSpringCfgPath());
+                    String path = (String)ctx.getBean(igniteSpringCfgPath);
+                    return Ignition.start(path);
+                }
+                catch (BeansException ex3) {
+                    throw new IgniteException("Failed to initialize Ignite repository factory. Ignite instance or"
+                        + " IgniteConfiguration or a path to Ignite's spring XML "
+                        + "configuration must be defined in the"
+                        + " application configuration");
+                }
+            }
+        }
     }
 
     /**
-     * Initializes the factory with provided {@link IgniteConfiguration} that is used to start up an underlying
-     * {@link Ignite} instance.
+     * {@inheritDoc} @param <T>  the type parameter
      *
-     * @param cfg Ignite configuration.
+     * @param <ID>        the type parameter
+     * @param domainClass the domain class
+     * @return the entity information
      */
-    public IgniteRepositoryFactory(IgniteConfiguration cfg, ApplicationContext ctx) {
-        this.ignite = Ignition.start(cfg);
-
-        this.ctx = ctx;
-
-        this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
-
-        this.beanExpressionContext = new BeanExpressionContext(beanFactory, null);
-    }
-
-    /**
-     * Initializes the factory with provided a configuration under {@code springCfgPath} that is used to start up
-     * an underlying {@link Ignite} instance.
-     *
-     * @param springCfgPath A path to Ignite configuration.
-     */
-    public IgniteRepositoryFactory(String springCfgPath, ApplicationContext ctx) {
-        this.ignite = Ignition.start(springCfgPath);
-
-        this.ctx = ctx;
-
-        this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
-
-        this.beanExpressionContext = new BeanExpressionContext(beanFactory, null);
-    }
-
-    /** {@inheritDoc} */
     @Override public <T, ID> EntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
         return new AbstractEntityInformation<T, ID>(domainClass) {
             @Override public ID getId(T entity) {
@@ -125,71 +154,123 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
         };
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc} @param metadata the metadata
+     *
+     * @return the repository base class
+     */
     @Override protected Class<?> getRepositoryBaseClass(RepositoryMetadata metadata) {
         return IgniteRepositoryImpl.class;
     }
 
-    /** {@inheritDoc} */
-    @Override protected RepositoryMetadata getRepositoryMetadata(Class<?> repoItf) {
+    /**
+     * {@inheritDoc} @param repoItf the repo itf
+     *
+     * @return the repository metadata
+     */
+    @Override protected synchronized RepositoryMetadata getRepositoryMetadata(Class<?> repoItf) {
         Assert.notNull(repoItf, "Repository interface must be set.");
         Assert.isAssignable(IgniteRepository.class, repoItf, "Repository must implement IgniteRepository interface.");
 
         RepositoryConfig annotation = repoItf.getAnnotation(RepositoryConfig.class);
 
-        Assert.notNull(annotation, "Set a name of an Apache Ignite cache using @RepositoryConfig annotation to map " +
-            "this repository to the underlying cache.");
+        Assert.notNull(annotation, "Set a name of an Apache Ignite cache using @RepositoryConfig annotation to map "
+            + "this repository to the underlying cache.");
 
-        Assert.hasText(annotation.cacheName(), "Set a name of an Apache Ignite cache using @RepositoryConfig " +
-            "annotation to map this repository to the underlying cache.");
+        Assert.hasText(annotation.cacheName(), "Set a name of an Apache Ignite cache using @RepositoryConfig "
+            + "annotation to map this repository to the underlying cache.");
 
         String cacheName = evaluateExpression(annotation.cacheName());
 
         repoToCache.put(repoItf, cacheName);
 
+        repoToIgnite.put(repoItf, igniteForRepoConfig(annotation));
+
         return super.getRepositoryMetadata(repoItf);
     }
 
     /**
-     *  evaluate the SpEL expression
+     * evaluate the SpEL expression
      *
      * @param spelExpression SpEL expression
      * @return the result of execution of the SpEL expression
      */
-    @NotNull private String evaluateExpression(String spelExpression) {
+    @NotNull
+    private String evaluateExpression(String spelExpression) {
         return (String)resolver.evaluate(spelExpression, beanExpressionContext);
     }
 
-    /** {@inheritDoc} */
-    @Override protected Object getTargetRepository(RepositoryInformation metadata) {
-        return getTargetRepositoryViaReflection(metadata,
-            ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
+    /* control underline cache creation to avoid cache creation by mistake */
+    private IgniteCache getRepositoryCache(Class<?> repoIf) {
+        Ignite ignite = repoToIgnite.get(repoIf);
+
+        RepositoryConfig config = repoIf.getAnnotation(RepositoryConfig.class);
+
+        String cacheName = repoToCache.get(repoIf);
+
+        IgniteCache c = config.autoCreateCache() ? ignite.getOrCreateCache(cacheName) : ignite.cache(cacheName);
+
+        if (c == null) {
+            throw new IllegalStateException(
+                "Cache '" + cacheName + "' not found for repository interface " + repoIf.getName()
+                    + ". Please, add a cache configuration to ignite configuration"
+                    + " or pass autoCreateCache=true to org.apache.ignite.springdata20"
+                    + ".repository.config.RepositoryConfig annotation.");
+        }
+
+        return c;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc} @param metadata the metadata
+     *
+     * @return the target repository
+     */
+    @Override protected Object getTargetRepository(RepositoryInformation metadata) {
+        Ignite ignite = repoToIgnite.get(metadata.getRepositoryInterface());
+        return getTargetRepositoryViaReflection(metadata, ignite,
+            getRepositoryCache(metadata.getRepositoryInterface()));
+    }
+
+    /**
+     * {@inheritDoc} @param key the key
+     *
+     * @param evaluationContextProvider the evaluation context provider
+     * @return the query lookup strategy
+     */
     @Override protected Optional<QueryLookupStrategy> getQueryLookupStrategy(final QueryLookupStrategy.Key key,
-        EvaluationContextProvider evaluationCtxProvider) {
+        EvaluationContextProvider evaluationContextProvider) {
         return Optional.of((mtd, metadata, factory, namedQueries) -> {
 
             final Query annotation = mtd.getAnnotation(Query.class);
+            final Ignite ignite = repoToIgnite.get(metadata.getRepositoryInterface());
 
-            if (annotation != null) {
+            if (annotation != null && (StringUtils.hasText(annotation.value()) || annotation.textQuery() || annotation
+                .dynamicQuery())) {
+
                 String qryStr = annotation.value();
-
-                if (key != QueryLookupStrategy.Key.CREATE && StringUtils.hasText(qryStr)) {
-                    return new IgniteRepositoryQuery(metadata,
-                            new IgniteQuery(qryStr, isFieldQuery(qryStr), IgniteQueryGenerator.getOptions(mtd)),
-                            mtd, factory, ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
+                boolean annotatedIgniteQuery = !annotation.dynamicQuery() && (StringUtils.hasText(qryStr) || annotation
+                    .textQuery());
+                IgniteQuery query = annotatedIgniteQuery ? new IgniteQuery(qryStr,
+                    !annotation.textQuery() && (isFieldQuery(qryStr) || annotation.forceFieldsQuery()),
+                    annotation.textQuery(), false, IgniteQueryGenerator.getOptions(mtd)) : null;
+                if (key != QueryLookupStrategy.Key.CREATE) {
+                    return new IgniteRepositoryQuery(ignite, metadata, query, mtd, factory,
+                        getRepositoryCache(metadata.getRepositoryInterface()),
+                        annotatedIgniteQuery ? DynamicQueryConfig.fromQueryAnnotation(annotation) : null,
+                        evaluationContextProvider);
                 }
             }
 
             if (key == QueryLookupStrategy.Key.USE_DECLARED_QUERY) {
-                throw new IllegalStateException("To use QueryLookupStrategy.Key.USE_DECLARED_QUERY, pass " +
-                        "a query string via org.apache.ignite.springdata.repository.config.Query annotation.");
+                throw new IllegalStateException("To use QueryLookupStrategy.Key.USE_DECLARED_QUERY, pass "
+                    + "a query string via org.apache.ignite.springdata20.repository"
+                    + ".config.Query annotation.");
             }
 
-            return new IgniteRepositoryQuery(metadata, IgniteQueryGenerator.generateSql(mtd, metadata), mtd,
-                factory, ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
+            return new IgniteRepositoryQuery(ignite, metadata, IgniteQueryGenerator.generateSql(mtd, metadata), mtd,
+                factory, getRepositoryCache(metadata.getRepositoryInterface()),
+                DynamicQueryConfig.fromQueryAnnotation(annotation), evaluationContextProvider);
         });
     }
 
@@ -197,7 +278,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      * @param qry Query string.
      * @return {@code true} if query is SqlFieldsQuery.
      */
-    private boolean isFieldQuery(String qry) {
+    public static boolean isFieldQuery(String qry) {
         String qryUpperCase = qry.toUpperCase();
 
         return isStatement(qryUpperCase) && !qryUpperCase.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
@@ -207,11 +288,19 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      * Evaluates if the query starts with a clause.<br>
      * <code>SELECT, INSERT, UPDATE, MERGE, DELETE</code>
      *
-     * @param qryUpperCase  Query string in upper case.
+     * @param qryUpperCase Query string in upper case.
      * @return {@code true} if query is full SQL statement.
      */
-    private boolean isStatement(String qryUpperCase ) {
-        return qryUpperCase.matches("^\\s*SELECT\\b.*") || qryUpperCase.matches("^\\s*UPDATE\\b.*") || qryUpperCase.matches("^\\s*DELETE\\b.*") ||
-            qryUpperCase.matches("^\\s*MERGE\\b.*") || qryUpperCase.matches("^\\s*INSERT\\b.*");
+    private static boolean isStatement(String qryUpperCase) {
+        return qryUpperCase.matches("^\\s*SELECT\\b.*") ||
+            // update
+            qryUpperCase.matches("^\\s*UPDATE\\b.*") ||
+            // delete
+            qryUpperCase.matches("^\\s*DELETE\\b.*") ||
+            // merge
+            qryUpperCase.matches("^\\s*MERGE\\b.*") ||
+            // insert
+            qryUpperCase.matches("^\\s*INSERT\\b.*");
     }
+
 }
