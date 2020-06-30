@@ -34,9 +34,6 @@ import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
-import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
-
 /**
  * Tracing SPI implementation based on OpenCensus library.
  *
@@ -117,14 +114,14 @@ public class OpenCensusTracingSpi extends IgniteSpiAdapter implements TracingSpi
 
             Sampler sampler;
 
-            if (Double.compare(samplingRate, SAMPLING_RATE_NEVER) == 0) {
+            if (Double.compare(samplingRate, 0) == 0) {
                 // We should never get here, because of an optimization that produces {@code NoopSpan.Instance}
                 // instead of a span with {@code SAMPLING_RATE_NEVER} sampling rate. It is useful cause in case
                 // of {@code NoopSpan.Instance} we will not send span data over the network.assert false;
 
                 sampler = Samplers.neverSample(); // Just in case.
             }
-            else if (Double.compare(samplingRate, SAMPLING_RATE_ALWAYS) == 0)
+            else if (Double.compare(samplingRate, 1) == 0)
                 sampler = Samplers.alwaysSample();
             else
                 sampler = Samplers.probabilitySampler(samplingRate);
