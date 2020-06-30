@@ -58,6 +58,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_REENCRYPTION_DISAB
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REENCRYPTION_THREAD_POOL_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REENCRYPTION_THROTTLE;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
+import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.INITIAL_KEY_ID;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
@@ -106,19 +107,19 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        stopAllGrids();
-
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
     @Override protected <K, V> CacheConfiguration<K, V> cacheConfiguration(String name, String grp) {
         CacheConfiguration<K, V> cfg = super.cacheConfiguration(name, grp);
 
         cfg.setIndexedTypes(Long.class, IndexedObject.class);
 
         return cfg.setAffinity(new RendezvousAffinityFunction(false, 16)).setBackups(backups);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -171,7 +172,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         checkEncryptedCaches(nodes.get1(), nodes.get2());
 
-        checkGroupKey(grpId, 1, MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
 
     /** @throws Exception If failed. */
@@ -229,7 +230,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         checkEncryptedCaches(nodes.get1(), nodes.get2());
 
-        checkGroupKey(grpId, 1, MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
 
     /** @throws Exception If failed. */
@@ -239,29 +240,37 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     public void testCacheStopDuringReencryption() throws Exception {
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
 
-        createEncryptedCache(nodes.get1(), nodes.get2(), cacheName(), null);
+        IgniteEx node0 = nodes.get1();
+        IgniteEx node1 = nodes.get2();
+
+        createEncryptedCache(node0, node1, cacheName(), null);
 
         loadData(100_000);
-
-        IgniteEx node0 = nodes.get1();
 
         IgniteCache cache = node0.cache(cacheName());
 
         node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
-        IgniteInternalFuture<Void> fut0 = node0.context().encryption().reencryptionFuture(CU.cacheId(cacheName()));
+        int grpId = CU.cacheId(cacheName());
+
+        IgniteInternalFuture<Void> fut0 = node0.context().encryption().reencryptionFuture(grpId);
 
         assertFalse(fut0.isDone());
-        assertTrue(isReencryptionInProgress(node0, CU.cacheId(cacheName())));
+
+        assertTrue(isReencryptionInProgress(node0, grpId));
 
         cache.destroy();
 
-        // todo CacheStopException?
         assertThrowsAnyCause(log, () -> {
             fut0.get();
 
             return null;
         }, IgniteFutureCancelledCheckedException.class, null);
+
+        awaitPartitionMapExchange();
+
+        assertNull(node0.context().encryption().groupKeysInfo(grpId));
+        assertNull(node1.context().encryption().groupKeysInfo(grpId));
     }
 
     /** @throws Exception If failed. */
@@ -308,7 +317,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         startTestGrids(false);
 
-        checkGroupKey(grpId, 1, MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
 
     /**
@@ -344,7 +353,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         assertTrue(isReencryptionInProgress(Collections.singleton(cacheName())));
 
-        checkGroupKey(CU.cacheId(cacheName()), 1, getTestTimeout());
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, getTestTimeout());
     }
 
     /**
@@ -400,7 +409,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         checkEncryptedCaches(nodes.get1(), nodes.get2());
 
-        checkGroupKey(CU.cacheId(cacheName()), 1, getTestTimeout());
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, getTestTimeout());
     }
 
     /**
@@ -446,7 +455,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         startTestGrids(false);
 
-        checkGroupKey(grpId, 1, MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
 
     /**
@@ -486,7 +495,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         startTestGrids(false);
 
-        awaitEncryption(G.allGrids(), grpId, MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
 
     /**
@@ -543,23 +552,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         awaitPartitionMapExchange();
 
-        checkGroupKey(CU.cacheId(cacheName()), 1, MAX_AWAIT_MILLIS);
-        checkGroupKey(CU.cacheId(cache2), 1, MAX_AWAIT_MILLIS);
-    }
-
-    /**
-     * @param cacheGroups Cache group names.
-     * @return {@code True} If reencryption of the specified groups is not yet complete.
-     */
-    private boolean isReencryptionInProgress(Iterable<String> cacheGroups) {
-        for (Ignite node : G.allGrids()) {
-            for (String groupName : cacheGroups) {
-                if (isReencryptionInProgress((IgniteEx)node, CU.cacheId(groupName)))
-                    return true;
-            }
-        }
-
-        return false;
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+        checkGroupKey(CU.cacheId(cache2), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
 
     /** @throws Exception If failed. */
@@ -602,7 +596,22 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         checkEncryptedCaches(node0, node1);
 
-        checkGroupKey(grpId, 1, MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+    }
+
+    /**
+     * @param cacheGroups Cache group names.
+     * @return {@code True} If reencryption of the specified groups is not yet complete.
+     */
+    private boolean isReencryptionInProgress(Iterable<String> cacheGroups) {
+        for (Ignite node : G.allGrids()) {
+            for (String groupName : cacheGroups) {
+                if (isReencryptionInProgress((IgniteEx)node, CU.cacheId(groupName)))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /** */

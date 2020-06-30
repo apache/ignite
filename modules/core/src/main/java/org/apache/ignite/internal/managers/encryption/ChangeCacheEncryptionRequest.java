@@ -68,7 +68,7 @@ public class ChangeCacheEncryptionRequest implements Serializable {
     /**
      * @return Cache group IDs.
      */
-    public int[] groups() {
+    public int[] groupIds() {
         return grpIds;
     }
 
@@ -82,7 +82,7 @@ public class ChangeCacheEncryptionRequest implements Serializable {
     /**
      * @return Key identifiers.
      */
-    public byte[] keyIdentifiers() { return keyIds; }
+    public byte[] keyIds() { return keyIds; }
 
     /**
      * @return Initial topology version.
