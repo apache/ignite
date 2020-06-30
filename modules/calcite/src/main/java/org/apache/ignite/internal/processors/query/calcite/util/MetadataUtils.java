@@ -18,29 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexExecutor;
-import org.apache.calcite.rex.RexNode;
-
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.context;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 
 /** */
-public class RexUtils {
+public class MetadataUtils {
     /** */
-    public static RexNode makeCast(RexBuilder builder, RelDataType toType, RexNode node) {
-        return TypeUtils.needCast(builder.getTypeFactory(), node.getType(), toType)
-            ? builder.makeCast(toType, node)
-            : node;
-    }
-
-    /** */
-    public static RexBuilder builder(RelNode rel) {
-        return rel.getCluster().getRexBuilder();
-    }
-
-    /** */
-    public static RexExecutor executor(RelNode rel) {
-        return context(rel).rexExecutor();
+    public static RelMetadataQuery mq(RelNode rel) {
+        return rel.getCluster().getMetadataQuery();
     }
 }

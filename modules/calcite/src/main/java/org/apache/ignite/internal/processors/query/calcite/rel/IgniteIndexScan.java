@@ -406,7 +406,10 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCount = estimateRowCount(mq);
+        double rowCount = table.getRowCount() * idxSelectivity;
+
+        if (cond != null)
+            rowCount += rowCount * mq.getSelectivity(this, cond);
 
         if (!PK_INDEX_NAME.equals(indexName()))
             rowCount = RelMdUtil.addEpsilon(rowCount);
@@ -416,16 +419,11 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        double rows = table.getRowCount();
+        double rows = table.getRowCount() * idxSelectivity;
 
-        double rowsIn = rows * idxSelectivity;
-        double rowsOut = rowsIn;
+        if (cond != null)
+            rows *= mq.getSelectivity(this, cond);
 
-        if (cond != null) {
-            Double sel = mq.getSelectivity(this, cond);
-            rowsOut *= sel;
-        }
-
-        return rowsIn + rowsOut;
+        return rows;
     }
 }

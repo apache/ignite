@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
@@ -302,5 +304,18 @@ public final class Commons {
         } catch (Exception e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** */
+    public static void checkRange(@NotNull Object[] array, int idx) {
+        if (idx < 0 || idx >= array.length)
+            throw new ArrayIndexOutOfBoundsException(idx);
+    }
+
+    /** */
+    public static <T> T[] ensureCapacity(T[] array, int required) {
+        A.ensure(required >= 0, "capacity must not be negative");
+
+        return array.length <= required ? Arrays.copyOf(array, U.nextPowerOf2(required)) : array;
     }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -31,7 +30,10 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
 
 /**
  * Runtime context allowing access to the tables in a database.
@@ -59,7 +61,7 @@ public class ExecutionContext<Row> implements DataContext {
     private final ExpressionFactory<Row> expressionFactory;
 
     /** */
-    private final List<Object> correlations;
+    private Object[] correlations = new Object[16];
 
     /** */
     private volatile boolean cancelled;
@@ -87,8 +89,6 @@ public class ExecutionContext<Row> implements DataContext {
         this.params = params;
 
         expressionFactory = new ExpressionFactoryImpl<>(this, ctx.typeFactory(), ctx.conformance());
-
-        correlations = new ArrayList<>();
     }
 
     /**
@@ -210,7 +210,9 @@ public class ExecutionContext<Row> implements DataContext {
      * @return Correlated value.
      */
     public @NotNull Object getCorrelated(int id) {
-        return correlations.get(id);
+        checkRange(correlations, id);
+
+        return correlations[id];
     }
 
     /**
@@ -220,10 +222,9 @@ public class ExecutionContext<Row> implements DataContext {
      * @param value Correlated value.
      */
     public void setCorrelated(@NotNull Object value, int id) {
-        while (correlations.size() <= id)
-            correlations.add(null);
+        correlations = Commons.ensureCapacity(correlations, id + 1);
 
-        correlations.set(id, value);
+        correlations[id] = value;
     }
 
     /**

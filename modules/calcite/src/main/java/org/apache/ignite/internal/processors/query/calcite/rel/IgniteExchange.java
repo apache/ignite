@@ -29,7 +29,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -78,7 +77,7 @@ public class IgniteExchange extends Exchange implements IgniteRel {
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCount = mq.getRowCount(this);
         double bytesPerRow = getRowType().getFieldCount() * 4;
-        return planner.getCostFactory().makeCost(Util.nLogN(rowCount) * bytesPerRow, rowCount, 0);
+        return planner.getCostFactory().makeCost(rowCount * bytesPerRow, rowCount, 0);
     }
 
     /** {@inheritDoc} */

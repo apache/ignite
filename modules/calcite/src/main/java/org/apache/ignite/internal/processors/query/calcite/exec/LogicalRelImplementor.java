@@ -27,7 +27,6 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -84,7 +83,10 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.context;
+import static org.apache.calcite.plan.RelOptPredicateList.EMPTY;
+import static org.apache.ignite.internal.processors.query.calcite.util.MetadataUtils.mq;
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.builder;
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.executor;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
 
 /**
@@ -150,12 +152,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteFilter rel) {
-        RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-        RelOptPredicateList predicates = mq.getPulledUpPredicates(rel.getInput());
-        RexSimplify simplify = new RexSimplify(rel.getCluster().getRexBuilder(), predicates, context(rel).rexExecutor());
-        RexNode condition = simplify.simplifyUnknownAsFalse(rel.getCondition());
-
-        Predicate<Row> pred = expressionFactory.predicate(condition, rel.getRowType());
+        Predicate<Row> pred = expressionFactory.predicate(simplify(rel, rel.getInput(), rel.getCondition()), rel.getRowType());
 
         FilterNode<Row> node = new FilterNode<>(ctx, pred);
 
@@ -268,20 +265,14 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteIndexScan rel) {
-        Predicate<Row> filters = null;
-
-        if (rel.condition() != null) {
-            RexSimplify simplify = new RexSimplify(rel.getCluster().getRexBuilder(), RelOptPredicateList.EMPTY, context(rel).rexExecutor());
-            RexNode condition = simplify.simplifyUnknownAsFalse(rel.condition());
-
-            filters = expressionFactory.predicate(condition, rel.getRowType());
-        }
+        RexNode condition = rel.condition();
+        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(simplify(rel, null, condition), rel.getRowType());
 
         List<RexNode> lowerCond = rel.lowerIndexCondition();
-        Supplier<Row> lower = lowerCond == null ? null : expressionFactory.asRow(lowerCond, rel.getRowType());
+        Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
 
         List<RexNode> upperCond = rel.upperIndexCondition();
-        Supplier<Row> upper = upperCond == null ? null : expressionFactory.asRow(upperCond, rel.getRowType());
+        Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
 
         IgniteTable tbl = rel.igniteTable();
 
@@ -432,6 +423,12 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         ToIntFunction<Object> partFunction = function.partitionFunction(partSvc, ctx.partitionsCount(), keys);
 
         return o -> filter.get(partFunction.applyAsInt(o));
+    }
+
+    /** */
+    private RexNode simplify(RelNode rel, RelNode input, RexNode condition) {
+        RelOptPredicateList predicates = input != null ? mq(rel).getPulledUpPredicates(input) : EMPTY;
+        return new RexSimplify(builder(rel), predicates, executor(rel)).simplifyUnknownAsFalse(condition);
     }
 
     /** */

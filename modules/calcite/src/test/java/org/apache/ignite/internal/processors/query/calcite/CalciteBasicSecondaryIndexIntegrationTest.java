@@ -443,7 +443,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testComplexIndexCondition9() {
         assertQuery("SELECT * FROM Developer WHERE name>='Mozart' AND depId>=2 AND city>='Vienna'")
-            .containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX)
+            .containsAnyScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX, NAME_DEPID_CITY_IDX, DEPID_IDX)
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
     }
