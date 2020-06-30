@@ -41,8 +41,9 @@ import org.springframework.data.repository.query.QueryLookupStrategy.Key;
 @Import(IgniteRepositoriesRegistar.class)
 public @interface EnableIgniteRepositories {
     /**
-     * Alias for the {@link #basePackages()} attribute. Allows for more concise annotation declarations e.g.: {@code
-     * @EnableIgniteRepositories("org.my.pkg")} instead of {@code @EnableIgniteRepositories(basePackages="org.my.pkg")}.
+     * Alias for the {@link #basePackages()} attribute. Allows for more concise annotation declarations e.g.:
+     * {@code @EnableIgniteRepositories("org.my.pkg")} instead of
+     * {@code @EnableIgniteRepositories(basePackages="org.my.pkg")}.
      */
     String[] value() default {};
 
