@@ -173,7 +173,7 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
             if (waitingRight == 0)
                 sources.get(1).request(waitingRight = IN_BUFFER_SIZE);
         }
-        catch (Exception e){
+        catch (Exception e) {
             onError(e);
         }
     }

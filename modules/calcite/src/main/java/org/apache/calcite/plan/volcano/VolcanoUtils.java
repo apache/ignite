@@ -18,6 +18,7 @@
 package org.apache.calcite.plan.volcano;
 
 import org.apache.calcite.plan.RelOptCost;
+
 /** */
 public class VolcanoUtils {
     /** */

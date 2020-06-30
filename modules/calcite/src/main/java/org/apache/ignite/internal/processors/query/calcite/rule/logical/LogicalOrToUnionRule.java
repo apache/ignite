@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
@@ -27,11 +26,9 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 
 /**
@@ -86,22 +83,12 @@ public class LogicalOrToUnionRule extends RelOptRule {
      * @return UnionAll expression.
      */
     private RelNode createUnionAll(RelOptCluster cluster, RelNode input, RexNode op1, RexNode op2) {
-        final RelBuilder builder = relBuilderFactory.create(cluster, null);
-        final RexBuilder rexBuilder = cluster.getRexBuilder();
+        RelBuilder builder = relBuilderFactory.create(cluster, null);
 
-        builder.push(input).filter(op1);
-        builder.push(input).filter(
-            builder.and(op2,
-                // LNNVL is used here. We must treat 'null' values as valid.
-                rexBuilder.makeCall(op1.getType(), SqlStdOperatorTable.CASE,
-                    ImmutableList.of(
-                        rexBuilder.makeCall(SqlStdOperatorTable.IS_NOT_NULL, op1),
-                        RexUtil.not(op1),
-                        rexBuilder.makeLiteral(true))
-                )
-            )
-        );
-
-        return builder.union(true).build();
+        return builder
+            .push(input).filter(op1)
+            .push(input).filter(builder.and(op2,
+                builder.or(builder.isNull(op1), RexUtil.not(op1))))
+            .union(true).build();
     }
 }

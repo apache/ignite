@@ -122,9 +122,9 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             "FROM products " +
             "WHERE category = 'Video' " +
             "OR subcategory ='Camera Lens'")
-            .and(containsUnion(true))
-            .and(containsScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
-            .and(containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"))
+            .matches(containsUnion(true))
+            .matches(containsScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
+            .matches(containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"))
             .returns(3, "Photo", 1, "Camera Lens", 12, "Lens 1")
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
@@ -144,9 +144,9 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             "FROM products " +
             "WHERE subcategory = 'Camera Lens' " +
             "OR subcategory = 'Other'")
-            .and(containsUnion(true))
-            .and(containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"))
-            .and(containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"))
+            .matches(containsUnion(true))
+            .matches(containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"))
+            .matches(containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"))
             .returns(3, "Photo", 1, "Camera Lens", 12, "Lens 1")
             .returns(4, "Photo", 1, "Other", 12, "Charger 1")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
@@ -165,9 +165,9 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             "FROM products " +
             "WHERE category = 'Photo' " +
             "OR (subcat_id > 12 AND subcat_id < 22)")
-            .and(containsUnion(true))
-            .and(containsScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
-            .and(containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCAT_ID"))
+            .matches(containsUnion(true))
+            .matches(containsScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
+            .matches(containsScan("PUBLIC", "PRODUCTS", "IDX_SUBCAT_ID"))
             .returns(1, "Photo", 1, "Camera Media", 11, "Media 1")
             .returns(2, "Photo", 1, "Camera Media", 11, "Media 2")
             .returns(3, "Photo", 1, "Camera Lens", 12, "Lens 1")
@@ -187,8 +187,8 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             "FROM products " +
             "WHERE cat_id > 1 " +
             "OR subcat_id < 10")
-            .and(not(containsUnion(true)))
-            .and(containsScan("PUBLIC", "PRODUCTS", "PK"))
+            .matches(not(containsUnion(true)))
+            .matches(containsScan("PUBLIC", "PRODUCTS", "PK"))
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
             .returns(7, "Video", 1, null, 0, "Canon")
@@ -201,15 +201,15 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12819")
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12819")
     public void testNonIndexedOrToUnionAllRewrite() throws Exception {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE name = 'Canon' " +
             "OR category = 'Video'")
-            .and(not(containsUnion(true)))
-            .and(containsScan("PUBLIC", "PRODUCTS", "PK"))
+            .matches(not(containsUnion(true)))
+            .matches(containsScan("PUBLIC", "PRODUCTS", "PK"))
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
             .returns(7, "Video", 1, null, 0, "Canon")
@@ -222,13 +222,14 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12819")
     public void testAllNonIndexedOrToUnionAllRewrite() throws Exception {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE name = 'Canon' " +
             "OR name = 'Sony'")
-            .and(not(containsUnion(true)))
-            .and(containsScan("PUBLIC", "PRODUCTS", "PK"))
+            .matches(not(containsUnion(true)))
+            .matches(containsScan("PUBLIC", "PRODUCTS", "PK"))
             .returns(7, "Video", 1, null, 0, "Canon")
             .check();
     }
