@@ -349,10 +349,24 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO
         }
 
+        /// <summary>
+        /// Tests that listener gets notified about connection failure with a special event.
+        /// </summary>
         [Test]
-        public void TestServerNodeFailureCausesExceptionInContinuousQueryListener()
+        public void TestDisconnectCausesExceptionInContinuousQueryListener()
         {
-            // TODO: Stop server node which hosts the query.
+            ICacheEntryEvent<int, int> lastEvt = null;
+            var qry = new ContinuousQuery<int,int>(
+                new DelegateListener<int, int>(e => lastEvt = e));
+
+            using (var client = GetClient())
+            {
+                var cache = client.GetOrCreateCache<int, int>(TestUtils.TestName);
+
+                cache.QueryContinuous(qry);
+            }
+
+            Assert.IsNotNull(lastEvt);
         }
 
         /** */
