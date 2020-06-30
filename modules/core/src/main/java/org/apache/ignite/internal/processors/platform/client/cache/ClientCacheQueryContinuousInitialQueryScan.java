@@ -58,7 +58,8 @@ class ClientCacheQueryContinuousInitialQueryScan extends ClientCacheQueryContinu
 
         int part0 = reader.readInt();
         part = part0 < 0 ? null : part0;
-                loc = reader.readBoolean();
+
+        loc = reader.readBoolean();
     }
 
     /**

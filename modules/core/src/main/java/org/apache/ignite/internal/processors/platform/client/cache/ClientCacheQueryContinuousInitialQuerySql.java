@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
@@ -35,37 +35,7 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings({"rawtypes"})
 class ClientCacheQueryContinuousInitialQuerySql extends ClientCacheQueryContinuousInitialQuery {
     /** */
-    private final String schema;
-
-    /** */
-    private final String sql;
-
-    /** */
-    private final Object[] args;
-
-    /** */
-    private final int pageSize;
-
-    /** */
-    private final JdbcStatementType stmtType;
-
-    /** */
-    private final boolean distributedJoins;
-
-    /** */
-    private final boolean loc;
-
-    /** */
-    private final boolean enforceJoinOrder;
-
-    /** */
-    private final boolean collocated;
-
-    /** */
-    private final boolean lazy;
-
-    /** */
-    private final int timeout;
+    private final SqlFieldsQuery qry;
 
     /**
      * Ctor.
@@ -73,27 +43,19 @@ class ClientCacheQueryContinuousInitialQuerySql extends ClientCacheQueryContinuo
      * @param reader Reader.
      */
     public ClientCacheQueryContinuousInitialQuerySql(BinaryRawReaderEx reader) {
+        String schema = reader.readString();
+        int pageSize = reader.readInt();
+        String sql = reader.readString();
+        Object[] args = PlatformCache.readQueryArgs(reader);
+        boolean distributedJoins = reader.readBoolean();
+        boolean loc = reader.readBoolean();
+        boolean enforceJoinOrder = reader.readBoolean();
+        boolean collocated = reader.readBoolean();
+        boolean lazy = reader.readBoolean();
+        long timeout = reader.readLong();
 
-        schema = reader.readString();
-        pageSize = reader.readInt();
-        sql = reader.readString();
-        args = PlatformCache.readQueryArgs(reader);
-        stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
-        distributedJoins = reader.readBoolean();
-        loc = reader.readBoolean();
-        enforceJoinOrder = reader.readBoolean();
-        collocated = reader.readBoolean();
-        lazy = reader.readBoolean();
-        timeout = (int) reader.readLong();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Query getQuery(GridKernalContext ctx) {
-        SqlFieldsQuery qry = stmtType == JdbcStatementType.ANY_STATEMENT_TYPE
-                ? new SqlFieldsQuery(sql)
-                : new SqlFieldsQueryEx(sql,stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE);
-
-        qry.setSchema(schema)
+        qry = new SqlFieldsQuery(sql)
+                .setSchema(schema)
                 .setPageSize(pageSize)
                 .setArgs(args)
                 .setDistributedJoins(distributedJoins)
@@ -103,13 +65,16 @@ class ClientCacheQueryContinuousInitialQuerySql extends ClientCacheQueryContinuo
                 .setLazy(lazy);
 
         if (timeout >= 0)
-            qry.setTimeout(timeout, TimeUnit.MILLISECONDS);
+            qry.setTimeout((int) timeout, TimeUnit.MILLISECONDS);
+    }
 
+    /** {@inheritDoc} */
+    @Override public Query getQuery(GridKernalContext ctx) {
         return qry;
     }
 
     /** {@inheritDoc} */
     @Override public ClientCacheQueryCursor getClientCursor(QueryCursor cursor, ClientConnectionContext ctx) {
-        return new ClientCacheFieldsQueryCursor((QueryCursorEx<List<?>>) cursor, pageSize, ctx, false);
+        return new ClientCacheFieldsQueryCursor((QueryCursorEx<List<?>>) cursor, qry.getPageSize(), ctx, false);
     }
 }
