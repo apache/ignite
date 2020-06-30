@@ -37,6 +37,14 @@ public class SemiJoinNode<Row> extends AbstractJoinNode<Row> {
     }
 
     /** {@inheritDoc} */
+    @Override protected void resetInternal() {
+        left = null;
+        rightIdx = 0;
+
+        super.resetInternal();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void doJoinInternal() {
         if (waitingRight == NOT_WAITING) {
             while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {

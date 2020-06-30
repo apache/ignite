@@ -94,7 +94,8 @@ public abstract class AbstractNode<Row> implements Node<Row> {
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        sources.forEach(Node::reset);
+        if (!F.isEmpty(sources))
+            sources.forEach(Node::reset);
 
         resetInternal();
     }

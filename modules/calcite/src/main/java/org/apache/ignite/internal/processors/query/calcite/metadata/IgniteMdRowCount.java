@@ -14,6 +14,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.NumberUtil.multiply;
 
@@ -24,6 +25,11 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
     /** {@inheritDoc} */
     @Override public Double getRowCount(Join rel, RelMetadataQuery mq) {
+        return joinRowCount(mq, rel);
+    }
+
+    /** */
+    @Nullable public static Double joinRowCount(RelMetadataQuery mq, Join rel) {
         if (!rel.getJoinType().projectsRight()) {
           // Create a RexNode representing the selectivity of the
           // semijoin filter and pass it to getSelectivity

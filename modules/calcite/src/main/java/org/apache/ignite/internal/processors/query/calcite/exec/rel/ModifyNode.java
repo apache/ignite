@@ -194,8 +194,8 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
             }
 
             if (state == State.END && requested > 0) {
-                downstream.end();
                 requested = 0;
+                downstream.end();
             }
         }
         catch (Exception e) {

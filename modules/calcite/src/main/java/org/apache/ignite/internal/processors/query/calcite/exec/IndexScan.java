@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.query.h2.database.H2TreeFilterClosu
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
@@ -83,10 +85,10 @@ public class IndexScan<Row> implements Iterable<Row> {
     private final Predicate<Row> filters;
 
     /** Lower index scan bound. */
-    private final Row lowerBound;
+    private final Supplier<Row> lowerBound;
 
     /** Upper index scan bound. */
-    private final Row upperBound;
+    private final Supplier<Row> upperBound;
 
     /** */
     private final int[] partsArr;
@@ -95,7 +97,7 @@ public class IndexScan<Row> implements Iterable<Row> {
     private final MvccSnapshot mvccSnapshot;
 
     /** */
-    private List<GridDhtLocalPartition> partsToReserve;
+    private List<GridDhtLocalPartition> reserved;
 
     /**
      * @param ctx Cache context.
@@ -108,8 +110,8 @@ public class IndexScan<Row> implements Iterable<Row> {
         ExecutionContext<Row> ctx,
         IgniteIndex igniteIdx,
         Predicate<Row> filters,
-        Row lowerBound,
-        Row upperBound
+        Supplier<Row> lowerBound,
+        Supplier<Row> upperBound
     ) {
         ectx = ctx;
         desc = igniteIdx.table().descriptor();
@@ -132,8 +134,8 @@ public class IndexScan<Row> implements Iterable<Row> {
     @Override public Iterator<Row> iterator() {
         H2TreeFilterClosure filterC = filterClosure();
 
-        H2Row lower = lowerBound == null ? null : new CalciteH2Row<>(coCtx, ectx, lowerBound);
-        H2Row upper = upperBound == null ? null : new CalciteH2Row<>(coCtx, ectx, upperBound);
+        H2Row lower = lowerBound == null ? null : new CalciteH2Row<>(coCtx, ectx, lowerBound.get());
+        H2Row upper = upperBound == null ? null : new CalciteH2Row<>(coCtx, ectx, upperBound.get());
 
         reservePartitions();
 
@@ -156,18 +158,28 @@ public class IndexScan<Row> implements Iterable<Row> {
 
     /** */
     private void reservePartitions() {
-        assert partsToReserve == null : partsToReserve;
+        assert reserved == null : reserved;
 
-        partsToReserve = gatherPartitions(cacheCtx, partsArr);
+        try {
+            List<GridDhtLocalPartition> toReserve = gatherPartitions(cacheCtx, partsArr);
 
-        for (GridDhtLocalPartition part : partsToReserve) {
-            if (part == null || !part.reserve())
-                throw reservationException();
-            else if (part.state() != GridDhtPartitionState.OWNING) {
-                part.release();
+            reserved = new ArrayList<>(toReserve.size());
+            for (GridDhtLocalPartition part : toReserve) {
+                if (part == null || !part.reserve())
+                    throw reservationException();
+                else if (part.state() != GridDhtPartitionState.OWNING) {
+                    part.release();
 
-                throw reservationException();
+                    throw reservationException();
+                }
+
+                reserved.add(part);
             }
+        }
+        catch (Exception e) {
+            releasePartitions();
+
+            throw e;
         }
     }
 
@@ -202,10 +214,11 @@ public class IndexScan<Row> implements Iterable<Row> {
 
     /** */
     private void releasePartitions() {
-        assert partsToReserve != null;
-
-        for (GridDhtLocalPartition part : partsToReserve)
-            part.release();
+        if (!F.isEmpty(reserved)) {
+            for (GridDhtLocalPartition part : reserved)
+                part.release();
+        }
+        reserved = null;
     }
 
     /** */

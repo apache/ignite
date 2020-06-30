@@ -178,6 +178,13 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
         return this;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void resetInternal() {
+        requested = 0;
+        waiting = 0;
+        groupings.forEach(grouping -> grouping.groups.clear());
+    }
+
     /** */
     public void flushInternal() {
         assert waiting == -1;
@@ -215,8 +222,8 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
         }
 
         if (requested > 0) {
-            downstream.end();
             requested = 0;
+            downstream.end();
         }
     }
 

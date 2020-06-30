@@ -129,6 +129,13 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         return this;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void resetInternal() {
+        requested = 0;
+        waiting = 0;
+        inBuf.clear();
+    }
+
     /** */
     public void filterInternal() {
         inLoop = true;
@@ -148,8 +155,8 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         if (waiting == -1 && requested > 0) {
             assert inBuf.isEmpty();
 
-            downstream.end();
             requested = 0;
+            downstream.end();
         }
     }
 }

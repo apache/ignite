@@ -60,35 +60,38 @@ import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.calcite.rex.RexUtil.EXECUTOR;
+
 /** */
 public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
-            .sqlToRelConverterConfig(SqlToRelConverter.configBuilder()
-                .withTrimUnusedFields(true)
-                .withDecorrelationEnabled(true)
-                .build())
-            .parserConfig(SqlParser.configBuilder()
-                // Lexical configuration defines how identifiers are quoted, whether they are converted to upper or lower
-                // case when they are read, and whether identifiers are matched case-sensitively.
-                .setLex(Lex.ORACLE)
+        .executor(EXECUTOR)
+        .sqlToRelConverterConfig(SqlToRelConverter.configBuilder()
+            .withTrimUnusedFields(true)
+            .withDecorrelationEnabled(true)
+            .build())
+        .parserConfig(SqlParser.configBuilder()
+            // Lexical configuration defines how identifiers are quoted, whether they are converted to upper or lower
+            // case when they are read, and whether identifiers are matched case-sensitively.
+            .setLex(Lex.ORACLE)
 //                .setParserFactory(SqlDdlParserImpl.FACTORY) // Enables DDL support
-                .setConformance(SqlConformanceEnum.DEFAULT)
-                .build())
-            .sqlValidatorConfig(SqlValidator.Config.DEFAULT
-                .withIdentifierExpansion(true)
-                .withSqlConformance(SqlConformanceEnum.DEFAULT))
-            // Dialects support.
-            .operatorTable(SqlLibraryOperatorTableFactory.INSTANCE
-                .getOperatorTable(
-                    SqlLibrary.STANDARD,
-                    SqlLibrary.MYSQL))
-            // Context provides a way to store data within the planner session that can be accessed in planner rules.
-            .context(Contexts.empty())
-            // Custom cost factory to use during optimization
-            .costFactory(RelOptCostImpl.FACTORY)
-            .typeSystem(IgniteTypeSystem.INSTANCE)
-            .build();
+            .setConformance(SqlConformanceEnum.DEFAULT)
+            .build())
+        .sqlValidatorConfig(SqlValidator.Config.DEFAULT
+            .withIdentifierExpansion(true)
+            .withSqlConformance(SqlConformanceEnum.DEFAULT))
+        // Dialects support.
+        .operatorTable(SqlLibraryOperatorTableFactory.INSTANCE
+            .getOperatorTable(
+                SqlLibrary.STANDARD,
+                SqlLibrary.MYSQL))
+        // Context provides a way to store data within the planner session that can be accessed in planner rules.
+        .context(Contexts.empty())
+        // Custom cost factory to use during optimization
+        .costFactory(RelOptCostImpl.FACTORY)
+        .typeSystem(IgniteTypeSystem.INSTANCE)
+        .build();
 
     /** */
     private final QueryPlanCache qryPlanCache;

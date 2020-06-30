@@ -28,6 +28,7 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -55,7 +57,7 @@ public final class PlanningContext implements Context {
         .build();
 
     /** */
-    public static final PlanningContext EMPTY = new PlanningContext();
+    private static final PlanningContext EMPTY = new PlanningContext();
 
     /** */
     private final FrameworkConfig cfg;
@@ -86,6 +88,9 @@ public final class PlanningContext implements Context {
 
     /** */
     private final IgniteTypeFactory typeFactory;
+
+    /** */
+    private final RexExecutor rexExecutor;
 
     /** */
     private IgnitePlanner planner;
@@ -119,6 +124,8 @@ public final class PlanningContext implements Context {
         // link frameworkConfig#context() to this.
         this.cfg = Frameworks.newConfigBuilder(cfg).context(this).build();
 
+        rexExecutor = cfg.getExecutor();
+
         qryCancel = unwrap(GridQueryCancel.class);
 
         RelDataTypeSystem typeSys = connectionConfig().typeSystem(RelDataTypeSystem.class, cfg.getTypeSystem());
@@ -129,17 +136,14 @@ public final class PlanningContext implements Context {
      * Constructor for empty context.
      */
     private PlanningContext() {
-        cfg = EMPTY_CONFIG;
-        parentCtx = EMPTY_CONTEXT;
-        RelDataTypeSystem typeSys = connectionConfig().typeSystem(RelDataTypeSystem.class, cfg.getTypeSystem());
-        typeFactory = new IgniteTypeFactory(typeSys);
-        locNodeId = null;
-        originatingNodeId = null;
-        qry = null;
-        parameters = null;
-        topVer = null;
-        qryCancel = null;
-        log = null;
+        this(EMPTY_CONFIG,
+            EMPTY_CONTEXT,
+            null,
+            null,
+            null,
+            null,
+            null,
+            new NullLogger());
     }
 
     /**
@@ -213,6 +217,13 @@ public final class PlanningContext implements Context {
      */
     public SqlConformance conformance() {
         return cfg.getParserConfig().conformance();
+    }
+
+    /**
+     * @return Executor used to evaluate constant expressions.
+     */
+    public RexExecutor rexExecutor() {
+        return rexExecutor;
     }
 
     /**

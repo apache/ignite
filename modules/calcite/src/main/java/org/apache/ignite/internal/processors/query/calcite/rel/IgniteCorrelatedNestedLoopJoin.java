@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -30,7 +34,11 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Relational expression that combines two relational expressions according to
@@ -40,7 +48,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  * The set of output rows is a subset of the cartesian product of the two
  * inputs; precisely which subset depends on the join condition.
  */
-public class IgniteNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
+public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
     /**
      * Creates a Join.
      *
@@ -54,12 +62,12 @@ public class IgniteNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
      *                         LHS and used by the RHS and are not available to
      *                         nodes above this Join in the tree
      */
-    public IgniteNestedLoopJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
+    public IgniteCorrelatedNestedLoopJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
         super(cluster, traitSet, left, right, condition, variablesSet, joinType);
     }
 
     /** */
-    public IgniteNestedLoopJoin(RelInput input) {
+    public IgniteCorrelatedNestedLoopJoin(RelInput input) {
         this(input.getCluster(),
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInputs().get(0),
@@ -71,7 +79,7 @@ public class IgniteNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
 
     /** {@inheritDoc} */
     @Override public Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
-        return new IgniteNestedLoopJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType);
+        return new IgniteCorrelatedNestedLoopJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType);
     }
 
     /** {@inheritDoc} */
@@ -80,7 +88,60 @@ public class IgniteNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left, left = pair.right.get(0), right = pair.right.get(1);
+
+            RewindabilityTrait leftRewindability = TraitUtils.rewindability(left);
+
+            RelTraitSet outTraits, leftTraits, rightTraits;
+
+            outTraits = out.replace(RewindabilityTrait.ONE_WAY);
+            leftTraits = left.replace(RewindabilityTrait.ONE_WAY);
+            rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
+
+            traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+            if (leftRewindability.rewindable()) {
+                outTraits = out.replace(RewindabilityTrait.REWINDABLE);
+                leftTraits = left.replace(RewindabilityTrait.REWINDABLE);
+                rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
+
+                traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+            }
+        }
+
+        return traits0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(
+        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
+        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+
+        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
+            RelTraitSet out = pair.left, left = pair.right.get(0), right = pair.right.get(1);
+
+            RelTraitSet outTraits, leftTraits, rightTraits;
+
+            RewindabilityTrait rewindability = TraitUtils.rewindability(out);
+
+            outTraits = out.replace(rewindability);
+            leftTraits = left.replace(rewindability);
+            rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
+
+            traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        }
+
+        return traits0;
+    }
+
+    /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return super.computeSelfCost(planner, mq).multiplyBy(10);
+        // Give it some penalty
+        return super.computeSelfCost(planner, mq).multiplyBy(5);
     }
 }

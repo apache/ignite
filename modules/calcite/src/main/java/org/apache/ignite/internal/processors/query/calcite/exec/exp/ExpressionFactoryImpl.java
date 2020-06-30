@@ -24,6 +24,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -32,6 +33,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
+import org.apache.calcite.adapter.enumerable.RexToLixTranslator.InputGetter;
+import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -44,10 +47,12 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexProgramBuilder;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -174,11 +179,10 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Row asRow(List<RexNode> values, RelDataType rowType) {
+    @Override public Supplier<Row> asRow(List<RexNode> values, RelDataType rowType) {
         RowFactory<Row> factory = ctx.rowHandler().factory(typeFactory, rowType);
         ProjectImpl project = new ProjectImpl(scalar(values, rowType), factory);
-
-        return project.apply(factory.create());
+        return () -> project.apply(factory.create());
     }
 
     /** {@inheritDoc} */
@@ -188,7 +192,17 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
     /** */
     private Scalar compile(Iterable<RexNode> nodes, RelDataType type) {
-        RelDataType rowType = type == null ? emptyType : type;
+        if (type == null)
+            type = emptyType;
+
+        RexProgramBuilder programBuilder = new RexProgramBuilder(type, rexBuilder);
+
+        for (RexNode node : nodes)
+            programBuilder.addProject(node, null);
+
+        RexProgram program = programBuilder.getProgram();
+
+        BlockBuilder builder = new BlockBuilder();
 
         ParameterExpression ctx_ =
             Expressions.parameter(ExecutionContext.class, "ctx");
@@ -199,37 +213,23 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         ParameterExpression out_ =
             Expressions.parameter(Object.class, "out");
 
-        RexToLixTranslator.InputGetter inputGetter = new FieldGetter(ctx_, in_, rowType);
-
-//        RexToLixTranslator.InputGetter inputGetter =
-//            new RexToLixTranslator.InputGetterImpl(
-//                ImmutableList.of(
-//                    Pair.of(in_,
-//                        PhysTypeImpl.of(typeFactory, type,
-//                            JavaRowFormat.ARRAY, false))));
-
-        RexProgramBuilder programBuilder = new RexProgramBuilder(rowType, rexBuilder);
-
-        for (RexNode node : nodes)
-            programBuilder.addProject(node, null);
-
-        RexProgram program = programBuilder.getProgram();
-
-        BlockBuilder builder = new BlockBuilder();
-
-        Expression handler_ = builder.append("hnd",
+        Expression hnd_ = builder.append("hnd",
             Expressions.call(ctx_,
                 IgniteMethod.CONTEXT_ROW_HANDLER.method()));
 
-        List<Expression> list = RexToLixTranslator.translateProjects(program,
-            typeFactory, conformance, builder, null, ctx_, inputGetter, null);
+        InputGetter inputGetter = new FieldGetter(hnd_, in_, type);
 
-        for (int i = 0; i < list.size(); i++) {
+        Function1<String, InputGetter> correlates = new CorrelatesBuilder(builder, ctx_, hnd_).build(nodes);
+
+        List<Expression> projects = RexToLixTranslator.translateProjects(program, typeFactory, conformance,
+            builder, null, ctx_, inputGetter, correlates);
+
+        for (int i = 0; i < projects.size(); i++) {
             builder.add(
                 Expressions.statement(
-                    Expressions.call(handler_,
+                    Expressions.call(hnd_,
                         IgniteMethod.ROW_HANDLER_SET.method(),
-                            Expressions.constant(i), out_, list.get(i))));
+                            Expressions.constant(i), out_, projects.get(i))));
         }
 
         MethodDeclaration decl = Expressions.methodDecl(
@@ -315,33 +315,30 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** */
-    private class FieldGetter implements RexToLixTranslator.InputGetter {
+    private class FieldGetter implements InputGetter {
         /** */
-        private final Expression ctx;
+        private final Expression hnd_;
 
         /** */
-        private final Expression row;
+        private final Expression row_;
 
         /** */
         private final RelDataType rowType;
 
         /** */
-        private FieldGetter(Expression ctx, Expression row, RelDataType rowType) {
-            this.ctx = ctx;
-            this.row = row;
+        private FieldGetter(Expression hnd_, Expression row_, RelDataType rowType) {
+            this.hnd_ = hnd_;
+            this.row_ = row_;
             this.rowType = rowType;
         }
 
         /** {@inheritDoc} */
         @Override public Expression field(BlockBuilder list, int index, Type desiredType) {
-            Expression row = list.append("row", this.row);
-            Expression hnd = list.append("hnd",
-                Expressions.call(ctx,
-                    IgniteMethod.CONTEXT_ROW_HANDLER.method()));
+            Expression row_ = list.append("row", this.row_);
 
-            Expression field = Expressions.call(hnd,
+            Expression field = Expressions.call(hnd_,
                 IgniteMethod.ROW_HANDLER_GET.method(),
-                    Expressions.constant(index), row);
+                    Expressions.constant(index), row_);
 
             Type fieldType = typeFactory.getJavaClass(rowType.getFieldList().get(index).getType());
 
@@ -355,6 +352,55 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             }
 
             return EnumUtils.convert(field, fieldType, desiredType);
+        }
+    }
+
+    /** */
+    private class CorrelatesBuilder extends RexShuttle {
+        /** */
+        private final BlockBuilder builder;
+
+        /** */
+        private final Expression ctx_;
+
+        /** */
+        private final Expression hnd_;
+
+        /** */
+        private Map<String, FieldGetter> correlates;
+
+        /** */
+        public CorrelatesBuilder(BlockBuilder builder, Expression ctx_, Expression hnd_) {
+            this.builder = builder;
+            this.hnd_ = hnd_;
+            this.ctx_ = ctx_;
+        }
+
+        /** */
+        public Function1<String, InputGetter> build(Iterable<RexNode> nodes) {
+            try {
+                for (RexNode node : nodes)
+                    node.accept(this);
+
+                return correlates == null ? null : correlates::get;
+            }
+            finally {
+                correlates = null;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public RexNode visitCorrelVariable(RexCorrelVariable variable) {
+            Expression corr_ = builder.append("corr",
+                Expressions.call(ctx_, IgniteMethod.CONTEXT_GET_CORRELATED_VALUE.method(),
+                    Expressions.constant(variable.id.getId())));
+
+            if (correlates == null)
+                correlates = new HashMap<>();
+
+            correlates.put(variable.getName(), new FieldGetter(hnd_, corr_, variable.getType()));
+
+            return variable;
         }
     }
 }

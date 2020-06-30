@@ -36,6 +36,14 @@ public class InnerJoinNode<Row> extends AbstractJoinNode<Row> {
         super(ctx, cond);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void resetInternal() {
+        left = null;
+        rightIdx = 0;
+
+        super.resetInternal();
+    }
+
     /** */
     @Override
     protected void doJoinInternal() {
@@ -74,8 +82,8 @@ public class InnerJoinNode<Row> extends AbstractJoinNode<Row> {
             sources.get(0).request(waitingLeft = IN_BUFFER_SIZE);
 
         if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-            downstream.end();
             requested = 0;
+            downstream.end();
         }
     }
 }

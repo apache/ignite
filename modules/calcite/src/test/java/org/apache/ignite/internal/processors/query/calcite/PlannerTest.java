@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.Enumerable;
@@ -777,7 +778,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             @Override public IgniteIndex getIndex(String idxName) {
                 return new IgniteIndex(null, null, null, null) {
                     @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
-                        Row lowerIdxConditions, Row upperIdxConditions) {
+                        Supplier<Row> lowerIdxConditions, Supplier<Row> upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
                             row(execCtx, 0, "Igor", 0),
                             row(execCtx, 1, "Roman", 0)
@@ -810,7 +811,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             @Override public IgniteIndex getIndex(String idxName) {
                 return new IgniteIndex(null, null, null, null) {
                     @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
-                        Row lowerIdxConditions, Row upperIdxConditions) {
+                        Supplier<Row> lowerIdxConditions, Supplier<Row> upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
                             row(execCtx, 0, "Calcite", 1),
                             row(execCtx, 1, "Ignite", 1)
@@ -1147,7 +1148,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             @Override public IgniteIndex getIndex(String idxName) {
                 return new IgniteIndex(null, null, null, null) {
                     @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
-                        Row lowerIdxConditions, Row upperIdxConditions) {
+                        Supplier<Row> lowerIdxConditions, Supplier<Row> upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
                             row(execCtx, 0, "Igor", 0),
                             row(execCtx, 1, "Roman", 0)
@@ -1174,7 +1175,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             @Override public IgniteIndex getIndex(String idxName) {
                 return new IgniteIndex(null, null, null, null) {
                     @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
-                        Row lowerIdxConditions, Row upperIdxConditions) {
+                        Supplier<Row> lowerIdxConditions, Supplier<Row> upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
                             row(execCtx, 0, "Calcite", 1),
                             row(execCtx, 1, "Ignite", 1)
@@ -1426,7 +1427,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             @Override public IgniteIndex getIndex(String idxName) {
                 return new IgniteIndex(null, null, null, null) {
                     @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
-                        Row lowerIdxConditions, Row upperIdxConditions) {
+                        Supplier<Row> lowerIdxConditions, Supplier<Row> upperIdxConditions) {
                         return Linq4j.asEnumerable(Arrays.asList(
                             row(execCtx, 0, 1),
                             row(execCtx, 1, 2)
@@ -2606,11 +2607,11 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assertNotNull(phys);
             assertEquals("" +
-                    "IgniteNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
+                    "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
                     "  IgniteProject(DEPTNO=[$0])\n" +
                     "    IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n" +
                     "  IgniteProject(DEPTNO=[$2])\n" +
-                    "    IgniteIndexScan(table=[[PUBLIC, EMP]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n",
+                    "    IgniteIndexScan(table=[[PUBLIC, EMP]], index=[PK], lower=[[]], upper=[[]], filters=[=(CAST(+($cor1.DEPTNO, $t2)):INTEGER, 2)], collation=[[]])\n",
                 RelOptUtil.toString(phys));
         }
     }

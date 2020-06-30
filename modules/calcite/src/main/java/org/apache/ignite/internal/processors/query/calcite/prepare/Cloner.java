@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -117,6 +118,14 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
         RelNode right = visit((IgniteRel) rel.getRight());
 
         return new IgniteNestedLoopJoin(cluster, rel.getTraitSet(), left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteCorrelatedNestedLoopJoin rel) {
+        RelNode left = visit((IgniteRel) rel.getLeft());
+        RelNode right = visit((IgniteRel) rel.getRight());
+
+        return new IgniteCorrelatedNestedLoopJoin(cluster, rel.getTraitSet(), left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
     }
 
     /** {@inheritDoc} */

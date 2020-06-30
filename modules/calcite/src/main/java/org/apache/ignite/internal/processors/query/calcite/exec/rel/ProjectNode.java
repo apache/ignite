@@ -39,6 +39,11 @@ public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
     }
 
     /** {@inheritDoc} */
+    @Override protected void resetInternal() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
         checkThread();
 

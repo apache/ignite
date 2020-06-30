@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -90,6 +91,11 @@ public class Splitter implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteNestedLoopJoin rel) {
+        return processNode(rel);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteCorrelatedNestedLoopJoin rel) {
         return processNode(rel);
     }
 

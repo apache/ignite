@@ -22,12 +22,16 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
+import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -37,6 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumula
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AntiJoinNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FullOuterJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
@@ -53,6 +58,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -77,6 +83,9 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFun
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.context;
+import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
 
 /**
  * Implements a query plan.
@@ -141,7 +150,12 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteFilter rel) {
-        Predicate<Row> pred = expressionFactory.predicate(rel.getCondition(), rel.getRowType());
+        RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+        RelOptPredicateList predicates = mq.getPulledUpPredicates(rel.getInput());
+        RexSimplify simplify = new RexSimplify(rel.getCluster().getRexBuilder(), predicates, context(rel).rexExecutor());
+        RexNode condition = simplify.simplifyUnknownAsFalse(rel.getCondition());
+
+        Predicate<Row> pred = expressionFactory.predicate(condition, rel.getRowType());
 
         FilterNode<Row> node = new FilterNode<>(ctx, pred);
 
@@ -178,7 +192,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteNestedLoopJoin rel) {
-        RelDataType rowType = Commons.combinedRowType(ctx.getTypeFactory(), rel.getLeft().getRowType(), rel.getRight().getRowType());
+        RelDataType rowType = combinedRowType(ctx.getTypeFactory(), rel.getLeft().getRowType(), rel.getRight().getRowType());
 
         Predicate<Row> cond = expressionFactory.predicate(rel.getCondition(), rowType);
 
@@ -235,23 +249,45 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteIndexScan scan) {
-        Predicate<Row> filters = scan.condition() == null ? null :
-            expressionFactory.predicate(scan.condition(), scan.getRowType());
+    @Override public Node<Row> visit(IgniteCorrelatedNestedLoopJoin rel) {
+        RelDataType rowType = combinedRowType(ctx.getTypeFactory(), rel.getLeft().getRowType(), rel.getRight().getRowType());
 
-        List<RexNode> lowerCond = scan.lowerIndexCondition();
-        Row lowerBound = lowerCond == null ? null :
-            expressionFactory.asRow(lowerCond, scan.getRowType());
+        Predicate<Row> cond = expressionFactory.predicate(rel.getCondition(), rowType);
 
-        List<RexNode> upperCond = scan.upperIndexCondition();
-        Row upperBound = upperCond == null ? null :
-            expressionFactory.asRow(upperCond, scan.getRowType());
+        assert rel.getJoinType() == JoinRelType.INNER; // TODO LEFT, SEMI, ANTI
 
-        IgniteTable tbl = scan.igniteTable();
+        Node<Row> node = new CorrelatedNestedLoopJoinNode<>(ctx, cond, rel.getVariablesSet());
 
-        IgniteIndex idx = tbl.getIndex(scan.indexName());
+        Node<Row> leftInput = visit(rel.getLeft());
+        Node<Row> rightInput = visit(rel.getRight());
 
-        Iterable<Row> rowsIter = idx.scan(ctx, filters, lowerBound, upperBound);
+        node.register(F.asList(leftInput, rightInput));
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteIndexScan rel) {
+        Predicate<Row> filters = null;
+
+        if (rel.condition() != null) {
+            RexSimplify simplify = new RexSimplify(rel.getCluster().getRexBuilder(), RelOptPredicateList.EMPTY, context(rel).rexExecutor());
+            RexNode condition = simplify.simplifyUnknownAsFalse(rel.condition());
+
+            filters = expressionFactory.predicate(condition, rel.getRowType());
+        }
+
+        List<RexNode> lowerCond = rel.lowerIndexCondition();
+        Supplier<Row> lower = lowerCond == null ? null : expressionFactory.asRow(lowerCond, rel.getRowType());
+
+        List<RexNode> upperCond = rel.upperIndexCondition();
+        Supplier<Row> upper = upperCond == null ? null : expressionFactory.asRow(upperCond, rel.getRowType());
+
+        IgniteTable tbl = rel.igniteTable();
+
+        IgniteIndex idx = tbl.getIndex(rel.indexName());
+
+        Iterable<Row> rowsIter = idx.scan(ctx, filters, lower, upper);
 
         return new ScanNode<>(ctx, rowsIter);
     }

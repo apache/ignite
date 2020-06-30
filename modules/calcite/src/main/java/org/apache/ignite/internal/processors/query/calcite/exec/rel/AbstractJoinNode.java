@@ -129,6 +129,16 @@ public abstract class AbstractJoinNode<Row> extends AbstractNode<Row> {
         throw new IndexOutOfBoundsException();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void resetInternal() {
+        requested = 0;
+        waitingLeft = 0;
+        waitingRight = 0;
+
+        rightMaterialized.clear();
+        leftInBuf.clear();
+    }
+
     /** */
     private void pushLeft(Row row) {
         checkThread();

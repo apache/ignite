@@ -39,8 +39,12 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexDynamicParam;
+import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
@@ -61,6 +65,7 @@ import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.OR;
 import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl.PK_INDEX_NAME;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.makeCast;
 
 /**
  * Relational operator that returns the contents of a table.
@@ -167,7 +172,7 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
             for (RexCall pred : collFldPreds) {
                 RexNode cond = removeCast(pred.operands.get(1));
 
-                assert cond instanceof RexLiteral || cond instanceof RexDynamicParam : cond;
+                assert supports(cond) : cond;
 
                 SqlOperator op = pred.getOperator();
                 switch (op.kind) {
@@ -281,12 +286,19 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
         leftOp = removeCast(leftOp);
         rightOp = removeCast(rightOp);
 
-        if (leftOp instanceof RexLocalRef && (rightOp instanceof RexLiteral || rightOp instanceof RexDynamicParam))
+        if (leftOp instanceof RexLocalRef && supports(rightOp))
             return leftOp;
-        else if ((leftOp instanceof RexLiteral || leftOp instanceof RexDynamicParam) && rightOp instanceof RexLocalRef)
+        else if (supports(leftOp) && rightOp instanceof RexLocalRef)
             return rightOp;
 
         return null;
+    }
+
+    /** */
+    private static boolean supports(RexNode op) {
+        return op instanceof RexLiteral
+            || op instanceof RexDynamicParam
+            || op instanceof RexFieldAccess;
     }
 
     /** */
@@ -321,7 +333,9 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
 
     /** */
     public List<RexNode> buildIndexCondition(Iterable<RexNode> idxCond) {
-        List<RexNode> lowerIdxCond = makeListOfNullLiterals(rowType.getFieldCount());
+        List<RexNode> res = makeListOfNullLiterals(rowType);
+        List<RelDataType> fieldTypes = RelOptUtil.getFieldTypeList(rowType);
+        RexBuilder rexBuilder = getCluster().getRexBuilder();
 
         for (RexNode pred : idxCond) {
             assert pred instanceof RexCall;
@@ -330,22 +344,24 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
             RexLocalRef ref = (RexLocalRef)removeCast(call.operands.get(0));
             RexNode cond = removeCast(call.operands.get(1));
 
-            assert cond instanceof RexLiteral || cond instanceof RexDynamicParam : cond;
+            assert supports(cond) : cond;
 
-            lowerIdxCond.set(ref.getIndex(), cond);
+            res.set(ref.getIndex(), makeCast(rexBuilder, fieldTypes.get(ref.getIndex()), cond));
         }
 
-        return lowerIdxCond;
+        return res;
     }
 
     /** */
-    private List<RexNode> makeListOfNullLiterals(int size) {
-        List<RexNode> list = new ArrayList<>(size);
-        RexNode nullLiteral = getCluster().getRexBuilder()
-            .makeNullLiteral(getCluster().getTypeFactory().createJavaType(Object.class));
-        for (int i = 0; i < size; i++) {
-            list.add(nullLiteral);
-        }
+    private List<RexNode> makeListOfNullLiterals(RelDataType rowType) {
+        assert rowType.isStruct();
+
+        RexBuilder builder = getCluster().getRexBuilder();
+
+        List<RexNode> list = new ArrayList<>(rowType.getFieldCount());
+        for (RelDataTypeField field : rowType.getFieldList())
+            list.add(builder.makeNullLiteral(field.getType()));
+
         return list;
     }
 

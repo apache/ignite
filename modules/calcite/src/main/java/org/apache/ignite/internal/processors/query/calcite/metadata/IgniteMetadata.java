@@ -36,7 +36,6 @@ import org.apache.calcite.rel.metadata.RelMdMinRowCount;
 import org.apache.calcite.rel.metadata.RelMdNodeTypes;
 import org.apache.calcite.rel.metadata.RelMdParallelism;
 import org.apache.calcite.rel.metadata.RelMdPopulationSize;
-import org.apache.calcite.rel.metadata.RelMdPredicates;
 import org.apache.calcite.rel.metadata.RelMdSelectivity;
 import org.apache.calcite.rel.metadata.RelMdSize;
 import org.apache.calcite.rel.metadata.RelMdTableReferences;
@@ -61,6 +60,7 @@ public class IgniteMetadata {
                 IgniteMdCumulativeCost.SOURCE,
                 IgniteMdNonCumulativeCost.SOURCE,
                 IgniteMdRowCount.SOURCE,
+                IgniteMdPredicates.SOURCE,
 
                 // Basic providers
                 RelMdColumnOrigins.SOURCE,
@@ -78,7 +78,6 @@ public class IgniteMetadata {
                 RelMdDistinctRowCount.SOURCE,
                 RelMdSelectivity.SOURCE,
                 RelMdExplainVisibility.SOURCE,
-                RelMdPredicates.SOURCE,
                 RelMdAllPredicates.SOURCE,
                 RelMdCollation.SOURCE));
 

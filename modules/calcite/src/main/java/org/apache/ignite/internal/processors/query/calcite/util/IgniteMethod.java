@@ -31,6 +31,7 @@ public enum IgniteMethod {
     ROW_HANDLER_SET(RowHandler.class, "set", int.class, Object.class, Object.class),
     ROW_HANDLER_GET(RowHandler.class, "get", int.class, Object.class),
     CONTEXT_ROW_HANDLER(ExecutionContext.class, "rowHandler"),
+    CONTEXT_GET_CORRELATED_VALUE(ExecutionContext.class, "getCorrelated", int.class),
     SCALAR_EXECUTE(Scalar.class, "execute", ExecutionContext.class, Object.class, Object.class),
     NODES_MAPPING(NodesMappingMetadata.class, "nodesMapping");
 

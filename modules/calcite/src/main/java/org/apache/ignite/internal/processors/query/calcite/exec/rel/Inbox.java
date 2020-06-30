@@ -262,8 +262,8 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         if (requested > 0 && heap.isEmpty()) {
             assert buffers.isEmpty();
 
-            downstream.end();
             requested = 0;
+            downstream.end();
 
             close();
         }
@@ -308,8 +308,8 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         }
 
         if (requested > 0 && buffers.isEmpty()) {
-            downstream.end();
             requested = 0;
+            downstream.end();
 
             close();
         }

@@ -26,6 +26,7 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.ignite.internal.processors.query.calcite.rule.AggregateConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ExposeIndexRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
@@ -71,6 +72,7 @@ public enum PlannerPhase {
                 ExposeIndexRule.INSTANCE,
                 AggregateConverterRule.INSTANCE,
                 NestedLoopJoinConverterRule.INSTANCE,
+                CorrelatedNestedLoopJoinConverterRule.INSTANCE,
                 FilterJoinRule.PUSH_JOIN_CONDITION,
                 FilterJoinRule.FILTER_ON_JOIN,
                 ProjectConverterRule.INSTANCE,

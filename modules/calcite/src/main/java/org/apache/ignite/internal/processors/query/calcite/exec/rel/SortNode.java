@@ -127,6 +127,13 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         downstream.onError(e);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void resetInternal() {
+        requested = 0;
+        waiting = 0;
+        rows.clear();
+    }
+
     /** */
     private void flushInternal() {
         assert waiting == -1;
@@ -164,8 +171,8 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         }
 
         if (requested >= 0) {
-            downstream.end();
             requested = 0;
+            downstream.end();
         }
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -159,10 +160,14 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
             List<RelFieldCollation> inFieldCollations = new ArrayList<>();
             for (RelFieldCollation inFieldCollation : collation.getFieldCollations()) {
                 Integer newIndex = targets.get(inFieldCollation.getFieldIndex());
-                if (newIndex == null)
-                    return null;
+                if (newIndex != null)
+                    inFieldCollations.add(inFieldCollation.withFieldIndex(newIndex));
+                else {
+                    out = out.replace(RelCollations.EMPTY);
+                    inFieldCollations = Collections.emptyList();
 
-                inFieldCollations.add(inFieldCollation.withFieldIndex(newIndex));
+                    break;
+                }
             }
 
             traits0.add(Pair.of(out, ImmutableList.of(in.replace(RelCollations.of(inFieldCollations)))));

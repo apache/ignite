@@ -39,7 +39,7 @@ public class NestedLoopJoinConverterRule extends AbstractIgniteConverterRule<Log
      * Creates a converter.
      */
     public NestedLoopJoinConverterRule() {
-        super(LogicalJoin.class);
+        super(LogicalJoin.class, "NestedLoopJoinConverter");
     }
 
     /** {@inheritDoc} */

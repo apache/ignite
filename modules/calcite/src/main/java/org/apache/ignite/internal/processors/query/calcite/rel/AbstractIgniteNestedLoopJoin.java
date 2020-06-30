@@ -1,24 +1,6 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +14,6 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelFieldCollation;
-import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelNodes;
 import org.apache.calcite.rel.RelWriter;
@@ -44,75 +25,45 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
+import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
 import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
+import static org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdRowCount.joinRowCount;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.random;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
-/**
- * Relational expression that combines two relational expressions according to
- * some condition.
- *
- * <p>Each output row has columns from the left and right inputs.
- * The set of output rows is a subset of the cartesian product of the two
- * inputs; precisely which subset depends on the join condition.
- */
-public class IgniteBatchNestedLoopJoin extends Join implements TraitsAwareIgniteRel {
-    /**
-     * Creates a Join.
-     *
-     * @param cluster          Cluster
-     * @param traitSet         Trait set
-     * @param left             Left input
-     * @param right            Right input
-     * @param condition        Join condition
-     * @param joinType         Join type
-     * @param variablesSet     Set variables that are set by the
-     *                         LHS and used by the RHS and are not available to
-     *                         nodes above this Join in the tree
-     */
-    public IgniteBatchNestedLoopJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
-        super(cluster, traitSet, left, right, condition, variablesSet, joinType);
-
-        assert joinType != RIGHT && joinType != JoinRelType.FULL;
-    }
-
+public abstract class AbstractIgniteNestedLoopJoin extends Join implements TraitsAwareIgniteRel {
     /** */
-    public IgniteBatchNestedLoopJoin(RelInput input) {
-        this(input.getCluster(),
-            input.getTraitSet().replace(IgniteConvention.INSTANCE),
-            input.getInputs().get(0),
-            input.getInputs().get(1),
-            input.getExpression("condition"),
-            ImmutableSet.copyOf((List<CorrelationId>)input.get("variablesSet")),
-            input.getEnum("joinType", JoinRelType.class));
+    protected AbstractIgniteNestedLoopJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,
+        RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
+        super(cluster, traitSet, left, right, condition, variablesSet, joinType);
     }
 
     /** {@inheritDoc} */
-    @Override public Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
-        return new IgniteBatchNestedLoopJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType);
-    }
+    @Override public abstract Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right,
+        JoinRelType joinType, boolean semiJoinDone);
 
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
+    @Override public abstract <T> T accept(IgniteRelVisitor<T> visitor);
 
     /** {@inheritDoc} */
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
-            .itemIf("variablesSet", variablesSet.asList(), pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES);
+            .itemIf("variablesSet", Commons.transform(variablesSet.asList(), CorrelationId::getId), pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES);
     }
 
     /** {@inheritDoc} */
@@ -268,7 +219,9 @@ public class IgniteBatchNestedLoopJoin extends Join implements TraitsAwareIgnite
 
             RelCollation collation = TraitUtils.collation(out);
 
-            if (joinType == RIGHT || joinType == JoinRelType.FULL) {
+            if (!projectsLeft(collation))
+                collation = RelCollations.EMPTY;
+            else if (joinType == RIGHT || joinType == JoinRelType.FULL) {
                 for (RelFieldCollation field : collation.getFieldCollations()) {
                     if (RelFieldCollation.NullDirection.LAST != field.nullDirection) {
                         collation = RelCollations.EMPTY;
@@ -391,6 +344,11 @@ public class IgniteBatchNestedLoopJoin extends Join implements TraitsAwareIgnite
     }
 
     /** {@inheritDoc} */
+    @Override public double estimateRowCount(RelMetadataQuery mq) {
+        return Util.first(joinRowCount(mq, this), 1D);
+    }
+
+    /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCount = mq.getRowCount(this);
 
@@ -418,9 +376,21 @@ public class IgniteBatchNestedLoopJoin extends Join implements TraitsAwareIgnite
         if (Double.isInfinite(rightRowCount))
             rowCount = rightRowCount;
 
-        RelOptCost cost = planner.getCostFactory().makeCost(rowCount, 0, 0);
-        // Give it some penalty
-        cost = cost.multiplyBy(10);
-        return cost;
+        RelDistribution.Type type = distribution().getType();
+
+        if (type == BROADCAST_DISTRIBUTED || type == SINGLETON)
+            rowCount = RelMdUtil.addEpsilon(rowCount);
+
+        return planner.getCostFactory().makeCost(rowCount, 0, 0);
+    }
+
+    /** */
+    protected boolean projectsLeft(RelCollation collation) {
+        int leftFieldCount = getLeft().getRowType().getFieldCount();
+        for (int field : RelCollations.ordinals(collation)) {
+            if (field >= leftFieldCount)
+                return false;
+        }
+        return true;
     }
 }

@@ -34,9 +34,6 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
@@ -46,7 +43,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
@@ -243,27 +239,6 @@ public final class Commons {
             U.closeWithSuppressingException((AutoCloseable) o, e);
         else
             U.closeQuiet((AutoCloseable) o);
-    }
-
-    /** */
-    public static RelDataType combinedRowType(IgniteTypeFactory typeFactory, RelDataType... types) {
-        RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
-
-        Set<String> names = new HashSet<>();
-
-        for (RelDataType type : types) {
-            for (RelDataTypeField field : type.getFieldList()) {
-                int idx = 0;
-                String fieldName = field.getName();
-
-                while (!names.add(fieldName))
-                    fieldName = field.getName() + idx++;
-
-                builder.add(fieldName, field.getType());
-            }
-        }
-
-        return builder.build();
     }
 
     /** */

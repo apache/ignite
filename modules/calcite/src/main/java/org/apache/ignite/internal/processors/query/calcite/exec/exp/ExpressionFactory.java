@@ -78,7 +78,7 @@ public interface ExpressionFactory<Row> {
      * @param values Values.
      * @return Row.
      */
-    Row asRow(List<RexNode> values, RelDataType rowType);
+    Supplier<Row> asRow(List<RexNode> values, RelDataType rowType);
 
     /**
      * Creates {@link Scalar}, a code-generated expressions evaluator.

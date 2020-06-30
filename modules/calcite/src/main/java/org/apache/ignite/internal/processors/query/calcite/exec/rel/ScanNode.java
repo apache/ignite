@@ -102,6 +102,13 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void resetInternal() {
+        requested = 0;
+        Commons.closeQuiet(it);
+        it = null;
+    }
+
     /** */
     private void pushInternal() throws Exception {
         if (it == null)
@@ -136,8 +143,8 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         }
 
         if (requested > 0 && !it.hasNext()) {
-            downstream.end();
             requested = 0;
+            downstream.end();
 
             close();
         }

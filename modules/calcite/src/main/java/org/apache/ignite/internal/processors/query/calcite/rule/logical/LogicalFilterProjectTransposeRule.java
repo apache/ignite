@@ -32,7 +32,7 @@ public class LogicalFilterProjectTransposeRule extends FilterProjectTransposeRul
 
     /** */
     public LogicalFilterProjectTransposeRule() {
-        super(LogicalFilter.class, LogicalProject.class, true, true,
+        super(LogicalFilter.class, filter -> true, LogicalProject.class, project -> true, true, true,
             RelFactories.LOGICAL_BUILDER);
     }
 }

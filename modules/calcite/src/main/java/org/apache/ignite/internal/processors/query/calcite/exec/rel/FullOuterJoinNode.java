@@ -58,6 +58,17 @@ public class FullOuterJoinNode<Row> extends AbstractJoinNode<Row> {
     }
 
     /** {@inheritDoc} */
+    @Override protected void resetInternal() {
+        left = null;
+        leftMatched = false;
+        rightNotMatchedIndexes.clear();
+        lastPushedInd = 0;
+        rightIdx = 0;
+
+        super.resetInternal();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void doJoinInternal() {
         if (waitingRight == NOT_WAITING) {
             if (rightNotMatchedIndexes == null) {
@@ -145,8 +156,8 @@ public class FullOuterJoinNode<Row> extends AbstractJoinNode<Row> {
 
         if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
             && leftInBuf.isEmpty() && rightNotMatchedIndexes.isEmpty()) {
-            downstream.end();
             requested = 0;
+            downstream.end();
         }
     }
 }

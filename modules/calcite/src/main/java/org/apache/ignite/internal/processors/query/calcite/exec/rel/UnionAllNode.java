@@ -101,6 +101,12 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
         downstream.onError(e);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void resetInternal() {
+        curSrc = 0;
+        waiting = 0;
+    }
+
     /** */
     private Node<Row> source() {
         return sources.get(curSrc);

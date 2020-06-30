@@ -49,10 +49,13 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.createRowType;
 
 /** */
 public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrapper<Row>>> {
@@ -85,7 +88,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
     /** */
     private static Function<Object, Object> cast0(Pair<RelDataType,RelDataType> types) {
-        IgniteTypeFactory typeFactory = new IgniteTypeFactory();
+        IgniteTypeFactory typeFactory = PlanningContext.empty().typeFactory();
 
         RelDataType from = types.left;
         RelDataType to = types.right;
@@ -96,8 +99,13 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         if (fromType == toType)
             return Function.identity();
 
-        RelDataType rowType = typeFactory.createStructType(F.asList(types.left), F.asList("$EXPR"));
+        return compileCast(typeFactory, from, to);
+    }
 
+    /** */
+    private static Function<Object, Object> compileCast(IgniteTypeFactory typeFactory, RelDataType from,
+        RelDataType to) {
+        RelDataType rowType = createRowType(typeFactory, from);
         ParameterExpression in_ = Expressions.parameter(Object.class, "in");
 
         RexToLixTranslator.InputGetter getter =

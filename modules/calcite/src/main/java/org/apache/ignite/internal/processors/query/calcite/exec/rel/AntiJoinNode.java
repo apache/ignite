@@ -36,6 +36,14 @@ public class AntiJoinNode<Row> extends AbstractJoinNode<Row> {
         super(ctx, cond);
     }
 
+    /** */
+    @Override protected void resetInternal() {
+        left = null;
+        rightIdx = 0;
+
+        super.resetInternal();
+    }
+
     /** {@inheritDoc} */
     @Override protected void doJoinInternal() {
         if (waitingRight == NOT_WAITING) {
@@ -75,8 +83,8 @@ public class AntiJoinNode<Row> extends AbstractJoinNode<Row> {
             sources.get(0).request(waitingLeft = IN_BUFFER_SIZE);
 
         if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-            downstream.end();
             requested = 0;
+            downstream.end();
         }
     }
 }
