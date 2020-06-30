@@ -108,7 +108,6 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         }
     }
 
-
     /**
      * Gets column names.
      *
