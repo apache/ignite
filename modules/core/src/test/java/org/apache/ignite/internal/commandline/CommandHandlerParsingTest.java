@@ -821,6 +821,7 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.SET_STATE ||
             cmd == CommandList.ENCRYPTION ||
             cmd == CommandList.KILL ||
-            cmd == CommandList.SNAPSHOT;
+            cmd == CommandList.SNAPSHOT ||
+            cmd == CommandList.METADATA;
     }
 }
