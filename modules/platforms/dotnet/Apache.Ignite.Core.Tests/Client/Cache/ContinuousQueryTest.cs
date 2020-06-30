@@ -18,9 +18,11 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
@@ -160,9 +162,47 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// but client has not received the response with query ID yet - server should not send notifications.
         /// </summary>
         [Test]
-        public void TestContinuousQueryStartWithBackgroundCacheUpdatesReceivesEventsCorrectly()
+        public void TestContinuousQueryWithInitialQueryDoesNotMissCacheUpdates()
         {
-            // TODO:
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+
+            var keys = new ConcurrentBag<int>();
+            var listener = new DelegateListener<int, int>(e => keys.Add(e.Key));
+
+            var enableCacheUpdates = true;
+            var key = 0;
+
+            Task.Factory.StartNew(() =>
+            {
+                // ReSharper disable once AccessToModifiedClosure
+                while (Volatile.Read(ref enableCacheUpdates))
+                {
+                    Interlocked.Increment(ref key);
+                    cache[key] = key;
+                }
+            });
+
+            TestUtils.WaitForTrueCondition(() => keys.Count > 10);
+
+            var qry = new ContinuousQuery<int, int>(listener);
+            var initialQry = new ScanQuery<int, int>();
+
+            using (var handle = cache.QueryContinuous(qry, initialQry))
+            {
+                foreach (var e in handle.GetInitialQueryCursor())
+                {
+                    keys.Add(e.Key);
+                }
+
+                // Wait for some more events.
+                var currentKey = key;
+                TestUtils.WaitForTrueCondition(() => key > currentKey);
+
+                // Stop generator.
+                Volatile.Write(ref enableCacheUpdates, false);
+            }
+
+            Assert.AreEqual(key, keys.Count);
         }
 
         /// <summary>
