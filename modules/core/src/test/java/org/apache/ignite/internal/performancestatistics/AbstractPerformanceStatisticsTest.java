@@ -20,6 +20,7 @@ package org.apache.ignite.internal.performancestatistics;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.LogListener;
@@ -28,11 +29,15 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.internal.performancestatistics.TestFilePerformanceStatisticsReader.readToLog;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERFORMANCE_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.statisticsFile;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Ignite performance statistics abstract test.
  */
 public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstractTest {
+    /** */
+    public static final long TIMEOUT = 30_000;
+
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
@@ -48,7 +53,9 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         IgniteEx ignite = (IgniteEx)grids.get(0);
 
-        ignite.context().performanceStatistics().startCollectStatistics().get();
+        ignite.context().performanceStatistics().startCollectStatistics();
+
+        waitForStatisticsEnabled(true);
     }
 
     /** Stops collecting performance statistics and checks listeners on all grids. */
@@ -59,12 +66,27 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         IgniteEx ignite = (IgniteEx)grids.get(0);
 
-        ignite.context().performanceStatistics().stopCollectStatistics().get();
+        ignite.context().performanceStatistics().stopCollectStatistics();
+
+        waitForStatisticsEnabled(false);
 
         for (Ignite grid : grids)
             readToLog(statisticsFile(((IgniteEx)grid).context()), grid.log());
 
         for (LogListener lsnr : lsnrs)
             assertTrue(lsnr.check());
+    }
+
+    /** */
+    public static void waitForStatisticsEnabled(boolean enabled) throws IgniteInterruptedCheckedException {
+        assertTrue(waitForCondition(() -> {
+            List<Ignite> grids = G.allGrids();
+
+            for (Ignite grid : grids)
+                if (enabled != ((IgniteEx)grid).context().performanceStatistics().enabled())
+                    return false;
+
+            return true;
+        }, TIMEOUT));
     }
 }

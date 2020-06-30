@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.OperationType;
-import org.apache.ignite.internal.processors.performancestatistics.IgnitePerformanceStatistics.CacheOperationType;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteUuid;
@@ -172,10 +172,11 @@ public class FilePerformanceStatisticsReader {
         private final ConcurrentHashMap<Short, String> stringById = new ConcurrentHashMap<>();
 
         /** Handlers to process deserialized operation. */
-        private final IgnitePerformanceStatistics[] handlers;
+        private final org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler[] handlers;
 
         /** @param handlers Handlers to process deserialized operation. */
-        public PerformanceStatisticsDeserializer(IgnitePerformanceStatistics... handlers) {
+        public PerformanceStatisticsDeserializer(
+            org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler... handlers) {
             this.handlers = handlers;
         }
 
@@ -205,7 +206,7 @@ public class FilePerformanceStatisticsReader {
                     long startTime = buf.getLong();
                     long duration = buf.getLong();
 
-                    for (IgnitePerformanceStatistics handler : handlers)
+                    for (org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler handler : handlers)
                         handler.cacheOperation(cacheOp, cacheId, startTime, duration);
 
                     return true;
@@ -229,7 +230,7 @@ public class FilePerformanceStatisticsReader {
                     long duration = buf.getLong();
                     boolean commit = buf.get() != 0;
 
-                    for (IgnitePerformanceStatistics handler : handlers)
+                    for (org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler handler : handlers)
                         handler.transaction(cacheIds, startTime, duration, commit);
 
                     return true;
@@ -266,7 +267,7 @@ public class FilePerformanceStatisticsReader {
                     if (str == null)
                         return true;
 
-                    for (IgnitePerformanceStatistics handler : handlers)
+                    for (org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler handler : handlers)
                         handler.query(queryType, str, id, startTime, duration, success);
 
                     return true;
@@ -283,7 +284,7 @@ public class FilePerformanceStatisticsReader {
                     long logicalReads = buf.getLong();
                     long physicalReads = buf.getLong();
 
-                    for (IgnitePerformanceStatistics handler : handlers)
+                    for (org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler handler : handlers)
                         handler.queryReads(queryType, uuid, id, logicalReads, physicalReads);
 
                     return true;
@@ -319,7 +320,7 @@ public class FilePerformanceStatisticsReader {
                     if (taskName == null)
                         return true;
 
-                    for (IgnitePerformanceStatistics handler : handlers)
+                    for (org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler handler : handlers)
                         handler.task(sesId, taskName, startTime, duration, affPartId);
 
                     return true;
@@ -335,7 +336,7 @@ public class FilePerformanceStatisticsReader {
                     long duration = buf.getLong();
                     boolean timedOut = buf.get() != 0;
 
-                    for (IgnitePerformanceStatistics handler : handlers)
+                    for (org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler handler : handlers)
                         handler.job(sesId, queuedTime, startTime, duration, timedOut);
 
                     return true;
@@ -366,7 +367,7 @@ public class FilePerformanceStatisticsReader {
     }
 
     /** Performance statistics handler. */
-    public abstract static class PerformanceStatisticsHandler implements IgnitePerformanceStatistics {
+    public abstract static class PerformanceStatisticsHandler implements org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler {
         /** Node id. */
         private UUID nodeId;
 

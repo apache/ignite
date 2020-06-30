@@ -35,12 +35,12 @@ public class PerformanceStatisticsMBeanImpl implements PerformanceStatisticsMBea
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.performanceStatistics().startCollectStatistics().get();
+        ctx.performanceStatistics().startCollectStatistics();
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteCheckedException {
-        ctx.performanceStatistics().stopCollectStatistics().get();
+        ctx.performanceStatistics().stopCollectStatistics();
     }
 
     /** {@inheritDoc} */

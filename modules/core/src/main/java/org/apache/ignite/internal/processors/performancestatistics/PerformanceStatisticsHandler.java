@@ -26,7 +26,7 @@ import org.apache.ignite.lang.IgniteUuid;
  * The interface represents performance statistics operations collection for purposes of troubleshooting and
  * performance analysis.
  */
-public interface IgnitePerformanceStatistics {
+public interface PerformanceStatisticsHandler {
     /**
      * @param type Operation type.
      * @param cacheId Cache id.

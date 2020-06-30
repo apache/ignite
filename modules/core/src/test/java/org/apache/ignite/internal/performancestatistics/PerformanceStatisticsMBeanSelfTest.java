@@ -38,10 +38,14 @@ public class PerformanceStatisticsMBeanSelfTest extends AbstractPerformanceStati
 
         statMBean0.start();
 
+        waitForStatisticsEnabled(true);
+
         assertTrue(statMBean0.enabled());
         assertTrue(statMBean1.enabled());
 
         statMBean0.stop();
+
+        waitForStatisticsEnabled(false);
 
         assertFalse(statMBean0.enabled());
         assertFalse(statMBean1.enabled());

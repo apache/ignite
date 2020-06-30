@@ -56,7 +56,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
-public class FilePerformanceStatisticsWriter implements IgnitePerformanceStatistics {
+public class FilePerformanceStatisticsWriter implements PerformanceStatisticsHandler {
     /** Default maximum file size in bytes. Performance statistics will be stopped when the size exceeded. */
     public static final long DFLT_FILE_MAX_SIZE = 32 * 1024 * 1024 * 1024L;
 
@@ -577,7 +577,9 @@ public class FilePerformanceStatisticsWriter implements IgnitePerformanceStatist
             } catch (IOException e) {
                 log.error("Unable to write to file. Performance statistics collecting will be stopped.", e);
 
-                ctx.performanceStatistics().stopCollectStatistics();
+                fileWriter.shutdown();
+
+                stopStatisticsSafe();
             }
         }
 
@@ -605,10 +607,20 @@ public class FilePerformanceStatisticsWriter implements IgnitePerformanceStatist
             if (stopByMaxSize.compareAndSet(false, true)) {
                 fileWriter.shutdown();
 
-                ctx.performanceStatistics().stopCollectStatistics();
+                stopStatisticsSafe();
 
                 log.warning("The performance statistics file maximum size is reached. " +
                     "Performance statistics collecting will be stopped.");
+            }
+        }
+
+        /** Stops collecting statistics. */
+        void stopStatisticsSafe() {
+            try {
+                ctx.performanceStatistics().stopCollectStatistics();
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Failed to stop performance statistics.", e);
             }
         }
     }
