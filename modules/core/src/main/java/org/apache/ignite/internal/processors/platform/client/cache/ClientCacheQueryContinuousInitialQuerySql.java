@@ -20,17 +20,19 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Initial query holder.
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SuppressWarnings({"rawtypes"})
 class ClientCacheQueryContinuousInitialQuerySql extends ClientCacheQueryContinuousInitialQuery {
     /** */
     private final String schema;
@@ -108,6 +110,6 @@ class ClientCacheQueryContinuousInitialQuerySql extends ClientCacheQueryContinuo
 
     /** {@inheritDoc} */
     @Override public ClientCacheQueryCursor getClientCursor(QueryCursor cursor, ClientConnectionContext ctx) {
-        return new ClientCacheFieldsQueryCursor((FieldsQueryCursor) cursor, pageSize, ctx, false);
+        return new ClientCacheFieldsQueryCursor((QueryCursorEx<List<?>>) cursor, pageSize, ctx, false);
     }
 }

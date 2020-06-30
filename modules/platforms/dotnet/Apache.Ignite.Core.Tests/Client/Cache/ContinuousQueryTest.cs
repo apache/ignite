@@ -21,9 +21,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Impl.Cache.Event;
     using NUnit.Framework;
 
@@ -166,11 +168,16 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestInitialSqlQuery()
         {
-            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            var listener = new DelegateListener<int, int>();
-            var qry = new ContinuousQuery<int,int>(listener);
+            var queryEntity = new QueryEntity(typeof(int), typeof(int))
+            {
+                TableName = TestUtils.TestName
+            };
 
-            using (var handle = cache.QueryContinuous(qry, new SqlFieldsQuery("select * from foo")))
+            var cacheCfg = new CacheClientConfiguration(TestUtils.TestName, queryEntity);
+            var cache = Client.GetOrCreateCache<int, int>(cacheCfg);
+            var qry = new ContinuousQuery<int,int>(new DelegateListener<int, int>());
+
+            using (var handle = cache.QueryContinuous(qry, new SqlFieldsQuery("select _key from " + TestUtils.TestName)))
             {
                 using (var cur = handle.GetInitialQueryCursor())
                 {
