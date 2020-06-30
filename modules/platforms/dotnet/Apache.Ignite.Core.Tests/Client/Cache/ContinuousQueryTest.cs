@@ -165,6 +165,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestContinuousQueryWithInitialQueryDoesNotMissCacheUpdates()
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            var serverCache = Ignition.GetIgnite().GetCache<int, int>(cache.Name);
 
             var keys = new ConcurrentBag<int>();
             var listener = new DelegateListener<int, int>(e => keys.Add(e.Key));
@@ -178,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 while (Volatile.Read(ref enableCacheUpdates))
                 {
                     // ReSharper disable once AccessToModifiedClosure
-                    cache[(int)Interlocked.Increment(ref key)] = 1;
+                    serverCache[(int)Interlocked.Increment(ref key)] = 1;
                 }
             });
 
@@ -204,10 +205,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
 
             var lastKey = Interlocked.Read(ref key);
-
-            // TODO: Why do we get duplicate values? Write a test for regular cont queries - is it the same?
             Assert.AreEqual(lastKey, keys.Max());
-            CollectionAssert.AreEquivalent(Enumerable.Range(1, (int) lastKey), keys);
+
+            // Initial query can overlap the events (same with thick client) => use Distinct().
+            CollectionAssert.AreEquivalent(Enumerable.Range(1, (int) lastKey), keys.Distinct());
         }
 
         /// <summary>
