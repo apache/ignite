@@ -1132,6 +1132,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             if (err != null)
             {
                 // Socket is disposed.
+                // TODO: Notify client somehow:
+                // * Special CacheEntryEvent that throws exceptions: dirty
+                // * Cast listener to IDisposable - weird?
+                // * Special interface with additional method
                 return;
             }
 
