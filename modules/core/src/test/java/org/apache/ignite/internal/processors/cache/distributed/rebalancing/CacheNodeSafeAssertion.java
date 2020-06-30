@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import java.util.Collection;
 import java.util.Iterator;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;

@@ -24,7 +24,6 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.ExpiryPolicy;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;

@@ -40,7 +40,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinParameterMetadata;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;

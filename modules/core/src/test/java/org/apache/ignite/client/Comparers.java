@@ -19,7 +19,6 @@ package org.apache.ignite.client;
 
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.util.typedef.F;

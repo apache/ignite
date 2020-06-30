@@ -18,7 +18,6 @@
 package org.apache.ignite.stream.camel;
 
 import java.util.Map;
-
 import org.apache.camel.CamelContext;
 import org.apache.camel.Consumer;
 import org.apache.camel.Endpoint;

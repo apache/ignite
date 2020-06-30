@@ -20,7 +20,6 @@ package org.apache.ignite.examples.streaming.wordcount.socket;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.util.Map;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;

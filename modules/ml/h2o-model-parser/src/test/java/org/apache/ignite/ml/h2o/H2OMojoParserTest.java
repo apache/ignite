@@ -19,7 +19,6 @@ package org.apache.ignite.ml.h2o;
 
 import java.net.URL;
 import java.util.HashMap;
-
 import org.apache.ignite.ml.inference.builder.SingleModelBuilder;
 import org.apache.ignite.ml.inference.builder.SyncModelBuilder;
 import org.apache.ignite.ml.inference.reader.FileSystemModelReader;

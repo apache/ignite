@@ -19,7 +19,6 @@ package org.apache.ignite.examples.ml.sql;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;

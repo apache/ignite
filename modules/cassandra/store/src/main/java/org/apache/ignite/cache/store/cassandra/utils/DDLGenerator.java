@@ -19,7 +19,6 @@ package org.apache.ignite.cache.store.cassandra.utils;
 
 import java.io.File;
 import java.util.List;
-
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 
 /**

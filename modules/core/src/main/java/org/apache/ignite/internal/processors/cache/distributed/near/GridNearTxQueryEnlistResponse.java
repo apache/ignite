@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;

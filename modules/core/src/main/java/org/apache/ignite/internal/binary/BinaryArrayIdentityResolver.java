@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.binary;
 
 import java.util.Arrays;
-
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.util.typedef.internal.S;

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform.client.compute;
 
 import java.util.Set;
 import java.util.UUID;
-
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;

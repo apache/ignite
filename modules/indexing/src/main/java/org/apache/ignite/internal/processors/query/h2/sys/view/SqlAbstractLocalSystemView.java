@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
 import java.util.UUID;
-
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;

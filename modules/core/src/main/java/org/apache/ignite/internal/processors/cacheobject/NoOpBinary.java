@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.cacheobject;
 
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;

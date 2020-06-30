@@ -46,7 +46,6 @@ import java.util.Properties;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.internal.util.TransientSerializable;

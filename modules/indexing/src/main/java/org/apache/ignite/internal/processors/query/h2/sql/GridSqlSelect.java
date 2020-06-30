@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 

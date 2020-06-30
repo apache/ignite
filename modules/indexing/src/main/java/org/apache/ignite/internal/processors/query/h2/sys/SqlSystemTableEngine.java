@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.sys;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;

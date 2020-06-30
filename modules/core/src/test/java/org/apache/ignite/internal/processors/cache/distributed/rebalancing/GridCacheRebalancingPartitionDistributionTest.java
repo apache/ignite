@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;

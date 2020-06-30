@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.pagemem.impl;
 
 import java.util.Random;
-
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;

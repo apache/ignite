@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 

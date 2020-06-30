@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.typedef.internal.U;

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.continuous;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry;
 
 /**

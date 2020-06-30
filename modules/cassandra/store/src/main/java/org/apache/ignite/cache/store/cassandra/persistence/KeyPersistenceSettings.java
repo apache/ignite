@@ -20,7 +20,6 @@ package org.apache.ignite.cache.store.cassandra.persistence;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
