@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
@@ -1059,12 +1060,19 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             return res;
         }
 
-
+        /// <summary>
+        /// Starts the continuous query.
+        /// </summary>
         private ClientContinuousQueryHandle<TK, TV> QueryContinuousInternal(
             ContinuousQuery<TK, TV> continuousQuery,
             Action<ClientRequestContext> writeInitialQueryAction = null,
             Func<ClientResponseContext, IList<string>> columnsFunc = null)
         {
+            Debug.Assert(continuousQuery != null);
+            Debug.Assert(continuousQuery.Listener != null);
+
+            var listener = continuousQuery.Listener;
+
             return DoOutInOp(
                 ClientOp.QueryContinuous,
                 ctx => WriteContinuousQuery(ctx, continuousQuery, writeInitialQueryAction),
@@ -1073,7 +1081,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                     var queryId = ctx.Stream.ReadLong();
 
                     ctx.Socket.AddNotificationHandler(queryId,
-                        (stream, err) => HandleContinuousQueryEvents(stream, err, continuousQuery));
+                        (stream, err) => HandleContinuousQueryEvents(stream, err, listener));
 
                     var columns = columnsFunc != null ? columnsFunc(ctx) : null;
 
@@ -1127,7 +1135,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// Handles continuous query events.
         /// </summary>
         private void HandleContinuousQueryEvents(IBinaryStream stream, Exception err,
-            ContinuousQuery<TK, TV> continuousQuery)
+            ICacheEntryEventListener<TK, TV> listener)
         {
             if (err != null)
             {
@@ -1158,7 +1166,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 var evts = ContinuousQueryUtils.ReadEvents<TK, TV>(
                     stream, _marsh, _keepBinary);
 
-                continuousQuery.Listener.OnEvent(evts);
+                listener.OnEvent(evts);
             }
         }
 
