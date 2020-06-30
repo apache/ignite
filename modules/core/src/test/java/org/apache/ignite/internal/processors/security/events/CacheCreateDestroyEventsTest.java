@@ -141,15 +141,15 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
     /** */
     private List<Consumer<Collection<CacheConfiguration>>> operations() {
         return Arrays.asList(
-            ccfgs -> grid(login).getOrCreateCache(ccfgs.iterator().next()),//0
-            ccfgs -> grid(login).createCache(ccfgs.iterator().next()),//1
-            ccfgs -> grid(login).destroyCache(ccfgs.iterator().next().getName()),//2
-            ccfgs -> grid(login).createCaches(ccfgs),//3
+            ccfgs -> grid(login).getOrCreateCache(ccfgs.iterator().next()), //0
+            ccfgs -> grid(login).createCache(ccfgs.iterator().next()), //1
+            ccfgs -> grid(login).destroyCache(ccfgs.iterator().next().getName()), //2
+            ccfgs -> grid(login).createCaches(ccfgs), //3
             ccfgs -> grid(login).destroyCaches(ccfgs.stream().map(CacheConfiguration::getName).collect(Collectors.toSet())),//4
-            ccfgs -> startClient().createCache(ccfgs.iterator().next().getName()),//5
-            ccfgs -> startClient().getOrCreateCache(ccfgs.iterator().next().getName()),//6
-            ccfgs -> startClient().destroyCache(ccfgs.iterator().next().getName()),//7
-            ccfgs -> {//8
+            ccfgs -> startClient().createCache(ccfgs.iterator().next().getName()), //5
+            ccfgs -> startClient().getOrCreateCache(ccfgs.iterator().next().getName()), //6
+            ccfgs -> startClient().destroyCache(ccfgs.iterator().next().getName()), //7
+            ccfgs -> { //8
                 try {
                     startGrid(getConfiguration(login,
                         new TestSecurityPluginProvider(login, "", ALLOW_ALL, false))
@@ -161,7 +161,7 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
                     throw new RuntimeException(e);
                 }
             },
-            ccfgs -> {//9
+            ccfgs -> { //9
                 grid(login).cluster().state(ClusterState.INACTIVE);
 
                 grid(login).cluster().state(ClusterState.ACTIVE);
@@ -172,20 +172,19 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testDynamicCreateDestroyCache() throws Exception {
-        boolean isClusterTest = opNum == 9;
-
-        int expTimes = cacheCnt * (!isClusterTest && (SRV.equals(login) || "thin".equals(login)) ? 2 : 3);
+        int expTimes = cacheCnt * (opNum != 9 && (SRV.equals(login) || "thin".equals(login)) ? 2 : 3);
 
         Collection<CacheConfiguration> ccfgs = new ArrayList<>(cacheCnt);
 
         for (int i = 0; i < cacheCnt; i++)
             ccfgs.add(new CacheConfiguration("test_cache_" + COUNTER.incrementAndGet()));
 
-        if (evtType == EVT_CACHE_STOPPED || isClusterTest)
+        if (opNum == 9 || evtType == EVT_CACHE_STOPPED) {
             ccfgs.forEach(c -> grid(LISTENER_NODE).createCache(c.getName()));
 
-        if (isClusterTest || (CLNT.equals(login) && evtType == EVT_CACHE_STOPPED))
-            ccfgs.forEach(c -> grid(CLNT).cache(c.getName()));
+            if (opNum == 9 || CLNT.equals(login))
+                ccfgs.forEach(c -> grid(CLNT).cache(c.getName()));
+        }
 
         locLoginCnt.set(0);
         rmtLoginCnt.set(0);
