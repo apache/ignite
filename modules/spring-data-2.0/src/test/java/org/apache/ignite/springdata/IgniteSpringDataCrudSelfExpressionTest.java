@@ -117,7 +117,21 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
      */
     @Test
     public void testCacheCount() {
-        Ignite ignite = ctx.getBean(Ignite.class);
+        Ignite ignite = ctx.getBean("igniteInstance", Ignite.class);
+
+        Collection<String> cacheNames = ignite.cacheNames();
+
+        assertFalse("The SpEL \"#{cacheNames.personCacheName}\" isn't processed!",
+            cacheNames.contains("#{cacheNames.personCacheName}"));
+
+        assertTrue("Cache \"PersonCache\" isn't found!",
+            cacheNames.contains("PersonCache"));
+    }
+
+    /** */
+    @Test
+    public void testCacheCountTWO() {
+        Ignite ignite = ctx.getBean("igniteInstanceTWO", Ignite.class);
 
         Collection<String> cacheNames = ignite.cacheNames();
 
