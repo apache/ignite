@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.springdata20.repository.config.DynamicQueryConfig;
 import org.apache.ignite.springdata20.repository.query.StringQuery.ParameterBinding;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -728,7 +727,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
      * @param values     Values.
      * @return prepared query for execution
      */
-    @NotNull
     private Query prepareQuery(IgniteQuery qry, DynamicQueryConfig config, ReturnStrategy returnStgy, Object[] values) {
         Object[] parameters = values;
 

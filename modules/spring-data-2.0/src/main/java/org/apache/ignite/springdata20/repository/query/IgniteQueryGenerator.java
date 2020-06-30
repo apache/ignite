@@ -18,7 +18,6 @@
 package org.apache.ignite.springdata20.repository.query;
 
 import java.lang.reflect.Method;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.core.RepositoryMetadata;
