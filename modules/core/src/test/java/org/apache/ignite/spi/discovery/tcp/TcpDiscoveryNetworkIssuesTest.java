@@ -21,8 +21,11 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
@@ -97,12 +100,16 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setLocalHost("VoidStation");
+
         TcpDiscoverySpi spi = (specialSpi != null) ? specialSpi : new TcpDiscoverySpi();
 
         if (usePortFromNodeName)
             spi.setLocalPort(Integer.parseInt(igniteInstanceName.split("-")[1]));
 
-        spi.setIpFinder(ipFinder);
+//        spi.setIpFinder(ipFinder);
+        spi.setIpFinder(new TcpDiscoveryVmIpFinder().setAddresses(
+            Stream.of("127.0.0.1", "192.168.56.1", "192.168.1.3").collect(Collectors.toList())));
 
         if (connectionRecoveryTimeout >= 0)
             spi.setConnectionRecoveryTimeout(connectionRecoveryTimeout);

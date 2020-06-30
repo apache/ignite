@@ -377,12 +377,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         lastRingMsgSentTime = 0;
 
-        long msgExchangeTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
-            spi.getSocketTimeout() + spi.getAckTimeout();
-
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
-        connCheckInterval = Math.min(msgExchangeTimeout / 4, MAX_CON_CHECK_INTERVAL);
+        connCheckInterval = Math.min(effectiveExchangeTimeout() / 4, MAX_CON_CHECK_INTERVAL);
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
@@ -1932,7 +1929,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         return threads;
     }
 
-    /** @return Total timeout of single complete exchange operation in network on established connection. */
+    /** @return Complete timeout of single message exchange operation on established connection. */
     protected long effectiveExchangeTimeout() {
         return spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
             spi.getSocketTimeout() + spi.getAckTimeout();
