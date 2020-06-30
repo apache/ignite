@@ -1144,6 +1144,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 // * Special CacheEntryEvent that throws exceptions: dirty
                 // * Cast listener to IDisposable - weird?
                 // * Special interface with additional method
+                // - Instead of this, users just need an event on socket failure?
+                //   But how does it work with multiple connections - not clear.
                 return;
             }
 
