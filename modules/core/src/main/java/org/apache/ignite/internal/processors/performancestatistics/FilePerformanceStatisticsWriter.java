@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -56,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
-public class FilePerformanceStatisticsWriter implements PerformanceStatisticsHandler {
+public class FilePerformanceStatisticsWriter {
     /** Default maximum file size in bytes. Performance statistics will be stopped when the size exceeded. */
     public static final long DFLT_FILE_MAX_SIZE = 32 * 1024 * 1024 * 1024L;
 
@@ -158,8 +159,13 @@ public class FilePerformanceStatisticsWriter implements PerformanceStatisticsHan
         return new GridFinishedFuture<>();
     }
 
-    /** {@inheritDoc} */
-    @Override public void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
+    /**
+     * @param type Operation type.
+     * @param cacheId Cache id.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in nanoseconds.
+     */
+    public void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
         int size = /*type*/ 1 +
             /*cacheId*/ 4 +
             /*startTime*/ 8 +
@@ -180,8 +186,13 @@ public class FilePerformanceStatisticsWriter implements PerformanceStatisticsHan
         seg.release();
     }
 
-    /** {@inheritDoc} */
-    @Override public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commit) {
+    /**
+     * @param cacheIds Cache IDs.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in nanoseconds.
+     * @param commit {@code True} if commited.
+     */
+    public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commit) {
         int size = /*cacheIds*/ 4 + cacheIds.size() * 4 +
             /*startTime*/ 8 +
             /*duration*/ 8 +
@@ -208,8 +219,15 @@ public class FilePerformanceStatisticsWriter implements PerformanceStatisticsHan
         seg.release();
     }
 
-    /** {@inheritDoc} */
-    @Override public void query(GridCacheQueryType type, String text, long id, long startTime, long duration,
+    /**
+     * @param type Cache query type.
+     * @param text Query text in case of SQL query. Cache name in case of SCAN query.
+     * @param id Query id.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in nanoseconds.
+     * @param success Success flag.
+     */
+    public void query(GridCacheQueryType type, String text, long id, long startTime, long duration,
         boolean success) {
         FileWriter writer = fileWriter;
 
@@ -262,8 +280,14 @@ public class FilePerformanceStatisticsWriter implements PerformanceStatisticsHan
         seg.release();
     }
 
-    /** {@inheritDoc} */
-    @Override public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
+    /**
+     * @param type Cache query type.
+     * @param queryNodeId Originating node id.
+     * @param id Query id.
+     * @param logicalReads Number of logical reads.
+     * @param physicalReads Number of physical reads.
+     */
+    public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
         long physicalReads) {
         int size = /*type*/ 1 +
             /*queryNodeId*/ 16 +
@@ -287,8 +311,14 @@ public class FilePerformanceStatisticsWriter implements PerformanceStatisticsHan
         seg.release();
     }
 
-    /** {@inheritDoc} */
-    @Override public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
+    /**
+     * @param sesId Session id.
+     * @param taskName Task name.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration.
+     * @param affPartId Affinity partition id.
+     */
+    public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
         FileWriter writer = fileWriter;
 
         if (writer == null)
@@ -338,8 +368,14 @@ public class FilePerformanceStatisticsWriter implements PerformanceStatisticsHan
         seg.release();
     }
 
-    /** {@inheritDoc} */
-    @Override public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
+    /**
+     * @param sesId Session id.
+     * @param queuedTime Time job spent on waiting queue.
+     * @param startTime Start time in milliseconds.
+     * @param duration Job execution time.
+     * @param timedOut {@code True} if job is timed out.
+     */
+    public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
         int size = /*sesId*/ 24 +
             /*queuedTime*/ 8 +
             /*startTime*/ 8 +

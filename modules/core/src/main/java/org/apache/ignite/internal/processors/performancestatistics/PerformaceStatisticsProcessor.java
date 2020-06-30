@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteUuid;
@@ -37,7 +38,7 @@ import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
  * <p>
  * Manages collecting statistics.
  */
-public class PerformaceStatisticsProcessor extends GridProcessorAdapter implements PerformanceStatisticsHandler {
+public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     /** Prefix for performance statistics enabled property name. */
     private static final String STAT_ENABLED_PREFIX = "performanceStatistics.enabled";
 
@@ -103,35 +104,70 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter implemen
         metastorage.write(STAT_ENABLED_PREFIX, false);
     }
 
-    /** {@inheritDoc} */
-    @Override public void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
+    /**
+     * @param type Operation type.
+     * @param cacheId Cache id.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in nanoseconds.
+     */
+    public void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
         writer.cacheOperation(type, cacheId, startTime, duration);
     }
 
-    /** {@inheritDoc} */
-    @Override public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commit) {
+    /**
+     * @param cacheIds Cache IDs.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in nanoseconds.
+     * @param commit {@code True} if commited.
+     */
+    public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commit) {
         writer.transaction(cacheIds, startTime, duration, commit);
     }
 
-    /** {@inheritDoc} */
-    @Override public void query(GridCacheQueryType type, String text, long id, long startTime, long duration,
+    /**
+     * @param type Cache query type.
+     * @param text Query text in case of SQL query. Cache name in case of SCAN query.
+     * @param id Query id.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in nanoseconds.
+     * @param success Success flag.
+     */
+    public void query(GridCacheQueryType type, String text, long id, long startTime, long duration,
         boolean success) {
         writer.query(type, text, id, startTime, duration, success);
     }
 
-    /** {@inheritDoc} */
-    @Override public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
+    /**
+     * @param type Cache query type.
+     * @param queryNodeId Originating node id.
+     * @param id Query id.
+     * @param logicalReads Number of logical reads.
+     * @param physicalReads Number of physical reads.
+     */
+    public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
         long physicalReads) {
         writer.queryReads(type, queryNodeId, id, logicalReads, physicalReads);
     }
 
-    /** {@inheritDoc} */
-    @Override public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
+    /**
+     * @param sesId Session id.
+     * @param taskName Task name.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration.
+     * @param affPartId Affinity partition id.
+     */
+    public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
         writer.task(sesId, taskName, startTime, duration, affPartId);
     }
 
-    /** {@inheritDoc} */
-    @Override public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
+    /**
+     * @param sesId Session id.
+     * @param queuedTime Time job spent on waiting queue.
+     * @param startTime Start time in milliseconds.
+     * @param duration Job execution time.
+     * @param timedOut {@code True} if job is timed out.
+     */
+    public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
         writer.job(sesId, queuedTime, startTime, duration, timedOut);
     }
 

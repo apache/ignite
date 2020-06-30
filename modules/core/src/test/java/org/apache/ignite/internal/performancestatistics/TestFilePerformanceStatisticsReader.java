@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader;
-import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader.PerformanceStatisticsHandler;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -41,7 +41,7 @@ public class TestFilePerformanceStatisticsReader {
     }
 
     /** The handler that writes handled operations to the log. */
-    private static class LogMessageHandler extends PerformanceStatisticsHandler {
+    private static class LogMessageHandler implements PerformanceStatisticsHandler {
         /** Log to write operations to. */
         private final IgniteLogger log;
 
@@ -51,39 +51,43 @@ public class TestFilePerformanceStatisticsReader {
         }
 
         /** {@inheritDoc} */
-        @Override public void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
+        @Override public void cacheOperation(UUID nodeId, CacheOperationType type, int cacheId, long startTime,
+            long duration) {
             log("cacheOperation", "type", type, "cacheId", cacheId, "startTime", startTime,
                 "duration", duration);
         }
 
         /** {@inheritDoc} */
-        @Override public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commit) {
+        @Override public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
+            boolean commit) {
             log("transaction", "cacheIds", cacheIds, "startTime", startTime, "duration", duration,
                 "commit", commit);
         }
 
         /** {@inheritDoc} */
-        @Override public void query(GridCacheQueryType type, String text, long id, long startTime, long duration,
-            boolean success) {
+        @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
+            long duration, boolean success) {
             log("query", "type", type, "text", text, "id", id, "startTime", startTime,
                 "duration", duration, "success", success);
         }
 
         /** {@inheritDoc} */
-        @Override public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
-            long physicalReads) {
+        @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id,
+            long logicalReads, long physicalReads) {
             log("queryReads", "type", type, "queryNodeId", queryNodeId, "id", id,
                 "logicalReads", logicalReads, "physicalReads", physicalReads);
         }
 
         /** {@inheritDoc} */
-        @Override public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
+        @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
+            int affPartId) {
             log("task", "sesId", sesId, "taskName", taskName, "startTime", startTime,
                 "duration", duration, "affPartId", affPartId);
         }
 
         /** {@inheritDoc} */
-        @Override public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
+        @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
+            boolean timedOut) {
             log("job", "sesId", sesId, "queuedTime", queuedTime, "startTime", startTime,
                 "duration", duration, "timedOut", timedOut);
         }
@@ -104,10 +108,9 @@ public class TestFilePerformanceStatisticsReader {
             for (int i = 0; i < tuples.length; i += 2) {
                 sb.append(tuples[i]).append("=").append(tuples[i + 1]);
 
-                sb.append(", ");
+                if (i < tuples.length - 2)
+                    sb.append(", ");
             }
-
-            sb.append("nodeId=").append(nodeId());
 
             sb.append(']');
 

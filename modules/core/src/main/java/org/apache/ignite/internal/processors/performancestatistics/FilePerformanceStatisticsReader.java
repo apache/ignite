@@ -83,14 +83,8 @@ public class FilePerformanceStatisticsReader {
             if (files.isEmpty())
                 return;
 
-            for (File file : files) {
-                UUID nodeId = checkFileName(file);
-
-                for (PerformanceStatisticsHandler handler : handlers)
-                    handler.nodeId(nodeId);
-
+            for (File file : files)
                 readFile(file, handlers);
-            }
         } finally {
             GridUnsafe.cleanDirectBuffer(buf);
         }
@@ -103,11 +97,13 @@ public class FilePerformanceStatisticsReader {
      * @param handlers Handlers to process deserialized operation.
      */
     private static void readFile(File file, PerformanceStatisticsHandler... handlers) throws IOException {
+        UUID nodeId = checkFileName(file);
+
         ByteBuffer buf = allocateDirect(READ_BUFFER_SIZE).order(nativeOrder());
 
         try (
             FileIO io = ioFactory.create(file);
-            PerformanceStatisticsDeserializer des = new PerformanceStatisticsDeserializer(handlers)
+            PerformanceStatisticsDeserializer des = new PerformanceStatisticsDeserializer(nodeId, handlers)
         ) {
             while (true) {
                 int read = io.read(buf);
@@ -172,11 +168,14 @@ public class FilePerformanceStatisticsReader {
         private final ConcurrentHashMap<Short, String> stringById = new ConcurrentHashMap<>();
 
         /** Handlers to process deserialized operation. */
-        private final org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler[] handlers;
+        private final PerformanceStatisticsHandler[] handlers;
+
+        /** Node id. */
+        private final UUID nodeId;
 
         /** @param handlers Handlers to process deserialized operation. */
-        public PerformanceStatisticsDeserializer(
-            org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler... handlers) {
+        public PerformanceStatisticsDeserializer(UUID nodeId, PerformanceStatisticsHandler... handlers) {
+            this.nodeId = nodeId;
             this.handlers = handlers;
         }
 
@@ -206,8 +205,8 @@ public class FilePerformanceStatisticsReader {
                     long startTime = buf.getLong();
                     long duration = buf.getLong();
 
-                    for (org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler handler : handlers)
-                        handler.cacheOperation(cacheOp, cacheId, startTime, duration);
+                    for (PerformanceStatisticsHandler handler : handlers)
+                        handler.cacheOperation(nodeId, cacheOp, cacheId, startTime, duration);
 
                     return true;
                 }
@@ -230,8 +229,8 @@ public class FilePerformanceStatisticsReader {
                     long duration = buf.getLong();
                     boolean commit = buf.get() != 0;
 
-                    for (org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler handler : handlers)
-                        handler.transaction(cacheIds, startTime, duration, commit);
+                    for (PerformanceStatisticsHandler handler : handlers)
+                        handler.transaction(nodeId, cacheIds, startTime, duration, commit);
 
                     return true;
                 }
@@ -267,8 +266,8 @@ public class FilePerformanceStatisticsReader {
                     if (str == null)
                         return true;
 
-                    for (org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler handler : handlers)
-                        handler.query(queryType, str, id, startTime, duration, success);
+                    for (PerformanceStatisticsHandler handler : handlers)
+                        handler.query(nodeId, queryType, str, id, startTime, duration, success);
 
                     return true;
                 }
@@ -284,8 +283,8 @@ public class FilePerformanceStatisticsReader {
                     long logicalReads = buf.getLong();
                     long physicalReads = buf.getLong();
 
-                    for (org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler handler : handlers)
-                        handler.queryReads(queryType, uuid, id, logicalReads, physicalReads);
+                    for (PerformanceStatisticsHandler handler : handlers)
+                        handler.queryReads(nodeId, queryType, uuid, id, logicalReads, physicalReads);
 
                     return true;
                 }
@@ -320,8 +319,8 @@ public class FilePerformanceStatisticsReader {
                     if (taskName == null)
                         return true;
 
-                    for (org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler handler : handlers)
-                        handler.task(sesId, taskName, startTime, duration, affPartId);
+                    for (PerformanceStatisticsHandler handler : handlers)
+                        handler.task(nodeId, sesId, taskName, startTime, duration, affPartId);
 
                     return true;
                 }
@@ -336,8 +335,8 @@ public class FilePerformanceStatisticsReader {
                     long duration = buf.getLong();
                     boolean timedOut = buf.get() != 0;
 
-                    for (org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler handler : handlers)
-                        handler.job(sesId, queuedTime, startTime, duration, timedOut);
+                    for (PerformanceStatisticsHandler handler : handlers)
+                        handler.job(nodeId, sesId, queuedTime, startTime, duration, timedOut);
 
                     return true;
                 }
@@ -363,22 +362,6 @@ public class FilePerformanceStatisticsReader {
         /** {@inheritDoc} */
         @Override public void close() {
             stringById.clear();
-        }
-    }
-
-    /** Performance statistics handler. */
-    public abstract static class PerformanceStatisticsHandler implements org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler {
-        /** Node id. */
-        private UUID nodeId;
-
-        /** @return Current node id. */
-        public UUID nodeId() {
-            return nodeId;
-        }
-
-        /** Set current node id. */
-        private void nodeId(UUID nodeId) {
-            this.nodeId = nodeId;
         }
     }
 }

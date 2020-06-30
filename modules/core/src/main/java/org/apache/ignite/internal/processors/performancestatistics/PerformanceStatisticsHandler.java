@@ -28,22 +28,25 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public interface PerformanceStatisticsHandler {
     /**
+     * @param nodeId Node id.
      * @param type Operation type.
      * @param cacheId Cache id.
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
      */
-    void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration);
+    void cacheOperation(UUID nodeId, CacheOperationType type, int cacheId, long startTime, long duration);
 
     /**
+     * @param nodeId Node id.
      * @param cacheIds Cache IDs.
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
      * @param commit {@code True} if commited.
      */
-    void transaction(GridIntList cacheIds, long startTime, long duration, boolean commit);
+    void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration, boolean commit);
 
     /**
+     * @param nodeId Node id.
      * @param type Cache query type.
      * @param text Query text in case of SQL query. Cache name in case of SCAN query.
      * @param id Query id.
@@ -51,34 +54,39 @@ public interface PerformanceStatisticsHandler {
      * @param duration Duration in nanoseconds.
      * @param success Success flag.
      */
-    void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success);
+    void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime, long duration,
+        boolean success);
 
     /**
+     * @param nodeId Node id.
      * @param type Cache query type.
      * @param queryNodeId Originating node id.
      * @param id Query id.
      * @param logicalReads Number of logical reads.
      * @param physicalReads Number of physical reads.
      */
-    void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads, long physicalReads);
+    void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
+        long physicalReads);
 
     /**
+     * @param nodeId Node id.
      * @param sesId Session id.
      * @param taskName Task name.
      * @param startTime Start time in milliseconds.
      * @param duration Duration.
      * @param affPartId Affinity partition id.
      */
-    void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId);
+    void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId);
 
     /**
+     * @param nodeId Node id.
      * @param sesId Session id.
      * @param queuedTime Time job spent on waiting queue.
      * @param startTime Start time in milliseconds.
      * @param duration Job execution time.
      * @param timedOut {@code True} if job is timed out.
      */
-    void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut);
+    void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut);
 
     /** Cache operations types. */
     public enum CacheOperationType {
