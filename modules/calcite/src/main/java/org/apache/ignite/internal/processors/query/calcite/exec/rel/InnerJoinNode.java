@@ -45,8 +45,7 @@ public class InnerJoinNode<Row> extends AbstractJoinNode<Row> {
     }
 
     /** */
-    @Override
-    protected void doJoinInternal() {
+    @Override protected void doJoinInternal() {
         if (waitingRight == NOT_WAITING) {
             inLoop = true;
             try {

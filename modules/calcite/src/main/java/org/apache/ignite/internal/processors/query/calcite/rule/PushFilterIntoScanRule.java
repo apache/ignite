@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rex.RexBuilder;
@@ -36,10 +37,16 @@ import org.apache.ignite.internal.util.typedef.F;
  * Rule that pushes filter into the scan. This might be useful for index range scans.
  */
 public class PushFilterIntoScanRule extends RelOptRule {
-
+    /** Instance. */
     public static final PushFilterIntoScanRule FILTER_INTO_SCAN =
         new PushFilterIntoScanRule(LogicalFilter.class, "IgniteFilterIntoScanRule");
 
+    /**
+     * Constructor.
+     *
+     * @param clazz Class of relational expression to match.
+     * @param desc Description, or null to guess description
+     */
     private PushFilterIntoScanRule(Class<? extends RelNode> clazz, String desc) {
         super(operand(clazz,
             operand(IgniteIndexScan.class, none())),
