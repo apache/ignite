@@ -413,6 +413,63 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_REENCRYPTION_THROTTLE, value = "50")
+    @WithSystemProperty(key = IGNITE_REENCRYPTION_BATCH_SIZE, value = "10")
+    @WithSystemProperty(key = IGNITE_REENCRYPTION_THREAD_POOL_SIZE, value = "2")
+    public void testNotBltNodeJoin() throws Exception {
+        backups = 1;
+
+        T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
+
+        createEncryptedCache(nodes.get1(), nodes.get2(), cacheName(), null);
+
+        loadData(50_000);
+
+        forceCheckpoint();
+
+        long startIdx1 = nodes.get1().context().cache().context().wal().currentSegment();
+        long startIdx2 = nodes.get2().context().cache().context().wal().currentSegment();
+
+        nodes.get1().encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+
+        long endIdx1 = nodes.get1().context().cache().context().wal().currentSegment();
+        long endIdx2 = nodes.get2().context().cache().context().wal().currentSegment();
+
+        stopGrid(GRID_1);
+
+        resetBaselineTopology();
+
+        int grpId = CU.cacheId(cacheName());
+
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, getTestTimeout());
+
+        startGrid(GRID_1);
+
+        resetBaselineTopology();
+
+        awaitPartitionMapExchange();
+
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, getTestTimeout());
+
+        assertEquals(2, grid(GRID_0).context().encryption().groupKeysInfo(grpId).size());
+        assertEquals(2, grid(GRID_1).context().encryption().groupKeysInfo(grpId).size());
+
+        // Simulate that wal was removed.
+        for (long segment = startIdx1; segment <= endIdx1; segment++)
+            grid(GRID_0).context().encryption().onWalSegmentRemoved(segment);
+
+        assertEquals(1, grid(GRID_0).context().encryption().groupKeysInfo(grpId).size());
+
+        for (long segment = startIdx2; segment <= endIdx2; segment++)
+            grid(GRID_1).context().encryption().onWalSegmentRemoved(segment);
+
+        assertEquals(1, grid(GRID_1).context().encryption().groupKeysInfo(grpId).size());
+    }
+
+    /**
      * Ensures that re-encryption continues after a restart.
      *
      * @throws Exception If failed.

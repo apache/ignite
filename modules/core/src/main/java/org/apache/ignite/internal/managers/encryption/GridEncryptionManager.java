@@ -834,6 +834,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Future that will be completed when reencryption of the specified group is finished.
      */
     public IgniteInternalFuture<Void> reencryptionFuture(int grpId) {
+        if (reencryption.disabled() && reencryptGroups.contains(grpId))
+            return new GridFutureAdapter<>();
+
         return reencryption.statusFuture(grpId);
     }
 
