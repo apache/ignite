@@ -66,8 +66,7 @@ class ClientCacheQueryContinuousInitialQueryScan extends ClientCacheQueryContinu
      *
      * @return Query.
      */
-    @Override
-    public Query getQuery(GridKernalContext ctx) {
+    @Override public Query getQuery(GridKernalContext ctx) {
         return new ScanQuery()
                 .setFilter(ClientCacheScanQueryRequest.createFilter(ctx, filter, filterPlatform))
                 .setPageSize(pageSize)
@@ -82,8 +81,7 @@ class ClientCacheQueryContinuousInitialQueryScan extends ClientCacheQueryContinu
      * @param ctx Context.
      * @return Client cache query cursor according to query type.
      */
-    @Override
-    public ClientCacheQueryCursor getClientCursor(QueryCursor cursor, ClientConnectionContext ctx) {
+    @Override public ClientCacheQueryCursor getClientCursor(QueryCursor cursor, ClientConnectionContext ctx) {
         return new ClientCacheEntryQueryCursor(cursor, pageSize, ctx, false);
     }
 }
