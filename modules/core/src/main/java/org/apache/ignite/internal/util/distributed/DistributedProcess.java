@@ -35,7 +35,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
-import org.apache.ignite.internal.processors.performancestatistics.PerformaceStatisticsProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI3;
@@ -418,13 +417,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
          *
          * @see IgniteSnapshotManager
          */
-        END_SNAPSHOT,
-
-        /**
-         * Start/stop collecting performance statistics.
-         *
-         * @see PerformaceStatisticsProcessor
-         */
-        PERFORMANCE_STATISTICS
+        END_SNAPSHOT
     }
 }

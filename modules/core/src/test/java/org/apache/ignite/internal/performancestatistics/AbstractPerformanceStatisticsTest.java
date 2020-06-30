@@ -77,7 +77,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
             assertTrue(lsnr.check());
     }
 
-    /** */
+    /** Wait for statistics enabled/disabled. */
     public static void waitForStatisticsEnabled(boolean enabled) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
             List<Ignite> grids = G.allGrids();

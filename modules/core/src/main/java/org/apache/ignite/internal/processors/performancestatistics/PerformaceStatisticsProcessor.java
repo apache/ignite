@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -58,6 +59,10 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
             new DistributedMetastorageLifecycleListener() {
             @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
                 metastorage.listen(STAT_ENABLED_PREFIX::equals, (key, oldVal, newVal) -> {
+                    // Skip history on local join.
+                    if (!ctx.discovery().localJoinFuture().isDone())
+                        return;
+
                     boolean start = (boolean)newVal;
 
                     if (start)
@@ -69,6 +74,18 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
 
             @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
                 PerformaceStatisticsProcessor.this.metastorage = metastorage;
+
+                try {
+                    Boolean enabled = metastorage.read(STAT_ENABLED_PREFIX);
+
+                    if (enabled != null && enabled)
+                        ctx.closure().runLocalSafe(writer::start);
+                    else
+                        writer.stop();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
             }
         });
     }
@@ -131,8 +148,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
      * @param duration Duration in nanoseconds.
      * @param success Success flag.
      */
-    public void query(GridCacheQueryType type, String text, long id, long startTime, long duration,
-        boolean success) {
+    public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
         writer.query(type, text, id, startTime, duration, success);
     }
 
@@ -143,8 +159,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
      * @param logicalReads Number of logical reads.
      * @param physicalReads Number of physical reads.
      */
-    public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
-        long physicalReads) {
+    public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads, long physicalReads) {
         writer.queryReads(type, queryNodeId, id, logicalReads, physicalReads);
     }
 

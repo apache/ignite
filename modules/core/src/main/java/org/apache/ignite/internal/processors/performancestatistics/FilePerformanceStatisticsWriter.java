@@ -227,8 +227,7 @@ public class FilePerformanceStatisticsWriter {
      * @param duration Duration in nanoseconds.
      * @param success Success flag.
      */
-    public void query(GridCacheQueryType type, String text, long id, long startTime, long duration,
-        boolean success) {
+    public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
         FileWriter writer = fileWriter;
 
         if (writer == null)
@@ -287,8 +286,7 @@ public class FilePerformanceStatisticsWriter {
      * @param logicalReads Number of logical reads.
      * @param physicalReads Number of physical reads.
      */
-    public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
-        long physicalReads) {
+    public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads, long physicalReads) {
         int size = /*type*/ 1 +
             /*queryNodeId*/ 16 +
             /*id*/ 8 +
@@ -615,7 +613,7 @@ public class FilePerformanceStatisticsWriter {
 
                 fileWriter.shutdown();
 
-                stopStatisticsSafe();
+                stopStatistics();
             }
         }
 
@@ -643,7 +641,7 @@ public class FilePerformanceStatisticsWriter {
             if (stopByMaxSize.compareAndSet(false, true)) {
                 fileWriter.shutdown();
 
-                stopStatisticsSafe();
+                stopStatistics();
 
                 log.warning("The performance statistics file maximum size is reached. " +
                     "Performance statistics collecting will be stopped.");
@@ -651,7 +649,7 @@ public class FilePerformanceStatisticsWriter {
         }
 
         /** Stops collecting statistics. */
-        void stopStatisticsSafe() {
+        void stopStatistics() {
             try {
                 ctx.performanceStatistics().stopCollectStatistics();
             }
