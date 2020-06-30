@@ -854,6 +854,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         IgniteInternalFuture<?> res = cachesRegistry.update(exchActions);
 
+        for (ExchangeActions.CacheActionData d: exchActions.cacheStartRequests())
+            cctx.coordinators().validateCacheConfiguration(d.descriptor().cacheConfiguration());
+
         // Affinity did not change for existing caches.
         onCustomMessageNoAffinityChange(fut, exchActions);
 

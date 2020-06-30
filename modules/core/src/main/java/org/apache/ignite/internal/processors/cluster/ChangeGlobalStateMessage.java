@@ -200,7 +200,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      */
     @Deprecated
     public boolean activate() {
-        return ClusterState.active(state);
+        return state.active();
     }
 
     /**

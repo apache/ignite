@@ -950,13 +950,13 @@ public class BinaryClassDescriptor {
     /**
      * @return Instance of {@link BinaryMetadata} for this type.
      */
-    BinaryMetadata metadata() {
+    BinaryMetadata metadata(boolean includeSchema) {
         return new BinaryMetadata(
             typeId,
             typeName,
             stableFieldsMeta,
             affKeyFieldName,
-            null,
+            includeSchema ? (stableSchema == null ? null : Collections.singleton(stableSchema)) : null,
             isEnum(),
             cls.isEnum() ? enumMap(cls) : null);
     }

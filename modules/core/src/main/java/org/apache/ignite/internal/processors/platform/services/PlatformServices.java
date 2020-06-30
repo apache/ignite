@@ -515,6 +515,19 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /**
+     * Finds a suitable method in a class.
+     *
+     * @param clazz Class.
+     * @param mthdName Name.
+     * @param args Args.
+     * @return Method.
+     * @throws NoSuchMethodException On error.
+     */
+    public static Method getMethod(Class<?> clazz, String mthdName, Object[] args) throws NoSuchMethodException {
+        return ServiceProxyHolder.getMethod(clazz, mthdName, args);
+    }
+
+    /**
      * Proxy holder.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
