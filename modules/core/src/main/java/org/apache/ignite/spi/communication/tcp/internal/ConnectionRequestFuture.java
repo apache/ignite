@@ -15,25 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.spi.communication.tcp.internal;
 
-import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 
 /**
- * This enum represents general hint for Ignite about its environment: stand-alone or virtualized.
- *
- * Virtualized deployments may come with limitations like networks hidden behing NATs or may
- * bring external automated management as Kubernetes does.
- * However from inside virtualized environment looks exaclty the same as a stand-alone one and
- * Ignite node cannot detect type of the environment and adapt its algorithms to these factors.
- *
- * {@link EnvironmentType} enum enables user to give a hint to started Ignite node so it is able to function efficiently.
+ * Marker future implementation, just like {@code ConnectFuture}, but meaning that we're waiting for the inverse
+ * connection.
  */
-@IgniteExperimental
-public enum EnvironmentType {
-    /** Default value. */
-    STANDALONE,
-
-    /** */
-    VIRTUALIZED;
+public class ConnectionRequestFuture extends GridFutureAdapter<GridCommunicationClient> {
 }

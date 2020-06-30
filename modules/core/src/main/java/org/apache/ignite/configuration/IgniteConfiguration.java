@@ -259,9 +259,6 @@ public class IgniteConfiguration {
     /** Default query timeout. */
     public static final long DFLT_QRY_TIMEOUT = 0;
 
-    /** Default value of environment type is {@link EnvironmentType#STANDALONE}. */
-    private static final EnvironmentType DFLT_ENV_TYPE = EnvironmentType.STANDALONE;
-
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -600,10 +597,6 @@ public class IgniteConfiguration {
     /** SQL schemas to be created on node start. */
     private String[] sqlSchemas;
 
-    /** Environment type - hint to Ignite that it is started in a specific environment and should adapt
-     * its behavior and algorithms to specific properties. */
-    private EnvironmentType envType = DFLT_ENV_TYPE;
-
     /** Plugin providers. */
     private PluginProvider[] pluginProvs;
 
@@ -738,7 +731,6 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        envType = cfg.getEnvironmentType();
     }
 
     /**
@@ -3574,35 +3566,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setSqlSchemas(String... sqlSchemas) {
         this.sqlSchemas = sqlSchemas;
-
-        return this;
-    }
-
-    /**
-     * <b>This is an experimental feature. Envronment awareness approac may be changed.</b>
-     * <p>
-     *
-     * Configured environment type.
-     *
-     * @return {@link EnvironmentType environment type}.
-     */
-    @IgniteExperimental
-    public EnvironmentType getEnvironmentType() {
-        return envType;
-    }
-
-    /**
-     * <b>This is an experimental feature. Envronment awareness approac may be changed.</b>
-     * <p>
-     *
-     * Sets environment type hint.
-     *
-     * @param environmentType Environment type value.
-     * @return {@code this} for chaining.
-     */
-    @IgniteExperimental
-    public IgniteConfiguration setEnvironmentType(EnvironmentType environmentType) {
-        this.envType = environmentType;
 
         return this;
     }

@@ -17,11 +17,8 @@
 
 package org.apache.ignite.spi.communication.tcp.internal;
 
-import java.util.UUID;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception is thrown by {@link TcpCommunicationSpi} when some or all addresses of a node are unreachable and
@@ -46,19 +43,7 @@ public class NodeUnreachableException extends IgniteSpiException {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public final UUID nodeId;
-
-    /** */
-    public final int connIdx;
-
-    /** */
-    public final transient GridFutureAdapter<?> fut;
-
-    /** */
-    public NodeUnreachableException(String msg, @Nullable Throwable cause, UUID nodeId, int connIdx, GridFutureAdapter<?> fut) {
-        super(msg, cause);
-        this.nodeId = nodeId;
-        this.connIdx = connIdx;
-        this.fut = fut;
+    public NodeUnreachableException(String msg) {
+        super(msg);
     }
 }

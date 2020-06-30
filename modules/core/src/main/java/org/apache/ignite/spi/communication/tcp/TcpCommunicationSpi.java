@@ -61,7 +61,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
-import org.apache.ignite.configuration.EnvironmentType;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -119,6 +118,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -150,6 +150,8 @@ import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.CommunicationListenerEx;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionRequestFuture;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionRequestor;
 import org.apache.ignite.spi.communication.tcp.internal.HandshakeException;
 import org.apache.ignite.spi.communication.tcp.internal.NodeUnreachableException;
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture;
@@ -315,8 +317,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** */
     public static final String ATTR_PAIRED_CONN = "comm.tcp.pairedConnection";
 
-    /** Attribute with information of {@link EnvironmentType environment} local node is started in. */
-    public static final String ATTR_ENVIRONMENT_TYPE = "comm.environment.type";
+    /** */
+    public static final String ATTR_FORCE_CLIENT_SERVER_CONNECTIONS = "comm.force.client.srv.connections";
 
     /** Default port which node sets listener to (value is <tt>47100</tt>). */
     public static final int DFLT_PORT = 47100;
@@ -772,8 +774,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
                                 new ConnectClosure(ses, recoveryDesc, rmtNode, connKey, msg0, !hasShmemClient, fut));
 
+                            GridTcpNioCommunicationClient client = null;
+
                             if (reserved)
-                                connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
+                                client = connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
+
+                            if (oldFut instanceof ConnectionRequestFuture && !oldFut.isDone())
+                                oldFut.onDone(client);
                         }
                     }
                 }
@@ -1321,6 +1328,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     private long selectorSpins = IgniteSystemProperties.getLong("IGNITE_SELECTOR_SPINS", 0L);
 
+    /** */
+    private boolean forceClientToSrvConnections;
+
     /** Address resolver. */
     private AddressResolver addrRslvr;
 
@@ -1348,6 +1358,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** */
     private final GridLocalEventListener discoLsnr = new DiscoveryListener();
+
+    /** Connection requestor. */
+    private ConnectionRequestor connectionRequestor;
+
 
     /**
      * @return {@code True} if ssl enabled.
@@ -2014,6 +2028,30 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         return this;
     }
 
+    /**
+     * @return Force client to server connections flag.
+     *
+     * @see #setForceClientToServerConnections(boolean)
+     */
+    @IgniteExperimental
+    public boolean forceClientToServerConnections() {
+        return forceClientToSrvConnections;
+    }
+
+    /**
+     * Applicable for clients only. Sets PSI in the mode when server node cannot open TCP connection to the current
+     * node. Possile reasons for that may be specific network configurations or security rules.
+     * In this mode, when server needs the connection with client, it uses {@link DiscoverySpi} protocol to notify
+     * client about it. After that client opens the required connection from its side.
+     */
+    @IgniteExperimental
+    @IgniteSpiConfiguration(optional = true)
+    public TcpCommunicationSpi setForceClientToServerConnections(boolean forceClientToSrvConnections) {
+        this.forceClientToSrvConnections = forceClientToSrvConnections;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public void setListener(CommunicationListener<Message> lsnr) {
         this.lsnr = lsnr;
@@ -2024,6 +2062,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     public CommunicationListener getListener() {
         return lsnr;
+    }
+
+    /** */
+    @IgniteExperimental
+    public void setConnectionRequestor(ConnectionRequestor connectionRequestor) {
+        this.connectionRequestor = connectionRequestor;
     }
 
     /** {@inheritDoc} */
@@ -2318,12 +2362,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             throw new IgniteSpiException("Failed to initialize TCP server: " + locHost, e);
         }
 
-        EnvironmentType envType = ignite.configuration().getEnvironmentType();
+        boolean forceClientToSrvConnections = forceClientToServerConnections();
 
-        if (usePairedConnections) {
-            if (envType == EnvironmentType.VIRTUALIZED)
-                throw new IgniteSpiException("Node using paired connections " +
-                    "is not allowed to start in virtualized environment.");
+        if (usePairedConnections && forceClientToSrvConnections) {
+            throw new IgniteSpiException("Node using paired connections " +
+                "is not allowed to start in forced client to server connections mode.");
         }
 
         // Set local node attributes.
@@ -2341,7 +2384,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             res.put(createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null);
             res.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
             res.put(createSpiAttributeName(ATTR_PAIRED_CONN), usePairedConnections);
-            res.put(createSpiAttributeName(ATTR_ENVIRONMENT_TYPE), envType.toString());
+            res.put(createSpiAttributeName(ATTR_FORCE_CLIENT_SERVER_CONNECTIONS), forceClientToSrvConnections);
 
             return res;
         }
@@ -2713,6 +2756,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (nioSrvr != null)
             nioSrvr.stop();
 
+//        if (commWorker != null)
+//            commWorker.stop();
+
         U.cancel(commWorker);
         U.join(commWorker, log);
 
@@ -2730,6 +2776,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (client != null)
                     client.forceClose();
             }
+        }
+
+        for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values()) {
+            if (fut instanceof ConnectionRequestFuture) {
+                // There's no way it would be done by itself at this point.
+                fut.onDone(new IgniteSpiException("SPI is being stopped."));
+            }
+        }
+
+        if (commWorker != null) {
+            U.cancel(commWorker);
+            U.join(commWorker, log);
         }
 
         // Clear resources.
@@ -2950,10 +3008,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (stopping)
                     throw new IgniteSpiException("Node is stopping.", t);
 
-                // NodeUnreachableException should not be explicitly logged. Error message will appear if inverse
-                // connection attempt fails as well.
-                if (!(t instanceof NodeUnreachableException))
-                    log.error("Failed to send message to remote node [node=" + node + ", msg=" + msg + ']', t);
+                log.error("Failed to send message to remote node [node=" + node + ", msg=" + msg + ']', t);
 
                 if (t instanceof Error)
                     throw (Error)t;
@@ -3112,10 +3167,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         fut.onDone(client0);
                     }
+                    catch (NodeUnreachableException e) {
+                        fut = handleUnreachableNodeException(node, connIdx, fut, e);
+                    }
                     catch (Throwable e) {
-                        if (e instanceof NodeUnreachableException)
-                            throw e;
-
                         fut.onDone(e);
 
                         if (e instanceof IgniteTooManyOpenFilesException)
@@ -3156,6 +3211,76 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 // Client has just been closed by idle worker. Help it and try again.
                 removeNodeClient(nodeId, client);
         }
+    }
+
+    /**
+     * Handles {@link NodeUnreachableException}. This means that the method will try to trigger client itself to open
+     * connection. The only possible way of doing this is to use {@link #connectionRequestor}'s trigger and wait.
+     * Specifics of triggers implementation technically should be considered unknown, but for now it's not true and we
+     * expect that {@link NodeUnreachableException} won't be thrown in {@link IgniteDiscoveryThread}.
+     *
+     * @param node Node to open connection to.
+     * @param connIdx Connection index.
+     * @param fut Current future for opening connection.
+     * @param e Curent exception.
+     * @return New future that will return the client or error. {@code null} client is possible if newly opened
+     *      connection has been closed by idle worker, at least that's what documentation says.
+     * @throws IgniteCheckedException If trigerring failed or trigger is not configured.
+     */
+    private GridFutureAdapter<GridCommunicationClient> handleUnreachableNodeException(
+        ClusterNode node,
+        int connIdx,
+        GridFutureAdapter<GridCommunicationClient> fut,
+        NodeUnreachableException e
+    ) throws IgniteCheckedException {
+        if (connectionRequestor != null) {
+            ConnectFuture fut0 = (ConnectFuture)fut;
+
+            ConnectionRequestFuture triggerFut = new ConnectionRequestFuture();
+
+            triggerFut.listen(f -> {
+                try {
+                    fut0.onDone(f.get());
+                }
+                catch (Throwable t) {
+                    fut0.onDone(t);
+                }
+            });
+
+            clientFuts.put(new ConnectionKey(node.id(), connIdx, -1), triggerFut);
+
+            fut = triggerFut;
+
+            try {
+                connectionRequestor.request(node, connIdx);
+
+                long failTimeout = failureDetectionTimeoutEnabled()
+                    ? failureDetectionTimeout()
+                    : getConnectTimeout();
+
+                fut.get(failTimeout);
+            }
+            catch (IgniteCheckedException triggerException) {
+                IgniteSpiException spiE = new IgniteSpiException(triggerException);
+
+                spiE.addSuppressed(e);
+
+                String msg = "Failed to wait for establishing inverse communication connection from node " + node;
+
+                log.warning(msg, spiE);
+
+                fut.onDone(spiE);
+
+                throw spiE;
+            }
+        }
+        else {
+            fut.onDone(e);
+
+            throw new IgniteCheckedException(e);
+        }
+
+        return fut;
     }
 
     /**
@@ -3506,13 +3631,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         boolean locNodeIsSrv = !getLocalNode().isClient() && !getLocalNode().isDaemon();
 
         if (!(Thread.currentThread() instanceof IgniteDiscoveryThread) && locNodeIsSrv) {
-            if (node.isClient() && startedInVirtualizedEnvironment(node)) {
+            if (node.isClient() && forceClientToServerConnections(node)) {
                 String msg = "Failed to connect to node " + node.id() +
                     " because it is started in virtualized environment; inverse connection will be requested.";
 
-                GridFutureAdapter<?> fut = clientFuts.get(new ConnectionKey(node.id(), connIdx, -1));
-
-                throw new NodeUnreachableException(msg, null, node.id(), connIdx, fut);
+                throw new NodeUnreachableException(msg);
             }
         }
 
@@ -3816,9 +3939,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     String msg = "Failed to connect to all addresses of node " + node.id() + ": " + failedAddrsSet +
                         "; inverse connection will be requested.";
 
-                    GridFutureAdapter<?> fut = clientFuts.get(new ConnectionKey(node.id(), connIdx, -1));
-
-                    throw new NodeUnreachableException(msg, null, node.id(), connIdx, fut);
+                    throw new NodeUnreachableException(msg);
                 }
             }
 
@@ -4334,12 +4455,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /**
      * @param node Node.
-     * @return {@code True} if remote node is
+     * @return {@code True} if remote current node cannot receive TCP connections. Applicable for client nodes only.
      */
-    private boolean startedInVirtualizedEnvironment(ClusterNode node) {
-        String envType = node.attribute(createSpiAttributeName(ATTR_ENVIRONMENT_TYPE));
+    private boolean forceClientToServerConnections(ClusterNode node) {
+        Boolean forceClientToSrvConnections = node.attribute(createSpiAttributeName(ATTR_FORCE_CLIENT_SERVER_CONNECTIONS));
 
-        return EnvironmentType.VIRTUALIZED.toString().equals(envType);
+        return Boolean.TRUE.equals(forceClientToSrvConnections);
     }
 
     /**
