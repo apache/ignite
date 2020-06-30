@@ -170,19 +170,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var listener = new DelegateListener<int, int>(e => keys.Add(e.Key));
 
             var enableCacheUpdates = true;
-            var key = 0;
+            long key = 0;
 
-            Task.Factory.StartNew(() =>
+            var generatorTask = Task.Factory.StartNew(() =>
             {
                 // ReSharper disable once AccessToModifiedClosure
                 while (Volatile.Read(ref enableCacheUpdates))
                 {
-                    Interlocked.Increment(ref key);
-                    cache[key] = key;
+                    // ReSharper disable once AccessToModifiedClosure
+                    cache[(int)Interlocked.Increment(ref key)] = 1;
                 }
             });
 
-            TestUtils.WaitForTrueCondition(() => keys.Count > 10);
+            TestUtils.WaitForTrueCondition(() => Interlocked.Read(ref key) > 10);
 
             var qry = new ContinuousQuery<int, int>(listener);
             var initialQry = new ScanQuery<int, int>();
@@ -195,14 +195,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 }
 
                 // Wait for some more events.
-                var currentKey = key;
-                TestUtils.WaitForTrueCondition(() => key > currentKey);
+                var currentKey = Interlocked.Read(ref key);
+                TestUtils.WaitForTrueCondition(() => Interlocked.Read(ref key) > currentKey);
 
                 // Stop generator.
                 Volatile.Write(ref enableCacheUpdates, false);
+                generatorTask.Wait();
             }
 
-            Assert.AreEqual(key, keys.Count);
+            var lastKey = Interlocked.Read(ref key);
+
+            // TODO: Why do we get duplicate values? Write a test for regular cont queries - is it the same?
+            Assert.AreEqual(lastKey, keys.Max());
+            CollectionAssert.AreEquivalent(Enumerable.Range(1, (int) lastKey), keys);
         }
 
         /// <summary>
