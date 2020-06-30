@@ -59,7 +59,6 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
             @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
                 metastorage.listen(STAT_ENABLED_PREFIX::equals, (key, oldVal, newVal) -> {
                     boolean start = (boolean)newVal;
-                    System.out.println("MY enabled="+start);
 
                     if (start)
                         ctx.closure().runLocalSafe(writer::start);
