@@ -17,48 +17,75 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * Initial query holder.
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
-class ClientCacheQueryContinuousInitialQueryScan extends ClientCacheQueryContinuousInitialQuery {
-   /** */
-    @Nullable
-    private final Object filter;
+class ClientCacheQueryContinuousInitialQuerySql extends ClientCacheQueryContinuousInitialQuery {
+    /** */
+    private final String schema;
 
     /** */
-    private final byte filterPlatform;
+    private final String sql;
+
+    /** */
+    private final Object[] args;
 
     /** */
     private final int pageSize;
 
     /** */
-    private final Integer part;
+    private final JdbcStatementType stmtType;
+
+    /** */
+    private final boolean distributedJoins;
 
     /** */
     private final boolean loc;
+
+    /** */
+    private final boolean enforceJoinOrder;
+
+    /** */
+    private final boolean collocated;
+
+    /** */
+    private final boolean lazy;
+
+    /** */
+    private final int timeout;
 
     /**
      * Ctor.
      *
      * @param reader Reader.
      */
-    public ClientCacheQueryContinuousInitialQueryScan(BinaryRawReaderEx reader) {
-        filter = reader.readObjectDetached();
-        filterPlatform = filter == null ? 0 : reader.readByte();
-        pageSize = reader.readInt();
+    public ClientCacheQueryContinuousInitialQuerySql(BinaryRawReaderEx reader) {
 
-        int part0 = reader.readInt();
-        part = part0 < 0 ? null : part0;
-                loc = reader.readBoolean();
+        schema = reader.readString();
+        pageSize = reader.readInt();
+        sql = reader.readString();
+        args = PlatformCache.readQueryArgs(reader);
+        stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
+        distributedJoins = reader.readBoolean();
+        loc = reader.readBoolean();
+        enforceJoinOrder = reader.readBoolean();
+        collocated = reader.readBoolean();
+        lazy = reader.readBoolean();
+        timeout = (int) reader.readLong();
     }
 
     /**
@@ -84,6 +111,6 @@ class ClientCacheQueryContinuousInitialQueryScan extends ClientCacheQueryContinu
      */
     @Override
     public ClientCacheQueryCursor getClientCursor(QueryCursor cursor, ClientConnectionContext ctx) {
-        return new ClientCacheEntryQueryCursor(cursor, pageSize, ctx, false);
+        return new ClientCacheFieldsQueryCursor((FieldsQueryCursor) cursor, pageSize, ctx, false);
     }
 }

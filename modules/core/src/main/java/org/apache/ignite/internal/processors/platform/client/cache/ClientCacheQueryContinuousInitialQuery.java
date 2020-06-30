@@ -21,8 +21,6 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
-import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
@@ -61,35 +59,11 @@ abstract class ClientCacheQueryContinuousInitialQuery {
             case TYPE_NONE:
                 return null;
 
-            case TYPE_SCAN: {
-                Object filter = reader.readObjectDetached();
-                byte filterPlatform = filter == null ? 0 : reader.readByte();
-                int pageSize = reader.readInt();
+            case TYPE_SCAN:
+                return new ClientCacheQueryContinuousInitialQueryScan(reader);
 
-                int part0 = reader.readInt();
-                Integer part = part0 < 0 ? null : part0;
-
-                boolean loc = reader.readBoolean();
-
-                return new ClientCacheQueryContinuousInitialQueryScan(filter, filterPlatform, pageSize, part, loc);
-            }
-
-            case TYPE_SQL: {
-                // TODO: Split this class to avoid switching and data mixup
-                String schema = reader.readString();
-                int pageSize = reader.readInt();
-                String sql = reader.readString();
-                Object[] args = PlatformCache.readQueryArgs(reader);
-                JdbcStatementType stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
-                boolean distributedJoins = reader.readBoolean();
-                boolean loc = reader.readBoolean();
-                boolean enforceJoinOrder = reader.readBoolean();
-                boolean collocated = reader.readBoolean();
-                boolean lazy = reader.readBoolean();
-                int timeout = (int) reader.readLong();
-
-                return null;
-            }
+            case TYPE_SQL:
+                return new ClientCacheQueryContinuousInitialQuerySql(reader);
 
             default:
                 throw new IgniteClientException(ClientStatus.FAILED, "Invalid initial query type: " + typ);
