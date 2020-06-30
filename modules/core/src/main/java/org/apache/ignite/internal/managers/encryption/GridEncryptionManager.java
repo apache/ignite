@@ -501,7 +501,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             Serializable rmtKey = getSpi().decryptKey(entry.getValue());
 
-            if (F.eq(locEncKey.key(), rmtKey) && F.eq(locEncKey.id(), nodeEncKeys.knownKeyIds.get(grpId)))
+            if (!F.eq(locEncKey.id(), nodeEncKeys.knownKeyIds.get(grpId)) || F.eq(locEncKey.key(), rmtKey))
                 continue;
 
             return new IgniteNodeValidationResult(ctx.localNodeId(),
@@ -591,24 +591,33 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             return;
 
         for (Map.Entry<Integer, Object> entry : encKeysFromCluster.entrySet()) {
-            if (groupKey(entry.getKey()) == null) {
-                U.quietAndInfo(log, "Store group key received from coordinator [grp=" + entry.getKey() + "]");
+            int grpId = entry.getKey();
 
-                if (entry.getValue() instanceof T2) {
-                    T2<Integer, byte[]> pair = (T2<Integer, byte[]>)entry.getValue();
+            Integer locKeyId = grpEncActiveIds.get(grpId);
+            Integer rmtKeyId = null;
 
-                    addGroupKey(entry.getKey(), pair.get2(), pair.get1());
+            byte[] key;
 
-                    continue;
-                }
+            if (entry.getValue() instanceof T2) {
+                T2<Integer, byte[]> pair = (T2<Integer, byte[]>)entry.getValue();
 
-                // compatibility
-                addGroupKey(entry.getKey(), (byte[])entry.getValue(), INITIAL_KEY_ID);
+                rmtKeyId = pair.get1();
+                key = pair.get2();
             }
-            else {
+            else // Compatibility
+                key = (byte[])entry.getValue();
+
+            if (locKeyId != null && F.eq(locKeyId, rmtKeyId)) {
                 U.quietAndInfo(log, "Skip group key received from coordinator. Already exists. [grp=" +
-                    entry.getKey() + "]");
+                    grpId + "]");
+
+                continue;
             }
+
+            U.quietAndInfo(log, "Store group key received from coordinator [grp=" + grpId +
+                ", keyId=" + rmtKeyId + "]");
+
+            addGroupKey(grpId, key, rmtKeyId == null ? INITIAL_KEY_ID : rmtKeyId);
         }
     }
 
@@ -672,21 +681,28 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * Add new cache group encryption key.
      *
      * @param grpId Cache group ID.
-     * @param encGrpKey Encrypted group key.
-     * @param keyId Key ID.
+     * @param key Encrypted group key.
+     * @param id Encrypted group key ID.
      */
-    private void addGroupKey(int grpId, byte[] encGrpKey, int keyId) {
+    private void addGroupKey(int grpId, byte[] key, int id) {
         try {
-            Serializable encKey = withMasterKeyChangeReadLock(() -> getSpi().decryptKey(encGrpKey));
+            Serializable encKey = withMasterKeyChangeReadLock(() -> getSpi().decryptKey(key));
 
             synchronized (metaStorageMux) {
-                grpEncKeys.computeIfAbsent(grpId, m -> new ConcurrentHashMap<>()).put(keyId, encKey);
+                grpEncKeys.computeIfAbsent(grpId, m -> new ConcurrentHashMap<>()).put(id, encKey);
 
-                Integer prevKeyId = grpEncActiveIds.put(grpId, keyId);
+                Integer prevId = grpEncActiveIds.put(grpId, id);
 
-                assert prevKeyId == null : "new=" + keyId + ", prev=" + prevKeyId;
+                boolean updateWalSegments = prevId != null;
 
-                writeToMetaStore(grpId, true, true, false);
+                if (updateWalSegments) {
+                    long walIdx = ctx.cache().context().wal().currentSegment();
+
+                    awaitWalSegments.computeIfAbsent(walIdx, v -> new HashMap<>())
+                        .computeIfAbsent(grpId, v -> new HashSet<>()).add(prevId);
+                }
+
+                writeToMetaStore(grpId, true, true, updateWalSegments);
             }
         } catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to write cache group encryption key [grpId=" + grpId + ']', e);
