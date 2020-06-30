@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
@@ -26,13 +26,12 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Initial query holder.
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
-class ClientCacheQueryContinuousInitialQuery {
+@SuppressWarnings("rawtypes")
+abstract class ClientCacheQueryContinuousInitialQuery {
     /** */
     private static final byte TYPE_NONE = 0;
 
@@ -42,57 +41,11 @@ class ClientCacheQueryContinuousInitialQuery {
     /** */
     private static final byte TYPE_SQL = 2;
 
-    /** */
-    private final byte type;
-
-    /** */
-    @Nullable
-    private final Object filter;
-
-    /** */
-    private final byte filterPlatform;
-
-    /** */
-    private final int pageSize;
-
-    /** */
-    private final Integer part;
-
-    /** */
-    private final boolean loc;
-
-    /** */
-    @Nullable
-    private final String sql;
-
     /**
      * Ctor.
-     *
-     * @param type Query type.
-     * @param filter Filter (for Scan query).
-     * @param filterPlatform Filter platform.
-     * @param pageSize Page size.
-     * @param part Partition.
-     * @param loc Local flag.
-     * @param sql Sql.
      */
-    public ClientCacheQueryContinuousInitialQuery(
-            byte type,
-            @Nullable Object filter,
-            byte filterPlatform,
-            int pageSize,
-            @Nullable Integer part,
-            boolean loc,
-            @Nullable String sql) {
-        assert type > TYPE_NONE && type <= TYPE_SQL;
-
-        this.type = type;
-        this.filter = filter;
-        this.filterPlatform = filterPlatform;
-        this.pageSize = pageSize;
-        this.part = part;
-        this.loc = loc;
-        this.sql = sql;
+    protected ClientCacheQueryContinuousInitialQuery() {
+        // No-op.
     }
 
     /**
@@ -118,8 +71,7 @@ class ClientCacheQueryContinuousInitialQuery {
 
                 boolean loc = reader.readBoolean();
 
-                return new ClientCacheQueryContinuousInitialQuery(typ, filter, filterPlatform, pageSize,
-                        part, loc, null);
+                return new ClientCacheQueryContinuousInitialQueryScan(filter, filterPlatform, pageSize, part, loc);
             }
 
             case TYPE_SQL: {
@@ -149,23 +101,7 @@ class ClientCacheQueryContinuousInitialQuery {
      *
      * @return Query.
      */
-    public Query getQuery(GridKernalContext ctx) {
-        switch (type) {
-            case TYPE_SCAN:
-                return new ScanQuery()
-                        .setFilter(ClientCacheScanQueryRequest.createFilter(ctx, filter, filterPlatform))
-                        .setPageSize(pageSize)
-                        .setLocal(loc)
-                        .setPartition(part);
-
-            case TYPE_SQL:
-                // TODO
-                return new SqlFieldsQuery(sql);
-
-            default:
-                throw new IgniteException("Invalid initial query type: " + type);
-        }
-    }
+    public abstract Query getQuery(GridKernalContext ctx);
 
     /**
      * Gets the client cursor.
@@ -174,16 +110,5 @@ class ClientCacheQueryContinuousInitialQuery {
      * @param ctx Context.
      * @return Client cache query cursor according to query type.
      */
-    public ClientCacheQueryCursor getClientCursor(QueryCursor cursor, ClientConnectionContext ctx) {
-        switch (type) {
-            case TYPE_SCAN:
-                return new ClientCacheEntryQueryCursor(cursor, pageSize, ctx, false);
-
-            case TYPE_SQL:
-                return new ClientCacheFieldsQueryCursor((FieldsQueryCursor) cursor, pageSize, ctx, false);
-
-            default:
-                throw new IgniteException("Invalid initial query type: " + type);
-        }
-    }
+    public abstract ClientCacheQueryCursor getClientCursor(QueryCursor cursor, ClientConnectionContext ctx);
 }
