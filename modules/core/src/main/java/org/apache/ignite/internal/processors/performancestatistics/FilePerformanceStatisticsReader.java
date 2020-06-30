@@ -75,19 +75,13 @@ public class FilePerformanceStatisticsReader {
      * @param handlers Handlers to process deserialized operation.
      */
     public static void read(List<File> filesOrDirs, PerformanceStatisticsHandler... handlers) throws IOException {
-        ByteBuffer buf = allocateDirect(READ_BUFFER_SIZE).order(nativeOrder());
+        List<File> files = resolveFiles(filesOrDirs);
 
-        try {
-            List<File> files = resolveFiles(filesOrDirs);
+        if (files.isEmpty())
+            return;
 
-            if (files.isEmpty())
-                return;
-
-            for (File file : files)
-                readFile(file, handlers);
-        } finally {
-            GridUnsafe.cleanDirectBuffer(buf);
-        }
+        for (File file : files)
+            readFile(file, handlers);
     }
 
     /**
