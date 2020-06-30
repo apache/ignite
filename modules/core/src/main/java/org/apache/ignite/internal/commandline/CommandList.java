@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.encryption.EncryptionCommand;
+import org.apache.ignite.internal.commandline.meta.MetadataCommand;
 import org.apache.ignite.internal.commandline.query.KillCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
 
@@ -62,6 +63,9 @@ public enum CommandList {
 
     /** Snapshot commands. */
     SNAPSHOT("--snapshot", new SnapshotCommand()),
+
+    /** Metadata commands. */
+    METADATA("--meta", new MetadataCommand()),
 
     /** */
     TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand());

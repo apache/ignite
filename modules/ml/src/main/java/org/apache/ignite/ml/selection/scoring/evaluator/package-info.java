@@ -16,7 +16,7 @@
  */
 
 /**
- * <!-- Package description. --> Package for model evaluator classes.
+ * <!-- Package description. -->
+ * Package for model evaluator classes.
  */
-
 package org.apache.ignite.ml.selection.scoring.evaluator;

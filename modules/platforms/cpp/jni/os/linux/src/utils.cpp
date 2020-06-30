@@ -18,6 +18,7 @@
 
 #include <pthread.h>
 
+#include <algorithm>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <dlfcn.h>
@@ -44,6 +45,9 @@ namespace ignite
         const char* IGNITE_HOME = "IGNITE_HOME";
 
         const char* IGNITE_NATIVE_TEST_CLASSPATH = "IGNITE_NATIVE_TEST_CLASSPATH";
+
+        /** Excluded modules from test classpath. */
+        const char* TEST_EXCLUDED_MODULES[] = { "rest-http", "spring-data" };
 
         /** Key indicating that the thread is attached. */
         static pthread_key_t attachKey;
@@ -174,6 +178,24 @@ namespace ignite
         }
 
         /**
+         * Check if path corresponds to excluded module.
+         *
+         * @path Path.
+         * @return True if path should be excluded.
+         */
+        bool IsExcludedModule(const std::string& path) {
+            std::string lower_path = path;
+            std::transform(path.begin(), path.end(), lower_path.begin(), ::tolower);
+
+            for (size_t i = 0; i < sizeof(TEST_EXCLUDED_MODULES) / sizeof(char*); i++) {
+                if (lower_path.find(TEST_EXCLUDED_MODULES[i]) != std::string::npos)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /**
          * Create classpath picking compiled classes from the given path.
          *
          * @path Path.
@@ -183,7 +205,7 @@ namespace ignite
         {
             std::string res;
 
-            if (FileExists(path))
+            if (FileExists(path) && !IsExcludedModule(path))
             {
                 // 1. Append "target\classes".
                 std::string classesPath = path + "/target/classes";

@@ -125,6 +125,22 @@ This utility can do the following commands:
     Parameters:
       snapshot_name  - Snapshot name.
 
+  Print metadata command help:
+    control.(sh|bat) --meta help
+
+  Print list of binary metadata types:
+    control.(sh|bat) --meta list
+
+  Print detailed info about specified binary type (the type must be specified by type name or by type identifier):
+    control.(sh|bat) --meta details [--typeId <typeId>] [--typeName <typeName>]
+
+  Remove the metadata of the specified type (the type must be specified by type name or by type identifier) from cluster and saves the removed metadata to the specified file.
+If the file name isn't specified the output file name is: '<typeId>.bin'
+    control.(sh|bat) --meta remove [--typeId <typeId>] [--typeName <typeName>] [--out <fileName>]
+
+  Update cluster metadata from specified file (file name is required)
+    control.(sh|bat) --meta update --in <fileName>
+
   Print tracing configuration:
     control.(sh|bat) --tracing-configuration
 
