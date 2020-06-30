@@ -166,7 +166,20 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestInitialSqlQuery()
         {
-            // TODO
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            var listener = new DelegateListener<int, int>();
+            var qry = new ContinuousQuery<int,int>(listener);
+
+            using (var handle = cache.QueryContinuous(qry, new SqlFieldsQuery("select * from foo")))
+            {
+                using (var cur = handle.GetInitialQueryCursor())
+                {
+                    var rows = cur.GetAll();
+                    var cols = cur.FieldNames;
+
+                    // TODO: Assert
+                }
+            }
         }
 
         [Test]
@@ -286,9 +299,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             private Action<ICacheEntryEvent<TK, TV>> _action;
 
             /** */
-            public DelegateListener(Action<ICacheEntryEvent<TK, TV>> action)
+            public DelegateListener(Action<ICacheEntryEvent<TK, TV>> action = null)
             {
-                _action = action;
+                _action = action ?? (_ => {});
             }
 
             /** */
