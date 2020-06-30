@@ -238,7 +238,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private DistributedProcess<MasterKeyChangeRequest, EmptyResult> performMKChangeProc;
 
     /** Two phase distributed process, that performs cache group encryption key rotation. */
-    private final GroupKeyChangeProcess grpKeyChangeProc = new GroupKeyChangeProcess();
+    private GroupKeyChangeProcess grpKeyChangeProc;
 
     /** Cache groups for which encryption key was changed. */
     private final Set<Integer> reencryptGroups = new GridConcurrentHashSet<>();
@@ -341,6 +341,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             this::finishPerformMasterKeyChange);
 
         reencryption = new CacheGroupReencryption(ctx);
+
+        grpKeyChangeProc = new GroupKeyChangeProcess();
     }
 
     /** {@inheritDoc} */
@@ -1856,12 +1858,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         private volatile ChangeCacheEncryptionRequest grpKeyChangeReq;
 
         /** Cache group encyption key change prepare phase. */
-        DistributedProcess<ChangeCacheEncryptionRequest, EmptyResult> prepareGKChangeProc =
+        private final DistributedProcess<ChangeCacheEncryptionRequest, EmptyResult> prepareGKChangeProc =
             new DistributedProcess<>(ctx, CACHE_GROUP_KEY_CHANGE_PREPARE, this::prepare, this::finishPrepare,
                 (id, req) -> new InitMessage<>(id, CACHE_GROUP_KEY_CHANGE_PREPARE, req), true);
 
         /** Cache group encyption key change perform phase. */
-        DistributedProcess<ChangeCacheEncryptionRequest, EmptyResult> performGKChangeProc =
+        private final DistributedProcess<ChangeCacheEncryptionRequest, EmptyResult> performGKChangeProc =
             new DistributedProcess<>(ctx, CACHE_GROUP_KEY_CHANGE_FINISH, this::perform, this::finishPerform);
 
         /**

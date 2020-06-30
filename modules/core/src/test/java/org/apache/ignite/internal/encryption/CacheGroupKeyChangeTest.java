@@ -166,20 +166,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testCrdFailsBeforePrepare() throws Exception {
-        checkNodeFailsDuringRotation(true, true, true);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
     public void testNodeFailsBeforePerform() throws Exception {
         checkNodeFailsDuringRotation(false, false, true);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testCrdFailsBeforePerform() throws Exception {
-        checkNodeFailsDuringRotation(true, false, true);
     }
 
     /** @throws Exception If failed. */
