@@ -3204,7 +3204,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (log.isInfoEnabled()) {
                                     log.info("Partitions reassignment request skipped due to affinity was already changed" +
                                         " [reassignTopVer=" + exchId.topologyVersion() +
-                                        ", lastAffChangedTopVer=" + lastAffChangedVer +']');
+                                        ", lastAffChangedTopVer=" + lastAffChangedVer + ']');
                                 }
 
                                 continue;

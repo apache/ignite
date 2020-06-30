@@ -1036,7 +1036,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             return iterator;
         }
-        catch(Exception ex) {
+        catch (Exception ex) {
             if (!X.hasCause(ex, IgniteHistoricalIteratorException.class))
                 throw new IgniteHistoricalIteratorException(ex);
 

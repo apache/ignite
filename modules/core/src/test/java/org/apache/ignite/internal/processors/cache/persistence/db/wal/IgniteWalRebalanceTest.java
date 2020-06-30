@@ -886,7 +886,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         corruptWalClo.apply(supplier1);
 
         // Trigger rebalance process from suppliers.
-        IgniteEx restartedDemander= startGrid(2);
+        IgniteEx restartedDemander = startGrid(2);
 
         recordMsgPred = null;
         blockMsgPred = null;
@@ -908,7 +908,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         demanderSpi.stopBlock();
 
         // Wait until rebalancing will be cancelled for both suppliers.
-        GridTestUtils.waitForCondition(() ->preloadFut1.isDone() && preloadFut2.isDone(), getTestTimeout());
+        GridTestUtils.waitForCondition(() -> preloadFut1.isDone() && preloadFut2.isDone(), getTestTimeout());
 
         Assert.assertEquals(
             "Rebalance should be cancelled on demander node: " + preloadFut1,
