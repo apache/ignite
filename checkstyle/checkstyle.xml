@@ -42,7 +42,7 @@
         <module name="CustomImportOrder">
             <property name="customImportOrderRules"
                       value="STANDARD_JAVA_PACKAGE###SPECIAL_IMPORTS###THIRD_PARTY_PACKAGE###STATIC"/>
-            <property name="standardPackageRegExp" value="^(com.sun|java)\."/>
+            <property name="standardPackageRegExp" value="^java\."/>
             <property name="specialImportsRegExp" value="^javax\."/>
             <property name="sortImportsInGroupAlphabetically" value="true"/>
             <property name="separateLineBetweenGroups" value="false"/>

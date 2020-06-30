@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
 import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringTokenizer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -150,10 +150,10 @@ public class IgniteNativeIoLib {
 
             if (compsCnt > majorRevIdx && verIntComps.get(majorRevIdx) > 4)
                 return true;
-            else if (compsCnt > minorRevIdx
-                && verIntComps.get(majorRevIdx) == 4
-                && verIntComps.get(minorRevIdx) >= 10)
-                return true;
+            else
+                return compsCnt > minorRevIdx
+                    && verIntComps.get(majorRevIdx) == 4
+                    && verIntComps.get(minorRevIdx) >= 10;
         }
         return false;
     }

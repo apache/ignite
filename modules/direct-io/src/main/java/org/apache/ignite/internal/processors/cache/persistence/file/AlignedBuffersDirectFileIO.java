@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import com.sun.jna.Native;
-import com.sun.jna.NativeLong;
-import com.sun.jna.Pointer;
 import java.io.File;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
@@ -31,6 +28,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import com.sun.jna.Native;
+import com.sun.jna.NativeLong;
+import com.sun.jna.Pointer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.compress.FileSystemUtils;
@@ -63,10 +63,10 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     private final IgniteLogger log;
 
     /** Thread local with buffers with capacity = one page {@link #pageSize} and aligned using {@link #ioBlockSize}. */
-    private ThreadLocal<ByteBuffer> tlbOnePageAligned;
+    private final ThreadLocal<ByteBuffer> tlbOnePageAligned;
 
     /** Managed aligned buffers. Used to check if buffer is applicable for direct IO our data should be copied. */
-    private ConcurrentHashMap<Long, Thread> managedAlignedBuffers;
+    private final ConcurrentHashMap<Long, Thread> managedAlignedBuffers;
 
     /** File descriptor. */
     private int fd = -1;
@@ -210,7 +210,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     @Override public void position(long newPosition) throws IOException {
         if (IgniteNativeIoLib.lseek(fdCheckOpened(), newPosition, IgniteNativeIoLib.SEEK_SET) < 0) {
             throw new IOException(String.format("Error setting file [%s] position to [%s]: %s",
-                file, Long.toString(newPosition), getLastError()));
+                file, newPosition, getLastError()));
         }
     }
 

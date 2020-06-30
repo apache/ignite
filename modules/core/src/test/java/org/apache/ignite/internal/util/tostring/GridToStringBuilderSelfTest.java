@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import com.sun.management.ThreadMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -32,6 +31,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Function;
+import com.sun.management.ThreadMXBean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -684,7 +684,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         /** */
         @SuppressWarnings("unused")
         @GridToStringOrder(0)
-        private String id = "1234567890";
+        private final String id = "1234567890";
 
         /** */
         @SuppressWarnings("unused")
@@ -710,7 +710,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         /** */
         @SuppressWarnings("unused")
-        private String name = "qwertyuiopasdfghjklzxcvbnm";
+        private final String name = "qwertyuiopasdfghjklzxcvbnm";
 
         /** */
         @SuppressWarnings("unused")
@@ -799,7 +799,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         /** */
         @SuppressWarnings("unused")
         @GridToStringInclude
-        private String str;
+        private final String str;
 
         /** */
         @GridToStringInclude
@@ -822,7 +822,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridToStringInclude
-        private Parent pa[] = new Parent[1];
+        private final Parent[] pa = new Parent[1];
 
         /** {@inheritDoc} */
         @Override public String toString() {
@@ -839,7 +839,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridToStringInclude
-        private Parent pb[] = new Parent[1];
+        private final Parent[] pb = new Parent[1];
 
         /** {@inheritDoc} */
         @Override public String toString() {
