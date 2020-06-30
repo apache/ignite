@@ -33,7 +33,7 @@ import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
- *
+ * CRUD tests.
  */
 public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /** Repository. */
@@ -76,9 +76,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
-    /**
-     *
-     */
+    /** */
     private void fillInRepository() {
         for (int i = 0; i < CACHE_SIZE - 5; i++) {
             repo.save(i, new Person("person" + Integer.toHexString(i),
@@ -97,9 +95,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         ctx.destroy();
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testPutGet() {
         Person person = new Person("some_name", "some_surname");
@@ -122,9 +118,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testPutAllGetAll() {
         LinkedHashMap<Integer, Person> map = new LinkedHashMap<>();
@@ -162,9 +156,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(map.size(), counter);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testGetAll() {
         assertEquals(CACHE_SIZE, repo.count());
@@ -181,9 +173,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(repo.count(), counter);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testDelete() {
         assertEquals(CACHE_SIZE, repo.count());
@@ -203,9 +193,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testDeleteSet() {
         assertEquals(CACHE_SIZE, repo.count());
@@ -234,9 +222,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testDeleteAll() {
         assertEquals(CACHE_SIZE, repo.count());
@@ -247,7 +233,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Delete existing record
+     * Delete existing record.
      */
     @Test
     public void testDeleteByFirstName() {
@@ -259,7 +245,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Delete NON existing record
+     * Delete NON existing record.
      */
     @Test
     public void testDeleteExpression() {
@@ -269,7 +255,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Delete Multiple records due to where
+     * Delete Multiple records due to where.
      */
     @Test
     public void testDeleteExpressionMultiple() {
@@ -280,7 +266,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Remove should do the same than Delete
+     * Remove should do the same than Delete.
      */
     @Test
     public void testRemoveExpression() {
@@ -291,7 +277,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Delete unique record using lower case key word
+     * Delete unique record using lower case key word.
      */
     @Test
     public void testDeleteQuery() {
@@ -302,7 +288,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Try to delete with a wrong @Query
+     * Try to delete with a wrong @Query.
      */
     @Test
     public void testWrongDeleteQuery() {
@@ -320,7 +306,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Update with a @Query a record
+     * Update with a @Query a record.
      */
     @Test
     public void testUpdateQueryMixedCase() {
@@ -347,6 +333,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName1");
     }
 
+    /** */
     @Test
     public void testUpdateQueryMixedCaseProjectionNamedParameter() {
         final String newSecondName = "updatedUniqueSecondName2";
@@ -358,6 +345,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName2");
     }
 
+    /** */
     @Test
     public void testUpdateQueryMixedCaseDynamicProjectionNamedParameter() {
         final String newSecondName = "updatedUniqueSecondName2";
@@ -372,6 +360,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(personFullName.get(0).getFullName(), "uniquePerson updatedUniqueSecondName2");
     }
 
+    /** */
     @Test
     public void testUpdateQueryOneMixedCaseDynamicProjectionNamedParameter() {
         final String newSecondName = "updatedUniqueSecondName2";
@@ -386,6 +375,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(personFullName.getFullName(), "uniquePerson updatedUniqueSecondName2");
     }
 
+    /** */
     @Test
     public void testUpdateQueryMixedCaseProjectionIndexedParameter() {
         final String newSecondName = "updatedUniqueSecondName3";
@@ -397,6 +387,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName3");
     }
 
+    /** */
     @Test
     public void testUpdateQueryMixedCaseProjectionIndexedParameterLuceneTextQuery() {
         final String newSecondName = "updatedUniqueSecondName4";
@@ -408,6 +399,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName4");
     }
 
+    /** */
     @Test
     public void testUpdateQueryMixedCaseProjectionNamedParameterAndTemplateDomainEntityVariable() {
         final String newSecondName = "updatedUniqueSecondName5";
@@ -419,6 +411,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName5");
     }
 
+    /** */
     @Test
     public void testUpdateQueryMixedCaseProjectionNamedParameterWithSpELExtension() {
         final String newSecondName = "updatedUniqueSecondName6";
@@ -438,6 +431,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     public void testWrongUpdateQuery() {
         final String newSecondName = "updatedUniqueSecondName";
         int rowsUpdated = 0;
+
         try {
             rowsUpdated = repo.setWrongFixedSecondName(newSecondName, "uniquePerson");
         }

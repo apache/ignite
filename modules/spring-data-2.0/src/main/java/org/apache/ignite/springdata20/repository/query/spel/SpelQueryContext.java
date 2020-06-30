@@ -39,17 +39,12 @@ import org.springframework.util.Assert;
  *
  * @author Jens Schauder
  * @author Gerrit Meier
- * @since spring data 2.1 - transition code (borrowed and adapted code from version 2.1)
  */
 public class SpelQueryContext {
-    /**
-     * Spel pattern string.
-     */
+    /** */
     private static final String SPEL_PATTERN_STRING = "([:?])#\\{([^}]+)}";
 
-    /**
-     * Spel pattern.
-     */
+    /** */
     private static final Pattern SPEL_PATTERN = Pattern.compile(SPEL_PATTERN_STRING);
 
     /**
@@ -68,6 +63,7 @@ public class SpelQueryContext {
      */
     private final BiFunction<String, String, String> replacementSrc;
 
+    /** */
     private SpelQueryContext(BiFunction<Integer, String, String> paramNameSrc,
         BiFunction<String, String, String> replacementSrc) {
         this.paramNameSrc = paramNameSrc;
@@ -112,7 +108,6 @@ public class SpelQueryContext {
      * @return Evaluating Spel QueryContext
      */
     public EvaluatingSpelQueryContext withEvaluationContextProvider(EvaluationContextProvider provider) {
-
         Assert.notNull(provider, "EvaluationContextProvider must not be null!");
 
         return new EvaluatingSpelQueryContext(provider, paramNameSrc, replacementSrc);
@@ -123,10 +118,9 @@ public class SpelQueryContext {
      * {@link EvaluationContextProvider}.
      *
      * @author Oliver Gierke
-     * @since 2.1
      */
     public static class EvaluatingSpelQueryContext extends SpelQueryContext {
-
+        /** */
         private final EvaluationContextProvider evaluationContextProvider;
 
         /**
@@ -139,7 +133,6 @@ public class SpelQueryContext {
          */
         private EvaluatingSpelQueryContext(EvaluationContextProvider evaluationCtxProvider,
             BiFunction<Integer, String, String> paramNameSrc, BiFunction<String, String, String> replacementSrc) {
-
             super(paramNameSrc, replacementSrc);
 
             evaluationContextProvider = evaluationCtxProvider;
@@ -174,33 +167,21 @@ public class SpelQueryContext {
      *
      * @author Jens Schauder
      * @author Oliver Gierke
-     * @since 2.1
      */
     public class SpelExtractor {
-
-        /**
-         * Prefix group index.
-         */
+        /** */
         private static final int PREFIX_GROUP_INDEX = 1;
 
-        /**
-         * Expression group index.
-         */
+        /** */
         private static final int EXPRESSION_GROUP_INDEX = 2;
 
-        /**
-         * Query.
-         */
+        /** */
         private final String query;
 
-        /**
-         * Expressions.
-         */
+        /** */
         private final Map<String, String> expressions;
 
-        /**
-         * Quotations.
-         */
+        /** */
         private final QuotationMap quotations;
 
         /**
@@ -209,7 +190,6 @@ public class SpelQueryContext {
          * @param qry must not be {@literal null}.
          */
         SpelExtractor(String qry) {
-
             Assert.notNull(qry, "Query must not be null");
 
             Map<String, String> exps = new HashMap<>();
@@ -221,11 +201,10 @@ public class SpelQueryContext {
             int matchedUntil = 0;
 
             while (matcher.find()) {
-
                 if (quotedAreas.isQuoted(matcher.start()))
                     resultQry.append(qry, matchedUntil, matcher.end());
-                else {
 
+                else {
                     String spelExpression = matcher.group(EXPRESSION_GROUP_INDEX);
                     String prefix = matcher.group(PREFIX_GROUP_INDEX);
 
@@ -303,18 +282,12 @@ public class SpelQueryContext {
      *
      * @author Jens Schauder
      * @author Oliver Gierke
-     * @since 2.1
      */
     static class QuotationMap {
-
-        /**
-         * Quoting characters.
-         */
+        /** */
         private static final Collection<Character> QUOTING_CHARACTERS = Arrays.asList('"', '\'');
 
-        /**
-         * Quoted ranges.
-         */
+        /** */
         private final List<Range<Integer>> quotedRanges = new ArrayList<>();
 
         /**
@@ -323,7 +296,6 @@ public class SpelQueryContext {
          * @param qry can be {@literal null}.
          */
         public QuotationMap(@Nullable String qry) {
-
             if (qry == null)
                 return;
 

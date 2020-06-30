@@ -29,8 +29,9 @@ import org.springframework.data.repository.query.parser.PartTree;
  * Ignite query generator for Spring Data framework.
  */
 public class IgniteQueryGenerator {
-
+    /** */
     private IgniteQueryGenerator() {
+        // No-op.
     }
 
     /**
@@ -38,7 +39,6 @@ public class IgniteQueryGenerator {
      * @param metadata Metadata.
      * @return Generated ignite query.
      */
-    @NotNull
     public static IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
         PartTree parts = new PartTree(mtd.getName(), metadata.getDomainType());
 
@@ -253,5 +253,4 @@ public class IgniteQueryGenerator {
 
         sql.append(")");
     }
-
 }

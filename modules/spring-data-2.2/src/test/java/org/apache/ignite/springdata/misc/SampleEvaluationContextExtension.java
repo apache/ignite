@@ -22,7 +22,7 @@ import java.util.Map;
 import org.springframework.data.spel.spi.EvaluationContextExtension;
 
 /**
- * Sample EvaluationContext Extension for Spring Data 2.0
+ * Sample EvaluationContext Extension for Spring Data 2.2
  * <p>
  * Use SpEl expressions into your {@code @Query} definitions.
  * <p>
@@ -59,32 +59,35 @@ import org.springframework.data.spel.spi.EvaluationContextExtension;
  * @author Manuel Núñez Sánchez (manuel.nunez@hawkore.com)
  */
 public class SampleEvaluationContextExtension implements EvaluationContextExtension {
-
+    /** */
     private static final SamplePassParamExtension SAMPLE_PASS_PARAM_EXTENSION_INSTANCE = new SamplePassParamExtension();
 
+    /** */
     private static final Map<String, Object> properties = new HashMap<>();
 
+    /** */
     private static final String SAMPLE_EXTENSION_SPEL_VAR = "sampleExtension";
 
     static {
         properties.put(SAMPLE_EXTENSION_SPEL_VAR, SAMPLE_PASS_PARAM_EXTENSION_INSTANCE);
     }
 
+    /** */
     @Override public String getExtensionId() {
         return "HK-SAMPLE-PASS-PARAM-EXTENSION";
     }
 
+    /** */
     @Override public Map<String, Object> getProperties() {
         return properties;
     }
 
+    /** */
     public static class SamplePassParamExtension {
-
         // just return same param
+        /** */
         public Object transformParam(Object param) {
             return param;
         }
-
     }
-
 }

@@ -150,5 +150,4 @@ class ExpressionBasedStringQuery extends StringQuery {
     private static boolean containsExpression(String qry) {
         return qry.contains(ENTITY_NAME_VARIABLE_EXPRESSION);
     }
-
 }

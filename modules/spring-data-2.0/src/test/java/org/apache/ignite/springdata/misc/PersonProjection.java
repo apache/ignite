@@ -24,7 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
  * @author Manuel Núñez Sánchez (manuel.nunez@hawkore.com)
  */
 public interface PersonProjection {
-
+    /** */
     String getFirstName();
 
     /**

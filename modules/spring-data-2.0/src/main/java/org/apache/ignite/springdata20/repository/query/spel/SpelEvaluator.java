@@ -32,27 +32,18 @@ import org.springframework.util.Assert;
  * @author Jens Schauder
  * @author Gerrit Meier
  * @author Oliver Gierke
- * @since spring data 2.1 - transition code (borrowed and adapted code from version 2.1)
  */
 public class SpelEvaluator {
-    /**
-     * Parser.
-     */
+    /** */
     private static final SpelExpressionParser PARSER = new SpelExpressionParser();
 
-    /**
-     * Evaluation context provider.
-     */
+    /** */
     private final EvaluationContextProvider evaluationCtxProvider;
 
-    /**
-     * Parameters.
-     */
+    /** */
     private final Parameters<?, ?> parameters;
 
-    /**
-     * Extractor.
-     */
+    /** */
     private final SpelExtractor extractor;
 
     /**
@@ -75,7 +66,6 @@ public class SpelEvaluator {
      * @return a map from parameter name to evaluated value. Guaranteed to be not {@literal null}.
      */
     public Map<String, Object> evaluate(Object[] values) {
-
         Assert.notNull(values, "Values must not be null.");
 
         EvaluationContext evaluationCtx = evaluationCtxProvider.getEvaluationContext(parameters, values);
@@ -103,5 +93,4 @@ public class SpelEvaluator {
     private static Object getSpElValue(EvaluationContext evaluationCtx, String expression) {
         return PARSER.parseExpression(expression).getValue(evaluationCtx);
     }
-
 }

@@ -101,6 +101,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
         beanExpressionContext = new BeanExpressionContext(beanFactory, null);
     }
 
+    /** */
     private Ignite igniteForRepoConfig(RepositoryConfig config) {
         try {
             String igniteInstanceName = evaluateExpression(config.igniteInstance());
@@ -135,39 +136,27 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
         }
     }
 
-    /**
-     * {@inheritDoc} @param <T>  the type parameter
-     *
-     * @param <ID>        the type parameter
-     * @param domainClass the domain class
-     * @return the entity information
-     */
+    /** {@inheritDoc} */
     @Override public <T, ID> EntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
         return new AbstractEntityInformation<T, ID>(domainClass) {
+            /** {@inheritDoc} */
             @Override public ID getId(T entity) {
                 return null;
             }
 
+            /** {@inheritDoc} */
             @Override public Class<ID> getIdType() {
                 return null;
             }
         };
     }
 
-    /**
-     * {@inheritDoc} @param metadata the metadata
-     *
-     * @return the repository base class
-     */
+    /** {@inheritDoc} */
     @Override protected Class<?> getRepositoryBaseClass(RepositoryMetadata metadata) {
         return IgniteRepositoryImpl.class;
     }
 
-    /**
-     * {@inheritDoc} @param repoItf the repo itf
-     *
-     * @return the repository metadata
-     */
+    /** {@inheritDoc} */
     @Override protected synchronized RepositoryMetadata getRepositoryMetadata(Class<?> repoItf) {
         Assert.notNull(repoItf, "Repository interface must be set.");
         Assert.isAssignable(IgniteRepository.class, repoItf, "Repository must implement IgniteRepository interface.");
@@ -190,7 +179,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     }
 
     /**
-     * evaluate the SpEL expression
+     * Evaluate the SpEL expression
      *
      * @param spelExpression SpEL expression
      * @return the result of execution of the SpEL expression
@@ -200,7 +189,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
         return (String)resolver.evaluate(spelExpression, beanExpressionContext);
     }
 
-    /* control underline cache creation to avoid cache creation by mistake */
+    /** Control underlying cache creation to avoid cache creation by mistake */
     private IgniteCache getRepositoryCache(Class<?> repoIf) {
         Ignite ignite = repoToIgnite.get(repoIf);
 
@@ -221,27 +210,18 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
         return c;
     }
 
-    /**
-     * {@inheritDoc} @param metadata the metadata
-     *
-     * @return the target repository
-     */
+    /** {@inheritDoc} */
     @Override protected Object getTargetRepository(RepositoryInformation metadata) {
         Ignite ignite = repoToIgnite.get(metadata.getRepositoryInterface());
+
         return getTargetRepositoryViaReflection(metadata, ignite,
             getRepositoryCache(metadata.getRepositoryInterface()));
     }
 
-    /**
-     * {@inheritDoc} @param key the key
-     *
-     * @param evaluationContextProvider the evaluation context provider
-     * @return the query lookup strategy
-     */
+    /** {@inheritDoc} */
     @Override protected Optional<QueryLookupStrategy> getQueryLookupStrategy(final QueryLookupStrategy.Key key,
         EvaluationContextProvider evaluationContextProvider) {
         return Optional.of((mtd, metadata, factory, namedQueries) -> {
-
             final Query annotation = mtd.getAnnotation(Query.class);
             final Ignite ignite = repoToIgnite.get(metadata.getRepositoryInterface());
 
@@ -249,11 +229,14 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                 .dynamicQuery())) {
 
                 String qryStr = annotation.value();
+
                 boolean annotatedIgniteQuery = !annotation.dynamicQuery() && (StringUtils.hasText(qryStr) || annotation
                     .textQuery());
+
                 IgniteQuery query = annotatedIgniteQuery ? new IgniteQuery(qryStr,
                     !annotation.textQuery() && (isFieldQuery(qryStr) || annotation.forceFieldsQuery()),
                     annotation.textQuery(), false, IgniteQueryGenerator.getOptions(mtd)) : null;
+
                 if (key != QueryLookupStrategy.Key.CREATE) {
                     return new IgniteRepositoryQuery(ignite, metadata, query, mtd, factory,
                         getRepositoryCache(metadata.getRepositoryInterface()),
@@ -302,5 +285,4 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
             // insert
             qryUpperCase.matches("^\\s*INSERT\\b.*");
     }
-
 }

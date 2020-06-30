@@ -89,16 +89,6 @@ public @interface Query {
     boolean distributedJoins() default false;
 
     /**
-     * Specify if the query contains only replicated tables. This is a hint for potentially more effective execution.
-     * <p>
-     * Only applicable to SqlFieldsQuery and SqlQuery
-     *
-     * @deprecated No longer used as of Apache Ignite 2.8.
-     */
-    @Deprecated
-    boolean replicatedOnly() default false;
-
-    /**
      * Sets lazy query execution flag.
      * <p>
      * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small and
@@ -143,5 +133,4 @@ public @interface Query {
      * Sets limit to response records count for TextQuery. If 0 or less, considered to be no limit.
      */
     int limit() default 0;
-
 }

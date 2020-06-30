@@ -65,53 +65,31 @@ public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRe
         this.ignite = ignite;
     }
 
-    /**
-     * {@inheritDoc} @return the ignite cache
-     */
+    /** {@inheritDoc} */
     @Override public IgniteCache<K, V> cache() {
         return cache;
     }
 
-    /**
-     * {@inheritDoc} @return the ignite
-     */
+    /** {@inheritDoc} */
     @Override public Ignite ignite() {
         return ignite;
     }
 
-    /**
-     * {@inheritDoc} @param <S>  the type parameter
-     *
-     * @param key    the key
-     * @param entity the entity
-     * @return the s
-     */
+    /** {@inheritDoc} */
     @Override public <S extends V> S save(K key, S entity) {
         cache.put(key, entity);
 
         return entity;
     }
 
-    /**
-     * {@inheritDoc} @param <S>  the type parameter
-     *
-     * @param entities the entities
-     * @return the iterable
-     */
+    /** {@inheritDoc} */
     @Override public <S extends V> Iterable<S> save(Map<K, S> entities) {
         cache.putAll(entities);
 
         return entities.values();
     }
 
-    /**
-     * {@inheritDoc} @param <S>  the type parameter
-     *
-     * @param key       the key
-     * @param entity    the entity
-     * @param expiryPlc the expiry policy
-     * @return the s
-     */
+    /** {@inheritDoc} */
     @Override public <S extends V> S save(K key, S entity, @Nullable ExpiryPolicy expiryPlc) {
         if (expiryPlc != null)
             cache.withExpiryPolicy(expiryPlc).put(key, entity);
@@ -120,13 +98,7 @@ public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRe
         return entity;
     }
 
-    /**
-     * {@inheritDoc} @param <S>  the type parameter
-     *
-     * @param entities  the entities
-     * @param expiryPlc the expiry policy
-     * @return the iterable
-     */
+    /** {@inheritDoc} */
     @Override public <S extends V> Iterable<S> save(Map<K, S> entities, @Nullable ExpiryPolicy expiryPlc) {
         if (expiryPlc != null)
             cache.withExpiryPolicy(expiryPlc).putAll(entities);
@@ -136,60 +108,48 @@ public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRe
     }
 
     /**
-     * {@inheritDoc} @param <S>  the type parameter
-     *
-     * @param entity the entity
-     * @return the s
+     * Not implemented.
      */
     @Override public <S extends V> S save(S entity) {
         throw new UnsupportedOperationException("Use IgniteRepository.save(key,value) method instead.");
     }
 
     /**
-     * {@inheritDoc} @param <S>  the type parameter
-     *
-     * @param entities the entities
-     * @return the iterable
+     * Not implemented.
      */
     @Override public <S extends V> Iterable<S> saveAll(Iterable<S> entities) {
         throw new UnsupportedOperationException("Use IgniteRepository.save(Map<keys,value>) method instead.");
     }
 
-    /**
-     * {@inheritDoc} @param id the id
-     *
-     * @return the optional
-     */
+    /** {@inheritDoc} */
     @Override public Optional<V> findById(K id) {
         return Optional.ofNullable(cache.get(id));
     }
 
-    /**
-     * {@inheritDoc} @param id the id
-     *
-     * @return the boolean
-     */
+    /** {@inheritDoc} */
     @Override public boolean existsById(K id) {
         return cache.containsKey(id);
     }
 
-    /**
-     * {@inheritDoc} @return the iterable
-     */
+    /** {@inheritDoc} */
     @Override public Iterable<V> findAll() {
         final Iterator<Cache.Entry<K, V>> iter = cache.iterator();
 
         return new Iterable<V>() {
+            /** */
             @Override public Iterator<V> iterator() {
                 return new Iterator<V>() {
+                    /** {@inheritDoc} */
                     @Override public boolean hasNext() {
                         return iter.hasNext();
                     }
 
+                    /** {@inheritDoc} */
                     @Override public V next() {
                         return iter.next().getValue();
                     }
 
+                    /** {@inheritDoc} */
                     @Override public void remove() {
                         iter.remove();
                     }
@@ -198,11 +158,7 @@ public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRe
         };
     }
 
-    /**
-     * {@inheritDoc} @param ids the ids
-     *
-     * @return the iterable
-     */
+    /** {@inheritDoc} */
     @Override public Iterable<V> findAllById(Iterable<K> ids) {
         if (ids instanceof Set)
             return cache.getAll((Set<K>)ids).values();
@@ -218,37 +174,27 @@ public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRe
         return cache.getAll(keys).values();
     }
 
-    /**
-     * {@inheritDoc} @return the long
-     */
+    /** {@inheritDoc} */
     @Override public long count() {
         return cache.size(CachePeekMode.PRIMARY);
     }
 
-    /**
-     * {@inheritDoc} @param id the id
-     */
+    /** {@inheritDoc} */
     @Override public void deleteById(K id) {
         cache.remove(id);
     }
 
-    /**
-     * {@inheritDoc} @param entity the entity
-     */
+    /** {@inheritDoc} */
     @Override public void delete(V entity) {
         throw new UnsupportedOperationException("Use IgniteRepository.deleteById(key) method instead.");
     }
 
-    /**
-     * {@inheritDoc} @param entities the entities
-     */
+    /** {@inheritDoc} */
     @Override public void deleteAll(Iterable<? extends V> entities) {
         throw new UnsupportedOperationException("Use IgniteRepository.deleteAllById(keys) method instead.");
     }
 
-    /**
-     * {@inheritDoc} @param ids the ids
-     */
+    /** {@inheritDoc} */
     @Override public void deleteAllById(Iterable<K> ids) {
         if (ids instanceof Set) {
             cache.removeAll((Set<K>)ids);
@@ -268,11 +214,8 @@ public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRe
         cache.removeAll(keys);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public void deleteAll() {
         cache.clear();
     }
-
 }

@@ -24,7 +24,6 @@ import org.springframework.util.Assert;
  * NULL-Object pattern implementation for {@link DeclaredQuery}.
  *
  * @author Jens Schauder
- * @since 2.0.3
  */
 class EmptyDeclaredQuery implements DeclaredQuery {
     /**
@@ -32,59 +31,43 @@ class EmptyDeclaredQuery implements DeclaredQuery {
      */
     static final DeclaredQuery EMPTY_QUERY = new EmptyDeclaredQuery();
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public boolean hasNamedParameter() {
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public String getQueryString() {
         return "";
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public String getAlias() {
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public boolean hasConstructorExpression() {
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public boolean isDefaultProjection() {
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public List<StringQuery.ParameterBinding> getParameterBindings() {
         return Collections.emptyList();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public DeclaredQuery deriveCountQuery(@Nullable String cntQry, @Nullable String cntQryProjection) {
         Assert.hasText(cntQry, "CountQuery must not be empty!");
         return DeclaredQuery.of(cntQry);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public boolean usesJdbcStyleParameters() {
         return false;
     }

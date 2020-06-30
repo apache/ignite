@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Value;
  * @author Manuel Núñez Sánchez (manuel.nunez@hawkore.com)
  */
 public interface FullNameProjection {
-
     /**
      * Sample of using SpEL expression
      * @return

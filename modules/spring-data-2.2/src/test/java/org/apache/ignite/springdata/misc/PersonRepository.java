@@ -30,7 +30,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.query.Param;
 
 /**
- *
+ * Test repository.
  */
 @RepositoryConfig(cacheName = "PersonCache")
 public interface PersonRepository extends IgniteRepository<Person, Integer> {

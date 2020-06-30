@@ -25,7 +25,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.data.repository.query.SpelQueryContext;
 import org.springframework.data.repository.query.SpelQueryContext.SpelExtractor;
-
 import org.springframework.data.domain.Range;
 import org.springframework.data.domain.Range.Bound;
 import org.springframework.data.repository.query.parser.Part.Type;
@@ -51,18 +50,23 @@ import static org.springframework.util.ObjectUtils.nullSafeHashCode;
  * @author Jens Schauder
  */
 class StringQuery implements DeclaredQuery {
-
+    /** */
     private final String query;
 
+    /** */
     private final List<ParameterBinding> bindings;
 
+    /** */
     @Nullable
     private final String alias;
 
+    /** */
     private final boolean hasConstructorExpression;
 
+    /** */
     private final boolean containsPageableInSpel;
 
+    /** */
     private final boolean usesJdbcStyleParameters;
 
     /**
@@ -70,8 +74,7 @@ class StringQuery implements DeclaredQuery {
      *
      * @param query must not be {@literal null} or empty.
      */
-    @SuppressWarnings("deprecation") StringQuery(String query) {
-
+    StringQuery(String query) {
         Assert.hasText(query, "Query must not be null or empty!");
 
         bindings = new ArrayList<>();
@@ -94,84 +97,64 @@ class StringQuery implements DeclaredQuery {
         return !bindings.isEmpty();
     }
 
+    /** */
     String getProjection() {
         return QueryUtils.getProjection(query);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see org.springframework.data.jpa.repository.query.DeclaredQuery#getParameterBindings()
-     */
+    // See org.springframework.data.jpa.repository.query.DeclaredQuery#getParameterBindings()
+    /** {@inheritDoc} */
     @Override public List<ParameterBinding> getParameterBindings() {
         return bindings;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see org.springframework.data.jpa.repository.query.DeclaredQuery#deriveCountQuery(java.lang.String, java.lang
-     * .String)
-     */
-    @SuppressWarnings("deprecation")
+    // See org.springframework.data.jpa.repository.query.DeclaredQuery#deriveCountQuery(java.lang.String, java.lang
+    /** {@inheritDoc} */
     @Override public DeclaredQuery deriveCountQuery(@Nullable String countQuery,
         @Nullable String countQueryProjection) {
-
         return DeclaredQuery
             .of(countQuery != null ? countQuery : QueryUtils.createCountQueryFor(query, countQueryProjection));
     }
 
-    /*
-     * (non-Javadoc)
-     * @see org.springframework.data.jpa.repository.query.DeclaredQuery#usesJdbcStyleParameters()
-     */
+    // See org.springframework.data.jpa.repository.query.DeclaredQuery#usesJdbcStyleParameters()
+    /** */
     @Override public boolean usesJdbcStyleParameters() {
         return usesJdbcStyleParameters;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see org.springframework.data.jpa.repository.query.DeclaredQuery#getQueryString()
-     */
+    // See org.springframework.data.jpa.repository.query.DeclaredQuery#getQueryString()
+    /** {@inheritDoc} */
     @Override public String getQueryString() {
         return query;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see org.springframework.data.jpa.repository.query.DeclaredQuery#getAlias()
-     */
+    // See org.springframework.data.jpa.repository.query.DeclaredQuery#getAlias()
+    /** {@inheritDoc} */
     @Override @Nullable
     public String getAlias() {
         return alias;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see org.springframework.data.jpa.repository.query.DeclaredQuery#hasConstructorExpression()
-     */
+    // See org.springframework.data.jpa.repository.query.DeclaredQuery#hasConstructorExpression()
+    /** {@inheritDoc} */
     @Override public boolean hasConstructorExpression() {
         return hasConstructorExpression;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see org.springframework.data.jpa.repository.query.DeclaredQuery#isDefaultProjection()
-     */
+    // See org.springframework.data.jpa.repository.query.DeclaredQuery#isDefaultProjection()
+    /** {@inheritDoc} */
     @Override public boolean isDefaultProjection() {
         return getProjection().equalsIgnoreCase(alias);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see org.springframework.data.jpa.repository.query.DeclaredQuery#hasNamedParameter()
-     */
+    // See org.springframework.data.jpa.repository.query.DeclaredQuery#hasNamedParameter()
+    /** {@inheritDoc} */
     @Override public boolean hasNamedParameter() {
         return bindings.stream().anyMatch(b -> b.getName() != null);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see org.springframework.data.jpa.repository.query.DeclaredQuery#usesPaging()
-     */
+    // See org.springframework.data.jpa.repository.query.DeclaredQuery#usesPaging()
+    /** {@inheritDoc} */
     @Override public boolean usesPaging() {
         return containsPageableInSpel;
     }
@@ -182,24 +165,40 @@ class StringQuery implements DeclaredQuery {
      * @author Thomas Darimont
      */
     enum ParameterBindingParser {
+        /** */
         INSTANCE;
+
+        /** */
         private static final String EXPRESSION_PARAMETER_PREFIX = "__$synthetic$__";
+
+        /** */
         public static final String POSITIONAL_OR_INDEXED_PARAMETER = "\\?(\\d*+(?![#\\w]))";
         // .....................................................................^ not followed by a hash or a letter.
         // .................................................................^ zero or more digits.
         // .............................................................^ start with a question mark.
+
+        /** */
         private static final Pattern PARAMETER_BINDING_BY_INDEX = Pattern.compile(POSITIONAL_OR_INDEXED_PARAMETER);
+
+        /** */
         private static final Pattern PARAMETER_BINDING_PATTERN;
+
+        /** */
         private static final String MESSAGE =
             "Already found parameter binding with same index / parameter name but differing binding type! "
                 + "Already have: %s, found %s! If you bind a parameter multiple times make sure they use the same "
                 + "binding.";
+
+        /** */
         private static final int INDEXED_PARAMETER_GROUP = 4;
+
+        /** */
         private static final int NAMED_PARAMETER_GROUP = 6;
+
+        /** */
         private static final int COMPARISION_TYPE_GROUP = 1;
 
         static {
-
             List<String> keywords = new ArrayList<>();
 
             for (ParameterBindingType type : ParameterBindingType.values()) {
@@ -234,7 +233,6 @@ class StringQuery implements DeclaredQuery {
         private String parseParameterBindingsOfQueryIntoBindingsAndReturnCleanedQuery(String query,
             List<ParameterBinding> bindings,
             Metadata queryMeta) {
-
             int greatestParamIdx = tryFindGreatestParameterIndexIn(query);
             boolean parametersShouldBeAccessedByIdx = greatestParamIdx != -1;
 
@@ -256,8 +254,8 @@ class StringQuery implements DeclaredQuery {
             int expressionParamIdx = parametersShouldBeAccessedByIdx ? greatestParamIdx : 0;
 
             boolean usesJpaStyleParameters = false;
-            while (matcher.find()) {
 
+            while (matcher.find()) {
                 if (quotedAreas.isQuoted(matcher.start()))
                     continue;
 
@@ -275,7 +273,6 @@ class StringQuery implements DeclaredQuery {
 
                 expressionParamIdx++;
                 if (paramIdxStr != null && paramIdxStr.isEmpty()) {
-
                     queryMeta.usesJdbcStyleParameters = true;
                     paramIdx = expressionParamIdx;
                 }
@@ -296,9 +293,7 @@ class StringQuery implements DeclaredQuery {
                 }
 
                 switch (ParameterBindingType.of(typeSrc)) {
-
                     case LIKE:
-
                         Type likeType = LikeParameterBinding.getLikeTypeFrom(matcher.group(2));
                         replacement = matcher.group(3);
 
@@ -313,7 +308,6 @@ class StringQuery implements DeclaredQuery {
                         break;
 
                     case IN:
-
                         if (paramIdx != null)
                             checkAndRegister(new InParameterBinding(paramIdx, expression), bindings);
                         else
@@ -335,6 +329,7 @@ class StringQuery implements DeclaredQuery {
             return resultingQry;
         }
 
+        /** */
         private static SpelExtractor createSpelExtractor(String queryWithSpel,
             boolean parametersShouldBeAccessedByIndex,
             int greatestParameterIndex) {
@@ -360,8 +355,8 @@ class StringQuery implements DeclaredQuery {
             return SpelQueryContext.of(indexToParameterName, parameterNameToReplacement).parse(queryWithSpel);
         }
 
+        /** */
         private static String replaceFirst(String text, String substring, String replacement) {
-
             int index = text.indexOf(substring);
             if (index < 0)
                 return text;
@@ -369,16 +364,16 @@ class StringQuery implements DeclaredQuery {
             return text.substring(0, index) + replacement + text.substring(index + substring.length());
         }
 
+        /** */
         @Nullable
         private static Integer getParameterIndex(@Nullable String parameterIndexString) {
-
             if (parameterIndexString == null || parameterIndexString.isEmpty())
                 return null;
             return Integer.valueOf(parameterIndexString);
         }
 
+        /** */
         private static int tryFindGreatestParameterIndexIn(String query) {
-
             Matcher parameterIndexMatcher = PARAMETER_BINDING_BY_INDEX.matcher(query);
 
             int greatestParameterIndex = -1;
@@ -393,6 +388,7 @@ class StringQuery implements DeclaredQuery {
             return greatestParameterIndex;
         }
 
+        /** */
         private static void checkAndRegister(ParameterBinding binding, List<ParameterBinding> bindings) {
 
             bindings.stream() //
@@ -412,12 +408,20 @@ class StringQuery implements DeclaredQuery {
         private enum ParameterBindingType {
             // Trailing whitespace is intentional to reflect that the keywords must be used with at least one whitespace
             // character, while = does not.
+            /** */
             LIKE("like "),
-            IN("in "),
-            AS_IS(null);
-            private final @Nullable
-            String keyword;
 
+            /** */
+            IN("in "),
+
+            /** */
+            AS_IS(null);
+
+            /** */
+            @Nullable
+            private final String keyword;
+
+            /** */
             ParameterBindingType(@Nullable String keyword) {
                 this.keyword = keyword;
             }
@@ -438,7 +442,6 @@ class StringQuery implements DeclaredQuery {
              * #AS_IS} in case no other {@link ParameterBindingType} could be found.
              */
             static ParameterBindingType of(String typeSource) {
-
                 if (!StringUtils.hasText(typeSource))
                     return AS_IS;
 
@@ -458,12 +461,15 @@ class StringQuery implements DeclaredQuery {
      * @author Thomas Darimont
      */
     static class ParameterBinding {
+        /** */
         @Nullable
         private final String name;
 
+        /** */
         @Nullable
         private final String expression;
 
+        /** */
         @Nullable
         private final Integer position;
 
@@ -524,7 +530,6 @@ class StringQuery implements DeclaredQuery {
         /**
          * @return the name
          * @throws IllegalStateException if the name is not available.
-         * @since 2.0
          */
         String getRequiredName() throws IllegalStateException {
 
@@ -547,7 +552,6 @@ class StringQuery implements DeclaredQuery {
         /**
          * @return the position
          * @throws IllegalStateException if the position is not available.
-         * @since 2.0
          */
         int getRequiredPosition() throws IllegalStateException {
 
@@ -566,10 +570,7 @@ class StringQuery implements DeclaredQuery {
             return expression != null;
         }
 
-        /*
-         * (non-Javadoc)
-         * @see java.lang.Object#hashCode()
-         */
+        /** */
         @Override public int hashCode() {
 
             int result = 17;
@@ -581,10 +582,7 @@ class StringQuery implements DeclaredQuery {
             return result;
         }
 
-        /*
-         * (non-Javadoc)
-         * @see java.lang.Object#equals(java.lang.Object)
-         */
+        /** */
         @Override public boolean equals(Object obj) {
 
             if (!(obj instanceof ParameterBinding))
@@ -596,10 +594,7 @@ class StringQuery implements DeclaredQuery {
                 && nullSafeEquals(expression, that.expression);
         }
 
-        /*
-         * (non-Javadoc)
-         * @see java.lang.Object#toString()
-         */
+        /** */
         @Override public String toString() {
             return String.format("ParameterBinding [name: %s, position: %d, expression: %s]", getName(), getPosition(),
                 getExpression());
@@ -613,11 +608,11 @@ class StringQuery implements DeclaredQuery {
             return valueToBind;
         }
 
+        /** */
         @Nullable
         public String getExpression() {
             return expression;
         }
-
     }
 
     /**
@@ -627,7 +622,6 @@ class StringQuery implements DeclaredQuery {
      * @author Thomas Darimont
      */
     static class InParameterBinding extends ParameterBinding {
-
         /**
          * Creates a new {@link InParameterBinding} for the parameter with the given name.
          */
@@ -647,7 +641,6 @@ class StringQuery implements DeclaredQuery {
          * @see org.springframework.data.jpa.repository.query.StringQuery.ParameterBinding#prepare(java.lang.Object)
          */
         @Override public Object prepare(@Nullable Object value) {
-
             if (!ObjectUtils.isArray(value))
                 return value;
 
@@ -670,10 +663,11 @@ class StringQuery implements DeclaredQuery {
      * @author Thomas Darimont
      */
     static class LikeParameterBinding extends ParameterBinding {
-
+        /** */
         private static final List<Type> SUPPORTED_TYPES = Arrays.asList(Type.CONTAINING, Type.STARTING_WITH,
             Type.ENDING_WITH, Type.LIKE);
 
+        /** */
         private final Type type;
 
         /**
@@ -751,7 +745,6 @@ class StringQuery implements DeclaredQuery {
          */
         @Nullable
         @Override public Object prepare(@Nullable Object value) {
-
             if (value == null)
                 return null;
 
@@ -768,12 +761,8 @@ class StringQuery implements DeclaredQuery {
             }
         }
 
-        /*
-         * (non-Javadoc)
-         * @see java.lang.Object#equals(java.lang.Object)
-         */
+        /** */
         @Override public boolean equals(Object obj) {
-
             if (!(obj instanceof LikeParameterBinding))
                 return false;
 
@@ -782,10 +771,7 @@ class StringQuery implements DeclaredQuery {
             return super.equals(obj) && type.equals(that.type);
         }
 
-        /*
-         * (non-Javadoc)
-         * @see java.lang.Object#hashCode()
-         */
+        /** */
         @Override public int hashCode() {
 
             int result = super.hashCode();
@@ -795,10 +781,7 @@ class StringQuery implements DeclaredQuery {
             return result;
         }
 
-        /*
-         * (non-Javadoc)
-         * @see java.lang.Object#toString()
-         */
+        /** */
         @Override public String toString() {
             return String.format("LikeBinding [name: %s, position: %d, type: %s]", getName(), getPosition(), type);
         }
@@ -826,13 +809,12 @@ class StringQuery implements DeclaredQuery {
 
     }
 
+    /** */
     static class Metadata {
-
         /**
          * Uses jdbc style parameters.
          */
         private boolean usesJdbcStyleParameters;
-
     }
 
     /**
@@ -841,12 +823,12 @@ class StringQuery implements DeclaredQuery {
      *
      * @author Jens Schauder
      * @author Oliver Gierke
-     * @since 2.1
      */
     static class QuotationMap {
-
+        /** */
         private static final Collection<Character> QUOTING_CHARACTERS = Arrays.asList('"', '\'');
 
+        /** */
         private final List<Range<Integer>> quotedRanges = new ArrayList<>();
 
         /**
@@ -855,7 +837,6 @@ class StringQuery implements DeclaredQuery {
          * @param query can be {@literal null}.
          */
         public QuotationMap(@Nullable String query) {
-
             if (query == null)
                 return;
 
@@ -863,18 +844,15 @@ class StringQuery implements DeclaredQuery {
             int start = 0;
 
             for (int i = 0; i < query.length(); i++) {
-
                 char currentChar = query.charAt(i);
 
                 if (QUOTING_CHARACTERS.contains(currentChar)) {
-
                     if (inQuotation == null) {
 
                         inQuotation = currentChar;
                         start = i;
                     }
                     else if (currentChar == inQuotation) {
-
                         inQuotation = null;
 
                         quotedRanges.add(Range.from(Bound.inclusive(start)).to(Bound.inclusive(i)));
@@ -897,7 +875,5 @@ class StringQuery implements DeclaredQuery {
         public boolean isQuoted(int idx) {
             return quotedRanges.stream().anyMatch(r -> r.contains(idx));
         }
-
     }
-
 }

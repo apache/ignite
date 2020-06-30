@@ -66,7 +66,7 @@ public interface IgniteRepository<V, K extends Serializable> extends CrudReposit
      * It's suggested to use this method instead of default {@link CrudRepository#save(Object)} that generates IDs
      * (keys) that are not unique cluster wide.
      *
-     * @param <S>      type of entities.
+     * @param <S>      Type of entities.
      * @param entities Map of key-entities pairs to save.
      * @return Saved entities.
      */
@@ -92,7 +92,7 @@ public interface IgniteRepository<V, K extends Serializable> extends CrudReposit
      * It's suggested to use this method instead of default {@link CrudRepository#save(Object)} that generates IDs
      * (keys) that are not unique cluster wide.
      *
-     * @param <S>       type of entities.
+     * @param <S>       Type of entities.
      * @param entities  Map of key-entities pairs to save.
      * @param expiryPlc ExpiryPolicy to apply, if not null.
      * @return Saved entities.

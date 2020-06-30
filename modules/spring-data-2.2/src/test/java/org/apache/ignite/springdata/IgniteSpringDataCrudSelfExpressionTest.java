@@ -32,30 +32,20 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  * Test with using repository which is configured by Spring EL
  */
 public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTest {
-    /**
-     * Number of entries to store
-     */
+    /** Number of entries to store */
     private static final int CACHE_SIZE = 1000;
 
-    /**
-     * Repository.
-     */
+    /** Repository. */
     private static PersonExpressionRepository repo;
 
-    /**
-     * Context.
-     */
+    /** Context. */
     private static AnnotationConfigApplicationContext ctx;
 
-    /**
-     *
-     */
+    /** */
     @Rule
     public final ExpectedException expected = ExpectedException.none();
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -66,9 +56,7 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         repo = ctx.getBean(PersonExpressionRepository.class);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -77,9 +65,7 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         assertEquals(CACHE_SIZE, repo.count());
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         repo.deleteAll();
 
@@ -88,25 +74,21 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         super.afterTest();
     }
 
-    /**
-     *
-     */
+    /** */
     private void fillInRepository() {
         for (int i = 0; i < CACHE_SIZE - 5; i++) {
             repo.save(i, new Person("person" + Integer.toHexString(i),
                 "lastName" + Integer.toHexString((i + 16) % 256)));
         }
 
-        repo.save((int)repo.count(), new Person("uniquePerson", "uniqueLastName"));
-        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int) repo.count(), new Person("uniquePerson", "uniqueLastName"));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() {
         ctx.close();
     }
@@ -147,6 +129,7 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
             cacheNames.contains("PersonCache"));
     }
 
+    /** */
     @Test
     public void testCacheCountTWO() {
         Ignite ignite = ctx.getBean("igniteInstanceTWO", Ignite.class);

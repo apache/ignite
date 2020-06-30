@@ -155,166 +155,105 @@ import static org.apache.ignite.springdata20.repository.support.IgniteRepository
  * </pre>
  * </li>
  * </ol>
- * <p>
- * Visit <a href="https://docs.hawkore.com/private/apache-ignite-advanced-indexing">Apache Ignite advanced Indexing
- * Documentation site</a> for more info about Advanced Lucene Index and Lucene Query Builder.
  *
  * @author Apache Ignite Team
  * @author Manuel Núñez (manuel.nunez@hawkore.com)
  */
 @SuppressWarnings("unchecked")
 public class IgniteRepositoryQuery implements RepositoryQuery {
-
+    /** */
     private static final TreeMap<String, Class<?>> binaryFieldClass = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     /**
      * Defines the way how to process query result
      */
     private enum ReturnStrategy {
-        /**
-         * Need to return only one value.
-         */
+        /** Need to return only one value. */
         ONE_VALUE,
 
-        /**
-         * Need to return one cache entry
-         */
+        /** Need to return one cache entry */
         CACHE_ENTRY,
 
-        /**
-         * Need to return list of cache entries
-         */
+        /** Need to return list of cache entries */
         LIST_OF_CACHE_ENTRIES,
 
-        /**
-         * Need to return list of values
-         */
+        /** Need to return list of values */
         LIST_OF_VALUES,
 
-        /**
-         * Need to return list of lists
-         */
+        /** Need to return list of lists */
         LIST_OF_LISTS,
 
-        /**
-         * Need to return slice
-         */
+        /** Need to return slice */
         SLICE_OF_VALUES,
 
-        /**
-         * Slice of cache entries.
-         */
+        /** Slice of cache entries */
         SLICE_OF_CACHE_ENTRIES,
 
-        /**
-         * Slice of lists.
-         */
+        /** Slice of lists */
         SLICE_OF_LISTS,
 
-        /**
-         * Need to return Page of values
-         */
+        /** Need to return Page of values */
         PAGE_OF_VALUES,
 
-        /**
-         * Need to return stream of values
-         */
+        /** Need to return stream of values */
         STREAM_OF_VALUES,
     }
 
-    /**
-     * Type.
-     */
+    /** */
     private final Class<?> type;
 
-    /**
-     * Sql.
-     */
+    /** */
     private final IgniteQuery staticQuery;
 
-    /**
-     * Cache.
-     */
+    /** */
     private final IgniteCache cache;
 
-    /**
-     * Ignite instance
-     */
+    /** */
     private final Ignite ignite;
 
-    /**
-     * required by qryStr field query type for binary manipulation
-     */
+    /** Required by qryStr field query type for binary manipulation */
     private IgniteBinaryImpl igniteBinary;
 
-    /**
-     * Ignite bin type.
-     */
+    /** */
     private BinaryType igniteBinType;
 
-    /**
-     * Method.
-     */
+    /** */
     private final Method mtd;
 
-    /**
-     * Metadata.
-     */
+    /** */
     private final RepositoryMetadata metadata;
 
-    /**
-     * Factory.
-     */
+    /** */
     private final ProjectionFactory factory;
 
-    /**
-     * Return strategy.
-     */
+    /** */
     private final ReturnStrategy staticReturnStgy;
 
-    /**
-     * Detect if returned data from method is projected
-     */
+    /** Detect if returned data from method is projected */
     private final boolean hasProjection;
 
-    /**
-     * Whether projection is dynamic (provided as method parameter)
-     */
+    /** Whether projection is dynamic (provided as method parameter) */
     private final boolean hasDynamicProjection;
 
-    /**
-     * Dynamic projection parameter index.
-     */
+    /** Dynamic projection parameter index */
     private final int dynamicProjectionIndex;
 
-    /**
-     * Dynamic query configuration.
-     */
+    /** Dynamic query configuration */
     private final int dynamicQueryConfigurationIndex;
 
-    /**
-     * the return query method
-     */
+    /** The return query method */
     private final QueryMethod qMethod;
 
-    /**
-     * the return domain class of QueryMethod
-     */
+    /** The return domain class of QueryMethod */
     private final Class<?> returnedDomainClass;
 
-    /**
-     * Expression parser.
-     */
+    /** */
     private final SpelExpressionParser expressionParser;
 
-    /**
-     * could provide ExtensionAwareQueryMethodEvaluationContextProvider
-     */
+    /** Could provide ExtensionAwareQueryMethodEvaluationContextProvider */
     private final EvaluationContextProvider queryMethodEvaluationContextProvider;
 
-    /**
-     * Static query configuration.
-     */
+    /** Static query configuration. */
     private final DynamicQueryConfig staticQueryConfiguration;
 
     /**
@@ -385,7 +324,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
      * @return the object
      */
     @Override public Object execute(Object[] values) {
-
         Object[] parameters = values;
 
         // config via Query annotation (dynamicQuery = false)
@@ -419,9 +357,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         return transformQueryCursor(qry, returnStgy, parameters, qryCursor);
     }
 
-    /**
-     * {@inheritDoc} @return the query method
-     */
+    /** {@inheritDoc} */
     @Override public QueryMethod getQueryMethod() {
         return new QueryMethod(mtd, metadata, factory);
     }
@@ -433,28 +369,35 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         int index = -1;
         while (it.hasNext()) {
             T parameter = it.next();
+
             if (DynamicQueryConfig.class.isAssignableFrom(parameter.getType())) {
                 if (found) {
                     throw new IllegalStateException("Invalid '" + method.getName() + "' repository method signature. "
                         + "Only ONE DynamicQueryConfig parameter is allowed");
                 }
+
                 found = true;
                 index = i;
             }
+
             i++;
         }
         return index;
     }
 
+    /** */
     private synchronized IgniteBinaryImpl binary() {
         if (igniteBinary == null)
             igniteBinary = (IgniteBinaryImpl)ignite.binary();
+
         return igniteBinary;
     }
 
+    /** */
     private synchronized BinaryType binType() {
         if (igniteBinType == null)
             igniteBinType = binary().type(type);
+
         return igniteBinType;
     }
 
@@ -500,7 +443,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
      * @return if {@code mtd} return type is assignable from {@code cls}
      */
     private boolean hasAssignableGenericReturnTypeFrom(Class<?> cls, Method mtd) {
-
         Type genericReturnType = mtd.getGenericReturnType();
 
         if (!(genericReturnType instanceof ParameterizedType))
@@ -529,7 +471,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     }
 
     /**
-     * when select fields by query H2 returns Timestamp for types java.util.Date and java.qryStr.Timestamp
+     * When select fields by query H2 returns Timestamp for types java.util.Date and java.qryStr.Timestamp
      *
      * @see org.apache.ignite.internal.processors.query.h2.H2DatabaseType map.put(Timestamp.class, TIMESTAMP)
      * map.put(java.util.Date.class, TIMESTAMP) map.put(java.qryStr.Date.class, DATE)
@@ -537,6 +479,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     private static <T> T fixExpectedType(final Object object, final Class<T> expected) {
         if (expected != null && object instanceof java.sql.Timestamp && expected.equals(java.util.Date.class))
             return (T)new java.util.Date(((java.sql.Timestamp)object).getTime());
+
         return (T)object;
     }
 
@@ -546,11 +489,13 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     private IgniteQuery getQuery(@Nullable DynamicQueryConfig cfg) {
         if (staticQuery != null)
             return staticQuery;
+
         if (cfg != null && (StringUtils.hasText(cfg.value()) || cfg.textQuery())) {
             return new IgniteQuery(cfg.value(),
                 !cfg.textQuery() && (isFieldQuery(cfg.value()) || cfg.forceFieldsQuery()), cfg.textQuery(),
                 false, IgniteQueryGenerator.getOptions(mtd));
         }
+
         throw new IllegalStateException("Unable to obtain a valid query. When passing dynamicQuery = true via org"
             + ".apache.ignite.springdata.repository.config.Query annotation, you must"
             + " provide a non null method parameter of type DynamicQueryConfig with a "
@@ -563,8 +508,10 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     private ReturnStrategy getReturnStgy(IgniteQuery qry) {
         if (staticReturnStgy != null)
             return staticReturnStgy;
+
         if (qry != null)
             return calcReturnType(mtd, qry.isFieldQuery());
+
         throw new IllegalStateException("Unable to obtain a valid return strategy. When passing dynamicQuery = true "
             + "via org.apache.ignite.springdata.repository.config.Query annotation, "
             + "you must provide a non null method parameter of type "
@@ -600,7 +547,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         ReturnStrategy returnStgy,
         Object[] prmtrs,
         QueryCursor qryCursor) {
-
         final Class<?> returnClass;
 
         if (hasProjection) {
@@ -726,7 +672,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     private Object[] extractBindableValues(Object[] values,
         Parameters<?, ?> queryMethodParams,
         List<ParameterBinding> queryBindings) {
-
         // no binding params then exit
         if (queryBindings.isEmpty())
             return values;
@@ -785,7 +730,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
      */
     @NotNull
     private Query prepareQuery(IgniteQuery qry, DynamicQueryConfig config, ReturnStrategy returnStgy, Object[] values) {
-
         Object[] parameters = values;
 
         String queryString = qry.qryStr();
@@ -795,7 +739,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         checkRequiredPageable(returnStgy, values);
 
         if (!qry.isTextQuery()) {
-
             if (!qry.isAutogenerated()) {
                 StringQuery squery = new ExpressionBasedStringQuery(queryString, metadata, expressionParser);
                 queryString = squery.getQueryString();
@@ -839,7 +782,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                 if (config.parts() != null && config.parts().length > 0)
                     sqlFieldsQry.setPartitions(config.parts());
 
-                sqlFieldsQry.setReplicatedOnly(config.replicatedOnly());
                 sqlFieldsQry.setTimeout(config.timeout(), TimeUnit.MILLISECONDS);
 
                 query = sqlFieldsQry;
@@ -850,16 +792,16 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
                 sqlQry.setDistributedJoins(config.distributedJoins());
                 sqlQry.setLocal(config.local());
+
                 if (config.parts() != null && config.parts().length > 0)
                     sqlQry.setPartitions(config.parts());
-                sqlQry.setReplicatedOnly(config.replicatedOnly());
+
                 sqlQry.setTimeout(config.timeout(), TimeUnit.MILLISECONDS);
 
                 query = sqlQry;
             }
         }
         else {
-
             int pageSize = -1;
 
             switch (qry.options()) {
@@ -898,6 +840,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         return query;
     }
 
+    /** */
     private static Map<String, Object> rowToMap(final List<?> row, final List<GridQueryFieldMetadata> meta) {
         // use treemap with case insensitive property name
         final TreeMap<String, Object> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -911,7 +854,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         return map;
     }
 
-    /*
+    /**
      * convert row ( with list of field values) into domain entity
      */
     private <V> V rowToEntity(final IgniteBinaryImpl binary,
@@ -952,7 +895,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         final BinaryType binType,
         final GridQueryFieldMetadata fieldMeta) {
         try {
-
             final String fieldId = fieldMeta.schemaName() + "." + fieldMeta.typeName() + "." + fieldMeta.fieldName();
 
             if (binaryFieldClass.containsKey(fieldId))
@@ -1037,7 +979,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
      * @param <V> transformed output type
      */
     public static class QueryCursorWrapper<T, V> extends AbstractCollection<V> implements QueryCursor<V> {
-
         /**
          * Delegate query cursor.
          */
@@ -1059,14 +1000,12 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
             this.transformer = transformer;
         }
 
-        /**
-         * {@inheritDoc} @return the iterator
-         */
+        /** {@inheritDoc} */
         @Override public Iterator<V> iterator() {
-
             final Iterator<T> it = delegate.iterator();
 
             return new Iterator<V>() {
+                /** */
                 @Override public boolean hasNext() {
                     if (!it.hasNext()) {
                         U.closeQuiet(delegate);
@@ -1075,6 +1014,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                     return true;
                 }
 
+                /** */
                 @Override public V next() {
                     final V r = transformer.apply(it.next());
                     if (r != null)
@@ -1084,16 +1024,12 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
             };
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void close() {
             U.closeQuiet(delegate);
         }
 
-        /**
-         * {@inheritDoc} @return the all
-         */
+        /** {@inheritDoc} */
         @Override public List<V> getAll() {
             final List<V> data = new ArrayList<>();
             delegate.forEach(i -> data.add(transformer.apply(i)));
@@ -1101,13 +1037,9 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
             return data;
         }
 
-        /**
-         * {@inheritDoc} @return the int
-         */
+        /** {@inheritDoc} */
         @Override public int size() {
             return 0;
         }
-
     }
-
 }

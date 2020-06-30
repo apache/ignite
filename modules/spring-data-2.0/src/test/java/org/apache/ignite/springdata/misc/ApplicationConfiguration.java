@@ -29,15 +29,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.repository.query.spi.EvaluationContextExtension;
 
-/**
- *
- */
+/** */
 @Configuration
 @EnableIgniteRepositories
 public class ApplicationConfiguration {
-
+    /** */
     public static final String IGNITE_INSTANCE_ONE = "IGNITE_INSTANCE_ONE";
 
+    /** */
     public static final String IGNITE_INSTANCE_TWO = "IGNITE_INSTANCE_TWO";
 
     /**
@@ -52,11 +51,13 @@ public class ApplicationConfiguration {
         return bean;
     }
 
+    /** */
     @Bean
     public EvaluationContextExtension sampleSpELExtension() {
         return new SampleEvaluationContextExtension();
     }
 
+    /** */
     @Bean(value = "sampleExtensionBean")
     public SamplePassParamExtension sampleExtensionBean() {
         return new SamplePassParamExtension();

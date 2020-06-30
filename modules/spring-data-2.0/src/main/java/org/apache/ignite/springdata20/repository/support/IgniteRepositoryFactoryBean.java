@@ -45,9 +45,7 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
  */
 public class IgniteRepositoryFactoryBean<T extends Repository<V, K>, V, K extends Serializable>
     extends RepositoryFactoryBeanSupport<T, V, K> implements ApplicationContextAware {
-    /**
-     * Application context.
-     */
+    /** */
     private ApplicationContext ctx;
 
     /**
@@ -57,16 +55,12 @@ public class IgniteRepositoryFactoryBean<T extends Repository<V, K>, V, K extend
         super(repoInterface);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
         this.ctx = ctx;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected RepositoryFactorySupport createRepositoryFactory() {
         return new IgniteRepositoryFactory(ctx);
     }

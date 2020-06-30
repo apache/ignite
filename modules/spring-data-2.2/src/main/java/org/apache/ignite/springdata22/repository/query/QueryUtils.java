@@ -118,7 +118,6 @@ public abstract class QueryUtils {
     private static final Pattern FUNCTION_PATTERN;
 
     static {
-
         StringBuilder builder = new StringBuilder();
         builder.append("(?<=from)"); // from as starting delimiter
         builder.append("(?:\\s)+"); // at least one space separating
@@ -165,7 +164,7 @@ public abstract class QueryUtils {
      * Private constructor to prevent instantiation.
      */
     private QueryUtils() {
-
+        // No-op.
     }
 
     /**
@@ -179,7 +178,6 @@ public abstract class QueryUtils {
     public static String getExistsQueryString(String entityName,
         String cntQryPlaceHolder,
         Iterable<String> idAttrs) {
-
         String whereClause = Streamable.of(idAttrs).stream() //
             .map(idAttribute -> String.format(EQUALS_CONDITION_STRING, "x", idAttribute,
                 idAttribute)) //
@@ -194,10 +192,9 @@ public abstract class QueryUtils {
      * @param template   must not be {@literal null}.
      * @param entityName must not be {@literal null}.
      * @return the template with placeholders replaced by the {@literal entityName}. Guaranteed to be not {@literal
-     * null}.
+     *     null}.
      */
     public static String getQueryString(String template, String entityName) {
-
         Assert.hasText(entityName, "Entity name must not be null or empty!");
 
         return String.format(template, entityName);
@@ -210,12 +207,10 @@ public abstract class QueryUtils {
      * @return a {@literal Set} of aliases used in the query. Guaranteed to be not {@literal null}.
      */
     static Set<String> getOuterJoinAliases(String qry) {
-
         Set<String> result = new HashSet<>();
         Matcher matcher = JOIN_PATTERN.matcher(qry);
 
         while (matcher.find()) {
-
             String alias = matcher.group(QUERY_JOIN_ALIAS_GROUP_INDEX);
             if (StringUtils.hasText(alias))
                 result.add(alias);
@@ -231,12 +226,10 @@ public abstract class QueryUtils {
      * @return a {@literal Set} containing all found aliases. Guaranteed to be not {@literal null}.
      */
     static Set<String> getFunctionAliases(String qry) {
-
         Set<String> result = new HashSet<>();
         Matcher matcher = FUNCTION_PATTERN.matcher(qry);
 
         while (matcher.find()) {
-
             String alias = matcher.group(1);
 
             if (StringUtils.hasText(alias))
@@ -251,12 +244,9 @@ public abstract class QueryUtils {
      *
      * @param qry must not be {@literal null}.
      * @return Might return {@literal null}.
-     * @deprecated use {@link DeclaredQuery#getAlias()} instead.
      */
     @Nullable
-    @Deprecated
-    public static String detectAlias(String qry) {
-
+    static String detectAlias(String qry) {
         Matcher matcher = ALIAS_MATCH.matcher(qry);
 
         return matcher.find() ? matcher.group(2) : null;
@@ -265,34 +255,17 @@ public abstract class QueryUtils {
     /**
      * Creates a count projected query from the given original query.
      *
-     * @param originalQry must not be {@literal null} or empty.
-     * @return Guaranteed to be not {@literal null}.
-     * @deprecated use {@link DeclaredQuery#deriveCountQuery(String, String)} instead.
-     */
-    @Deprecated
-    public static String createCountQueryFor(String originalQry) {
-        return createCountQueryFor(originalQry, null);
-    }
-
-    /**
-     * Creates a count projected query from the given original query.
-     *
      * @param originalQry   must not be {@literal null}.
      * @param cntProjection may be {@literal null}.
      * @return a query String to be used a count query for pagination. Guaranteed to be not {@literal null}.
-     * @since 1.6
-     * @deprecated use {@link DeclaredQuery#deriveCountQuery(String, String)} instead.
      */
-    @Deprecated
-    public static String createCountQueryFor(String originalQry, @Nullable String cntProjection) {
-
+    static String createCountQueryFor(String originalQry, @Nullable String cntProjection) {
         Assert.hasText(originalQry, "OriginalQuery must not be null or empty!");
 
         Matcher matcher = COUNT_MATCH.matcher(originalQry);
         String countQuery;
 
         if (cntProjection == null) {
-
             String variable = matcher.matches() ? matcher.group(VARIABLE_NAME_GROUP_INDEX) : null;
             boolean useVariable = variable != null && StringUtils.hasText(variable) && !variable.startsWith("new")
                 && !variable.startsWith("count(") && !variable.contains(",");
@@ -307,25 +280,12 @@ public abstract class QueryUtils {
     }
 
     /**
-     * Returns whether the given query contains named parameters.
-     *
-     * @param qry can be {@literal null} or empty.
-     * @return whether the given query contains named parameters.
-     */
-    @Deprecated
-    static boolean hasNamedParameter(@Nullable String qry) {
-        return StringUtils.hasText(qry) && NAMED_PARAMETER.matcher(qry).find();
-    }
-
-    /**
      * Returns whether the given JPQL query contains a constructor expression.
      *
      * @param qry must not be {@literal null} or empty.
      * @return boolean
-     * @since 1.10
      */
     public static boolean hasConstructorExpression(String qry) {
-
         Assert.hasText(qry, "Query must not be null or empty!");
 
         return CONSTRUCTOR_EXPRESSION.matcher(qry).find();
@@ -336,15 +296,12 @@ public abstract class QueryUtils {
      *
      * @param qry must not be {@literal null} or empty.
      * @return projection
-     * @since 1.10.2
      */
     public static String getProjection(String qry) {
-
         Assert.hasText(qry, "Query must not be null or empty!");
 
         Matcher matcher = PROJECTION_CLAUSE.matcher(qry);
         String projection = matcher.find() ? matcher.group(1) : "";
         return projection.trim();
     }
-
 }

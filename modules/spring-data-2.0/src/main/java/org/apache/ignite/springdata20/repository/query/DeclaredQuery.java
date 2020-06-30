@@ -23,7 +23,6 @@ import org.springframework.util.StringUtils;
  * A wrapper for a String representation of a query offering information about the query.
  *
  * @author Jens Schauder
- * @since 2.0.3
  */
 interface DeclaredQuery {
     /**
@@ -56,8 +55,6 @@ interface DeclaredQuery {
 
     /**
      * Returns whether the query is using a constructor expression.
-     *
-     * @since 1.10
      */
     public boolean hasConstructorExpression();
 
@@ -84,7 +81,6 @@ interface DeclaredQuery {
 
     /**
      * @return whether paging is implemented in the query itself, e.g. using SpEL expressions.
-     * @since 2.0.6
      */
     public default boolean usesPaging() {
         return false;
@@ -95,7 +91,6 @@ interface DeclaredQuery {
      * name.
      *
      * @return Whether the query uses JDBC style parameters.
-     * @since 2.0.6
      */
     public boolean usesJdbcStyleParameters();
 }

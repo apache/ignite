@@ -31,64 +31,37 @@ package org.apache.ignite.springdata20.repository.config;
  * @author Manuel Núñez Sánchez (manuel.nunez@hawkore.com)
  */
 public class DynamicQueryConfig {
-    /**
-     * Value.
-     */
+    /** */
     private String value = "";
 
-    /**
-     * Text query.
-     */
+    /** */
     private boolean textQuery;
 
-    /**
-     * Force fields query.
-     */
+    /** */
     private boolean forceFieldsQry;
 
-    /**
-     * Collocated.
-     */
+    /** */
     private boolean collocated;
 
-    /**
-     * Timeout.
-     */
+    /** */
     private int timeout;
 
-    /**
-     * Enforce join order.
-     */
+    /** */
     private boolean enforceJoinOrder;
 
-    /**
-     * Distributed joins.
-     */
+    /** */
     private boolean distributedJoins;
 
-    /**
-     * Replicated only.
-     */
-    private boolean replicatedOnly;
-
-    /**
-     * Lazy.
-     */
+    /** */
     private boolean lazy;
 
-    /**
-     * Local.
-     */
+    /** */
     private boolean local;
 
-    /**
-     * Parts.
-     */
+    /** */
     private int[] parts;
 
-    /**
-     * Limit.
-     */
+    /** */
     private int limit;
 
     /**
@@ -105,7 +78,6 @@ public class DynamicQueryConfig {
             config.timeout = queryConfiguration.timeout();
             config.enforceJoinOrder = queryConfiguration.enforceJoinOrder();
             config.distributedJoins = queryConfiguration.distributedJoins();
-            config.replicatedOnly = queryConfiguration.replicatedOnly();
             config.lazy = queryConfiguration.lazy();
             config.parts = queryConfiguration.parts();
             config.local = queryConfiguration.local();
@@ -198,19 +170,6 @@ public class DynamicQueryConfig {
      */
     public boolean distributedJoins() {
         return distributedJoins;
-    }
-
-    /**
-     * Specify if the query contains only replicated tables. This is a hint for potentially more effective execution.
-     * <p>
-     * Only applicable to SqlFieldsQuery and SqlQuery
-     *
-     * @return the boolean
-     * @deprecated No longer used as of Apache Ignite 2.8.
-     */
-    @Deprecated
-    public boolean replicatedOnly() {
-        return replicatedOnly;
     }
 
     /**
@@ -344,17 +303,6 @@ public class DynamicQueryConfig {
     }
 
     /**
-     * Sets replicated only.
-     *
-     * @param replicatedOnly the replicated only
-     * @return this for chaining
-     */
-    public DynamicQueryConfig setReplicatedOnly(boolean replicatedOnly) {
-        this.replicatedOnly = replicatedOnly;
-        return this;
-    }
-
-    /**
      * Sets lazy.
      *
      * @param lazy the lazy
@@ -397,5 +345,4 @@ public class DynamicQueryConfig {
         this.limit = limit;
         return this;
     }
-
 }
