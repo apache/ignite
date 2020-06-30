@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client.Cache.Query
 {
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
@@ -34,6 +35,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /** Cursor ID. */
         private readonly long _queryId;
 
+        /** Columns (for fields initial query). */
+        private readonly IList<string> _columns;
+
         /** */
         private readonly object _disposeSyncRoot = new object();
 
@@ -43,11 +47,12 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <summary>
         /// Initializes a new instance of <see cref="ClientContinuousQueryHandle{TK, TV}"/>.
         /// </summary>
-        public ClientContinuousQueryHandle(ClientSocket socket, bool keepBinary, long queryId)
+        public ClientContinuousQueryHandle(ClientSocket socket, bool keepBinary, long queryId, IList<string> columns)
         {
             _socket = socket;
             _keepBinary = keepBinary;
             _queryId = queryId;
+            _columns = columns;
         }
 
         /** <inheritdoc /> */
@@ -59,9 +64,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /** <inheritdoc /> */
         IFieldsQueryCursor IContinuousQueryHandleFields.GetInitialQueryCursor()
         {
-            IList<string> columns = null; // TODO: ???
+            Debug.Assert(_columns != null);
+
             return new ClientFieldsQueryCursor(_socket, _queryId, _keepBinary, null,
-                ClientOp.QuerySqlFieldsCursorGetPage, columns);
+                ClientOp.QuerySqlFieldsCursorGetPage, _columns);
         }
 
         /** <inheritdoc /> */

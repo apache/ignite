@@ -638,24 +638,29 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(continuousQuery.Listener, "continuousQuery.Listener");
             IgniteArgumentCheck.NotNull(initialQry, "initialQry");
 
-            return QueryContinuousInternal(continuousQuery, ctx =>
-            {
-                ctx.Writer.WriteByte((byte) InitialQueryType.Scan);
+            return QueryContinuousInternal(
+                continuousQuery,
+                writeInitialQueryAction: ctx =>
+                {
+                    ctx.Writer.WriteByte((byte) InitialQueryType.Scan);
 
-                WriteScanQuery(ctx.Writer, initialQry);
-            });
+                    WriteScanQuery(ctx.Writer, initialQry);
+                });
         }
 
         /** <inheritDoc /> */
         public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> continuousQuery,
             SqlFieldsQuery initialQry)
         {
-            return QueryContinuousInternal(continuousQuery, ctx =>
-            {
-                ctx.Writer.WriteByte((byte) InitialQueryType.Sql);
+            return QueryContinuousInternal(
+                continuousQuery,
+                writeInitialQueryAction: ctx =>
+                {
+                    ctx.Writer.WriteByte((byte) InitialQueryType.Sql);
 
-                WriteSqlFieldsInitialQuery(ctx.Writer, initialQry);
-            });
+                    WriteSqlFieldsInitialQuery(ctx.Writer, initialQry);
+                },
+                columnsFunc: ctx => ctx.Reader.ReadStringCollection());
         }
 
         /** <inheritDoc /> */
@@ -1062,7 +1067,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
         private ClientContinuousQueryHandle<TK, TV> QueryContinuousInternal(
             ContinuousQuery<TK, TV> continuousQuery,
-            Action<ClientRequestContext> writeInitialQueryAction = null)
+            Action<ClientRequestContext> writeInitialQueryAction = null,
+            Func<ClientResponseContext, IList<string>> columnsFunc = null)
         {
             return DoOutInOp(
                 ClientOp.QueryContinuous,
@@ -1074,7 +1080,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                     ctx.Socket.AddNotificationHandler(queryId,
                         (stream, err) => HandleContinuousQueryEvents(stream, err, continuousQuery));
 
-                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId);
+                    var columns = columnsFunc != null ? columnsFunc(ctx) : null;
+
+                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId, columns);
                 });
         }
 
