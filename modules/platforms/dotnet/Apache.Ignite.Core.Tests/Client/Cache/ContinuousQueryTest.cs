@@ -165,8 +165,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO:
         }
 
+        /// <summary>
+        /// Tests that SqlFieldsQuery works as initial query, returns both data and metadata.
+        /// </summary>
         [Test]
-        public void TestInitialSqlQuery()
+        public void TestInitialSqlQueryReturnsRowDataAndColumnNames()
         {
             var queryEntity = new QueryEntity(typeof(int), typeof(int))
             {
@@ -177,14 +180,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cache = Client.GetOrCreateCache<int, int>(cacheCfg);
             var qry = new ContinuousQuery<int,int>(new DelegateListener<int, int>());
 
+            cache[1] = 1;
+
             using (var handle = cache.QueryContinuous(qry, new SqlFieldsQuery("select _key from " + TestUtils.TestName)))
             {
                 using (var cur = handle.GetInitialQueryCursor())
                 {
-                    var rows = cur.GetAll();
-                    var cols = cur.FieldNames;
+                    CollectionAssert.AreEqual(new[]{"_KEY"}, cur.FieldNames);
 
-                    // TODO: Assert
+                    CollectionAssert.AreEqual(new[] {1}, cur.Single());
                 }
             }
         }
