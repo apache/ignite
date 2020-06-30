@@ -17,18 +17,15 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.Query;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Initial query holder.
@@ -88,29 +85,29 @@ class ClientCacheQueryContinuousInitialQuerySql extends ClientCacheQueryContinuo
         timeout = (int) reader.readLong();
     }
 
-    /**
-     * Gets the query.
-     *
-     * @return Query.
-     */
-    @Override
-    public Query getQuery(GridKernalContext ctx) {
-        return new ScanQuery()
-                .setFilter(ClientCacheScanQueryRequest.createFilter(ctx, filter, filterPlatform))
+    /** {@inheritDoc} */
+    @Override public Query getQuery(GridKernalContext ctx) {
+        SqlFieldsQuery qry = stmtType == JdbcStatementType.ANY_STATEMENT_TYPE
+                ? new SqlFieldsQuery(sql)
+                : new SqlFieldsQueryEx(sql,stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE);
+
+        qry.setSchema(schema)
                 .setPageSize(pageSize)
+                .setArgs(args)
+                .setDistributedJoins(distributedJoins)
                 .setLocal(loc)
-                .setPartition(part);
+                .setEnforceJoinOrder(enforceJoinOrder)
+                .setCollocated(collocated)
+                .setLazy(lazy);
+
+        if (timeout >= 0)
+            qry.setTimeout(timeout, TimeUnit.MILLISECONDS);
+
+        return qry;
     }
 
-    /**
-     * Gets the client cursor.
-     *
-     * @param cursor Query cursor.
-     * @param ctx Context.
-     * @return Client cache query cursor according to query type.
-     */
-    @Override
-    public ClientCacheQueryCursor getClientCursor(QueryCursor cursor, ClientConnectionContext ctx) {
+    /** {@inheritDoc} */
+    @Override public ClientCacheQueryCursor getClientCursor(QueryCursor cursor, ClientConnectionContext ctx) {
         return new ClientCacheFieldsQueryCursor((FieldsQueryCursor) cursor, pageSize, ctx, false);
     }
 }
