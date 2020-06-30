@@ -6550,10 +6550,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         // Node cannot connect to it's next (for local node it's previous).
                         // Need to check connectivity to it.
                         long rcvdTime = lastRingMsgReceivedTime;
-                        long now = U.currentTimeMillis();
+                        long now = System.nanoTime();
 
                         // We got message from previous in less than effective exchange timeout.
-                        boolean ok = rcvdTime + effectiveExchangeTimeout() > now;
+                        boolean ok = rcvdTime + U.millisToNanos(effectiveExchangeTimeout()) > now;
                         TcpDiscoveryNode previous = null;
 
                         if (ok) {
@@ -7033,7 +7033,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Update last ring message received timestamp.
          */
         private void ringMessageReceived() {
-            lastRingMsgReceivedTime = U.currentTimeMillis();
+            lastRingMsgReceivedTime = System.nanoTime();
         }
 
         /** @return Alive address if was able to connected to. {@code Null} otherwise. */
