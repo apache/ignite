@@ -1080,12 +1080,14 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 {
                     var queryId = ctx.Stream.ReadLong();
 
-                    ctx.Socket.AddNotificationHandler(queryId,
-                        (stream, err) => HandleContinuousQueryEvents(stream, err, listener));
-
                     var columns = columnsFunc != null ? columnsFunc(ctx) : null;
 
-                    return new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId, columns);
+                    var qryHandle = new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId, columns);
+                    
+                    ctx.Socket.AddNotificationHandler(queryId,
+                        (stream, err) => HandleContinuousQueryEvents(stream, err, listener, qryHandle));
+
+                    return qryHandle;
                 });
         }
 
@@ -1135,17 +1137,11 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// Handles continuous query events.
         /// </summary>
         private void HandleContinuousQueryEvents(IBinaryStream stream, Exception err,
-            ICacheEntryEventListener<TK, TV> listener)
+            ICacheEntryEventListener<TK, TV> listener, ClientContinuousQueryHandle<TK, TV> qryHandle)
         {
             if (err != null)
             {
-                // Socket is disposed.
-                // TODO: Notify client somehow:
-                // * Special CacheEntryEvent that throws exceptions: dirty
-                // * Cast listener to IDisposable - weird?
-                // * Special interface with additional method
-                // - Instead of this, users just need an event on socket failure?
-                //   But how does it work with multiple connections - not clear.
+                qryHandle.Dispose();
                 return;
             }
 
