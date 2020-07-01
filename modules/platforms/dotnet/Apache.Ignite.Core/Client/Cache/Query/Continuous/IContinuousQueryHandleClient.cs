@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Client.Cache.Query.Continuous
     /// <summary>
     /// Represents a continuous query handle.
     /// </summary>
-    public interface IContinuousQueryHandleClient
+    public interface IContinuousQueryHandleClient : IDisposable
     {
         /// <summary>
         /// TODO: Which args?

@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
@@ -623,7 +624,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> continuousQuery)
+        public IContinuousQueryHandleClient QueryContinuous(ContinuousQuery<TK, TV> continuousQuery)
         {
             IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
             IgniteArgumentCheck.NotNull(continuousQuery.Listener, "continuousQuery.Listener");
@@ -632,7 +633,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery,
+        public IContinuousQueryHandleClient<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery,
             ScanQuery<TK, TV> initialQry)
         {
             IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
@@ -650,7 +651,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> continuousQuery,
+        public IContinuousQueryHandleFieldsClient QueryContinuous(ContinuousQuery<TK, TV> continuousQuery,
             SqlFieldsQuery initialQry)
         {
             return QueryContinuousInternal(

@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Cache.Query.Continuous;
 
     /// <summary>
     /// Adapts <see cref="ICache{TK,TV}"/> to <see cref="ICacheClient{TK,TV}"/>
@@ -300,17 +301,17 @@ namespace Apache.Ignite.Core.Tests.Client
             throw new NotSupportedException();
         }
 
-        public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> continuousQuery)
+        public IContinuousQueryHandleClient QueryContinuous(ContinuousQuery<TK, TV> continuousQuery)
         {
             throw new NotImplementedException();
         }
 
-        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, ScanQuery<TK, TV> initialQry)
+        public IContinuousQueryHandleClient<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, ScanQuery<TK, TV> initialQry)
         {
             throw new NotImplementedException();
         }
 
-        public IContinuousQueryHandleFields QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, SqlFieldsQuery initialQry)
+        public IContinuousQueryHandleFieldsClient QueryContinuous(ContinuousQuery<TK, TV> continuousQuery, SqlFieldsQuery initialQry)
         {
             throw new NotImplementedException();
         }

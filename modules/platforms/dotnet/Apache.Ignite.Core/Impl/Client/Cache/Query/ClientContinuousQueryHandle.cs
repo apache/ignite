@@ -17,14 +17,15 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Cache.Query
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Client.Cache.Query.Continuous;
 
-    internal class ClientContinuousQueryHandle<TK, TV> : IContinuousQueryHandle<ICacheEntry<TK, TV>>,
-        IContinuousQueryHandleFields
+    internal class ClientContinuousQueryHandle<TK, TV> : IContinuousQueryHandleClient<ICacheEntry<TK, TV>>,
+        IContinuousQueryHandleFieldsClient
     {
         /** Socket. */
         private readonly ClientSocket _socket;
@@ -62,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         }
 
         /** <inheritdoc /> */
-        IFieldsQueryCursor IContinuousQueryHandleFields.GetInitialQueryCursor()
+        IFieldsQueryCursor IContinuousQueryHandleFieldsClient.GetInitialQueryCursor()
         {
             Debug.Assert(_columns != null);
 
@@ -108,5 +109,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         {
             Dispose(false);
         }
+
+        // TODO
+        public event Action<object> OnDisconnected;
     }
 }
