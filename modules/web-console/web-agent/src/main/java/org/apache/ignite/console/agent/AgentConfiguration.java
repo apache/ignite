@@ -46,8 +46,8 @@ public class AgentConfiguration {
     /** Default Ignite node HTTP URI. */
     private static final String DFLT_NODE_URI = "http://localhost:8080";
     
-    /** Default Flink SQL gateway node HTTP URI. */
-    private static final String DFLT_FLINK_SQL_URI = "http://localhost:1234";
+    /** Default presto gateway node HTTP URI. */
+    private static final String DFLT_PRESTO_URI = "http://localhost:9100/hive";
 
     /** */
     @Parameter(names = {"-t", "--tokens"},
@@ -69,7 +69,7 @@ public class AgentConfiguration {
     private List<String> nodeURIs;
     
     /** */
-    private String flinkSqlURI = DFLT_FLINK_SQL_URI;
+    private String prestoURI = DFLT_PRESTO_URI;
 
     /** */
     @Parameter(names = {"-nl", "--node-login"},
@@ -196,15 +196,15 @@ public class AgentConfiguration {
     /**
      * @return Node URIs.
      */
-    public String flinkSqlURI() {
-        return this.flinkSqlURI;
+    public String prestoURI() {
+        return this.prestoURI;
     }
 
     /**
      * @param nodeURIs Node URIs.
      */
-    public void flinkSqlURI(String nodeURI) {
-        this.flinkSqlURI = nodeURI;
+    public void prestoURI(String nodeURI) {
+        this.prestoURI = nodeURI;
     }
 
 
@@ -444,10 +444,10 @@ public class AgentConfiguration {
         if (val != null)
             nodeURIs(new ArrayList<>(Arrays.asList(val.split(","))));
         
-        val = props.getProperty("flink-sql-uri");
+        val = props.getProperty("presto-uri");
 
         if (val != null)
-            flinkSqlURI(val);
+        	prestoURI(val);
 
         val = props.getProperty("node-login");
 
@@ -530,11 +530,11 @@ public class AgentConfiguration {
             nodeURIs(Collections.singletonList(DFLT_NODE_URI));
         
         
-        if (flinkSqlURI == null)
-        	flinkSqlURI(cfg.flinkSqlURI());
+        if (prestoURI == null)
+        	prestoURI(cfg.prestoURI());
 
-        if (flinkSqlURI == null)
-        	flinkSqlURI(DFLT_FLINK_SQL_URI);
+        if (prestoURI == null)
+        	prestoURI(DFLT_PRESTO_URI);
 
         if (nodeLogin == null)
             nodeLogin(cfg.nodeLogin());

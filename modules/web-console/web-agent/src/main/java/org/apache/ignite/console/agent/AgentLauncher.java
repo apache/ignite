@@ -48,6 +48,7 @@ import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.handlers.RestListener;
 import org.apache.ignite.console.agent.rest.RestExecutor;
+import org.apache.ignite.console.agent.rest.RestForPrestoExecutor;
 import org.apache.ignite.console.agent.rest.RestForRDSExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -483,8 +484,10 @@ public class AgentLauncher {
             DatabaseListener dbHnd = new DatabaseListener(cfg);
             
             RestForRDSExecutor rfsExecuter = new RestForRDSExecutor(dbHnd);
+            
+            RestForPrestoExecutor prestoExecutor = new RestForPrestoExecutor(cfg);
 
-            RestListener restHnd = new RestListener(cfg, restExecutor, rfsExecuter);
+            RestListener restHnd = new RestListener(cfg, restExecutor, rfsExecuter,prestoExecutor);
 
             final CountDownLatch latch = new CountDownLatch(1);
 

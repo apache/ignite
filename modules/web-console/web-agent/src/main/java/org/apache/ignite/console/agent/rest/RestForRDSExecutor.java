@@ -22,11 +22,16 @@ import java.io.StringWriter;
 import java.net.ConnectException;
 import java.security.GeneralSecurityException;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -53,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
 
@@ -67,17 +73,12 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
- * API to translate REST requests to rds use jdbc.
+ * API to translate REST requests to rds use jdbc connect.
  */
 public class RestForRDSExecutor implements AutoCloseable {
     /** */
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(RestForRDSExecutor.class));
-
-    /** JSON object mapper. */
-    private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
-
-    /** */
-    private final OkHttpClient httpClient;
+   
     
     private DatabaseListener dbListener;
 
@@ -98,83 +99,17 @@ public class RestForRDSExecutor implements AutoCloseable {
     	
     	this.dbListener = dbListener;
     	
-        Dispatcher dispatcher = new Dispatcher();
-
-        dispatcher.setMaxRequests(Integer.MAX_VALUE);
-        dispatcher.setMaxRequestsPerHost(Integer.MAX_VALUE);
-
-        OkHttpClient.Builder builder = new OkHttpClient.Builder()
-            .readTimeout(0, TimeUnit.MILLISECONDS)
-            .dispatcher(dispatcher);        
-
-        httpClient = builder.build();
     }
 
     /**
-     * Stop HTTP client.
+     * Stop jdbc client.
      */
     @Override public void close() {
-        if (httpClient != null) {
-            httpClient.dispatcher().executorService().shutdown();
-
-            httpClient.dispatcher().cancelAll();
-        }        
+       
     }
 
-    /** */
-    private RestResult parseResponse(Response res) throws IOException {
-        if (res.isSuccessful()) {
-            RestResponseHolder holder = MAPPER.readValue(res.body().byteStream(), RestResponseHolder.class);
+    
 
-            int status = holder.getSuccessStatus();
-
-            if (status == STATUS_SUCCESS)
-                return RestResult.success(holder.getResponse(), holder.getSessionToken());
-
-            return RestResult.fail(status, holder.getError());
-        }
-
-        if (res.code() == 401)
-            return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in cluster. " +
-                "Please check agent\'s login and password or node port.");
-
-        if (res.code() == 404)
-            return RestResult.fail(STATUS_FAILED, "Failed connect to cluster.");
-
-        return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + res);
-    }
-
-    /** */
-    public RestResult sendRequestToFlink(String url, Map<String, Object> params, Map<String, Object> headers) throws IOException {
-        HttpUrl httpUrl = HttpUrl
-            .parse(url)
-            .newBuilder()
-            .addPathSegment("ignite")
-            .build();
-
-        final Request.Builder reqBuilder = new Request.Builder();
-
-        if (headers != null) {
-            for (Map.Entry<String, Object> entry : headers.entrySet())
-                if (entry.getValue() != null)
-                    reqBuilder.addHeader(entry.getKey(), entry.getValue().toString());
-        }
-
-        FormBody.Builder bodyParams = new FormBody.Builder();
-
-        if (params != null) {
-            for (Map.Entry<String, Object> entry : params.entrySet()) {
-                if (entry.getValue() != null)
-                    bodyParams.add(entry.getKey(), entry.getValue().toString());
-            }
-        }
-
-        reqBuilder.url(httpUrl).post(bodyParams.build());
-
-        try (Response resp = httpClient.newCall(reqBuilder.build()).execute()) {
-            return parseResponse(resp);
-        }
-    }
 
     /**
      * Send request to cluster.
@@ -198,16 +133,88 @@ public class RestForRDSExecutor implements AutoCloseable {
     	if(jdbcUrl==null) {
     		return RestResult.fail(STATUS_FAILED, "Not configure any jdbc connection, Please click Import from Database on configuration/overview");
     	}
-    	
+    	String cmd = (String)params.get("p2");
+    	if(cmd==null) {
+        	cmd = (String)params.get("cmd");
+        }
     	Connection conn = null;
-    	int  urlsCnt = 2;
+    	int  urlsCnt = 1;
         for (int i = 0;  i < urlsCnt; i++) {           
 
             try {
             	conn = dbListener.connect(null, jdbcDriverCls, jdbcUrl, jdbcInfo);
+            	JSONObject res;
+            	if("org.apache.ignite.internal.visor.cache.VisorCacheNamesCollectorTask".equals(cmd)) {
+            		DatabaseMetaData metadata = conn.getMetaData();                    
+            		ResultSet tables = metadata.getTables(
+                    		conn.getCatalog(),
+                            null,
+                            null,
+                            new String[] {"TABLE", "VIEW"});
+            		res = new JSONObject();
+                    JSONObject result = new JSONObject();
+                    JSONObject caches = new JSONObject();
+            		
+                    while (tables.next()) {
+                    	//caches.put(tables.getString("TABLE_NAME"),tables.getString("TABLE_SCHEM"));
+                    	Object schema = tables.getObject("TABLE_SCHEM");
+                    	caches.put(schema.toString(),tables.getString("TABLE_SCHEM"));
+                    }
+                    result.put("caches", caches);
+                    result.put("protocolVersion", 1);
+                    res.put("result", result);
+            	}
+            	else if("metadata".equals(cmd)) {
+            		DatabaseMetaData metadata = conn.getMetaData();                    
+            		ResultSet tables = metadata.getTables(
+                    		conn.getCatalog(),
+                            null,
+                            null,
+                            new String[] {"TABLE", "VIEW"});
+            		JSONArray arr = new JSONArray();            		
+                    while (tables.next()) {
+                    	JSONObject caches = new JSONObject();
+                    	String typeName = tables.getObject("TABLE_SCHEM")+"."+tables.getString("TABLE_NAME");
+                    	caches.put("cacheName",typeName);
+                    	
+                    	JSONArray types = new JSONArray();  
+                    	types.put(typeName);
+                    	caches.put("types",types);
+                    	JSONObject fields = new JSONObject();
+                    	JSONObject column = new JSONObject();
+                    	column.put("ID", "java.lang.Integer");
+                    	column.put("NAME", "java.lang.String");
+                    	fields.put(typeName, column);
+                    	/**
+                   "fields": {
+						"SQL_PUBLIC_PERSON_e7361252_ba66_4feb_991c_81b866eb4adb": {
+							"ID": "java.lang.Integer",
+							"NAME": "java.lang.String"
+						}
+					},
+                    	 */
+                    	caches.put("fields",fields); 
+                    	JSONObject indexes = new JSONObject();
+                    	JSONArray index = new JSONArray();  
+                    	indexes.put(typeName, index);
+                    	caches.put("indexes",indexes);
+                    	
+                    	//caches.put("keyClasses",fields);
+                    	//caches.put("valClasses",fields);
+                    	arr.put(caches);
+                    }
+                   
+                    return RestResult.success(arr.toString(), (String)args.get("token"));
+            	}
+            	else {
+            		JdbcQueryExecutor exec = new JdbcQueryExecutor(conn.createStatement(),(String)params.get("p5"));
             	
-            	JdbcQueryExecutor exec = new JdbcQueryExecutor(conn.createStatement(),(String)params.get("p5"));
-            	JSONObject res = exec.executeSqlVisor(0,(String)params.get("p1"));
+            		res = exec.executeSqlVisor(0,(String)params.get("p1"));
+            		
+            	}
+            	
+            	res.put("id", params.get("p1"));
+        		res.put("finished",true);
 
                 // If first attempt failed then throttling should be cleared.
                 if (i > 0)
@@ -231,217 +238,9 @@ public class RestForRDSExecutor implements AutoCloseable {
         
         
         LT.warn(log, "Failed connect to cluster. " +
-            "Please ensure that nodes have [ignite-rest-http] module in classpath " +
+            "Please ensure that db driver jar in classpath " +
             "(was copied from libs/optional to libs folder).");
 
-        throw new ConnectException("Failed connect to cluster [url=" + nodeUrl + ", parameters=" + params + "]");
-    }
-    
-    
-    public RestResult sendRequestToFlink(
-            List<String> nodeURIs,
-            Map<String, Object> params,
-            Map<String, Object> headers
-        ) throws IOException {
-            Integer startIdx = startIdxs.getOrDefault(nodeURIs, 0);
-
-            int urlsCnt = nodeURIs.size();
-
-            for (int i = 0;  i < urlsCnt; i++) {
-                Integer currIdx = (startIdx + i) % urlsCnt;
-
-                String nodeUrl = nodeURIs.get(currIdx);
-
-                try {
-                    RestResult res = sendRequestToFlink(nodeUrl, params, headers);
-
-                    // If first attempt failed then throttling should be cleared.
-                    if (i > 0)
-                        LT.clear();
-
-                    LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");
-
-                    startIdxs.put(nodeURIs, currIdx);
-
-                    return res;
-                }
-                catch (ConnectException ignored) {
-                    LT.warn(log, "Failed connect to cluster [url=" + nodeUrl + "]");
-                }
-            }
-
-            LT.warn(log, "Failed connect to cluster. " +
-                "Please ensure that nodes have [ignite-rest-http] module in classpath " +
-                "(was copied from libs/optional to libs folder).");
-
-            throw new ConnectException("Failed connect to cluster [urls=" + nodeURIs + ", parameters=" + params + "]");
-        }
-    
-    
-
-    /**
-     * REST response holder Java bean.
-     */
-    private static class RestResponseHolder {
-        /** Success flag */
-        private int successStatus;
-
-        /** Error. */
-        private String err;
-
-        /** Response. */
-        private String res;
-
-        /** Session token string representation. */
-        private String sesTok;
-
-        /**
-         * @return {@code True} if this request was successful.
-         */
-        public int getSuccessStatus() {
-            return successStatus;
-        }
-
-        /**
-         * @param successStatus Whether request was successful.
-         */
-        public void setSuccessStatus(int successStatus) {
-            this.successStatus = successStatus;
-        }
-
-        /**
-         * @return Error.
-         */
-        public String getError() {
-            return err;
-        }
-
-        /**
-         * @param err Error.
-         */
-        public void setError(String err) {
-            this.err = err;
-        }
-
-        /**
-         * @return Response object.
-         */
-        public String getResponse() {
-            return res;
-        }
-
-        /**
-         * @param res Response object.
-         */
-        @JsonDeserialize(using = RawContentDeserializer.class)
-        public void setResponse(String res) {
-            this.res = res;
-        }
-
-        /**
-         * @return String representation of session token.
-         */
-        public String getSessionToken() {
-            return sesTok;
-        }
-
-        /**
-         * @param sesTok String representation of session token.
-         */
-        public void setSessionToken(String sesTok) {
-            this.sesTok = sesTok;
-        }
-    }
-
-    /**
-     * Raw content deserializer that will deserialize any data as string.
-     */
-    private static class RawContentDeserializer extends JsonDeserializer<String> {
-        /** */
-        private final JsonFactory factory = new JsonFactory();
-
-        /**
-         * @param tok Token to process.
-         * @param p Parser.
-         * @param gen Generator.
-         */
-        private void writeToken(JsonToken tok, JsonParser p, JsonGenerator gen) throws IOException {
-            switch (tok) {
-                case FIELD_NAME:
-                    gen.writeFieldName(p.getText());
-                    break;
-
-                case START_ARRAY:
-                    gen.writeStartArray();
-                    break;
-
-                case END_ARRAY:
-                    gen.writeEndArray();
-                    break;
-
-                case START_OBJECT:
-                    gen.writeStartObject();
-                    break;
-
-                case END_OBJECT:
-                    gen.writeEndObject();
-                    break;
-
-                case VALUE_NUMBER_INT:
-                    gen.writeNumber(p.getBigIntegerValue());
-                    break;
-
-                case VALUE_NUMBER_FLOAT:
-                    gen.writeNumber(p.getDecimalValue());
-                    break;
-
-                case VALUE_TRUE:
-                    gen.writeBoolean(true);
-                    break;
-
-                case VALUE_FALSE:
-                    gen.writeBoolean(false);
-                    break;
-
-                case VALUE_NULL:
-                    gen.writeNull();
-                    break;
-
-                default:
-                    gen.writeString(p.getText());
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public String deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-            JsonToken startTok = p.getCurrentToken();
-
-            if (startTok.isStructStart()) {
-                StringWriter wrt = new StringWriter(4096);
-
-                JsonGenerator gen = factory.createGenerator(wrt);
-
-                JsonToken tok = startTok, endTok = startTok == START_ARRAY ? END_ARRAY : END_OBJECT;
-
-                int cnt = 1;
-
-                while (cnt > 0) {
-                    writeToken(tok, p, gen);
-
-                    tok = p.nextToken();
-
-                    if (tok == startTok)
-                        cnt++;
-                    else if (tok == endTok)
-                        cnt--;
-                }
-
-                gen.close();
-
-                return wrt.toString();
-            }
-
-            return p.getValueAsString();
-        }
-    }
+        throw new ConnectException("Failed connect to rds [url=" + nodeUrl + ", parameters=" + params + "]");
+    }    
 }

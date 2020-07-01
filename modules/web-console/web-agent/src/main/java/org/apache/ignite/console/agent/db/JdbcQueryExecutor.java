@@ -78,8 +78,9 @@ public class JdbcQueryExecutor implements Callable<JSONObject> {
             
             
             result.put("result", queryResult);
-            
+            result.put("protocolVersion", 1);
             res.put("result", result);
+            
         } catch (SQLException ex) {
         	err = ex.getMessage();            
         } catch (JSONException ex) {			
@@ -186,8 +187,8 @@ public class JdbcQueryExecutor implements Callable<JSONObject> {
 		for (int counter = 1; counter <= columnCount; counter++) {
 			JSONObject object = new JSONObject();
 			object.put("fieldName", resultSetMetaData.getColumnLabel(counter));
-
-			int columnType = resultSetMetaData.getColumnType(counter);
+			object.put("typeName", resultSetMetaData.getTableName(counter));
+			object.put("schemaName", resultSetMetaData.getSchemaName(counter));	
 			final String aClass = resultSetMetaData.getColumnClassName(counter);			
 			object.put("fieldTypeName", aClass);
 			metaDataArray.put(object);
