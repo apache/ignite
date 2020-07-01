@@ -22,6 +22,7 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 import org.apache.ignite.springdata22.repository.support.IgniteRepositoryFactoryBean;
 import org.apache.ignite.springdata22.repository.support.IgniteRepositoryImpl;
 import org.springframework.beans.factory.FactoryBean;
@@ -97,8 +98,8 @@ public @interface EnableIgniteRepositories {
     Key queryLookupStrategy() default Key.CREATE_IF_NOT_FOUND;
 
     /**
-     * Returns the {@link FactoryBean} class to be used for each repository instance. Defaults to
-     * {@link IgniteRepositoryFactoryBean}.
+     * Returns the {@link FactoryBean} class to be used for each repository instance. Defaults to {@link
+     * IgniteRepositoryFactoryBean}.
      *
      * @return {@link FactoryBean} class to be used for each repository instance.
      */
