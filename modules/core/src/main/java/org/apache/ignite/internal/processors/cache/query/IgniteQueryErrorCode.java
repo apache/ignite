@@ -135,6 +135,9 @@ public final class IgniteQueryErrorCode {
     /** Transaction serialization error. */
     public static final int TRANSACTION_SERIALIZATION_ERROR = 5005;
 
+    /** Field type mismatch. e.g.: cause is ClassCastException. */
+    public static final int FIELD_TYPE_MISMATCH = 5006;
+
     /** */
     private IgniteQueryErrorCode() {
         // No-op.
