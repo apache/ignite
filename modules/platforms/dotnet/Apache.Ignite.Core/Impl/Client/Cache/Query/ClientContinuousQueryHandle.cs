@@ -24,7 +24,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
 
-    internal class ClientContinuousQueryHandle<TK, TV> : IContinuousQueryHandleClient<ICacheEntry<TK, TV>>,
+    /// <summary>
+    /// Thin client continuous query handle.
+    /// </summary>
+    internal sealed class ClientContinuousQueryHandle<TK, TV> : IContinuousQueryHandleClient<ICacheEntry<TK, TV>>,
         IContinuousQueryHandleFieldsClient
     {
         /** Socket. */
@@ -74,17 +77,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /** <inheritdoc /> */
         public void Dispose()
         {
-            Dispose(true);
-        }
-
-        /// <summary>
-        /// Releases unmanaged and - optionally - managed resources.
-        /// </summary>
-        /// <param name="disposing">
-        /// <c>true</c> when called from Dispose; <c>false</c> when called from finalizer.
-        /// </param>
-        protected virtual void Dispose(bool disposing)
-        {
             lock (_disposeSyncRoot)
             {
                 if (_disposed)
@@ -107,10 +99,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /** <inheritdoc /> */
         ~ClientContinuousQueryHandle()
         {
-            Dispose(false);
+            Dispose();
         }
 
-        // TODO
+        /** <inheritdoc /> */
         public event Action<object> OnDisconnected;
     }
 }
