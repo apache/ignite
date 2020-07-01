@@ -37,33 +37,19 @@ import static java.util.Collections.singletonList;
  * Cancel query test.
  */
 public class CancelTest extends GridCommonAbstractTest {
-    /** */
-    private static IgniteCache<Integer, String> cacheRepl;
-
-    /** */
-    private static IgniteCache<Integer, String> cachePart;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(2);
 
-        cacheRepl = grid(0).cache("TEST_REPL");
-        cachePart = grid(0).cache("TEST_PART");
+        IgniteCache<Integer, String> c = grid(0).cache("TEST");
+
+        fillCache(c, 5000);
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        QueryEntity eRepl = new QueryEntity()
-            .setTableName("TEST_REPL")
-            .setKeyType(Integer.class.getName())
-            .setValueType(String.class.getName())
-            .setKeyFieldName("id")
-            .setValueFieldName("val")
-            .addQueryField("id", Integer.class.getName(), null)
-            .addQueryField("val", String.class.getName(), null);
-
         QueryEntity ePart = new QueryEntity()
-            .setTableName("TEST_PART")
+            .setTableName("TEST")
             .setKeyType(Integer.class.getName())
             .setValueType(String.class.getName())
             .setKeyFieldName("id")
@@ -73,10 +59,6 @@ public class CancelTest extends GridCommonAbstractTest {
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
-                new CacheConfiguration<>(eRepl.getTableName())
-                    .setCacheMode(CacheMode.REPLICATED)
-                    .setQueryEntities(singletonList(eRepl))
-                    .setSqlSchema("PUBLIC"),
                 new CacheConfiguration<>(ePart.getTableName())
                     .setCacheMode(CacheMode.PARTITIONED)
                     .setQueryEntities(singletonList(ePart))
@@ -88,13 +70,11 @@ public class CancelTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCancel() throws Exception {
-        fillCache(cachePart, 5000);
-
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
         List<FieldsQueryCursor<List<?>>> cursors =
             engine.query(null, "PUBLIC",
-                "SELECT * FROM TEST_PART",
+                "SELECT * FROM TEST",
                 X.EMPTY_OBJECT_ARRAY);
 
         Iterator<List<?>> it = cursors.get(0).iterator();
