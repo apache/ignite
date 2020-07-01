@@ -91,11 +91,13 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                     return;
                 }
 
-                // TODO: This fails when socket is disposed, but it should be already disposed at this point.
-                _socket.DoOutInOp<object>(ClientOp.ResourceClose,
-                    ctx => ctx.Writer.WriteLong(_queryId), null);
+                if (!_socket.IsDisposed)
+                {
+                    _socket.DoOutInOp<object>(ClientOp.ResourceClose,
+                        ctx => ctx.Writer.WriteLong(_queryId), null);
 
-                _socket.RemoveNotificationHandler(_queryId);
+                    _socket.RemoveNotificationHandler(_queryId);
+                }
 
                 _disposed = true;
             }

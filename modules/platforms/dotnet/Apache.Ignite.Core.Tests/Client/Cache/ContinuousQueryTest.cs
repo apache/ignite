@@ -369,6 +369,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO: Handle should not reuse thick interface.
             // 1. Use thin interface which provides a way to identify the connection
             // 2. Provide Disconnected event in IIgniteClient and pass the details of dropped connection?
+            // 3. Provide Disconnected event in the handle itself.
             client.Dispose();
             handle.Dispose();
         }
