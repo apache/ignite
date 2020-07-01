@@ -150,10 +150,10 @@ public class IgniteNativeIoLib {
 
             if (compsCnt > majorRevIdx && verIntComps.get(majorRevIdx) > 4)
                 return true;
-            else
-                return compsCnt > minorRevIdx
-                    && verIntComps.get(majorRevIdx) == 4
-                    && verIntComps.get(minorRevIdx) >= 10;
+            else if (compsCnt > minorRevIdx
+                && verIntComps.get(majorRevIdx) == 4
+                && verIntComps.get(minorRevIdx) >= 10)
+                return true;
         }
         return false;
     }
