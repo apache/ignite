@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Client.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Client.Cache.Query.Continuous;
 
     /// <summary>
     /// Client cache API. See <see cref="IIgniteClient.GetCache{K, V}"/>.
@@ -442,7 +443,7 @@ namespace Apache.Ignite.Core.Client.Cache
         /// </summary>
         /// <param name="continuousQuery">Continuous query.</param>
         /// <returns>Handle to stop query execution.</returns>
-        IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> continuousQuery);
+        IContinuousQueryHandleClient QueryContinuous(ContinuousQuery<TK, TV> continuousQuery);
 
         /// <summary>
         /// Start continuous query execution.
@@ -455,7 +456,7 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <returns>
         /// Handle to get initial query cursor or stop query execution.
         /// </returns>
-        IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(
+        IContinuousQueryHandleClient<ICacheEntry<TK, TV>> QueryContinuous(
             ContinuousQuery<TK, TV> continuousQuery,
             ScanQuery<TK, TV> initialQry);
 
@@ -470,7 +471,7 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <returns>
         /// Handle to get initial query cursor or stop query execution.
         /// </returns>
-        IContinuousQueryHandleFields QueryContinuous(
+        IContinuousQueryHandleFieldsClient QueryContinuous(
             ContinuousQuery<TK, TV> continuousQuery,
             SqlFieldsQuery initialQry);
     }
