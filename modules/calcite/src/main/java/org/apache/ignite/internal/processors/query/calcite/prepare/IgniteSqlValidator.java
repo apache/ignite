@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,7 +31,6 @@ import org.apache.calcite.sql.SqlDelete;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperatorTable;
@@ -56,9 +54,6 @@ import static org.apache.calcite.util.Static.RESOURCE;
 
 /** Validator. */
 public class IgniteSqlValidator extends SqlValidatorImpl {
-    /** Decimal of Integer.MAX_VALUE. */
-    private static final BigDecimal DEC_INT_MAX = BigDecimal.valueOf(Integer.MAX_VALUE);
-
     /**
      * Creates a validator.
      *
@@ -158,25 +153,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** {@inheritDoc} */
     @Override public boolean isSystemField(RelDataTypeField field) {
         return isSystemFieldName(field.getName());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
-        checkIntegerLimit(select.getFetch(), "fetch / limit");
-        checkIntegerLimit(select.getOffset(), "offset");
-
-        super.validateSelect(select, targetRowType);
-    }
-
-    /**
-     * @param n Node to check limit.
-     * @param nodeName Node name.
-     */
-    private void checkIntegerLimit(SqlNode n, String nodeName) {
-        if (n instanceof SqlLiteral) {
-            if (((SqlLiteral)n).bigDecimalValue().compareTo(DEC_INT_MAX) > 0)
-                throw newValidationError(n, IgniteResource.INSTANCE.greaterThanIntegerLimit(nodeName));
-        }
     }
 
     /** */

@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.FullOuterJoi
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.InnerJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.LeftJoinNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.LimitNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ModifyNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
@@ -57,7 +56,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
@@ -365,20 +363,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType());
 
         AggregateNode<Row> node = new AggregateNode<>(ctx, type, rel.groupSets(), accFactory, rowFactory);
-
-        Node<Row> input = visit(rel.getInput());
-
-        node.register(input);
-
-        return node;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteLimit rel) {
-        Supplier<Integer> offsetSup = (rel.offset == null) ? null : expressionFactory.execute(rel.offset);
-        Supplier<Integer> fetchSup = (rel.fetch == null) ? null : expressionFactory.execute(rel.fetch);
-
-        LimitNode<Row> node = new LimitNode<>(ctx, offsetSup, fetchSup);
 
         Node<Row> input = visit(rel.getInput());
 

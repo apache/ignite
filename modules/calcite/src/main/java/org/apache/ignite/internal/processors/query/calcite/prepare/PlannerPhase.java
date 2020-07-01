@@ -27,7 +27,6 @@ import org.apache.calcite.tools.RuleSets;
 import org.apache.ignite.internal.processors.query.calcite.rule.AggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.LimitConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.PushFilterIntoScanRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.RegisterIndexRule;
@@ -85,7 +84,6 @@ public enum PlannerPhase {
                 UnionMergeRule.INSTANCE,
                 UnionConverterRule.INSTANCE,
                 SortConverterRule.INSTANCE,
-                LimitConverterRule.INSTANCE,
                 SortRemoveRule.INSTANCE);
         }
 

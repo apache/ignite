@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
@@ -38,19 +37,6 @@ public class SortConverterRule extends AbstractIgniteConverterRule<LogicalSort> 
     /** */
     public SortConverterRule() {
         super(LogicalSort.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean matches(RelOptRuleCall call) {
-        RelNode n = call.rel(0);
-
-        if (n instanceof LogicalSort) {
-            LogicalSort sort = (LogicalSort)n;
-
-            return sort.fetch == null && sort.offset == null;
-        }
-
-        return false;
     }
 
     /** {@inheritDoc} */
