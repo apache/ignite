@@ -359,14 +359,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var qry = new ContinuousQuery<int,int>(
                 new DelegateListener<int, int>(e => lastEvt = e));
 
-            using (var client = GetClient())
-            {
-                var cache = client.GetOrCreateCache<int, int>(TestUtils.TestName);
-
-                cache.QueryContinuous(qry);
-            }
-
-            Assert.IsNotNull(lastEvt);
+            var client = GetClient();
+            var cache = client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            var handle = cache.QueryContinuous(qry);
+            
+            cache[1] = 1;
+            TestUtils.WaitForTrueCondition(() => lastEvt != null);
+            
+            // TODO: Handle should not reuse thick interface.
+            // 1. Use thin interface which provides a way to identify the connection
+            // 2. Provide Disconnected event in IIgniteClient and pass the details of dropped connection?
+            client.Dispose();
+            handle.Dispose();
         }
 
         /** */
