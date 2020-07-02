@@ -390,6 +390,29 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             handle.Dispose();
         }
 
+        /// <summary>
+        /// Tests that continuous query disconnected event is not raised on a disposed handle.
+        /// </summary>
+        [Test]
+        public void TestClientDisconnectDoesNotRaiseDisconnectedEventOnDisposedQueryHandle()
+        {
+            var qry = new ContinuousQuery<int,int>(new DelegateListener<int, int>());
+
+            var client = GetClient();
+            var cache = client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            ContinuousQueryClientDisconnectedEventArgs disconnectedEventArgs = null;
+            
+            using (var handle = cache.QueryContinuous(qry))
+            {
+                handle.Disconnected += (sender, args) => disconnectedEventArgs = args;
+            }
+
+            client.Dispose();
+            
+            // Assert: disconnected event has NOT been raised.
+            Assert.IsNull(disconnectedEventArgs);
+        }
+
         /** */
         private class DelegateListener<TK, TV> : ICacheEntryEventListener<TK, TV>
         {
