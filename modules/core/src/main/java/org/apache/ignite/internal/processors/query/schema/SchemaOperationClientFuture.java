@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import java.util.UUID;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.UUID;
 
 /**
  * Schema operation client future.

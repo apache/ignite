@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -34,10 +37,6 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2Job;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.T2;
-
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Map;
 
 /**
  * Counter writer delegate implementation.

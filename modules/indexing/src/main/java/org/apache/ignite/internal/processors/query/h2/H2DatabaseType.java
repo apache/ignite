@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.h2.util.LocalDateTimeUtils;
-import org.h2.value.DataType;
-
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.util.LocalDateTimeUtils;
+import org.h2.value.DataType;
 
 /**
  * Enum that helps to map java types to database types.

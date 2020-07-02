@@ -17,8 +17,8 @@
 
 package org.apache.ignite.stream.jms11;
 
-import org.junit.runner.*;
-import org.junit.runners.*;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * JMS streamer tests.

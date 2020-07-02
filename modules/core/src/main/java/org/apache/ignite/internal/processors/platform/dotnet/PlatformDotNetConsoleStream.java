@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
-import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
-
 import java.io.IOException;
 import java.io.OutputStream;
+import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 
 /**
  * Stream that writes to the .NET console.

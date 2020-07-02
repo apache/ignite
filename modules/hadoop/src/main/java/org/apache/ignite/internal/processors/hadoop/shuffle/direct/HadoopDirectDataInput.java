@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle.direct;
 
-import java.io.EOFException;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.DataInput;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
 
