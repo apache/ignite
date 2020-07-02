@@ -292,7 +292,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         if (map == null) { // Create new map.
             map = get(job.info(), SHUFFLE_REDUCER_NO_SORTING, false) ?
-                new HadoopConcurrentHashMultimap(job.info(), mem, get(job.info(), PARTITION_HASHMAP_SIZE, 8 * 1024)):
+                new HadoopConcurrentHashMultimap(job.info(), mem, get(job.info(), PARTITION_HASHMAP_SIZE, 8 * 1024)) :
                 new HadoopSkipList(job.info(), mem);
 
             if (!maps.compareAndSet(idx, null, map)) {

@@ -167,7 +167,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
             createWalIterator(dir, new FileWALPointer(lBound.index() - 1, 0, 0), hBound, true);
 
             return 0;
-        } , IgniteCheckedException.class, null);
+        }, IgniteCheckedException.class, null);
 
         //noinspection ThrowableNotThrown
         GridTestUtils.assertThrows(log, () -> {

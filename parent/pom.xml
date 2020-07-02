@@ -67,7 +67,6 @@
         <easymock.version>3.4</easymock.version>
         <ezmorph.bundle.version>1.0.6_1</ezmorph.bundle.version>
         <ezmorph.version>1.0.6</ezmorph.version>
-        <flume.ng.version>1.7.0</flume.ng.version>
         <guava.retrying.version>2.0.0</guava.retrying.version>
         <guava.version>25.1-jre</guava.version>
         <guava14.version>14.0.1</guava14.version>
@@ -115,7 +114,6 @@
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
         <postgres.connector.version>42.2.5.jre7</postgres.connector.version>
-        <rocketmq.version>4.4.0</rocketmq.version>
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
@@ -450,10 +448,6 @@
                                 <packages>org.apache.ignite.springdata22.repository*</packages>
                             </group>
                             <group>
-                            <title>RocketMQ integration</title>
-                                <packages>org.apache.ignite.stream.rocketmq*</packages>
-                            </group>
-                            <group>
                                 <title>Storm integration</title>
                                 <packages>org.apache.ignite.stream.storm*</packages>
                             </group>
@@ -772,6 +766,7 @@
                                     <configLocation>../checkstyle/checkstyle.xml</configLocation>
                                     <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
                                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                                    <excludes>**/generated/**/*</excludes>
                                 </configuration>
                             </execution>
                         </executions>
@@ -867,6 +862,8 @@
                                         <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
+                                        <exclude>.travis.yml</exclude>
+                                        <exclude>.github/PULL_REQUEST_TEMPLATE.md</exclude>
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
                                         <exclude>**/DEVNOTES*.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>

@@ -159,6 +159,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
@@ -194,6 +195,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
     /** */
     private static final transient Map<Class<?>, IgniteTestResources> tests = new ConcurrentHashMap<>();
+
+    /** Loggers with changed log level for test's purposes. */
+    private static final transient Map<Logger, Level> changedLevels = new ConcurrentHashMap<>();
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
@@ -328,7 +332,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If failed.
      */
     protected void afterTest() throws Exception {
-        // No-op.
+        try {
+            for (Logger logger : changedLevels.keySet())
+                logger.setLevel(changedLevels.get(logger));
+        }
+        finally {
+            changedLevels.clear();
+        }
     }
 
     /**
@@ -433,6 +443,18 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             return IgniteNodeRunner.startedInstance().log();
 
         return log;
+    }
+
+    /**
+     * Sets the log level for root logger ({@link #log}) to {@link Level#DEBUG}. The log level will be resetted to
+     * default in {@link #afterTest()}.
+     */
+    protected final void setRootLoggerDebugLevel() {
+        Logger logger = Logger.getRootLogger();
+
+        assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, logger.getLevel()));
+
+        logger.setLevel(Level.DEBUG);
     }
 
     /**
@@ -644,7 +666,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     private void resolveWorkDirectory() throws Exception {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), BINARY_META_FOLDER, true);
     }
 
     /** */
@@ -1265,7 +1287,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             if (discoverySpi != null && !(discoverySpi instanceof TcpDiscoverySpi)) {
                 try {
                     // Clone added to support ZookeeperDiscoverySpi.
-                    cfg.setDiscoverySpi(cloneDiscoverySpi(cfg.getDiscoverySpi()));
+                    cfg.setDiscoverySpi(cloneDiscoverySpi(discoverySpi));
 
                     resetDiscovery = false;
                 }
@@ -1296,7 +1318,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Additional JVM args for remote instances.
      */
     protected List<String> additionalRemoteJvmArgs() {
-        return Collections.emptyList();
+        return new ArrayList<>();
     }
 
     /**
@@ -2004,7 +2026,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         BinaryEnumCache.clear();
         serializedObj.clear();
 
-        if (err!= null)
+        if (err != null)
             throw err;
     }
 

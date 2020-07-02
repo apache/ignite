@@ -73,7 +73,7 @@ public class SharedRDDExample {
         // Define data to be stored in the Ignite RDD (cache).
         List<Integer> data = new ArrayList<>(20);
 
-        for (int i = 0; i<20; i++) {
+        for (int i = 0; i < 20; i++) {
             data.add(i);
         }
 

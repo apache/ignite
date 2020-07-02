@@ -204,7 +204,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 for (int i = 0; i < gridCount(); i++) {
                     GridContinuousProcessor proc = grid(i).context().continuous();
 
-                    if(!((Map)U.field(proc, "rmtInfos")).isEmpty())
+                    if (!((Map)U.field(proc, "rmtInfos")).isEmpty())
                         return false;
                 }
 
@@ -1229,7 +1229,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      * @throws Exception if failed.
      */
     @Test
-    public void testQueryWithRemoteTransformer() throws Exception{
+    public void testQueryWithRemoteTransformer() throws Exception {
         doQueryWithRemoteTransformer(true, true);
         doQueryWithRemoteTransformer(true, false);
         doQueryWithRemoteTransformer(false, true);

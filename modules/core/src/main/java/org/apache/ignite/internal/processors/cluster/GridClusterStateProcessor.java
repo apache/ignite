@@ -41,8 +41,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.ClusterStateChangeStartedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -115,6 +117,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
  *
  */
 public class GridClusterStateProcessor extends GridProcessorAdapter implements IGridClusterStateProcessor, MetastorageLifecycleListener {
+    /** Stripe id for cluster activation event. */
+    public static final int CLUSTER_ACTIVATION_EVT_STRIPE_ID = Integer.MAX_VALUE;
+
     /** */
     private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
 
@@ -559,10 +564,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (joinFut != null)
                 joinFut.onDone(false);
 
-            GridFutureAdapter<Void> transitionFut = transitionFuts.remove(discoClusterState.transitionRequestId());
+            GridFutureAdapter<Void> transitionFut = transitionFuts.get(discoClusterState.transitionRequestId());
 
             if (transitionFut != null) {
                 discoClusterState.setTransitionResult(msg.requestId(), msg.state());
+
+                transitionFuts.remove(discoClusterState.transitionRequestId());
 
                 transitionFut.onDone();
             }
@@ -669,23 +676,21 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     log.info("Started state transition: " + prettyStr(msg.state()));
 
                 BaselineTopologyHistoryItem bltHistItem = BaselineTopologyHistoryItem.fromBaseline(
-                    globalState.baselineTopology());
+                    state.baselineTopology());
 
                 transitionFuts.put(msg.requestId(), new GridFutureAdapter<Void>());
 
-                DiscoveryDataClusterState prevState = globalState;
-
-                globalState = DiscoveryDataClusterState.createTransitionState(
+                DiscoveryDataClusterState newState = globalState = DiscoveryDataClusterState.createTransitionState(
                     msg.state(),
-                    prevState,
-                    activate(prevState.state(), msg.state()) || msg.forceChangeBaselineTopology() ? msg.baselineTopology() : prevState.baselineTopology(),
+                    state,
+                    activate(state.state(), msg.state()) || msg.forceChangeBaselineTopology() ? msg.baselineTopology() : state.baselineTopology(),
                     msg.requestId(),
                     topVer,
                     nodeIds
                 );
 
                 if (msg.forceChangeBaselineTopology())
-                    globalState.setTransitionResult(msg.requestId(), msg.state());
+                    newState.setTransitionResult(msg.requestId(), msg.state());
 
                 AffinityTopologyVersion stateChangeTopVer = topVer.nextMinorVersion();
 
@@ -699,6 +704,20 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 exchangeActions.stateChangeRequest(req);
 
                 msg.exchangeActions(exchangeActions);
+
+                if (newState.state() != state.state()) {
+                    if (ctx.event().isRecordable(EventType.EVT_CLUSTER_STATE_CHANGE_STARTED)) {
+                        ctx.getStripedExecutorService().execute(
+                            CLUSTER_ACTIVATION_EVT_STRIPE_ID,
+                            () -> ctx.event().record(new ClusterStateChangeStartedEvent(
+                                state.state(),
+                                newState.state(),
+                                ctx.discovery().localNode(),
+                                "Cluster state change started."
+                            ))
+                        );
+                    }
+                }
 
                 return true;
             }
@@ -1717,7 +1736,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /**
      * @return Status of baseline auto-adjust.
      */
-    public BaselineAutoAdjustStatus baselineAutoAdjustStatus(){
+    public BaselineAutoAdjustStatus baselineAutoAdjustStatus() {
         return changeTopologyWatcher.getStatus();
     }
 
@@ -1778,7 +1797,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 try {
                     val = field.getBoolean(cfg);
                 }
-                catch (IllegalAccessException | IllegalArgumentException | NullPointerException  e) {
+                catch (IllegalAccessException | IllegalArgumentException | NullPointerException e) {
                     log.error("Can't get value of field with name " + fieldName + " from config: " + cfg, e);
                 }
 

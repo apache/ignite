@@ -49,6 +49,7 @@ import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.PersistenceMetrics;
@@ -339,7 +340,7 @@ public class IgniteMock implements Ignite {
             };
 
             if (marshaller instanceof BinaryMarshaller)
-                ctx.configure((BinaryMarshaller)marshaller, configuration());
+                ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration());
         }
 
         binaryMock = new NoOpBinary() {
@@ -490,6 +491,11 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public IgniteEncryption encryption() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteSnapshot snapshot() {
         return null;
     }
 

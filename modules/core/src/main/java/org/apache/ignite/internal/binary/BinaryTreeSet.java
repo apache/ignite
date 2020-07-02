@@ -70,7 +70,7 @@ public class BinaryTreeSet implements Binarylizable {
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReader rawReader = reader.rawReader();
 
-        Comparator comp =  rawReader.readObject();
+        Comparator comp = rawReader.readObject();
 
         set = comp == null ? new TreeSet() : new TreeSet(comp);
 

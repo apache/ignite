@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQ
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest2;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartTxSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryReservationOnUnstableTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteSqlQueryWithBaselineTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxMultiNodeBasicTest;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQueryDe
 import org.apache.ignite.internal.processors.cache.query.ScanQueryOffheapExpiryPolicySelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteChangingBaselineCacheQueryNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineCacheQueryNodeRestartsSelfTest;
+import org.apache.ignite.internal.processors.query.DisabledSqlFunctionsTest;
 import org.apache.ignite.internal.processors.query.DmlBatchSizeDeadlockTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsCompareQueryTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlDistributedJoinSelfTest;
@@ -84,6 +86,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    DisabledSqlFunctionsTest.class,
+
     SqlCacheStartStopTest.class,
 
     SqlIndexConsistencyAfterInterruptAtomicCacheOperationTest.class,
@@ -172,7 +176,9 @@ import org.junit.runners.Suite;
 
     IgniteCacheLocalQueryDefaultTimeoutSelfTest.class,
 
-    SqlQueriesTopologyMappingTest.class
+    SqlQueriesTopologyMappingTest.class,
+
+    IgniteCacheQueryReservationOnUnstableTopologyTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite2 {
 }

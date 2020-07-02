@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
@@ -213,10 +214,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.PluginProcessorStop, PluginProcessorStop);
             AddHandler(UnmanagedCallbackOp.PluginProcessorIgniteStop, PluginProcessorIgniteStop);
             AddHandler(UnmanagedCallbackOp.PluginCallbackInLongLongOutLong, PluginCallbackInLongLongOutLong);
-            AddHandler(UnmanagedCallbackOp.NearCacheUpdate, NearCacheUpdate);
-            AddHandler(UnmanagedCallbackOp.NearCacheUpdateFromThreadLocal, NearCacheUpdateFromThreadLocal);
+            AddHandler(UnmanagedCallbackOp.PlatformCacheUpdate, PlatformCacheUpdate);
+            AddHandler(UnmanagedCallbackOp.PlatformCacheUpdateFromThreadLocal, PlatformCacheUpdateFromThreadLocal);
             AddHandler(UnmanagedCallbackOp.OnCacheStopped, OnCacheStopped);
             AddHandler(UnmanagedCallbackOp.OnAffinityTopologyVersionChanged, OnAffinityTopologyVersionChanged);
+            AddHandler(UnmanagedCallbackOp.ComputeOutFuncExecute, ComputeOutFuncExecute);
+            AddHandler(UnmanagedCallbackOp.ComputeActionExecute, ComputeActionExecute);
         }
 
         /// <summary>
@@ -425,31 +428,31 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
         
         /// <summary>
-        /// Updates near cache entry.
+        /// Updates platform cache entry.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>Unused.</returns>
-        private long NearCacheUpdate(long memPtr)
+        private long PlatformCacheUpdate(long memPtr)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
                 var cacheId = stream.ReadInt();
 
-                _ignite.NearCacheManager.Update(cacheId, stream, _ignite.Marshaller);
+                _ignite.PlatformCacheManager.Update(cacheId, stream, _ignite.Marshaller);
             }
 
             return 0;
         }
         
         /// <summary>
-        /// Updates near cache entry.
+        /// Updates platform cache entry.
         /// </summary>
-        private long NearCacheUpdateFromThreadLocal(long cacheIdAndPartition, long verMajor, long verMinor, void* arg)
+        private long PlatformCacheUpdateFromThreadLocal(long cacheIdAndPartition, long verMajor, long verMinor, void* arg)
         {
             int cacheId = (int)(cacheIdAndPartition & 0xFFFFFFFF);
             int partition = (int) (cacheIdAndPartition >> 32);
 
-            _ignite.NearCacheManager.UpdateFromThreadLocal(
+            _ignite.PlatformCacheManager.UpdateFromThreadLocal(
                 cacheId, partition, new AffinityTopologyVersion(verMajor, (int) verMinor));
                 
             return 0;
@@ -461,7 +464,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <param name="cacheId">Cache id.</param>
         private long OnCacheStopped(long cacheId)
         {
-            _ignite.NearCacheManager.Stop((int) cacheId);
+            _ignite.PlatformCacheManager.Stop((int) cacheId);
             
             return 0;
         }
@@ -474,7 +477,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             var affinityTopologyVersion = new AffinityTopologyVersion(topologyVersion, (int) minorTopologyVersion);
             
-            _ignite.NearCacheManager.OnAffinityTopologyVersionChanged(affinityTopologyVersion);
+            _ignite.PlatformCacheManager.OnAffinityTopologyVersionChanged(affinityTopologyVersion);
             
             return 0;
         }
@@ -613,6 +616,51 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private ComputeJobHolder Job(long jobPtr)
         {
             return _handleRegistry.Get<ComputeJobHolder>(jobPtr);
+        }
+        
+        /// <summary>
+        /// Executes <see cref="IComputeOutFunc"/>.
+        /// </summary>
+        /// <param name="memPtr">Memory pointer.</param>
+        private long ComputeOutFuncExecute(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var func = stream.ReadBool()
+                    ? _handleRegistry.Get<object>(stream.ReadLong(), true)
+                    : _ignite.Marshaller.Unmarshal<object>(stream);
+                
+                stream.Reset();
+                
+                var invoker = DelegateTypeDescriptor.GetComputeOutFunc(func.GetType());
+                ComputeRunner.ExecuteJobAndWriteResults(_ignite, stream, func, invoker);
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Executes <see cref="IComputeAction"/>.
+        /// </summary>
+        /// <param name="memPtr">Memory pointer.</param>
+        private long ComputeActionExecute(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var action = stream.ReadBool()
+                    ? _handleRegistry.Get<IComputeAction>(stream.ReadLong(), true)
+                    : _ignite.Marshaller.Unmarshal<IComputeAction>(stream);
+                
+                stream.Reset();
+                
+                ComputeRunner.ExecuteJobAndWriteResults(_ignite, stream, action, act =>
+                {
+                    act.Invoke();
+                    return null;
+                });
+            }
+
+            return 0;
         }
 
         #endregion

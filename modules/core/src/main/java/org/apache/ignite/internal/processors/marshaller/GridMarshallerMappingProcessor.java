@@ -263,7 +263,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                     if (origNodeId.equals(ctx.localNodeId())) {
                         GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.mappingItem());
 
-                        assert fut != null: msg;
+                        assert fut != null : msg;
 
                         fut.onDone(MappingExchangeResult.createFailureResult(
                                 duplicateMappingException(msg.mappingItem(), msg.conflictingClassName())));
@@ -347,20 +347,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
      * @param mappings Incoming marshaller mappings.
      */
     private void processIncomingMappings(List<Map<Integer, MappedName>> mappings) {
-        if (mappings != null) {
-            for (int i = 0; i < mappings.size(); i++) {
-                Map<Integer, MappedName> map;
-
-                if ((map = mappings.get(i)) != null) {
-                    try {
-                        marshallerCtx.onMappingDataReceived((byte)i, map);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to process marshaller mapping data", e);
-                    }
-                }
-            }
-        }
+        marshallerCtx.onMappingDataReceived(log, mappings);
     }
 
     /** {@inheritDoc} */

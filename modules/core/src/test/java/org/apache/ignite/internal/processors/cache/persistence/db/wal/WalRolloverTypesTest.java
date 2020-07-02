@@ -73,8 +73,7 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
             .setWalMode(walMode)
             .setWalArchivePath(disableWALArchiving ? DFLT_WAL_PATH : DFLT_WAL_ARCHIVE_PATH)
             .setWalSegmentSize(4 * 1024 * 1024))
-            .setCheckpointSpi(new NoopCheckpointSpi())
-        ;
+            .setCheckpointSpi(new NoopCheckpointSpi());
 
         return cfg;
     }

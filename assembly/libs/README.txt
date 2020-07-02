@@ -95,7 +95,6 @@ The following modules are available:
 - ignite-osgi-karaf (to seemlessly intall ignite into Apache Karaf container)
 - ignite-osgi-paxlogging (to expose PAX Logging API to Log4j if needed)
 - ignite-rest-http (for HTTP REST messages)
-- ignite-rocketmq (for streaming messages from Apache RocketMQ into Ignite)
 - ignite-scalar (for ignite Scala API)
 - ignite-scalar_2.10 (for Ignite Scala 2.10 API)
 - ignite-schedule (for Cron-based task scheduling)

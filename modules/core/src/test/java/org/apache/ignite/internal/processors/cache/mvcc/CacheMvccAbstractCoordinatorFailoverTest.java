@@ -75,7 +75,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
      */
     @Test
     public void testPutAllGetAll_Server_Backups0_RestartCoordinator_GetPut() throws Exception {
-        putAllGetAll(RestartMode.RESTART_CRD  , 2, 0, 0, 64,
+        putAllGetAll(RestartMode.RESTART_CRD, 2, 0, 0, 64,
             null, GET, PUT);
     }
 
@@ -86,7 +86,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     public void testPutAllGetAll_SingleNode_RestartCoordinator_GetPut_Persistence() throws Exception {
         persistence = true;
 
-        putAllGetAll(RestartMode.RESTART_CRD  , 1, 0, 0, 1,
+        putAllGetAll(RestartMode.RESTART_CRD, 1, 0, 0, 1,
             null, GET, PUT);
     }
 

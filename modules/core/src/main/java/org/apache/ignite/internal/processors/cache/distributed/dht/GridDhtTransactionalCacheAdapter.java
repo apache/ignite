@@ -1451,7 +1451,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                 assert e.lockedBy(mappedVer) ||
                                     ctx.mvcc().isRemoved(e.context(), mappedVer) ||
-                                    tx != null && tx.isRollbackOnly():
+                                    tx != null && tx.isRollbackOnly() :
                                     "Entry does not own lock for tx [locNodeId=" + ctx.localNodeId() +
                                         ", entry=" + e +
                                         ", mappedVer=" + mappedVer + ", ver=" + ver +

@@ -127,7 +127,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     @Override public R result() {
         Object state0 = state;
 
-        if(state0 == null ||                           // It is DONE state
+        if (state0 == null ||                           // It is DONE state
            (state0.getClass() != Node.class &&         // It is not INIT state
             state0.getClass() != ErrorWrapper.class && // It is not FAILED
             state0 != CANCELLED))                      // It is not CANCELLED
@@ -273,10 +273,10 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
             if (isDone(oldState))
                 return false;
 
-            if(node == null)
+            if (node == null)
                 node = new Node(waiter);
 
-            if(oldState != INIT && oldState.getClass() == Node.class)
+            if (oldState != INIT && oldState.getClass() == Node.class)
                 node.next = (Node)oldState;
 
             if (compareAndSetState(oldState, node))
@@ -292,7 +292,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         Object cur = state;
 
         while (cur != null) {
-            if(cur.getClass() != Node.class)
+            if (cur.getClass() != Node.class)
                 return;
 
             Object curWaiter = ((Node)cur).val;
@@ -507,7 +507,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
 
             if (compareAndSetState(oldState, newState)) {
 
-                if(oldState != INIT)
+                if (oldState != INIT)
                     unblockAll((Node)oldState);
 
                 return true;

@@ -159,7 +159,7 @@ public class JdbcThinConnectionTimeoutSelfTest extends JdbcThinAbstractSelfTest 
     public void testNegativeConnectionTimeout() {
         GridTestUtils.assertThrows(log,
             () -> {
-                try(final Connection conn = DriverManager.getConnection(URL+"?connectionTimeout=-1")) {
+                try (final Connection conn = DriverManager.getConnection(URL + "?connectionTimeout=-1")) {
                     return null;
                 }
             },
