@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -976,8 +977,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)data.commonData();
 
             if (nodeData != null) {
-                if (nodeData.skippedKeys != null)
-                    skippedKeys.addAll(nodeData.skippedKeys);
+                Set<String> newSkippedKeys = nodeData.skippedKeys;
+
+                if (newSkippedKeys != null && !newSkippedKeys.isEmpty())
+                    skippedKeys.addAll(newSkippedKeys);
 
                 if (nodeData.fullData != null) {
                     ver = nodeData.ver;
