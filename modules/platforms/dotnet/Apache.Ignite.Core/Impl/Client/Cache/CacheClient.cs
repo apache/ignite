@@ -1164,8 +1164,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             }
             else
             {
-                var evts = ContinuousQueryUtils.ReadEvents<TK, TV>(
-                    stream, _marsh, _keepBinary);
+                var evts = ContinuousQueryUtils.ReadEvents<TK, TV>(stream, _marsh, _keepBinary);
 
                 listener.OnEvent(evts);
             }
