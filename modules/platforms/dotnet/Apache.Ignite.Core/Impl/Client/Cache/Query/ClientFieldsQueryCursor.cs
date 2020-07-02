@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
     /// <summary>
     /// Client fields cursor.
     /// </summary>
-    internal class ClientFieldsQueryCursor : ClientQueryCursorBase<IList<object>>, IFieldsQueryCursor
+    internal sealed class ClientFieldsQueryCursor : ClientQueryCursorBase<IList<object>>, IFieldsQueryCursor
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientQueryCursor{TK, TV}" /> class.
