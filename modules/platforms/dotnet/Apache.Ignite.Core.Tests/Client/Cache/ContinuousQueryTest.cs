@@ -251,6 +251,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
         }
 
+        /// <summary>
+        /// Tests that server-side updates are sent to the client.
+        /// </summary>
         [Test]
         public void TestClientContinuousQueryReceivesEventsFromServerCache()
         {
@@ -357,10 +360,25 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO: filter operates on binary objects.
         }
 
+        /// <summary>
+        /// Tests that exception in continuous query remote filter is propagated to the client.
+        /// </summary>
         [Test]
         public void TestExceptionInFilterResultsInCorrectErrorMessage()
         {
-            // TODO
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            
+            var qry = new ContinuousQuery<int, int>(new DelegateListener<int, int>())
+            {
+                Filter = new ExceptionalFilter()
+            };
+
+            using (cache.QueryContinuous(qry))
+            {
+                cache[1] = 1;
+            }
+            
+            // TODO: Check log?
         }
 
         [Test]
@@ -485,6 +503,21 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 LastKey = entry.Key;
 
                 return entry.Key % 2 == 1;
+            }
+        }
+
+        private class ExceptionalFilter : ICacheEntryEventFilter<int, int>, ICacheEntryFilter<int, int>
+        {
+            public const string Error = "Foo failed because of bar";
+            
+            public bool Evaluate(ICacheEntryEvent<int, int> evt)
+            {
+                throw new Exception(Error);
+            }
+
+            public bool Invoke(ICacheEntry<int, int> entry)
+            {
+                throw new Exception(Error);
             }
         }
     }
