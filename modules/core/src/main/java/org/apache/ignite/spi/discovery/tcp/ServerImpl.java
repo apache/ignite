@@ -3340,7 +3340,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // state of conenction recovering and have to work with
                             // TcpDiscoverSpi.getEffectiveConnectionRecoveryTimeout()
                             if (timeoutHelper == null || sndState != null)
-                                timeoutHelper = srvOperationTimeoutHelper(sndState, -1);
+                                timeoutHelper = serverOperationTimeoutHelper(sndState, -1);
 
                             boolean success = false;
 
@@ -3563,7 +3563,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     addFailedNodes(pendingMsg, failedNodes);
 
                                     if (timeoutHelper == null)
-                                        timeoutHelper = srvOperationTimeoutHelper(sndState, lastRingMsgSentTime);
+                                        timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
                                     try {
                                         spi.writeToSocket(sock, out, pendingMsg, timeoutHelper.nextTimeoutChunk(
@@ -3607,7 +3607,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 long tsNanos = System.nanoTime();
 
                                 if (timeoutHelper == null)
-                                    timeoutHelper = srvOperationTimeoutHelper(sndState, lastRingMsgSentTime);
+                                    timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
                                 addFailedNodes(msg, failedNodes);
 
@@ -6223,7 +6223,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param lastOperationNanos Time of last related operation. Ignored if negative or 0.
      * @return Timeout helper.
      */
-    private IgniteSpiOperationTimeoutHelper srvOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState,
+    private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState,
         long lastOperationNanos) {
 
         IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true,
