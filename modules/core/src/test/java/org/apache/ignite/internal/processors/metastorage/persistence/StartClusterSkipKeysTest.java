@@ -38,6 +38,7 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  * Tests metastorage restore from previous cluster with different class path.
@@ -142,6 +143,8 @@ public class StartClusterSkipKeysTest extends GridCommonAbstractTest {
         DistributedMetaStorage metastorage = ignite.context().distributedMetastorage();
 
         assertEquals(VALUE_2, metastorage.read(KEY_2));
+
+        assertThrowsAnyCause(log, () -> metastorage.read(KEY_1), ClassNotFoundException.class, null);
     }
 
     /** Job for a remote JVM Ignite instance to write to metastorage and stop. */
