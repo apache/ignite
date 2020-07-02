@@ -22,15 +22,14 @@ import com.datastax.driver.core.Row;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.util.List;
-
-import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 import org.w3c.dom.Element;
 
 /**
- * Descriptor for particular field in a POJO object, specifying how this field
- * should be written to or loaded from Cassandra.
+ * Descriptor for particular field in a POJO object, specifying how this field should be written to or loaded from
+ * Cassandra.
  */
 public abstract class PojoField implements Serializable {
     /** Name attribute of XML element describing Pojo field. */
@@ -45,17 +44,17 @@ public abstract class PojoField implements Serializable {
     /** Field column name in Cassandra table. */
     private String col;
 
-    /** Field column DDL.  */
+    /** Field column DDL. */
     private String colDDL;
 
     /** Indicator for calculated field. */
     private Boolean calculated;
 
     /** Field property accessor. */
-    private transient PojoFieldAccessor accessor;
+    private PojoFieldAccessor accessor;
 
     /**
-     *  Checks if list contains POJO field with the specified name.
+     * Checks if list contains POJO field with the specified name.
      *
      * @param fields list of POJO fields.
      * @param fieldName field name.
@@ -105,7 +104,7 @@ public abstract class PojoField implements Serializable {
         QuerySqlField sqlField = (QuerySqlField)accessor.getAnnotation(QuerySqlField.class);
 
         col = sqlField != null && sqlField.name() != null && !sqlField.name().isEmpty() ?
-                sqlField.name() : name.toLowerCase();
+            sqlField.name() : name.toLowerCase();
 
         init(accessor);
     }
@@ -153,10 +152,10 @@ public abstract class PojoField implements Serializable {
     }
 
     /**
-     * Indicates if it's a calculated field - field which value just generated based on other field values.
-     * Such field will be stored in Cassandra as all other POJO fields, but it's value shouldn't be read from
-     * Cassandra - cause it's again just generated based on other field values. One of the good applications of such
-     * kind of fields - Cassandra materialized views build on top of other tables.
+     * Indicates if it's a calculated field - field which value just generated based on other field values. Such field
+     * will be stored in Cassandra as all other POJO fields, but it's value shouldn't be read from Cassandra - cause
+     * it's again just generated based on other field values. One of the good applications of such kind of fields -
+     * Cassandra materialized views build on top of other tables.
      *
      * @return {@code true} if it's auto generated field, {@code false} if not.
      */
@@ -168,8 +167,8 @@ public abstract class PojoField implements Serializable {
     }
 
     /**
-     * Gets field value as an object having Cassandra compatible type.
-     * This it could be stored directly into Cassandra without any conversions.
+     * Gets field value as an object having Cassandra compatible type. This it could be stored directly into Cassandra
+     * without any conversions.
      *
      * @param obj Object instance.
      * @param serializer {@link org.apache.ignite.cache.store.cassandra.serializer.Serializer} to use.
