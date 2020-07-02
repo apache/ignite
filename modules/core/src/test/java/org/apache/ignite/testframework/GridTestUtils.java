@@ -64,6 +64,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
@@ -98,7 +99,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1800,38 +1800,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * Tries few times to perform some assertion. In the worst case
-     * {@code assertion} closure will be executed {@code retries} + 1 times and
-     * thread will spend approximately {@code retries} * {@code retryInterval} sleeping.
-     *
-     * @param log Log.
-     * @param retries Number of retries.
-     * @param retryInterval Interval between retries in milliseconds.
-     * @param c Closure with assertion. All {@link AssertionError}s thrown
-     *      from this closure will be ignored {@code retries} times.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
-     */
-    @SuppressWarnings("ErrorNotRethrown")
-    public static void retryAssert(@Nullable IgniteLogger log, int retries, long retryInterval, GridAbsClosure c)
-        throws IgniteInterruptedCheckedException {
-        for (int i = 0; i < retries; i++) {
-            try {
-                c.apply();
-
-                return;
-            }
-            catch (AssertionError e) {
-                U.warn(log, "Check failed (will retry in " + retryInterval + "ms).", e);
-
-                U.sleep(retryInterval);
-            }
-        }
-
-        // Apply the last time without guarding try.
-        c.apply();
-    }
-
-    /**
      * Reads entire file into byte array.
      *
      * @param file File to read.
@@ -1916,6 +1884,35 @@ public final class GridTestUtils {
             U.sleep(DFLT_BUSYWAIT_SLEEP_INTERVAL);
 
             curTime = U.currentTimeMillis();
+        }
+
+        return false;
+    }
+
+    /**
+     * Waits until given condition is met or timeout. Exception free check. Polling in busy wait loop is used.
+     *
+     * @param cond condition to met.
+     * @param timeout max time to wait in milliseconds.
+     * @return {@code true} if condition was met, {@code false} otherwise or in case of timeout/exception.
+     */
+    public static boolean waitUntil(Supplier<Boolean> cond, long timeout) {
+        assert timeout > 0;
+        long curTime = U.currentTimeMillis();
+        long endTime = curTime + timeout;
+
+        try {
+            while (curTime < endTime) {
+                if (cond.get()) {
+                    return true;
+                }
+                U.sleep(DFLT_BUSYWAIT_SLEEP_INTERVAL);
+
+                curTime = U.currentTimeMillis();
+            }
+        }
+        catch (Exception ex) {
+            return false;
         }
 
         return false;

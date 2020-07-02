@@ -33,7 +33,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
-import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -97,11 +96,8 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
         for (int i = 0; i < GRID_CNT; i++) {
             final IgniteKernal grid = (IgniteKernal)grid(i);
 
-            GridTestUtils.retryAssert(log, 10, 500, new CA() {
-                @Override public void apply() {
-                    assertTrue(grid.internalCache(DEFAULT_CACHE_NAME).context().mvcc().atomicFutures().isEmpty());
-                }
-            });
+            boolean isCleaned = GridTestUtils.waitForCondition(() -> grid.internalCache(DEFAULT_CACHE_NAME).context().mvcc().atomicFutures().isEmpty(), 5000);
+            assertTrue("Cache is not empty", isCleaned);
         }
     }
 

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -35,7 +36,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
-import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -286,27 +286,18 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     @Test
-    public void testGetServicesByName() throws Exception {
+    public void testGetServicesByName() {
         final String name = "servicesByName";
 
         Ignite g = randomGrid();
 
         g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
-        GridTestUtils.retryAssert(log, 50, 200, new CA() {
-            @Override public void apply() {
-                int cnt = 0;
+        assertTrue(GridTestUtils.waitUntil(() -> {
+            int cnt = IntStream.range(0, nodeCount()).parallel().map(i -> grid(i).services().services(name).size()).sum();
+            return  cnt == nodeCount() * 2;
+        }, 1000));
 
-                for (int i = 0; i < nodeCount(); i++) {
-                    Collection<DummyService> svcs = grid(i).services().services(name);
-
-                    if (svcs != null)
-                        cnt += svcs.size();
-                }
-
-                assertEquals(nodeCount() * 2, cnt);
-            }
-        });
     }
 
     /**

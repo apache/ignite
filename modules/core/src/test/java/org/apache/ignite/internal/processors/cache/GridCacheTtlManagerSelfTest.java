@@ -23,7 +23,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -108,16 +107,13 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
 
             U.sleep(1100);
 
-            GridTestUtils.retryAssert(log, 10, 100, new CAX() {
-                @Override public void applyx() {
-                    // Check that no more entries left in the map.
-                    assertNull(g.cache(DEFAULT_CACHE_NAME).get(key));
+            GridTestUtils.waitForCondition(() ->
+                    g.cache(DEFAULT_CACHE_NAME).get(key) == null // Check that no more entries left in the map.
+                    && (g.internalCache(DEFAULT_CACHE_NAME).context().deferredDelete()
+                        || g.internalCache(DEFAULT_CACHE_NAME).map().getEntry(
+                                g.internalCache(DEFAULT_CACHE_NAME).context(), g.internalCache(DEFAULT_CACHE_NAME).context().toCacheKeyObject(key)) == null)
 
-                    if (!g.internalCache(DEFAULT_CACHE_NAME).context().deferredDelete())
-                        assertNull(g.internalCache(DEFAULT_CACHE_NAME).map().getEntry(g.internalCache(DEFAULT_CACHE_NAME).context(),
-                            g.internalCache(DEFAULT_CACHE_NAME).context().toCacheKeyObject(key)));
-                }
-            });
+                    , 1000);
         }
         finally {
             stopAllGrids();

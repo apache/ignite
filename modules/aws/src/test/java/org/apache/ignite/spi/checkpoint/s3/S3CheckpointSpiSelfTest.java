@@ -29,15 +29,13 @@ import java.net.UnknownHostException;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.GridTestIoUtils;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
-import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.checkpoint.GridCheckpointTestState;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -113,12 +111,15 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
         for (int i = 0; i < CHECK_POINT_COUNT; i++) {
             final String key = KEY_PREFIX + i;
 
-            assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
-                    assertNotNull("Missing checkpoint: " + key,
-                        getSpi().loadCheckpoint(key));
+            Assert.assertTrue(GridTestUtils.waitUntil(() ->
+            {
+                try {
+                    return getSpi().loadCheckpoint(key) != null;
                 }
-            });
+                catch (IgniteCheckedException e) {
+                    return false;
+                }
+            }, 5000));
 
             // Doing it again as pulling value from repeated assertion is tricky,
             // and all assertions below shouldn't be retried in case of failure.
@@ -135,22 +136,28 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
         for (int i = 0; i < CHECK_POINT_COUNT; i++) {
             final String key = KEY_PREFIX + i;
 
-            assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
-                    assertTrue(getSpi().removeCheckpoint(key));
+            Assert.assertTrue(GridTestUtils.waitUntil(() -> {
+                try {
+                    return getSpi().removeCheckpoint(key);
                 }
-            });
+                catch (IgniteCheckedException e) {
+                    return false;
+                }
+            }, 5000));
         }
 
         // Check that states was removed.
         for (int i = 0; i < CHECK_POINT_COUNT; i++) {
             final String key = KEY_PREFIX + i;
 
-            assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
-                    assertNull(getSpi().loadCheckpoint(key));
+            Assert.assertTrue(GridTestUtils.waitUntil(() -> {
+                try {
+                    return getSpi().loadCheckpoint(key) == null;
                 }
-            });
+                catch (IgniteCheckedException e) {
+                    return false;
+                }
+            }, 5000));
         }
     }
 
@@ -174,12 +181,14 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
         for (int i = 0; i < CHECK_POINT_COUNT; i++) {
             final String key = KEY_PREFIX + i;
 
-            assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
-                    assertNull("Checkpoint state should not be loaded with key: " + key,
-                        getSpi().loadCheckpoint(key));
+            Assert.assertTrue(GridTestUtils.waitUntil(() -> {
+                try {
+                    return getSpi().loadCheckpoint(key) == null;
                 }
-            });
+                catch (IgniteCheckedException e) {
+                    return false;
+                }
+            }, 5000));
         }
     }
 
@@ -198,11 +207,14 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
         getSpi().saveCheckpoint(KEY_PREFIX, GridTestIoUtils.serializeJdk(state1), 0, true);
         getSpi().saveCheckpoint(KEY_PREFIX, GridTestIoUtils.serializeJdk(state2), 0, true);
 
-        assertWithRetries(new GridAbsClosureX() {
-            @Override public void applyx() throws IgniteCheckedException {
-                assertNotNull(getSpi().loadCheckpoint(KEY_PREFIX));
+        Assert.assertTrue(GridTestUtils.waitUntil(() -> {
+            try {
+                return getSpi().loadCheckpoint(KEY_PREFIX) == null;
             }
-        });
+            catch (IgniteCheckedException e) {
+                return false;
+            }
+        }, 5000));
 
         byte[] serState = getSpi().loadCheckpoint(KEY_PREFIX);
 
@@ -214,26 +226,18 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
         // Remove.
         getSpi().removeCheckpoint(KEY_PREFIX);
 
-        assertWithRetries(new GridAbsClosureX() {
-            @Override public void applyx() throws IgniteCheckedException {
-                assertNull(getSpi().loadCheckpoint(KEY_PREFIX));
+        Assert.assertTrue(GridTestUtils.waitUntil(() -> {
+            try {
+                return getSpi().loadCheckpoint(KEY_PREFIX) == null;
             }
-        });
+            catch (IgniteCheckedException e) {
+                return false;
+            }
+        }, 5000));
     }
 
     /**
-     * Wrapper around {@link GridTestUtils#retryAssert(org.apache.ignite.IgniteLogger, int, long, GridAbsClosure)}.
-     * Provides s3-specific timeouts.
-     * @param assertion Closure with assertion inside.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If was interrupted.
-     */
-    private void assertWithRetries(GridAbsClosureX assertion) throws IgniteInterruptedCheckedException {
-        GridTestUtils.retryAssert(log, 6, 5000, assertion);
-    }
-
-    /**
-     * Gets a Bucket name suffix
-     * Bucket name suffix should be unique for the host to parallel test run on one bucket.
+     * Gets a Bucket name suffix Bucket name suffix should be unique for the host to parallel test run on one bucket.
      * Please note that the final bucket name should not exceed 63 chars.
      *
      * @return Bucket name suffix.

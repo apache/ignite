@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -30,7 +31,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -303,16 +303,12 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
             final Collection<WeakReference<Object>> refs = call.call();
 
-            GridTestUtils.retryAssert(log, 10, 1000, new CA() {
-                @Override public void apply() {
-                    System.gc();
-                    System.gc();
-                    System.gc();
+            boolean refsAreNull = GridTestUtils.waitForCondition(() -> {
+                System.gc();
+                return refs.stream().map(WeakReference::get).allMatch(Objects::isNull);
 
-                    for (WeakReference<?> ref : refs)
-                        assertNull("" + ref.get(), ref.get());
-                }
-            });
+            }, 10000);
+            assertTrue("References are not released", refsAreNull);
         }
     }
 

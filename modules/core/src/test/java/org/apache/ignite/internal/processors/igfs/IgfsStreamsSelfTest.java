@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -29,9 +30,9 @@ import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -282,11 +283,9 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             fs.delete(path, true);
         }
 
-        GridTestUtils.retryAssert(log, ASSERT_RETRIES, ASSERT_RETRY_INTERVAL, new CAX() {
-            @Override public void applyx() {
-                for (int i = 0; i < NODES_CNT; i++)
-                    assertTrue(grid(i).cachex(dataCacheName).isEmpty());
-            }
+        IntStream.range(0, NODES_CNT).parallel().forEach(i -> {
+            IgniteEx grid = grid(i);
+            assertTrue(GridTestUtils.waitUntil(() -> grid.cachex(dataCacheName).isEmpty(), ASSERT_RETRIES*ASSERT_RETRY_INTERVAL));
         });
     }
 
