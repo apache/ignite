@@ -17,10 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.cloud;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Predicate;
-import com.google.common.base.Supplier;
-import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -33,6 +29,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.google.common.base.Charsets;
+import com.google.common.base.Predicate;
+import com.google.common.base.Supplier;
+import com.google.common.io.Files;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;

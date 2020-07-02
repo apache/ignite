@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.Lists;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -33,6 +32,7 @@ import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
