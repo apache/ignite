@@ -417,13 +417,13 @@ class ServerImpl extends TcpDiscoveryImpl {
         if (spi.locNodeAddrs.size() > 1 && log.isDebugEnabled()) {
             if (spi.failureDetectionTimeoutEnabled()) {
                 log.debug("This node " + spi.locNode.id() + " has " + spi.locNodeAddrs.size() + " TCP " +
-                    "addresses. Note that TcpDiscoverySpi.failureDetectionTimeout works per address serially. " +
+                    "addresses. Note that TcpDiscoverySpi.failureDetectionTimeout works per address consistently. " +
                     "Setting of several addresses can prolong detection of current node failure.");
             }
             else {
                 log.debug("This node " + spi.locNode.id() + " has " + spi.locNodeAddrs.size() + " TPC " +
                     "addresses. With exception of connRecoveryTimeout, timeouts and setting like sockTimeout, " +
-                    "ackTimeout, reconCnt in TcpDiscoverySpi work per address serially. Setting of several " +
+                    "ackTimeout, reconCnt in TcpDiscoverySpi work per address consistently. Setting of several " +
                     "addresses can prolong detection of current node failure.");
             }
         }
