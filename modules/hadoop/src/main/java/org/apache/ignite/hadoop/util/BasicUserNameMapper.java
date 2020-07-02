@@ -17,10 +17,9 @@
 
 package org.apache.ignite.hadoop.util;
 
+import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Map;
 
 /**
  * Name mapper which maps one user name to another based on predefined dictionary. If name is not found in the

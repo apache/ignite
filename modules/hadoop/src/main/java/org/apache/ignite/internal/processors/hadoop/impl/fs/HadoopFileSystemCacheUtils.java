@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.fs;
 
+import java.io.IOException;
+import java.net.URI;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.mapreduce.MRJobConfig;
@@ -26,9 +28,6 @@ import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.IOException;
-import java.net.URI;
 
 /**
  * File system cache utility methods used by Map-Reduce tasks and jobs.

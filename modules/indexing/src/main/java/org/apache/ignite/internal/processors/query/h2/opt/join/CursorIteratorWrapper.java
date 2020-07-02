@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
+import java.util.Iterator;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-
-import java.util.Iterator;
 
 /**
  *

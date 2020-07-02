@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop.state;
 
-import org.apache.ignite.internal.processors.hadoop.HadoopSharedMap;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
-
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.hadoop.HadoopSharedMap;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 
 /**
  * Shared state for HadoopGroupingTest.
