@@ -1142,7 +1142,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             if (err != null)
             {
-                qryHandle.Dispose();
+                qryHandle.OnError(err);
                 return;
             }
 

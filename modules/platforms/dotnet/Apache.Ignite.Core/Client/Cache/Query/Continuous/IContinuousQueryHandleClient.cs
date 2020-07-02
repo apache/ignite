@@ -25,10 +25,10 @@ namespace Apache.Ignite.Core.Client.Cache.Query.Continuous
     public interface IContinuousQueryHandleClient : IDisposable
     {
         /// <summary>
-        /// TODO: Which args?
-        /// TODO: Don't use Action
+        /// Raised when continuous query gets disconnected.
+        /// Disconnect can be caused by a server node failure or a network failure.
         /// </summary>
-        event Action<object> OnDisconnected;
+        event EventHandler Disconnected;
     }
 
 }
