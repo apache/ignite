@@ -1362,7 +1362,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Connection requestor. */
     private ConnectionRequestor connectionRequestor;
 
-
     /**
      * @return {@code True} if ssl enabled.
      */
