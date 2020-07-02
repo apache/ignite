@@ -113,16 +113,12 @@ public class FilePerformanceStatisticsWriter {
             }
         }
 
-        assert fileWriter == null;
-
         try {
             File file = statisticsFile(ctx);
 
             U.delete(file);
 
             FileIO fileIo = fileIoFactory.create(file);
-
-            fileIo.position(0);
 
             fileWriter = new FileWriter(ctx, fileIo, DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, DFLT_FLUSH_SIZE, log);
 
@@ -152,10 +148,10 @@ public class FilePerformanceStatisticsWriter {
 
         FileWriter fileWriter = this.fileWriter;
 
-        if (fileWriter != null)
-            return fileWriter.shutdown();
+        if (fileWriter == null)
+            return new GridFinishedFuture<>();
 
-        return new GridFinishedFuture<>();
+        return fileWriter.shutdown();
     }
 
     /**
@@ -520,7 +516,7 @@ public class FilePerformanceStatisticsWriter {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!isCancelled() && !Thread.interrupted()) {
+            while (!isCancelled()) {
                 blockingSectionBegin();
 
                 try {
@@ -528,12 +524,12 @@ public class FilePerformanceStatisticsWriter {
                         while (readyForFlushSize.get() < flushBatchSize && !isCancelled())
                             wait();
                     }
-
-                    flushBuffer();
                 }
                 finally {
                     blockingSectionEnd();
                 }
+
+                flushBuffer();
             }
 
             fileWriter = null;
@@ -594,6 +590,8 @@ public class FilePerformanceStatisticsWriter {
 
             try {
                 for (int i = 0; i < segs.size(); i++) {
+                    updateHeartbeat();
+
                     SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
 
                     try {
