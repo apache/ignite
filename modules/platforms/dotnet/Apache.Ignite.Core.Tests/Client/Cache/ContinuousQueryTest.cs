@@ -233,11 +233,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             var cacheCfg = new CacheClientConfiguration(TestUtils.TestName, queryEntity);
             var cache = Client.GetOrCreateCache<int, int>(cacheCfg);
+            
             var qry = new ContinuousQuery<int,int>(new DelegateListener<int, int>());
+            var initialQry = new SqlFieldsQuery("select _key from " + TestUtils.TestName);
 
             cache[1] = 1;
 
-            using (var handle = cache.QueryContinuous(qry, new SqlFieldsQuery("select _key from " + TestUtils.TestName)))
+            using (var handle = cache.QueryContinuous(qry, initialQry))
             {
                 using (var cur = handle.GetInitialQueryCursor())
                 {
