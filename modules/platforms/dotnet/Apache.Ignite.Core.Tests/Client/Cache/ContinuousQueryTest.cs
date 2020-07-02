@@ -147,8 +147,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
 
-            ICacheEntryEvent<int, int> lastEvt = null;
-            var listener = new DelegateListener<int, int>(e => lastEvt = e);
+            var evts = new ConcurrentBag<int>();
+            var listener = new DelegateListener<int, int>(e => evts.Add(e.Key));
 
             var qry = new ContinuousQuery<int,int>(listener)
             {
@@ -156,7 +156,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     "org.apache.ignite.platform.PlatformCacheEntryEvenKeyEventFilter", null)
             };
 
-            // TODO
+            using (cache.QueryContinuous(qry))
+            {
+                cache.PutAll(Enumerable.Range(1, 5).ToDictionary(x => x, x => x));
+            }
+            
+            TestUtils.WaitForTrueCondition(() => evts.Count == 2);
+            CollectionAssert.AreEquivalent(new[] {2, 4}, evts);
         }
 
         /// <summary>
