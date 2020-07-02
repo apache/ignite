@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
@@ -310,14 +311,28 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO:
         }
 
+        /// <summary>
+        /// Tests that initial scan query with filter returns filtered entries.
+        /// </summary>
         [Test]
         public void TestInitialScanQueryWithFilter()
         {
-            // TODO
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            cache.PutAll(Enumerable.Range(1, 10).ToDictionary(x => x, x => x));
+            cache.PutAll(Enumerable.Range(1, 8).ToDictionary(x => x, x => x));
 
-            var initialQry = new ScanQuery<int, int>();
+            var initialQry = new ScanQuery<int, int>
+            {
+                Filter = new OddKeyFilter()
+            };
+
+            var qry = new ContinuousQuery<int, int>(new DelegateListener<int, int>());
+
+            using (var handle = cache.QueryContinuous(qry, initialQry))
+            {
+                var entries = handle.GetInitialQueryCursor().GetAll();
+
+                CollectionAssert.AreEquivalent(new[] {1, 3, 5, 7}, entries.Select(e => e.Key));
+            }
         }
 
         [Test]
@@ -417,7 +432,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         private class DelegateListener<TK, TV> : ICacheEntryEventListener<TK, TV>
         {
             /** */
-            private Action<ICacheEntryEvent<TK, TV>> _action;
+            private readonly Action<ICacheEntryEvent<TK, TV>> _action;
 
             /** */
             public DelegateListener(Action<ICacheEntryEvent<TK, TV>> action = null)
@@ -435,7 +450,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
         }
 
-        private class OddKeyFilter : ICacheEntryEventFilter<int, int>
+        private class OddKeyFilter : ICacheEntryEventFilter<int, int>, ICacheEntryFilter<int, int>
         {
             public static int LastKey;
 
@@ -444,6 +459,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 LastKey = evt.Key;
 
                 return evt.Key % 2 == 1;
+            }
+
+            public bool Invoke(ICacheEntry<int, int> entry)
+            {
+                LastKey = entry.Key;
+
+                return entry.Key % 2 == 1;
             }
         }
     }
