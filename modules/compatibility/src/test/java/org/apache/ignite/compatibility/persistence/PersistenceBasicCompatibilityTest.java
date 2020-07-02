@@ -45,7 +45,7 @@ import org.junit.Test;
  */
 public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
-    public static final String TEST_CACHE_NAME = PersistenceBasicCompatibilityTest.class.getSimpleName();
+    protected static final String TEST_CACHE_NAME = PersistenceBasicCompatibilityTest.class.getSimpleName();
 
     /** */
     protected volatile boolean compactFooter;

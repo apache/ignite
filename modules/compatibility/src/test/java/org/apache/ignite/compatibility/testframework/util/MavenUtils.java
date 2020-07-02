@@ -47,7 +47,7 @@ public class MavenUtils {
     private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
 
     /** Set this flag to true if running PDS compatibility tests locally. */
-    public static boolean useGgRepo;
+    private static boolean useGgRepo;
 
     /**
      * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId={@code artifactId}.
