@@ -23,6 +23,10 @@ import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdPredicates;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLocalRef;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -42,6 +46,13 @@ public class IgniteMdPredicates extends RelMdPredicates {
 
         return RelOptPredicateList.of(rel.getCluster().getRexBuilder(),
                     RexUtil.retainDeterministic(
-                        RelOptUtil.conjunctions(rel.condition())));
+                        RelOptUtil.conjunctions(rel.condition().accept(new LocalRefReplacer()))));
+    }
+
+    /** Visitor for replacing scan local refs to input refs. */
+    private static class LocalRefReplacer extends RexShuttle {
+        @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
+            return new RexInputRef(inputRef.getIndex(), inputRef.getType());
+        }
     }
 }

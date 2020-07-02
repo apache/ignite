@@ -88,10 +88,8 @@ public class IgniteFilter extends Filter implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCount = estimateRowCount(mq);
-
+        double rowCount = mq.getRowCount(getInput());
         rowCount = RelMdUtil.addEpsilon(rowCount); // to differ from rel nodes with integrated filter
-
         return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
 }

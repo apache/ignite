@@ -32,16 +32,22 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.calcite.rel.core.JoinRelType.ANTI;
+import static org.apache.calcite.rel.core.JoinRelType.FULL;
+import static org.apache.calcite.rel.core.JoinRelType.INNER;
+import static org.apache.calcite.rel.core.JoinRelType.LEFT;
+import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
+import static org.apache.calcite.rel.core.JoinRelType.SEMI;
 import static org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode.AggregateType.MAP;
 import static org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode.AggregateType.REDUCE;
 import static org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode.AggregateType.SINGLE;
@@ -86,7 +92,10 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[]{3, 0, "Core"}
         ));
 
-        InnerJoinNode<Object[]> join = new InnerJoinNode<>(ctx, r -> r[0] == r[4]);
+        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, String.class);
+        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, int.class, String.class);
+
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, leftType, rightType, INNER, r -> r[0] == r[4]);
         join.register(F.asList(persons, projects));
 
         ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[0], r[1], r[5]});
@@ -174,19 +183,10 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[]{2, "SQL"}
         ));
 
-        LeftJoinNode<Object[]> join = new LeftJoinNode<>(
-            ctx,
-            r -> r[2] == r[3],
-            new RowHandler.RowFactory<Object[]>() {
-                @Override public Object[] create() {
-                    return new Object[2];
-                }
+        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
+        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
 
-                @Override public Object[] create(Object... fields) {
-                    return create();
-                }
-            }
-        );
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, leftType, rightType, LEFT, r -> r[2] == r[3]);
         join.register(F.asList(persons, deps));
 
         ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[0], r[1], r[4]});
@@ -233,19 +233,10 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[]{3, "QA"}
         ));
 
-        RightJoinNode<Object[]> join = new RightJoinNode<>(
-            ctx,
-            r -> r[0] == r[4],
-            new RowHandler.RowFactory<Object[]>() {
-                @Override public Object[] create() {
-                    return new Object[2];
-                }
+        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
+        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
 
-                @Override public Object[] create(Object... fields) {
-                    return create();
-                }
-            }
-        );
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, leftType, rightType, RIGHT, r -> r[0] == r[4]);
         join.register(F.asList(deps, persons));
 
         ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[2], r[3], r[1]});
@@ -292,28 +283,10 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[]{3, "QA"}
         ));
 
-        FullOuterJoinNode<Object[]> join = new FullOuterJoinNode<>(
-            ctx,
-            r -> r[2] == r[3],
-            new RowHandler.RowFactory<Object[]>() {
-                @Override public Object[] create() {
-                    return new Object[3];
-                }
+        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
+        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
 
-                @Override public Object[] create(Object... fields) {
-                    return create();
-                }
-            },
-            new RowHandler.RowFactory<Object[]>() {
-                @Override public Object[] create() {
-                    return new Object[2];
-                }
-
-                @Override public Object[] create(Object... fields) {
-                    return create();
-                }
-            }
-        );
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, leftType, rightType, FULL, r -> r[2] == r[3]);
         join.register(F.asList(persons, deps));
 
         ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[0], r[1], r[4]});
@@ -361,10 +334,10 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[]{3, "QA"}
         ));
 
-        SemiJoinNode<Object[]> join = new SemiJoinNode<>(
-            ctx,
-            r -> r[0] == r[4]
-        );
+        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
+        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
+
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, leftType, rightType, SEMI, r -> r[0] == r[4]);
         join.register(F.asList(deps, persons));
 
         ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[1]});
@@ -409,10 +382,10 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[]{3, "QA"}
         ));
 
-        AntiJoinNode<Object[]> join = new AntiJoinNode<>(
-            ctx,
-            r -> r[0] == r[4]
-        );
+        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
+        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
+
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, leftType, rightType, ANTI, r -> r[0] == r[4]);
         join.register(F.asList(deps, persons));
 
         ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[1]});

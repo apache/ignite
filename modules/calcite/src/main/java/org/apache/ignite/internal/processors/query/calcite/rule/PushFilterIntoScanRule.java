@@ -16,20 +16,24 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import com.google.common.collect.ImmutableList;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.rex.RexVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -58,32 +62,33 @@ public class PushFilterIntoScanRule extends RelOptRule {
         LogicalFilter filter = call.rel(0);
         IgniteIndexScan scan = call.rel(1);
 
+        RelOptCluster cluster = scan.getCluster();
+        RelMetadataQuery mq = call.getMetadataQuery();
+        RexBuilder rexBuilder = cluster.getRexBuilder();
+        RexExecutor rexExecutor = Commons.context(scan).rexExecutor();
+
         RexNode cond = filter.getCondition();
 
+        RexSimplify simplify = new RexSimplify(rexBuilder,
+            mq.getPulledUpPredicates(scan), rexExecutor);
+
+        // Let's remove from the condition common with the scan filter parts.
+        cond = simplify.simplifyFilterPredicates(RelOptUtil.conjunctions(cond));
+
         // We need to replace RexInputRef with RexLocalRef because TableScan doesn't have inputs.
-        RexVisitor<RexNode> inputRefReplacer = new InputRefReplacer();
-        cond = cond.accept(inputRefReplacer);
+        cond = cond.accept(new InputRefReplacer());
 
-        RexNode cond0 = scan.condition();
-
-        if (cond0 != null) {
-            ImmutableList<RexNode> nodes = RexUtil.flattenAnd(ImmutableList.of(cond0));
-            if (nodes.contains(cond))
-                return;
-
-            RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-            cond = RexUtil.composeConjunction(rexBuilder, F.concat(true, cond, nodes));
-        }
+        // Combine the condition with the scan filter.
+        cond = RexUtil.composeConjunction(rexBuilder, F.asList(cond, scan.condition()));
 
         call.transformTo(
-            new IgniteIndexScan(scan.getCluster(), scan.getTraitSet(), scan.getTable(), scan.indexName(), cond));
+            new IgniteIndexScan(cluster, scan.getTraitSet(), scan.getTable(), scan.indexName(), cond));
     }
 
     /** Visitor for replacing input refs to local refs. We need it for proper plan serialization. */
     private static class InputRefReplacer extends RexShuttle {
         @Override public RexNode visitInputRef(RexInputRef inputRef) {
-            int idx = inputRef.getIndex();
-            return new RexLocalRef(idx, inputRef.getType());
+            return new RexLocalRef(inputRef.getIndex(), inputRef.getType());
         }
     }
 }

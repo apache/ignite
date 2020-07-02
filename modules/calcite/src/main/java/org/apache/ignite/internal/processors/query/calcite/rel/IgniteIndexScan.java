@@ -106,11 +106,11 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
      */
     public IgniteIndexScan(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
+        igniteTbl = getTable().unwrap(IgniteTable.class);
         idxName = input.getString("index");
         cond = input.getExpression("filters");
-        lowerIdxCond = input.getExpressionList("lower");
-        upperIdxCond = input.getExpressionList("upper");
-        igniteTbl = getTable().unwrap(IgniteTable.class);
+        lowerIdxCond = input.get("lower") == null ? ImmutableList.of() : input.getExpressionList("lower");
+        upperIdxCond = input.get("upper") == null ? ImmutableList.of() : input.getExpressionList("upper");
         collation = igniteTbl.getIndex(idxName).collation();
     }
 
@@ -268,7 +268,7 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
         if (cond == null)
             return false;
 
-        RexCall dnf = ((RexCall)RexUtil.toDnf(getCluster().getRexBuilder(), cond));
+        RexCall dnf = (RexCall)RexUtil.toDnf(getCluster().getRexBuilder(), cond);
 
         if (dnf.isA(OR) && dnf.getOperands().size() > 1) // OR conditions are not supported yet.
             return false;
@@ -369,10 +369,10 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
     @Override public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         return pw.item("index", idxName )
-            .itemIf("lower", lowerIdxCond, lowerIdxCond != null)
-            .itemIf("upper", upperIdxCond, upperIdxCond != null)
+            .item("collation", collation)
             .itemIf("filters", cond, cond != null)
-            .item("collation", collation);
+            .itemIf("lower", lowerIdxCond, !F.isEmpty(lowerIdxCond))
+            .itemIf("upper", upperIdxCond, !F.isEmpty(upperIdxCond));
     }
 
     /** {@inheritDoc} */
@@ -406,15 +406,12 @@ public class IgniteIndexScan extends TableScan implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCount = table.getRowCount() * idxSelectivity;
-
-        if (cond != null)
-            rowCount += rowCount * mq.getSelectivity(this, cond);
+        double tableRows = table.getRowCount() * idxSelectivity;
 
         if (!PK_INDEX_NAME.equals(indexName()))
-            rowCount = RelMdUtil.addEpsilon(rowCount);
+            tableRows = RelMdUtil.addEpsilon(tableRows);
 
-        return planner.getCostFactory().makeCost(rowCount, 0, 0);
+        return planner.getCostFactory().makeCost(tableRows, 0, 0);
     }
 
     /** {@inheritDoc} */

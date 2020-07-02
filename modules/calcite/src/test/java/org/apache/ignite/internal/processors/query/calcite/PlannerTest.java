@@ -2592,9 +2592,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                     "LogicalFilter(condition=[=(CAST(+($0, $1)):INTEGER, 2)])\n" +
                     "  LogicalJoin(condition=[true], joinType=[inner])\n" +
                     "    LogicalProject(DEPTNO=[$0])\n" +
-                    "      IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n" +
+                    "      IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[PK], collation=[[]])\n" +
                     "    LogicalProject(DEPTNO=[$2])\n" +
-                    "      IgniteIndexScan(table=[[PUBLIC, EMP]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n",
+                    "      IgniteIndexScan(table=[[PUBLIC, EMP]], index=[PK], collation=[[]])\n",
                 RelOptUtil.toString(rel));
 
             // Transformation chain
@@ -2609,9 +2609,9 @@ public class PlannerTest extends GridCommonAbstractTest {
             assertEquals("" +
                     "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
                     "  IgniteProject(DEPTNO=[$0])\n" +
-                    "    IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[PK], lower=[[]], upper=[[]], collation=[[]])\n" +
+                    "    IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[PK], collation=[[]])\n" +
                     "  IgniteProject(DEPTNO=[$2])\n" +
-                    "    IgniteIndexScan(table=[[PUBLIC, EMP]], index=[PK], lower=[[]], upper=[[]], filters=[=(CAST(+($cor1.DEPTNO, $t2)):INTEGER, 2)], collation=[[]])\n",
+                    "    IgniteIndexScan(table=[[PUBLIC, EMP]], index=[PK], collation=[[]], filters=[=(CAST(+($cor1.DEPTNO, $t2)):INTEGER, 2)])\n",
                 RelOptUtil.toString(phys));
         }
     }

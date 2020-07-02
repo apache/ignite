@@ -37,27 +37,19 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.calcite.tools.Frameworks.createRootSchema;
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
  * Planning context.
  */
 public final class PlanningContext implements Context {
     /** */
-    private static final Context EMPTY_CONTEXT = Contexts.empty();
-
-    /** */
-    private static final FrameworkConfig EMPTY_CONFIG =
-        Frameworks.newConfigBuilder(CalciteQueryProcessor.FRAMEWORK_CONFIG)
-        .defaultSchema(Frameworks.createRootSchema(false))
-        .traitDefs()
-        .build();
-
-    /** */
-    private static final PlanningContext EMPTY = new PlanningContext();
+    private static final PlanningContext EMPTY = builder().build();
 
     /** */
     private final FrameworkConfig cfg;
@@ -130,20 +122,6 @@ public final class PlanningContext implements Context {
 
         RelDataTypeSystem typeSys = connectionConfig().typeSystem(RelDataTypeSystem.class, cfg.getTypeSystem());
         typeFactory = new IgniteTypeFactory(typeSys);
-    }
-
-    /**
-     * Constructor for empty context.
-     */
-    private PlanningContext() {
-        this(EMPTY_CONFIG,
-            EMPTY_CONTEXT,
-            null,
-            null,
-            null,
-            null,
-            null,
-            new NullLogger());
     }
 
     /**
@@ -337,10 +315,17 @@ public final class PlanningContext implements Context {
     @SuppressWarnings("PublicInnerClass") 
     public static class Builder {
         /** */
+        private static final FrameworkConfig EMPTY_CONFIG =
+            Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(createRootSchema(false))
+                .traitDefs()
+                .build();
+
+        /** */
         private FrameworkConfig frameworkCfg = EMPTY_CONFIG;
 
         /** */
-        private Context parentCtx = EMPTY_CONTEXT;
+        private Context parentCtx = Contexts.empty();
 
         /** */
         private UUID locNodeId;
@@ -358,7 +343,7 @@ public final class PlanningContext implements Context {
         private AffinityTopologyVersion topVer;
 
         /** */
-        private IgniteLogger log;
+        private IgniteLogger log = new NullLogger();
 
         /**
          * @param locNodeId Local node ID.

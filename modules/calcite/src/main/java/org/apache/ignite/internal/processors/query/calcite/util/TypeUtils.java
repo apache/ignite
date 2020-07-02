@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
-import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,6 +30,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.jetbrains.annotations.NotNull;
 
 /** */
 public class TypeUtils {
@@ -93,18 +94,23 @@ public class TypeUtils {
     }
 
     /** */
-    public static RelDataType createRowType(IgniteTypeFactory typeFactory, RelDataType... fields) {
-        return createRowType(typeFactory, ImmutableList.copyOf(fields));
+    @NotNull public static RelDataType createRowType(@NotNull IgniteTypeFactory typeFactory, @NotNull Class<?>... fields) {
+        List<RelDataType> types = Arrays.stream(fields)
+            .map(typeFactory::createJavaType)
+            .collect(Collectors.toList());
+
+        return createRowType(typeFactory, types, "$F");
     }
 
     /** */
-    public static RelDataType createRowType(IgniteTypeFactory typeFactory, List<RelDataType> fields) {
-        return createRowType(typeFactory, fields, "$EXPR");
+    @NotNull public static RelDataType createRowType(@NotNull IgniteTypeFactory typeFactory, @NotNull RelDataType... fields) {
+        List<RelDataType> types = Arrays.asList(fields);
+
+        return createRowType(typeFactory, types, "$F");
     }
 
     /** */
-    public static RelDataType createRowType(IgniteTypeFactory typeFactory, List<RelDataType> fields,
-        String namePreffix) {
+    private static RelDataType createRowType(IgniteTypeFactory typeFactory, List<RelDataType> fields, String namePreffix) {
         List<String> names = IntStream.range(0, fields.size())
             .mapToObj(ord -> namePreffix + ord)
             .collect(Collectors.toList());
