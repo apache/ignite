@@ -453,6 +453,7 @@
                             <excludes>
                                 <!-- Parent's pom.xml includes all Ignite test classes (tests, suites) in the surefire plugin.
                                      So need to exclude all of them to test only JCache tests. -->
+                                <exclude>**/com/sbt/sbergrid/**/*Test.java</exclude>
                                 <exclude>**/org/apache/ignite/**/*.java</exclude>
                                 <exclude>**/annotation/*Test.java</exclude>
                                 <exclude>**/ClientServerTest.java</exclude>
