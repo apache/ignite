@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.performancestatistics.CacheOperation;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
 import org.apache.ignite.internal.util.GridIntList;

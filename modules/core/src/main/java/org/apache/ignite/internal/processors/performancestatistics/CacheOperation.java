@@ -15,9 +15,50 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains classes for Ignite performance statistics.
- */
-
 package org.apache.ignite.internal.processors.performancestatistics;
+
+/**
+ * Cache operations types.
+ */
+public enum CacheOperation {
+    /** */
+    GET,
+
+    /** */
+    PUT,
+
+    /** */
+    REMOVE,
+
+    /** */
+    GET_AND_PUT,
+
+    /** */
+    GET_AND_REMOVE,
+
+    /** */
+    INVOKE,
+
+    /** */
+    LOCK,
+
+    /** */
+    GET_ALL,
+
+    /** */
+    PUT_ALL,
+
+    /** */
+    REMOVE_ALL,
+
+    /** */
+    INVOKE_ALL;
+
+    /** Values. */
+    private static final CacheOperation[] VALS = values();
+
+    /** @return Operation type from ordinal. */
+    public static CacheOperation fromOrdinal(byte ord) {
+        return ord < 0 || ord >= VALS.length ? null : VALS[ord];
+    }
+}
