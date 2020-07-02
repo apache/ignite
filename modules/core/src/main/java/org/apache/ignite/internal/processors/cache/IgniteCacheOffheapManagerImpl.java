@@ -112,7 +112,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
-import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -124,7 +123,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.TRUE;
-import static java.util.Objects.nonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
@@ -1226,12 +1224,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public void storeEntries(
-        int partId,
-        Iterator<GridCacheEntryInfo> infos,
-        IgnitePredicateX<CacheDataRow> initPred,
-        @Nullable IgniteInClosureX<GridCacheEntryInfo> entryInfoConsr
-    ) throws IgniteCheckedException {
+    @Override public void storeEntries(int partId, Iterator<GridCacheEntryInfo> infos,
+        IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
         CacheDataStore dataStore = dataStore(partId);
 
         List<DataRowCacheAware> batch = new ArrayList<>(PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK);
@@ -1240,9 +1234,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             GridCacheEntryInfo info = infos.next();
 
             assert info.ttl() == TTL_ETERNAL : info.ttl();
-
-            if (nonNull(entryInfoConsr))
-                entryInfoConsr.apply(info);
 
             batch.add(new DataRowCacheAware(info.key(),
                 info.value(),

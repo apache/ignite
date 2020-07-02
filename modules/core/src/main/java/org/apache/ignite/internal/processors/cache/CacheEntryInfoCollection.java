@@ -37,9 +37,6 @@ public class CacheEntryInfoCollection implements Message {
     @GridDirectCollection(GridCacheEntryInfo.class)
     private List<GridCacheEntryInfo> infos;
 
-    /** {@code True} if partition rebalancing using WAL history. */
-    private boolean historical;
-
     /** */
     public CacheEntryInfoCollection() {
         // No-op
@@ -50,15 +47,6 @@ public class CacheEntryInfoCollection implements Message {
      */
     public CacheEntryInfoCollection(List<GridCacheEntryInfo> infos) {
         this.infos = infos;
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param historical {@code True} if partition rebalancing using WAL history.
-     */
-    public CacheEntryInfoCollection(boolean historical) {
-        this.historical = historical;
     }
 
     /**
@@ -82,15 +70,6 @@ public class CacheEntryInfoCollection implements Message {
         infos.add(info);
     }
 
-    /**
-     * Return {@code true} if partition rebalancing using WAL history.
-     *
-     * @return {@code True} if partition rebalancing using WAL history.
-     */
-    public boolean historical() {
-        return historical;
-    }
-
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
@@ -109,12 +88,6 @@ public class CacheEntryInfoCollection implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeBoolean("historical", historical))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeCollection("infos", infos, MessageCollectionItemType.MSG))
                     return false;
 
@@ -134,14 +107,6 @@ public class CacheEntryInfoCollection implements Message {
 
         switch (reader.state()) {
             case 0:
-                historical = reader.readBoolean("historical");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 infos = reader.readCollection("infos", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -161,7 +126,7 @@ public class CacheEntryInfoCollection implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */

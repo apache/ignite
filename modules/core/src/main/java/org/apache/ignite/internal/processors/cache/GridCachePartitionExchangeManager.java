@@ -3447,7 +3447,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     U.log(log, "Rebalancing scheduled [order=" + rebList +
                                         ", top=" + finalR.topologyVersion() +
                                         ", evt=" + exchId.discoveryEventName() +
-                                        ", node=" + exchId.nodeId() + ']');
+                                        ", node=" + exchId.nodeId() +
+                                        ", rebalanceId=" + finalR.rebalanceId() + ']');
 
                                     finalR.requestPartitions();
                                 }

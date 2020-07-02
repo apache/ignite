@@ -50,7 +50,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
-import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -511,18 +510,13 @@ public interface IgniteCacheOffheapManager {
     /**
      * Store entries.
      *
-     * @param partId Partition id.
+     * @param partId Partition number.
      * @param infos Entry infos.
      * @param initPred Applied to all created rows. Each row that not matches the predicate is removed.
-     * @param entryInfoConsr {@link GridCacheEntryInfo} consumer.
      * @throws IgniteCheckedException If failed.
      */
-    void storeEntries(
-        int partId,
-        Iterator<GridCacheEntryInfo> infos,
-        IgnitePredicateX<CacheDataRow> initPred,
-        @Nullable IgniteInClosureX<GridCacheEntryInfo> entryInfoConsr
-    ) throws IgniteCheckedException;
+    public void storeEntries(int partId, Iterator<GridCacheEntryInfo> infos,
+        IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
 
     /**
      * Clears offheap entries.
