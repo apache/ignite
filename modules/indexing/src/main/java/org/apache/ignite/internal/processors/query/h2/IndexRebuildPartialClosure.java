@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 
 /**
  * Closure to rebuild some cache indexes.

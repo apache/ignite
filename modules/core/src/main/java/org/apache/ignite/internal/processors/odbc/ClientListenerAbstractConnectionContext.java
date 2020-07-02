@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.security.cert.Certificate;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import java.security.cert.Certificate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;

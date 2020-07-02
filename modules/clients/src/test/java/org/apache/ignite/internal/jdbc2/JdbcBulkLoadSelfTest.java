@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.io.Serializable;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collections;
+import java.util.Properties;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,15 +36,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.io.Serializable;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Collections;
-import java.util.Properties;
-import java.util.concurrent.Callable;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;

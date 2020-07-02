@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Diagnostics.CodeAnalysis;
     using System.Text;
     using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Log;
 
@@ -38,6 +39,9 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Classpath separator. */
         [SuppressMessage("Microsoft.Performance", "CA1802:UseLiteralsWhereAppropriate")]
         private static readonly string ClasspathSeparator = Os.IsWindows ? ";" : ":";
+        
+        /** Excluded modules from test classpath */
+        private static readonly string[] TestExcludedModules = { "rest-http", "spring-data" };
 
         /// <summary>
         /// Creates classpath from the given configuration, or default classpath if given config is null.
@@ -133,7 +137,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="cp">Classpath builder.</param>
         private static void AppendTestClasses0(string path, StringBuilder cp)
         {
-            if (path.EndsWith("rest-http", StringComparison.OrdinalIgnoreCase))
+            var shouldExcluded = TestExcludedModules.Any(excl => 
+                path.IndexOf(excl, StringComparison.OrdinalIgnoreCase) >= 0);
+            
+            if (shouldExcluded)
                 return;
 
             var dir = Path.Combine(path, "target", "classes");
