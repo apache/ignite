@@ -36,8 +36,7 @@ import java.util.regex.Pattern;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.OperationType;
-import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteUuid;
@@ -194,7 +193,7 @@ public class FilePerformanceStatisticsReader {
                     if (buf.remaining() < 1 + 4 + 8 + 8)
                         break;
 
-                    CacheOperationType cacheOp = CacheOperationType.fromOrdinal(buf.get());
+                    CacheOperation cacheOp = CacheOperation.fromOrdinal(buf.get());
                     int cacheId = buf.getInt();
                     long startTime = buf.getLong();
                     long duration = buf.getLong();

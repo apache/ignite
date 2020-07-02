@@ -33,22 +33,22 @@ public class PerformanceStatisticsMBeanSelfTest extends AbstractPerformanceStati
         PerformanceStatisticsMBean statMBean0 = getMBean(srv0.name());
         PerformanceStatisticsMBean statMBean1 = getMBean(srv1.name());
 
-        assertFalse(statMBean0.enabled());
-        assertFalse(statMBean1.enabled());
+        assertFalse(statMBean0.started());
+        assertFalse(statMBean1.started());
 
         statMBean0.start();
 
         waitForStatisticsEnabled(true);
 
-        assertTrue(statMBean0.enabled());
-        assertTrue(statMBean1.enabled());
+        assertTrue(statMBean0.started());
+        assertTrue(statMBean1.started());
 
         statMBean0.stop();
 
         waitForStatisticsEnabled(false);
 
-        assertFalse(statMBean0.enabled());
-        assertFalse(statMBean1.enabled());
+        assertFalse(statMBean0.started());
+        assertFalse(statMBean1.started());
     }
 
     /**

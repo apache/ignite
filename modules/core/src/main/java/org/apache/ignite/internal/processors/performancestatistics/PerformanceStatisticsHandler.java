@@ -34,16 +34,16 @@ public interface PerformanceStatisticsHandler {
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
      */
-    void cacheOperation(UUID nodeId, CacheOperationType type, int cacheId, long startTime, long duration);
+    void cacheOperation(UUID nodeId, CacheOperation type, int cacheId, long startTime, long duration);
 
     /**
      * @param nodeId Node id.
      * @param cacheIds Cache IDs.
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
-     * @param commit {@code True} if commited.
+     * @param commited {@code True} if commited.
      */
-    void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration, boolean commit);
+    void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration, boolean commited);
 
     /**
      * @param nodeId Node id.
@@ -89,7 +89,7 @@ public interface PerformanceStatisticsHandler {
     void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut);
 
     /** Cache operations types. */
-    public enum CacheOperationType {
+    public enum CacheOperation {
         /** */
         GET,
 
@@ -124,10 +124,10 @@ public interface PerformanceStatisticsHandler {
         INVOKE_ALL;
 
         /** Values. */
-        private static final CacheOperationType[] VALS = values();
+        private static final CacheOperation[] VALS = values();
 
         /** @return Operation type from ordinal. */
-        public static CacheOperationType fromOrdinal(byte ord) {
+        public static CacheOperation fromOrdinal(byte ord) {
             return ord < 0 || ord >= VALS.length ? null : VALS[ord];
         }
     }

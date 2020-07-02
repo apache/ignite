@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -165,7 +165,7 @@ public class FilePerformanceStatisticsWriter {
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
      */
-    public void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
+    public void cacheOperation(CacheOperation type, int cacheId, long startTime, long duration) {
         int size = /*type*/ 1 +
             /*cacheId*/ 4 +
             /*startTime*/ 8 +
@@ -190,9 +190,9 @@ public class FilePerformanceStatisticsWriter {
      * @param cacheIds Cache IDs.
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
-     * @param commit {@code True} if commited.
+     * @param commited {@code True} if commited.
      */
-    public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commit) {
+    public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commited) {
         int size = /*cacheIds*/ 4 + cacheIds.size() * 4 +
             /*startTime*/ 8 +
             /*duration*/ 8 +
@@ -214,7 +214,7 @@ public class FilePerformanceStatisticsWriter {
 
         buf.putLong(startTime);
         buf.putLong(duration);
-        buf.put(commit ? (byte)1 : 0);
+        buf.put(commited ? (byte)1 : 0);
 
         seg.release();
     }
@@ -656,35 +656,6 @@ public class FilePerformanceStatisticsWriter {
             catch (IgniteCheckedException e) {
                 log.error("Failed to stop performance statistics.", e);
             }
-        }
-    }
-
-    /** Operation type. */
-    public enum OperationType {
-        /** Cache operation. */
-        CACHE_OPERATION,
-
-        /** Transaction. */
-        TRANSACTION,
-
-        /** Query. */
-        QUERY,
-
-        /** Query reads. */
-        QUERY_READS,
-
-        /** Task. */
-        TASK,
-
-        /** Job. */
-        JOB;
-
-        /** Values. */
-        private static final OperationType[] VALS = values();
-
-        /** @return Operation type from ordinal. */
-        public static OperationType fromOrdinal(byte ord) {
-            return ord < 0 || ord >= VALS.length ? null : VALS[ord];
         }
     }
 }

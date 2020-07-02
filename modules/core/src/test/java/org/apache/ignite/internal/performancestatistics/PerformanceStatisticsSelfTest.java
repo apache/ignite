@@ -28,7 +28,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -36,15 +36,15 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType.GET;
-import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType.GET_ALL;
-import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType.INVOKE;
-import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType.INVOKE_ALL;
-import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType.LOCK;
-import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType.PUT;
-import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType.PUT_ALL;
-import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType.REMOVE;
-import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType.REMOVE_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation.GET;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation.GET_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation.INVOKE;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation.INVOKE_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation.LOCK;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation.PUT;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation.PUT_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation.REMOVE;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation.REMOVE_ALL;
 import static org.apache.ignite.testframework.LogListener.matches;
 
 /**
@@ -176,7 +176,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     }
 
     /** */
-    private void checkCacheOperation(CacheOperationType op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
+    private void checkCacheOperation(CacheOperation op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
         LogListener lsnr = matches("cacheOperation ")
             .andMatches("type=" + op)
             .andMatches("cacheId=" + ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId())
@@ -205,7 +205,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
         LogListener lsnr = matches("transaction ")
             .andMatches("cacheIds=[" + ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId() + ']')
-            .andMatches("commit=" + commit).build();
+            .andMatches("commited=" + commit).build();
 
         log.registerListener(lsnr);
 

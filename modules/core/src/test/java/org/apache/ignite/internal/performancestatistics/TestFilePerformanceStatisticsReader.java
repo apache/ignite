@@ -51,7 +51,7 @@ public class TestFilePerformanceStatisticsReader {
         }
 
         /** {@inheritDoc} */
-        @Override public void cacheOperation(UUID nodeId, CacheOperationType type, int cacheId, long startTime,
+        @Override public void cacheOperation(UUID nodeId, CacheOperation type, int cacheId, long startTime,
             long duration) {
             log("cacheOperation", "type", type, "cacheId", cacheId, "startTime", startTime,
                 "duration", duration);
@@ -59,9 +59,9 @@ public class TestFilePerformanceStatisticsReader {
 
         /** {@inheritDoc} */
         @Override public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
-            boolean commit) {
+            boolean commited) {
             log("transaction", "cacheIds", cacheIds, "startTime", startTime, "duration", duration,
-                "commit", commit);
+                "commited", commited);
         }
 
         /** {@inheritDoc} */

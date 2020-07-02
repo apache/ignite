@@ -44,7 +44,7 @@ public class PerformanceStatisticsMBeanImpl implements PerformanceStatisticsMBea
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enabled() {
+    @Override public boolean started() {
         return ctx.performanceStatistics().enabled();
     }
 }

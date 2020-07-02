@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
-import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperationType;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler.CacheOperation;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteUuid;
@@ -126,7 +126,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
      */
-    public void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
+    public void cacheOperation(CacheOperation type, int cacheId, long startTime, long duration) {
         writer.cacheOperation(type, cacheId, startTime, duration);
     }
 
@@ -134,10 +134,10 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
      * @param cacheIds Cache IDs.
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
-     * @param commit {@code True} if commited.
+     * @param commited {@code True} if commited.
      */
-    public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commit) {
-        writer.transaction(cacheIds, startTime, duration, commit);
+    public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commited) {
+        writer.transaction(cacheIds, startTime, duration, commited);
     }
 
     /**
