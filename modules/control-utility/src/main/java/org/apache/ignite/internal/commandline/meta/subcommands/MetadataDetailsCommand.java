@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
+import org.apache.ignite.internal.commandline.meta.MetadataCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataInfoTask;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataListResult;
@@ -44,7 +45,7 @@ public class MetadataDetailsCommand
 
     /** {@inheritDoc} */
     @Override public MetadataTypeArgs parseArguments0(CommandArgIterator argIter) {
-        return MetadataTypeArgs.parseArguments(argIter);
+        return MetadataCommand.parseArgs(argIter);
     }
 
     /** {@inheritDoc} */
