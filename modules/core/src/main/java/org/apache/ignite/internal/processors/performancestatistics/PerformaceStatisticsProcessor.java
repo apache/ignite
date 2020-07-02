@@ -91,7 +91,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
 
     /** @return {@code True} if collecting performance statistics is enabled. */
     public boolean enabled() {
-        return writer.performanceStatisticsEnabled();
+        return writer.enabled();
     }
 
     /**

@@ -92,7 +92,7 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** @return {@code True} if collecting performance statistics enabled. */
-    public boolean performanceStatisticsEnabled() {
+    public boolean enabled() {
         return enabled;
     }
 
