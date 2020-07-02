@@ -20,13 +20,18 @@ package org.apache.ignite.console.agent.rest;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
 import java.sql.Connection;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -54,6 +59,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.db.JdbcQueryExecutor;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
+import org.apache.ignite.console.agent.rest.presto.ClientSession;
 import org.apache.ignite.console.agent.rest.presto.PrestoClient;
 
 import org.apache.ignite.internal.util.typedef.F;
@@ -87,9 +93,8 @@ public class RestForPrestoExecutor implements AutoCloseable {
 
     /** JSON object mapper. */
     public static final ObjectMapper MAPPER = new ObjectMapper();
-    public static JsonNodeFactory jsonNodeFactory = new JsonNodeFactory(true);
-    /** */
-    private final OkHttpClient httpClient;
+    public static final JsonNodeFactory jsonNodeFactory = new JsonNodeFactory(true);
+   
     
     private AgentConfiguration cfg;
 
@@ -98,8 +103,10 @@ public class RestForPrestoExecutor implements AutoCloseable {
     
     int jdbcQueryCancellationTime = 10000;
     
-    private PrestoClient presto;
+    private ClientSession session;
 
+    private PrestoClient presto;
+    
     /**
      * Constructor.
      *    
@@ -111,17 +118,20 @@ public class RestForPrestoExecutor implements AutoCloseable {
     ) throws GeneralSecurityException, IOException {
     	
     	this.cfg = cfg;
+    	String url = cfg.prestoURI();
+    	int pos = url.lastIndexOf('/');
+    	String catalog = "";
+    	if(pos>10) {
+    		catalog = url.substring(pos+1);
+    		url = url.substring(0,pos);
+    	}
     	
-        Dispatcher dispatcher = new Dispatcher();
-
-        dispatcher.setMaxRequests(Integer.MAX_VALUE);
-        dispatcher.setMaxRequestsPerHost(Integer.MAX_VALUE);
-
-        OkHttpClient.Builder builder = new OkHttpClient.Builder()
-            .readTimeout(0, TimeUnit.MILLISECONDS)
-            .dispatcher(dispatcher);        
-
-        httpClient = builder.build();
+    	try {
+			this.session = new ClientSession(new URI(url),cfg.nodeLogin(),cfg.configPath(),catalog,null);
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
         
        
     }
@@ -130,11 +140,9 @@ public class RestForPrestoExecutor implements AutoCloseable {
      * Stop HTTP client.
      */
     @Override public void close() {
-        if (httpClient != null) {
-            httpClient.dispatcher().executorService().shutdown();
-
-            httpClient.dispatcher().cancelAll();
-        }        
+    	 if(presto!=null) {
+    		 presto.Close();
+    	 }
     }
 
     /** */
@@ -189,26 +197,64 @@ public class RestForPrestoExecutor implements AutoCloseable {
 		
     }
     /** */
-    public RestResult sendRequestToPresto(String url, Map<String, Object> params, Map<String, Object> headers) throws IOException {
-    	int pos = url.lastIndexOf('/');
-    	String calalog = "";
-    	if(pos>10) {
-    		calalog = url.substring(pos+1);
-    		url = url.substring(0,pos);
-    	}
-    	String cmd = (String)params.get("p2");
-    	if(cmd==null) {
-        	cmd = (String)params.get("cmd");
-        }
-    	presto = new PrestoClient(httpClient,url,calalog);
+    public RestResult sendRequestToPresto(String url, Map<String, Object> args,Map<String, Object> params, Map<String, Object> headers) throws IOException {
     	
-    	if("org.apache.ignite.internal.visor.cache.VisorCacheNamesCollectorTask".equals(cmd)) {
-    		return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + presto.$HTTP_error);
+    	String cmd = (String)params.get("cmd");
+    	String p2 = (String)params.get("p2");
+    	
+    	String token = (String)args.get("token");
+    	presto = session.newPrestoClient();
+    	
+    	if("org.apache.ignite.internal.visor.cache.VisorCacheNamesCollectorTask".equals(p2)) {
+    		Map<String,ObjectNode> schemas = presto.ShowSchemas(null);
+    		ObjectNode res = new ObjectNode(jsonNodeFactory);
+    		ObjectNode result = new ObjectNode(jsonNodeFactory);
+    		ObjectNode caches = new ObjectNode(jsonNodeFactory);
+    		
+            for (String schema: schemas.keySet()) {            	
+            	caches.put(schema.toString(),schema);
+            }
+            result.set("caches", caches);
+            result.put("protocolVersion", 1);
+            res.set("result", result);
+            
+            return RestResult.success(res.toPrettyString(), token);
     	}
     	else if("metadata".equals(cmd)) {
-    		return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + presto.$HTTP_error);
+    		
+    		ArrayNode result = new ArrayNode(jsonNodeFactory);    
+    		ObjectNode cachesMap = new ObjectNode(jsonNodeFactory);
+    		
+    		Map<String,ObjectNode> schemas = presto.ShowSchemas(null);
+    		for (String schema: schemas.keySet()) {      
+    			ObjectNode caches = cachesMap.with(schema);
+    			caches.put("cacheName",schema); 
+    			ArrayNode types = caches.withArray("types");
+    			result.add(caches);
+    			ObjectNode tables = presto.ShowTables(null, schema);
+        		Iterator<Entry<String, JsonNode>> it = tables.fields();
+                while (it.hasNext()) {  
+                	Entry<String, JsonNode> table = it.next();
+                	String typeName = table.getKey();
+                	  
+                	types.add(typeName);  
+                	
+                	ObjectNode fields = caches.with("fields");
+                	ObjectNode column = new ObjectNode(jsonNodeFactory);
+                	column.put("ID", "java.lang.Integer");
+                	fields.set(typeName, column);
+                	
+                	ObjectNode indexes = caches.with("indexes");
+                	ArrayNode index = new ArrayNode(jsonNodeFactory);  
+                	indexes.set(typeName, index);   
+                
+                }
+            }    
+    		
+            
+            return RestResult.success(result.toPrettyString(), token);
     	}
-    	else {
+    	else if("org.apache.ignite.internal.visor.query.VisorQueryTask".equals(p2)){
 	        String schema = (String)params.get("p4");
 	        String query = (String)params.get("p5");
 	    	
@@ -223,21 +269,23 @@ public class RestForPrestoExecutor implements AutoCloseable {
 				//Get the result
 				ArrayNode $answer = presto.GetData();
 				ArrayNode $cols = presto.GetColumns();
-				return parseResponse((String)params.get("token"),presto.$queryId,$cols,$answer,start);
+				return parseResponse(token,presto.$queryId,$cols,$answer,start);
 	    	}
 	    	else {
 	    		return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + presto.$HTTP_error);
 	    	}
     	 
     	}
+    	return null;
     }
 
     
     public RestResult sendRequest(
-            List<String> nodeURIs,
+    		Map<String, Object> args,           
             Map<String, Object> params,
             Map<String, Object> headers
         ) throws ConnectException {
+    	 	List<String> nodeURIs = Arrays.asList(cfg.prestoURI());
             Integer startIdx = startIdxs.getOrDefault(nodeURIs, 0);
 
             int urlsCnt = nodeURIs.size();
@@ -248,7 +296,7 @@ public class RestForPrestoExecutor implements AutoCloseable {
                 String nodeUrl = nodeURIs.get(currIdx);
 
                 try {
-                    RestResult res = sendRequestToPresto(nodeUrl, params, headers);
+                    RestResult res = sendRequestToPresto(nodeUrl, args, params, headers);
 
                     // If first attempt failed then throttling should be cleared.
                     if (i > 0)

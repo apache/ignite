@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -34,10 +35,16 @@ import org.apache.ignite.console.agent.db.DbColumn;
 import org.apache.ignite.console.agent.db.DbTable;
 import org.apache.ignite.internal.visor.query.VisorQueryIndex;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+
 /**
  * Base class for database metadata dialect.
  */
 public abstract class DatabaseMetadataDialect {
+	
+	static CacheBuilder cacheBuilder = CacheBuilder.newBuilder().expireAfterWrite(5*60, TimeUnit.SECONDS);
+	static Cache<String,Collection<DbTable>> cache = null;
     /**
      * Gets schemas from database.
      *
@@ -123,5 +130,18 @@ public abstract class DatabaseMetadataDialect {
         }
 
         return uniqueIdxAsPk;
+    }
+    
+    public Collection<DbTable> cachedTables(Connection conn, List<String> schemas, boolean tblsOnly) throws SQLException {
+    	String key = conn.getCatalog()+schemas.toString()+tblsOnly;
+    	if(cache==null) {
+    		cache = cacheBuilder.build();
+    	}
+    	Collection<DbTable> tables = cache.getIfPresent(key);
+    	if(tables==null) {
+    		tables = this.tables(conn, schemas, tblsOnly);
+    		cache.put(key, tables);
+    	}
+    	return tables;
     }
 }

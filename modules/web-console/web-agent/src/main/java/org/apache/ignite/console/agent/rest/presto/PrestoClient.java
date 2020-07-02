@@ -1,8 +1,12 @@
 package org.apache.ignite.console.agent.rest.presto;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -12,7 +16,9 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Maps;
 
 import okhttp3.Dispatcher;
 import okhttp3.FormBody;
@@ -27,13 +33,14 @@ public class PrestoClient {
 	
 	 /** JSON object mapper. */
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final JsonNodeFactory jsonNodeFactory = new JsonNodeFactory(true);
 	/**
 	 * The following parameters may be modified depending on your configuration
 	 */
-	private String $source = "PrestoClient";
+	
 	private String $version = "0.2";
 	private int $maximumRetries = 5;
-	private String $prestoUser = "presto";
+	
 	private String $prestoSchema = "default";
 	private String $prestoCatalog = "hive";
 	private String $userAgent = "";
@@ -57,7 +64,7 @@ public class PrestoClient {
 	 /** */
     private final OkHttpClient httpClient;
 	
-
+    private final ClientSession $session;
 
 	/**
 	 * Constructs the presto connection instance
@@ -65,9 +72,11 @@ public class PrestoClient {
 	 * @param $connectUrl
 	 * @param $catalog
 	 */
-	public PrestoClient(OkHttpClient httpClient,String connectUrl,String catalog){
-		this.$url = connectUrl;
-		this.$prestoCatalog = catalog;
+	PrestoClient(OkHttpClient httpClient,ClientSession session){
+		this.$session = session;
+		this.$url = session.getServer().toString();
+		this.$prestoCatalog = session.getCatalog();
+		this.$prestoSchema = session.getSchema();
 		this.httpClient = httpClient;
 	}
 	
@@ -111,7 +120,7 @@ public class PrestoClient {
 		
 		$data = null;
 		
-		this.$userAgent = this.$source+"/"+this.$version;
+		this.$userAgent = $session.getSource()+"/"+this.$version;
 		
 		String $request = $query;
 		//check that no other queries are already running for this object
@@ -127,7 +136,7 @@ public class PrestoClient {
 			return false;
 		}
 				
-		this.$headers.put("X-Presto-User", this.$prestoUser);
+		this.$headers.put("X-Presto-User", $session.getUser());
 		this.$headers.put("X-Presto-Catalog", this.$prestoCatalog);
 		if(!StringUtil.isEmpty(this.$prestoSchema)) {
 			this.$headers.put("X-Presto-Schema", this.$prestoSchema);
@@ -190,9 +199,7 @@ public class PrestoClient {
 		
 	}
 	
-	public void setUser(String user) {
-		this.$prestoUser = user;
-	}
+	
 	
 	/** 
 	 * Provide Information on the query execution
@@ -269,6 +276,13 @@ public class PrestoClient {
 	  
 	}
 	
+	public void Close() {
+		if (httpClient != null) {
+            httpClient.dispatcher().executorService().shutdown();
+
+            httpClient.dispatcher().cancelAll();
+        }     
+	}
 	/**
 	 * Provide a function to cancel current request if not yet finished
 	 */
@@ -298,7 +312,111 @@ public class PrestoClient {
 		}
 	}
 	
+
+	/**
+	 * 
+	 * @param catalog,schema
+	 * @return Map<String,JSONNode>
+	 */
+	public ObjectNode ShowTables(String catalog,String schema){
+		if(StringUtil.isEmpty(catalog)) {
+			catalog = $session.getCatalog();
+		}
+		Map<String,ObjectNode> schemas = ShowSchemas(catalog);
+		if(schemas.containsKey(schema)) {
+			ObjectNode tables = schemas.get(schema);
+			if(tables.isEmpty()) {
+				try {
+					this.Query("SHOW TABLES FROM "+catalog+'.'+schema);
+					
+					if(this.WaitQueryExec()) {
+						ArrayNode catas = this.GetData();
+						if(catas!=null)
+							catas.forEach(item->{
+								ObjectNode table  = new ObjectNode(jsonNodeFactory);
+								String name = item.get(0).asText();
+								tables.set(name, table);
+							});
+						
+					}
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+			}
+			return tables;
+		}
+		else {
+			ObjectNode tables  = new ObjectNode(jsonNodeFactory);
+			return tables;					
+		}
+	}
 	
+	/**
+	 * 
+	 * @param catalog
+	 * @return Map<scheam:catalog>
+	 */
+	public Map<String,ObjectNode> ShowSchemas(String catalog){
+		if(StringUtil.isEmpty(catalog)) {
+			catalog = $session.getCatalog();
+		}
+		Set<String> catalogs = ShowCatalog();
+		if(catalogs.contains(catalog)) {
+			Map<String,ObjectNode> schemas = $session.metasMap.get(catalog);
+			if(schemas.isEmpty()) {
+				try {
+					this.Query("SHOW SCHEMAS FROM "+catalog);
+					
+					if(this.WaitQueryExec()) {
+						ArrayNode catas = this.GetData();
+						catas.forEach(item->{
+							ObjectNode tables  = new ObjectNode(jsonNodeFactory);
+							String name = item.get(0).asText();
+							schemas.put(name, tables);
+						});
+						
+					}
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+			}
+			return schemas;
+		}
+		else {
+			return Maps.newHashMap();					
+		}
+	}
+	
+	/**
+	 * 
+	 * @param 
+	 * @return <catalog type>
+	 */
+	public Set<String> ShowCatalog(){
+		if($session.metasMap.isEmpty()) {
+			try {
+				this.Query("SHOW CATALOGS");
+				if(this.WaitQueryExec()) {
+					ArrayNode catas = this.GetData();
+					catas.forEach(item->{
+						String name = item.get(0).asText();
+						Map<String,ObjectNode> schema = new HashMap<>();
+						$session.metasMap.put(name, schema);
+					});
+					
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+		return $session.metasMap.keySet();
+	}
 
     /** */
     public Response sendRequest(String url, RequestBody body, Map<String, Object> headers) throws IOException {
@@ -348,22 +466,18 @@ public class PrestoClient {
         }
     }
     
-	public static void main(String[] args) {
+	public static void main(String[] args) throws URISyntaxException {
 		
-		Dispatcher dispatcher = new Dispatcher();
-
-        dispatcher.setMaxRequests(Integer.MAX_VALUE);
-        dispatcher.setMaxRequestsPerHost(Integer.MAX_VALUE);
-
-        OkHttpClient.Builder builder = new OkHttpClient.Builder()
-            .readTimeout(0, TimeUnit.MILLISECONDS)
-            .dispatcher(dispatcher);  
+		ClientSession session = new ClientSession(new URI("http://localhost:9100"),"root","demo","pgsql",null);
         
 		//Create a new connection object. Provide URL and catalog as parameters
-		PrestoClient  $presto = new PrestoClient(builder.build(),"http://localhost:9100","pgsql");
+		PrestoClient  $presto = session.newPrestoClient();
 
 		//Prepare your sql request
 		try {
+			
+			ObjectNode tables = $presto.ShowTables(null, "public");
+			
 			$presto.Query("SELECT * FROM pgsql.dict.mid_city_area");
 			
 			//Execute the request and build the result

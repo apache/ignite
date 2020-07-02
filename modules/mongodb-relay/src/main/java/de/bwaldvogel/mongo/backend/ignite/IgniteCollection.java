@@ -58,6 +58,16 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
         super(database, collectionName, idField);
         this.dataMap = dataMap;
     }
+    
+    @Override
+    protected void indexChanged(Index<Object> index,String op) {
+    	for (Index<Object> idx : this.getIndexes()) {
+			if (idx instanceof IgniteLuceneIndex) {
+				IgniteLuceneIndex igniteIndex = (IgniteLuceneIndex) idx;
+				igniteIndex.init(this.getCollectionName());
+			}
+    	}
+    }
 
     @Override
     protected void updateDataSize(int sizeDelta) {

@@ -69,7 +69,7 @@ public class AgentConfiguration {
     private List<String> nodeURIs;
     
     /** */
-    private String prestoURI = DFLT_PRESTO_URI;
+    private String prestoURI;
 
     /** */
     @Parameter(names = {"-nl", "--node-login"},
@@ -532,9 +532,9 @@ public class AgentConfiguration {
         
         if (prestoURI == null)
         	prestoURI(cfg.prestoURI());
-
+        
         if (prestoURI == null)
-        	prestoURI(DFLT_PRESTO_URI);
+        	prestoURI(DFLT_PRESTO_URI);        
 
         if (nodeLogin == null)
             nodeLogin(cfg.nodeLogin());

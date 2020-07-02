@@ -2101,8 +2101,8 @@ export class NotebookCtrl {
 
                             if (cache.sqlSchema)
                                 meta.children.unshift({type: 'plain', name: 'cacheName: ' + meta.maskedName, maskedName: meta.maskedName});
-
-                            meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode, maskedName: meta.maskedName});
+							//remove@byron
+                            //meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode, maskedName: meta.maskedName});
                         }
 
                         return cache;

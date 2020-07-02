@@ -57,6 +57,7 @@ import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
 import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.backend.DocumentComparator;
 import de.bwaldvogel.mongo.backend.DocumentWithPosition;
+import de.bwaldvogel.mongo.backend.Index;
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.bson.Document;
@@ -70,6 +71,16 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     public IgniteBinaryCollection(IgniteDatabase database, String collectionName, String idField, IgniteCache<Object, BinaryObject> dataMap) {
         super(database, collectionName, idField);
         this.dataMap = dataMap;
+    }
+    
+    @Override
+    protected void indexChanged(Index<Object> index,String op) {
+    	for (Index<Object> idx : this.getIndexes()) {
+			if (idx instanceof IgniteLuceneIndex) {
+				IgniteLuceneIndex igniteIndex = (IgniteLuceneIndex) idx;
+				igniteIndex.init(this.getCollectionName());
+			}
+    	}
     }
 
     @Override

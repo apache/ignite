@@ -65,8 +65,8 @@ export default class {
                 }
                 for(var i=0; i<len; i++) {
                 	db_clusters2[i].active = false;
-                    db_clusters2[i].name += '->Flink';
-                    db_clusters2[i].router_uri = 'flink_sql';
+                    db_clusters2[i].name += '->Presto';
+                    db_clusters2[i].router_uri = 'presto';
                 }
                 this.db_clusters = this.db_clusters.concat(db_clusters2);
             })

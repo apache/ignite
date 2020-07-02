@@ -174,7 +174,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 	@Override
 	public void add(Document document, Object position, MongoCollection<Object> collection) {
 		// index all field
-		if (idxdFields == null) {
+		if (idxdFields == null || idxdFields.length==0) {
 			Map<String, FieldType> fields = fieldsMapping(collection);
 			idxdFields = new String[fields.size()];
 			idxdTypes = new FieldType[fields.size()];
@@ -440,7 +440,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 	@Override
 	public void updateInPlace(Document oldDocument, Document newDocument, Object position,
 			MongoCollection<Object> collection) throws KeyConstraintError {
-		if (true || !nullAwareEqualsKeys(oldDocument, newDocument)) {
+		if (!nullAwareEqualsKeys(oldDocument, newDocument)) {
 			Object removedPosition = remove(oldDocument, collection);
 			if (removedPosition != null) {
 				Assert.equals(removedPosition, position);

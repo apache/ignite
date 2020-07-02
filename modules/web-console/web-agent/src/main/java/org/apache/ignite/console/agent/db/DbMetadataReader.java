@@ -95,6 +95,10 @@ public class DbMetadataReader {
     public Collection<DbTable> metadata(Connection conn, List<String> schemas, boolean tblsOnly) throws SQLException {
         return dialect(conn).tables(conn, schemas, tblsOnly);
     }
+    
+    public Collection<DbTable> cachedMetadata(Connection conn, List<String> schemas, boolean tblsOnly) throws SQLException {
+        return dialect(conn).cachedTables(conn, schemas, tblsOnly);
+    }
 
     /**
      * Connect to database.

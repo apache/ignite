@@ -108,7 +108,7 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
             return commandGetLastError(channel, command, query);
         } else if (command.equalsIgnoreCase("reseterror")) {
             return commandResetError(channel);
-        }
+        } 
 
         clearLastStatus(channel);
 

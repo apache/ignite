@@ -101,22 +101,21 @@ public class RestListener extends AbstractListener {
             }
             
             //add@byron support query on backend rds or presto
-            
-            String cmd = (String)params.get("p2");
-            if(cmd==null) {
-            	cmd = (String)params.get("cmd");
-            }
-            if ("org.apache.ignite.internal.visor.query.VisorQueryTask".equals(cmd) 
-            || "org.apache.ignite.internal.visor.cache.VisorCacheNamesCollectorTask".equals(cmd)
-            || "metadata".equals(cmd)) {
+            RestResult result = null;
+            String cmd = (String)params.get("cmd");            
+            if ("exe".equals(cmd) || "metadata".equals(cmd)) {
             	//到配置的关系数据库查询数据
+            	//"org.apache.ignite.internal.visor.query.VisorQueryTask"
             	if("rds".equals(args.get("uri"))) {
-	            	return rdsExecutor.sendRequest(args, params, headers);
+            		result = rdsExecutor.sendRequest(args, params, headers);
 	            }
 	            //到配置的presto gateway数据代理查询数据
             	else if ("flink_sql".equals(args.get("uri")) || "presto".equals(args.get("uri"))) {
-	            	return prestoExecutor.sendRequestToPresto(this.cfg.prestoURI(),params, headers);
-	            }            	
+            		result = prestoExecutor.sendRequest(args, params, headers);
+	            } 
+            	if(result!=null) {
+            		return result;
+            	}
             }
 	         //end
             return restExecutor.sendRequest(this.cfg.nodeURIs(), params, headers);

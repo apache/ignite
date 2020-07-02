@@ -202,8 +202,13 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
             log.debug("Index is not empty");
         }
         indexes.add(index);
+        indexChanged(index,"add");
     }
 
+    protected void indexChanged(Index<P> index,String op) {
+    	
+    }
+    
     private Index<P> findByName(String indexName) {
         return indexes.stream()
             .filter(index -> index.getName().equals(indexName))
@@ -229,6 +234,7 @@ public abstract class AbstractMongoCollection<P> implements MongoCollection<P> {
         Index<P> indexToDrop = CollectionUtils.getSingleElement(indexesToDrop);
         indexToDrop.drop();
         indexes.remove(indexToDrop);
+        indexChanged(indexToDrop,"remove");
     }
     
  	   
