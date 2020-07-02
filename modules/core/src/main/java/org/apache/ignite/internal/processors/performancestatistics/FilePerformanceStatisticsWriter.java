@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
@@ -228,15 +228,13 @@ public class FilePerformanceStatisticsWriter {
         if (writer == null)
             return;
 
-        Short strId = writer.stringId(text);
-
-        boolean needWriteStr = strId == null;
+        boolean needWriteStr = !writer.stringCached(text);
 
         byte[] strBytes = null;
 
         int size = /*type*/ 1 +
             /*compactStringFlag*/ 1 +
-            /*strId*/ 2 +
+            /*strId*/ 4 +
             /*id*/ 8 +
             /*startTime*/ 8 +
             /*duration*/ 8 +
@@ -246,8 +244,6 @@ public class FilePerformanceStatisticsWriter {
             strBytes = text.getBytes();
 
             size += /*text*/ 4 + strBytes.length;
-
-            strId = writer.generateStringId(text);
         }
 
         SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.QUERY, size);
@@ -259,7 +255,7 @@ public class FilePerformanceStatisticsWriter {
 
         buf.put((byte)type.ordinal());
         buf.put(needWriteStr ? (byte)1 : 0);
-        buf.putShort(strId);
+        buf.putInt(text.hashCode());
 
         if (needWriteStr) {
             buf.putInt(strBytes.length);
@@ -317,15 +313,13 @@ public class FilePerformanceStatisticsWriter {
         if (writer == null)
             return;
 
-        Short strId = writer.stringId(taskName);
-
-        boolean needWriteStr = strId == null;
+        boolean needWriteStr = !writer.stringCached(taskName);
 
         byte[] strBytes = null;
 
         int size = /*sesId*/ 24 +
             /*compactStringFlag*/ 1 +
-            /*strId*/ 2 +
+            /*strId*/ 4 +
             /*startTime*/ 8 +
             /*duration*/ 8 +
             /*affPartId*/ 4;
@@ -334,8 +328,6 @@ public class FilePerformanceStatisticsWriter {
             strBytes = taskName.getBytes();
 
             size += /*taskName*/ 4 + strBytes.length;
-
-            strId = writer.generateStringId(taskName);
         }
 
         SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.TASK, size);
@@ -347,7 +339,7 @@ public class FilePerformanceStatisticsWriter {
 
         writeIgniteUuid(buf, sesId);
         buf.put(needWriteStr ? (byte)1 : 0);
-        buf.putShort(strId);
+        buf.putInt(taskName.hashCode());
 
         if (needWriteStr) {
             buf.putInt(strBytes.length);
@@ -482,11 +474,8 @@ public class FilePerformanceStatisticsWriter {
         /** Stop file writer future. */
         GridFutureAdapter<Void> stopFut = new GridFutureAdapter<>();
 
-        /** Cached strings by id. */
-        private final ConcurrentHashMap<String, Short> stringIds = new ConcurrentHashMap<>();
-
-        /** String id generator. */
-        private final AtomicInteger idsGen = new AtomicInteger();
+        /** Hashcodes of cached strings. */
+        private final ConcurrentSkipListSet<Integer> cachedStrings = new ConcurrentSkipListSet<>();
 
         /** {@code True} if the small buffer warning message logged. */
         private final AtomicBoolean smallBufLogged = new AtomicBoolean();
@@ -543,25 +532,21 @@ public class FilePerformanceStatisticsWriter {
 
             U.closeQuiet(fileIo);
 
-            stringIds.clear();
+            cachedStrings.clear();
 
             stopFut.onDone();
 
             log.info("Performance statistics writer stopped.");
         }
 
-        /** @return Unique per file string identifier. {@code Null} if there is no cached identifier. */
-        Short stringId(String str) {
-            return stringIds.get(str);
-        }
+        /** @return {@code True} if string hash code is cached. {@code False} if need write string.  */
+        boolean stringCached(String str) {
+            boolean cached = cachedStrings.contains(str.hashCode());
 
-        /** @return Generate unique per file string identifier. {@code -1} if max cached limit exceeded. */
-        short generateStringId(String str) {
-            if (idsGen.get() > MAX_CACHED_STRING_COUNT)
-                return -1;
+            if (!cached)
+                cachedStrings.add(str.hashCode());
 
-            return stringIds.computeIfAbsent(str,
-                s -> (short)idsGen.updateAndGet(id -> id < MAX_CACHED_STRING_COUNT ? id + 1 : -1));
+            return cached;
         }
 
         /** @return Write segment.*/

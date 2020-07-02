@@ -27,10 +27,10 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -157,7 +157,7 @@ public class FilePerformanceStatisticsReader {
     /** Performance statistics operations deserializer. */
     private static class PerformanceStatisticsDeserializer implements AutoCloseable {
         /** Cached strings by id. */
-        private final ConcurrentHashMap<Short, String> stringById = new ConcurrentHashMap<>();
+        private final HashMap<Integer, String> stringById = new HashMap<>();
 
         /** Handlers to process deserialized operation. */
         private final PerformanceStatisticsHandler[] handlers;
@@ -228,12 +228,12 @@ public class FilePerformanceStatisticsReader {
                 }
 
                 case QUERY: {
-                    if (buf.remaining() < 1 + 1 + 2 + 8 + 8 + 8 + 1)
+                    if (buf.remaining() < 1 + 1 + 4 + 8 + 8 + 8 + 1)
                         break;
 
                     GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
                     boolean needReadString = buf.get() != 0;
-                    short strId = buf.getShort();
+                    int strId = buf.getInt();
 
                     String str;
 
@@ -282,12 +282,12 @@ public class FilePerformanceStatisticsReader {
                 }
 
                 case TASK: {
-                    if (buf.remaining() < 24 + 1 + 2 + 8 + 8 + 4)
+                    if (buf.remaining() < 24 + 1 + 4 + 8 + 8 + 4)
                         break;
 
                     IgniteUuid sesId = readIgniteUuid(buf);
                     boolean needReadString = buf.get() != 0;
-                    short strId = buf.getShort();
+                    int strId = buf.getInt();
 
                     String taskName;
 
