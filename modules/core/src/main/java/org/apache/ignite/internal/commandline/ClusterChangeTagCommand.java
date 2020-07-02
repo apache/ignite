@@ -83,7 +83,8 @@ public class ClusterChangeTagCommand implements Command<String> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Change cluster tag to new value:", CLUSTER_CHANGE_TAG, "newTagValue", optional(CMD_AUTO_CONFIRMATION));
+        Command.usage(logger, "Change cluster tag to new value:", CLUSTER_CHANGE_TAG,
+            "newTagValue", optional(CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */
