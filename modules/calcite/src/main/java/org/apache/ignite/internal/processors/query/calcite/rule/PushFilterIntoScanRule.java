@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -31,6 +30,7 @@ import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
+import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -73,7 +73,7 @@ public class PushFilterIntoScanRule extends RelOptRule {
             mq.getPulledUpPredicates(scan), rexExecutor);
 
         // Let's remove from the condition common with the scan filter parts.
-        cond = simplify.simplifyFilterPredicates(RelOptUtil.conjunctions(cond));
+        cond = simplify.simplifyPreservingType(cond, RexUnknownAs.FALSE, true);
 
         // We need to replace RexInputRef with RexLocalRef because TableScan doesn't have inputs.
         cond = cond.accept(new InputRefReplacer());
