@@ -381,6 +381,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(1, cache[1]);
             
             // TODO: Check log?
+            // TODO: When filter fails, it is ignored, and notification is delivered - check this
         }
 
         [Test]
