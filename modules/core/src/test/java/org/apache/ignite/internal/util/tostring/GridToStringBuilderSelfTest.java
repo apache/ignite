@@ -684,7 +684,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         /** */
         @SuppressWarnings("unused")
         @GridToStringOrder(0)
-        private final String id = "1234567890";
+        private String id = "1234567890";
 
         /** */
         @SuppressWarnings("unused")
@@ -710,7 +710,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         /** */
         @SuppressWarnings("unused")
-        private final String name = "qwertyuiopasdfghjklzxcvbnm";
+        private String name = "qwertyuiopasdfghjklzxcvbnm";
 
         /** */
         @SuppressWarnings("unused")
@@ -799,7 +799,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         /** */
         @SuppressWarnings("unused")
         @GridToStringInclude
-        private final String str;
+        private String str;
 
         /** */
         @GridToStringInclude
@@ -822,7 +822,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridToStringInclude
-        private final Parent[] pa = new Parent[1];
+        private Parent pa[] = new Parent[1];
 
         /** {@inheritDoc} */
         @Override public String toString() {
@@ -839,7 +839,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         /** */
         @GridToStringInclude
-        private final Parent[] pb = new Parent[1];
+        private Parent pb[] = new Parent[1];
 
         /** {@inheritDoc} */
         @Override public String toString() {

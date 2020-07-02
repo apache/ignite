@@ -25,7 +25,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,7 +56,7 @@ public class GridDebug {
     private static final FileOutputStream out;
 
     /** */
-    private static final Charset charset = StandardCharsets.UTF_8;
+    private static final Charset charset = Charset.forName("UTF-8");
 
     /** */
     private static volatile long start;

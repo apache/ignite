@@ -63,10 +63,10 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     private final IgniteLogger log;
 
     /** Thread local with buffers with capacity = one page {@link #pageSize} and aligned using {@link #ioBlockSize}. */
-    private final ThreadLocal<ByteBuffer> tlbOnePageAligned;
+    private ThreadLocal<ByteBuffer> tlbOnePageAligned;
 
     /** Managed aligned buffers. Used to check if buffer is applicable for direct IO our data should be copied. */
-    private final ConcurrentHashMap<Long, Thread> managedAlignedBuffers;
+    private ConcurrentHashMap<Long, Thread> managedAlignedBuffers;
 
     /** File descriptor. */
     private int fd = -1;
@@ -210,7 +210,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     @Override public void position(long newPosition) throws IOException {
         if (IgniteNativeIoLib.lseek(fdCheckOpened(), newPosition, IgniteNativeIoLib.SEEK_SET) < 0) {
             throw new IOException(String.format("Error setting file [%s] position to [%s]: %s",
-                file, newPosition, getLastError()));
+                file, Long.toString(newPosition), getLastError()));
         }
     }
 
