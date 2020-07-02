@@ -45,7 +45,7 @@ public class IgniteSpiOperationTimeoutHelper {
     /** Given timeout on operation in nanos. */
     private final long timeoutNanos;
 
-    /** Absolute time threshold (nanos) which must not be reached. Ignired if negative or 0. */
+    /** Absolute time threshold (nanos) which must not be reached. Ignored if negative or 0. */
     private long absolteThreshold;
 
     /**
@@ -122,7 +122,7 @@ public class IgniteSpiOperationTimeoutHelper {
     }
 
     /**
-     * Sets absolute time threshold which must never be reached. Ignired if negative or 0.
+     * Sets absolute time threshold which must never be reached. Ignored if negative or 0.
      *
      * @param absolteTimeThreshold Maximum time threshold in nonos.
      */
