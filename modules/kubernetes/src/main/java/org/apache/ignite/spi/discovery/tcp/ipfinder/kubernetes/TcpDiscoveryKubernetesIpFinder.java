@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,6 +41,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 
 /**
  * IP finder for automatic lookup of Ignite nodes running in Kubernetes environment. All Ignite nodes have to deployed
@@ -121,6 +135,9 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
     /** SSL context */
     private SSLContext ctx;
 
+    /** Object reader */
+    private final ObjectReader reader;
+
     /** Whether addresses of pods in not-ready state should be included. */
     private boolean includeNotReadyAddresses;
 
@@ -129,6 +146,15 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
      */
     public TcpDiscoveryKubernetesIpFinder() {
         setShared(true);
+        reader = new ObjectMapper().readerFor(Endpoints.class);
+    }
+
+    /**
+     * Creates an instance of Kubernetes IP finder.
+     */
+    public TcpDiscoveryKubernetesIpFinder(ObjectMapper mapper) {
+        setShared(true);
+        this.reader = mapper.readerFor(Endpoints.class);
     }
 
     /** {@inheritDoc} */
@@ -148,10 +174,7 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
             conn.setSSLSocketFactory(ctx.getSocketFactory());
             conn.addRequestProperty("Authorization", "Bearer " + serviceAccountToken(accountToken));
 
-            // Sending the request and processing a response.
-            ObjectMapper mapper = new ObjectMapper();
-
-            Endpoints endpoints = mapper.readValue(conn.getInputStream(), Endpoints.class);
+            Endpoints endpoints = reader.readValue(conn.getInputStream());
 
             if (endpoints != null && endpoints.subsets != null && !endpoints.subsets.isEmpty()) {
                 for (Subset subset : endpoints.subsets) {
@@ -251,13 +274,13 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
         if (initGuard.compareAndSet(false, true)) {
 
             if (serviceName == null || serviceName.isEmpty() ||
-                namespace == null || namespace.isEmpty() ||
-                master == null || master.isEmpty() ||
-                accountToken == null || accountToken.isEmpty()) {
+                    namespace == null || namespace.isEmpty() ||
+                    master == null || master.isEmpty() ||
+                    accountToken == null || accountToken.isEmpty()) {
                 throw new IgniteSpiException(
-                    "One or more configuration parameters are invalid [setServiceName=" +
-                        serviceName + ", setNamespace=" + namespace + ", setMasterUrl=" +
-                        master + ", setAccountToken=" + accountToken + "]");
+                        "One or more configuration parameters are invalid [setServiceName=" +
+                                serviceName + ", setNamespace=" + namespace + ", setMasterUrl=" +
+                                master + ", setAccountToken=" + accountToken + "]");
             }
 
             try {
