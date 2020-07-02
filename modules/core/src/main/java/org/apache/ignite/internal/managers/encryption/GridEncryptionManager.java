@@ -36,6 +36,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -198,7 +199,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Group encryption keys. */
     private final Map<Integer, Map<Integer, Serializable>> grpEncKeys = new ConcurrentHashMap<>();
 
-    /** Key IDs that are used for writing. */
+    /** Group IDs with key IDs used for writing. */
     private final ConcurrentHashMap<Integer, Integer> grpEncActiveIds = new ConcurrentHashMap<>();
 
     /** Pending generate encryption key futures. */
@@ -247,10 +248,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private final Set<Integer> reencryptGroupsForced = new GridConcurrentHashSet<>();
 
     /** WAL segments encrypted with previous encrypted keys, mapped to cache group encryption key identifiers. */
-    private final Map<Long, Map<Integer, Set<Integer>>> awaitWalSegments = new ConcurrentHashMap<>();
+    private final Map<Long, Map<Integer, Set<Integer>>> awaitWalSegments = new ConcurrentSkipListMap<>();
 
     /** Recovered partitions pages count to be reencrypted. */
-    private final Map<Integer, Map<Integer, Integer>> recoveredPartPagesCnt = new ConcurrentHashMap<>(0);
+    private final Map<Integer, Map<Integer, Integer>> recoveredPartPagesCnt = new ConcurrentHashMap<>();
 
     /** Cache group reencryption manager. */
     private CacheGroupReencryption reencryption;
@@ -349,7 +350,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
-        // Stop reencryption.
         reencryption.stop();
     }
 
@@ -804,9 +804,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (bltSize != bltOnline)
             throw new IgniteException("Not all baseline nodes online [total=" + bltSize + ", online=" + bltOnline + "]");
 
-        int[] groups = new int[cacheOrGrpNames.size()];
-        byte[] keyIds = new byte[groups.length];
-        byte[][] keys = new byte[groups.length][];
+        int[] grpIds = new int[cacheOrGrpNames.size()];
+        byte[] keyIds = new byte[grpIds.length];
+        byte[][] keys = new byte[grpIds.length][];
 
         int n = 0;
 
@@ -817,32 +817,32 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 IgniteInternalCache cache = ctx.cache().cache(cacheOrGroupName);
 
                 if (cache == null)
-                    throw new IgniteException("Cache or group " + cacheOrGroupName + " doesn't exists");
+                    throw new IgniteException("Cache or group \"" + cacheOrGroupName + "\" doesn't exists");
 
                 grp = cache.context().group();
 
                 if (grp.sharedGroup()) {
-                    throw new IgniteException("Cache " + cacheOrGroupName + " is a part of group " + grp.name() +
-                        ". Provide group name instead of cache name for shared groups.");
+                    throw new IgniteException("Cache or group \"" + cacheOrGroupName + "\" is a part of group " +
+                        grp.name() + ". Provide group name instead of cache name for shared groups.");
                 }
-
-                if (!grp.config().isEncryptionEnabled())
-                    throw new IgniteException("Cache " + cacheOrGroupName + " is not encrypted.");
             }
 
-            if (!reencryptionFuture(grp.groupId()).isDone())
+            if (!grp.config().isEncryptionEnabled())
+                throw new IgniteException("Cache or group \"" + cacheOrGroupName + "\" is not encrypted.");
+
+            if (reencryptGroups.contains(grp.groupId()))
                 throw new IgniteException("Reencryption is in progress [grp=" + cacheOrGroupName + "]");
 
-            groups[n] = grp.groupId();
-            keys[n] = getSpi().encryptKey(getSpi().create());
+            grpIds[n] = grp.groupId();
             keyIds[n] = (byte)(grpEncActiveIds.get(grp.groupId()) + 1);
+            keys[n] = getSpi().encryptKey(getSpi().create());
 
             n += 1;
         }
 
         AffinityTopologyVersion curVer = ctx.cache().context().exchange().readyAffinityVersion();
 
-        return grpKeyChangeProc.start(new ChangeCacheEncryptionRequest(groups, keys, keyIds, curVer));
+        return grpKeyChangeProc.start(new ChangeCacheEncryptionRequest(grpIds, keys, keyIds, curVer));
     }
 
     /**
@@ -945,19 +945,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param segmentIdx WAL segment index.
      */
     public void onWalSegmentRemoved(long segmentIdx) {
-        if (stopped)
-            return;
+        Map<Integer, Set<Integer>> rmvKeys = removeWalSegments(segmentIdx);
 
-        Map<Integer, Set<Integer>> grpKeys = awaitWalSegments.remove(segmentIdx);
-
-        if (grpKeys == null)
+        if (rmvKeys == null)
             return;
 
         synchronized (metaStorageMux) {
             try {
                 writeToMetaStore(0, false, false, true);
 
-                for (Map.Entry<Integer, Set<Integer>> entry : grpKeys.entrySet()) {
+                for (Map.Entry<Integer, Set<Integer>> entry : rmvKeys.entrySet()) {
                     int grpId = entry.getKey();
 
                     if (reencryptGroups.contains(grpId))
@@ -971,14 +968,54 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                     writeToMetaStore(grpId, true, false, false);
 
-                    if (log.isInfoEnabled())
-                        log.info("Encryption keys were removed [grpId=" + grpId + ", keyIds=" + keyIds + "]");
+                    if (log.isInfoEnabled()) {
+                        log.info("Previous encryption keys have been removed [grpId=" + grpId +
+                            ", keyIds=" + keyIds + "]");
+                    }
                 }
             }
             catch (IgniteCheckedException e) {
                 log.error("Unable to remove encryption keys from metastore.", e);
             }
         }
+    }
+
+    /**
+     * Remove all of the segments that are not greater than the specified index.
+     *
+     * @param segmentIdx WAL segment index.
+     * @return Map of group IDs with key IDs that were associated with removed WAL segments.
+     */
+    @Nullable private Map<Integer, Set<Integer>> removeWalSegments(long segmentIdx) {
+        Map<Integer, Set<Integer>> rmvKeys = null;
+        Iterator<Map.Entry<Long, Map<Integer, Set<Integer>>>> iter = awaitWalSegments.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            Map.Entry<Long, Map<Integer, Set<Integer>>> entry = iter.next();
+
+            if (entry.getKey() > segmentIdx)
+                break;
+
+            iter.remove();
+
+            Map<Integer, Set<Integer>> grpKeys = entry.getValue();
+
+            if (rmvKeys == null) {
+                rmvKeys = grpKeys;
+
+                continue;
+            }
+
+            for (Map.Entry<Integer, Set<Integer>> e : grpKeys.entrySet()) {
+                rmvKeys.merge(e.getKey(), e.getValue(), (set1, set2) -> {
+                    set1.addAll(set2);
+
+                    return set1;
+                });
+            }
+        }
+
+        return rmvKeys;
     }
 
     /** {@inheritDoc} */
@@ -1248,7 +1285,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 try {
                     f.get();
 
-                    cleanupKeys(grpId);
+                    synchronized (metaStorageMux) {
+                        cleanupKeys(grpId);
+
+                        reencryptGroups.remove(grpId);
+                    }
                 }
                 catch (IgniteFutureCancelledCheckedException e) {
                     log.warning("Reencryption cancelled [grp=" + grpId + "]");
@@ -1265,28 +1306,22 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @throws IgniteCheckedException If failed.
      */
     private void cleanupKeys(int grpId) throws IgniteCheckedException {
-        int activeKey = grpEncActiveIds.get(grpId);
+        Set<Integer> grpKeyIds = grpEncKeys.get(grpId).keySet();
+        Set<Integer> rmvKeys = new HashSet<>(grpKeyIds);
 
-        Set<Integer> rmvKeys = new HashSet<>(grpEncKeys.get(grpId).keySet());
-
-        rmvKeys.remove(activeKey);
+        rmvKeys.remove(grpEncActiveIds.get(grpId));
 
         for (Map<Integer, Set<Integer>> map : awaitWalSegments.values()) {
             Set<Integer> grpKeepKeys = map.get(grpId);
 
-            rmvKeys.removeAll(grpKeepKeys);
+            if (grpKeepKeys != null)
+                rmvKeys.removeAll(grpKeepKeys);
         }
 
-        boolean changed = grpEncKeys.get(grpId).keySet().removeAll(rmvKeys);
-
-        reencryptGroups.remove(grpId);
-
-        if (stopped || !changed)
+        if (!grpKeyIds.removeAll(rmvKeys))
             return;
 
-        synchronized (metaStorageMux) {
-            writeToMetaStore(grpId, true, false, false);
-        }
+        writeToMetaStore(grpId, true, false, false);
 
         if (log.isInfoEnabled())
             log.info("Previous encryption keys were removed [grpId=" + grpId + ", KeyIds=" + rmvKeys + "]");
@@ -1349,7 +1384,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         assert Thread.holdsLock(metaStorageMux);
         assert updateKeys || activeKeys || walIdxs;
 
-        if (metaStorage == null || !writeToMetaStoreEnabled)
+        if (metaStorage == null || !writeToMetaStoreEnabled || stopped)
             return;
 
         HashMap<Integer, byte[]> keysEncrypted = null;
@@ -1964,7 +1999,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 for (int i = 0; i < grpIds.length; i++) {
                     int grpId = grpIds[i];
 
-                    if (!reencryptionFuture(grpId).isDone()) {
+                    if (reencryptGroups.contains(grpId)) {
                         return new GridFinishedFuture<>(
                             new IgniteException("Reencryption is in progress [grpId=" + grpId + "]"));
                     }
