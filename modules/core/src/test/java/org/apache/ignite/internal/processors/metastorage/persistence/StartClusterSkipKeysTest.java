@@ -20,18 +20,18 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.IgniteCountDownLatch;
-import org.apache.ignite.IgniteException;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.compute.ComputeJobMasterLeaveAware;
-import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
@@ -43,7 +43,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Tests metastorage restore from previous cluster with different class path.
  */
 public class StartClusterSkipKeysTest extends GridCommonAbstractTest {
-    /** Test key 1. (For a value with unknown class. */
+    /** Test key 1. (For a value with unknown class after recovery. */
     private static final String KEY_1 = "test-unknown-class-key-1";
 
     /** Test value 1 classname. */
@@ -54,9 +54,6 @@ public class StartClusterSkipKeysTest extends GridCommonAbstractTest {
 
     /** Test value 2. */
     private static final String VALUE_2 = "test-value-2";
-
-    /** Job start latch. */
-    private static final String JOB_LATCH = "job-start-latch";
 
     /** True if start nodes in the local JVM. */
     private static boolean startLocalNode;
@@ -112,31 +109,26 @@ public class StartClusterSkipKeysTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testStartWithUnknownKey() throws Exception {
-        assertFalse(classFound(getClass().getClassLoader(), VALUE_1_CLASSNAME));
+        assertFalse(U.inClassPath(VALUE_1_CLASSNAME));
 
         // 1. Start remote JVM ignite instance and write to the metastorage a value with class unknown to a local JVM.
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().state(ClusterState.ACTIVE);
-
         IgniteProcessProxy rmtIgnite = (IgniteProcessProxy)startGrid(1);
 
-        IgniteCountDownLatch latch = ignite.countDownLatch(JOB_LATCH, 1, false, true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
-        ignite.compute(ignite.cluster().forRemotes()).broadcastAsync(new WriteMetastorageJob());
+        ignite.compute(ignite.cluster().forRemotes()).broadcast(new WriteMetastorageJob());
 
         // Stop local instance to prevent transfer a value with class unknown to a local JVM.
-        latch.await();
-
         stopGrid(0, true);
 
-        // Make sure that job was finished.
-        U.sleep(5000);
+        // 2. Remote node will write to metastorage on node left event and will be stopped.
+        GridTestUtils.waitForCondition(() -> !rmtIgnite.getProcess().getProcess().isAlive(), getTestTimeout());
 
-        // 2. Stop remote node.
-        rmtIgnite.getProcess().kill();
+        assertTrue(G.allGrids().isEmpty());
 
-        // 3. Recovery metastorage from remote node data and check metastorage.
+        // 3. Recovery metastorage from remote node data and check on local JVM.
         startLocalNode = true;
 
         ignite = startGrid(1);
@@ -147,61 +139,37 @@ public class StartClusterSkipKeysTest extends GridCommonAbstractTest {
 
         waitForTopology(2);
 
-        assertEquals(VALUE_2, ignite.context().distributedMetastorage().read(KEY_2));
+        DistributedMetaStorage metastorage = ignite.context().distributedMetastorage();
 
-//        System.out.println("MY CHECK2="+ ignite.context().distributedMetastorage().read(TEST_KEY_UNKNOWN_CLASS));
+        assertEquals(VALUE_2, metastorage.read(KEY_2));
     }
 
-    /**
-     * @param clsLdr classloader.
-     * @param name classname.
-     * @return true if class loaded by classloader, false if class not found.
-     */
-    private boolean classFound(ClassLoader clsLdr, String name) {
-        try {
-            clsLdr.loadClass(name);
-
-            return true;
-        }
-        catch (ClassNotFoundException e) {
-            return false;
-        }
-    }
-
-    /** Job to write to metastorage on a remote grid. */
-    private static class WriteMetastorageJob implements IgniteRunnable, ComputeJobMasterLeaveAware {
+    /** Job for a remote JVM Ignite instance to write to metastorage and stop. */
+    private static class WriteMetastorageJob implements IgniteRunnable {
         /** Auto injected ignite instance. */
         @IgniteInstanceResource
         IgniteEx ignite;
 
         /** {@inheritDoc} */
         @Override public void run() {
-            IgniteCountDownLatch latch = ignite.countDownLatch(JOB_LATCH, 0, false, false);
+            assertTrue(U.inClassPath(VALUE_1_CLASSNAME));
 
-            latch.countDown();
+            ignite.events().localListen(event -> {
+                try {
+                    Serializable val1 = U.newInstance(VALUE_1_CLASSNAME);
 
-            try {
-                // Waiting for master node left.
-                while (!Thread.interrupted())
-                    U.sleep(100);
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
-        }
+                    ignite.context().distributedMetastorage().write(KEY_1, val1);
 
-        /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteException {
-            try {
-                Serializable val1 = U.newInstance(VALUE_1_CLASSNAME);
+                    ignite.context().distributedMetastorage().write(KEY_2, VALUE_2);
 
-                ignite.context().distributedMetastorage().write(KEY_1, val1);
+                    CompletableFuture.runAsync(() -> G.stop(ignite.name(), false));
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
 
-                ignite.context().distributedMetastorage().write(KEY_2, VALUE_2);
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
+                return false;
+            }, EVT_NODE_LEFT);
         }
     }
 }
