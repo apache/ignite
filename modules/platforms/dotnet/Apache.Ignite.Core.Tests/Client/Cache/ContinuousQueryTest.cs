@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Event;
@@ -368,10 +369,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO
         }
 
+        /// <summary>
+        /// Tests that invalid SQL query used as initial query provides a correct error message.
+        /// </summary>
         [Test]
         public void TestInvalidInitialSqlQueryResultsInCorrectErrorMessage()
         {
-            // TODO
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            
+            var qry = new ContinuousQuery<int,int>(new DelegateListener<int, int>());
+            var initialQry = new SqlFieldsQuery("select a from b");
+
+            var ex = Assert.Throws<IgniteClientException>(() => cache.QueryContinuous(qry, initialQry));
+            StringAssert.StartsWith("Failed to parse query", ex.Message);
         }
 
         /// <summary>
