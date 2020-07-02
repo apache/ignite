@@ -145,10 +145,7 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         BinaryObjectImpl bo = (BinaryObjectImpl) filter;
 
         switch (filterPlatform) {
-            case ClientPlatform.JAVA:
-                return bo.deserialize();
-
-            case ClientPlatform.DOTNET: {
+            case ClientPlatform.JAVA: {
                 if (bo.typeId() == GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY) {
                     PlatformJavaObjectFactoryProxy prx = bo.deserialize();
 
@@ -158,6 +155,10 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
                     return FactoryBuilder.factoryOf(rmtFilter);
                 }
 
+                return bo.deserialize();
+            }
+
+            case ClientPlatform.DOTNET: {
                 PlatformContext platformCtx = ctx.kernalContext().platform().context();
 
                 String curPlatform = platformCtx.platform();
