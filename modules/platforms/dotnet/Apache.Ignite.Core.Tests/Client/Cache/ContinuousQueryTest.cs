@@ -152,7 +152,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             var qry = new ContinuousQuery<int,int>(listener)
             {
-                Filter = new JavaCacheEntryEventFilter<int, int>("TODO", null)
+                Filter = new JavaCacheEntryEventFilter<int, int>(
+                    "org.apache.ignite.platform.PlatformCacheEntryEvenKeyEventFilter", null)
             };
 
             // TODO
