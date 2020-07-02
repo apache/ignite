@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Event;
+    using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
     /// <summary>
@@ -361,14 +362,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
-        /// Tests that exception in continuous query remote filter is propagated to the client.
+        /// Tests that exception in continuous query remote filter is logged and event is delivered anyway.
         /// </summary>
         [Test]
-        public void TestExceptionInFilterResultsInCorrectErrorMessage()
+        public void TestExceptionInFilterIsLoggedAndFilterIsIgnored()
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
             
-            var qry = new ContinuousQuery<int, int>(new DelegateListener<int, int>())
+            var evts = new ConcurrentBag<int>();
+            var qry = new ContinuousQuery<int, int>(new DelegateListener<int, int>(e => evts.Add(e.Key)))
             {
                 Filter = new ExceptionalFilter()
             };
@@ -380,8 +382,20 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             
             Assert.AreEqual(1, cache[1]);
             
-            // TODO: Check log?
-            // TODO: When filter fails, it is ignored, and notification is delivered - check this
+            // Assert: error is logged.
+            var error = GetLoggers()
+                .SelectMany(x => x.Entries)
+                .Where(e => e.Level >= LogLevel.Warn)
+                .Select(e => e.Message)
+                .LastOrDefault();
+
+            Assert.AreEqual(
+                "CacheEntryEventFilter failed: javax.cache.event.CacheEntryListenerException: " +
+                ExceptionalFilter.Error,
+                error);
+            
+            // Assert: continuous query event is delivered.
+            Assert.AreEqual(new[] {1}, evts);
         }
 
         [Test]
