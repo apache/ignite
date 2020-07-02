@@ -1250,11 +1250,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public boolean allHistoricalPartitionsDone() {
-            return doneParts.size() == partMap.size();
-        }
-
-        /** {@inheritDoc} */
         @Override public void close() throws IgniteCheckedException {
             walIt.close();
             releasePartitions();

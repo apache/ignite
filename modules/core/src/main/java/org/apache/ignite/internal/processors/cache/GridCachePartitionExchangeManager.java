@@ -3190,7 +3190,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             "Reassignment request started for exchange future which didn't change affinity " +
                                 "[exchId=" + exchId + ", fut=" + exchFut + ']';
 
-                        if (fut.hasInapplicableNodesForRebalance() ) {
+                        if (fut.hasInapplicableNodesForRebalance()) {
                               GridDhtPartitionsExchangeFuture lastFut = lastFinishedFut.get();
 
                               AffinityTopologyVersion lastAffChangedVer = cctx.exchange().

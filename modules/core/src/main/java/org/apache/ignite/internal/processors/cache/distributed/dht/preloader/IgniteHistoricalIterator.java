@@ -36,9 +36,4 @@ public interface IgniteHistoricalIterator extends GridCloseableIterator<CacheDat
      * @return {@code True} if all data for given partition has already been returned.
      */
     public boolean isDone(int partId);
-
-    /**
-     * @return {@code true} if all historical partitions are processed.
-     */
-    public boolean allHistoricalPartitionsDone();
 }
