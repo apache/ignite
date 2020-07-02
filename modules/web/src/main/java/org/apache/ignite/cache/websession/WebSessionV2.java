@@ -28,6 +28,8 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionBindingEvent;
+import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionContext;
 import java.io.IOException;
 import java.util.Collections;
@@ -131,6 +133,18 @@ class WebSessionV2 implements HttpSession {
             }
         }
     }
+    
+    WebSessionV2(WebSessionEntity entity, final Marshaller marshaller) {
+        assert entity != null;
+        assert marshaller != null;
+
+        this.entity = entity;
+        this.marsh = marshaller;
+
+        this.genuineSes = null;
+        this.ctx = null;
+        this.accessTime = 0;
+    }   
 
     /** {@inheritDoc} */
     @Override public long getCreationTime() {
@@ -168,6 +182,10 @@ class WebSessionV2 implements HttpSession {
         maxInactiveInterval = interval;
 
         maxInactiveIntervalChanged = true;
+        
+        if (genuineSes != null) {
+            genuineSes.setMaxInactiveInterval(interval);
+        }
     }
 
     /**
@@ -224,6 +242,10 @@ class WebSessionV2 implements HttpSession {
     /** {@inheritDoc} */
     @Override public void setAttribute(final String name, final Object val) {
         assertValid();
+        
+        if (genuineSes != null) {
+            genuineSes.setAttribute(name, val);
+        }
 
         if (val == null)
             removeAttribute(name);
@@ -277,6 +299,10 @@ class WebSessionV2 implements HttpSession {
         assertValid();
 
         attributes().put(name, REMOVED_ATTR);
+        
+        if (genuineSes != null) {
+            genuineSes.removeAttribute(name);
+        }
     }
 
     /** {@inheritDoc} */
@@ -406,4 +432,21 @@ class WebSessionV2 implements HttpSession {
         if (invalidated)
             throw new IllegalStateException("Session was invalidated.");
     }
+    
+    
+    /**
+     * Notifies the attribute that it is being unbound from a session and identifies the session.
+     *
+     * @param name
+     */
+    public void notifyAttributeBeingUnbound(final String name) {
+        Object value = getAttribute(name);
+    
+        // Call the valueUnbound() method if any
+        HttpSessionBindingEvent event = null;
+        if (value != null && value instanceof HttpSessionBindingListener) {
+            event = new HttpSessionBindingEvent(this, name, value);
+            ((HttpSessionBindingListener) value).valueUnbound(event);
+        }
+    }    
 }

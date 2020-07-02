@@ -29,6 +29,8 @@ import java.util.LinkedList;
 import java.util.Map;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionBindingEvent;
+import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -233,6 +235,10 @@ class WebSession implements HttpSession, Externalizable {
     /** {@inheritDoc} */
     @Override public void setMaxInactiveInterval(int interval) {
         maxInactiveInterval = interval;
+        
+        if (genSes != null) {
+            genSes.setMaxInactiveInterval(interval);
+        }        
     }
 
     /** {@inheritDoc} */
@@ -351,5 +357,22 @@ class WebSession implements HttpSession, Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(WebSession.class, this);
+    }
+    
+    
+    /**
+     * Notifies the attribute that it is being unbound from a session and identifies the session.
+     *
+     * @param name
+     */
+    public void notifyAttributeBeingUnbound(final String name) {
+        Object value = attrs.get(name);
+    
+        // Call the valueUnbound() method if any
+        HttpSessionBindingEvent event = null;
+        if (value != null && value instanceof HttpSessionBindingListener) {
+            event = new HttpSessionBindingEvent(this, name, value);
+            ((HttpSessionBindingListener) value).valueUnbound(event);
+        }
     }
 }
