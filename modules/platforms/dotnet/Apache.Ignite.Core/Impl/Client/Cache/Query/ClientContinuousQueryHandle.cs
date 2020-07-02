@@ -104,12 +104,20 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// </summary>
         internal void OnError(Exception exception)
         {
-            Dispose();
-            
-            var disconnected = Disconnected;
-            if (disconnected != null)
+            lock (_disposeSyncRoot)
             {
-                disconnected.Invoke(this, new ContinuousQueryClientDisconnectedEventArgs(exception));
+                if (_disposed)
+                {
+                    return;
+                }
+                
+                var disconnected = Disconnected;
+                if (disconnected != null)
+                {
+                    disconnected.Invoke(this, new ContinuousQueryClientDisconnectedEventArgs(exception));
+                }
+
+                _disposed = true;
             }
         }
 

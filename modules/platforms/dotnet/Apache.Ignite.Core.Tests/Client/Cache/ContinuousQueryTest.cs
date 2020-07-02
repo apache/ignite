@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Event;
     using NUnit.Framework;
 
@@ -350,10 +351,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
-        /// Tests that listener gets notified about connection failure with a special event.
+        /// Tests that users can subscribe to continuous query disconnected event.
         /// </summary>
         [Test]
-        public void TestDisconnectCausesExceptionInContinuousQueryListener()
+        public void TestClientDisconnectRaisesDisconnectedEventOnQueryHandle()
         {
             ICacheEntryEvent<int, int> lastEvt = null;
             var qry = new ContinuousQuery<int,int>(
@@ -362,15 +363,30 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var client = GetClient();
             var cache = client.GetOrCreateCache<int, int>(TestUtils.TestName);
             var handle = cache.QueryContinuous(qry);
+
+            ContinuousQueryClientDisconnectedEventArgs disconnectedEventArgs = null;
+
+            handle.Disconnected += (sender, args) =>
+            {
+                disconnectedEventArgs = args;
+                
+                // ReSharper disable once AccessToDisposedClosure (disposed state does not matter)
+                Assert.AreEqual(handle, sender);
+            };
             
             cache[1] = 1;
             TestUtils.WaitForTrueCondition(() => lastEvt != null);
             
-            // TODO: Handle should not reuse thick interface.
-            // 1. Use thin interface which provides a way to identify the connection
-            // 2. Provide Disconnected event in IIgniteClient and pass the details of dropped connection?
-            // 3. Provide Disconnected event in the handle itself.
             client.Dispose();
+            
+            // Assert: disconnected event has been raised.
+            TestUtils.WaitForTrueCondition(() => disconnectedEventArgs != null);
+            Assert.IsNotNull(disconnectedEventArgs.Exception);
+            
+            StringAssert.StartsWith("Cannot access a disposed object", disconnectedEventArgs.Exception.Message);
+            
+            // Multiple dispose is allowed.
+            handle.Dispose();
             handle.Dispose();
         }
 
