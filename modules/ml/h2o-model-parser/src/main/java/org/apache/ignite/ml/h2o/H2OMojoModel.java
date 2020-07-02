@@ -20,7 +20,12 @@ package org.apache.ignite.ml.h2o;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
-import hex.genmodel.easy.prediction.*;
+import hex.genmodel.easy.prediction.AbstractPrediction;
+import hex.genmodel.easy.prediction.BinomialModelPrediction;
+import hex.genmodel.easy.prediction.ClusteringModelPrediction;
+import hex.genmodel.easy.prediction.MultinomialModelPrediction;
+import hex.genmodel.easy.prediction.OrdinalModelPrediction;
+import hex.genmodel.easy.prediction.RegressionModelPrediction;
 import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.ml.math.primitives.vector.NamedVector;
 

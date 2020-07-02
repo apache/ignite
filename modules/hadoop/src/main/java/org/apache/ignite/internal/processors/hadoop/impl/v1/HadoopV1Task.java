@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v1;
 
+import java.io.IOException;
+import java.text.NumberFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.ignite.internal.processors.hadoop.HadoopTask;
@@ -24,9 +26,6 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2TaskContext;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.IOException;
-import java.text.NumberFormat;
 
 /**
  * Extended Hadoop v1 task.
