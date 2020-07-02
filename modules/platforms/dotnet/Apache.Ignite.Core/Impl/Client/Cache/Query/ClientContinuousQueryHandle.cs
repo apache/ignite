@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         }
 
         /** <inheritdoc /> */
-        public event EventHandler Disconnected;
+        public event EventHandler<ContinuousQueryClientDisconnectedEventArgs> Disconnected;
 
         /** <inheritdoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> GetInitialQueryCursor()
@@ -102,16 +102,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <summary>
         /// Called when error occurs during continuous query execution.
         /// </summary>
-        internal void OnError(Exception err)
+        internal void OnError(Exception exception)
         {
+            Dispose();
+            
             var disconnected = Disconnected;
             if (disconnected != null)
             {
-                // TODO: Pass exception
-                disconnected.Invoke(this, EventArgs.Empty);
+                disconnected.Invoke(this, new ContinuousQueryClientDisconnectedEventArgs(exception));
             }
-            
-            Dispose();
         }
 
         /** <inheritdoc /> */

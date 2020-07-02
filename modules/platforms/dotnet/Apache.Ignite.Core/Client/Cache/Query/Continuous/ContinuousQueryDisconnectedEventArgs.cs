@@ -13,22 +13,33 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-
-namespace Apache.Ignite.Core.Client.Cache.Query.Continuous
+ */namespace Apache.Ignite.Core.Client.Cache.Query.Continuous
 {
     using System;
 
     /// <summary>
-    /// Represents a continuous query handle.
+    /// Provides data for the <see cref="IContinuousQueryHandleClient.Disconnected"/> event.
     /// </summary>
-    public interface IContinuousQueryHandleClient : IDisposable
+    public class ContinuousQueryClientDisconnectedEventArgs : EventArgs
     {
-        /// <summary>
-        /// Occurs when continuous query gets disconnected.
-        /// Disconnect can be caused by a server node failure or a network failure.
-        /// </summary>
-        event EventHandler<ContinuousQueryClientDisconnectedEventArgs> Disconnected;
-    }
+        /** */
+        private readonly Exception _exception;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ContinuousQueryClientDisconnectedEventArgs"/> class.
+        /// </summary>
+        /// <param name="exception">Exception that caused the disconnect.</param>
+        public ContinuousQueryClientDisconnectedEventArgs(Exception exception)
+        {
+            _exception = exception;
+        }
+
+        /// <summary>
+        /// Gets the exception that caused the disconnect.
+        /// </summary>
+        public Exception Exception
+        {
+            get { return _exception; }
+        }
+    }
 }
