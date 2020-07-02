@@ -644,6 +644,7 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.ENCRYPTION ||
             cmd == CommandList.KILL ||
             cmd == CommandList.SNAPSHOT ||
-            cmd == CommandList.CLUSTER_CHANGE_TAG;
+            cmd == CommandList.CLUSTER_CHANGE_TAG ||
+            cmd == CommandList.METADATA;
     }
 }
