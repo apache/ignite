@@ -109,19 +109,25 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     /** @throws Exception If failed. */
     @Test
     public void testCompute() throws Exception {
-        LogListener taskLsnr = matches("task ").andMatches("taskName=" + getClass().getName()).times(1).build();
-        LogListener jobLsnr = matches("job ").times(1).build();
+        String taskName = "testTask";
+        int executions = 5;
+
+        LogListener taskLsnr = matches("task ").andMatches("taskName=" + taskName).times(executions).build();
+        LogListener jobLsnr = matches("job ").times(executions).build();
 
         log.registerListener(taskLsnr);
         log.registerListener(jobLsnr);
 
         startCollectStatistics();
 
-        ignite.compute().broadcast(new IgniteRunnable() {
+        IgniteRunnable task = new IgniteRunnable() {
             @Override public void run() {
                 // No-op.
             }
-        });
+        };
+
+        for (int i = 0; i < executions; i++)
+            ignite.compute().withName(taskName).run(task);
 
         stopCollectStatisticsAndCheck(taskLsnr, jobLsnr);
     }

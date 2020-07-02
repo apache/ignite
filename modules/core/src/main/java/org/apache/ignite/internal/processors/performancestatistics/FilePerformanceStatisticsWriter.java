@@ -25,11 +25,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -39,8 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRing
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
@@ -91,11 +90,6 @@ public class FilePerformanceStatisticsWriter {
         this.ctx = ctx;
     }
 
-    /** @return {@code True} if collecting performance statistics enabled. */
-    public boolean enabled() {
-        return enabled;
-    }
-
     /** Starts collecting performance statistics. */
     public synchronized void start() {
         if (enabled)
@@ -106,7 +100,7 @@ public class FilePerformanceStatisticsWriter {
         // Writer is stopping.
         if (writer != null) {
             try {
-                writer.shutdown().get();
+                U.join(writer.runner());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to wait for previous writer stopping.", e);
@@ -136,10 +130,10 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** Stops collecting performance statistics. */
-    public IgniteInternalFuture<Void> stop() {
+    public void stop() {
         synchronized (this) {
             if (!enabled)
-                return new GridFinishedFuture<>();
+                return;
 
             enabled = false;
         }
@@ -148,10 +142,8 @@ public class FilePerformanceStatisticsWriter {
 
         FileWriter fileWriter = this.fileWriter;
 
-        if (fileWriter == null)
-            return new GridFinishedFuture<>();
-
-        return fileWriter.shutdown();
+        if (fileWriter != null)
+            fileWriter.shutdown();
     }
 
     /**
@@ -161,24 +153,14 @@ public class FilePerformanceStatisticsWriter {
      * @param duration Duration in nanoseconds.
      */
     public void cacheOperation(CacheOperation type, int cacheId, long startTime, long duration) {
-        int size = /*type*/ 1 +
-            /*cacheId*/ 4 +
-            /*startTime*/ 8 +
-            /*duration*/ 8;
-
-        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.CACHE_OPERATION, size);
-
-        if (seg == null)
-            return;
-
-        ByteBuffer buf = seg.buffer();
-
-        buf.put((byte)type.ordinal());
-        buf.putInt(cacheId);
-        buf.putLong(startTime);
-        buf.putLong(duration);
-
-        seg.release();
+        doWrite(OperationType.CACHE_OPERATION,
+            () -> 1 + 4 + 8 + 8,
+            buf -> {
+                buf.put((byte)type.ordinal());
+                buf.putInt(cacheId);
+                buf.putLong(startTime);
+                buf.putLong(duration);
+            });
     }
 
     /**
@@ -188,30 +170,20 @@ public class FilePerformanceStatisticsWriter {
      * @param commited {@code True} if commited.
      */
     public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commited) {
-        int size = /*cacheIds*/ 4 + cacheIds.size() * 4 +
-            /*startTime*/ 8 +
-            /*duration*/ 8 +
-            /*commit*/ 1;
+        doWrite(OperationType.TRANSACTION,
+            () -> 4 + cacheIds.size() * 4 + 8 + 8 + 1,
+            buf -> {
+                buf.putInt(cacheIds.size());
 
-        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.TRANSACTION, size);
+                GridIntIterator iter = cacheIds.iterator();
 
-        if (seg == null)
-            return;
+                while (iter.hasNext())
+                    buf.putInt(iter.next());
 
-        ByteBuffer buf = seg.buffer();
-
-        buf.putInt(cacheIds.size());
-
-        GridIntIterator iter = cacheIds.iterator();
-
-        while (iter.hasNext())
-            buf.putInt(iter.next());
-
-        buf.putLong(startTime);
-        buf.putLong(duration);
-        buf.put(commited ? (byte)1 : 0);
-
-        seg.release();
+                buf.putLong(startTime);
+                buf.putLong(duration);
+                buf.put(commited ? (byte)1 : 0);
+            });
     }
 
     /**
@@ -229,45 +201,30 @@ public class FilePerformanceStatisticsWriter {
             return;
 
         boolean needWriteStr = !writer.stringCached(text);
+        byte[] strBytes = needWriteStr ? text.getBytes() : null;
 
-        byte[] strBytes = null;
+        doWrite(OperationType.QUERY, () -> {
+            int size = 1 + 1 + 4 + 8 + 8 + 8 + 1;
 
-        int size = /*type*/ 1 +
-            /*compactStringFlag*/ 1 +
-            /*strId*/ 4 +
-            /*id*/ 8 +
-            /*startTime*/ 8 +
-            /*duration*/ 8 +
-            /*success*/ 1;
+            if (needWriteStr)
+                size += 4 + strBytes.length;
 
-        if (needWriteStr) {
-            strBytes = text.getBytes();
+            return size;
+        }, buf -> {
+            buf.put((byte)type.ordinal());
+            buf.put(needWriteStr ? (byte)1 : 0);
+            buf.putInt(text.hashCode());
 
-            size += /*text*/ 4 + strBytes.length;
-        }
+            if (needWriteStr) {
+                buf.putInt(strBytes.length);
+                buf.put(strBytes);
+            }
 
-        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.QUERY, size);
-
-        if (seg == null)
-            return;
-
-        ByteBuffer buf = seg.buffer();
-
-        buf.put((byte)type.ordinal());
-        buf.put(needWriteStr ? (byte)1 : 0);
-        buf.putInt(text.hashCode());
-
-        if (needWriteStr) {
-            buf.putInt(strBytes.length);
-            buf.put(strBytes);
-        }
-
-        buf.putLong(id);
-        buf.putLong(startTime);
-        buf.putLong(duration);
-        buf.put(success ? (byte)1 : 0);
-
-        seg.release();
+            buf.putLong(id);
+            buf.putLong(startTime);
+            buf.putLong(duration);
+            buf.put(success ? (byte)1 : 0);
+        });
     }
 
     /**
@@ -278,26 +235,15 @@ public class FilePerformanceStatisticsWriter {
      * @param physicalReads Number of physical reads.
      */
     public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads, long physicalReads) {
-        int size = /*type*/ 1 +
-            /*queryNodeId*/ 16 +
-            /*id*/ 8 +
-            /*logicalReads*/ 8 +
-            /*physicalReads*/ 8;
-
-        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.QUERY_READS, size);
-
-        if (seg == null)
-            return;
-
-        ByteBuffer buf = seg.buffer();
-
-        buf.put((byte)type.ordinal());
-        writeUuid(buf, queryNodeId);
-        buf.putLong(id);
-        buf.putLong(logicalReads);
-        buf.putLong(physicalReads);
-
-        seg.release();
+        doWrite(OperationType.QUERY_READS,
+            () -> 1 + 16 + 8 + 8 + 8,
+            buf -> {
+                buf.put((byte)type.ordinal());
+                writeUuid(buf, queryNodeId);
+                buf.putLong(id);
+                buf.putLong(logicalReads);
+                buf.putLong(physicalReads);
+            });
     }
 
     /**
@@ -314,43 +260,29 @@ public class FilePerformanceStatisticsWriter {
             return;
 
         boolean needWriteStr = !writer.stringCached(taskName);
+        byte[] strBytes = needWriteStr ? taskName.getBytes() : null;
 
-        byte[] strBytes = null;
+        doWrite(OperationType.TASK, () -> {
+            int size = 24 + 1 + 4 + 8 + 8 + 4;
 
-        int size = /*sesId*/ 24 +
-            /*compactStringFlag*/ 1 +
-            /*strId*/ 4 +
-            /*startTime*/ 8 +
-            /*duration*/ 8 +
-            /*affPartId*/ 4;
+            if (needWriteStr)
+                size += 4 + strBytes.length;
 
-        if (needWriteStr) {
-            strBytes = taskName.getBytes();
+            return size;
+        }, buf -> {
+            writeIgniteUuid(buf, sesId);
+            buf.put(needWriteStr ? (byte)1 : 0);
+            buf.putInt(taskName.hashCode());
 
-            size += /*taskName*/ 4 + strBytes.length;
-        }
+            if (needWriteStr) {
+                buf.putInt(strBytes.length);
+                buf.put(strBytes);
+            }
 
-        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.TASK, size);
-
-        if (seg == null)
-            return;
-
-        ByteBuffer buf = seg.buffer();
-
-        writeIgniteUuid(buf, sesId);
-        buf.put(needWriteStr ? (byte)1 : 0);
-        buf.putInt(taskName.hashCode());
-
-        if (needWriteStr) {
-            buf.putInt(strBytes.length);
-            buf.put(strBytes);
-        }
-
-        buf.putLong(startTime);
-        buf.putLong(duration);
-        buf.putInt(affPartId);
-
-        seg.release();
+            buf.putLong(startTime);
+            buf.putLong(duration);
+            buf.putInt(affPartId);
+        });
     }
 
     /**
@@ -361,24 +293,37 @@ public class FilePerformanceStatisticsWriter {
      * @param timedOut {@code True} if job is timed out.
      */
     public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
-        int size = /*sesId*/ 24 +
-            /*queuedTime*/ 8 +
-            /*startTime*/ 8 +
-            /*duration*/ 8 +
-            /*timedOut*/ 1;
+        doWrite(OperationType.JOB,
+            () -> 24 + 8 + 8 + 8 + 1,
+            buf -> {
+                writeIgniteUuid(buf, sesId);
+                buf.putLong(queuedTime);
+                buf.putLong(startTime);
+                buf.putLong(duration);
+                buf.put(timedOut ? (byte)1 : 0);
+            });
+    }
 
-        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(OperationType.JOB, size);
+    /**
+     * @param op Operation type.
+     * @param sizeSupplier Record size supplier.
+     * @param writer Record writer.
+     */
+    private void doWrite(OperationType op, IntSupplier sizeSupplier, Consumer<ByteBuffer> writer) {
+        FileWriter fileWriter = this.fileWriter;
+
+        // Writer stopping.
+        if (fileWriter == null)
+            return;
+
+        int size = sizeSupplier.getAsInt();
+
+        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(fileWriter, op, size);
 
         if (seg == null)
             return;
 
-        ByteBuffer buf = seg.buffer();
-
-        writeIgniteUuid(buf, sesId);
-        buf.putLong(queuedTime);
-        buf.putLong(startTime);
-        buf.putLong(duration);
-        buf.put(timedOut ? (byte)1 : 0);
+        writer.accept(seg.buffer());
 
         seg.release();
     }
@@ -386,15 +331,12 @@ public class FilePerformanceStatisticsWriter {
     /**
      * Reserves buffer's write segment.
      *
+     * @param fileWriter File writer.
+     * @param type Operation type.
+     * @param size Record size.
      * @return Buffer's write segment or {@code null} if not enought space or writer stopping.
      */
-    private SegmentedRingByteBuffer.WriteSegment reserveBuffer(OperationType type, int size) {
-        FileWriter fileWriter = this.fileWriter;
-
-        // Writer stopping.
-        if (fileWriter == null)
-            return null;
-
+    private SegmentedRingByteBuffer.WriteSegment reserveBuffer(FileWriter fileWriter, OperationType type, int size) {
         SegmentedRingByteBuffer.WriteSegment seg = fileWriter.writeSegment(size + /*type*/ 1);
 
         if (seg == null) {
@@ -454,11 +396,13 @@ public class FilePerformanceStatisticsWriter {
         return new IgniteUuid(globalId, buf.getLong());
     }
 
+    /** @return {@code True} if collecting performance statistics enabled. */
+    public boolean enabled() {
+        return enabled;
+    }
+
     /** Worker to write to performance statistics file. */
     private class FileWriter extends GridWorker {
-        /** Maximum cached string count. */
-        private static final short MAX_CACHED_STRING_COUNT = Short.MAX_VALUE;
-
         /** Performance statistics file I/O. */
         private final FileIO fileIo;
 
@@ -470,9 +414,6 @@ public class FilePerformanceStatisticsWriter {
 
         /** Size of ready for flushing bytes. */
         private final AtomicInteger readyForFlushSize = new AtomicInteger();
-
-        /** Stop file writer future. */
-        GridFutureAdapter<Void> stopFut = new GridFutureAdapter<>();
 
         /** Hashcodes of cached strings. */
         private final ConcurrentSkipListSet<Integer> cachedStrings = new ConcurrentSkipListSet<>();
@@ -526,15 +467,13 @@ public class FilePerformanceStatisticsWriter {
             ringByteBuffer.close();
 
             // Make sure that all producers released their buffers to safe deallocate memory.
-            ringByteBuffer.poll();
+            flushBuffer();
 
             ringByteBuffer.free();
 
             U.closeQuiet(fileIo);
 
             cachedStrings.clear();
-
-            stopFut.onDone();
 
             log.info("Performance statistics writer stopped.");
         }
@@ -600,14 +539,12 @@ public class FilePerformanceStatisticsWriter {
         }
 
         /** Shutted down the worker. */
-        private IgniteInternalFuture<Void> shutdown() {
+        private void shutdown() {
             isCancelled = true;
 
             synchronized (this) {
                 notify();
             }
-
-            return stopFut;
         }
 
         /** Logs warning message about small buffer size if not logged yet. */
