@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
+import org.apache.ignite.lang.IgniteAsyncCallback;
 
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -27,6 +28,7 @@ import javax.cache.event.CacheEntryUpdatedListener;
 /**
  * Continuous query handle.
  */
+@IgniteAsyncCallback
 public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListener<Object, Object> {
     /** */
     private final ClientConnectionContext ctx;
@@ -48,6 +50,7 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
     @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> iterable) throws CacheEntryListenerException {
         // Client is not yet ready to receive notifications - skip them.
         // TODO: Is this correct in presence of initial query? Should we cache notifications and then send them?
+        // TODO: Should we mark this with IgniteAsyncCallback?
         if (continuousQueryId == null)
             return;
 
