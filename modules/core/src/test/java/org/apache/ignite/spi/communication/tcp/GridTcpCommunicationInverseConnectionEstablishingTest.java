@@ -308,7 +308,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         // due to bug in inverse connection protocol & comm worker - it will be fixed later.
         List<Thread> tcpCommWorkerThreads = Thread.getAllStackTraces().keySet().stream()
             .filter(t -> t.getName().contains("tcp-comm-worker"))
-            .filter(t -> /*t.getName().contains(srv.name()) || */t.getName().contains(client.name()))
+            .filter(t -> t.getName().contains(srv.name()) || t.getName().contains(client.name()))
             .collect(Collectors.toList());
 
         for (Thread tcpCommWorkerThread : tcpCommWorkerThreads) {

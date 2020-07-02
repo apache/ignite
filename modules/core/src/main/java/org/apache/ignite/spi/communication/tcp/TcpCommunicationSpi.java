@@ -2756,12 +2756,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (nioSrvr != null)
             nioSrvr.stop();
 
-//        if (commWorker != null)
-//            commWorker.stop();
-
-        U.cancel(commWorker);
-        U.join(commWorker, log);
-
         U.cancel(shmemAcceptWorker);
         U.join(shmemAcceptWorker, log);
 
