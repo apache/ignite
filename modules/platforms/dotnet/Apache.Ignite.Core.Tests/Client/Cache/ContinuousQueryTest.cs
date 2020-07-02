@@ -378,6 +378,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 cache[1] = 1;
             }
             
+            Assert.AreEqual(1, cache[1]);
+            
             // TODO: Check log?
         }
 

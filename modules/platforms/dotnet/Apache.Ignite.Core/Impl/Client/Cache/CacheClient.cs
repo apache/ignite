@@ -1159,6 +1159,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 var msg = _marsh.Unmarshal<string>(stream);
 
                 GetLogger().Error("Error while handling Continuous Query notification ({0}): {1}", status, msg);
+                
+                qryHandle.OnError(new IgniteClientException(msg, null, status));
             }
             else
             {
