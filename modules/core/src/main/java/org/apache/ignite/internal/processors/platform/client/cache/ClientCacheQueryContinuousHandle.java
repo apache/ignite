@@ -50,7 +50,6 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
     @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> iterable) throws CacheEntryListenerException {
         // Client is not yet ready to receive notifications - skip them.
         // TODO: Is this correct in presence of initial query? Should we cache notifications and then send them?
-        // TODO: Should we mark this with IgniteAsyncCallback?
         if (continuousQueryId == null)
             return;
 
