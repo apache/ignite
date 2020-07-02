@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
+import java.util.Set;
 
 /**
  * Distributed metastorage data that cluster sends to joining node.
@@ -49,12 +50,16 @@ class DistributedMetaStorageClusterNodeData implements Serializable {
      */
     public DistributedMetaStorageHistoryItem[] updates;
 
+    /** Set of keys that should be skipped due to marshalling porpose. */
+    public final Set<String> skippedKeys;
+
     /** */
     public DistributedMetaStorageClusterNodeData(
         DistributedMetaStorageVersion ver,
         DistributedMetaStorageKeyValuePair[] fullData,
         DistributedMetaStorageHistoryItem[] hist,
-        DistributedMetaStorageHistoryItem[] updates
+        DistributedMetaStorageHistoryItem[] updates,
+        Set<String> skippedKeys
     ) {
         assert ver != null;
         assert fullData == null || hist != null;
@@ -63,5 +68,6 @@ class DistributedMetaStorageClusterNodeData implements Serializable {
         this.ver = ver;
         this.hist = hist;
         this.updates = updates;
+        this.skippedKeys = skippedKeys;
     }
 }

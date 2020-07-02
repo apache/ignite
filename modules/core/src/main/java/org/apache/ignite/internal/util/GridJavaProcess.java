@@ -162,6 +162,12 @@ public final class GridJavaProcess {
         procCommands.add(clsName);
         procCommands.addAll(procParams);
 
+        System.out.println();
+        System.out.println();
+        System.out.println("MY procCommands="+procCommands);
+        System.out.println();
+        System.out.println();
+
         ProcessBuilder builder = new ProcessBuilder(procCommands);
 
         builder.redirectErrorStream(true);

@@ -120,6 +120,7 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
                 new DistributedMetaStorageKeyValuePair("newKey", marshaller.marshal("newVal"))
             },
             DistributedMetaStorageHistoryItem.EMPTY_ARRAY,
+            null,
             null
         ));
 
