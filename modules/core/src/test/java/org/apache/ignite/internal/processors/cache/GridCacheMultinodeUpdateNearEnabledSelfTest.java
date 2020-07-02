@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 

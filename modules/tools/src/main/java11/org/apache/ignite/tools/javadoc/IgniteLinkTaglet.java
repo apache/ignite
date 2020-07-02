@@ -17,8 +17,6 @@
 
 package org.apache.ignite.tools.javadoc;
 
-import com.sun.javadoc.Tag;
-import com.sun.source.doctree.DocTree;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -26,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.lang.model.element.Element;
+import com.sun.javadoc.Tag;
+import com.sun.source.doctree.DocTree;
 import jdk.javadoc.doclet.Taglet;
 
 /**

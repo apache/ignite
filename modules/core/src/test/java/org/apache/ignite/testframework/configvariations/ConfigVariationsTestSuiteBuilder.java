@@ -31,8 +31,8 @@ import javassist.CtClass;
 import javassist.CtNewConstructor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
 

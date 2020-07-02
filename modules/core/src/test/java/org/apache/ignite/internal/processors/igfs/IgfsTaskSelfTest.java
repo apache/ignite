@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -40,13 +46,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.TaskSessionResource;
-
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Serializable;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;

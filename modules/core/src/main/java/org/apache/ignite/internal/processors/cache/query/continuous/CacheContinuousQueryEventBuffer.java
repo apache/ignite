@@ -29,8 +29,8 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.jetbrains.annotations.Nullable;
 import org.apache.ignite.util.deque.FastSizeDeque;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.igfs;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception thrown when parent supposed to be a directory is a file.

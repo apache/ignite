@@ -17,14 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.nio.file.attribute.BasicFileAttributeView;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.PosixFileAttributes;
-import java.nio.file.attribute.PosixFilePermission;
-import java.util.HashMap;
-import org.apache.ignite.internal.util.typedef.T2;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +26,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Adapter for local secondary file system.

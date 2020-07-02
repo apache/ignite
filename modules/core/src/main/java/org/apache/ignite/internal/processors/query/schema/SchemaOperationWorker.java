@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -31,8 +32,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Schema operation executor.

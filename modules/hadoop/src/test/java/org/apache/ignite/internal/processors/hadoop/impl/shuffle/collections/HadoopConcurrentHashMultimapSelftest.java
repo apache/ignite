@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Deque;
@@ -30,6 +28,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
+import java.util.Collection;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
 
 /**
  * Extended platform configuration.

@@ -18,9 +18,9 @@
 package org.apache.ignite.osgi;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
-import java.util.concurrent.ConcurrentHashMap;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 

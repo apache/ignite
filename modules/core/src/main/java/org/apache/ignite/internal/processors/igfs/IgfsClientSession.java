@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.io.Closeable;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * IGFS client session. Effectively used to manage lifecycle of opened resources and close them on

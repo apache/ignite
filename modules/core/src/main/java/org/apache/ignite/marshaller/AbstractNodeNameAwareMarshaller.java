@@ -17,14 +17,13 @@
 
 package org.apache.ignite.marshaller;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.InputStream;
-import java.io.OutputStream;
 
 /**
  * Marshaller allowing for {@link Ignition#localIgnite()} calls.

@@ -25,7 +25,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-
 import java.util.List;
 import org.apache.ignite.internal.processors.hadoop.shuffle.direct.HadoopDirectDataInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.direct.HadoopDirectDataOutput;

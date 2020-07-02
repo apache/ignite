@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.internal.util.typedef.T2;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Universal interface to an underlying filesystem.

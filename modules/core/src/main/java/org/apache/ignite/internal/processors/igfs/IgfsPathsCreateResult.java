@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.List;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.List;
 
 /**
  * IGFS paths create result.

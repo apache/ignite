@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Write replacer based on method invocation.

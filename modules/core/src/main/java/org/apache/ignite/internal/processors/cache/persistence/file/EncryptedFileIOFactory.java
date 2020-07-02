@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 /**
  * Factory to produce {@code EncryptedFileIO}.

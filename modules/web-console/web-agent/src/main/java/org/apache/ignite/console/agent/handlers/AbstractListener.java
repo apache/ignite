@@ -17,8 +17,6 @@
 
 package org.apache.ignite.console.agent.handlers;
 
-import io.socket.client.Ack;
-import io.socket.emitter.Emitter;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -27,14 +25,16 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.GZIPOutputStream;
+import io.socket.client.Ack;
+import io.socket.emitter.Emitter;
 import org.apache.commons.codec.binary.Base64OutputStream;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.ignite.console.agent.AgentUtils.removeCallback;
 import static org.apache.ignite.console.agent.AgentUtils.fromJSON;
+import static org.apache.ignite.console.agent.AgentUtils.removeCallback;
 import static org.apache.ignite.console.agent.AgentUtils.safeCallback;
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
 

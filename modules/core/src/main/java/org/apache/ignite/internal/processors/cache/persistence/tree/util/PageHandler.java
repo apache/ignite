@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.util;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.Nullable;
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.console.agent.handlers;
 
-import io.socket.emitter.Emitter;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -34,6 +33,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import io.socket.emitter.Emitter;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.db.DbMetadataReader;
 import org.apache.ignite.console.agent.db.DbSchema;

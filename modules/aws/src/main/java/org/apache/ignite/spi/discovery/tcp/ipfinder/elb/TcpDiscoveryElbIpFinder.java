@@ -16,6 +16,10 @@
  */
 package org.apache.ignite.spi.discovery.tcp.ipfinder.elb;
 
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
@@ -26,14 +30,9 @@ import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancingCli
 import com.amazonaws.services.elasticloadbalancing.model.DescribeLoadBalancersRequest;
 import com.amazonaws.services.elasticloadbalancing.model.Instance;
 import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription;
-import java.util.ArrayList;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
-
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.List;
 
 import static com.amazonaws.util.StringUtils.isNullOrEmpty;
 

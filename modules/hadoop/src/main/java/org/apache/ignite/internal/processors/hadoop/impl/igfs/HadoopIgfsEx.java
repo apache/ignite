@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.IOException;
 
 /**
  * Extended IGFS server interface.

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs.client;
 
+import java.util.Map;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -26,8 +27,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Map;
 
 /**
  * IGFS client update callable.

@@ -17,24 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import org.apache.ignite.cluster.ClusterMetrics;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.hadoop.mapreduce.IgniteHadoopWeightedMapReducePlanner;
-import org.apache.ignite.igfs.IgfsBlockLocation;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
-import org.apache.ignite.hadoop.HadoopInputSplit;
-import org.apache.ignite.hadoop.HadoopMapReducePlan;
-import org.apache.ignite.hadoop.planner.HadoopAbstractMapReducePlanner;
-import org.apache.ignite.internal.processors.igfs.IgfsIgniteMock;
-import org.apache.ignite.internal.processors.igfs.IgfsMock;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,6 +27,23 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.mapreduce.IgniteHadoopWeightedMapReducePlanner;
+import org.apache.ignite.hadoop.planner.HadoopAbstractMapReducePlanner;
+import org.apache.ignite.igfs.IgfsBlockLocation;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
+import org.apache.ignite.internal.processors.igfs.IgfsIgniteMock;
+import org.apache.ignite.internal.processors.igfs.IgfsMock;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**

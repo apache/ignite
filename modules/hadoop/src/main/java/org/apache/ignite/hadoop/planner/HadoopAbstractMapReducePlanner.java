@@ -17,6 +17,11 @@
 
 package org.apache.ignite.hadoop.planner;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -26,12 +31,6 @@ import org.apache.ignite.internal.processors.hadoop.planner.HadoopMapReducePlanT
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v1;
 
+import java.io.IOException;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.OutputCommitter;
@@ -29,8 +30,6 @@ import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.IOException;
 
 /**
  * Hadoop output collector.

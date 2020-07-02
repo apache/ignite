@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import javax.cache.Cache;
-import javax.cache.expiry.ExpiryPolicy;
 import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,6 +27,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import javax.cache.Cache;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;

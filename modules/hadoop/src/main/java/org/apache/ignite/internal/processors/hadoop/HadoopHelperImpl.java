@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.hadoop;
 
+import java.io.IOException;
+import java.io.InputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -26,9 +28,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.RemappingClassAdapter;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * Utility methods for Hadoop classloader required to avoid direct 3rd-party dependencies in class loader.
