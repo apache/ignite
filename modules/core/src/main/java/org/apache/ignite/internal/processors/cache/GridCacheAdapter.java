@@ -110,7 +110,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
-import org.apache.ignite.internal.processors.performancestatistics.CacheOperation;
+import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -1503,7 +1503,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             metrics0().addGetTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)
-            writeStatistics(CacheOperation.GET, start);
+            writeStatistics(OperationType.CACHE_GET, start);
 
         return val;
     }
@@ -1543,7 +1543,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             metrics0().addGetTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)
-            writeStatistics(CacheOperation.GET, start);
+            writeStatistics(OperationType.CACHE_GET, start);
 
         return val;
     }
@@ -1582,7 +1582,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetTimeStatClosure<V>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(CacheOperation.GET, start));
+            fut.listen(f -> writeStatistics(OperationType.CACHE_GET, start));
 
         return fut;
     }
@@ -1639,7 +1639,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetTimeStatClosure<EntryGetResult>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(CacheOperation.GET, start));
+            fut.listen(f -> writeStatistics(OperationType.CACHE_GET, start));
 
         return fr;
     }
@@ -1669,7 +1669,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             metrics0().addGetTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)
-            writeStatistics(CacheOperation.GET_ALL, start);
+            writeStatistics(OperationType.CACHE_GET_ALL, start);
 
         return map;
     }
@@ -1705,7 +1705,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             metrics0().addGetTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)
-            writeStatistics(CacheOperation.GET_ALL, start);
+            writeStatistics(OperationType.CACHE_GET_ALL, start);
 
         return res;
     }
@@ -1746,7 +1746,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(CacheOperation.GET_ALL, start));
+            fut.listen(f -> writeStatistics(OperationType.CACHE_GET_ALL, start));
 
         return fut;
     }
@@ -1802,7 +1802,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetTimeStatClosure<Map<K, EntryGetResult>>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(CacheOperation.GET_ALL, start));
+            fut.listen(f -> writeStatistics(OperationType.CACHE_GET_ALL, start));
 
         return rf;
     }
@@ -2518,7 +2518,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             metrics0().addPutAndGetTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)
-            writeStatistics(CacheOperation.GET_AND_PUT, start);
+            writeStatistics(OperationType.CACHE_GET_AND_PUT, start);
 
         return prevVal;
     }
@@ -2574,7 +2574,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(CacheOperation.GET_AND_PUT, start));
+            fut.listen(f -> writeStatistics(OperationType.CACHE_GET_AND_PUT, start));
 
         return fut;
     }
@@ -2635,7 +2635,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             metrics0().addPutTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)
-            writeStatistics(CacheOperation.PUT, start);
+            writeStatistics(OperationType.CACHE_PUT, start);
 
         return stored;
     }
@@ -2766,7 +2766,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     metrics0().addInvokeTimeNanos(System.nanoTime() - start);
 
                 if (performanceStatsEnabled)
-                    writeStatistics(CacheOperation.INVOKE, start);
+                    writeStatistics(OperationType.CACHE_INVOKE, start);
 
                 EntryProcessorResult<T> res = null;
 
@@ -2815,7 +2815,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     metrics0().addInvokeTimeNanos(System.nanoTime() - start);
 
                 if (performanceStatsEnabled)
-                    writeStatistics(CacheOperation.INVOKE_ALL, start);
+                    writeStatistics(OperationType.CACHE_INVOKE_ALL, start);
 
                 return res != null ? res : Collections.<K, EntryProcessorResult<T>>emptyMap();
             }
@@ -2864,7 +2864,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     metrics0().addInvokeTimeNanos(System.nanoTime() - start);
 
                 if (performanceStatsEnabled)
-                    writeStatistics(CacheOperation.INVOKE, start);
+                    writeStatistics(OperationType.CACHE_INVOKE, start);
 
                 Map<K, EntryProcessorResult<T>> resMap = ret.value();
 
@@ -2927,7 +2927,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     metrics0().addInvokeTimeNanos(System.nanoTime() - start);
 
                 if (performanceStatsEnabled)
-                    writeStatistics(CacheOperation.INVOKE_ALL, start);
+                    writeStatistics(OperationType.CACHE_INVOKE_ALL, start);
 
                 assert ret != null;
 
@@ -2978,7 +2978,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     metrics0().addInvokeTimeNanos(System.nanoTime() - start);
 
                 if (performanceStatsEnabled)
-                    writeStatistics(CacheOperation.INVOKE_ALL, start);
+                    writeStatistics(OperationType.CACHE_INVOKE_ALL, start);
 
                 assert ret != null;
 
@@ -3015,7 +3015,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     metrics0().addInvokeTimeNanos(System.nanoTime() - start);
 
                 if (performanceStatsEnabled)
-                    writeStatistics(CacheOperation.INVOKE_ALL, start);
+                    writeStatistics(OperationType.CACHE_INVOKE_ALL, start);
 
                 return value;
             }
@@ -3050,7 +3050,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(CacheOperation.PUT, start));
+            fut.listen(f -> writeStatistics(OperationType.CACHE_PUT, start));
 
         return fut;
     }
@@ -3160,7 +3160,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             metrics0().addPutTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)
-            writeStatistics(CacheOperation.PUT_ALL, start);
+            writeStatistics(OperationType.CACHE_PUT_ALL, start);
     }
 
     /**
@@ -3201,7 +3201,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(CacheOperation.PUT_ALL, start));
+            fut.listen(f -> writeStatistics(OperationType.CACHE_PUT_ALL, start));
 
         return fut;
     }
@@ -3244,7 +3244,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             metrics0().addRemoveAndGetTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)
-            writeStatistics(CacheOperation.GET_AND_REMOVE, start);
+            writeStatistics(OperationType.CACHE_GET_AND_REMOVE, start);
 
         return prevVal;
     }
@@ -3304,7 +3304,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(CacheOperation.GET_AND_REMOVE, start));
+            fut.listen(f -> writeStatistics(OperationType.CACHE_GET_AND_REMOVE, start));
 
         return fut;
     }
@@ -3377,7 +3377,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)
-            writeStatistics(CacheOperation.REMOVE_ALL, start);
+            writeStatistics(OperationType.CACHE_REMOVE_ALL, start);
     }
 
     /**
@@ -3423,7 +3423,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(CacheOperation.REMOVE_ALL, start));
+            fut.listen(f -> writeStatistics(OperationType.CACHE_REMOVE_ALL, start));
 
         return fut;
     }
@@ -3478,7 +3478,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)
-            writeStatistics(CacheOperation.REMOVE, start);
+            writeStatistics(OperationType.CACHE_REMOVE, start);
 
         return rmv;
     }
@@ -3540,7 +3540,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(CacheOperation.REMOVE, start));
+            fut.listen(f -> writeStatistics(OperationType.CACHE_REMOVE, start));
 
         return fut;
     }
@@ -6911,7 +6911,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param op Operation type.
      * @param start Start time in nanoseconds.
      */
-    private void writeStatistics(CacheOperation op, long start) {
+    private void writeStatistics(OperationType op, long start) {
         ctx.kernalContext().performanceStatistics().cacheOperation(
             op,
             ctx.cacheId(),

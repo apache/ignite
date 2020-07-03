@@ -25,7 +25,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.performancestatistics.CacheOperation;
+import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.performancestatistics.PerformaceStatisticsProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -199,7 +199,7 @@ class CacheLockImpl<K, V> implements Lock {
                 PerformaceStatisticsProcessor stat = delegate.context().kernalContext().performanceStatistics();
 
                 if (stat.enabled()) {
-                    stat.cacheOperation(CacheOperation.LOCK,
+                    stat.cacheOperation(OperationType.CACHE_LOCK,
                         delegate.context().cacheId(),
                         U.currentTimeMillis(),
                         System.nanoTime() - startTime);

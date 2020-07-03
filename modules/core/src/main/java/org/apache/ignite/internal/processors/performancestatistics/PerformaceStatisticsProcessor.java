@@ -125,7 +125,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
      */
-    public void cacheOperation(CacheOperation type, int cacheId, long startTime, long duration) {
+    public void cacheOperation(OperationType type, int cacheId, long startTime, long duration) {
         writer.cacheOperation(type, cacheId, startTime, duration);
     }
 

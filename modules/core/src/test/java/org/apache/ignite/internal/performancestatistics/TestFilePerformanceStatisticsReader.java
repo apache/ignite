@@ -23,8 +23,8 @@ import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.performancestatistics.CacheOperation;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader;
+import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
@@ -52,7 +52,7 @@ public class TestFilePerformanceStatisticsReader {
         }
 
         /** {@inheritDoc} */
-        @Override public void cacheOperation(UUID nodeId, CacheOperation type, int cacheId, long startTime,
+        @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime,
             long duration) {
             log("cacheOperation", "type", type, "cacheId", cacheId, "startTime", startTime,
                 "duration", duration);

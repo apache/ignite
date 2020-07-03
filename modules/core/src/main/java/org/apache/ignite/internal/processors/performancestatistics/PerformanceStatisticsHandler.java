@@ -34,7 +34,7 @@ public interface PerformanceStatisticsHandler {
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
      */
-    void cacheOperation(UUID nodeId, CacheOperation type, int cacheId, long startTime, long duration);
+    void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime, long duration);
 
     /**
      * @param nodeId Node id.

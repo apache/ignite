@@ -28,7 +28,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.performancestatistics.CacheOperation;
+import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -36,15 +36,15 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.performancestatistics.CacheOperation.GET;
-import static org.apache.ignite.internal.processors.performancestatistics.CacheOperation.GET_ALL;
-import static org.apache.ignite.internal.processors.performancestatistics.CacheOperation.INVOKE;
-import static org.apache.ignite.internal.processors.performancestatistics.CacheOperation.INVOKE_ALL;
-import static org.apache.ignite.internal.processors.performancestatistics.CacheOperation.LOCK;
-import static org.apache.ignite.internal.processors.performancestatistics.CacheOperation.PUT;
-import static org.apache.ignite.internal.processors.performancestatistics.CacheOperation.PUT_ALL;
-import static org.apache.ignite.internal.processors.performancestatistics.CacheOperation.REMOVE;
-import static org.apache.ignite.internal.processors.performancestatistics.CacheOperation.REMOVE_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_INVOKE;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_INVOKE_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_LOCK;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL;
 import static org.apache.ignite.testframework.LogListener.matches;
 
 /**
@@ -135,54 +135,54 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     /** @throws Exception If failed. */
     @Test
     public void testCacheOperations() throws Exception {
-        checkCacheOperation(PUT, cache -> cache.put(1, 1));
-        checkCacheOperation(PUT, cache -> cache.putAsync(2, 2).get());
+        checkCacheOperation(CACHE_PUT, cache -> cache.put(1, 1));
+        checkCacheOperation(CACHE_PUT, cache -> cache.putAsync(2, 2).get());
 
-        checkCacheOperation(PUT_ALL, cache -> cache.putAll(Collections.singletonMap(3, 3)));
-        checkCacheOperation(PUT_ALL, cache -> cache.putAllAsync(Collections.singletonMap(4, 4)).get());
+        checkCacheOperation(CACHE_PUT_ALL, cache -> cache.putAll(Collections.singletonMap(3, 3)));
+        checkCacheOperation(CACHE_PUT_ALL, cache -> cache.putAllAsync(Collections.singletonMap(4, 4)).get());
 
-        checkCacheOperation(GET, cache -> cache.get(1));
-        checkCacheOperation(GET, cache -> cache.getAsync(2).get());
+        checkCacheOperation(CACHE_GET, cache -> cache.get(1));
+        checkCacheOperation(CACHE_GET, cache -> cache.getAsync(2).get());
 
-        checkCacheOperation(GET_ALL, cache -> cache.getAll(Collections.singleton(1)));
-        checkCacheOperation(GET_ALL, cache -> cache.getAllAsync(Collections.singleton(2)).get());
+        checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAll(Collections.singleton(1)));
+        checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAllAsync(Collections.singleton(2)).get());
 
-        checkCacheOperation(REMOVE, cache -> cache.remove(1));
-        checkCacheOperation(REMOVE, cache -> cache.removeAsync(2).get());
+        checkCacheOperation(CACHE_REMOVE, cache -> cache.remove(1));
+        checkCacheOperation(CACHE_REMOVE, cache -> cache.removeAsync(2).get());
 
-        checkCacheOperation(REMOVE_ALL, cache -> cache.removeAll(Collections.singleton(3)));
-        checkCacheOperation(REMOVE_ALL, cache -> cache.removeAllAsync(Collections.singleton(4)).get());
+        checkCacheOperation(CACHE_REMOVE_ALL, cache -> cache.removeAll(Collections.singleton(3)));
+        checkCacheOperation(CACHE_REMOVE_ALL, cache -> cache.removeAllAsync(Collections.singleton(4)).get());
 
-        checkCacheOperation(LOCK, cache -> {
+        checkCacheOperation(CACHE_LOCK, cache -> {
             Lock lock = cache.lock(5);
 
             lock.lock();
             lock.unlock();
         });
 
-        checkCacheOperation(LOCK, cache -> {
+        checkCacheOperation(CACHE_LOCK, cache -> {
             Lock lock = cache.lockAll(Collections.singleton(5));
 
             lock.lock();
             lock.unlock();
         });
 
-        checkCacheOperation(INVOKE, cache -> cache.invoke(10, ENTRY_PROC));
-        checkCacheOperation(INVOKE, cache -> cache.invokeAsync(10, ENTRY_PROC).get());
+        checkCacheOperation(CACHE_INVOKE, cache -> cache.invoke(10, ENTRY_PROC));
+        checkCacheOperation(CACHE_INVOKE, cache -> cache.invokeAsync(10, ENTRY_PROC).get());
 
-        checkCacheOperation(INVOKE, cache -> cache.invoke(10, CACHE_ENTRY_PROC));
-        checkCacheOperation(INVOKE, cache -> cache.invokeAsync(10, CACHE_ENTRY_PROC).get());
+        checkCacheOperation(CACHE_INVOKE, cache -> cache.invoke(10, CACHE_ENTRY_PROC));
+        checkCacheOperation(CACHE_INVOKE, cache -> cache.invokeAsync(10, CACHE_ENTRY_PROC).get());
 
-        checkCacheOperation(INVOKE_ALL, cache -> cache.invokeAll(Collections.singleton(10), ENTRY_PROC));
-        checkCacheOperation(INVOKE_ALL, cache -> cache.invokeAllAsync(Collections.singleton(10), ENTRY_PROC).get());
+        checkCacheOperation(CACHE_INVOKE_ALL, cache -> cache.invokeAll(Collections.singleton(10), ENTRY_PROC));
+        checkCacheOperation(CACHE_INVOKE_ALL, cache -> cache.invokeAllAsync(Collections.singleton(10), ENTRY_PROC).get());
 
-        checkCacheOperation(INVOKE_ALL, cache -> cache.invokeAll(Collections.singleton(10), CACHE_ENTRY_PROC));
-        checkCacheOperation(INVOKE_ALL,
+        checkCacheOperation(CACHE_INVOKE_ALL, cache -> cache.invokeAll(Collections.singleton(10), CACHE_ENTRY_PROC));
+        checkCacheOperation(CACHE_INVOKE_ALL,
             cache -> cache.invokeAllAsync(Collections.singleton(10), CACHE_ENTRY_PROC).get());
     }
 
     /** */
-    private void checkCacheOperation(CacheOperation op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
+    private void checkCacheOperation(OperationType op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
         LogListener lsnr = matches("cacheOperation ")
             .andMatches("type=" + op)
             .andMatches("cacheId=" + ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId())

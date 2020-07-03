@@ -46,6 +46,13 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
+
 /**
  * Performance statistics collector based on logging to a file.
  * <p>
@@ -57,13 +64,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FilePerformanceStatisticsWriter {
     /** Default maximum file size in bytes. Performance statistics will be stopped when the size exceeded. */
-    public static final long DFLT_FILE_MAX_SIZE = 32 * 1024 * 1024 * 1024L;
+    public static final long DFLT_FILE_MAX_SIZE = 32 * U.GB;
 
     /** Default off heap buffer size in bytes. */
-    public static final int DFLT_BUFFER_SIZE = 32 * 1024 * 1024;
+    public static final int DFLT_BUFFER_SIZE = (int)(32 * U.MB);
 
     /** Default minimal batch size to flush in bytes. */
-    public static final int DFLT_FLUSH_SIZE = 8 * 1024 * 1024;
+    public static final int DFLT_FLUSH_SIZE = (int)(8 * U.MB);
 
     /** Directory to store performance statistics files. Placed under Ignite work directory. */
     public static final String PERFORMANCE_STAT_DIR = "performanceStatistics";
@@ -152,11 +159,10 @@ public class FilePerformanceStatisticsWriter {
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
      */
-    public void cacheOperation(CacheOperation type, int cacheId, long startTime, long duration) {
-        doWrite(OperationType.CACHE_OPERATION,
-            () -> 1 + 4 + 8 + 8,
+    public void cacheOperation(OperationType type, int cacheId, long startTime, long duration) {
+        doWrite(type,
+            () -> 4 + 8 + 8,
             buf -> {
-                buf.put((byte)type.ordinal());
                 buf.putInt(cacheId);
                 buf.putLong(startTime);
                 buf.putLong(duration);
@@ -170,8 +176,8 @@ public class FilePerformanceStatisticsWriter {
      * @param commited {@code True} if commited.
      */
     public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commited) {
-        doWrite(OperationType.TRANSACTION,
-            () -> 4 + cacheIds.size() * 4 + 8 + 8 + 1,
+        doWrite(commited ? TX_COMMIT : TX_ROLLBACK,
+            () -> 4 + cacheIds.size() * 4 + 8 + 8,
             buf -> {
                 buf.putInt(cacheIds.size());
 
@@ -182,7 +188,6 @@ public class FilePerformanceStatisticsWriter {
 
                 buf.putLong(startTime);
                 buf.putLong(duration);
-                buf.put(commited ? (byte)1 : 0);
             });
     }
 
@@ -203,7 +208,7 @@ public class FilePerformanceStatisticsWriter {
         boolean needWriteStr = !writer.stringCached(text);
         byte[] strBytes = needWriteStr ? text.getBytes() : null;
 
-        doWrite(OperationType.QUERY, () -> {
+        doWrite(QUERY, () -> {
             int size = 1 + 1 + 4 + 8 + 8 + 8 + 1;
 
             if (needWriteStr)
@@ -235,7 +240,7 @@ public class FilePerformanceStatisticsWriter {
      * @param physicalReads Number of physical reads.
      */
     public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads, long physicalReads) {
-        doWrite(OperationType.QUERY_READS,
+        doWrite(QUERY_READS,
             () -> 1 + 16 + 8 + 8 + 8,
             buf -> {
                 buf.put((byte)type.ordinal());
@@ -262,7 +267,7 @@ public class FilePerformanceStatisticsWriter {
         boolean needWriteStr = !writer.stringCached(taskName);
         byte[] strBytes = needWriteStr ? taskName.getBytes() : null;
 
-        doWrite(OperationType.TASK, () -> {
+        doWrite(TASK, () -> {
             int size = 24 + 1 + 4 + 8 + 8 + 4;
 
             if (needWriteStr)
@@ -293,7 +298,7 @@ public class FilePerformanceStatisticsWriter {
      * @param timedOut {@code True} if job is timed out.
      */
     public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
-        doWrite(OperationType.JOB,
+        doWrite(JOB,
             () -> 24 + 8 + 8 + 8 + 1,
             buf -> {
                 writeIgniteUuid(buf, sesId);
@@ -316,33 +321,12 @@ public class FilePerformanceStatisticsWriter {
         if (fileWriter == null)
             return;
 
-        int size = sizeSupplier.getAsInt();
-
-        SegmentedRingByteBuffer.WriteSegment seg = reserveBuffer(fileWriter, op, size);
-
-        if (seg == null)
-            return;
-
-        writer.accept(seg.buffer());
-
-        seg.release();
-    }
-
-    /**
-     * Reserves buffer's write segment.
-     *
-     * @param fileWriter File writer.
-     * @param type Operation type.
-     * @param size Record size.
-     * @return Buffer's write segment or {@code null} if not enought space or writer stopping.
-     */
-    private SegmentedRingByteBuffer.WriteSegment reserveBuffer(FileWriter fileWriter, OperationType type, int size) {
-        SegmentedRingByteBuffer.WriteSegment seg = fileWriter.writeSegment(size + /*type*/ 1);
+        SegmentedRingByteBuffer.WriteSegment seg = fileWriter.writeSegment(sizeSupplier.getAsInt() + /*type*/ 1);
 
         if (seg == null) {
             fileWriter.logSmallBufferMessage();
 
-            return null;
+            return;
         }
 
         // Ring buffer closed (writer stopping) or maximum size reached.
@@ -352,14 +336,16 @@ public class FilePerformanceStatisticsWriter {
             if (!fileWriter.isCancelled())
                 fileWriter.onMaxFileSizeReached();
 
-            return null;
+            return;
         }
 
         ByteBuffer buf = seg.buffer();
 
-        buf.put((byte)type.ordinal());
+        buf.put((byte)op.ordinal());
 
-        return seg;
+        writer.accept(buf);
+
+        seg.release();
     }
 
     /** @return Performance statistics file. */
@@ -377,23 +363,11 @@ public class FilePerformanceStatisticsWriter {
         buf.putLong(uuid.getLeastSignificantBits());
     }
 
-    /** Reads {@link UUID} from buffer. */
-    public static UUID readUuid(ByteBuffer buf) {
-        return new UUID(buf.getLong(), buf.getLong());
-    }
-
     /** Writes {@link IgniteUuid} to buffer. */
     public static void writeIgniteUuid(ByteBuffer buf, IgniteUuid uuid) {
         buf.putLong(uuid.globalId().getMostSignificantBits());
         buf.putLong(uuid.globalId().getLeastSignificantBits());
         buf.putLong(uuid.localId());
-    }
-
-    /** Reads {@link IgniteUuid} from buffer. */
-    public static IgniteUuid readIgniteUuid(ByteBuffer buf) {
-        UUID globalId = new UUID(buf.getLong(), buf.getLong());
-
-        return new IgniteUuid(globalId, buf.getLong());
     }
 
     /** @return {@code True} if collecting performance statistics enabled. */
@@ -446,36 +420,39 @@ public class FilePerformanceStatisticsWriter {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!isCancelled()) {
-                blockingSectionBegin();
+            try {
+                while (!isCancelled()) {
+                    blockingSectionBegin();
 
-                try {
-                    synchronized (this) {
-                        while (readyForFlushSize.get() < flushBatchSize && !isCancelled())
-                            wait();
+                    try {
+                        synchronized (this) {
+                            while (readyForFlushSize.get() < flushBatchSize && !isCancelled())
+                                wait();
+                        }
                     }
-                }
-                finally {
-                    blockingSectionEnd();
-                }
+                    finally {
+                        blockingSectionEnd();
+                    }
 
-                flushBuffer();
+                    flushBuffer();
+                }
             }
+            finally {
+                fileWriter = null;
 
-            fileWriter = null;
+                ringByteBuffer.close();
 
-            ringByteBuffer.close();
+                // Make sure that all producers released their buffers to safe deallocate memory.
+                flushBuffer();
 
-            // Make sure that all producers released their buffers to safe deallocate memory.
-            flushBuffer();
+                ringByteBuffer.free();
 
-            ringByteBuffer.free();
+                U.closeQuiet(fileIo);
 
-            U.closeQuiet(fileIo);
+                cachedStrings.clear();
 
-            cachedStrings.clear();
-
-            log.info("Performance statistics writer stopped.");
+                log.info("Performance statistics writer stopped.");
+            }
         }
 
         /** @return {@code True} if string hash code is cached. {@code False} if need write string.  */
@@ -497,6 +474,7 @@ public class FilePerformanceStatisticsWriter {
 
                 if (readySize >= DFLT_FLUSH_SIZE) {
                     synchronized (this) {
+                        // Required to start writing data to the file.
                         notify();
                     }
                 }
@@ -543,6 +521,7 @@ public class FilePerformanceStatisticsWriter {
             isCancelled = true;
 
             synchronized (this) {
+                // Required to start writing data to the file.
                 notify();
             }
         }

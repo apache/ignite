@@ -17,15 +17,50 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.util.EnumSet;
+
 /**
  * Operation type.
  */
 public enum OperationType {
-    /** Cache operation. */
-    CACHE_OPERATION,
+    /** Cache get. */
+    CACHE_GET,
 
-    /** Transaction. */
-    TRANSACTION,
+    /** Cache put. */
+    CACHE_PUT,
+
+    /** Cache remove. */
+    CACHE_REMOVE,
+
+    /** Cache get and put. */
+    CACHE_GET_AND_PUT,
+
+    /** Cache get and remove. */
+    CACHE_GET_AND_REMOVE,
+
+    /** Cache invoke. */
+    CACHE_INVOKE,
+
+    /** Cache lock. */
+    CACHE_LOCK,
+
+    /** Cache get all. */
+    CACHE_GET_ALL,
+
+    /** Cache put all. */
+    CACHE_PUT_ALL,
+
+    /** Cache remove all. */
+    CACHE_REMOVE_ALL,
+
+    /** Cache invoke all. */
+    CACHE_INVOKE_ALL,
+
+    /** Transaction commit. */
+    TX_COMMIT,
+
+    /** Transaction rollback. */
+    TX_ROLLBACK,
 
     /** Query. */
     QUERY,
@@ -39,11 +74,27 @@ public enum OperationType {
     /** Job. */
     JOB;
 
+    /** Cache operations. */
+    public static final EnumSet<OperationType> CACHE_OPS = EnumSet.range(CACHE_GET, CACHE_INVOKE_ALL);
+
+    /** Transaction operations. */
+    public static final EnumSet<OperationType> TX_OPS = EnumSet.of(TX_COMMIT, TX_ROLLBACK);
+
     /** Values. */
     private static final OperationType[] VALS = values();
 
     /** @return Operation type from ordinal. */
     public static OperationType fromOrdinal(byte ord) {
         return ord < 0 || ord >= VALS.length ? null : VALS[ord];
+    }
+
+    /** @return {@code True} if cache operation. */
+    public static boolean cacheOperation(OperationType op) {
+        return CACHE_OPS.contains(op);
+    }
+
+    /** @return {@code True} if transaction operation. */
+    public static boolean transactionOperation(OperationType op) {
+        return TX_OPS.contains(op);
     }
 }

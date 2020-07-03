@@ -44,8 +44,13 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.file.Files.walkFileTree;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.readIgniteUuid;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.readUuid;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheOperation;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionOperation;
 
 /**
  * Walker over the performance statistics file.
@@ -105,7 +110,7 @@ public class FilePerformanceStatisticsReader {
                 if (read <= 0)
                     break;
 
-                while (des.deserialize(buf));
+                while (des.read(buf));
 
                 buf.compact();
             }
@@ -154,6 +159,18 @@ public class FilePerformanceStatisticsReader {
         return null;
     }
 
+    /** Reads {@link UUID} from buffer. */
+    public static UUID readUuid(ByteBuffer buf) {
+        return new UUID(buf.getLong(), buf.getLong());
+    }
+
+    /** Reads {@link IgniteUuid} from buffer. */
+    public static IgniteUuid readIgniteUuid(ByteBuffer buf) {
+        UUID globalId = new UUID(buf.getLong(), buf.getLong());
+
+        return new IgniteUuid(globalId, buf.getLong());
+    }
+
     /** Performance statistics operations deserializer. */
     private static class PerformanceStatisticsDeserializer implements AutoCloseable {
         /** Cached strings by id. */
@@ -166,20 +183,33 @@ public class FilePerformanceStatisticsReader {
         private final UUID nodeId;
 
         /** @param handlers Handlers to process deserialized operation. */
-        public PerformanceStatisticsDeserializer(UUID nodeId, PerformanceStatisticsHandler... handlers) {
+        PerformanceStatisticsDeserializer(UUID nodeId, PerformanceStatisticsHandler... handlers) {
             this.nodeId = nodeId;
             this.handlers = handlers;
         }
 
         /**
-         * Tries to deserialize performance statistics operation from buffer.
+         * Tries to deserialize performance statistics operation from buffer and notify handlers.
          *
          * @param buf Buffer.
-         * @return {@code True} if operation parsed. {@code False} if not enough bytes.
+         * @return {@code True} if operation deserialized and handlers notified. {@code False} if not enough bytes.
          */
-        public boolean deserialize(ByteBuffer buf) {
+        boolean read(ByteBuffer buf) {
             int pos = buf.position();
 
+            if (deserialize(buf))
+                return true;
+
+            buf.position(pos);
+
+            return false;
+        }
+
+        /**
+         * @param buf Buffer.
+         * @return {@code True} if operation deserialized. {@code False} if not enough bytes.
+         */
+        private boolean deserialize(ByteBuffer buf) {
             if (buf.remaining() < 1)
                 return false;
 
@@ -187,159 +217,145 @@ public class FilePerformanceStatisticsReader {
 
             OperationType opType = OperationType.fromOrdinal(opTypeByte);
 
-            switch (opType) {
-                case CACHE_OPERATION: {
-                    if (buf.remaining() < 1 + 4 + 8 + 8)
-                        break;
+            if (cacheOperation(opType)) {
+                if (buf.remaining() < 4 + 8 + 8)
+                    return false;
 
-                    CacheOperation cacheOp = CacheOperation.fromOrdinal(buf.get());
-                    int cacheId = buf.getInt();
-                    long startTime = buf.getLong();
-                    long duration = buf.getLong();
+                int cacheId = buf.getInt();
+                long startTime = buf.getLong();
+                long duration = buf.getLong();
 
-                    for (PerformanceStatisticsHandler handler : handlers)
-                        handler.cacheOperation(nodeId, cacheOp, cacheId, startTime, duration);
+                for (PerformanceStatisticsHandler handler : handlers)
+                    handler.cacheOperation(nodeId, opType, cacheId, startTime, duration);
 
-                    return true;
-                }
-
-                case TRANSACTION: {
-                    if (buf.remaining() < 4)
-                        break;
-
-                    int cacheIdsSize = buf.getInt();
-
-                    if (buf.remaining() < 4 * cacheIdsSize + 8 + 8 + 1)
-                        break;
-
-                    GridIntList cacheIds = new GridIntList(cacheIdsSize);
-
-                    for (int i = 0; i < cacheIdsSize; i++)
-                        cacheIds.add(buf.getInt());
-
-                    long startTime = buf.getLong();
-                    long duration = buf.getLong();
-                    boolean commit = buf.get() != 0;
-
-                    for (PerformanceStatisticsHandler handler : handlers)
-                        handler.transaction(nodeId, cacheIds, startTime, duration, commit);
-
-                    return true;
-                }
-
-                case QUERY: {
-                    if (buf.remaining() < 1 + 1 + 4 + 8 + 8 + 8 + 1)
-                        break;
-
-                    GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
-                    boolean needReadString = buf.get() != 0;
-                    int strId = buf.getInt();
-
-                    String str;
-
-                    if (needReadString) {
-                        int textLength = buf.getInt();
-
-                        if (buf.remaining() < textLength + 8 + 8 + 8 + 1)
-                            break;
-
-                        str = readString(buf, textLength);
-
-                        stringById.putIfAbsent(strId, str);
-                    }
-                    else
-                        str = stringById.get(strId);
-
-                    long id = buf.getLong();
-                    long startTime = buf.getLong();
-                    long duration = buf.getLong();
-                    boolean success = buf.get() != 0;
-
-                    if (str == null)
-                        return true;
-
-                    for (PerformanceStatisticsHandler handler : handlers)
-                        handler.query(nodeId, queryType, str, id, startTime, duration, success);
-
-                    return true;
-                }
-
-                case QUERY_READS: {
-                    if (buf.remaining() < 1 + 16 + 8 + 8 + 8)
-                        break;
-
-                    GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
-
-                    UUID uuid = readUuid(buf);
-                    long id = buf.getLong();
-                    long logicalReads = buf.getLong();
-                    long physicalReads = buf.getLong();
-
-                    for (PerformanceStatisticsHandler handler : handlers)
-                        handler.queryReads(nodeId, queryType, uuid, id, logicalReads, physicalReads);
-
-                    return true;
-                }
-
-                case TASK: {
-                    if (buf.remaining() < 24 + 1 + 4 + 8 + 8 + 4)
-                        break;
-
-                    IgniteUuid sesId = readIgniteUuid(buf);
-                    boolean needReadString = buf.get() != 0;
-                    int strId = buf.getInt();
-
-                    String taskName;
-
-                    if (needReadString) {
-                        int textLength = buf.getInt();
-
-                        if (buf.remaining() < textLength + 8 + 8 + 4)
-                            break;
-
-                        taskName = readString(buf, textLength);
-
-                        stringById.putIfAbsent(strId, taskName);
-                    }
-                    else
-                        taskName = stringById.get(strId);
-
-                    long startTime = buf.getLong();
-                    long duration = buf.getLong();
-                    int affPartId = buf.getInt();
-
-                    if (taskName == null)
-                        return true;
-
-                    for (PerformanceStatisticsHandler handler : handlers)
-                        handler.task(nodeId, sesId, taskName, startTime, duration, affPartId);
-
-                    return true;
-                }
-
-                case JOB: {
-                    if (buf.remaining() < 24 + 8 + 8 + 8 + 1)
-                        break;
-
-                    IgniteUuid sesId = readIgniteUuid(buf);
-                    long queuedTime = buf.getLong();
-                    long startTime = buf.getLong();
-                    long duration = buf.getLong();
-                    boolean timedOut = buf.get() != 0;
-
-                    for (PerformanceStatisticsHandler handler : handlers)
-                        handler.job(nodeId, sesId, queuedTime, startTime, duration, timedOut);
-
-                    return true;
-                }
-
-                default:
-                    throw new RuntimeException("Unknown operation type id [typeId=" + opTypeByte + ']');
+                return true;
             }
+            else if (transactionOperation(opType)) {
+                if (buf.remaining() < 4)
+                    return false;
 
-            buf.position(pos);
+                int cacheIdsSize = buf.getInt();
 
-            return false;
+                if (buf.remaining() < 4 * cacheIdsSize + 8 + 8)
+                    return false;
+
+                GridIntList cacheIds = new GridIntList(cacheIdsSize);
+
+                for (int i = 0; i < cacheIdsSize; i++)
+                    cacheIds.add(buf.getInt());
+
+                long startTime = buf.getLong();
+                long duration = buf.getLong();
+
+                for (PerformanceStatisticsHandler handler : handlers)
+                    handler.transaction(nodeId, cacheIds, startTime, duration, opType == TX_COMMIT);
+
+                return true;
+            }
+            else if (opType == QUERY) {
+                if (buf.remaining() < 1 + 1 + 4 + 8 + 8 + 8 + 1)
+                    return false;
+
+                GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
+                boolean needReadString = buf.get() != 0;
+                int strId = buf.getInt();
+
+                String str;
+
+                if (needReadString) {
+                    int textLength = buf.getInt();
+
+                    if (buf.remaining() < textLength + 8 + 8 + 8 + 1)
+                        return false;
+
+                    str = readString(buf, textLength);
+
+                    stringById.putIfAbsent(strId, str);
+                }
+                else
+                    str = stringById.get(strId);
+
+                long id = buf.getLong();
+                long startTime = buf.getLong();
+                long duration = buf.getLong();
+                boolean success = buf.get() != 0;
+
+                if (str == null)
+                    return true;
+
+                for (PerformanceStatisticsHandler handler : handlers)
+                    handler.query(nodeId, queryType, str, id, startTime, duration, success);
+
+                return true;
+            }
+            else if (opType == QUERY_READS) {
+                if (buf.remaining() < 1 + 16 + 8 + 8 + 8)
+                    return false;
+
+                GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
+
+                UUID uuid = readUuid(buf);
+                long id = buf.getLong();
+                long logicalReads = buf.getLong();
+                long physicalReads = buf.getLong();
+
+                for (PerformanceStatisticsHandler handler : handlers)
+                    handler.queryReads(nodeId, queryType, uuid, id, logicalReads, physicalReads);
+
+                return true;
+            }
+            else if (opType == TASK) {
+                if (buf.remaining() < 24 + 1 + 4 + 8 + 8 + 4)
+                    return false;
+
+                IgniteUuid sesId = readIgniteUuid(buf);
+                boolean needReadString = buf.get() != 0;
+                int strId = buf.getInt();
+
+                String taskName;
+
+                if (needReadString) {
+                    int textLength = buf.getInt();
+
+                    if (buf.remaining() < textLength + 8 + 8 + 4)
+                        return false;
+
+                    taskName = readString(buf, textLength);
+
+                    stringById.putIfAbsent(strId, taskName);
+                }
+                else
+                    taskName = stringById.get(strId);
+
+                long startTime = buf.getLong();
+                long duration = buf.getLong();
+                int affPartId = buf.getInt();
+
+                if (taskName == null)
+                    return true;
+
+                for (PerformanceStatisticsHandler handler : handlers)
+                    handler.task(nodeId, sesId, taskName, startTime, duration, affPartId);
+
+                return true;
+            }
+            else if (opType == JOB) {
+                if (buf.remaining() < 24 + 8 + 8 + 8 + 1)
+                    return false;
+
+                IgniteUuid sesId = readIgniteUuid(buf);
+                long queuedTime = buf.getLong();
+                long startTime = buf.getLong();
+                long duration = buf.getLong();
+                boolean timedOut = buf.get() != 0;
+
+                for (PerformanceStatisticsHandler handler : handlers)
+                    handler.job(nodeId, sesId, queuedTime, startTime, duration, timedOut);
+
+                return true;
+            }
+            else
+                throw new RuntimeException("Unknown operation type id [typeId=" + opTypeByte + ']');
         }
 
         /** Reads string from byte buffer. */
