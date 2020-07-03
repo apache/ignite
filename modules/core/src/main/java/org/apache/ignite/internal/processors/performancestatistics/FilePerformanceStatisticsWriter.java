@@ -342,7 +342,7 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** @return {@code True} if string is cached. {@code False} if need write string.  */
-    boolean stringCached(String str) {
+    private boolean stringCached(String str) {
         boolean cached = cachedStrings.contains(str.hashCode());
 
         if (!cached)
@@ -352,7 +352,7 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** @return Performance statistics file. */
-    public static File statisticsFile(GridKernalContext ctx) throws IgniteCheckedException {
+    private static File statisticsFile(GridKernalContext ctx) throws IgniteCheckedException {
         String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
 
         File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERFORMANCE_STAT_DIR, false);
@@ -361,13 +361,13 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** Writes {@link UUID} to buffer. */
-    public static void writeUuid(ByteBuffer buf, UUID uuid) {
+    private static void writeUuid(ByteBuffer buf, UUID uuid) {
         buf.putLong(uuid.getMostSignificantBits());
         buf.putLong(uuid.getLeastSignificantBits());
     }
 
     /** Writes {@link IgniteUuid} to buffer. */
-    public static void writeIgniteUuid(ByteBuffer buf, IgniteUuid uuid) {
+    private static void writeIgniteUuid(ByteBuffer buf, IgniteUuid uuid) {
         buf.putLong(uuid.globalId().getMostSignificantBits());
         buf.putLong(uuid.globalId().getLeastSignificantBits());
         buf.putLong(uuid.localId());

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.performancestatistics;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
@@ -27,18 +26,24 @@ import org.apache.ignite.internal.processors.performancestatistics.FilePerforman
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERFORMANCE_STAT_DIR;
 
 /**
  * Test performance statistics file reader.
  */
 public class TestFilePerformanceStatisticsReader {
     /**
-     * @param file Performance statistics file to read.
+     * Reads statistics to a log.
+     *
      * @param log Log to write operations to.
      */
-    public static void readToLog(File file, IgniteLogger log) throws IOException {
-        FilePerformanceStatisticsReader.read(Collections.singletonList(file), new LogMessageHandler(log));
+    public static void readToLog(IgniteLogger log) throws Exception {
+        File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERFORMANCE_STAT_DIR, false);
+
+        FilePerformanceStatisticsReader.read(Collections.singletonList(dir), new LogMessageHandler(log));
     }
 
     /** The handler that writes handled operations to the log. */
@@ -54,43 +59,43 @@ public class TestFilePerformanceStatisticsReader {
         /** {@inheritDoc} */
         @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime,
             long duration) {
-            log("cacheOperation", "type", type, "cacheId", cacheId, "startTime", startTime,
-                "duration", duration);
+            log("cacheOperation", "nodeId", nodeId, "type", type, "cacheId", cacheId,
+                "startTime", startTime, "duration", duration);
         }
 
         /** {@inheritDoc} */
         @Override public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
             boolean commited) {
-            log("transaction", "cacheIds", cacheIds, "startTime", startTime, "duration", duration,
-                "commited", commited);
+            log("transaction", "nodeId", nodeId, "cacheIds", cacheIds,
+                "startTime", startTime, "duration", duration, "commited", commited);
         }
 
         /** {@inheritDoc} */
         @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
             long duration, boolean success) {
-            log("query", "type", type, "text", text, "id", id, "startTime", startTime,
-                "duration", duration, "success", success);
+            log("query", "nodeId", nodeId, "type", type, "text", text, "id", id,
+                "startTime", startTime, "duration", duration, "success", success);
         }
 
         /** {@inheritDoc} */
         @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id,
             long logicalReads, long physicalReads) {
-            log("queryReads", "type", type, "queryNodeId", queryNodeId, "id", id,
+            log("queryReads", "nodeId", nodeId, "type", type, "queryNodeId", queryNodeId, "id", id,
                 "logicalReads", logicalReads, "physicalReads", physicalReads);
         }
 
         /** {@inheritDoc} */
         @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
             int affPartId) {
-            log("task", "sesId", sesId, "taskName", taskName, "startTime", startTime,
-                "duration", duration, "affPartId", affPartId);
+            log("task", "nodeId", nodeId, "sesId", sesId, "taskName", taskName,
+                "startTime", startTime, "duration", duration, "affPartId", affPartId);
         }
 
         /** {@inheritDoc} */
         @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
             boolean timedOut) {
-            log("job", "sesId", sesId, "queuedTime", queuedTime, "startTime", startTime,
-                "duration", duration, "timedOut", timedOut);
+            log("job", "nodeId", nodeId, "sesId", sesId, "queuedTime", queuedTime,
+                "startTime", startTime, "duration", duration, "timedOut", timedOut);
         }
 
         /**

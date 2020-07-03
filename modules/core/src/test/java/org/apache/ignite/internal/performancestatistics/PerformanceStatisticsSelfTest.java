@@ -73,16 +73,11 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     /** Ignite. */
     private static IgniteEx ignite;
 
-    /** Log to register performance statistics. */
-    private static ListeningTestLogger log;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
-
-        cfg.setGridLogger(log);
 
         return cfg;
     }
@@ -101,11 +96,6 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
             cache.put(i, i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() {
-        log.clearListeners();
-    }
-
     /** @throws Exception If failed. */
     @Test
     public void testCompute() throws Exception {
@@ -114,9 +104,6 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
         LogListener taskLsnr = matches("task ").andMatches("taskName=" + taskName).times(executions).build();
         LogListener jobLsnr = matches("job ").times(executions).build();
-
-        log.registerListener(taskLsnr);
-        log.registerListener(jobLsnr);
 
         startCollectStatistics();
 
@@ -188,8 +175,6 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
             .andMatches("cacheId=" + ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId())
             .build();
 
-        log.registerListener(lsnr);
-
         startCollectStatistics();
 
         clo.accept(ignite.cache(DEFAULT_CACHE_NAME));
@@ -212,8 +197,6 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         LogListener lsnr = matches("transaction ")
             .andMatches("cacheIds=[" + ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId() + ']')
             .andMatches("commited=" + commit).build();
-
-        log.registerListener(lsnr);
 
         startCollectStatistics();
 

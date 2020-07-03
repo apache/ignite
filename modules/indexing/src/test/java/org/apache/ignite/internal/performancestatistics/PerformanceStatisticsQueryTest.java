@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.performancestatistics;
 
 import java.util.Collections;
+import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.Query;
@@ -28,7 +29,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
@@ -47,15 +47,6 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     /** Cache. */
     private static IgniteCache<Integer, Integer> cache;
 
-    /** Log of grid0. */
-    private static ListeningTestLogger log0;
-
-    /** Log of grid1. */
-    private static ListeningTestLogger log1;
-
-    /** Log of client. */
-    private static ListeningTestLogger clientLog;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -65,22 +56,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
 
-        ListeningTestLogger testLog = new ListeningTestLogger(log);
-
-        cfg.setGridLogger(testLog);
-
-        if (getTestIgniteInstanceName(0).equals(igniteInstanceName))
-            log0 = testLog;
-
-        if (getTestIgniteInstanceName(1).equals(igniteInstanceName))
-            log1 = testLog;
-
-        if ("client".equals(igniteInstanceName))
-            clientLog = testLog;
-
         return cfg;
     }
-
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -110,16 +87,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         cleanPersistenceDir();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        log0.clearListeners();
-        log1.clearListeners();
-        clientLog.clearListeners();
-    }
-
-    /** */
+    /** @throws Exception If failed. */
     @Test
     public void testSqlFieldsQuery() throws Exception {
         String sql = "SELECT * FROM " + DEFAULT_CACHE_NAME;
@@ -130,7 +98,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         checkQuery(qry, sql);
     }
 
-    /** */
+    /** @throws Exception If failed. */
     @Test
     public void testScanQuery() throws Exception {
         checkQuery(new ScanQuery<>(), DEFAULT_CACHE_NAME);
@@ -141,13 +109,11 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         client.cluster().state(INACTIVE);
         client.cluster().state(ACTIVE);
 
-        LogListener lsnr0 = readsListener(true, true);
-        LogListener lsnr1 = readsListener(true, true);
-        LogListener clientLsnr = LogListener.matches("query ").andMatches("text=" + text).times(1).build();
-
-        log0.registerListener(lsnr0);
-        log1.registerListener(lsnr1);
-        clientLog.registerListener(clientLsnr);
+        LogListener lsnr0 = readsListener(grid(0).context().localNodeId(), true, true);
+        LogListener lsnr1 = readsListener(grid(1).context().localNodeId(), true, true);
+        LogListener clientLsnr = LogListener.matches("query ")
+            .andMatches("nodeId=" + client.localNode().id()).times(1)
+            .andMatches("text=" + text).times(1).build();
 
         startCollectStatistics();
 
@@ -157,12 +123,9 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         stopCollectStatisticsAndCheck(lsnr0, lsnr1, clientLsnr);
 
-        lsnr0 = readsListener(true, false);
-        lsnr1 = readsListener(true, false);
+        lsnr0 = readsListener(grid(0).context().localNodeId(), true, false);
+        lsnr1 = readsListener(grid(1).context().localNodeId(), true, false);
         clientLsnr.reset();
-
-        log0.registerListener(lsnr0);
-        log1.registerListener(lsnr1);
 
         startCollectStatistics();
 
@@ -174,15 +137,15 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     }
 
     /** @return Log listener for given reads. */
-    private LogListener readsListener(boolean hasLogicalReads, boolean hasPhysicalReads) {
+    private LogListener readsListener(UUID nodeId, boolean hasLogicalReads, boolean hasPhysicalReads) {
         String logical = hasLogicalReads ? "[1-9]\\d*" : "0";
 
         String physical = hasPhysicalReads ? "[1-9]\\d*" : "0";
 
         return LogListener
             .matches("queryReads ")
+            .andMatches("nodeId=" + nodeId).times(1)
             .andMatches(compile("logicalReads=" + logical + ", physicalReads=" + physical))
-            .times(1)
             .build();
     }
 }
