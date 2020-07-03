@@ -160,6 +160,11 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     }
 
     /** {@inheritDoc} */
+    @Override public void onCancel() {
+        trees = null;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DurableBackgroundCleanupIndexTreeTask.class, this);
     }
