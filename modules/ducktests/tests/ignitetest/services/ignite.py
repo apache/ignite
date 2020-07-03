@@ -51,7 +51,8 @@ class IgniteService(IgniteAwareService):
 
     def start_cmd(self, node):
         jvm_opts = "-J-DIGNITE_SUCCESS_FILE=" + IgniteService.PERSISTENT_ROOT + "/success_file "
-        jvm_opts += "-J-Dlog4j.configDebug=true"
+        jvm_opts += "-J-Dlog4j.configDebug=true "
+        jvm_opts += "-J-XX:+UnlockExperimentalVMOptions -J-XX:+UseCGroupMemoryLimitForHeap"  # java8 docker fix
 
         cmd = "export EXCLUDE_TEST_CLASSES=true; "
         cmd += "export IGNITE_LOG_DIR=" + IgniteService.PERSISTENT_ROOT + "; "
