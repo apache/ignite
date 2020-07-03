@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -28,9 +30,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

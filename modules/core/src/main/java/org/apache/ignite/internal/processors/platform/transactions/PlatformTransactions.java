@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.transactions;
 
+import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -34,11 +38,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
-
-import java.sql.Timestamp;
-import java.util.Collection;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Native transaction wrapper implementation.

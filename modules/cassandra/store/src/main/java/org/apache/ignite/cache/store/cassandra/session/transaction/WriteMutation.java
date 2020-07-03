@@ -18,10 +18,8 @@
 package org.apache.ignite.cache.store.cassandra.session.transaction;
 
 import javax.cache.Cache;
-
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
-
 import org.apache.ignite.cache.store.cassandra.persistence.PersistenceController;
 
 /**

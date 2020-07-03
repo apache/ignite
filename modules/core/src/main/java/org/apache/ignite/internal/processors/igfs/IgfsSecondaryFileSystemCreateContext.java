@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.OutputStream;
+import java.util.Map;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.OutputStream;
-import java.util.Map;
 
 /**
  * Context for secondary file system create request.

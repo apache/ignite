@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -27,6 +26,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteInternalFuture;

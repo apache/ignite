@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.Callable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -47,10 +50,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.Callable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;

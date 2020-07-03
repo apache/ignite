@@ -16,14 +16,13 @@
  */
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
