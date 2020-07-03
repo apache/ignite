@@ -22,11 +22,11 @@ import org.junit.Test;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.cache.CheckIndexInlineSizes.INDEXES_INLINE_SIZE_ARE_THE_SAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
+import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.GROUP_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.breakCacheDataTree;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.breakSqlIndex;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
-import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
-import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.GROUP_NAME;
 
 /**
  * You can use this class if you don't need create nodes for each test because
