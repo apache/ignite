@@ -397,12 +397,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(new[] {1}, evts);
         }
 
+        /// <summary>
+        /// Tests that exception in initial query filter causes exception in initial query cursor.
+        /// </summary>
         [Test]
         public void TestExceptionInInitialQueryFilterResultsInCorrectErrorMessage()
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
             var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>());
-            // TODO
+            var initialQry = new ScanQuery<int, int>(new ExceptionalFilter());
+
+            cache[1] = 1;
+
+            var handle = cache.QueryContinuous(qry, initialQry);
+
+            var ex = Assert.Throws<IgniteClientException>(() => handle.GetInitialQueryCursor().GetAll());
+            StringAssert.Contains("Failed to execute query on node", ex.Message);
         }
 
         /// <summary>
@@ -412,7 +422,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestInvalidInitialSqlQueryResultsInCorrectErrorMessage()
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            
             var qry = new ContinuousQueryClient<int,int>(new DelegateListener<int, int>());
             var initialQry = new SqlFieldsQuery("select a from b");
 
