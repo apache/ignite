@@ -301,11 +301,16 @@ public class TcpIgniteClient implements IgniteClient {
         /** {@inheritDoc} */
         @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered)
             throws BinaryObjectException {
-            if (cache.metadata(typeId) == null) {
+            BinaryType oldType = cache.metadata(typeId);
+            BinaryMetadata oldMeta = oldType == null ? null : ((BinaryTypeImpl)oldType).metadata();
+            BinaryMetadata newMeta = ((BinaryTypeImpl)meta).metadata();
+
+            // If type wasn't registered before or metadata changed, send registration request.
+            if (oldType == null || BinaryUtils.mergeMetadata(oldMeta, newMeta) != oldMeta) {
                 try {
                     ch.request(
                         ClientOperation.PUT_BINARY_TYPE,
-                        req -> serDes.binaryMetadata(((BinaryTypeImpl)meta).metadata(), req.out())
+                        req -> serDes.binaryMetadata(newMeta, req.out())
                     );
                 }
                 catch (ClientException e) {
