@@ -44,9 +44,9 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.GROUP_NAME;
+import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
 
 /**
  * If you not necessary create nodes for each test you can try use
