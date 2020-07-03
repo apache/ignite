@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -27,6 +29,7 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.util.typedef.F;
@@ -65,8 +68,10 @@ public class PushFilterIntoScanRule extends RelOptRule {
 
         RexNode cond = filter.getCondition();
 
+        RexSimplify simplifier = simplifier(cluster);
+
         // Let's remove from the condition common with the scan filter parts.
-        cond = simplifier(cluster)
+        cond = simplifier
             .withPredicates(mq.getPulledUpPredicates(scan))
             .simplifyUnknownAsFalse(cond);
 
@@ -75,6 +80,14 @@ public class PushFilterIntoScanRule extends RelOptRule {
 
         // Combine the condition with the scan filter.
         cond = RexUtil.composeConjunction(builder(cluster), F.asList(cond, scan.condition()));
+
+        // Final simplification. We need several phases because simplifier sometimes
+        // (see RexSimplify.simplifyGenericNode) leaves UNKNOWN nodes that can be
+        // eliminated on next simplify attempt. We limit attempts count not to break
+        // planning performance on complex condition.
+        Set<RexNode> nodes = new HashSet<>();
+        while (nodes.add(cond) && nodes.size() < 3)
+            cond = simplifier.simplifyUnknownAsFalse(cond);
 
         call.transformTo(
             new IgniteIndexScan(cluster, scan.getTraitSet(), scan.getTable(), scan.indexName(), cond));
