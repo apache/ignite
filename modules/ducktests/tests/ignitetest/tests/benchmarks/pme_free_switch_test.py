@@ -20,7 +20,7 @@ from ducktape.mark.resource import cluster
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.version import DEV_BRANCH, V_2_7_6, V_2_8_0, IgniteVersion
+from ignitetest.version import DEV_BRANCH, LATEST_2_7, V_2_8_0, IgniteVersion
 
 
 class PmeFreeSwitchTest(IgniteTest):
@@ -52,7 +52,7 @@ class PmeFreeSwitchTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES + 2)
     @parametrize(version=str(DEV_BRANCH))
-    @parametrize(version=str(V_2_7_6))
+    @parametrize(version=str(LATEST_2_7))
     def test(self, version):
         data = {}
 

@@ -20,7 +20,7 @@ from ducktape.mark.resource import cluster
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.tests.utils.ignite_test import IgniteTest
-from ignitetest.version import DEV_BRANCH, IgniteVersion, V_2_8_0
+from ignitetest.version import DEV_BRANCH, IgniteVersion, LATEST
 
 
 class AddNodeRebalanceTest(IgniteTest):
@@ -50,7 +50,7 @@ class AddNodeRebalanceTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES + 1)
     @parametrize(version=str(DEV_BRANCH))
-    @parametrize(version=str(V_2_8_0))
+    @parametrize(version=str(LATEST))
     def test_add_node(self, version):
         """
         Test performs add node rebalance test which consists of following steps:

@@ -48,6 +48,7 @@ ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 # Install binary test dependencies.
 RUN cd /opt && curl -O $APACHE_ARCHIVE/ignite/2.7.6/apache-ignite-2.7.6-bin.zip && unzip apache-ignite-2.7.6-bin.zip && mv /opt/apache-ignite-2.7.6-bin /opt/ignite-2.7.6
 RUN cd /opt && curl -O $APACHE_ARCHIVE/ignite/2.8.0/apache-ignite-2.8.0-bin.zip && unzip apache-ignite-2.8.0-bin.zip && mv /opt/apache-ignite-2.8.0-bin /opt/ignite-2.8.0
+RUN cd /opt && curl -O $APACHE_ARCHIVE/ignite/2.8.1/apache-ignite-2.8.1-bin.zip && unzip apache-ignite-2.8.1-bin.zip && mv /opt/apache-ignite-2.8.1-bin /opt/ignite-2.8.1
 
 RUN rm /opt/apache-ignite-*-bin.zip
 RUN chmod a+wr /opt -R
