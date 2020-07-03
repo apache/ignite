@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -104,6 +105,52 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             // TODO: Start multiple queries with different filters,
             // do cache updates and compute calls in multiple threads.
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            
+            var receivedKeysAll = new ConcurrentBag<int>();
+            var receivedKeysOdd = new ConcurrentBag<int>();
+            
+            var qry1 = new ContinuousQueryClient<int, int>
+            {
+                Listener = new DelegateListener<int, int>(e => receivedKeysOdd.Add(e.Key)),
+                Filter = new OddKeyFilter()
+            };
+            
+            var qry2 = new ContinuousQueryClient<int, int>
+            {
+                Listener = new DelegateListener<int, int>(e => receivedKeysAll.Add(e.Key)),
+            };
+            
+            var cts = new CancellationTokenSource();
+            
+            var computeRunnerTask = Task.Factory.StartNew(() =>
+            {
+                while (!cts.IsCancellationRequested)
+                {
+                    var res = Client.GetCompute().ExecuteJavaTask<int>(
+                        ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeInt);
+                    
+                    Assert.AreEqual(1, res);
+                }
+            }, cts.Token);
+
+            const int count = 10000;
+            
+            using (cache.QueryContinuous(qry1))
+            using (cache.QueryContinuous(qry2))
+            {
+                for (var i = 0; i < count; i++)
+                {
+                    cache[i] = i;
+                }
+            }
+            
+            cts.Cancel();
+            computeRunnerTask.Wait();
+            
+            // TODO: Check actual keys.
+            TestUtils.WaitForTrueCondition(() => receivedKeysAll.Count == count);
+            Assert.AreEqual(count / 2, receivedKeysOdd.Count);
         }
 
         /// <summary>
