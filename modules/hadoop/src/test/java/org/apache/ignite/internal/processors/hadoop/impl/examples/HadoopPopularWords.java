@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.examples;
 
-import com.google.common.collect.MinMaxPriorityQueue;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Map.Entry;
+import com.google.common.collect.MinMaxPriorityQueue;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;

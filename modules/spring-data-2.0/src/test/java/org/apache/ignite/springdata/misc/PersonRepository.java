@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.springdata.misc;
 
 import java.util.Collection;
@@ -25,6 +24,7 @@ import org.apache.ignite.springdata20.repository.config.Query;
 import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Test repository.
@@ -33,6 +33,36 @@ import org.springframework.data.domain.Sort;
 public interface PersonRepository extends IgniteRepository<Person, Integer> {
     /** */
     public List<Person> findByFirstName(String val);
+
+    /** */
+    @Query("firstName = ?")
+    public List<PersonProjection> queryByFirstNameWithProjection(String val);
+
+    /** */
+    @Query("firstName = :firstname")
+    public List<PersonProjection> queryByFirstNameWithProjectionNamedParameter(@Param("firstname") String val);
+
+    /** */
+    @Query("firstName = :firstname")
+    public <P> List<P> queryByFirstNameWithProjectionNamedParameter(Class<P> dynamicProjection, @Param("firstname") String val);
+
+    /** */
+    @Query("firstName = :firstname")
+    public <P> P queryOneByFirstNameWithProjectionNamedParameter(Class<P> dynamicProjection, @Param("firstname") String val);
+
+    /** */
+    @Query("firstName = ?#{[1]}")
+    public List<PersonProjection> queryByFirstNameWithProjectionNamedIndexedParameter(@Param("notUsed") String notUsed, @Param("firstname") String val);
+
+    /** */
+    @Query(textQuery = true, value = "#{#firstname}", limit = 2)
+    public List<PersonProjection> textQueryByFirstNameWithProjectionNamedParameter(@Param("firstname") String val);
+
+    @Query(value = "select * from (sElecT * from #{#entityName} where firstName = :firstname)", forceFieldsQuery = true)
+    public List<PersonProjection> queryByFirstNameWithProjectionNamedParameterAndTemplateDomainEntityVariable(@Param("firstname") String val);
+
+    @Query(value = "firstName = ?#{sampleExtension.transformParam(#firstname)}")
+    public List<PersonProjection> queryByFirstNameWithProjectionNamedParameterWithSpELExtension(@Param("firstname") String val);
 
     /** */
     public List<Person> findByFirstNameContaining(String val);
@@ -65,7 +95,7 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     public Cache.Entry<Integer, Person> findTopBySecondNameLike(String val);
 
     /** */
-    public Person findTopBySecondNameStartingWith(String val);
+    public PersonProjection findTopBySecondNameStartingWith(String val);
 
     /** */
     @Query("firstName = ?")

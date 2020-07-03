@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle.direct;
 
+import java.io.IOException;
+import java.util.zip.GZIPOutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
-
-import java.io.IOException;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Hadoop data output context for direct communication.
