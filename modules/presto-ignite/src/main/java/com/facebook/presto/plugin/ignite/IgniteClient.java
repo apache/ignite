@@ -6,6 +6,9 @@ import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.TableNotFoundException;
+import com.facebook.presto.spi.type.DoubleType;
+import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -21,14 +24,22 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.facebook.presto.plugin.jdbc.JdbcErrorCode.JDBC_ERROR;
 import static java.util.Locale.ENGLISH;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
+import static com.facebook.presto.spi.type.RealType.REAL;
+import static com.facebook.presto.spi.type.TimeWithTimeZoneType.TIME_WITH_TIME_ZONE;
+import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
+import static com.facebook.presto.spi.type.TimestampWithTimeZoneType.TIMESTAMP_WITH_TIME_ZONE;
+import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
+import static com.facebook.presto.spi.type.Varchars.isVarcharType;
 import static com.google.common.collect.Iterables.getOnlyElement;
 
 
@@ -115,23 +126,41 @@ public class IgniteClient extends BaseJdbcClient {
     }
 
     protected String getTableWithString(ConnectorTableMetadata tableMetadata, String tableName)
-    {
-    	if(tableMetadata.getProperties().size()>0) {
+    {    	
+    	if(tableMetadata.getProperties().size()>0) {    		
     		StringBuilder with = new StringBuilder();
     		with.append("WITH ");
-    		with.append('"');
+    		with.append('"');    		
     		for(Map.Entry<String,Object> ent: tableMetadata.getProperties().entrySet()) {    			
+    			if(ent.getKey().equalsIgnoreCase(PRIMARY_KEY)) continue;
     			with.append(ent.getKey());
     			with.append('=');
     			with.append(ent.getValue());
     			with.append(',');
     		}
     		with.append('"');
-    		return with.toString();
+    		return with.length()>8 ? with.toString():"";
     	}
     	return "";
     }
    
+
+    @Override
+    protected String toSqlType(Type type)
+    {
+        if (DoubleType.DOUBLE.equals(type)) {
+            return "double";
+        }
+        if (TIME_WITH_TIME_ZONE.equals(type)) {
+            return "time";
+        }
+        if (TIMESTAMP_WITH_TIME_ZONE.equals(type)) {
+            return "timestamp";
+        }
+
+        return super.toSqlType(type);
+    }
+
 
   /**
 
@@ -155,4 +184,47 @@ public class IgniteClient extends BaseJdbcClient {
         return columnSet;
     }
   */ 
+    @Override
+    public JdbcOutputTableHandle beginCreateTable(ConnectorSession session, ConnectorTableMetadata tableMetadata)
+    {
+    	try {
+            return createTable(tableMetadata, session, tableMetadata.getTable().getTableName());
+        }
+        catch (SQLException e) {
+            throw new PrestoException(JDBC_ERROR, e);
+        }
+    }
+
+    @Override
+    public JdbcOutputTableHandle beginInsertTable(ConnectorSession session, ConnectorTableMetadata tableMetadata)
+    {
+    	SchemaTableName  table = tableMetadata.getTable();
+    	try {
+            return createTable(tableMetadata, session, table.getTableName());
+        }
+        catch (SQLException e) {        	
+        	log.info("Begin insert table, Table already exists  for "+tableMetadata.getTable());
+        	List<String> columnNames = tableMetadata.getColumns().stream().map(meta->meta.getName()).collect(Collectors.toList());
+        	List<Type> columnTypes = tableMetadata.getColumns().stream().map(meta->meta.getType()).collect(Collectors.toList());
+        	return new JdbcOutputTableHandle(
+                     connectorId,
+                     null,
+                     table.getSchemaName(),                     
+                     table.getTableName(),
+                     columnNames,
+                     columnTypes,
+                     table.getTableName());
+        }
+    }
+    @Override
+    public void commitCreateTable(JdbcIdentity identity, JdbcOutputTableHandle handle)
+    {
+    	log.info("commitCreateTable "+identity+" for "+handle.getTableName());
+    }
+    
+    @Override
+    public void finishInsertTable(JdbcIdentity identity, JdbcOutputTableHandle handle)
+    {
+    	log.info("finishInsertTable "+identity+" for "+handle.getTableName());
+    }
 }

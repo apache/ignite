@@ -170,7 +170,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 		QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
 		//Iterator<Cache.Entry<Object, BinaryObject>> it = cursor.iterator();
 	    for (Cache.Entry<Object, BinaryObject> entry: cursor) {	 	    	
-	    	Document document = this.binaryObjectToDocument(entry.getKey(),entry.getValue(),this.idField);
+	    	Document document = binaryObjectToDocument(entry.getKey(),entry.getValue(),this.idField);
 	    	if (documentMatchesQuery(document, query)) {
                 matchedDocuments.add(document);
             }

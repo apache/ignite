@@ -10,6 +10,8 @@
     <packaging>jar</packaging>
     
      <properties>
+     	<maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
     	<netty.version>4.1.27.Final</netty.version>
         <presto.version>0.234-SNAPSHOT</presto.version>
         <prestosql.version>329</prestosql.version>
