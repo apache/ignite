@@ -17,7 +17,9 @@
 
 package org.apache.ignite.ml.math;
 
+import org.apache.ignite.ml.math.distances.CosineSimilarityTest;
 import org.apache.ignite.ml.math.distances.DistanceTest;
+import org.apache.ignite.ml.math.distances.JaccardIndexTest;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeapTest;
 import org.apache.ignite.ml.math.primitives.matrix.DenseMatrixConstructorTest;
 import org.apache.ignite.ml.math.primitives.matrix.LUDecompositionTest;
@@ -74,6 +76,8 @@ import org.junit.runners.Suite;
     // Matrix tests.
     MatrixAttributeTest.class,
     DistanceTest.class,
+    CosineSimilarityTest.class,
+    JaccardIndexTest.class,
     LSQROnHeapTest.class,
     LUDecompositionTest.class
 })

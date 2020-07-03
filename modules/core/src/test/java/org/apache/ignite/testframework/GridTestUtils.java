@@ -2252,20 +2252,20 @@ public final class GridTestUtils {
      * Checks that {@code state} is active.
      *
      * @param state Passed cluster state.
-     * @see ClusterState#active(ClusterState)
+     * @see ClusterState#active()
      */
     public static void assertActive(ClusterState state) {
-        assertTrue(state + " isn't active state", ClusterState.active(state));
+        assertTrue(state + " isn't active state", state.active());
     }
 
     /**
      * Checks that {@code state} isn't active.
      *
      * @param state Passed cluster state.
-     * @see ClusterState#active(ClusterState)
+     * @see ClusterState#active()
      */
     public static void assertInactive(ClusterState state) {
-        assertFalse(state + " isn't inactive state", ClusterState.active(state));
+        assertFalse(state + " isn't inactive state", state.active());
     }
 
     /** Test parameters scale factor util. */

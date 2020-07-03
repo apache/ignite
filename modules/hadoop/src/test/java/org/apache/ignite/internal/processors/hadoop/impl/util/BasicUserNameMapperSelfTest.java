@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.util;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.hadoop.util.BasicUserNameMapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.Test;
 
 /**

@@ -23,9 +23,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Rule;
@@ -116,6 +118,31 @@ public class IgniteBinaryTest {
                     client.cache(Config.DEFAULT_CACHE_NAME).<Integer, BinaryObject>withKeepBinary().get(key);
 
                 assertBinaryObjectsEqual(val, cachedVal);
+            }
+        }
+    }
+
+    /**
+     * Check that binary types are registered for nested types too.
+     * With enabled "CompactFooter" binary type schema also should be passed to server.
+     */
+    @Test
+    public void testCompactFooterNestedTypeRegistration() throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration())) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true)))
+            ) {
+                IgniteCache<Integer, Person[]> igniteCache = ignite.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+                ClientCache<Integer, Person[]> clientCache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+
+                Integer key = 1;
+                Person[] val = new Person[] {new Person(1, "Joe")};
+
+                // Binary types should be registered for both "Person[]" and "Person" classes after this call.
+                clientCache.put(key, val);
+
+                // Check that we can deserialize on server using registered binary types.
+                assertArrayEquals(val, igniteCache.get(key));
             }
         }
     }

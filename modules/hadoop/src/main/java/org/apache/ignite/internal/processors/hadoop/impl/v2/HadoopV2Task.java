@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
+import java.io.IOException;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.OutputCommitter;
 import org.apache.hadoop.mapreduce.OutputFormat;
@@ -27,8 +28,6 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTask;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.IOException;
 
 /**
  * Extended Hadoop v2 task.

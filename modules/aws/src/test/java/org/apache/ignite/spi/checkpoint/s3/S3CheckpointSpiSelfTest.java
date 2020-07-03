@@ -17,6 +17,9 @@
 
 package org.apache.ignite.spi.checkpoint.s3;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.concurrent.ThreadLocalRandom;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -24,9 +27,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.GridTestIoUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
