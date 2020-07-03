@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.hadoop.HadoopInputSplit;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.TreeSet;
+import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Common Hadoop utility methods which do not depend on Hadoop API.

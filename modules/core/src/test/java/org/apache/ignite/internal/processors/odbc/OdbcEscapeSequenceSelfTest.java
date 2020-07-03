@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.concurrent.Callable;
 import org.junit.Test;
 
 /**

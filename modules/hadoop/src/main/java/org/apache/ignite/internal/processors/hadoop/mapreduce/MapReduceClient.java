@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.mapreduce;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.GridClient;
@@ -24,10 +27,6 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerUtils;
 
