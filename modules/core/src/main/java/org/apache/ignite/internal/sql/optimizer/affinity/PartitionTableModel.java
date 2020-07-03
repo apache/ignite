@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Partition join model. Describes how tables are joined with each other.

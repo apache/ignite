@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformConfigurationEx;
@@ -29,9 +31,6 @@ import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetS
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
 
 /**
  * Extended .Net configuration.
