@@ -84,6 +84,9 @@ public class FilePerformanceStatisticsWriter {
     /** Performance statistics file writer worker. */
     @Nullable private volatile FileWriter fileWriter;
 
+    /** Hashcodes of cached strings. */
+    private final ConcurrentSkipListSet<Integer> cachedStrings = new ConcurrentSkipListSet<>();
+
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -200,12 +203,7 @@ public class FilePerformanceStatisticsWriter {
      * @param success Success flag.
      */
     public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
-        FileWriter writer = fileWriter;
-
-        if (writer == null)
-            return;
-
-        boolean needWriteStr = !writer.stringCached(text);
+        boolean needWriteStr = !stringCached(text);
         byte[] strBytes = needWriteStr ? text.getBytes() : null;
 
         doWrite(QUERY, () -> {
@@ -259,12 +257,7 @@ public class FilePerformanceStatisticsWriter {
      * @param affPartId Affinity partition id.
      */
     public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
-        FileWriter writer = fileWriter;
-
-        if (writer == null)
-            return;
-
-        boolean needWriteStr = !writer.stringCached(taskName);
+        boolean needWriteStr = !stringCached(taskName);
         byte[] strBytes = needWriteStr ? taskName.getBytes() : null;
 
         doWrite(TASK, () -> {
@@ -348,6 +341,16 @@ public class FilePerformanceStatisticsWriter {
         seg.release();
     }
 
+    /** @return {@code True} if string is cached. {@code False} if need write string.  */
+    boolean stringCached(String str) {
+        boolean cached = cachedStrings.contains(str.hashCode());
+
+        if (!cached)
+            cachedStrings.add(str.hashCode());
+
+        return cached;
+    }
+
     /** @return Performance statistics file. */
     public static File statisticsFile(GridKernalContext ctx) throws IgniteCheckedException {
         String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
@@ -388,9 +391,6 @@ public class FilePerformanceStatisticsWriter {
 
         /** Size of ready for flushing bytes. */
         private final AtomicInteger readyForFlushSize = new AtomicInteger();
-
-        /** Hashcodes of cached strings. */
-        private final ConcurrentSkipListSet<Integer> cachedStrings = new ConcurrentSkipListSet<>();
 
         /** {@code True} if the small buffer warning message logged. */
         private final AtomicBoolean smallBufLogged = new AtomicBoolean();
@@ -453,16 +453,6 @@ public class FilePerformanceStatisticsWriter {
 
                 log.info("Performance statistics writer stopped.");
             }
-        }
-
-        /** @return {@code True} if string hash code is cached. {@code False} if need write string.  */
-        boolean stringCached(String str) {
-            boolean cached = cachedStrings.contains(str.hashCode());
-
-            if (!cached)
-                cachedStrings.add(str.hashCode());
-
-            return cached;
         }
 
         /** @return Write segment.*/
