@@ -869,6 +869,14 @@
                                         <exclude>**/keystore/ca/*.txt.attr</exclude><!--auto generated files-->
                                         <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
+                                        <!-- spring data 2.X modules, borrowed code from spring-jpa 5.2.0, Apache 2.0 licenses -->
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/QueryUtils.java</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/EmptyDeclaredQuery.java</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/ExpressionBasedStringQuery.java</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/spel/SpelEvaluator.java</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/spel/SpelQueryContext.java</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/DeclaredQuery.java</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/StringQuery.java</exclude>
                                         <!--special excludes-->
                                         <exclude>.travis.yml</exclude>
                                         <exclude>.github/PULL_REQUEST_TEMPLATE.md</exclude>

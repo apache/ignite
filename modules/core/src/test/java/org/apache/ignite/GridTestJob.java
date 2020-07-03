@@ -17,10 +17,9 @@
 
 package org.apache.ignite;
 
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.resources.LoggerResource;
-
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Test job.

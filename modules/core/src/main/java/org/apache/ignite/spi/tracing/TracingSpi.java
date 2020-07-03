@@ -40,14 +40,10 @@ public interface TracingSpi<S extends SpiSpecificSpan> extends IgniteSpi {
      *
      * @param name Name of span to create.
      * @param parentSpan Parent span.
-     * @param samplingRate Number between 0 and 1 that more or less reflects the probability of sampling specific trace.
-     * 0 and 1 have special meaning here, 0 means never 1 means always. Default value is 0 (never).
-     * @return Created span.
      */
     @NotNull S create(
         @NotNull String name,
-        @Nullable S parentSpan,
-        double samplingRate);
+        @Nullable S parentSpan);
 
     /**
      * Serializes span to byte array to send context over network.

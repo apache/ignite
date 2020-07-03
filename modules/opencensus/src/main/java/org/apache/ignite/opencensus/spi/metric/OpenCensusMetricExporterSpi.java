@@ -17,6 +17,13 @@
 
 package org.apache.ignite.opencensus.spi.metric;
 
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import io.opencensus.common.Scope;
 import io.opencensus.stats.Aggregation.LastValue;
 import io.opencensus.stats.Measure;
@@ -32,13 +39,6 @@ import io.opencensus.tags.TagKey;
 import io.opencensus.tags.TagMetadata;
 import io.opencensus.tags.TagValue;
 import io.opencensus.tags.Tags;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;

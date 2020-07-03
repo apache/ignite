@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import org.apache.ignite.internal.processors.hadoop.HadoopClasspathUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import org.apache.ignite.internal.processors.hadoop.HadoopClasspathUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.ml.math;
 
+import java.util.Set;
 import com.github.fommil.netlib.BLAS;
 import com.github.fommil.netlib.F2jBLAS;
-import java.util.Set;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.math.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.exceptions.math.NonSquareMatrixException;

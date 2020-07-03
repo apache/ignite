@@ -34,7 +34,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -93,8 +92,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.compareUpdateCounters;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.formatUpdateCountersDiff;
-import static org.apache.ignite.internal.util.IgniteUtils.error;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.getUpdateCountersSnapshot;
+import static org.apache.ignite.internal.util.IgniteUtils.error;
 
 /**
  * Closure that locally validates indexes of given caches.

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.proto;
 
+import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -44,7 +45,6 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.AccessControlList;
 import org.apache.hadoop.security.token.Token;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.mapreduce.MapReduceClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopMapReduceCounters;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
+import org.apache.ignite.internal.processors.hadoop.mapreduce.MapReduceClient;
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolJobCountersTask;
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolJobStatusTask;
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolKillJobTask;
@@ -60,8 +61,6 @@ import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolNextTask
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolSubmitJobTask;
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolTaskArguments;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import java.io.IOException;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 

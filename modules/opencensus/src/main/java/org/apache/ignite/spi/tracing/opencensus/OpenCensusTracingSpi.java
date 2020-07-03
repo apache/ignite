@@ -20,7 +20,6 @@ package org.apache.ignite.spi.tracing.opencensus;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import io.opencensus.trace.Sampler;
 import io.opencensus.trace.Tracing;
 import io.opencensus.trace.export.SpanExporter;
 import io.opencensus.trace.samplers.Samplers;
@@ -33,9 +32,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
-import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
 
 /**
  * Tracing SPI implementation based on OpenCensus library.
@@ -107,34 +103,19 @@ public class OpenCensusTracingSpi extends IgniteSpiAdapter implements TracingSpi
     /** {@inheritDoc} */
     @Override public @NotNull OpenCensusSpanAdapter create(
         @NotNull String name,
-        @Nullable OpenCensusSpanAdapter parentSpan,
-        double samplingRate) {
+        @Nullable OpenCensusSpanAdapter parentSpan) {
         try {
             io.opencensus.trace.Span openCensusParent = null;
 
             if (parentSpan != null)
                 openCensusParent = parentSpan.impl();
 
-            Sampler sampler;
-
-            if (Double.compare(samplingRate, SAMPLING_RATE_NEVER) == 0) {
-                // We should never get here, because of an optimization that produces {@code NoopSpan.Instance}
-                // instead of a span with {@code SAMPLING_RATE_NEVER} sampling rate. It is useful cause in case
-                // of {@code NoopSpan.Instance} we will not send span data over the network.assert false;
-
-                sampler = Samplers.neverSample(); // Just in case.
-            }
-            else if (Double.compare(samplingRate, SAMPLING_RATE_ALWAYS) == 0)
-                sampler = Samplers.alwaysSample();
-            else
-                sampler = Samplers.probabilitySampler(samplingRate);
-
             return new OpenCensusSpanAdapter(
                 Tracing.getTracer().spanBuilderWithExplicitParent(
                     name,
                     openCensusParent
                 )
-                    .setSampler(sampler)
+                    .setSampler(Samplers.alwaysSample())
                     .startSpan()
             );
         }
