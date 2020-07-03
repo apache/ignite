@@ -6225,14 +6225,8 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState,
         long lastOperationNanos) {
-
-        IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true,
-            lastOperationNanos);
-
-        if (sndState != null)
-            timeoutHelper.absolteTimeThreshold(sndState.failTimeNanos);
-
-        return timeoutHelper;
+        return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos,
+            sndState == null ? -1 : sndState.failTimeNanos);
     }
 
     /** Fixates time of last sent message. */

@@ -36,11 +36,11 @@ public class IgniteSpiOperationTimeoutHelper {
     /** Flag whether to use timeout. */
     private final boolean timeoutEnabled;
 
-    /** */
-    private final long timeoutTime;
+    /** Time in nanos which cannot be reached for current operation. */
+    private final long timeoutThreshold;
 
-    /** Absolute time threshold (nanos) which must not be reached. Ignored if negative or 0. */
-    private long absolteThreshold;
+    /** Keeps {@code true} if last call to {@link #nextTimeoutChunk(long)} has timeouted. {@code False} otherwise. */
+    private boolean lastOperationTimeouted;
 
     /**
      * Constructor.
@@ -49,7 +49,7 @@ public class IgniteSpiOperationTimeoutHelper {
      * @param srvOp {@code True} if communicates with server node.
      */
     public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp) {
-        this(adapter, srvOp, -1);
+        this(adapter, srvOp, -1, -1);
     }
 
     /**
@@ -57,13 +57,26 @@ public class IgniteSpiOperationTimeoutHelper {
      *
      * @param adapter SPI adapter.
      * @param srvOp {@code True} if communicates with server node.
-     * @param lastOperationNanos Time of last related operation in nanos. Ignored if negative or 0.
+     * @param lastRelatedOperationTime Time of last related operation in nanos. Ignored if negative, 0 or
+     * {@code adapter.failureDetectionTimeoutEnabled()} is false.
+     * @param absoluteThreshold Absolute time threshold (nanos) which must not be reached. Ignored if negative or 0.
      */
-    public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp, long lastOperationNanos) {
+    public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp, long lastRelatedOperationTime,
+        long absoluteThreshold) {
         timeoutEnabled = adapter.failureDetectionTimeoutEnabled();
 
-        timeoutTime = (lastOperationNanos > 0 ? lastOperationNanos : System.nanoTime()) +
-            U.millisToNanos(srvOp ? adapter.failureDetectionTimeout() : adapter.clientFailureDetectionTimeout());
+        if (timeoutEnabled) {
+            long timeout = (lastRelatedOperationTime > 0 ? lastRelatedOperationTime : System.nanoTime()) +
+                U.millisToNanos(srvOp ? adapter.failureDetectionTimeout() : adapter.clientFailureDetectionTimeout());
+
+            if (absoluteThreshold > 0 && timeout > absoluteThreshold)
+                timeout = absoluteThreshold;
+
+            timeoutThreshold = timeout;
+        } else {
+            // Save absolute threshold if it is set.
+            timeoutThreshold = absoluteThreshold > 0 ? absoluteThreshold : 0;
+        }
     }
 
     /**
@@ -80,32 +93,24 @@ public class IgniteSpiOperationTimeoutHelper {
     public long nextTimeoutChunk(long dfltTimeout) throws IgniteSpiOperationTimeoutException {
         long now = System.nanoTime();
 
-        if (!timeoutEnabled)
-            return checkedLeft(U.millisToNanos(dfltTimeout), now);
+        long left;
 
-        return checkedLeft(timeoutTime - now, now);
-    }
+        if (timeoutEnabled)
+            left = timeoutThreshold - now;
+        else {
+            left = U.millisToNanos(dfltTimeout);
 
-    /** If the absolute time threshold is set, checks it is not reached. */
-    private long checkedLeft(long left, long now) throws IgniteSpiOperationTimeoutException {
-        if (left > 0 && absolteThreshold > 0 && now + left > absolteThreshold)
-            left = absolteThreshold - now;
+            if (timeoutThreshold > 0 && now + left >= timeoutThreshold)
+                left = timeoutThreshold - now;
+        }
 
-        left = U.nanosToMillis(left);
+        if (left <= 0) {
+            lastOperationTimeouted = true;
 
-        if (left <= 0)
             throw new IgniteSpiOperationTimeoutException("Network operation timed out. Timeout: " + left);
+        }
 
-        return left;
-    }
-
-    /**
-     * Sets absolute time threshold which must never be reached. Ignored if negative or 0.
-     *
-     * @param absolteTimeThreshold Maximum time threshold in nonos.
-     */
-    public void absolteTimeThreshold(long absolteTimeThreshold) {
-        absolteThreshold = absolteTimeThreshold;
+        return U.nanosToMillis(left);
     }
 
     /**
@@ -115,14 +120,9 @@ public class IgniteSpiOperationTimeoutHelper {
      * @return {@code true} if failure detection timeout is reached, {@code false} otherwise.
      */
     public boolean checkFailureTimeoutReached(Exception e) {
-        if (!timeoutEnabled)
-            return false;
-
-        long now = System.nanoTime();
-
         if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
             return true;
 
-        return now >= timeoutTime || (absolteThreshold > 0 && now >= absolteThreshold);
+        return lastOperationTimeouted;
     }
 }
