@@ -554,21 +554,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12819")
     public void testOrCondition4() {
         assertQuery("SELECT * FROM Developer WHERE depId=1 OR (name='Mozart' AND depId=3)")
-            .matches(containsUnion(true))
-            .matches(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
-            .returns(1, "Mozart", 3, "Vienna", 33)
-            .returns(3, "Bach", 1, "Leipzig", 55)
-            .check();
-    }
-
-    /** */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12819")
-    public void testOrCondition5() {
-        assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND depId=3 AND (depId IS NULL OR depId <> 1)")
             .matches(containsUnion(true))
             .matches(containsScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)

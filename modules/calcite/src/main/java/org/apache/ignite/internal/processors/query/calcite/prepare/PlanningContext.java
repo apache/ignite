@@ -28,7 +28,6 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
@@ -82,9 +81,6 @@ public final class PlanningContext implements Context {
     private final IgniteTypeFactory typeFactory;
 
     /** */
-    private final RexExecutor rexExecutor;
-
-    /** */
     private IgnitePlanner planner;
 
     /** */
@@ -115,8 +111,6 @@ public final class PlanningContext implements Context {
         this.parentCtx = Contexts.chain(parentCtx, cfg.getContext());
         // link frameworkConfig#context() to this.
         this.cfg = Frameworks.newConfigBuilder(cfg).context(this).build();
-
-        rexExecutor = cfg.getExecutor();
 
         qryCancel = unwrap(GridQueryCancel.class);
 
@@ -195,13 +189,6 @@ public final class PlanningContext implements Context {
      */
     public SqlConformance conformance() {
         return cfg.getParserConfig().conformance();
-    }
-
-    /**
-     * @return Executor used to evaluate constant expressions.
-     */
-    public RexExecutor rexExecutor() {
-        return rexExecutor;
     }
 
     /**

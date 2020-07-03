@@ -26,10 +26,13 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RelBuilder;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.makeCase;
 
 /**
  * Converts OR to UNION ALL.
@@ -83,12 +86,17 @@ public class LogicalOrToUnionRule extends RelOptRule {
      * @return UnionAll expression.
      */
     private RelNode createUnionAll(RelOptCluster cluster, RelNode input, RexNode op1, RexNode op2) {
-        RelBuilder builder = relBuilderFactory.create(cluster, null);
+        RelBuilder relBldr = relBuilderFactory.create(cluster, null);
+        RexBuilder rexBldr = relBldr.getRexBuilder();
 
-        return builder
+        return relBldr
             .push(input).filter(op1)
-            .push(input).filter(builder.and(op2,
-                builder.or(builder.isNull(op1), RexUtil.not(op1))))
-            .union(true).build();
+            .push(input).filter(
+                relBldr.and(op2,
+                    makeCase(rexBldr,
+                        relBldr.isNull(op1), rexBldr.makeLiteral(false),
+                        relBldr.not(op1))))
+            .union(true)
+            .build();
     }
 }

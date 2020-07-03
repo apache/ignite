@@ -23,18 +23,16 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
-import org.apache.calcite.rex.RexSimplify;
-import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.builder;
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.simplifier;
 
 /**
  * Rule that pushes filter into the scan. This might be useful for index range scans.
@@ -64,22 +62,19 @@ public class PushFilterIntoScanRule extends RelOptRule {
 
         RelOptCluster cluster = scan.getCluster();
         RelMetadataQuery mq = call.getMetadataQuery();
-        RexBuilder rexBuilder = cluster.getRexBuilder();
-        RexExecutor rexExecutor = Commons.context(scan).rexExecutor();
 
         RexNode cond = filter.getCondition();
 
-        RexSimplify simplify = new RexSimplify(rexBuilder,
-            mq.getPulledUpPredicates(scan), rexExecutor);
-
         // Let's remove from the condition common with the scan filter parts.
-        cond = simplify.simplifyPreservingType(cond, RexUnknownAs.FALSE, true);
+        cond = simplifier(cluster)
+            .withPredicates(mq.getPulledUpPredicates(scan))
+            .simplifyUnknownAsFalse(cond);
 
         // We need to replace RexInputRef with RexLocalRef because TableScan doesn't have inputs.
         cond = cond.accept(new InputRefReplacer());
 
         // Combine the condition with the scan filter.
-        cond = RexUtil.composeConjunction(rexBuilder, F.asList(cond, scan.condition()));
+        cond = RexUtil.composeConjunction(builder(cluster), F.asList(cond, scan.condition()));
 
         call.transformTo(
             new IgniteIndexScan(cluster, scan.getTraitSet(), scan.getTable(), scan.indexName(), cond));
