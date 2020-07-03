@@ -881,7 +881,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * which can give more reliability. Providing several addresses can prolong failure detection of current node.
      * The timeouts and settings on network operations ({@link #failureDetectionTimeout()}, {@link #sockTimeout},
      * {@link #ackTimeout}, {@link #maxAckTimeout}, {@link #reconCnt}) work per connection/address. The exception is
-     * {@link #connRecoveryTimeout}. And node addresses are sorted out consistently.
+     * {@link #connRecoveryTimeout}. And node addresses are sorted out sequentially.
      * </p>
      * Example: if you use {@code failureDetectionTimeout} and have set 3 ip addresses for this node, previous node in
      * the ring can take up to 'failureDetectionTimeout * 3' to detect failure of current node.
