@@ -624,7 +624,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandleClient QueryContinuous(ContinuousQuery<TK, TV> continuousQuery)
+        public IContinuousQueryHandleClient QueryContinuous(ContinuousQueryClient<TK, TV> continuousQuery)
         {
             IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
             IgniteArgumentCheck.NotNull(continuousQuery.Listener, "continuousQuery.Listener");
@@ -633,7 +633,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandleClient<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> continuousQuery,
+        public IContinuousQueryHandleClient<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQueryClient<TK, TV> continuousQuery,
             ScanQuery<TK, TV> initialQry)
         {
             IgniteArgumentCheck.NotNull(continuousQuery, "continuousQuery");
@@ -651,7 +651,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandleFieldsClient QueryContinuous(ContinuousQuery<TK, TV> continuousQuery,
+        public IContinuousQueryHandleFieldsClient QueryContinuous(ContinuousQueryClient<TK, TV> continuousQuery,
             SqlFieldsQuery initialQry)
         {
             return QueryContinuousInternal(
@@ -1065,7 +1065,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// Starts the continuous query.
         /// </summary>
         private ClientContinuousQueryHandle<TK, TV> QueryContinuousInternal(
-            ContinuousQuery<TK, TV> continuousQuery,
+            ContinuousQueryClient<TK, TV> continuousQuery,
             Action<ClientRequestContext> writeInitialQueryAction = null,
             Func<ClientResponseContext, IList<string>> columnsFunc = null)
         {
@@ -1092,7 +1092,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 });
         }
 
-        private void WriteContinuousQuery(ClientRequestContext ctx, ContinuousQuery<TK, TV> continuousQuery,
+        private void WriteContinuousQuery(ClientRequestContext ctx, ContinuousQueryClient<TK, TV> continuousQuery,
             Action<ClientRequestContext> writeInitialQueryAction = null)
         {
             var w = ctx.Writer;

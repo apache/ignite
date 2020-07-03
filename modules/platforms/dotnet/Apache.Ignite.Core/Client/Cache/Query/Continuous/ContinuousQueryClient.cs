@@ -56,11 +56,6 @@ namespace Apache.Ignite.Core.Client.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Default auto-unsubscribe flag value.
-        /// </summary>
-        public const bool DefaultAutoUnsubscribe = true;
-        
-        /// <summary>
         /// Cache entry event listener. Invoked on the node where continuous query execution
         /// has been started.
         /// </summary>

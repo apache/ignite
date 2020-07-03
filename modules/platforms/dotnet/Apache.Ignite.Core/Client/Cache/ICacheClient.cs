@@ -443,7 +443,7 @@ namespace Apache.Ignite.Core.Client.Cache
         /// </summary>
         /// <param name="continuousQuery">Continuous query.</param>
         /// <returns>Handle to stop query execution.</returns>
-        IContinuousQueryHandleClient QueryContinuous(ContinuousQuery<TK, TV> continuousQuery);
+        IContinuousQueryHandleClient QueryContinuous(ContinuousQueryClient<TK, TV> continuousQuery);
 
         /// <summary>
         /// Start continuous query execution.
@@ -457,7 +457,7 @@ namespace Apache.Ignite.Core.Client.Cache
         /// Handle to get initial query cursor or stop query execution.
         /// </returns>
         IContinuousQueryHandleClient<ICacheEntry<TK, TV>> QueryContinuous(
-            ContinuousQuery<TK, TV> continuousQuery,
+            ContinuousQueryClient<TK, TV> continuousQuery,
             ScanQuery<TK, TV> initialQry);
 
         /// <summary>
@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Client.Cache
         /// Handle to get initial query cursor or stop query execution.
         /// </returns>
         IContinuousQueryHandleFieldsClient QueryContinuous(
-            ContinuousQuery<TK, TV> continuousQuery,
+            ContinuousQueryClient<TK, TV> continuousQuery,
             SqlFieldsQuery initialQry);
     }
 }

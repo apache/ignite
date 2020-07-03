@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
@@ -57,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
 
             var events = new List<ICacheEntryEvent<int, int>>();
-            var qry = new ContinuousQuery<int, int>(new DelegateListener<int, int>(events.Add));
+            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(events.Add));
             using (cache.QueryContinuous(qry))
             {
                 // Create.
@@ -118,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             ICacheEntryEvent<int, int> lastEvt = null;
             var listener = new DelegateListener<int, int>(e => lastEvt = e);
 
-            var qry = new ContinuousQuery<int,int>(listener)
+            var qry = new ContinuousQueryClient<int,int>(listener)
             {
                 Filter = new OddKeyFilter()
             };
@@ -152,7 +151,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var evts = new ConcurrentBag<int>();
             var listener = new DelegateListener<int, int>(e => evts.Add(e.Key));
 
-            var qry = new ContinuousQuery<int,int>(listener)
+            var qry = new ContinuousQueryClient<int,int>(listener)
             {
                 Filter = new JavaCacheEntryEventFilter<int, int>(
                     "org.apache.ignite.platform.PlatformCacheEntryEvenKeyEventFilter", null)
@@ -196,7 +195,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             TestUtils.WaitForTrueCondition(() => Interlocked.Read(ref key) > 10);
 
-            var qry = new ContinuousQuery<int, int>(listener);
+            var qry = new ContinuousQueryClient<int, int>(listener);
             var initialQry = new ScanQuery<int, int>();
 
             using (var handle = cache.QueryContinuous(qry, initialQry))
@@ -236,7 +235,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cacheCfg = new CacheClientConfiguration(TestUtils.TestName, queryEntity);
             var cache = Client.GetOrCreateCache<int, int>(cacheCfg);
             
-            var qry = new ContinuousQuery<int,int>(new DelegateListener<int, int>());
+            var qry = new ContinuousQueryClient<int,int>(new DelegateListener<int, int>());
             var initialQry = new SqlFieldsQuery("select _key from " + TestUtils.TestName);
 
             cache[1] = 1;
@@ -269,7 +268,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Interlocked.Increment(ref receiveCount);
             });
 
-            using (cache.QueryContinuous(new ContinuousQuery<int, int>(listener)))
+            using (cache.QueryContinuous(new ContinuousQueryClient<int, int>(listener)))
             {
                 var serverCache = Ignition.GetIgnite("1").GetCache<int, int>(cache.Name);
 
@@ -294,7 +293,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cache.PutAll(initialKeys.ToDictionary(x => x, x => x));
 
             ICacheEntryEvent<int, int> lastEvt = null;
-            var qry = new ContinuousQuery<int,int>(new DelegateListener<int, int>(e => lastEvt = e));
+            var qry = new ContinuousQueryClient<int,int>(new DelegateListener<int, int>(e => lastEvt = e));
             var initialQry = new ScanQuery<int, int>();
 
             using (var handle = cache.QueryContinuous(qry, initialQry))
@@ -339,7 +338,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Filter = new OddKeyFilter()
             };
 
-            var qry = new ContinuousQuery<int, int>(new DelegateListener<int, int>());
+            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>());
 
             using (var handle = cache.QueryContinuous(qry, initialQry))
             {
@@ -370,7 +369,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
             
             var evts = new ConcurrentBag<int>();
-            var qry = new ContinuousQuery<int, int>(new DelegateListener<int, int>(e => evts.Add(e.Key)))
+            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(e => evts.Add(e.Key)))
             {
                 Filter = new ExceptionalFilter()
             };
@@ -401,6 +400,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestExceptionInInitialQueryFilterResultsInCorrectErrorMessage()
         {
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>());
             // TODO
         }
 
@@ -412,7 +413,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
             
-            var qry = new ContinuousQuery<int,int>(new DelegateListener<int, int>());
+            var qry = new ContinuousQueryClient<int,int>(new DelegateListener<int, int>());
             var initialQry = new SqlFieldsQuery("select a from b");
 
             var ex = Assert.Throws<IgniteClientException>(() => cache.QueryContinuous(qry, initialQry));
@@ -426,7 +427,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestClientDisconnectRaisesDisconnectedEventOnQueryHandle()
         {
             ICacheEntryEvent<int, int> lastEvt = null;
-            var qry = new ContinuousQuery<int,int>(
+            var qry = new ContinuousQueryClient<int,int>(
                 new DelegateListener<int, int>(e => lastEvt = e));
 
             var client = GetClient();
@@ -465,7 +466,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestClientDisconnectDoesNotRaiseDisconnectedEventOnDisposedQueryHandle()
         {
-            var qry = new ContinuousQuery<int,int>(new DelegateListener<int, int>());
+            var qry = new ContinuousQueryClient<int,int>(new DelegateListener<int, int>());
 
             var client = GetClient();
             var cache = client.GetOrCreateCache<int, int>(TestUtils.TestName);
