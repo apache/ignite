@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.misc;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Test various increment strategies.
