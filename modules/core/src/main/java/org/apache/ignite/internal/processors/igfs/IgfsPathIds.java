@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Path IDs abstraction. Contains path and corresponding IDs.

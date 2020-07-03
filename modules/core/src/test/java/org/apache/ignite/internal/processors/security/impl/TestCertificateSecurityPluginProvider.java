@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.security.impl;
 
-import java.util.List;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;

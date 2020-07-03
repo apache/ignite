@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
  * Remote shuffle state.
