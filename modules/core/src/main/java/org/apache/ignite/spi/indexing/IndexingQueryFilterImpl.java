@@ -17,13 +17,12 @@
 
 package org.apache.ignite.spi.indexing;
 
+import java.util.HashSet;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.HashSet;
 
 /**
  * Indexing query filter.

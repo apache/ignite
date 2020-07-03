@@ -17,13 +17,12 @@
 
 package org.apache.ignite.ml.math.stat;
 
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.DoubleStream;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
  * Mixture of distributions class where each component has own probability and probability of input vector can be
