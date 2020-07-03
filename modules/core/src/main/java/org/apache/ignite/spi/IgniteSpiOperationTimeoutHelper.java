@@ -107,17 +107,18 @@ public class IgniteSpiOperationTimeoutHelper {
         if (left <= 0) {
             lastOperationTimeouted = true;
 
-            throw new IgniteSpiOperationTimeoutException("Network operation timed out. Timeout: " + left);
+            throw new IgniteSpiOperationTimeoutException("Network operation timed out.");
         }
 
         return U.nanosToMillis(left);
     }
 
     /**
-     * Checks whether the given {@link Exception} is generated because failure detection timeout has been reached.
+     * Checks whether the given {@link Exception} is a timeout-exception or the has been reached in last call to
+     * {@code nextTimeoutChunk(long)}.
      *
-     * @param e Exception.
-     * @return {@code true} if failure detection timeout is reached, {@code false} otherwise.
+     * @param e Exception to check if is a timeout.
+     * @return {@code True} if the excaption is a timeout or failure timeout was reached. {@code False} otherwise.
      */
     public boolean checkFailureTimeoutReached(Exception e) {
         if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
