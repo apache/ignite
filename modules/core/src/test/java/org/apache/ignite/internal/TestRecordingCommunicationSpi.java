@@ -55,7 +55,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     private IgniteBiPredicate<ClusterNode, Message> recordP;
 
     /** */
-    private List<Object> recordedMsgs = new ArrayList<>();
+    private List<T2<ClusterNode, Object>> recordedMsgs = new ArrayList<>();
 
     /** */
     private List<T2<ClusterNode, GridIoMessage>> blockedMsgs = new ArrayList<>();
@@ -99,7 +99,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                     (recordP != null && recordP.apply(node, msg0));
 
                 if (record)
-                    recordedMsgs.add(msg0);
+                    recordedMsgs.add(new T2<>(node, msg0));
 
                 boolean block = false;
 
@@ -165,9 +165,9 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * @param stopRecord Stop record flag.
      * @return Recorded messages.
      */
-    public List<Object> recordedMessages(boolean stopRecord) {
+    public List<T2<ClusterNode, Object>> recordedMessages(boolean stopRecord) {
         synchronized (this) {
-            List<Object> msgs = recordedMsgs;
+            List<T2<ClusterNode, Object>> msgs = recordedMsgs;
 
             recordedMsgs = new ArrayList<>();
 

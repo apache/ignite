@@ -57,6 +57,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -471,6 +472,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
                 .collect(Collectors.toSet());
 
             List<Integer> rebalancedGroups = spi.recordedMessages(true).stream()
+                .map(IgniteBiTuple::get2)
                 .map(msg -> (GridDhtPartitionDemandMessage) msg)
                 .map(GridCacheGroupIdMessage::groupId)
                 .filter(grpId -> grpId != sysCacheGroupId)

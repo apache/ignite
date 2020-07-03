@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -237,7 +238,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         waitKeyUpdated(ignite, ccfg.getBackups() + 1, ccfg.getName(), key);
 
-        List<Object> msgs = commSpi0.recordedMessages(true);
+        List<?> msgs = commSpi0.recordedMessages(true);
 
         assertEquals(ccfg.getBackups(), msgs.size());
 
@@ -525,11 +526,11 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         waitKeyUpdated(ignite, ccfg.getBackups() + 1, ccfg.getName(), key);
 
-        List<Object> msgs = commSpiClient.recordedMessages(true);
+        List<T2<ClusterNode, Object>> msgs = commSpiClient.recordedMessages(true);
 
         assertEquals(1, msgs.size());
 
-        GridNearTxFinishRequest req = (GridNearTxFinishRequest)msgs.get(0);
+        GridNearTxFinishRequest req = (GridNearTxFinishRequest)msgs.get(0).get2();
 
         assertEquals(PRIMARY_SYNC, req.syncMode());
 
@@ -791,17 +792,19 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         c.apply(key, clientCache);
 
-        List<Object> srvMsgs = commSpi0.recordedMessages(true);
+        List<T2<ClusterNode, Object>> srvMsgs = commSpi0.recordedMessages(true);
 
         assertEquals("Unexpected messages: " + srvMsgs, 1, srvMsgs.size());
-        assertTrue("Unexpected message: " + srvMsgs.get(0), srvMsgs.get(0) instanceof GridNearTxPrepareResponse);
+        assertTrue("Unexpected message: " + srvMsgs.get(0),
+            srvMsgs.get(0).get2() instanceof GridNearTxPrepareResponse);
 
-        List<Object> clientMsgs = commSpiClient.recordedMessages(true);
+        List<T2<ClusterNode, Object>> clientMsgs = commSpiClient.recordedMessages(true);
 
         assertEquals("Unexpected messages: " + clientMsgs, 1, clientMsgs.size());
-        assertTrue("Unexpected message: " + clientMsgs.get(0), clientMsgs.get(0) instanceof GridNearTxPrepareRequest);
+        assertTrue("Unexpected message: " + clientMsgs.get(0),
+            clientMsgs.get(0).get2() instanceof GridNearTxPrepareRequest);
 
-        GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)clientMsgs.get(0);
+        GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)clientMsgs.get(0).get2();
 
         assertTrue(req.onePhaseCommit());
 

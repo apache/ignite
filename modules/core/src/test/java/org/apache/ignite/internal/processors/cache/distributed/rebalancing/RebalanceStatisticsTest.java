@@ -17,62 +17,46 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
-import java.util.function.Consumer;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Stream;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.testframework.CallbackExecutorLogListener;
 import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.SystemPropertiesList;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * For testing of rebalance statistics.
- * todo: need refactor
  */
-@SystemPropertiesList(value = {
-    @WithSystemProperty(key = IGNITE_QUIET, value = "false"),
-})
 public class RebalanceStatisticsTest extends GridCommonAbstractTest {
-    /** Logger for listen messages. */
-    private final ListeningTestLogger listenLog = new ListeningTestLogger(false, log);
-
     /** Caches configurations. */
     private CacheConfiguration[] cacheCfgs;
 
-    /** Data storage configuration. */
-    private DataStorageConfiguration dsCfg;
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        listenLog.clearListeners();
-
         stopAllGrids();
-
-        if (nonNull(dsCfg))
-            cleanPersistenceDir();
 
         super.afterTest();
     }
@@ -83,93 +67,106 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
             .setConsistentId(igniteInstanceName)
             .setCacheConfiguration(cacheCfgs)
             .setRebalanceThreadPoolSize(5)
-            .setGridLogger(listenLog)
-            .setDataStorageConfiguration(dsCfg)
             .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
     /**
-     * Test statistics of a full rebalance.
+     * Test statistics of a rebalance.
+     *
+     * Steps:
+     * 1)Creating and filling a cluster;
+     * 2)Starting a new node with listening for logs and supply messages;
+     * 3)Check that number of supply messages is equal to number of logs received +1;
+     * 4)Find corresponding message in log for each supply message;
+     * 5)Find log message after all of groups and to check its correctness.
      *
      * @throws Exception if any error occurs.
      */
     @Test
-    public void testFullRebalanceStatistics() throws Exception {
+    public void testRebalanceStatistics() throws Exception {
         createCluster(3);
-    }
 
-    /**
-     * Test statistics of a historical rebalance.
-     *
-     * @throws Exception if any error occurs.
-     */
-    @Test
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
-    public void testHistRebalanceStatistics() throws Exception {
-        dsCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration()
-                    .setMaxSize(200 * 1024 * 1024)
-                    .setPersistenceEnabled(true)
-            ).setWalMode(WALMode.LOG_ONLY);
+        ListeningTestLogger listeningTestLog = new ListeningTestLogger(log);
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(3)).setGridLogger(listeningTestLog);
 
-        IgniteEx crd = createCluster(3);
-    }
+        // Collect log messages with rebalance statistics.
+        Collection<String> logMsgs = new ConcurrentLinkedQueue<>();
+        listeningTestLog.registerListener(
+            new CallbackExecutorLogListener("Completed( \\(final\\))? rebalanc(ing|e chain).*", logMsgs::add)
+        );
 
-    /**
-     * Test checks situation when rebalance is restarted for cache group,
-     * then 2 statistics will be printed for it.
-     *
-     * @throws Exception if any error occurs.
-     */
-    @Test
-    public void testBreakRebalanceChain() throws Exception {
-        String filteredNodePostfix = "_filtered";
+        G.allGrids().forEach(n -> TestRecordingCommunicationSpi.spi(n).record(GridDhtPartitionSupplyMessage.class));
 
-        IgnitePredicate<ClusterNode> nodeFilter =
-            clusterNode -> !clusterNode.consistentId().toString().contains(filteredNodePostfix);
+        IgniteEx node = startGrid(cfg);
+        awaitPartitionMapExchange();
 
-        cacheCfgs = new CacheConfiguration[] {
-            cacheConfiguration(DEFAULT_CACHE_NAME + 1, null, 15, 1)
-                .setRebalanceOrder(1)
-                .setNodeFilter(nodeFilter),
-            cacheConfiguration(DEFAULT_CACHE_NAME + 2, null, 15, 1)
-                .setRebalanceOrder(2),
-            cacheConfiguration(DEFAULT_CACHE_NAME + 3, null, 15, 1)
-                .setRebalanceOrder(3)
-                .setNodeFilter(nodeFilter)
+        // Collect supply messages only for new node.
+        Map<Ignite, List<GridDhtPartitionSupplyMessage>> supplyMsgs = G.allGrids().stream()
+            .filter(n -> !n.equals(node))
+            .collect(
+                toMap(
+                    identity(),
+                    n -> TestRecordingCommunicationSpi.spi(n).recordedMessages(true).stream()
+                        .filter(t2 -> t2.get1().id().equals(node.localNode().id()))
+                        .map(IgniteBiTuple::get2)
+                        .map(GridDhtPartitionSupplyMessage.class::cast)
+                        .collect(toList())
+                )
+            );
+
+        // +1 because one message about end of rebalance for all groups.
+        assertEquals(supplyMsgs.values().stream().mapToInt(List::size).sum() + 1, logMsgs.size());
+
+        for (Map.Entry<Ignite, List<GridDhtPartitionSupplyMessage>> supplyMsg : supplyMsgs.entrySet()) {
+            List<String> supplierMsgs = logMsgs.stream()
+                .filter(s -> s.contains("supplier=" + supplyMsg.getKey().cluster().localNode().id()))
+                .collect(toList());
+
+            List<GridDhtPartitionSupplyMessage> msgs = supplyMsg.getValue();
+            assertEquals(msgs.size(), supplierMsgs.size());
+
+            for (GridDhtPartitionSupplyMessage msg : msgs) {
+                Map<Integer, CacheEntryInfoCollection> infos = U.field(msg, "infos");
+
+                String[] checVals = {
+                    "grp=" + node.context().cache().cacheGroup(msg.groupId()).cacheOrGroupName(),
+                    "partitions=" + infos.size(),
+                    "entries=" + infos.values().stream().mapToInt(i -> i.infos().size()).sum(),
+                    "bytesRcvd=" + U.humanReadableByteCount(((Integer)U.field(msg, "msgSize")).longValue()),
+                    "topVer=" + msg.topologyVersion(),
+                    "rebalanceId=" + U.field(msg, "rebalanceId")
+                };
+
+                assertTrue(supplierMsgs.stream().anyMatch(s -> Stream.of(checVals).allMatch(s::contains)));
+            }
+        }
+
+        String rebChainMsg = logMsgs.stream().filter(s -> s.startsWith("Completed rebalance chain")).findAny().get();
+
+        long rebId = -1;
+        int parts = 0;
+        int entries = 0;
+        int bytes = 0;
+
+        for (List<GridDhtPartitionSupplyMessage> msgs : supplyMsgs.values()) {
+            for (GridDhtPartitionSupplyMessage msg : msgs) {
+                Map<Integer, CacheEntryInfoCollection> infos = U.field(msg, "infos");
+
+                rebId = U.field(msg, "rebalanceId");
+                parts += infos.size();
+                entries += infos.values().stream().mapToInt(i -> i.infos().size()).sum();
+                bytes += (int)U.field(msg, "msgSize");
+            }
+        }
+
+        String[] checVals = {
+            "partitions=" + parts,
+            "entries=" + entries,
+            "bytesRcvd=" + U.humanReadableByteCount(bytes),
+            "rebalanceId=" + rebId
         };
 
-        int nodeCnt = 2;
-
-        startGrids(nodeCnt);
-        awaitPartitionMapExchange();
-
-        IgniteConfiguration cfg2 = getConfiguration(getTestIgniteInstanceName(nodeCnt++));
-        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi)cfg2.getCommunicationSpi();
-
-        int restartRebalanceCacheId = cacheId(DEFAULT_CACHE_NAME + 1);
-
-        spi2.blockMessages((clusterNode, msg) -> {
-            if (GridDhtPartitionDemandMessage.class.isInstance(msg)) {
-                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
-
-                if (demandMsg.groupId() == restartRebalanceCacheId)
-                    return true;
-            }
-            return false;
-        });
-
-        IgniteEx node2 = startGrid(cfg2);
-        spi2.waitForBlocked();
-
-        IgniteEx filteredNode = startGrid(getTestIgniteInstanceName(nodeCnt) + filteredNodePostfix);
-
-        for (CacheGroupContext grpCtx : filteredNode.context().cache().cacheGroups())
-            grpCtx.preloader().rebalanceFuture().get(10_000);
-
-        spi2.stopBlock();
-        awaitPartitionMapExchange();
+        assertTrue(Stream.of(checVals).allMatch(rebChainMsg::contains));
     }
 
     /**
@@ -195,6 +192,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
         crd.cluster().active(true);
 
         populateCluster(crd, 10, "");
+
         return crd;
     }
 
@@ -213,8 +211,10 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
             String cacheName = cacheCfg.getName();
             IgniteCache<Object, Object> cache = node.cache(cacheName);
 
-            for (int i = 0; i < cacheCfg.getAffinity().partitions(); i++)
-                partitionKeys(cache, i, cnt, i * cnt).forEach(k -> cache.put(k, cacheName + "_val_" + k + add));
+            for (int i = 0; i < cacheCfg.getAffinity().partitions(); i++) {
+                partitionKeys(cache, i, cnt, i * cnt)
+                    .forEach(k -> cache.put(k, cacheName + "_val_" + k + add));
+            }
         }
     }
 
@@ -236,46 +236,5 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
             .setAffinity(new RendezvousAffinityFunction(false, parts))
             .setBackups(backups)
             .setGroupName(grpName);
-    }
-
-    /**
-     * Restarting a node with log listeners.
-     *
-     * @param nodeId        Node id.
-     * @param afterStop Function after stop node.
-     * @param afterStart Function after start node.
-     * @param checkConsumer Checking listeners.
-     * @param logListeners  Log listeners.
-     * @throws Exception if any error occurs.
-     */
-    private void restartNode(
-        int nodeId,
-        @Nullable Runnable afterStop,
-        @Nullable Consumer<IgniteEx> afterStart,
-        Consumer<LogListener> checkConsumer,
-        LogListener... logListeners
-    ) throws Exception {
-        requireNonNull(checkConsumer);
-        requireNonNull(logListeners);
-
-        A.ensure(logListeners.length > 0, "Empty logListeners");
-
-        for (LogListener rebLogListener : logListeners)
-            rebLogListener.reset();
-
-        stopGrid(nodeId);
-        awaitPartitionMapExchange();
-
-        if (nonNull(afterStop))
-            afterStop.run();
-
-        IgniteEx node = startGrid(nodeId);
-        if(nonNull(afterStart))
-            afterStart.accept(node);
-
-        awaitPartitionMapExchange();
-
-        for (LogListener rebLogListener : logListeners)
-            checkConsumer.accept(rebLogListener);
     }
 }

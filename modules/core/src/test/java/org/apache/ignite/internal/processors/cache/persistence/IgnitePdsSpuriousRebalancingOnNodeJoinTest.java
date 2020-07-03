@@ -159,7 +159,7 @@ public class IgnitePdsSpuriousRebalancingOnNodeJoinTest extends GridCommonAbstra
             awaitPartitionMapExchange();
 
             // Expecting no rebalancing.
-            List<Object> msgs = TestRecordingCommunicationSpi.spi(crd).recordedMessages(true);
+            List<?> msgs = TestRecordingCommunicationSpi.spi(crd).recordedMessages(true);
 
             assertTrue("Rebalancing is not expected " + msgs, msgs.isEmpty());
         }

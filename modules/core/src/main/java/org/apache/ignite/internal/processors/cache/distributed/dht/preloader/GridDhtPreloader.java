@@ -547,15 +547,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /**
-     * Return supplier.
-     *
-     * @return Supplier.
-     * */
-    public GridDhtPartitionSupplier supplier() {
-        return supplier;
-    }
-
-    /**
      * Return demander.
      *
      * @return Demander.

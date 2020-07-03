@@ -24,11 +24,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Ignore;
@@ -242,15 +244,15 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
      * @param primarySpi Primary node SPI.
      */
     private void checkMessages(TestRecordingCommunicationSpi spi, TestRecordingCommunicationSpi primarySpi) {
-        List<Object> msgs = spi.recordedMessages(false);
+        List<T2<ClusterNode, Object>> msgs = spi.recordedMessages(false);
 
         assertEquals(1, msgs.size());
-        assertTrue(msgs.get(0) instanceof GridNearSingleGetRequest);
+        assertTrue(msgs.get(0).get2() instanceof GridNearSingleGetRequest);
 
         msgs = primarySpi.recordedMessages(false);
 
         assertEquals(1, msgs.size());
-        assertTrue(msgs.get(0) instanceof GridNearSingleGetResponse);
+        assertTrue(msgs.get(0).get2() instanceof GridNearSingleGetResponse);
     }
 
     /**
@@ -258,7 +260,7 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
      * @param primarySpi Primary node SPI.
      */
     private void checkNoMessages(TestRecordingCommunicationSpi spi, TestRecordingCommunicationSpi primarySpi) {
-        List<Object> msgs = spi.recordedMessages(false);
+        List<T2<ClusterNode, Object>> msgs = spi.recordedMessages(false);
         assertEquals(0, msgs.size());
 
         msgs = primarySpi.recordedMessages(false);
