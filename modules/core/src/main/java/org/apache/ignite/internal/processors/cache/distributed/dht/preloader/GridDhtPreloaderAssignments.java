@@ -17,11 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 
 /**
  * Partition to node assignments.
@@ -97,5 +103,87 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPreloaderAssignments.class, this, "super", super.toString());
+    }
+
+    /**
+     * Retains only moving partitions for the current topology.
+     *
+     * @param top Topology.
+     */
+    public void retainMoving(GridDhtPartitionTopology top) {
+        Iterator<Entry<ClusterNode, GridDhtPartitionDemandMessage>> it = entrySet().iterator();
+
+        while (it.hasNext()) {
+            Entry<ClusterNode, GridDhtPartitionDemandMessage> mapping = it.next();
+
+            GridDhtPartitionDemandMessage val = mapping.getValue();
+
+            IgniteDhtDemandedPartitionsMap cntrMap = val.partitions();
+
+            CachePartitionPartialCountersMap curHistMap = cntrMap.historicalMap();
+            CachePartitionPartialCountersMap newHistMap = null;
+
+            if (!curHistMap.isEmpty()) {
+                int moving = 0;
+
+                // Fast-path check.
+                for (int i = 0; i < curHistMap.size(); i++) {
+                    int partId = curHistMap.partitionAt(i);
+
+                    if (top.localPartition(partId).state() == MOVING)
+                        moving++;
+                }
+
+                if (moving != curHistMap.size()) {
+                    newHistMap = new CachePartitionPartialCountersMap(moving);
+
+                    for (int i = 0; i < curHistMap.size(); i++) {
+                        int partId = curHistMap.partitionAt(i);
+                        long initUpdCntr = curHistMap.initialUpdateCounterAt(i);
+                        long updCntr = curHistMap.updateCounterAt(i);
+
+                        if (top.localPartition(partId).state() == MOVING)
+                            newHistMap.add(partId, initUpdCntr, updCntr);
+                    }
+                }
+            }
+
+            Set<Integer> curFullSet = cntrMap.fullSet();
+            Set<Integer> newFullSet = null;
+
+            if (!curFullSet.isEmpty()) {
+                int moving = 0;
+
+                // Fast-path check.
+                for (Integer partId : curFullSet) {
+                    if (top.localPartition(partId).state() == MOVING)
+                        moving++;
+                }
+
+                if (moving != curFullSet.size()) {
+                    newFullSet = U.newHashSet(moving);
+
+                    for (Integer partId : curFullSet) {
+                        if (top.localPartition(partId).state() == MOVING)
+                            newFullSet.add(partId);
+                    }
+                }
+            }
+
+            if (newHistMap != null || newFullSet != null) {
+                if (newHistMap == null)
+                    newHistMap = curHistMap;
+
+                if (newFullSet == null)
+                    newFullSet = curFullSet;
+
+                IgniteDhtDemandedPartitionsMap newMap = new IgniteDhtDemandedPartitionsMap(newHistMap, newFullSet);
+
+                if (newMap.isEmpty())
+                    it.remove();
+                else
+                    mapping.setValue(val.withNewPartitionsMap(newMap));
+            }
+        }
     }
 }
