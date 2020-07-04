@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>" + Environment.NewLine +
                             "<igniteClientConfiguration " +
                             "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection\">" +
-                            Environment.NewLine + "  <logger type=\"null\" />" + Environment.NewLine + 
+                            Environment.NewLine + "  <logger type=\"null\" />" + Environment.NewLine +
                             "</igniteClientConfiguration>",
                 emptyConfig.ToXml());
 
@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>" + Environment.NewLine +
                             "<igniteClientConfiguration host=\"myHost\" port=\"123\" " +
                             "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection\">" +
-                            Environment.NewLine + "  <logger type=\"null\" />" + Environment.NewLine + 
+                            Environment.NewLine + "  <logger type=\"null\" />" + Environment.NewLine +
                             "</igniteClientConfiguration>",
                 cfg.ToXml());
 
@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Tests.Client
         public void TestDefaultLoggerWritesToConsole()
         {
             IgniteClientConfiguration cfg = null;
-            
+
             TestConsoleLogging(c => { cfg = c;}, (client, log) =>
             {
                 Assert.AreSame(cfg.Logger, client.GetConfiguration().Logger);
@@ -291,7 +291,7 @@ namespace Apache.Ignite.Core.Tests.Client
             }
         }
 
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0
+#if !NETCOREAPP
         /// <summary>
         /// Tests the schema validation.
         /// </summary>
