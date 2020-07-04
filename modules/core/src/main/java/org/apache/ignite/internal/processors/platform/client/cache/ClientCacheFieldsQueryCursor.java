@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.List;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-
-import java.util.List;
 
 /**
  * Query cursor holder.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
-import com.google.common.base.Strings;
 import java.util.concurrent.TimeUnit;
+import com.google.common.base.Strings;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;

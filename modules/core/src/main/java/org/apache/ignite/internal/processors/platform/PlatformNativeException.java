@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Exception occurred on native side.

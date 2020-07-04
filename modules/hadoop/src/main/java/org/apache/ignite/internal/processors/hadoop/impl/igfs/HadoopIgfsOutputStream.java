@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import org.apache.commons.logging.Log;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.IOException;
-import java.io.OutputStream;
 
 /**
  * IGFS Hadoop output stream implementation.
