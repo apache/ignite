@@ -538,6 +538,27 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.IsNull(disconnectedEventArgs);
         }
 
+        /// <summary>
+        /// Tests that when custom <see cref="ContinuousQueryClient{TK,TV}.BufferSize"/> is set,
+        /// events are sent in batches, not 1 by 1.
+        /// </summary>
+        [Test]
+        public void TestCustomBufferSizeResultsInBatchedUpdates()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests that when custom <see cref="ContinuousQueryClient{TK,TV}.TimeInterval"/> is set,
+        /// and <see cref="ContinuousQueryClient{TK,TV}.BufferSize"/> is greater than 1,
+        /// batches are sent out before buffer is full when the time interval passes.
+        /// </summary>
+        [Test]
+        public void TestCustomTimeIntervalCausesIncompleteBatches()
+        {
+            // TODO
+        }
+
         /** <inheritdoc /> */
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
