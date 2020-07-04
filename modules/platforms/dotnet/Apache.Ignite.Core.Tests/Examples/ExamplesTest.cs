@@ -143,6 +143,9 @@ namespace Apache.Ignite.Core.Tests.Examples
             if (_remoteNodeStarted)
                 return;
 
+            Console.WriteLine();
+            Console.WriteLine(">>> DBG TestRemoteNodes 1.");
+
             // Start a grid to monitor topology;
             // Stop it after topology check so we don't interfere with example.
             Ignition.ClientMode = false;
@@ -177,6 +180,9 @@ namespace Apache.Ignite.Core.Tests.Examples
             }
 
             _remoteNodeStarted = true;
+
+            Console.WriteLine();
+            Console.WriteLine(">>> DBG TestRemoteNodes 2.");
         }
 
         /// <summary>

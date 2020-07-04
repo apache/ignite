@@ -377,6 +377,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 return false;
 
             node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap, forcePrimary);
+
+            if (node == null)
+                log.info("DBG: nodes=" + affNodes + ", topVer=" + topVer + ", part=" + cctx.group().topology().localPartition(part) +
+                    ", canRemap=" + canRemap + ", fp=" + forcePrimary + ", invalid=" + this.invalidNodes);
         }
 
         // Failed if none remote node found.
