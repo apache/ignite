@@ -2070,8 +2070,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean hasNear = req.nearCache();
 
         // Assign next version for update inside entries lock.
-        GridCacheVersion ver = dhtUpdRes.dhtFuture() != null /*retry*/ ?
-            dhtUpdRes.dhtFuture().writeVer : ctx.versions().next(top.readyTopologyVersion().topologyVersion());
+        GridCacheVersion ver = dhtUpdRes.dhtFuture() != null /*retry*/ ? dhtUpdRes.dhtFuture().writeVer : nextVersion();
 
         if (hasNear)
             res.nearVersion(ver);
@@ -3381,6 +3380,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         assert req.partition() >= 0 : req;
 
         GridCacheVersion ver = req.writeVersion();
+
+        ctx.versions().onReceived(nodeId, ver);
 
         GridDhtAtomicNearResponse nearRes = null;
 
