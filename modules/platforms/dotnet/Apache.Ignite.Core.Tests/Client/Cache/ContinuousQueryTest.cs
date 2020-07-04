@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Compute;
@@ -103,39 +104,37 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestComputeWorksWhenContinuousQueryIsActive()
         {
-            // TODO: Start multiple queries with different filters,
-            // do cache updates and compute calls in multiple threads.
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            
+
             var receivedKeysAll = new ConcurrentBag<int>();
             var receivedKeysOdd = new ConcurrentBag<int>();
-            
+
             var qry1 = new ContinuousQueryClient<int, int>
             {
                 Listener = new DelegateListener<int, int>(e => receivedKeysOdd.Add(e.Key)),
                 Filter = new OddKeyFilter()
             };
-            
+
             var qry2 = new ContinuousQueryClient<int, int>
             {
                 Listener = new DelegateListener<int, int>(e => receivedKeysAll.Add(e.Key)),
             };
-            
+
             var cts = new CancellationTokenSource();
-            
+
             var computeRunnerTask = Task.Factory.StartNew(() =>
             {
                 while (!cts.IsCancellationRequested)
                 {
                     var res = Client.GetCompute().ExecuteJavaTask<int>(
                         ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeInt);
-                    
+
                     Assert.AreEqual(1, res);
                 }
             }, cts.Token);
 
             const int count = 10000;
-            
+
             using (cache.QueryContinuous(qry1))
             using (cache.QueryContinuous(qry2))
             {
@@ -144,10 +143,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     cache[i] = i;
                 }
             }
-            
+
             cts.Cancel();
             computeRunnerTask.Wait();
-            
+
             // TODO: Check actual keys.
             TestUtils.WaitForTrueCondition(() => receivedKeysAll.Count == count);
             Assert.AreEqual(count / 2, receivedKeysOdd.Count);
@@ -208,7 +207,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 cache.PutAll(Enumerable.Range(1, 5).ToDictionary(x => x, x => x));
             }
-            
+
             TestUtils.WaitForTrueCondition(() => evts.Count == 2);
             CollectionAssert.AreEquivalent(new[] {2, 4}, evts);
         }
@@ -281,7 +280,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             var cacheCfg = new CacheClientConfiguration(TestUtils.TestName, queryEntity);
             var cache = Client.GetOrCreateCache<int, int>(cacheCfg);
-            
+
             var qry = new ContinuousQueryClient<int,int>(new DelegateListener<int, int>());
             var initialQry = new SqlFieldsQuery("select _key from " + TestUtils.TestName);
 
@@ -414,7 +413,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestExceptionInFilterIsLoggedAndFilterIsIgnored()
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            
+
             var evts = new ConcurrentBag<int>();
             var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(e => evts.Add(e.Key)))
             {
@@ -425,9 +424,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 cache[1] = 1;
             }
-            
+
             Assert.AreEqual(1, cache[1]);
-            
+
             // Assert: error is logged.
             var error = GetLoggers()
                 .SelectMany(x => x.Entries)
@@ -439,7 +438,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 "CacheEntryEventFilter failed: javax.cache.event.CacheEntryListenerException: " +
                 ExceptionalFilter.Error,
                 error);
-            
+
             // Assert: continuous query event is delivered.
             Assert.AreEqual(new[] {1}, evts);
         }
@@ -495,22 +494,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             handle.Disconnected += (sender, args) =>
             {
                 disconnectedEventArgs = args;
-                
+
                 // ReSharper disable once AccessToDisposedClosure (disposed state does not matter)
                 Assert.AreEqual(handle, sender);
             };
-            
+
             cache[1] = 1;
             TestUtils.WaitForTrueCondition(() => lastEvt != null);
-            
+
             client.Dispose();
-            
+
             // Assert: disconnected event has been raised.
             TestUtils.WaitForTrueCondition(() => disconnectedEventArgs != null);
             Assert.IsNotNull(disconnectedEventArgs.Exception);
-            
+
             StringAssert.StartsWith("Cannot access a disposed object", disconnectedEventArgs.Exception.Message);
-            
+
             // Multiple dispose is allowed.
             handle.Dispose();
             handle.Dispose();
@@ -527,16 +526,31 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var client = GetClient();
             var cache = client.GetOrCreateCache<int, int>(TestUtils.TestName);
             ContinuousQueryClientDisconnectedEventArgs disconnectedEventArgs = null;
-            
+
             using (var handle = cache.QueryContinuous(qry))
             {
                 handle.Disconnected += (sender, args) => disconnectedEventArgs = args;
             }
 
             client.Dispose();
-            
+
             // Assert: disconnected event has NOT been raised.
             Assert.IsNull(disconnectedEventArgs);
+        }
+
+        /** <inheritdoc /> */
+        protected override IgniteConfiguration GetIgniteConfiguration()
+        {
+            return new IgniteConfiguration(base.GetIgniteConfiguration())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientConfiguration = new ThinClientConfiguration
+                    {
+                        MaxActiveComputeTasksPerConnection = 100
+                    }
+                }
+            };
         }
 
         /** */
@@ -583,7 +597,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         private class ExceptionalFilter : ICacheEntryEventFilter<int, int>, ICacheEntryFilter<int, int>
         {
             public const string Error = "Foo failed because of bar";
-            
+
             public bool Evaluate(ICacheEntryEvent<int, int> evt)
             {
                 throw new Exception(Error);
