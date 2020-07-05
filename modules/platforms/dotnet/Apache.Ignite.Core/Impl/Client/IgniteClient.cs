@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly IgniteClientConfiguration _configuration;
 
         /** Transactions. */
-        private ClientTransactions _transactions;
+        private readonly ClientTransactions _transactions;
 
         /** Node info cache. */
         private readonly ConcurrentDictionary<Guid, IClientClusterNode> _nodes =
@@ -91,7 +91,9 @@ namespace Apache.Ignite.Core.Impl.Client
                 Ignite = this
             };
 
-            _socket = new ClientFailoverSocket(_configuration, _marsh);
+            _transactions = new ClientTransactions(this);
+
+            _socket = new ClientFailoverSocket(_configuration, _marsh, _transactions);
 
             _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
 
@@ -100,8 +102,6 @@ namespace Apache.Ignite.Core.Impl.Client
             _cluster = new ClientCluster(this);
             
             _compute = new ComputeClient(this, ComputeClientFlags.None, TimeSpan.Zero, null);
-
-            _transactions = new ClientTransactions(this);
         }
 
         /// <summary>

@@ -53,6 +53,9 @@ namespace Apache.Ignite.Core.Tests.Client
         /** SSL. */
         private readonly bool _enableSsl;
 
+        /** Partition Awareness */
+        private readonly bool _enablePartitionAwareness;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
@@ -64,10 +67,14 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
-        public ClientTestBase(int gridCount, bool enableSsl = false)
+        public ClientTestBase(
+            int gridCount, 
+            bool enableSsl = false, 
+            bool enablePartitionAwareness = false)
         {
             _gridCount = gridCount;
             _enableSsl = enableSsl;
+            _enablePartitionAwareness = enablePartitionAwareness;
         }
 
         /// <summary>
@@ -190,7 +197,8 @@ namespace Apache.Ignite.Core.Tests.Client
                         SslProtocols = SslProtocols.Tls12
 #endif
                     }
-                    : null
+                    : null,
+                EnablePartitionAwareness = _enablePartitionAwareness
             };
         }
 

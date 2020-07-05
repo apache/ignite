@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using Apache.Ignite.Core.Client;
@@ -123,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             return TxStart(concurrency, isolation, timeout, null);
         }
 
-        public IClientTransaction TxStart(TransactionConcurrency concurrency,
+        private IClientTransaction TxStart(TransactionConcurrency concurrency,
             TransactionIsolation isolation,
             TimeSpan timeout,
             string label)
@@ -222,7 +223,9 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             /** <inheritDoc /> */
             public void StartTxIfNeeded()
             {
-                _transactions._txManager.StartTxIfNeeded(_label);
+                Debug.Fail("Labeled transactions are not supported for ambient transactions");
+
+                _transactions._txManager.StartTxIfNeeded();
             }
 
             /** <inheritDoc /> */

@@ -31,23 +31,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// <summary>
     /// Transactional cache client tests.
     /// </summary>
-    public class CacheClientTransactionalTest : ClientTestBase
+    public abstract class CacheClientAbstractTxTest : ClientTestBase
     {
-        /** */
-        private const int DEFAULT_SERVER_COUNT = 1;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CacheClientTransactionalTest" /> class.
-        /// </summary>
-        public CacheClientTransactionalTest() : this(DEFAULT_SERVER_COUNT)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CacheClientTransactionalTest" /> class.
-        /// </summary>
-        public CacheClientTransactionalTest(int serverCount) : base(serverCount)
+        protected CacheClientAbstractTxTest(int serverCount, bool enablePartitionAwareness) : base(serverCount,
+            enablePartitionAwareness: enablePartitionAwareness)
         {
             // No-op.
         }
@@ -82,7 +69,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestTxRollback()
         {
             var cache = TransactionalCache();
-
             cache.Put(1, 1);
             cache.Put(2, 2);
 
@@ -91,6 +77,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 cache.Put(1, 10);
                 cache.Put(2, 20);
 
+                Assert.AreEqual(10, cache.Get(1));
+                Assert.AreEqual(20, cache.Get(2));
                 tx.Rollback();
             }
 
@@ -576,7 +564,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Gets or creates transactional cache
         /// </summary>
-        private ICacheClient<int, int> TransactionalCache(string cacheName = null)
+        protected ICacheClient<int, int> TransactionalCache(string cacheName = null)
         {
             return Client.GetOrCreateCache<int, int>(new CacheClientConfiguration
             {

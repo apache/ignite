@@ -48,17 +48,17 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// </summary>
         TimeSpan DefaultTimeout { get; }
 
-        /// <summary>
-        /// Starts new transaction with the specified concurrency, isolation, timeout and label.
-        /// </summary>
-        /// <param name="concurrency">Concurrency.</param>
-        /// <param name="isolation">Isolation.</param>
-        /// <param name="timeout">Timeout. TimeSpan. Zero for indefinite timeout.</param>
-        /// <param name="label">Label.</param>
-        /// <returns>New transaction.</returns>
-        IClientTransaction TxStart(TransactionConcurrency concurrency,
-            TransactionIsolation isolation,
-            TimeSpan timeout,
-            string label);
+        // /// <summary>
+        // /// Starts new transaction with the specified concurrency, isolation, timeout and label.
+        // /// </summary>
+        // /// <param name="concurrency">Concurrency.</param>
+        // /// <param name="isolation">Isolation.</param>
+        // /// <param name="timeout">Timeout. TimeSpan. Zero for indefinite timeout.</param>
+        // /// <param name="label">Label.</param>
+        // /// <returns>New transaction.</returns>
+        // IClientTransaction TxStart(TransactionConcurrency concurrency,
+        //     TransactionIsolation isolation,
+        //     TimeSpan timeout,
+        //     string label);
     }
 }

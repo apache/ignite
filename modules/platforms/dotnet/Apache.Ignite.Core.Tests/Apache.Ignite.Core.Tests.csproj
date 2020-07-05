@@ -143,7 +143,9 @@
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Contains.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestCodeConfig.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
-    <Compile Include="Client\Cache\CacheClientTransactionalTest.cs" />
+    <Compile Include="Client\Cache\CacheClientAbstractTxTest.cs" />
+    <Compile Include="Client\Cache\CacheClientLocalTxTest.cs" />
+    <Compile Include="Client\Cache\CachePartitionedTxTest.cs" />
     <Compile Include="Client\Cache\DynamicFieldSetTest.cs" />
     <Compile Include="Client\Cache\SerializableObjectsTest.cs" />
     <Compile Include="Client\Cache\PartitionAwarenessTest.cs" />
