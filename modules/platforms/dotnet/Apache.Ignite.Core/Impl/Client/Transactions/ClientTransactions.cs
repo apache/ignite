@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         }
 
         /** <inheritdoc /> */
-        public ClientTransaction CurrentTx
+        public IClientTransactionInternal CurrentTx
         {
             get
             {
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             }
 
             /** <inheritDoc /> */
-            public ClientTransaction CurrentTx
+            public IClientTransactionInternal CurrentTx
             {
                 get { return _transactions.CurrentTx; }
             }

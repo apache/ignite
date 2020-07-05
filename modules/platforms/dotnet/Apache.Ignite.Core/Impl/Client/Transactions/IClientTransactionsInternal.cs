@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// <summary>
         /// Current thread transaction
         /// </summary>
-        ClientTransaction CurrentTx { get; }
+        IClientTransactionInternal CurrentTx { get; }
 
         /// <summary>
         /// If ambient transaction is present, starts an Ignite transaction and enlists it.
