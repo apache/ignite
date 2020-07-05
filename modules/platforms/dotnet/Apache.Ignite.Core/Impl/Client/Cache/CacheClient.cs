@@ -36,7 +36,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Client.Cache.Query;
-    using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Impl.Common;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
@@ -136,6 +135,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            _ignite.Transactions.StartTxIfNeeded();
+
             return DoOutInOpAffinity(ClientOp.CacheGet, key, ctx => UnmarshalNotNull<TV>(ctx));
         }
 
@@ -152,6 +153,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public bool TryGet(TK key, out TV value)
         {
             IgniteArgumentCheck.NotNull(key, "key");
+
+            _ignite.Transactions.StartTxIfNeeded();
 
             var res = DoOutInOpAffinity(ClientOp.CacheGet, key, UnmarshalCacheResult<TV>);
 
@@ -174,6 +177,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
+            _ignite.Transactions.StartTxIfNeeded();
+
             return DoOutInOp(ClientOp.CacheGetAll, ctx => ctx.Writer.WriteEnumerable(keys),
                 s => ReadCacheEntries(s.Stream));
         }
@@ -192,6 +197,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
+
+            _ignite.Transactions.StartTxIfNeeded();
 
             DoOutInOpAffinity<object>(ClientOp.CachePut, key, val, null);
         }
@@ -213,6 +220,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            _ignite.Transactions.StartTxIfNeeded();
+
             return DoOutInOpAffinity(ClientOp.CacheContainsKey, key, ctx => ctx.Stream.ReadBool());
         }
 
@@ -228,6 +237,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public bool ContainsKeys(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
+
+            _ignite.Transactions.StartTxIfNeeded();
 
             return DoOutInOp(ClientOp.CacheContainsKeys, ctx => ctx.Writer.WriteEnumerable(keys),
                 ctx => ctx.Stream.ReadBool());
@@ -292,6 +303,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
+            _ignite.Transactions.StartTxIfNeeded();
+
             return DoOutInOpAffinity(ClientOp.CacheGetAndPut, key, val, UnmarshalCacheResult<TV>);
         }
 
@@ -310,6 +323,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
+            _ignite.Transactions.StartTxIfNeeded();
+            
             return DoOutInOpAffinity(ClientOp.CacheGetAndReplace, key, val, UnmarshalCacheResult<TV>);
         }
 
@@ -327,6 +342,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            _ignite.Transactions.StartTxIfNeeded();
+
             return DoOutInOpAffinity(ClientOp.CacheGetAndRemove, key, UnmarshalCacheResult<TV>);
         }
 
@@ -343,6 +360,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
+
+            _ignite.Transactions.StartTxIfNeeded();
 
             return DoOutInOpAffinity(ClientOp.CachePutIfAbsent, key, val, ctx => ctx.Stream.ReadBool());
         }
@@ -362,6 +381,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
+            _ignite.Transactions.StartTxIfNeeded();
+
             return DoOutInOpAffinity(ClientOp.CacheGetAndPutIfAbsent, key, val, UnmarshalCacheResult<TV>);
         }
 
@@ -379,6 +400,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
+
+            _ignite.Transactions.StartTxIfNeeded();
 
             return DoOutInOpAffinity(ClientOp.CacheReplace, key, val, ctx => ctx.Stream.ReadBool());
         }
@@ -398,6 +421,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(oldVal, "oldVal");
             IgniteArgumentCheck.NotNull(newVal, "newVal");
+
+            _ignite.Transactions.StartTxIfNeeded();
 
             return DoOutInOpAffinity(ClientOp.CacheReplaceIfEquals, key, ctx =>
             {
@@ -427,6 +452,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(vals, "vals");
 
+            _ignite.Transactions.StartTxIfNeeded();
+
             DoOutOp(ClientOp.CachePutAll, ctx => ctx.Writer.WriteDictionary(vals));
         }
 
@@ -441,6 +468,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /** <inheritDoc /> */
         public void Clear()
         {
+            _ignite.Transactions.StartTxIfNeeded();
+
             DoOutOp(ClientOp.CacheClear);
         }
 
@@ -454,6 +483,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public void Clear(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
+
+            _ignite.Transactions.StartTxIfNeeded();
 
             DoOutOpAffinity(ClientOp.CacheClearKey, key);
         }
@@ -471,6 +502,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
+            _ignite.Transactions.StartTxIfNeeded();
+
             DoOutOp(ClientOp.CacheClearKeys, ctx => ctx.Writer.WriteEnumerable(keys));
         }
 
@@ -486,6 +519,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public bool Remove(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
+
+            _ignite.Transactions.StartTxIfNeeded();
 
             return DoOutInOpAffinity(ClientOp.CacheRemoveKey, key, ctx => ctx.Stream.ReadBool());
         }
@@ -504,6 +539,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
+            _ignite.Transactions.StartTxIfNeeded();
+
             return DoOutInOpAffinity(ClientOp.CacheRemoveIfEquals, key, val, ctx => ctx.Stream.ReadBool());
         }
 
@@ -521,6 +558,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
+            _ignite.Transactions.StartTxIfNeeded();
+
             DoOutOp(ClientOp.CacheRemoveKeys, ctx => ctx.Writer.WriteEnumerable(keys));
         }
 
@@ -535,6 +574,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /** <inheritDoc /> */
         public void RemoveAll()
         {
+            _ignite.Transactions.StartTxIfNeeded();
+
             DoOutOp(ClientOp.CacheRemoveAll);
         }
 
@@ -754,7 +795,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// </summary>
         private void WriteRequest(Action<ClientRequestContext> writeAction, ClientRequestContext ctx)
         {
-            _ignite.Transactions.StartTxIfNeeded();
             ctx.Stream.WriteInt(_id);
 
             var flags = ClientCacheRequestFlag.None;

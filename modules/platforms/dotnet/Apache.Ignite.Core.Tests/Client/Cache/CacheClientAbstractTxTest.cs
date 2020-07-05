@@ -422,6 +422,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             CheckTxOp((cache, key) => cache.Put(key, -5));
 
+            CheckReadTxOp((cache, key) => cache.Get(key));
+            
+            CheckReadTxOp((cache, key) =>
+            {
+                int value;
+                Assert.IsTrue(cache.TryGet(key, out value));
+            });
+
+            CheckReadTxOp((cache, key) => cache.ContainsKey(key));
+
+            CheckReadTxOp((cache, key) => cache.ContainsKeys(new[] {key}));
+
             CheckTxOp((cache, key) => cache.PutAll(new Dictionary<int, int> {{key, -7}}));
 
             CheckTxOp((cache, key) =>
@@ -459,7 +471,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestTransactionScopeAllOperationsAsync()
         {
             CheckTxOp((cache, key) => cache.PutAsync(key, -5));
-
             CheckTxOp((cache, key) => cache.PutAllAsync(new Dictionary<int, int> {{key, -7}}));
 
             CheckTxOp((cache, key) =>
@@ -487,6 +498,27 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             CheckTxOp((cache, key) => cache.ReplaceAsync(key, 100));
 
             CheckTxOp((cache, key) => cache.ReplaceAsync(key, cache[key], 100));
+        }
+
+        /// <summary>
+        /// Checks that read cache operation starts ambient transaction.
+        /// </summary>
+        private void CheckReadTxOp(Action<ICacheClient<int, int>, int> act)
+        {
+            var txOpts = new TransactionOptions {IsolationLevel = IsolationLevel.RepeatableRead};
+            const TransactionScopeOption scope = TransactionScopeOption.Required;
+
+            var cache = TransactionalCache();
+            cache[1] = 1;
+
+            // Rollback.
+            using (new TransactionScope(scope, txOpts))
+            {
+                act(cache, 1);
+
+                Assert.IsNotNull(((IClientTransactionsInternal) Client.Transactions).CurrentTx,
+                    "Transaction has not started.");
+            }
         }
 
         /// <summary>
