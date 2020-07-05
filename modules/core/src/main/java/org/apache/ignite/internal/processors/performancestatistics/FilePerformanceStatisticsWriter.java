@@ -153,7 +153,7 @@ public class FilePerformanceStatisticsWriter {
         FileWriter fileWriter = this.fileWriter;
 
         if (fileWriter != null)
-            fileWriter.shutdown();
+            fileWriter.cancel();
     }
 
     /**
@@ -500,19 +500,9 @@ public class FilePerformanceStatisticsWriter {
             } catch (IOException e) {
                 log.error("Unable to write to file. Performance statistics collecting will be stopped.", e);
 
-                fileWriter.shutdown();
+                fileWriter.cancel();
 
                 stopStatistics();
-            }
-        }
-
-        /** Shutted down the worker. */
-        private void shutdown() {
-            isCancelled = true;
-
-            synchronized (this) {
-                // Required to start writing data to the file.
-                notify();
             }
         }
 
@@ -527,7 +517,7 @@ public class FilePerformanceStatisticsWriter {
         /** Logs warning message and stops collecting statistics. */
         void onMaxFileSizeReached() {
             if (stopByMaxSize.compareAndSet(false, true)) {
-                fileWriter.shutdown();
+                fileWriter.cancel();
 
                 stopStatistics();
 
