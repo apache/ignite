@@ -99,7 +99,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <param name="config">The configuration.</param>
         /// <param name="marsh">The marshaller.</param>
         /// <param name="transactions">The transactions.</param>
-        public ClientFailoverSocket(IgniteClientConfiguration config,
+        public ClientFailoverSocket(
+            IgniteClientConfiguration config,
             Marshaller marsh,
             IClientTransactionsInternal transactions)
         {
