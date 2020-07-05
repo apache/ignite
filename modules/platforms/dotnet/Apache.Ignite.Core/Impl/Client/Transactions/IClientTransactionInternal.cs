@@ -25,10 +25,5 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Transaction ID.
         /// </summary>
         int Id { get; }
-
-        /// <summary>
-        /// Closed.
-        /// </summary>
-        bool Closed { get; }
     }
 }
