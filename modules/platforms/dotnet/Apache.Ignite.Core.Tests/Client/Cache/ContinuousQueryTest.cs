@@ -556,12 +556,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
 
-            using (var handle = cache.QueryContinuous(qry))
+            using (cache.QueryContinuous(qry))
             {
                 cache.PutAll(Enumerable.Range(1, 8).ToDictionary(x => x, x => x));
             }
 
-            TestUtils.WaitForTrueCondition(() => batches.Count == 3);
+            TestUtils.WaitForTrueCondition(() => batches.Count == 2, () => batches.Count.ToString());
         }
 
         /// <summary>
