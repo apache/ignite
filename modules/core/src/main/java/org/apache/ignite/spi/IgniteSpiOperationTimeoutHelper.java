@@ -39,6 +39,9 @@ public class IgniteSpiOperationTimeoutHelper {
     /** Time in nanos which cannot be reached for current operation. */
     private final long timeoutThreshold;
 
+    /** Keeps {@code true} if last call to {@link #nextTimeoutChunk(long)} has timeouted. {@code False} otherwise. */
+    private boolean lastOperationTimeouted;
+
     /**
      * Constructor.
      *
@@ -101,19 +104,26 @@ public class IgniteSpiOperationTimeoutHelper {
                 left = timeoutThreshold - now;
         }
 
-        if (left <= 0)
+        if (left <= 0) {
+            lastOperationTimeouted = true;
+
             throw new IgniteSpiOperationTimeoutException("Network operation timed out.");
+        }
 
         return U.nanosToMillis(left);
     }
 
     /**
-     * Checks whether the given {@link Exception} is a timeout-exception.
+     * Checks whether the given {@link Exception} is a timeout-exception or the has been reached in last call to
+     * {@code nextTimeoutChunk(long)}.
      *
      * @param e Exception to check if is a timeout.
-     * @return {@code True} if the excaption is a timeout. {@code False} otherwise.
+     * @return {@code True} if the excaption is a timeout or failure timeout was reached. {@code False} otherwise.
      */
     public boolean checkFailureTimeoutReached(Exception e) {
-        return X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class);
+        if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
+            return true;
+
+        return lastOperationTimeouted;
     }
 }
