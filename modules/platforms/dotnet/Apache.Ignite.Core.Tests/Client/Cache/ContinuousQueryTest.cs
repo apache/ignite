@@ -545,23 +545,26 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestCustomBufferSizeResultsInBatchedUpdates()
         {
-            var batches = new ConcurrentBag<List<int>>();
+            var res = new ConcurrentBag<int>();
 
             var qry = new ContinuousQueryClient<int, int>
             {
-                Listener = new DelegateBatchListener<int, int>(evts =>
-                    batches.Add(evts.Select(e => e.Key).ToList())),
+                Listener = new DelegateListener<int, int>(e => res.Add(e.Key)),
                 BufferSize = 3
             };
 
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            var server = Ignition.GetIgnite("1");
+            var serverCache = server.GetCache<int, int>(cache.Name);
+            var keys = TestUtils.GetPrimaryKeys(server, cache.Name).Take(8).ToList();
 
             using (cache.QueryContinuous(qry))
             {
-                cache.PutAll(Enumerable.Range(1, 8).ToDictionary(x => x, x => x));
+                serverCache.PutAll(keys.ToDictionary(x => x, x => x));
             }
 
-            TestUtils.WaitForTrueCondition(() => batches.Count == 2, () => batches.Count.ToString());
+            TestUtils.WaitForTrueCondition(() => res.Count == 6, () => res.Count.ToString());
+            CollectionAssert.AreEquivalent(keys.Take(6), res);
         }
 
         /// <summary>
@@ -609,25 +612,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     _action(evt);
                 }
-            }
-        }
-
-        /** */
-        private class DelegateBatchListener<TK, TV> : ICacheEntryEventListener<TK, TV>
-        {
-            /** */
-            private readonly Action<IEnumerable<ICacheEntryEvent<TK, TV>>> _action;
-
-            /** */
-            public DelegateBatchListener(Action<IEnumerable<ICacheEntryEvent<TK, TV>>> action = null)
-            {
-                _action = action ?? (_ => {});
-            }
-
-            /** */
-            public void OnEvent(IEnumerable<ICacheEntryEvent<TK, TV>> evts)
-            {
-                _action(evts);
             }
         }
 
