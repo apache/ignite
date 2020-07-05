@@ -28,11 +28,7 @@
             <version>${jackson.version}</version>
         </dependency>
 
-        <!-- Presto SPI -->    
-        
-      
-      
-        
+        <!-- Presto SPI -->  
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -80,11 +76,7 @@
             <version>${project.version}</version>
         </dependency>
     
-
-
-       
- 		<!-- for testing -->
- 
+		
 
 
         <dependency>

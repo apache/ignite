@@ -1,8 +1,11 @@
-package com.facebook.presto.plugin.ignite;
+package com.shard.jdbc.plugin;
 
 import com.facebook.presto.plugin.jdbc.*;
+import com.facebook.presto.plugin.jdbc.optimization.JdbcExpression;
 import com.facebook.presto.spi.ConnectorSession;
+import com.facebook.presto.spi.ConnectorSplitSource;
 import com.facebook.presto.spi.ConnectorTableMetadata;
+import com.facebook.presto.spi.FixedSplitSource;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.TableNotFoundException;
@@ -13,8 +16,12 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import org.apache.ignite.IgniteJdbcThinDriver;
-import org.apache.ignite.IgniteJdbcDriver;
+import com.shard.jdbc.database.DbInfo;
+import com.shard.jdbc.exception.DbException;
+import com.shard.jdbc.exception.NoMatchDataSourceException;
+import com.shard.jdbc.shard.Shard;
+import com.shard.jdbc.util.DbUtil;
+
 
 import javax.annotation.Nullable;
 import java.sql.Connection;
@@ -43,17 +50,13 @@ import static com.facebook.presto.spi.type.Varchars.isVarcharType;
 import static com.google.common.collect.Iterables.getOnlyElement;
 
 
-public class IgniteClient extends BaseJdbcClient {
+public class ShardingJdbcClient extends BaseJdbcClient {
 
-	IgniteConfig igniteConfig;
+	ShardingJdbcConfig igniteConfig;
 
     @Inject
-    public IgniteClient(JdbcConnectorId connectorId, BaseJdbcConfig config, IgniteConfig igniteConfig) {
-    	 super(connectorId, config, "",        		
-         		igniteConfig.isThinConnection() ? 
-         				 new DriverConnectionFactory(new IgniteJdbcThinDriver(), config)
-         				:new DriverConnectionFactory(new IgniteJdbcDriver(), config));
-
+    public ShardingJdbcClient(JdbcConnectorId connectorId, BaseJdbcConfig config, ShardingJdbcConfig shardingConfig) {
+    	 super(connectorId, config, "",new ShardingDriverConnectionFactory(shardingConfig, config));
     }
 
     @Override
@@ -148,9 +151,7 @@ public class IgniteClient extends BaseJdbcClient {
     @Override
     protected String toSqlType(Type type)
     {
-        if (DoubleType.DOUBLE.equals(type)) {
-            return "double";
-        }
+        
         if (TIME_WITH_TIME_ZONE.equals(type)) {
             return "time";
         }
@@ -232,5 +233,65 @@ public class IgniteClient extends BaseJdbcClient {
     public void finishInsertTable(JdbcIdentity identity, JdbcOutputTableHandle handle)
     {
     	log.info("finishInsertTable "+identity+" for "+handle.getTableName());
+    }
+    
+    @Override
+    public ConnectorSplitSource getSplits(JdbcIdentity identity, JdbcTableLayoutHandle layoutHandle)
+    {
+        JdbcTableHandle tableHandle = layoutHandle.getTable();
+        List<JdbcSplit> list = new ArrayList<>();
+        
+        	Optional<JdbcExpression> predicate = layoutHandle.getAdditionalPredicate();
+        	
+			Collection<DbInfo> dblist = DbUtil.getDataNodeListForType(tableHandle.getTableName());
+			
+			for(DbInfo dbInfo: dblist) {
+				JdbcSplit jdbcSplit = new JdbcSplit(
+						dbInfo.getId(),//connectorId,
+	                tableHandle.getCatalogName(),
+	                tableHandle.getSchemaName(),
+	                tableHandle.getTableName(),
+	                layoutHandle.getTupleDomain(),
+	                predicate);
+				
+				list.add(jdbcSplit);
+			}
+        
+        return new FixedSplitSource(list);
+    }
+    
+    @Override
+    public Connection getConnection(JdbcIdentity identity, JdbcSplit split)
+            throws SQLException
+    {
+        Connection connection = null;//connectionFactory.openConnection(identity);
+        try {
+        	connection = DbUtil.getConnection(split.getConnectorId());
+            connection.setReadOnly(true);
+        }
+        catch (SQLException e) {
+            if(connection!=null) connection.close();
+            throw e;
+        } catch (DbException e) {
+			// TODO Auto-generated catch block
+        	throw new PrestoException(JDBC_ERROR, e);
+		}
+        return connection;
+    }
+    
+
+    @Override
+    public Connection getConnection(JdbcIdentity identity, JdbcOutputTableHandle handle)
+            throws SQLException
+    {
+    	Shard shard = new Shard(handle.getTableName(),"user",identity.getUser().hashCode());
+    	Connection connection;
+		try {
+			//connection = DbUtil.getConnection(handle.getTableName(),shard);
+			connection = connectionFactory.openConnection(identity);
+			return connection;
+		} catch (Exception e) {			
+			throw new PrestoException(JDBC_ERROR, e);
+		}    	
     }
 }

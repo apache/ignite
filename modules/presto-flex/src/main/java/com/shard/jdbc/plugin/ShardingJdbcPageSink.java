@@ -1,9 +1,9 @@
-package com.facebook.presto.plugin.ignite;
+package com.shard.jdbc.plugin;
 
 import static com.facebook.presto.plugin.jdbc.JdbcErrorCode.JDBC_ERROR;
+import static com.facebook.presto.plugin.jdbc.JdbcErrorCode.JDBC_NON_TRANSIENT_ERROR;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
-import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.Chars.isCharType;
 import static com.facebook.presto.spi.type.DateTimeEncoding.unpackMillisUtc;
 import static com.facebook.presto.spi.type.DateType.DATE;
@@ -14,29 +14,39 @@ import static com.facebook.presto.spi.type.SmallintType.SMALLINT;
 import static com.facebook.presto.spi.type.TinyintType.TINYINT;
 import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
 import static com.facebook.presto.spi.type.Varchars.isVarcharType;
-import static com.facebook.presto.plugin.ignite.TypeUtils.isArrayType;
-import static com.facebook.presto.plugin.ignite.TypeUtils.isMapType;
-import static com.facebook.presto.plugin.ignite.TypeUtils.isRowType;
-
+import static com.shard.jdbc.util.TypeUtils.isArrayType;
+import static com.shard.jdbc.util.TypeUtils.isMapType;
+import static com.shard.jdbc.util.TypeUtils.isRowType;
+import static java.lang.Float.intBitsToFloat;
+import static java.lang.Math.toIntExact;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static org.joda.time.chrono.ISOChronology.getInstanceUTC;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
+import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.joda.time.DateTimeZone;
 
 import com.facebook.presto.plugin.jdbc.JdbcClient;
 import com.facebook.presto.plugin.jdbc.JdbcOutputTableHandle;
@@ -64,16 +74,151 @@ import com.facebook.presto.spi.type.TinyintType;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeSignatureParameter;
 import com.facebook.presto.spi.type.VarbinaryType;
+import com.google.common.collect.ImmutableList;
+import com.shard.jdbc.database.DbInfo;
+import com.shard.jdbc.exception.DbException;
+import com.shard.jdbc.exception.NoMatchDataSourceException;
+import com.shard.jdbc.shard.Shard;
+import com.shard.jdbc.shard.ShardProperty;
+import com.shard.jdbc.util.DbUtil;
+
+import io.airlift.slice.Slice;
 
 
-public class IgnitePageSink extends JdbcPageSink {
+public class ShardingJdbcPageSink extends JdbcPageSink {
 
 	private final String implicitPrefix = "_pos";
+	protected final PreparedStatement[] statements;
+	protected final Connection[] connections;
+	
+	protected final JdbcOutputTableHandle handle;
 
-	public IgnitePageSink(ConnectorSession session, JdbcOutputTableHandle handle, JdbcClient jdbcClient) {
-		super(session, handle, jdbcClient);
+	public ShardingJdbcPageSink(ConnectorSession session, JdbcOutputTableHandle handle, JdbcClient jdbcClient) {
+		super(session, handle, jdbcClient);		
+		this.handle = handle;
+		
+		Collection<DbInfo> list = DbUtil.getDataNodeListForType(handle.getTableName());
+		this.statements = new PreparedStatement[list.size()];
+		this.connections = new Connection[list.size()];
+		String insertSql = jdbcClient.buildInsertSql(handle);
+		Iterator<DbInfo> it = list.iterator();
+		for(int i=0;i<list.size();i++) {
+			try {
+				connections[i] = DbUtil.getConnection(it.next().getId());
+	            connections[i].setAutoCommit(false);	            
+	            statements[i] = connections[i].prepareStatement(insertSql);
+	        }
+	        catch (SQLException | NoMatchDataSourceException e) {		          
+	            throw new PrestoException(JDBC_ERROR, e);
+	        }
+		}
 	}
+	
+	@Override
+    public CompletableFuture<?> appendPage(Page page)
+    {
+		
+        try {
+        	
+        	ShardProperty shardP = DbUtil.getShardPropertyForType(handle.getTableName());
+        	
+            for (int position = 0; position < page.getPositionCount(); position++) {
+            	Object[] row = new Object[page.getChannelCount()];
+            	PreparedStatement statement = this.statement;// primary meta statement
+            	Connection connection = this.connection; //primary meta connect
+            	
+                for (int channel = 0; channel < page.getChannelCount(); channel++) {
+                	
+                	String column = handle.getColumnNames().get(channel);
+                	
+                	 Block block = page.getBlock(channel);
+                     int parameter = channel + 1;
 
+                     Type type = this.columnTypes.get(channel);                   
+                     row[channel] = getObjectValue(type, block, position);
+                     
+                     
+                     if(column.equalsIgnoreCase(shardP.getColumn())) {
+                    	 Shard shard = new Shard(handle.getTableName(),shardP.getColumn(),row[channel].hashCode());
+                    	 
+                    	 connection = DbUtil.getConnection(handle.getTableName(),shard);
+                    	 int find = -1;
+                    	 for(int index=0;index<connections.length;index++) {
+                    		 if(connection==connections[index]) {
+                    			 find = index;
+                    			 statement = statements[index];
+                    			 
+                    			 break;
+                    		 }
+                    	 }
+                    	 
+                     }
+                     
+                     for(int i=0;i<row.length;i++) {
+                    	 statement.setObject(i+1, row[i]);
+                     }
+                }
+                
+              
+                statement.addBatch();
+                batchSize++;
+
+                if (batchSize >= 1000) {
+                    statement.executeBatch();
+                    connection.commit();
+                    connection.setAutoCommit(false);
+                    batchSize = 0;
+                }
+            }
+        }
+        catch (SQLException | DbException e) {
+            throw new PrestoException(JDBC_ERROR, e);
+        }
+        return NOT_BLOCKED;
+    }
+
+
+    @Override
+    public CompletableFuture<Collection<Slice>> finish()
+    {
+    	for(int i=0;i<this.connections.length;i++) {
+	        // commit and close
+	        try (Connection connection = this.connections[i];
+	                PreparedStatement statement = this.statements[i]) {
+	            if (batchSize > 0) {
+	                statement.executeBatch();
+	                connection.commit();
+	            }
+	        }
+	        catch (SQLNonTransientException e) {
+	            throw new PrestoException(JDBC_NON_TRANSIENT_ERROR, e);
+	        }
+	        catch (SQLException e) {
+	            throw new PrestoException(JDBC_ERROR, e);
+	        }
+    	}
+        // the committer does not need any additional info
+        return super.finish();
+    }
+
+    @SuppressWarnings("unused")
+    @Override
+    public void abort()
+    {
+    	for(int i=0;i<this.connections.length;i++) {
+	        // rollback and close
+	        try (Connection connection = this.connections[i];
+	                PreparedStatement statement = this.statements[i]) {
+	            connection.rollback();
+	        }
+	        catch (SQLException e) {
+	            // Exceptions happened during abort do not cause any real damage so ignore them
+	            log.debug(e, "SQLException when abort");
+	        }
+    	}
+    	super.abort();
+    }
+    
 	@Override
 	protected Object getObjectValue(Type type, Block block, int position) {
 		if (block.isNull(position)) {

@@ -1,1 +1,2 @@
 org.ebyhr.presto.flex.FlexPlugin
+com.shard.jdbc.plugin.ShardingJdbcPlugin
