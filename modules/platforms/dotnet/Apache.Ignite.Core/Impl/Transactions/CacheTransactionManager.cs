@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <summary>
         /// Converts the isolation level from .NET-specific to Ignite-specific.
         /// </summary>
-        private static TransactionIsolation ConvertTransactionIsolation(IsolationLevel isolation)
+        internal static TransactionIsolation ConvertTransactionIsolation(IsolationLevel isolation)
         {
             switch (isolation)
             {

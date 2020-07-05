@@ -17,11 +17,10 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
-    using System;
     using System.Diagnostics;
     using System.Threading;
     using System.Transactions;
-    using Apache.Ignite.Core.Transactions;
+    using Apache.Ignite.Core.Impl.Transactions;
 
     /// <summary>
     /// Cache transaction enlistment manager, 
@@ -68,12 +67,12 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                 return;
             }
 
-            var ambientTx = Transaction.Current;
+            var ambientTx = System.Transactions.Transaction.Current;
 
             if (ambientTx != null && ambientTx.TransactionInformation.Status == TransactionStatus.Active)
             {
                 _transactions.TxStart(_transactions.DefaultTxConcurrency,
-                    ConvertTransactionIsolation(ambientTx.IsolationLevel),
+                    CacheTransactionManager.ConvertTransactionIsolation(ambientTx.IsolationLevel),
                     _transactions.DefaultTimeout);
 
                 _enlistment.Value = ambientTx.EnlistVolatile(this, EnlistmentOptions.None);
@@ -124,29 +123,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             Debug.Assert(enlistment != null);
 
             enlistment.Done();
-        }
-
-        // TODO
-        /// <summary>
-        /// Converts the isolation level from .NET-specific to Ignite-specific.
-        /// </summary>
-        private static TransactionIsolation ConvertTransactionIsolation(IsolationLevel isolation)
-        {
-            switch (isolation)
-            {
-                case IsolationLevel.Serializable:
-                    return TransactionIsolation.Serializable;
-                case IsolationLevel.RepeatableRead:
-                    return TransactionIsolation.RepeatableRead;
-                case IsolationLevel.ReadCommitted:
-                case IsolationLevel.ReadUncommitted:
-                case IsolationLevel.Snapshot:
-                case IsolationLevel.Chaos:
-                    return TransactionIsolation.ReadCommitted;
-                default:
-                    throw new ArgumentOutOfRangeException("isolation", isolation, 
-                        "Unsupported transaction isolation level: " + isolation);
-            }
         }
     }
 }
