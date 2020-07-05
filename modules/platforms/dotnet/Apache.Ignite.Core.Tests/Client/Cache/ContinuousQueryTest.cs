@@ -545,7 +545,23 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestCustomBufferSizeResultsInBatchedUpdates()
         {
-            // TODO
+            var batches = new ConcurrentBag<List<int>>();
+
+            var qry = new ContinuousQueryClient<int, int>
+            {
+                Listener = new DelegateBatchListener<int, int>(evts =>
+                    batches.Add(evts.Select(e => e.Key).ToList())),
+                BufferSize = 3
+            };
+
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+
+            using (var handle = cache.QueryContinuous(qry))
+            {
+                cache.PutAll(Enumerable.Range(1, 8).ToDictionary(x => x, x => x));
+            }
+
+            TestUtils.WaitForTrueCondition(() => batches.Count == 3);
         }
 
         /// <summary>
@@ -593,6 +609,25 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     _action(evt);
                 }
+            }
+        }
+
+        /** */
+        private class DelegateBatchListener<TK, TV> : ICacheEntryEventListener<TK, TV>
+        {
+            /** */
+            private readonly Action<IEnumerable<ICacheEntryEvent<TK, TV>>> _action;
+
+            /** */
+            public DelegateBatchListener(Action<IEnumerable<ICacheEntryEvent<TK, TV>>> action = null)
+            {
+                _action = action ?? (_ => {});
+            }
+
+            /** */
+            public void OnEvent(IEnumerable<ICacheEntryEvent<TK, TV>> evts)
+            {
+                _action(evts);
             }
         }
 
