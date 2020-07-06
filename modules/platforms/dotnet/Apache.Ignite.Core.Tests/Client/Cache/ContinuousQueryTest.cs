@@ -545,31 +545,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestCustomBufferSizeResultsInBatchedUpdates()
         {
-            var res = new ConcurrentQueue<List<int>>();
-
-            var qry = new ContinuousQueryClient<int, int>
+            TestBatches(keyCount: 8, bufferSize: 3, TimeSpan.Zero, (keys, res) =>
             {
-                Listener = new DelegateBatchListener<int, int>(evts =>
-                    res.Enqueue(evts.Select(e => e.Key).ToList())),
-                BufferSize = 3
-            };
-
-            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            var server = Ignition.GetIgnite("1");
-            var serverCache = server.GetCache<int, int>(cache.Name);
-
-            // Use primary keys for "remote" node to ensure batching.
-            // Client is connected to another server node, so it will receive batches as expected.
-            var keys = TestUtils.GetPrimaryKeys(server, cache.Name).Take(8).ToList();
-
-            using (cache.QueryContinuous(qry))
-            {
-                keys.ForEach(k => serverCache.Put(k, k));
-            }
-
-            TestUtils.WaitForTrueCondition(() => res.Count == 2, () => res.Count.ToString());
-            CollectionAssert.AreEquivalent(keys.Take(3), res.First());
-            CollectionAssert.AreEquivalent(keys.Skip(3), res.Last());
+                TestUtils.WaitForTrueCondition(() => res.Count == 2, () => res.Count.ToString());
+                CollectionAssert.AreEquivalent(keys.Take(3), res.First());
+                CollectionAssert.AreEquivalent(keys.Skip(3), res.Last());
+            });
         }
 
         /// <summary>
@@ -580,7 +561,45 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestCustomTimeIntervalCausesIncompleteBatches()
         {
-            // TODO
+            TestBatches(keyCount: 10, bufferSize: 4, interval: TimeSpan.FromSeconds(0.5), (keys, res) =>
+            {
+                TestUtils.WaitForTrueCondition(() => res.Count == 3, () => res.Count.ToString(), 2000);
+
+                CollectionAssert.AreEquivalent(keys.Take(4), res.First());
+                CollectionAssert.AreEquivalent(keys.Skip(8), res.Last());
+            });
+        }
+
+        /// <summary>
+        /// Tests batching behavior.
+        /// </summary>
+        private void TestBatches(int keyCount, int bufferSize, TimeSpan interval,
+            Action<List<int>, IReadOnlyCollection<List<int>>> assert)
+        {
+            var res = new ConcurrentQueue<List<int>>();
+
+            var qry = new ContinuousQueryClient<int, int>
+            {
+                Listener = new DelegateBatchListener<int, int>(evts =>
+                    res.Enqueue(evts.Select(e => e.Key).ToList())),
+                BufferSize = bufferSize,
+                TimeInterval = interval
+            };
+
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
+            var server = Ignition.GetIgnite("1");
+            var serverCache = server.GetCache<int, int>(cache.Name);
+
+            // Use primary keys for "remote" node to ensure batching.
+            // Client is connected to another server node, so it will receive batches as expected.
+            var keys = TestUtils.GetPrimaryKeys(server, cache.Name).Take(keyCount).ToList();
+
+            using (cache.QueryContinuous(qry))
+            {
+                keys.ForEach(k => serverCache.Put(k, k));
+            }
+
+            assert(keys, res);
         }
 
         /** <inheritdoc /> */
