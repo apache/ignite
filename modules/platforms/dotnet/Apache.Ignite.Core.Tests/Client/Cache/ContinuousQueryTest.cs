@@ -545,26 +545,31 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestCustomBufferSizeResultsInBatchedUpdates()
         {
-            var res = new ConcurrentBag<int>();
+            var res = new ConcurrentQueue<List<int>>();
 
             var qry = new ContinuousQueryClient<int, int>
             {
-                Listener = new DelegateListener<int, int>(e => res.Add(e.Key)),
+                Listener = new DelegateBatchListener<int, int>(evts =>
+                    res.Enqueue(evts.Select(e => e.Key).ToList())),
                 BufferSize = 3
             };
 
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
             var server = Ignition.GetIgnite("1");
             var serverCache = server.GetCache<int, int>(cache.Name);
+
+            // Use primary keys for "remote" node to ensure batching.
+            // Client is connected to another server node, so it will receive batches as expected.
             var keys = TestUtils.GetPrimaryKeys(server, cache.Name).Take(8).ToList();
 
             using (cache.QueryContinuous(qry))
             {
-                serverCache.PutAll(keys.ToDictionary(x => x, x => x));
+                keys.ForEach(k => serverCache.Put(k, k));
             }
 
-            TestUtils.WaitForTrueCondition(() => res.Count == 6, () => res.Count.ToString());
-            CollectionAssert.AreEquivalent(keys.Take(6), res);
+            TestUtils.WaitForTrueCondition(() => res.Count == 2, () => res.Count.ToString());
+            CollectionAssert.AreEquivalent(keys.Take(3), res.First());
+            CollectionAssert.AreEquivalent(keys.Skip(3), res.Last());
         }
 
         /// <summary>
@@ -612,6 +617,25 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     _action(evt);
                 }
+            }
+        }
+
+        /** */
+        private class DelegateBatchListener<TK, TV> : ICacheEntryEventListener<TK, TV>
+        {
+            /** */
+            private readonly Action<IEnumerable<ICacheEntryEvent<TK, TV>>> _action;
+
+            /** */
+            public DelegateBatchListener(Action<IEnumerable<ICacheEntryEvent<TK, TV>>> action = null)
+            {
+                _action = action ?? (_ => {});
+            }
+
+            /** */
+            public void OnEvent(IEnumerable<ICacheEntryEvent<TK, TV>> evts)
+            {
+                _action(evts);
             }
         }
 
