@@ -351,15 +351,25 @@ public class TcpIgniteClient implements IgniteClient {
         @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
             BinaryType meta = cache.metadata(typeId);
 
-            if (meta == null || !((BinaryTypeImpl)meta).metadata().hasSchema(schemaId))
-                meta = requestAndCacheBinaryType(typeId);
+            if (hasSchema(meta, schemaId))
+                return meta;
 
-            return meta != null && ((BinaryTypeImpl)meta).metadata().hasSchema(schemaId) ? meta : null;
+            meta = requestAndCacheBinaryType(typeId);
+
+            return hasSchema(meta, schemaId) ? meta : null;
         }
 
         /** {@inheritDoc} */
         @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
             return cache.metadata();
+        }
+
+        /**
+         * @param type Binary type.
+         * @param schemaId Schema id.
+         */
+        private boolean hasSchema(BinaryType type, int schemaId) {
+            return type != null && ((BinaryTypeImpl)type).metadata().hasSchema(schemaId);
         }
 
         /**

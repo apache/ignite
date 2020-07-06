@@ -149,34 +149,33 @@ public class IgniteBinaryTest {
     }
 
     /**
-     * Check that binary type schema updates are propogated from client to server and from server to client.
+     * Check that binary type schema updates are propagated from client to server and from server to client.
      */
     @Test
     public void testCompactFooterModifiedSchemaRegistration() throws Exception {
         try (Ignite ignite = Ignition.start(Config.getServerConfiguration())) {
             ignite.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
 
-            try (IgniteClient client1 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
-                .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true)));
-                 IgniteClient client2 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
-                     .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true)))
-            ) {
+            ClientConfiguration cfg = new ClientConfiguration().setAddresses(Config.SERVER)
+                .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true));
+
+            try (IgniteClient client1 = Ignition.startClient(cfg); IgniteClient client2 = Ignition.startClient(cfg)) {
                 ClientCache<Integer, Object> cache1 = client1.cache(Config.DEFAULT_CACHE_NAME).withKeepBinary();
                 ClientCache<Integer, Object> cache2 = client2.cache(Config.DEFAULT_CACHE_NAME).withKeepBinary();
 
                 String type = "Person";
 
                 // Register type and schema.
-                BinaryObjectBuilder builder1 = client1.binary().builder(type);
-                BinaryObject val1 = builder1.setField("Name", "Person 1").build();
+                BinaryObjectBuilder builder = client1.binary().builder(type);
+
+                BinaryObject val1 = builder.setField("Name", "Person 1").build();
 
                 cache1.put(1, val1);
 
                 assertEquals("Person 1", ((BinaryObject)cache2.get(1)).field("Name"));
 
                 // Update schema.
-                BinaryObjectBuilder builder2 = client1.binary().builder(type);
-                BinaryObject val2 = builder2.setField("Name", "Person 2").setField("Age", 2).build();
+                BinaryObject val2 = builder.setField("Name", "Person 2").setField("Age", 2).build();
 
                 cache1.put(2, val2);
 

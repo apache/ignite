@@ -249,12 +249,12 @@ public class FunctionalQueryTest {
 
             client.query(
                 new SqlFieldsQuery(String.format(
-                    "CREATE TABLE IF NOT EXISTS Person (id INT PRIMARY KEY, name VARCHAR) WITH \"VALUE_TYPE=%s,CACHE_NAME=%s\"",
+                    "CREATE TABLE IF NOT EXISTS Person (key INT PRIMARY KEY, name VARCHAR) WITH \"VALUE_TYPE=%s,CACHE_NAME=%s\"",
                     Person.class.getName(), cacheName
                 )).setSchema("PUBLIC")
             ).getAll();
 
-            client.query(new SqlFieldsQuery("INSERT INTO Person(id, name) VALUES(?, ?)")
+            client.query(new SqlFieldsQuery("INSERT INTO Person(key, name) VALUES(?, ?)")
                 .setArgs(1, "Person 1")
                 .setSchema("PUBLIC")
             ).getAll();
@@ -266,7 +266,7 @@ public class FunctionalQueryTest {
             assertEquals("Person 1", cache.get(1).getName());
 
             assertEquals("Person 2", client.query(
-                new SqlFieldsQuery("SELECT name FROM PUBLIC.Person WHERE id = 2")).getAll().get(0).get(0));
+                new SqlFieldsQuery("SELECT name FROM PUBLIC.Person WHERE key = 2")).getAll().get(0).get(0));
         }
     }
 
