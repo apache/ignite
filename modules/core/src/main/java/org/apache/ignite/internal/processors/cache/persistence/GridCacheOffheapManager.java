@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIteratorException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -105,6 +106,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1002,7 +1004,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override @Nullable protected IgniteHistoricalIterator historicalIterator(
-        CachePartitionPartialCountersMap partCntrs, Set<Integer> missing) throws IgniteCheckedException {
+        CachePartitionPartialCountersMap partCntrs,
+        Set<Integer> missing
+    ) throws IgniteCheckedException {
         if (partCntrs == null || partCntrs.isEmpty())
             return null;
 
@@ -1022,14 +1026,22 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         FileWALPointer minPtr = (FileWALPointer)database.checkpointHistory().searchEarliestWalPointer(grp.groupId(), partsCounters);
 
-        WALIterator it = grp.shared().wal().replay(minPtr);
+        try {
+            WALIterator it = grp.shared().wal().replay(minPtr);
 
-        WALHistoricalIterator iterator = new WALHistoricalIterator(log, grp, partCntrs, it);
+            WALHistoricalIterator histIt = new WALHistoricalIterator(log, grp, partCntrs, it);
 
-        // Add historical partitions which are unabled to reserve to missing set.
-        missing.addAll(iterator.missingParts);
+            // Add historical partitions which are unabled to reserve to missing set.
+            missing.addAll(histIt.missingParts);
 
-        return iterator;
+            return histIt;
+        }
+        catch (Exception ex) {
+            if (!X.hasCause(ex, IgniteHistoricalIteratorException.class))
+                throw new IgniteHistoricalIteratorException(ex);
+
+            throw ex;
+        }
     }
 
     /** {@inheritDoc} */
@@ -1349,91 +1361,97 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          *
          */
         private void advance() {
-            next = null;
+            try {
+                next = null;
 
-            outer: while (doneParts.size() != partMap.size()) {
-                if (entryIt != null) {
-                    while (entryIt.hasNext()) {
-                        DataEntry entry = entryIt.next();
+                outer:
+                while (doneParts.size() != partMap.size()) {
+                    if (entryIt != null) {
+                        while (entryIt.hasNext()) {
+                            DataEntry entry = entryIt.next();
 
-                        if (cacheIds.contains(entry.cacheId())) {
-                            int idx = partMap.partitionIndex(entry.partitionId());
+                            if (cacheIds.contains(entry.cacheId())) {
+                                int idx = partMap.partitionIndex(entry.partitionId());
 
-                            if (idx < 0 || missingParts.contains(idx))
-                                continue;
+                                if (idx < 0 || missingParts.contains(idx))
+                                    continue;
 
-                            long from = partMap.initialUpdateCounterAt(idx);
-                            long to = partMap.updateCounterAt(idx);
+                                long from = partMap.initialUpdateCounterAt(idx);
+                                long to = partMap.updateCounterAt(idx);
 
-                            if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
-                                // Partition will be marked as done for current entry on next iteration.
-                                if (++rebalancedCntrs[idx] == to)
-                                    donePart = entry.partitionId();
+                                if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
+                                    // Partition will be marked as done for current entry on next iteration.
+                                    if (++rebalancedCntrs[idx] == to)
+                                        donePart = entry.partitionId();
 
-                                next = entry;
+                                    next = entry;
 
-                                return;
-                            }
-                        }
-                    }
-                }
-
-                entryIt = null;
-
-                // Search for next DataEntry while applying rollback counters.
-                while (walIt.hasNext()) {
-                    IgniteBiTuple<WALPointer, WALRecord> rec = walIt.next();
-
-                    if (rec.get2() instanceof DataRecord) {
-                        DataRecord data = (DataRecord)rec.get2();
-
-                        entryIt = data.writeEntries().iterator();
-
-                        // Move on to the next valid data entry.
-                        continue outer;
-                    }
-                    else if (rec.get2() instanceof RollbackRecord) {
-                        RollbackRecord rbRec = (RollbackRecord)rec.get2();
-
-                        if (grp.groupId() == rbRec.groupId()) {
-                            int idx = partMap.partitionIndex(rbRec.partitionId());
-
-                            if (idx < 0 || missingParts.contains(idx))
-                                continue;
-
-                            long from = partMap.initialUpdateCounterAt(idx);
-                            long to = partMap.updateCounterAt(idx);
-
-                            rebalancedCntrs[idx] += rbRec.overlap(from, to);
-
-                            if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx)) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Partition done [grpId=" + grp.groupId() +
-                                        ", partId=" + donePart +
-                                        ", from=" + from +
-                                        ", to=" + to + ']');
+                                    return;
                                 }
-
-                                doneParts.add(rbRec.partitionId()); // Add to done set immediately.
                             }
                         }
                     }
-                }
 
-                if (entryIt == null && doneParts.size() != partMap.size()) {
-                    for (int i = 0; i < partMap.size(); i++) {
-                        int p = partMap.partitionAt(i);
+                    entryIt = null;
 
-                        if (!doneParts.contains(p)) {
-                            log.warning("Some partition entries were missed during historical rebalance [grp=" + grp + ", part=" + p + ", missed=" +
-                                    (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
+                    // Search for next DataEntry while applying rollback counters.
+                    while (walIt.hasNext()) {
+                        IgniteBiTuple<WALPointer, WALRecord> rec = walIt.next();
 
-                            doneParts.add(p);
+                        if (rec.get2() instanceof DataRecord) {
+                            DataRecord data = (DataRecord)rec.get2();
+
+                            entryIt = data.writeEntries().iterator();
+
+                            // Move on to the next valid data entry.
+                            continue outer;
+                        }
+                        else if (rec.get2() instanceof RollbackRecord) {
+                            RollbackRecord rbRec = (RollbackRecord)rec.get2();
+
+                            if (grp.groupId() == rbRec.groupId()) {
+                                int idx = partMap.partitionIndex(rbRec.partitionId());
+
+                                if (idx < 0 || missingParts.contains(idx))
+                                    continue;
+
+                                long from = partMap.initialUpdateCounterAt(idx);
+                                long to = partMap.updateCounterAt(idx);
+
+                                rebalancedCntrs[idx] += rbRec.overlap(from, to);
+
+                                if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx)) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Partition done [grpId=" + grp.groupId() +
+                                            ", partId=" + donePart +
+                                            ", from=" + from +
+                                            ", to=" + to + ']');
+                                    }
+
+                                    doneParts.add(rbRec.partitionId()); // Add to done set immediately.
+                                }
+                            }
                         }
                     }
 
-                    return;
+                    if (entryIt == null && doneParts.size() != partMap.size()) {
+                        for (int i = 0; i < partMap.size(); i++) {
+                            int p = partMap.partitionAt(i);
+
+                            if (!doneParts.contains(p)) {
+                                log.warning("Some partition entries were missed during historical rebalance [grp=" + grp + ", part=" + p + ", missed=" +
+                                        (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
+
+                                    doneParts.add(p);
+                                }
+                            }
+
+                        return;
+                    }
                 }
+            }
+            catch (Exception ex) {
+                throw new IgniteHistoricalIteratorException(ex);
             }
         }
     }
