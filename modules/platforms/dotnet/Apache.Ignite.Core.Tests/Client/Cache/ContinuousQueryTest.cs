@@ -563,9 +563,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestCustomTimeIntervalCausesIncompleteBatches()
         {
-            TestBatches(keyCount: 2, bufferSize: 4, interval: TimeSpan.FromSeconds(2), (keys, res) =>
+            TestBatches(keyCount: 2, bufferSize: 4, interval: TimeSpan.FromSeconds(1), (keys, res) =>
             {
-                TestUtils.WaitForTrueCondition(() => res.Count == 1, () => res.Count.ToString(), 50000);
+                TestUtils.WaitForTrueCondition(() => res.Count == 1, () => res.Count.ToString(), 2000);
 
                 CollectionAssert.AreEquivalent(keys.Take(2), res.Single());
             });
@@ -598,9 +598,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             using (cache.QueryContinuous(qry))
             {
                 keys.ForEach(k => serverCache.Put(k, k));
-            }
 
-            assert(keys, res);
+                assert(keys, res);
+            }
         }
 
         /** <inheritdoc /> */
