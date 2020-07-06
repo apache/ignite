@@ -26,6 +26,8 @@ import javax.cache.event.CacheEntryUpdatedListener;
 
 /**
  * Continuous query handle.
+ * NOTE: Do not mark with {@link org.apache.ignite.lang.IgniteAsyncCallback} - it disables batching and sends
+ * events one by one.
  */
 public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListener<Object, Object> {
     /** */
