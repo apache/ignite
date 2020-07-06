@@ -1535,7 +1535,12 @@ public class CacheMetricsImpl implements CacheMetrics {
         private int keySize;
 
         /** Is empty. */
-        private boolean isEmpty = true;
+        private boolean isEmpty;
+
+        /** Default constructor. */
+        public EntriesStatMetrics() {
+            isEmpty = true;
+        }
 
         /**
          * @return Total partitions count.
