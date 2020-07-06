@@ -539,6 +539,21 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests that client does not receive updates for a stopped continuous query.
+        /// </summary>
+        [Test]
+        public void TestDisposedQueryHandleDoesNotReceiveUpdates()
+        {
+            // Stop the query before the batch is sent out by time interval.
+            var interval = TimeSpan.FromSeconds(1);
+            TestBatches(keyCount: 1, bufferSize: 10, interval, (keys, res) => { });
+            Thread.Sleep(interval);
+
+            // Check that socket has no dangling notifications.
+            Assert.Fail("TODO");
+        }
+
+        /// <summary>
         /// Tests that when custom <see cref="ContinuousQueryClient{TK,TV}.BufferSize"/> is set,
         /// events are sent in batches, not 1 by 1.
         /// </summary>
