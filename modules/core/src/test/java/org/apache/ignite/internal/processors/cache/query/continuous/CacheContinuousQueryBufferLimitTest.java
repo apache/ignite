@@ -23,7 +23,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -42,6 +41,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -81,7 +81,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     private static final int PENDING_LIMIT = 1100;
 
     /** Timeout to wait for pending buffer overflow. */
-    private static final long OVERFLOW_TIMEOUT_MS = 15_000L;
+    private static final long OVERFLOW_TIMEOUT_MS = 5_000L;
 
     /** Default remote no-op filter. */
     private static final CacheEntryEventSerializableFilter<Integer, Integer> RMT_FILTER = e -> true;
@@ -168,14 +168,13 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
         assertEquals(PARTS, ccfg.getAffinity().partitions());
 
-        AtomicLong lastAcked = new AtomicLong();
+        GridAtomicLong lastAcked = new GridAtomicLong();
 
         ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
         cq.setRemoteFilterFactory(FactoryBuilder.factoryOf(RMT_FILTER));
         cq.setLocalListener((events) ->
             events.forEach(e ->
-                lastAcked.getAndUpdate(c ->
-                    Math.max(c, ((CacheQueryEntryEvent<?, ?>)e).getPartitionUpdateCounter()))));
+                lastAcked.setIfGreater(((CacheQueryEntryEvent<?, ?>)e).getPartitionUpdateCounter())));
         cq.setLocal(false);
 
         IgniteInternalFuture<?> updFut = null;
@@ -184,7 +183,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             awaitPartitionMapExchange();
 
             for (int j = 0; j < TOTAL_KEYS; j++)
-                putX2Value(cache, rnd.nextInt(TOTAL_KEYS));
+                cache.put(rnd.nextInt(TOTAL_KEYS), rnd.nextInt());
 
             SystemView<ContinuousQueryView> rmtQryView = rmtIgnite.context().systemView().view(CQ_SYS_VIEW);
             assertEquals(1, rmtQryView.size());
@@ -198,9 +197,8 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             spi(locIgnite).blockMessages(locBlockPred);
 
             updFut = GridTestUtils.runMultiThreadedAsync(() -> {
-                while (!Thread.currentThread().isInterrupted()) {
-                    putX2Value(cache, rnd.nextInt(TOTAL_KEYS));
-                }
+                while (!Thread.currentThread().isInterrupted())
+                    cache.put(rnd.nextInt(TOTAL_KEYS), rnd.nextInt());
             }, 3, "cq-put-");
 
             assertNotNull("Partition remote buffers must be inited", pending);
@@ -219,14 +217,6 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             if (updFut != null)
                 updFut.cancel();
         }
-    }
-
-    /**
-     * @param cache Ignite cache.
-     * @param key Key to change.
-     */
-    private static void putX2Value(IgniteCache<Integer, Integer> cache, int key) {
-        cache.put(key, key * 2);
     }
 
     /**
