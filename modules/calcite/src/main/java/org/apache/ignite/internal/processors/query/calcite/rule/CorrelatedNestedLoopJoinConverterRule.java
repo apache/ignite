@@ -57,6 +57,8 @@ public class CorrelatedNestedLoopJoinConverterRule extends AbstractIgniteConvert
     public CorrelatedNestedLoopJoinConverterRule(int batchSize) {
         super(LogicalJoin.class, "CorrelatedNestedLoopConverter");
 
+        assert batchSize >= 0;
+
         this.batchSize = batchSize;
     }
 

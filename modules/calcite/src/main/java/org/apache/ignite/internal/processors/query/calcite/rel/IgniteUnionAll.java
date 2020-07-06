@@ -66,6 +66,8 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Union node requires the same traits from all its inputs.
+
         RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
 
         return ImmutableList.of(Pair.of(nodeTraits,
@@ -74,6 +76,8 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Union node requires the same traits from all its inputs.
+
         IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
 
         return ImmutableList.of(Pair.of(nodeTraits,
@@ -82,12 +86,16 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Union node erases collation. TODO union all using merge sort algorythm
+
         return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
             Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
     }
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Union node requires the same traits from all its inputs.
+
         boolean rewindable = inputTraits.stream()
             .map(TraitUtils::rewindability)
             .allMatch(RewindabilityTrait::rewindable);
@@ -101,6 +109,8 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Union node requires the same traits from all its inputs.
+
         Set<IgniteDistribution> distributions = inputTraits.stream()
             .map(TraitUtils::distribution)
             .collect(Collectors.toSet());
@@ -116,6 +126,8 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Union node erases collation. TODO union all using merge sort algorythm
+
         return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
             Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
     }

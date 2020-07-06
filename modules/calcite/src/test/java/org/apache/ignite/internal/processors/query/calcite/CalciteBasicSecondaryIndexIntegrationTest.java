@@ -117,15 +117,11 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testIndexLoopJoin() {
         assertQuery("" +
-            "SELECT d1.name, d2.name FROM Developer d1, Developer d2 WHERE d1.depId = d2.depId")
-            .matches(containsScan("PUBLIC", "DEVELOPER", PK))
-            .matches(containsScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            "SELECT d1.name, d2.name FROM Developer d1, Developer d2 WHERE d1.id = d2.id")
             .matches(containsSubPlan("IgniteCorrelatedNestedLoopJoin"))
             .returns("Bach", "Bach")
             .returns("Beethoven", "Beethoven")
-            .returns("Beethoven", "Strauss")
             .returns("Mozart", "Mozart")
-            .returns("Strauss", "Beethoven")
             .returns("Strauss", "Strauss")
             .check();
     }

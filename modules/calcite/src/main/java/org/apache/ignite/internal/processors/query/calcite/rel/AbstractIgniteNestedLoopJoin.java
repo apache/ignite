@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -59,7 +60,6 @@ import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdRowCount.joinRowCount;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.random;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
 /** */
@@ -85,12 +85,17 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // We preserve left collation since it's translated into a nested loop join with an outer loop
+        // over a left edge. The code below checks and projects left collation on an output row type.
+
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
         RelTraitSet outTraits, leftTraits, rightTraits;
 
         RelCollation collation = TraitUtils.collation(left);
 
+        // If nulls are possible at left we has to check whether NullDirection.LAST flag is set on sorted fields.
+        // TODO set NullDirection.LAST for insufficient fields instead of erasing collation.
         if (joinType == RIGHT || joinType == JoinRelType.FULL) {
             for (RelFieldCollation field : collation.getFieldCollations()) {
                 if (RelFieldCollation.NullDirection.LAST != field.nullDirection) {
@@ -109,6 +114,8 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // The node is rewindable only if both sources are rewindable.
+
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
         ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
@@ -137,6 +144,15 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Tere are several rules:
+        // 1) any join is possible on broadcast or single distribution
+        // 2) hash distributed join is possible when join keys equal to source distribution keys
+        // 3) hash and broadcast distributed tables can be joined when join keys equal to hash
+        //    distributed table distribution keys and:
+        //      3.1) it's a left join and a hash distributed table is at left
+        //      3.2) it's a right join and a hash distributed table is at right
+        //      3.3) it's an inner join, this case a hash distributed table may be at any side
+
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
         ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
@@ -158,7 +174,7 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
         b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
 
-        if (joinType == LEFT || joinType == RIGHT || (joinType == INNER && !F.isEmpty(joinInfo.pairs()))) {
+        if (!F.isEmpty(joinInfo.pairs())) {
             Set<DistributionFunction> functions = new HashSet<>();
 
             if (leftDistr.getType() == HASH_DISTRIBUTED
@@ -171,37 +187,29 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
             functions.add(DistributionFunction.HashDistribution.INSTANCE);
 
-            for (DistributionFunction factory : functions) {
-                outTraits = nodeTraits.replace(hash(joinInfo.leftKeys, factory));
-                leftTraits = left.replace(hash(joinInfo.leftKeys, factory));
-                rightTraits = right.replace(hash(joinInfo.rightKeys, factory));
+            for (DistributionFunction function : functions) {
+                leftTraits = left.replace(hash(joinInfo.leftKeys, function));
+                rightTraits = right.replace(hash(joinInfo.rightKeys, function));
 
+                // TODO distribution multitrait support
+                outTraits = nodeTraits.replace(hash(joinInfo.leftKeys, function));
+                b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+                outTraits = nodeTraits.replace(hash(joinInfo.rightKeys, function));
                 b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
 
                 if (joinType == INNER || joinType == LEFT) {
-                    outTraits = nodeTraits.replace(hash(joinInfo.leftKeys, factory));
-                    leftTraits = left.replace(hash(joinInfo.leftKeys, factory));
-                    rightTraits = right.replace(broadcast());
-
-                    b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                    outTraits = nodeTraits.replace(random());
-                    leftTraits = left.replace(random());
+                    outTraits = nodeTraits.replace(hash(joinInfo.leftKeys, function));
+                    leftTraits = left.replace(hash(joinInfo.leftKeys, function));
                     rightTraits = right.replace(broadcast());
 
                     b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
                 }
 
                 if (joinType == INNER || joinType == RIGHT) {
-                    outTraits = nodeTraits.replace(hash(joinInfo.rightKeys, factory));
+                    outTraits = nodeTraits.replace(hash(joinInfo.rightKeys, function));
                     leftTraits = left.replace(broadcast());
-                    rightTraits = right.replace(hash(joinInfo.rightKeys, factory));
-
-                    b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                    outTraits = nodeTraits.replace(random());
-                    leftTraits = left.replace(broadcast());
-                    rightTraits = right.replace(random());
+                    rightTraits = right.replace(hash(joinInfo.rightKeys, function));
 
                     b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
                 }
@@ -213,6 +221,10 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // We preserve left collation since it's translated into a nested loop join with an outer loop
+        // over a left edge. The code below checks whether a desired collation is possible and requires
+        // appropriate collation from the left edge.
+
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
         RelTraitSet outTraits, leftTraits, rightTraits;
@@ -239,6 +251,8 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // The node is rewindable only if both sources are rewindable.
+
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
         RelTraitSet outTraits, leftTraits, rightTraits;
@@ -254,9 +268,18 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Tere are several rules:
+        // 1) any join is possible on broadcast or single distribution
+        // 2) hash distributed join is possible when join keys equal to source distribution keys
+        // 3) hash and broadcast distributed tables can be joined when join keys equal to hash
+        //    distributed table distribution keys and:
+        //      3.1) it's a left join and a hash distributed table is at left
+        //      3.2) it's a right join and a hash distributed table is at right
+        //      3.3) it's an inner join, this case a hash distributed table may be at any side
+
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
+        List<Pair<RelTraitSet, List<RelTraitSet>>> res = new ArrayList<>();
 
         RelTraitSet outTraits, leftTraits, rightTraits;
 
@@ -270,55 +293,58 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
                 leftTraits = left.replace(distribution);
                 rightTraits = right.replace(distribution);
 
-                b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
 
                 break;
             case HASH_DISTRIBUTED:
             case RANDOM_DISTRIBUTED:
-                if (joinType != LEFT && joinType != RIGHT && (joinType != INNER || F.isEmpty(joinInfo.pairs()))) {
-                    outTraits = nodeTraits.replace(single());
-                    leftTraits = left.replace(single());
-                    rightTraits = right.replace(single());
-
-                    b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
+                // Such join may be replaced as a cross join with a filter uppon it.
+                // It's impossible to get random or hash distribution from a cross join.
+                if (F.isEmpty(joinInfo.pairs()))
                     break;
-                }
 
+                // We cannot provide random distribution without unique constrain on join keys,
+                // so, we require hash distribution (wich satisfies random distribution) instead.
                 DistributionFunction function = distrType == HASH_DISTRIBUTED
                     ? distribution.function()
                     : DistributionFunction.HashDistribution.INSTANCE;
 
-                IgniteDistribution outDistr = hash(joinInfo.leftKeys, function);
+                IgniteDistribution outDistr; // TODO distribution multitrait support
 
-                if (distrType == HASH_DISTRIBUTED && !outDistr.satisfies(distribution)) {
-                    outTraits = nodeTraits.replace(single());
-                    leftTraits = left.replace(single());
-                    rightTraits = right.replace(single());
+                outDistr = hash(joinInfo.leftKeys, function);
 
-                    b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                    break;
-                }
-
-                outTraits = nodeTraits.replace(outDistr);
-                leftTraits = left.replace(hash(joinInfo.leftKeys, function));
-                rightTraits = right.replace(hash(joinInfo.rightKeys, function));
-
-                b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                if (joinType == INNER || joinType == LEFT) {
+                if (distrType != HASH_DISTRIBUTED || outDistr.satisfies(distribution)) {
+                    outTraits = nodeTraits.replace(outDistr);
                     leftTraits = left.replace(hash(joinInfo.leftKeys, function));
-                    rightTraits = right.replace(broadcast());
-
-                    b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-                }
-
-                if (joinType == INNER || joinType == RIGHT) {
-                    leftTraits = left.replace(broadcast());
                     rightTraits = right.replace(hash(joinInfo.rightKeys, function));
 
-                    b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                    res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+                    if (joinType == INNER || joinType == LEFT) {
+                        outTraits = nodeTraits.replace(outDistr);
+                        leftTraits = left.replace(hash(joinInfo.leftKeys, function));
+                        rightTraits = right.replace(broadcast());
+
+                        res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                    }
+                }
+
+                outDistr = hash(joinInfo.rightKeys, function);
+
+                if (distrType != HASH_DISTRIBUTED || outDistr.satisfies(distribution)) {
+                    outTraits = nodeTraits.replace(outDistr);
+                    leftTraits = left.replace(hash(joinInfo.leftKeys, function));
+                    rightTraits = right.replace(hash(joinInfo.rightKeys, function));
+
+                    res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+                    if (joinType == INNER || joinType == RIGHT) {
+                        outTraits = nodeTraits.replace(outDistr);
+                        leftTraits = left.replace(broadcast());
+                        rightTraits = right.replace(hash(joinInfo.rightKeys, function));
+
+                        res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                    }
                 }
 
                 break;
@@ -327,7 +353,11 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
                 break;
         }
 
-        return b.build();
+        if (!res.isEmpty())
+            return res;
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(single()),
+            ImmutableList.of(left.replace(single()), right.replace(single()))));
     }
 
     /** {@inheritDoc} */

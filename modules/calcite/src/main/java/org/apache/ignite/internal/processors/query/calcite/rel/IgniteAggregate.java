@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
@@ -30,10 +31,10 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -77,6 +78,8 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Aggregate is rewindable if its input is rewindable.
+
         RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
 
         return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(inputTraits.get(0).replace(rewindability))));
@@ -84,6 +87,12 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Distribution propagation is based on next rules:
+        // 1) Any aggregation is possible on single or broadcast distribution.
+        // 2) hash-distributed aggregation is possible in case it's a simple aggregate having hash distributed input
+        //    and all of input distribution keys are parts of aggregation group and vice versa.
+        // 3) Map-reduce aggregation is possible in case it's a simple aggregate and its input has random distribution.
+
         RelTraitSet in = inputTraits.get(0);
 
         ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
@@ -99,25 +108,50 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                 b.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(distribution))));
 
                 break;
-            case HASH_DISTRIBUTED:
+
             case RANDOM_DISTRIBUTED:
                 if (!groupSet.isEmpty() && isSimple(this)) {
-                    DistributionFunction function = distrType == HASH_DISTRIBUTED
-                        ? distribution.function()
-                        : DistributionFunction.HashDistribution.INSTANCE;
+                    IgniteDistribution outDistr = hash(range(0, groupSet.cardinality()));
+                    IgniteDistribution inDistr = hash(groupSet.asList());
 
-                    IgniteDistribution outDistr = hash(range(0, groupSet.cardinality()), function);
+                    b.add(Pair.of(nodeTraits.replace(outDistr), ImmutableList.of(in.replace(inDistr))));
 
-                    if (outDistr.satisfies(distribution)) {
-                        IgniteDistribution inDistr = hash(groupSet.asList(), function);
+                    break;
+                }
 
-                        b.add(Pair.of(nodeTraits.replace(outDistr), ImmutableList.of(in.replace(inDistr))));
+                b.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
+
+                break;
+
+            case HASH_DISTRIBUTED:
+                ImmutableIntList keys = distribution.getKeys();
+
+                if (isSimple(this) && groupSet.cardinality() == keys.size()) {
+                    Mappings.TargetMapping mapping = groupMapping(
+                        getInput().getRowType().getFieldCount(), groupSet);
+
+                    List<Integer> srcKeys = new ArrayList<>(keys.size());
+
+                    for (int key : keys) {
+                        int src = mapping.getSourceOpt(key);
+
+                        if (src == -1)
+                            break;
+
+                        srcKeys.add(src);
+                    }
+
+                    if (srcKeys.size() == keys.size()) {
+                        b.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(hash(srcKeys, distribution.function())))));
 
                         break;
                     }
                 }
 
                 b.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
+
+                break;
+
             default:
                 break;
         }
@@ -127,12 +161,16 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Since it's a hash aggregate it erases collation.
+
         return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
             ImmutableList.of(inputTraits.get(0).replace(RelCollations.EMPTY))));
     }
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Aggregate is rewindable if its input is rewindable.
+
         RelTraitSet in = inputTraits.get(0);
 
         RewindabilityTrait rewindability = isMapReduce(nodeTraits, in)
@@ -144,6 +182,12 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Distribution propagation is based on next rules:
+        // 1) Any aggregation is possible on single or broadcast distribution.
+        // 2) hash-distributed aggregation is possible in case it's a simple aggregate having hash distributed input
+        //    and all of input distribution keys are parts aggregation group.
+        // 3) Map-reduce aggregation is possible in case it's a simple aggregate and its input has random distribution.
+
         RelTraitSet in = inputTraits.get(0);
 
         ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
@@ -160,16 +204,24 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                 break;
 
             case HASH_DISTRIBUTED:
-                if (!groupSet.isEmpty() && isSimple(this)) {
+                ImmutableIntList keys = distribution.getKeys();
 
-                    Mappings.TargetMapping mapping = partialMapping(
+                if (isSimple(this) && groupSet.cardinality() == keys.size()) {
+                    Mappings.TargetMapping mapping = groupMapping(
                         getInput().getRowType().getFieldCount(), groupSet);
 
                     IgniteDistribution outDistr = distribution.apply(mapping);
 
-                    if (outDistr.getType() == HASH_DISTRIBUTED)
+                    if (outDistr.getType() == HASH_DISTRIBUTED) {
                         b.add(Pair.of(nodeTraits.replace(outDistr), ImmutableList.of(in)));
+
+                        break;
+                    }
                 }
+
+                b.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
+
+                break;
 
             case RANDOM_DISTRIBUTED:
                 // Map-reduce aggregates
@@ -177,6 +229,7 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                 b.add(Pair.of(nodeTraits.replace(broadcast()), ImmutableList.of(in.replace(random()))));
 
                 break;
+
             default:
                 break;
         }
@@ -186,6 +239,8 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        // Since it's a hash aggregate it erases collation.
+
         return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
             ImmutableList.of(inputTraits.get(0).replace(RelCollations.EMPTY))));
     }
@@ -214,13 +269,14 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
     }
 
     /** */
-    @NotNull public static Mappings.TargetMapping partialMapping(int inputFieldCount, ImmutableBitSet groupSet) {
+    @NotNull private static Mappings.TargetMapping groupMapping(int inputFieldCount, ImmutableBitSet groupSet) {
         Mappings.TargetMapping mapping =
             Mappings.create(MappingType.INVERSE_FUNCTION,
                 inputFieldCount, groupSet.cardinality());
 
         for (Ord<Integer> group : Ord.zip(groupSet))
             mapping.set(group.e, group.i);
+
         return mapping;
     }
 }
