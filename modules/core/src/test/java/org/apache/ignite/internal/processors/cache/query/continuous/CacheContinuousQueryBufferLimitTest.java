@@ -110,6 +110,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
     /** @throws Exception If fails. */
     @Test
+    @WithSystemProperty(key = "IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE", value = "2147483647")
     public void testContinuousQueryBatchSwitchOnAck() throws Exception {
         doTestContinuousQueryPendingBufferLimit((n, msg) ->
             msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 10);
