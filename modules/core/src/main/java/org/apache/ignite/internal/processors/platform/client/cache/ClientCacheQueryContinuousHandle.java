@@ -58,6 +58,7 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
                 continuousQueryId,
                 iterable);
 
+        // TODO: Don't notify the client if the cursor has been closed - we need an RW lock for that.
         ctx.notifyClient(notification);
     }
 
