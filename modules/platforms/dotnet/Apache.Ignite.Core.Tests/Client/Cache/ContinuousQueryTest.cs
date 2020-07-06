@@ -563,13 +563,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestCustomTimeIntervalCausesIncompleteBatches()
         {
-            TestBatches(keyCount: 10, bufferSize: 4, interval: TimeSpan.FromSeconds(0.5), (keys, res) =>
+            TestBatches(keyCount: 2, bufferSize: 4, interval: TimeSpan.FromSeconds(2), (keys, res) =>
             {
-                TestUtils.WaitForTrueCondition(() => res.Count == 3, () => res.Count.ToString(), 5000);
+                TestUtils.WaitForTrueCondition(() => res.Count == 1, () => res.Count.ToString(), 50000);
 
-                var resOrdered = res.OrderBy(x => x.FirstOrDefault()).ToList();
-                CollectionAssert.AreEquivalent(keys.Take(4), resOrdered.First());
-                CollectionAssert.AreEquivalent(keys.Skip(8), resOrdered.Last());
+                CollectionAssert.AreEquivalent(keys.Take(2), res.Single());
             });
         }
 

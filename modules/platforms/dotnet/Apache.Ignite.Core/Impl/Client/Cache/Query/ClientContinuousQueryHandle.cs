@@ -92,13 +92,17 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                     _socket.DoOutInOp<object>(ClientOp.ResourceClose,
                         ctx => ctx.Writer.WriteLong(_queryId), null);
 
+                    // TODO: There is a race between removal and ongoing notifications
+                    // It is possible to receive notifications even after ResourceClose call due to async nature
+                    // of the server.
+                    // TODO: Strive to fix this on the server side, otherwise we'll get a leak.
                     _socket.RemoveNotificationHandler(_queryId);
                 }
 
                 _disposed = true;
             }
         }
-        
+
         /// <summary>
         /// Called when error occurs during continuous query execution.
         /// </summary>
@@ -110,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                 {
                     return;
                 }
-                
+
                 var disconnected = Disconnected;
                 if (disconnected != null)
                 {
