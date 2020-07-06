@@ -42,13 +42,17 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.metric.BooleanMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
@@ -59,6 +63,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_REENCRYPTION_THREA
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REENCRYPTION_THROTTLE;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.INITIAL_KEY_ID;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
@@ -654,6 +659,59 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         checkEncryptedCaches(node0, node1);
 
         checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    @WithSystemProperty(key = IGNITE_REENCRYPTION_DISABLED, value = "true")
+    public void testReencryptionMetrics() throws Exception {
+        T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
+
+        IgniteEx node0 = nodes.get1();
+        IgniteEx node1 = nodes.get2();
+
+        createEncryptedCache(node0, node1, cacheName(), null);
+
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+
+        validateMetrics(node0, false);
+        validateMetrics(node1, false);
+
+        System.setProperty(IGNITE_REENCRYPTION_DISABLED, "false");
+
+        stopAllGrids();
+
+        nodes = startTestGrids(false);
+
+        node0 = nodes.get1();
+        node1 = nodes.get2();
+
+        awaitEncryption(G.allGrids(), CU.cacheId(cacheName()), MAX_AWAIT_MILLIS);
+
+        forceCheckpoint();
+
+        validateMetrics(node0, true);
+        validateMetrics(node1, true);
+    }
+
+    /**
+     * @param node Grid.
+     * @param finished Expected reencryption status.
+     */
+    private void validateMetrics(IgniteEx node, boolean finished) {
+        MetricRegistry registry =
+            node.context().metric().registry(metricName(CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX, cacheName()));
+
+        LongMetric pagesLeft = registry.findMetric("ReencryptionPagesLeft");
+
+        if (finished)
+            assertEquals(0, pagesLeft.value());
+        else
+            assertTrue(pagesLeft.value() > 0);
+
+        BooleanMetric reencryptionFinished = registry.findMetric("ReencryptionFinished");
+
+        assertEquals(finished, reencryptionFinished.value());;
     }
 
     /**

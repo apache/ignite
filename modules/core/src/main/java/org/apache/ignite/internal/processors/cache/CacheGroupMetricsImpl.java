@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -39,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -175,6 +178,16 @@ public class CacheGroupMetricsImpl {
         mreg.register("TotalAllocatedSize",
             this::getTotalAllocatedSize,
             "Total size of memory allocated for group, in bytes.");
+
+        if (ctx.config().isEncryptionEnabled()) {
+            mreg.register("ReencryptionFinished",
+                () -> ctx.shared().kernalContext().encryption().reencryptionFuture(ctx.groupId()).isDone(),
+                "The flag indicates whether reencryption is finished or not.");
+
+            mreg.register("ReencryptionPagesLeft",
+                this::getPagesLeftForReencryption,
+                "Total pages left for reencryption.");
+        }
     }
 
     /** */
@@ -484,6 +497,32 @@ public class CacheGroupMetricsImpl {
     /** */
     public long getSparseStorageSize() {
         return sparseStorageSize == null ? 0 : sparseStorageSize.value();
+    }
+
+    /** */
+    public long getPagesLeftForReencryption() {
+        if (ctx.shared().kernalContext().encryption().reencryptionFuture(ctx.groupId()).isDone())
+            return 0;
+
+        long pagesLeft = 0;
+
+        FilePageStoreManager mgr = (FilePageStoreManager)ctx.shared().pageStore();
+
+        try {
+            for (int p = 0; p < ctx.affinity().partitions(); p++) {
+                PageStore pageStore = mgr.getStore(ctx.groupId(), p);
+
+                if (!pageStore.exists())
+                    continue;
+
+                pagesLeft += (pageStore.encryptedPageCount() - pageStore.encryptedPageIndex());
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
+        return pagesLeft;
     }
 
     /** Removes all metric for cache group. */
