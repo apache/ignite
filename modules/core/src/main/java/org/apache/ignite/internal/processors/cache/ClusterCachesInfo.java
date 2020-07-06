@@ -172,7 +172,7 @@ public class ClusterCachesInfo {
         ctx.systemView().registerView(CACHES_VIEW, CACHES_VIEW_DESC,
             new CacheViewWalker(),
             registeredCaches.values(),
-            CacheView::new);
+            cache -> new CacheView(cache, ctx.cache()));
 
         ctx.systemView().registerView(CACHE_GRPS_VIEW, CACHE_GRPS_VIEW_DESC,
             new CacheGroupViewWalker(),

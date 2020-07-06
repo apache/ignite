@@ -29,10 +29,16 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 
 /**
  * This test checks that entries count metrics, calculated by method
@@ -173,8 +179,11 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
                 0);
 
         for (int igniteIdx = 0; igniteIdx < GRID_CNT; igniteIdx++)
-            for (int cacheIdx = 0; cacheIdx < cacheCnt; cacheIdx++)
+            for (int cacheIdx = 0; cacheIdx < cacheCnt; cacheIdx++) {
                 checkCacheLocalMetrics(igniteIdx, cacheIdx);
+
+                checkCacheView(igniteIdx, cacheIdx);
+            }
     }
 
     /**
@@ -299,5 +308,58 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
             assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, heapEntriesCntSum);
 
         assertEquals(cacheInfo + " isEmpty", cacheSize == 0, isEmptySum);
+    }
+
+    /**
+     * @param igniteIdx Ignite index.
+     * @param cacheIdx Cache index.
+     */
+    private void checkCacheView(int igniteIdx, int cacheIdx) throws IgniteCheckedException {
+        IgniteInternalCache internalCache = grid(igniteIdx).cachex(CACHE_PREFIX + cacheIdx);
+
+        GridCacheContext cctx = internalCache.context();
+
+        GridCacheAdapter cache = cctx.cache();
+
+        long offHeapEntriesCount = cache.offHeapEntriesCount();
+
+        long offHeapPrimaryEntriesCount = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+            true,
+            false,
+            cctx.affinity().affinityTopologyVersion());
+
+        long offHeapBackupEntriesCount = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+            false,
+            true,
+            cctx.affinity().affinityTopologyVersion());
+
+        long heapEntriesCount = cache.localSizeLong(ONHEAP_PEEK_MODES);
+
+        long cacheSize = cache.localSizeLong(new CachePeekMode[]{CachePeekMode.PRIMARY});
+        int size = cache.localSize(new CachePeekMode[]{CachePeekMode.PRIMARY});
+
+        boolean isEmpty = cache.isEmpty();
+
+        SystemView<CacheView> views = grid(igniteIdx).context().systemView().view(CACHES_VIEW);
+
+        CacheView cacheView = F.find(views, null, (IgnitePredicate<CacheView>)view -> view.cacheId() == cctx.cacheId());
+
+        assertNotNull(cacheView);
+
+        String cacheInfo = "igniteIdx=" + igniteIdx + ", cacheIdx=" + cacheIdx + " ";
+
+        log.info("Checking cache view,  " + cacheInfo);
+
+        assertEquals(cacheInfo + " offHeapEntriesCount",
+            offHeapEntriesCount, cacheView.offHeapEntriesCount());
+        assertEquals(cacheInfo + " offHeapBackupEntriesCount",
+            offHeapBackupEntriesCount, cacheView.offHeapBackupEntriesCount());
+        assertEquals(cacheInfo + " offHeapPrimaryEntriesCount",
+            offHeapPrimaryEntriesCount, cacheView.offHeapPrimaryEntriesCount());
+        assertEquals(cacheInfo + " heapEntriesCount", heapEntriesCount, cacheView.heapEntriesCount());
+        assertEquals(cacheInfo + " size", size, cacheView.size());
+        assertEquals(cacheInfo + " keySize", size, cacheView.keySize());
+        assertEquals(cacheInfo + " cacheSize", cacheSize, cacheView.cacheSize());
+        assertEquals(cacheInfo + " isEmpty", isEmpty, cacheView.isEmpty());
     }
 }
