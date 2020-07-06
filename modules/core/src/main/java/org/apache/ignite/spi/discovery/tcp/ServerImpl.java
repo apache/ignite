@@ -414,20 +414,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         spi.initLocalNode(tcpSrvr.port, true);
 
-        if (spi.locNodeAddrs.size() > 1 && log.isDebugEnabled()) {
-            if (spi.failureDetectionTimeoutEnabled()) {
-                log.debug("This node " + spi.locNode.id() + " has " + spi.locNodeAddrs.size() + " TCP " +
-                    "addresses. Note that TcpDiscoverySpi.failureDetectionTimeout works per address sequentially. " +
-                    "Setting of several addresses can prolong detection of current node failure.");
-            }
-            else {
-                log.debug("This node " + spi.locNode.id() + " has " + spi.locNodeAddrs.size() + " TPC " +
-                    "addresses. With exception of connRecoveryTimeout, timeouts and setting like sockTimeout, " +
-                    "ackTimeout, reconCnt in TcpDiscoverySpi work per address sequentially. Setting of several " +
-                    "addresses can prolong detection of current node failure.");
-            }
-        }
-
         locNode = spi.locNode;
 
         // Start TCP server thread after local node is initialized.
