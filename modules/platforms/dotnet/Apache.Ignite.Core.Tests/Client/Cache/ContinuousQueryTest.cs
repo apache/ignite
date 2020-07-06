@@ -548,8 +548,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             TestBatches(keyCount: 8, bufferSize: 3, TimeSpan.Zero, (keys, res) =>
             {
                 TestUtils.WaitForTrueCondition(() => res.Count == 2, () => res.Count.ToString());
-                CollectionAssert.AreEquivalent(keys.Take(3), res.First());
-                CollectionAssert.AreEquivalent(keys.Skip(3), res.Last());
+
+                var resOrdered = res.OrderBy(x => x.FirstOrDefault()).ToList();
+                CollectionAssert.AreEquivalent(keys.Take(3), resOrdered.First());
+                CollectionAssert.AreEquivalent(keys.Skip(3).Take(3), resOrdered.Last());
             });
         }
 
@@ -563,10 +565,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             TestBatches(keyCount: 10, bufferSize: 4, interval: TimeSpan.FromSeconds(0.5), (keys, res) =>
             {
-                TestUtils.WaitForTrueCondition(() => res.Count == 3, () => res.Count.ToString(), 2000);
+                TestUtils.WaitForTrueCondition(() => res.Count == 3, () => res.Count.ToString(), 5000);
 
-                CollectionAssert.AreEquivalent(keys.Take(4), res.First());
-                CollectionAssert.AreEquivalent(keys.Skip(8), res.Last());
+                var resOrdered = res.OrderBy(x => x.FirstOrDefault()).ToList();
+                CollectionAssert.AreEquivalent(keys.Take(4), resOrdered.First());
+                CollectionAssert.AreEquivalent(keys.Skip(8), resOrdered.Last());
             });
         }
 
