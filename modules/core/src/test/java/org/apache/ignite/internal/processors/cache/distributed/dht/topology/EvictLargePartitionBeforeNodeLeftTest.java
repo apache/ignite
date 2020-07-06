@@ -10,7 +10,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
 /**
  * Tests if currently evicting partition is owned after last supplier has left.
@@ -33,15 +35,13 @@ public class EvictLargePartitionBeforeNodeLeftTest extends GridCommonAbstractTes
         try {
             IgniteEx g0 = startGrid(0);
 
-            String CACHE = "dotnet_binary_cache";
+            IgniteCache<Object, Object> cache = g0.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-            IgniteCache<Object, Object> cache = g0.getOrCreateCache(CACHE);
+            int p0 = movingKeysAfterJoin(g0, DEFAULT_CACHE_NAME, 1).get(0);
 
-            int p0 = movingKeysAfterJoin(g0, CACHE, 1).get(0);
+            List<Integer> keys = partitionKeys(g0.cache(DEFAULT_CACHE_NAME), p0, 20_000, 0);
 
-            List<Integer> keys = partitionKeys(g0.cache(CACHE), p0, 20_000, 0);
-
-            try(IgniteDataStreamer<Object, Object> ds = g0.dataStreamer(CACHE)){
+            try(IgniteDataStreamer<Object, Object> ds = g0.dataStreamer(DEFAULT_CACHE_NAME)){
                 for (Integer key : keys)
                     ds.addData(key, key);
             }
@@ -50,17 +50,19 @@ public class EvictLargePartitionBeforeNodeLeftTest extends GridCommonAbstractTes
 
             awaitPartitionMapExchange();
 
-            assertEquals(GridDhtPartitionState.RENTING, g0.cachex(CACHE).context().topology().localPartition(p0).state());
+            GridDhtPartitionState state = g0.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(p0).state();
+
+            assertTrue(state == RENTING || state == EVICTED);
 
             g1.close();
 
-            GridDhtTopologyFuture fut = g0.cachex(CACHE).context().topology().topologyVersionFuture();
+            GridDhtTopologyFuture fut = g0.cachex(DEFAULT_CACHE_NAME).context().topology().topologyVersionFuture();
 
             assertEquals(new AffinityTopologyVersion(3, 0), fut.topologyVersion());
 
             fut.get();
 
-            assertEquals(OWNING, g0.cachex(CACHE).context().topology().localPartition(p0).state());
+            assertEquals(OWNING, g0.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(p0).state());
         }
         finally {
             stopAllGrids();
