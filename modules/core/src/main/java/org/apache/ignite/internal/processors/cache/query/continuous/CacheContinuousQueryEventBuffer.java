@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.IntSupplier;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -41,6 +40,10 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class CacheContinuousQueryEventBuffer {
+    /** Maximum size of buffer for pending events. Default value is {@code 10_000}. */
+    public static final int MAX_PENDING_BUFF_SIZE =
+        IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE", 10_000);
+
     /** Batch buffer size. */
     private static final int BUF_SIZE =
         IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE", 1000);
@@ -63,9 +66,6 @@ public class CacheContinuousQueryEventBuffer {
     /** Entries which are waiting for being processed. */
     private final ConcurrentSkipListMap<Long, CacheContinuousQueryEntry> pending = new ConcurrentSkipListMap<>();
 
-    /** Maximum size of buffer for pending events. Default value is {@code 10_000}. */
-    private final IntSupplier pendingMaxSize;
-
     /**
      * The size method of the pending ConcurrentSkipListMap is not a constant-time operation. Since each
      * entry processed under the GridCacheMapEntry lock it's necessary to maintain the size of map explicitly.
@@ -78,19 +78,17 @@ public class CacheContinuousQueryEventBuffer {
     /**
      * @param part Partition number.
      * @param log Continuous query category logger.
-     * @param pendingMaxSize Limit of pending buffer.
      */
-    CacheContinuousQueryEventBuffer(int part, IgniteLogger log, IntSupplier pendingMaxSize) {
+    CacheContinuousQueryEventBuffer(int part, IgniteLogger log) {
         this.part = part;
         this.log = log;
-        this.pendingMaxSize = pendingMaxSize;
     }
 
     /**
      * @param part Partition number.
      */
     CacheContinuousQueryEventBuffer(int part) {
-        this(part, null, () -> Integer.MAX_VALUE);
+        this(part, null);
     }
 
     /**
@@ -210,9 +208,9 @@ public class CacheContinuousQueryEventBuffer {
                 if (batch.endCntr < ackedUpdCntr.get())
                     batch.tryRollOver(entry.topologyVersion());
 
-                if (pendingCurrSize.get() > pendingMaxSize.getAsInt()) {
+                if (pendingCurrSize.get() > MAX_PENDING_BUFF_SIZE) {
                     LT.warn(log, "Buffer for pending events reached max of its size " +
-                        "[cacheId=" + entry.cacheId() + ", maxSize=" + pendingMaxSize.getAsInt() +
+                        "[cacheId=" + entry.cacheId() + ", maxSize=" + MAX_PENDING_BUFF_SIZE +
                         ", partId=" + entry.partition() + ']');
 
                     // Remove first BUFF_SIZE keys.

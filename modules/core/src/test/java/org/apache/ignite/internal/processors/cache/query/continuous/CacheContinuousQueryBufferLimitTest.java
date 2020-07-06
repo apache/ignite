@@ -49,7 +49,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -62,6 +61,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
+import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEventBuffer.MAX_PENDING_BUFF_SIZE;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -77,11 +77,8 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     /** Total number of cache keys. */
     private static final int TOTAL_KEYS = 1024;
 
-    /** Number of pending entries.  */
-    private static final int PENDING_LIMIT = 1100;
-
     /** Timeout to wait for pending buffer overflow. */
-    private static final long OVERFLOW_TIMEOUT_MS = 5_000L;
+    private static final long OVERFLOW_TIMEOUT_MS = 10_000L;
 
     /** Default remote no-op filter. */
     private static final CacheEntryEventSerializableFilter<Integer, Integer> RMT_FILTER = e -> true;
@@ -108,21 +105,30 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
         });
     }
 
-    /** @throws Exception If fails. */
+    /**
+     * Local pending limit for this test is less than MAX_PENDING_BUFF_SIZE,
+     * so pending entries must be cleaned prior to reaching it.
+     *
+     * @throws Exception If fails.
+     */
     @Test
-    @WithSystemProperty(key = "IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE", value = "2147483647")
     public void testContinuousQueryBatchSwitchOnAck() throws Exception {
         doTestContinuousQueryPendingBufferLimit((n, msg) ->
-            msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 10);
+            msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 10, MAX_PENDING_BUFF_SIZE / 10);
     }
 
-    /** @throws Exception If fails. */
+    /**
+     * The test blocks switching current CacheContinuousQueryEventBuffer.Batch to the new one, so
+     * pending entries will be processed (dropped on backups and send to the client on primaries)
+     * when the MAX_PENDING_BUFF_SIZE is reached.
+     *
+     * @throws Exception If fails.
+     */
     @Test
-    @WithSystemProperty(key = "IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE", value = "1000")
     public void testContinuousQueryPendingBufferLimit() throws Exception {
         doTestContinuousQueryPendingBufferLimit((n, msg) ->
             (msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 10) ||
-                msg instanceof CacheContinuousQueryBatchAck);
+                msg instanceof CacheContinuousQueryBatchAck, (int)(MAX_PENDING_BUFF_SIZE * 1.1));
     }
 
     /** {@inheritDoc} */
@@ -150,10 +156,12 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
     /**
      * @param locBlockPred Block predicate on local node to emulate message delivery issues.
+     * @param pendingLimit Test limit of pending entries.
      * @throws Exception If fails.
      */
     private void doTestContinuousQueryPendingBufferLimit(
-        IgniteBiPredicate<ClusterNode, Message> locBlockPred
+        IgniteBiPredicate<ClusterNode, Message> locBlockPred,
+        int pendingLimit
     ) throws Exception
     {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -206,7 +214,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
             log.warning("Waiting for pending buffer being overflowed within " + OVERFLOW_TIMEOUT_MS + " ms.");
 
-            boolean await = waitForCondition(() -> pending.size() > PENDING_LIMIT, OVERFLOW_TIMEOUT_MS);
+            boolean await = waitForCondition(() -> pending.size() > pendingLimit, OVERFLOW_TIMEOUT_MS);
 
             assertFalse("Pending buffer exceeded the limit despite entries have been acked " +
                     "[lastAcked=" + lastAcked + ", pending=" + S.compact(pending.keySet(), i -> i + 1) + ']',
