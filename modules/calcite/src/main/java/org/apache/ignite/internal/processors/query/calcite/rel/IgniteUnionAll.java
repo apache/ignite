@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.Collection;
-import java.util.HashSet;
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,8 +32,8 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -66,104 +65,58 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left;
-            RewindabilityTrait rewindability = TraitUtils.rewindability(out);
-
-            traits0.add(Pair.of(out, Commons.transform(pair.right, t -> t.replace(rewindability))));
-        }
-
-        return traits0;
+        return ImmutableList.of(Pair.of(nodeTraits,
+            Commons.transform(inputTraits, t -> t.replace(rewindability))));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left;
-            IgniteDistribution distribution = TraitUtils.distribution(out);
-
-            traits0.add(Pair.of(out, Commons.transform(pair.right, t -> t.replace(distribution))));
-        }
-
-        return traits0;
+        return ImmutableList.of(Pair.of(nodeTraits,
+            Commons.transform(inputTraits, t -> t.replace(distribution))));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
-
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left;
-
-            traits0.add(Pair.of(out.replace(RelCollations.EMPTY),
-                Commons.transform(pair.right, t -> t.replace(RelCollations.EMPTY))));
-        }
-
-        return traits0;
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+            Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        boolean rewindable = inputTraits.stream()
+            .map(TraitUtils::rewindability)
+            .allMatch(RewindabilityTrait::rewindable);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left;
+        if (rewindable)
+            return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE), inputTraits));
 
-            boolean rewindable = pair.right.stream()
-                .map(TraitUtils::rewindability)
-                .allMatch(RewindabilityTrait::rewindable);
-
-            if (rewindable)
-                traits0.add(Pair.of(out.replace(RewindabilityTrait.REWINDABLE), pair.right));
-            else
-                traits0.add(Pair.of(out.replace(RewindabilityTrait.ONE_WAY),
-                    Commons.transform(pair.right, t -> t.replace(RewindabilityTrait.ONE_WAY))));
-        }
-
-        return traits0;
+        return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
+            Commons.transform(inputTraits, t -> t.replace(RewindabilityTrait.ONE_WAY))));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        Set<IgniteDistribution> distributions = inputTraits.stream()
+            .map(TraitUtils::distribution)
+            .collect(Collectors.toSet());
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left;
+        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
 
-            Set<IgniteDistribution> distributions = pair.right.stream()
-                .map(TraitUtils::distribution)
-                .collect(Collectors.toSet());
+        for (IgniteDistribution distribution : distributions)
+            b.add(Pair.of(nodeTraits.replace(distribution),
+                Commons.transform(inputTraits, t -> t.replace(distribution))));
 
-            for (IgniteDistribution distribution : distributions)
-                traits0.add(Pair.of(out.replace(distribution),
-                    Commons.transform(pair.right, t -> t.replace(distribution))));
-        }
-
-        return traits0;
+        return b.build();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
-
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left;
-
-            traits0.add(Pair.of(out.replace(RelCollations.EMPTY),
-                Commons.transform(pair.right, t -> t.replace(RelCollations.EMPTY))));
-        }
-
-        return traits0;
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+            Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
     }
 }

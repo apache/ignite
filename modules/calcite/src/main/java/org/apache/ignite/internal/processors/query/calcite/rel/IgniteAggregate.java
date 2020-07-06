@@ -18,14 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
@@ -40,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFun
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -78,171 +76,135 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, in = pair.right.get(0);
-            RewindabilityTrait rewindability = TraitUtils.rewindability(out);
-
-            traits0.add(Pair.of(out, ImmutableList.of(in.replace(rewindability))));
-        }
-
-        return traits0;
+        return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(inputTraits.get(0).replace(rewindability))));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RelTraitSet in = inputTraits.get(0);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, in = pair.right.get(0);
+        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
 
-            IgniteDistribution distribution = TraitUtils.distribution(out);
+        IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
 
-            RelDistribution.Type distrType = distribution.getType();
+        RelDistribution.Type distrType = distribution.getType();
 
-            switch (distrType) {
-                case SINGLETON:
-                case BROADCAST_DISTRIBUTED:
-                    traits0.add(Pair.of(out, ImmutableList.of(in.replace(random())))); // Map-reduce aggregate
-                    traits0.add(Pair.of(out, ImmutableList.of(in.replace(distribution))));
+        switch (distrType) {
+            case SINGLETON:
+            case BROADCAST_DISTRIBUTED:
+                b.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(random())))); // Map-reduce aggregate
+                b.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(distribution))));
 
-                    break;
-                case HASH_DISTRIBUTED:
-                case RANDOM_DISTRIBUTED:
-                    if (!groupSet.isEmpty() && isSimple(this)) {
-                        DistributionFunction function = distrType == HASH_DISTRIBUTED
-                            ? distribution.function()
-                            : DistributionFunction.HashDistribution.INSTANCE;
+                break;
+            case HASH_DISTRIBUTED:
+            case RANDOM_DISTRIBUTED:
+                if (!groupSet.isEmpty() && isSimple(this)) {
+                    DistributionFunction function = distrType == HASH_DISTRIBUTED
+                        ? distribution.function()
+                        : DistributionFunction.HashDistribution.INSTANCE;
 
-                        IgniteDistribution outDistr = hash(range(0, groupSet.cardinality()), function);
+                    IgniteDistribution outDistr = hash(range(0, groupSet.cardinality()), function);
 
-                        if (outDistr.satisfies(distribution)) {
-                            IgniteDistribution inDistr = hash(groupSet.asList(), function);
+                    if (outDistr.satisfies(distribution)) {
+                        IgniteDistribution inDistr = hash(groupSet.asList(), function);
 
-                            traits0.add(Pair.of(out.replace(outDistr), ImmutableList.of(in.replace(inDistr))));
+                        b.add(Pair.of(nodeTraits.replace(outDistr), ImmutableList.of(in.replace(inDistr))));
 
-                            break;
-                        }
+                        break;
                     }
+                }
 
-                    traits0.add(Pair.of(out.replace(single()), ImmutableList.of(in.replace(single()))));
-                default:
-                    break;
-            }
+                b.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
+            default:
+                break;
         }
 
-        return traits0;
+        return b.build();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
-
-        RelCollation collation = RelCollations.EMPTY;
-
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, in = pair.right.get(0);
-
-            traits0.add(Pair.of(out.replace(collation), ImmutableList.of(in.replace(collation))));
-        }
-
-        return traits0;
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+            ImmutableList.of(inputTraits.get(0).replace(RelCollations.EMPTY))));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RelTraitSet in = inputTraits.get(0);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, in = pair.right.get(0);
-            RewindabilityTrait rewindability = isMapReduce(out, in) ? RewindabilityTrait.ONE_WAY : TraitUtils.rewindability(in);
+        RewindabilityTrait rewindability = isMapReduce(nodeTraits, in)
+            ? RewindabilityTrait.ONE_WAY
+            : TraitUtils.rewindability(in);
 
-            traits0.add(Pair.of(out.replace(rewindability), ImmutableList.of(in.replace(rewindability))));
-        }
-
-        return traits0;
+        return ImmutableList.of(Pair.of(nodeTraits.replace(rewindability), ImmutableList.of(in.replace(rewindability))));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RelTraitSet in = inputTraits.get(0);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, in = pair.right.get(0);
+        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
 
-            IgniteDistribution distribution = TraitUtils.distribution(in);
+        IgniteDistribution distribution = TraitUtils.distribution(in);
 
-            RelDistribution.Type distrType = distribution.getType();
+        RelDistribution.Type distrType = distribution.getType();
 
-            switch (distrType) {
-                case SINGLETON:
-                case BROADCAST_DISTRIBUTED:
-                    traits0.add(Pair.of(out.replace(distribution), ImmutableList.of(in)));
+        switch (distrType) {
+            case SINGLETON:
+            case BROADCAST_DISTRIBUTED:
+                b.add(Pair.of(nodeTraits.replace(distribution), ImmutableList.of(in)));
 
-                    break;
+                break;
 
-                case HASH_DISTRIBUTED:
-                    if (!groupSet.isEmpty() && isSimple(this)) {
+            case HASH_DISTRIBUTED:
+                if (!groupSet.isEmpty() && isSimple(this)) {
 
-                        Mappings.TargetMapping mapping = partialMapping(
-                            getInput().getRowType().getFieldCount(), groupSet);
+                    Mappings.TargetMapping mapping = partialMapping(
+                        getInput().getRowType().getFieldCount(), groupSet);
 
-                        IgniteDistribution outDistr = distribution.apply(mapping);
+                    IgniteDistribution outDistr = distribution.apply(mapping);
 
-                        if (outDistr.getType() == HASH_DISTRIBUTED)
-                            traits0.add(Pair.of(out.replace(outDistr), ImmutableList.of(in)));
-                    }
+                    if (outDistr.getType() == HASH_DISTRIBUTED)
+                        b.add(Pair.of(nodeTraits.replace(outDistr), ImmutableList.of(in)));
+                }
 
-                case RANDOM_DISTRIBUTED:
-                    // Map-reduce aggregates
-                    traits0.add(Pair.of(out.replace(single()), ImmutableList.of(in.replace(random()))));
-                    traits0.add(Pair.of(out.replace(broadcast()), ImmutableList.of(in.replace(random()))));
+            case RANDOM_DISTRIBUTED:
+                // Map-reduce aggregates
+                b.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(random()))));
+                b.add(Pair.of(nodeTraits.replace(broadcast()), ImmutableList.of(in.replace(random()))));
 
-                    break;
-                default:
-                    break;
-            }
+                break;
+            default:
+                break;
         }
 
-        return traits0;
+        return b.build();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
-
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, in = pair.right.get(0);
-
-            traits0.add(Pair.of(out.replace(RelCollations.EMPTY), ImmutableList.of(in.replace(RelCollations.EMPTY))));
-        }
-
-        return traits0;
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+            ImmutableList.of(inputTraits.get(0).replace(RelCollations.EMPTY))));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull RelNode createNode(Pair<RelTraitSet, List<RelTraitSet>> traits) {
-        RelTraitSet out = traits.left, in = traits.right.get(0);
+    @Override public @NotNull RelNode createNode(RelTraitSet outTraits, List<RelTraitSet> inTraits) {
+        RelTraitSet in = inTraits.get(0);
 
-        if (!isMapReduce(out, in))
-            return copy(out, ImmutableList.of(convert(getInput(), in)));
+        if (!isMapReduce(outTraits, in))
+            return copy(outTraits, ImmutableList.of(convert(getInput(), in)));
 
         if (U.assertionsEnabled()) {
-            ImmutableList<RelTrait> diff = in.difference(out);
+            ImmutableList<RelTrait> diff = in.difference(outTraits);
 
-            assert diff.size() == 1 && F.first(diff) == TraitUtils.distribution(out);
+            assert diff.size() == 1 && F.first(diff) == TraitUtils.distribution(outTraits);
         }
 
         RelNode map = new IgniteMapAggregate(getCluster(), in, convert(getInput(), in), groupSet, groupSets, aggCalls);
-        return new IgniteReduceAggregate(getCluster(), out, convert(map, out), groupSet, groupSets, aggCalls, getRowType());
+        return new IgniteReduceAggregate(getCluster(), outTraits, convert(map, outTraits), groupSet, groupSets, aggCalls, getRowType());
     }
 
     /** */

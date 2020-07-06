@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.Ord;
@@ -42,7 +40,7 @@ import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
@@ -82,168 +80,118 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RelTraitSet in = inputTraits.get(0);
+        RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, in = pair.right.get(0);
-            RewindabilityTrait rewindability = TraitUtils.rewindability(out);
-
-            traits0.add(Pair.of(out, ImmutableList.of(in.replace(rewindability))));
-        }
-
-        return traits0;
+        return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(in.replace(rewindability))));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RelTraitSet in = inputTraits.get(0);
+        IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, in = pair.right.get(0);
-            IgniteDistribution distribution = TraitUtils.distribution(out);
+        if (distribution.getType() != HASH_DISTRIBUTED)
+            return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(in.replace(distribution))));
 
-            if (distribution.getType() == HASH_DISTRIBUTED) {
-                Mappings.TargetMapping mapping = getPartialMapping(
-                    input.getRowType().getFieldCount(), getProjects());
+        Mappings.TargetMapping mapping = getPartialMapping(
+            input.getRowType().getFieldCount(), getProjects());
 
-                List<Integer> keys = new ArrayList<>(distribution.getKeys().size());
+        List<Integer> keys = new ArrayList<>(distribution.getKeys().size());
 
-                boolean mapped = true;
-                for (int key : distribution.getKeys()) {
-                    int src = mapping.getSourceOpt(key);
+        boolean mapped = true;
+        for (int key : distribution.getKeys()) {
+            int src = mapping.getSourceOpt(key);
 
-                    if (src == -1) {
-                        mapped = false;
+            if (src == -1) {
+                mapped = false;
 
-                        break;
-                    }
-
-                    keys.add(src);
-                }
-
-                if (mapped)
-                    traits0.add(Pair.of(out, ImmutableList.of(in.replace(hash(keys, distribution.function())))));
-                else
-                    traits0.add(Pair.of(out.replace(single()), ImmutableList.of(in.replace(single()))));
+                break;
             }
-            else
-                traits0.add(Pair.of(out, ImmutableList.of(in.replace(distribution))));
+
+            keys.add(src);
         }
 
-        return traits0;
+        return mapped
+            ? ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(in.replace(hash(keys, distribution.function())))))
+            : ImmutableList.of(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RelTraitSet out = nodeTraits, in = inputTraits.get(0);
+        RelCollation collation = TraitUtils.collation(out);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, in = pair.right.get(0);
-            RelCollation collation = TraitUtils.collation(out);
+        if (collation.getFieldCollations().isEmpty())
+            return ImmutableList.of(Pair.of(out, ImmutableList.of(in.replace(RelCollations.EMPTY))));
 
-            if (collation.getFieldCollations().isEmpty()) {
-                traits0.add(Pair.of(out, ImmutableList.of(in.replace(RelCollations.EMPTY))));
-
-                continue;
-            }
-
-            Map<Integer, Integer> targets = new HashMap<>();
-            for (Ord<RexNode> project : Ord.zip(getProjects())) {
-                if (project.e instanceof RexInputRef)
-                    targets.putIfAbsent(project.i, ((RexInputRef)project.e).getIndex());
-            }
-
-            List<RelFieldCollation> inFieldCollations = new ArrayList<>();
-            for (RelFieldCollation inFieldCollation : collation.getFieldCollations()) {
-                Integer newIndex = targets.get(inFieldCollation.getFieldIndex());
-                if (newIndex != null)
-                    inFieldCollations.add(inFieldCollation.withFieldIndex(newIndex));
-                else {
-                    out = out.replace(RelCollations.EMPTY);
-                    inFieldCollations = Collections.emptyList();
-
-                    break;
-                }
-            }
-
-            traits0.add(Pair.of(out, ImmutableList.of(in.replace(RelCollations.of(inFieldCollations)))));
+        Map<Integer, Integer> targets = new HashMap<>();
+        for (Ord<RexNode> project : Ord.zip(getProjects())) {
+            if (project.e instanceof RexInputRef)
+                targets.putIfAbsent(project.i, ((RexInputRef)project.e).getIndex());
         }
 
-        return traits0;
+        List<RelFieldCollation> inFieldCollations = new ArrayList<>();
+        for (RelFieldCollation inFieldCollation : collation.getFieldCollations()) {
+            Integer newIndex = targets.get(inFieldCollation.getFieldIndex());
+            if (newIndex != null)
+                inFieldCollations.add(inFieldCollation.withFieldIndex(newIndex));
+            else {
+                out = out.replace(RelCollations.EMPTY);
+                inFieldCollations = Collections.emptyList();
+
+                break;
+            }
+        }
+
+        return ImmutableList.of(Pair.of(out, ImmutableList.of(in.replace(RelCollations.of(inFieldCollations)))));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RelTraitSet in = inputTraits.get(0);
+        RewindabilityTrait rewindability = TraitUtils.rewindability(in);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, in = pair.right.get(0);
-            RewindabilityTrait rewindability = TraitUtils.rewindability(in);
-
-            traits0.add(Pair.of(out.replace(rewindability), ImmutableList.of(in)));
-        }
-
-        return traits0;
+        return ImmutableList.of(Pair.of(nodeTraits.replace(rewindability), ImmutableList.of(in)));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RelTraitSet in = inputTraits.get(0);
+        IgniteDistribution distribution = TraitUtils.distribution(in);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, in = pair.right.get(0);
-            IgniteDistribution distribution = TraitUtils.distribution(in);
+        if (distribution.getType() == HASH_DISTRIBUTED) {
+            Mappings.TargetMapping mapping = Project.getPartialMapping(
+                input.getRowType().getFieldCount(), getProjects());
 
-            if (distribution.getType() == HASH_DISTRIBUTED) {
-                Mappings.TargetMapping mapping = Project.getPartialMapping(
-                    input.getRowType().getFieldCount(), getProjects());
-
-                traits0.add(Pair.of(out.replace(distribution.apply(mapping)), ImmutableList.of(in)));
-            }
-            else
-                traits0.add(Pair.of(out.replace(distribution), ImmutableList.of(in)));
+            return ImmutableList.of(Pair.of(nodeTraits.replace(distribution.apply(mapping)), ImmutableList.of(in)));
         }
 
-        return traits0;
+        return ImmutableList.of(Pair.of(nodeTraits.replace(distribution), ImmutableList.of(in)));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RelTraitSet in = inputTraits.get(0);
+        RelCollation collation = TraitUtils.collation(in);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, in = pair.right.get(0);
-            RelCollation collation = TraitUtils.collation(in);
+        if (collation.getFieldCollations().isEmpty())
+            return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY), ImmutableList.of(in)));
 
-            if (collation.getFieldCollations().isEmpty()) {
-                traits0.add(Pair.of(out.replace(RelCollations.EMPTY), ImmutableList.of(in)));
-
-                continue;
-            }
-
-            Map<Integer, Integer> targets = new HashMap<>();
-            for (Ord<RexNode> project : Ord.zip(getProjects())) {
-                if (project.e instanceof RexInputRef)
-                    targets.putIfAbsent(((RexInputRef)project.e).getIndex(), project.i);
-            }
-
-            List<RelFieldCollation> outFieldCollations = new ArrayList<>();
-            for (RelFieldCollation inFieldCollation : collation.getFieldCollations()) {
-                Integer newIndex = targets.get(inFieldCollation.getFieldIndex());
-                if (newIndex != null)
-                    outFieldCollations.add(inFieldCollation.withFieldIndex(newIndex));
-            }
-
-            traits0.add(Pair.of(out.replace(RelCollations.of(outFieldCollations)), ImmutableList.of(in)));
+        Map<Integer, Integer> targets = new HashMap<>();
+        for (Ord<RexNode> project : Ord.zip(getProjects())) {
+            if (project.e instanceof RexInputRef)
+                targets.putIfAbsent(((RexInputRef)project.e).getIndex(), project.i);
         }
 
-        return traits0;
+        List<RelFieldCollation> outFieldCollations = new ArrayList<>();
+        for (RelFieldCollation inFieldCollation : collation.getFieldCollations()) {
+            Integer newIndex = targets.get(inFieldCollation.getFieldIndex());
+            if (newIndex != null)
+                outFieldCollations.add(inFieldCollation.withFieldIndex(newIndex));
+        }
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.of(outFieldCollations)), ImmutableList.of(in)));
     }
 }

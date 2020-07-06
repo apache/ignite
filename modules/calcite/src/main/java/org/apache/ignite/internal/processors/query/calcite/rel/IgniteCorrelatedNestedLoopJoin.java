@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
@@ -38,7 +36,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Relational expression that combines two relational expressions according to
@@ -88,55 +85,45 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, left = pair.right.get(0), right = pair.right.get(1);
+        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
 
-            RewindabilityTrait leftRewindability = TraitUtils.rewindability(left);
+        RewindabilityTrait leftRewindability = TraitUtils.rewindability(left);
 
-            RelTraitSet outTraits, leftTraits, rightTraits;
+        RelTraitSet outTraits, leftTraits, rightTraits;
 
-            outTraits = out.replace(RewindabilityTrait.ONE_WAY);
-            leftTraits = left.replace(RewindabilityTrait.ONE_WAY);
+        outTraits = nodeTraits.replace(RewindabilityTrait.ONE_WAY);
+        leftTraits = left.replace(RewindabilityTrait.ONE_WAY);
+        rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
+
+        b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+
+        if (leftRewindability.rewindable()) {
+            outTraits = nodeTraits.replace(RewindabilityTrait.REWINDABLE);
+            leftTraits = left.replace(RewindabilityTrait.REWINDABLE);
             rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
 
-            traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-            if (leftRewindability.rewindable()) {
-                outTraits = out.replace(RewindabilityTrait.REWINDABLE);
-                leftTraits = left.replace(RewindabilityTrait.REWINDABLE);
-                rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
-
-                traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-            }
+            b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
         }
 
-        return traits0;
+        return b.build();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(
-        Collection<Pair<RelTraitSet, List<RelTraitSet>>> traits) {
-        HashSet<Pair<RelTraitSet, List<RelTraitSet>>> traits0 = U.newHashSet(traits.size());
-
-        for (Pair<RelTraitSet, List<RelTraitSet>> pair : traits) {
-            RelTraitSet out = pair.left, left = pair.right.get(0), right = pair.right.get(1);
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+            RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
             RelTraitSet outTraits, leftTraits, rightTraits;
 
-            RewindabilityTrait rewindability = TraitUtils.rewindability(out);
+            RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
 
-            outTraits = out.replace(rewindability);
+            outTraits = nodeTraits.replace(rewindability);
             leftTraits = left.replace(rewindability);
             rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
 
-            traits0.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-        }
-
-        return traits0;
+            return ImmutableList.of(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
     }
 
     /** {@inheritDoc} */
