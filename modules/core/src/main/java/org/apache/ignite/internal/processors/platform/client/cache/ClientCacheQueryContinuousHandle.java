@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
-import org.apache.ignite.lang.IgniteAsyncCallback;
 
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -28,7 +27,6 @@ import javax.cache.event.CacheEntryUpdatedListener;
 /**
  * Continuous query handle.
  */
-@IgniteAsyncCallback
 public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListener<Object, Object> {
     /** */
     private final ClientConnectionContext ctx;
