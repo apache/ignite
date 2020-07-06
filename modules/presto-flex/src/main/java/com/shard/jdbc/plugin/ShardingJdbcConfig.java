@@ -2,13 +2,13 @@ package com.shard.jdbc.plugin;
 
 import java.net.URI;
 
-import com.facebook.airlift.configuration.Config;
+import io.airlift.configuration.Config;
 
 public class ShardingJdbcConfig {
     private String user;//统一的Metadata用户
     private String password;//统一的Metadata密码
-    private String driver;//统一的Metadata数据驱动
-    
+    private String driver;//统一的Metadata数据驱动    
+    private String identifierQuote;
     
     private String shardingRulePath; //存放sharding文件的本地路径，如果是远程文件，使用下面几个参数
     
@@ -16,7 +16,7 @@ public class ShardingJdbcConfig {
     private URI shardingRule; // 节点分库规则配置文件
     private URI metadata; //节点分表规则配置文件（多个子表合成一个大表）
    
-
+    
 	/**
      * @return the user
      */
@@ -64,6 +64,23 @@ public class ShardingJdbcConfig {
         this.driver = driver;
         return this;
     }
+    
+    /**
+     * @return the identifierQuote 
+     */
+    public String getIdentifierQuote() {
+        return identifierQuote;
+    }
+
+    /**
+     * @param set the driver to set
+     */
+    @Config("jdbc.identifierQuote")
+    public ShardingJdbcConfig setIdentifierQuote(String identifierQuote) {
+        this.identifierQuote = identifierQuote;
+        return this;
+    }
+
 
     
     /**

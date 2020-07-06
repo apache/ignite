@@ -5,16 +5,14 @@ import static java.util.Objects.requireNonNull;
 
 import javax.inject.Inject;
 
-import com.facebook.presto.plugin.jdbc.JdbcClient;
-import com.facebook.presto.plugin.jdbc.JdbcOutputTableHandle;
-
-import com.facebook.presto.spi.ConnectorInsertTableHandle;
-import com.facebook.presto.spi.ConnectorOutputTableHandle;
-import com.facebook.presto.spi.ConnectorPageSink;
-import com.facebook.presto.spi.ConnectorSession;
-import com.facebook.presto.spi.PageSinkProperties;
-import com.facebook.presto.spi.connector.ConnectorPageSinkProvider;
-import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
+import io.prestosql.plugin.jdbc.JdbcClient;
+import io.prestosql.plugin.jdbc.JdbcOutputTableHandle;
+import io.prestosql.spi.connector.ConnectorInsertTableHandle;
+import io.prestosql.spi.connector.ConnectorOutputTableHandle;
+import io.prestosql.spi.connector.ConnectorPageSink;
+import io.prestosql.spi.connector.ConnectorPageSinkProvider;
+import io.prestosql.spi.connector.ConnectorSession;
+import io.prestosql.spi.connector.ConnectorTransactionHandle;
 
 public class ShardingJdbcSinkProvider implements ConnectorPageSinkProvider {
 
@@ -27,16 +25,14 @@ public class ShardingJdbcSinkProvider implements ConnectorPageSinkProvider {
     }
 
     @Override
-    public ConnectorPageSink createPageSink(ConnectorTransactionHandle transactionHandle, ConnectorSession session, ConnectorOutputTableHandle tableHandle, PageSinkProperties pageSinkProperties)
-    {
-        checkArgument(!pageSinkProperties.isPartitionCommitRequired(), "Jdbc connector does not support partition commit");
+    public ConnectorPageSink createPageSink(ConnectorTransactionHandle transactionHandle, ConnectorSession session, ConnectorOutputTableHandle tableHandle)
+    {        
         return new ShardingJdbcPageSink(session, (JdbcOutputTableHandle) tableHandle, jdbcClient);
     }
 
     @Override
-    public ConnectorPageSink createPageSink(ConnectorTransactionHandle transactionHandle, ConnectorSession session, ConnectorInsertTableHandle tableHandle, PageSinkProperties pageSinkProperties)
-    {
-        checkArgument(!pageSinkProperties.isPartitionCommitRequired(), "Jdbc connector does not support partition commit");
+    public ConnectorPageSink createPageSink(ConnectorTransactionHandle transactionHandle, ConnectorSession session, ConnectorInsertTableHandle tableHandle)
+    {        
         return new ShardingJdbcPageSink(session, (JdbcOutputTableHandle) tableHandle, jdbcClient);
     }
 }

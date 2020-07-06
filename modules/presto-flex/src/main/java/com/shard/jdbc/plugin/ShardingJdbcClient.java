@@ -1,17 +1,19 @@
 package com.shard.jdbc.plugin;
 
-import com.facebook.presto.plugin.jdbc.*;
-import com.facebook.presto.plugin.jdbc.optimization.JdbcExpression;
-import com.facebook.presto.spi.ConnectorSession;
-import com.facebook.presto.spi.ConnectorSplitSource;
-import com.facebook.presto.spi.ConnectorTableMetadata;
-import com.facebook.presto.spi.FixedSplitSource;
-import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.SchemaTableName;
-import com.facebook.presto.spi.TableNotFoundException;
-import com.facebook.presto.spi.type.DoubleType;
-import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.VarcharType;
+import io.airlift.log.Logger;
+import io.prestosql.plugin.jdbc.*;
+import io.prestosql.plugin.jdbc.credential.CredentialProvider;
+import io.prestosql.spi.PrestoException;
+import io.prestosql.spi.connector.ColumnMetadata;
+import io.prestosql.spi.connector.ConnectorSession;
+import io.prestosql.spi.connector.ConnectorSplitSource;
+import io.prestosql.spi.connector.ConnectorTableMetadata;
+import io.prestosql.spi.connector.FixedSplitSource;
+import io.prestosql.spi.connector.SchemaTableName;
+import io.prestosql.spi.predicate.TupleDomain;
+import io.prestosql.spi.type.DoubleType;
+import io.prestosql.spi.type.Type;
+import io.prestosql.spi.type.VarcharType;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -38,25 +40,62 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.facebook.presto.plugin.jdbc.JdbcErrorCode.JDBC_ERROR;
+import static io.prestosql.plugin.jdbc.JdbcErrorCode.JDBC_ERROR;
 import static java.util.Locale.ENGLISH;
-import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
-import static com.facebook.presto.spi.type.RealType.REAL;
-import static com.facebook.presto.spi.type.TimeWithTimeZoneType.TIME_WITH_TIME_ZONE;
-import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
-import static com.facebook.presto.spi.type.TimestampWithTimeZoneType.TIMESTAMP_WITH_TIME_ZONE;
-import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
-import static com.facebook.presto.spi.type.Varchars.isVarcharType;
+import static io.prestosql.spi.StandardErrorCode.NOT_SUPPORTED;
+import static io.prestosql.spi.type.RealType.REAL;
+import static io.prestosql.spi.type.TimeWithTimeZoneType.TIME_WITH_TIME_ZONE;
+import static io.prestosql.spi.type.VarbinaryType.VARBINARY;
+import static io.prestosql.spi.type.Varchars.isVarcharType;
 import static com.google.common.collect.Iterables.getOnlyElement;
+
+import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Strings.emptyToNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.base.Verify.verify;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.common.collect.Iterables.getOnlyElement;
+import static io.prestosql.plugin.jdbc.ColumnMapping.DISABLE_PUSHDOWN;
+import static io.prestosql.plugin.jdbc.JdbcErrorCode.JDBC_ERROR;
+
+import static io.prestosql.plugin.jdbc.UnsupportedTypeHandling.CONVERT_TO_VARCHAR;
+import static io.prestosql.plugin.jdbc.UnsupportedTypeHandling.IGNORE;
+import static io.prestosql.spi.StandardErrorCode.NOT_FOUND;
+import static io.prestosql.spi.StandardErrorCode.NOT_SUPPORTED;
+import static io.prestosql.spi.type.BigintType.BIGINT;
+import static io.prestosql.spi.type.BooleanType.BOOLEAN;
+import static io.prestosql.spi.type.DateType.DATE;
+import static io.prestosql.spi.type.DoubleType.DOUBLE;
+import static io.prestosql.spi.type.IntegerType.INTEGER;
+import static io.prestosql.spi.type.RealType.REAL;
+import static io.prestosql.spi.type.SmallintType.SMALLINT;
+import static io.prestosql.spi.type.TinyintType.TINYINT;
+import static io.prestosql.spi.type.VarbinaryType.VARBINARY;
+import static io.prestosql.spi.type.VarcharType.createUnboundedVarcharType;
+import static io.prestosql.spi.type.Varchars.isVarcharType;
+import static java.lang.String.CASE_INSENSITIVE_ORDER;
+import static java.lang.String.format;
+import static java.lang.String.join;
+import static java.sql.DatabaseMetaData.columnNoNulls;
+import static java.util.Collections.nCopies;
+import static java.util.Locale.ENGLISH;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.joining;
+
 
 
 public class ShardingJdbcClient extends BaseJdbcClient {
+	public static final String PRIMARY_KEY = "primary_key";
+	protected static final Logger log = Logger.get(ShardingJdbcClient.class);
 
 	ShardingJdbcConfig igniteConfig;
 
     @Inject
-    public ShardingJdbcClient(JdbcConnectorId connectorId, BaseJdbcConfig config, ShardingJdbcConfig shardingConfig) {
-    	 super(connectorId, config, "",new ShardingDriverConnectionFactory(shardingConfig, config));
+    public ShardingJdbcClient(BaseJdbcConfig config, ShardingJdbcConfig shardingConfig,ShardingDriverConnectionFactory connectionFactory) {
+    	 super(config, shardingConfig.getIdentifierQuote(),connectionFactory);
     }
 
     @Override
@@ -81,53 +120,10 @@ public class ShardingJdbcClient extends BaseJdbcClient {
     protected ResultSet getTables(Connection connection, Optional<String> schemaName, Optional<String> tableName)
             throws SQLException
     {
-        DatabaseMetaData metadata = connection.getMetaData();
-        Optional<String> escape = Optional.ofNullable(metadata.getSearchStringEscape());
-        return metadata.getTables(
-                connection.getCatalog(),
-                escapeNamePattern(schemaName, escape).orElse(null),
-                escapeNamePattern(tableName, escape).orElse(null),
-                new String[] {"TABLE", "VIEW"});
+        return super.getTables(connection, schemaName, tableName);
     }
-
-    @Nullable
-    @Override
-    public JdbcTableHandle getTableHandle(JdbcIdentity identity, SchemaTableName schemaTableName) {
-        try (Connection connection = connectionFactory.openConnection(identity)) {
-            DatabaseMetaData metadata = connection.getMetaData();
-           
-            String jdbcSchemaName = schemaTableName.getSchemaName();
-            String jdbcTableName = schemaTableName.getTableName();
-            if (metadata.storesUpperCaseIdentifiers()) {
-                jdbcSchemaName = jdbcSchemaName.toUpperCase();
-                jdbcTableName = jdbcTableName.toUpperCase();
-            }
-            try (ResultSet resultSet = getTables(connection,  Optional.of(jdbcSchemaName),
-            		 Optional.of(jdbcTableName))) {
-                List<JdbcTableHandle> tableHandles = new ArrayList<>();
-                while (resultSet.next()) {
-                	//modify@byron TABLE_CAT to null
-                	//resultSet.getString("TABLE_CAT")
-                	
-                    tableHandles.add(new JdbcTableHandle(connectorId,
-                            schemaTableName, null,
-                            resultSet.getString("TABLE_SCHEM"), resultSet
-                            .getString("TABLE_NAME")));
-                }
-                if (tableHandles.isEmpty()) {
-                    return null;
-                }
-                if (tableHandles.size() > 1) {
-                    throw new PrestoException(NOT_SUPPORTED,
-                            "Multiple tables matched: " + schemaTableName);
-                }
-                return getOnlyElement(tableHandles);
-            }
-        } catch (SQLException e) {
-            throw Throwables.propagate(e);
-        }
-    }
-
+    
+    
     protected String getTableWithString(ConnectorTableMetadata tableMetadata, String tableName)
     {    	
     	if(tableMetadata.getProperties().size()>0) {    		
@@ -148,19 +144,7 @@ public class ShardingJdbcClient extends BaseJdbcClient {
     }
    
 
-    @Override
-    protected String toSqlType(Type type)
-    {
-        
-        if (TIME_WITH_TIME_ZONE.equals(type)) {
-            return "time";
-        }
-        if (TIMESTAMP_WITH_TIME_ZONE.equals(type)) {
-            return "timestamp";
-        }
-
-        return super.toSqlType(type);
-    }
+    
 
 
   /**
@@ -185,38 +169,138 @@ public class ShardingJdbcClient extends BaseJdbcClient {
         return columnSet;
     }
   */ 
+    
+
+    protected JdbcOutputTableHandle createTable(ConnectorSession session, ConnectorTableMetadata tableMetadata, String tableName)
+            throws SQLException
+    {
+        SchemaTableName schemaTableName = tableMetadata.getTable();
+
+        JdbcIdentity identity = JdbcIdentity.from(session);
+        if (!getSchemaNames(identity).contains(schemaTableName.getSchemaName())) {
+            throw new PrestoException(NOT_FOUND, "Schema not found: " + schemaTableName.getSchemaName());
+        }
+
+        try (Connection connection = connectionFactory.openConnection(identity)) {
+            boolean uppercase = connection.getMetaData().storesUpperCaseIdentifiers();
+            String remoteSchema = toRemoteSchemaName(identity, connection, schemaTableName.getSchemaName());
+            String remoteTable = toRemoteTableName(identity, connection, remoteSchema, schemaTableName.getTableName());
+            if (uppercase) {
+                tableName = tableName.toUpperCase(ENGLISH);
+            }
+            String catalog = connection.getCatalog();
+
+            ImmutableList.Builder<String> columnNames = ImmutableList.builder();
+            ImmutableList.Builder<Type> columnTypes = ImmutableList.builder();
+            ImmutableList.Builder<String> columnList = ImmutableList.builder();
+            for (ColumnMetadata column : tableMetadata.getColumns()) {
+                String columnName = column.getName();
+                if (uppercase) {
+                    columnName = columnName.toUpperCase(ENGLISH);
+                }
+                columnNames.add(columnName);
+                columnTypes.add(column.getType());
+                columnList.add(getColumnSql(session, column, columnName));
+            }
+
+            String sql = createTableSql(catalog, remoteSchema, tableName, columnList.build());
+            execute(connection, sql);
+
+            return new JdbcOutputTableHandle(
+                    catalog,
+                    remoteSchema,
+                    remoteTable,
+                    columnNames.build(),
+                    columnTypes.build(),
+                    Optional.empty(),
+                    tableName);
+        }
+    }
+
+
+    private String getColumnSql(ConnectorSession session, ColumnMetadata column, String columnName)
+    {
+        StringBuilder sb = new StringBuilder()
+                .append(quoted(columnName))
+                .append(" ")
+                .append(toWriteMapping(session, column.getType()).getDataType());
+        if (!column.isNullable()) {
+            sb.append(" NOT NULL");
+        }
+        return sb.toString();
+    }
+
+    
+    protected String createTableSql(String catalog, String remoteSchema, String tableName, List<String> columns)
+    {
+        return format("CREATE TABLE %s (%s)", quoted(catalog, remoteSchema, tableName), join(", ", columns));
+    }
+    
     @Override
     public JdbcOutputTableHandle beginCreateTable(ConnectorSession session, ConnectorTableMetadata tableMetadata)
     {
     	try {
-            return createTable(tableMetadata, session, tableMetadata.getTable().getTableName());
+            return createTable(session, tableMetadata,tableMetadata.getTable().getTableName());
         }
         catch (SQLException e) {
             throw new PrestoException(JDBC_ERROR, e);
         }
     }
+    
 
     @Override
-    public JdbcOutputTableHandle beginInsertTable(ConnectorSession session, ConnectorTableMetadata tableMetadata)
+    public JdbcOutputTableHandle beginInsertTable(ConnectorSession session, JdbcTableHandle tableHandle, List<JdbcColumnHandle> columns)
     {
-    	SchemaTableName  table = tableMetadata.getTable();
-    	try {
-            return createTable(tableMetadata, session, table.getTableName());
+        SchemaTableName schemaTableName = tableHandle.getSchemaTableName();
+        JdbcIdentity identity = JdbcIdentity.from(session);
+
+        ImmutableList.Builder<String> columnNames = ImmutableList.builder();
+        ImmutableList.Builder<Type> columnTypes = ImmutableList.builder();
+        ImmutableList.Builder<JdbcTypeHandle> jdbcColumnTypes = ImmutableList.builder();
+        
+        try (Connection connection = connectionFactory.openConnection(identity)) {
+            boolean uppercase = connection.getMetaData().storesUpperCaseIdentifiers();
+            String remoteSchema = toRemoteSchemaName(identity, connection, schemaTableName.getSchemaName());
+            String remoteTable = toRemoteTableName(identity, connection, remoteSchema, schemaTableName.getTableName());
+            String tableName = remoteTable;//generateTemporaryTableName();
+            if (uppercase) {
+                tableName = tableName.toUpperCase(ENGLISH);
+            }
+            String catalog = connection.getCatalog();
+
+           
+            for (JdbcColumnHandle column : columns) {
+                columnNames.add(column.getColumnName());
+                columnTypes.add(column.getColumnType());
+                jdbcColumnTypes.add(column.getJdbcTypeHandle());
+            }
+
+            copyTableSchema(connection, catalog, remoteSchema, remoteTable, tableName, columnNames.build());
+
+            return new JdbcOutputTableHandle(
+                    catalog,
+                    remoteSchema,
+                    remoteTable,
+                    columnNames.build(),
+                    columnTypes.build(),
+                    Optional.of(jdbcColumnTypes.build()),
+                    tableName);
         }
-        catch (SQLException e) {        	
-        	log.info("Begin insert table, Table already exists  for "+tableMetadata.getTable());
-        	List<String> columnNames = tableMetadata.getColumns().stream().map(meta->meta.getName()).collect(Collectors.toList());
-        	List<Type> columnTypes = tableMetadata.getColumns().stream().map(meta->meta.getType()).collect(Collectors.toList());
-        	return new JdbcOutputTableHandle(
-                     connectorId,
-                     null,
-                     table.getSchemaName(),                     
-                     table.getTableName(),
-                     columnNames,
-                     columnTypes,
-                     table.getTableName());
+        catch (SQLException e) {
+            //throw new PrestoException(JDBC_ERROR, e);        	
+        	log.info("Begin insert table, Table already exists  for "+schemaTableName.getTableName());
+        	
+        	return new JdbcOutputTableHandle(                     
+        			 null,
+        			 schemaTableName.getSchemaName(),
+        			 schemaTableName.getTableName(),
+                     columnNames.build(),
+                     columnTypes.build(),
+                     Optional.of(jdbcColumnTypes.build()),
+                     schemaTableName.getTableName());
         }
     }
+    
     @Override
     public void commitCreateTable(JdbcIdentity identity, JdbcOutputTableHandle handle)
     {
@@ -236,27 +320,26 @@ public class ShardingJdbcClient extends BaseJdbcClient {
     }
     
     @Override
-    public ConnectorSplitSource getSplits(JdbcIdentity identity, JdbcTableLayoutHandle layoutHandle)
+    public ConnectorSplitSource getSplits(ConnectorSession session, JdbcTableHandle tableHandle)
     {
-        JdbcTableHandle tableHandle = layoutHandle.getTable();
-        List<JdbcSplit> list = new ArrayList<>();
-        
-        	Optional<JdbcExpression> predicate = layoutHandle.getAdditionalPredicate();
-        	
-			Collection<DbInfo> dblist = DbUtil.getDataNodeListForType(tableHandle.getTableName());
+      
+    	List<JdbcSplit> list = new ArrayList<>();
+    
+    	TupleDomain predicate = tableHandle.getConstraint();
+    	
+		Collection<DbInfo> dblist = DbUtil.getDataNodeListForType(tableHandle.getTableName());
+		
+		for(DbInfo dbInfo: dblist) {
+			JdbcSplit jdbcSplit = new ShardingJdbcSplit(
+					dbInfo.getId(),
+                tableHandle.getCatalogName(),
+                tableHandle.getSchemaName(),
+                tableHandle.getTableName(),
+                predicate,
+                Optional.empty());
 			
-			for(DbInfo dbInfo: dblist) {
-				JdbcSplit jdbcSplit = new JdbcSplit(
-						dbInfo.getId(),//connectorId,
-	                tableHandle.getCatalogName(),
-	                tableHandle.getSchemaName(),
-	                tableHandle.getTableName(),
-	                layoutHandle.getTupleDomain(),
-	                predicate);
-				
-				list.add(jdbcSplit);
-			}
-        
+			list.add(jdbcSplit);
+		}
         return new FixedSplitSource(list);
     }
     
@@ -266,7 +349,8 @@ public class ShardingJdbcClient extends BaseJdbcClient {
     {
         Connection connection = null;//connectionFactory.openConnection(identity);
         try {
-        	connection = DbUtil.getConnection(split.getConnectorId());
+        	ShardingJdbcSplit shardSplit = (ShardingJdbcSplit) split;
+        	connection = DbUtil.getConnection(shardSplit.getConnectorId());
             connection.setReadOnly(true);
         }
         catch (SQLException e) {

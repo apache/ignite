@@ -1,43 +1,46 @@
 package com.shard.jdbc.plugin;
 
-import static com.facebook.presto.plugin.jdbc.JdbcErrorCode.JDBC_ERROR;
-import static com.facebook.presto.plugin.jdbc.JdbcErrorCode.JDBC_NON_TRANSIENT_ERROR;
-import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
-import static com.facebook.presto.spi.type.BigintType.BIGINT;
-import static com.facebook.presto.spi.type.Chars.isCharType;
-import static com.facebook.presto.spi.type.DateTimeEncoding.unpackMillisUtc;
-import static com.facebook.presto.spi.type.DateType.DATE;
-import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
-import static com.facebook.presto.spi.type.IntegerType.INTEGER;
-import static com.facebook.presto.spi.type.RealType.REAL;
-import static com.facebook.presto.spi.type.SmallintType.SMALLINT;
-import static com.facebook.presto.spi.type.TinyintType.TINYINT;
-import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
-import static com.facebook.presto.spi.type.Varchars.isVarcharType;
 import static com.shard.jdbc.util.TypeUtils.isArrayType;
 import static com.shard.jdbc.util.TypeUtils.isMapType;
 import static com.shard.jdbc.util.TypeUtils.isRowType;
-import static java.lang.Float.intBitsToFloat;
-import static java.lang.Math.toIntExact;
+import static io.prestosql.plugin.jdbc.JdbcErrorCode.JDBC_ERROR;
+import static io.prestosql.plugin.jdbc.JdbcErrorCode.JDBC_NON_TRANSIENT_ERROR;
+import static io.prestosql.spi.StandardErrorCode.NOT_SUPPORTED;
+import static io.prestosql.spi.type.BigintType.BIGINT;
+import static io.prestosql.spi.type.BooleanType.BOOLEAN;
+import static io.prestosql.spi.type.Chars.isCharType;
+import static io.prestosql.spi.type.DateTimeEncoding.unpackMillisUtc;
+
+import static io.prestosql.spi.type.Decimals.readBigDecimal;
+import static io.prestosql.spi.type.DateType.DATE;
+import static io.prestosql.spi.type.DoubleType.DOUBLE;
+import static io.prestosql.spi.type.IntegerType.INTEGER;
+import static io.prestosql.spi.type.RealType.REAL;
+import static io.prestosql.spi.type.SmallintType.SMALLINT;
+import static io.prestosql.spi.type.TinyintType.TINYINT;
+import static io.prestosql.spi.type.VarbinaryType.VARBINARY;
+import static io.prestosql.spi.type.Varchars.isVarcharType;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.lang.Float.intBitsToFloat;
+import static java.lang.Math.toIntExact;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static org.joda.time.chrono.ISOChronology.getInstanceUTC;
 
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -48,33 +51,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.joda.time.DateTimeZone;
 
-import com.facebook.presto.plugin.jdbc.JdbcClient;
-import com.facebook.presto.plugin.jdbc.JdbcOutputTableHandle;
-import com.facebook.presto.plugin.jdbc.JdbcPageSink;
-import com.facebook.presto.spi.ConnectorSession;
-import com.facebook.presto.spi.Page;
-import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.StandardErrorCode;
-import com.facebook.presto.spi.block.Block;
-import com.facebook.presto.spi.type.BigintType;
-import com.facebook.presto.spi.type.BooleanType;
-import com.facebook.presto.spi.type.DateTimeEncoding;
-import com.facebook.presto.spi.type.DateType;
-import com.facebook.presto.spi.type.DecimalType;
-import com.facebook.presto.spi.type.Decimals;
-import com.facebook.presto.spi.type.DoubleType;
-import com.facebook.presto.spi.type.IntegerType;
-import com.facebook.presto.spi.type.NamedTypeSignature;
-import com.facebook.presto.spi.type.SmallintType;
-import com.facebook.presto.spi.type.TimeType;
-import com.facebook.presto.spi.type.TimeWithTimeZoneType;
-import com.facebook.presto.spi.type.TimestampType;
-import com.facebook.presto.spi.type.TimestampWithTimeZoneType;
-import com.facebook.presto.spi.type.TinyintType;
-import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.TypeSignatureParameter;
-import com.facebook.presto.spi.type.VarbinaryType;
-import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.*;
 import com.shard.jdbc.database.DbInfo;
 import com.shard.jdbc.exception.DbException;
 import com.shard.jdbc.exception.NoMatchDataSourceException;
@@ -82,20 +59,54 @@ import com.shard.jdbc.shard.Shard;
 import com.shard.jdbc.shard.ShardProperty;
 import com.shard.jdbc.util.DbUtil;
 
+import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 
+import io.prestosql.plugin.jdbc.JdbcClient;
+import io.prestosql.plugin.jdbc.JdbcOutputTableHandle;
+import io.prestosql.plugin.jdbc.JdbcPageSink;
+import io.prestosql.spi.Page;
+import io.prestosql.spi.PrestoException;
+import io.prestosql.spi.StandardErrorCode;
+import io.prestosql.spi.block.Block;
+import io.prestosql.spi.connector.ConnectorSession;
+import io.prestosql.spi.type.BigintType;
+import io.prestosql.spi.type.BooleanType;
+import io.prestosql.spi.type.DateTimeEncoding;
+import io.prestosql.spi.type.DateType;
+import io.prestosql.spi.type.DecimalType;
+import io.prestosql.spi.type.Decimals;
+import io.prestosql.spi.type.DoubleType;
+import io.prestosql.spi.type.IntegerType;
+import io.prestosql.spi.type.NamedTypeSignature;
+import io.prestosql.spi.type.SmallintType;
+import io.prestosql.spi.type.TimeType;
+import io.prestosql.spi.type.TimeWithTimeZoneType;
+import io.prestosql.spi.type.TimestampType;
+import io.prestosql.spi.type.TimestampWithTimeZoneType;
+import io.prestosql.spi.type.TinyintType;
+import io.prestosql.spi.type.Type;
+import io.prestosql.spi.type.TypeSignatureParameter;
+import io.prestosql.spi.type.VarbinaryType;
 
 public class ShardingJdbcPageSink extends JdbcPageSink {
-
+	protected static final Logger log = Logger.get(ShardingJdbcPageSink.class);
 	private final String implicitPrefix = "_pos";
+	
+	protected PreparedStatement statement;
+	private final List<Type> columnTypes;
+	
 	protected final PreparedStatement[] statements;
 	protected final Connection[] connections;
 	
 	protected final JdbcOutputTableHandle handle;
+	
+	private int batchSize = 0;
 
 	public ShardingJdbcPageSink(ConnectorSession session, JdbcOutputTableHandle handle, JdbcClient jdbcClient) {
 		super(session, handle, jdbcClient);		
 		this.handle = handle;
+		this.columnTypes = handle.getColumnTypes();
 		
 		Collection<DbInfo> list = DbUtil.getDataNodeListForType(handle.getTableName());
 		this.statements = new PreparedStatement[list.size()];
@@ -124,8 +135,8 @@ public class ShardingJdbcPageSink extends JdbcPageSink {
         	
             for (int position = 0; position < page.getPositionCount(); position++) {
             	Object[] row = new Object[page.getChannelCount()];
-            	PreparedStatement statement = this.statement;// primary meta statement
-            	Connection connection = this.connection; //primary meta connect
+            	PreparedStatement statement = null;// primary meta statement
+            	Connection connection = null; //primary meta connect
             	
                 for (int channel = 0; channel < page.getChannelCount(); channel++) {
                 	
@@ -134,7 +145,7 @@ public class ShardingJdbcPageSink extends JdbcPageSink {
                 	 Block block = page.getBlock(channel);
                      int parameter = channel + 1;
 
-                     Type type = this.columnTypes.get(channel);                   
+                     Type type = columnTypes.get(channel);                   
                      row[channel] = getObjectValue(type, block, position);
                      
                      
@@ -175,6 +186,96 @@ public class ShardingJdbcPageSink extends JdbcPageSink {
             throw new PrestoException(JDBC_ERROR, e);
         }
         return NOT_BLOCKED;
+    }
+
+	
+
+
+    protected void _appendColumn(Page page, int position, int channel)
+            throws SQLException
+    {
+        Block block = page.getBlock(channel);
+        int parameter = channel + 1;
+
+        if (block.isNull(position)) {
+            statement.setObject(parameter, null);
+            return;
+        }
+
+        Type type = columnTypes.get(channel);
+        if (BOOLEAN.equals(type)) {
+            statement.setBoolean(parameter, type.getBoolean(block, position));
+        }
+        else if (BIGINT.equals(type)) {
+            statement.setLong(parameter, type.getLong(block, position));
+        }
+        else if (INTEGER.equals(type)) {
+            statement.setInt(parameter, toIntExact(type.getLong(block, position)));
+        }
+        else if (SMALLINT.equals(type)) {
+            statement.setShort(parameter, Shorts.checkedCast(type.getLong(block, position)));
+        }
+        else if (TINYINT.equals(type)) {
+            statement.setByte(parameter, SignedBytes.checkedCast(type.getLong(block, position)));
+        }
+        else if (DOUBLE.equals(type)) {
+            statement.setDouble(parameter, type.getDouble(block, position));
+        }
+        else if (REAL.equals(type)) {
+            statement.setFloat(parameter, intBitsToFloat(toIntExact(type.getLong(block, position))));
+        }
+        else if (type instanceof DecimalType) {
+            statement.setBigDecimal(parameter, readBigDecimal((DecimalType) type, block, position));
+        }
+        else if (isVarcharType(type) || isCharType(type)) {
+            statement.setString(parameter, type.getSlice(block, position).toStringUtf8());
+        }
+        else if (VARBINARY.equals(type)) {
+            statement.setBytes(parameter, type.getSlice(block, position).getBytes());
+        }
+        else if (DATE.equals(type)) {
+            // convert to midnight in default time zone
+            long utcMillis = DAYS.toMillis(type.getLong(block, position));
+            long localMillis = getInstanceUTC().getZone().getMillisKeepLocal(DateTimeZone.getDefault(), utcMillis);
+            statement.setDate(parameter, new Date(localMillis));
+        }
+        //add@byron
+        else if(TimestampType.TIMESTAMP.equals(type)) {
+        	// convert to midnight in default time zone
+            long utcMillis = (type.getLong(block, position));
+            long localMillis = getInstanceUTC().getZone().getMillisKeepLocal(DateTimeZone.getDefault(), utcMillis);
+        	statement.setTimestamp(parameter, new Timestamp(localMillis));
+        }
+        else if(TimestampWithTimeZoneType.TIMESTAMP_WITH_TIME_ZONE.equals(type)) {
+        	// convert to midnight in default time zone
+        	long timestampWithTimeZone = type.getLong(block, position);
+            long utcMillis = DateTimeEncoding.unpackMillisUtc(timestampWithTimeZone);
+            long timeZoneOffset = timestampWithTimeZone & 0xFFF;
+            long localMillis = getInstanceUTC().getZone().getMillisKeepLocal(DateTimeZone.forOffsetMillis((int)timeZoneOffset), utcMillis);
+        	statement.setTimestamp(parameter, new Timestamp(localMillis));
+        	
+        }
+        else if(TimeType.TIME.equals(type)) {
+        	// convert to midnight in default time zone
+            long utcMillis = (type.getLong(block, position));
+            long localMillis = getInstanceUTC().getZone().getMillisKeepLocal(DateTimeZone.getDefault(), utcMillis);
+        	statement.setTime(parameter, new Time(localMillis));        	
+        }
+        else if(TimeWithTimeZoneType.TIME_WITH_TIME_ZONE.equals(type)) {
+        	// convert to midnight in default time zone
+        	long timestampWithTimeZone = type.getLong(block, position);
+            long utcMillis = DateTimeEncoding.unpackMillisUtc(timestampWithTimeZone);
+            long timeZoneOffset = timestampWithTimeZone & 0xFFF;
+            long localMillis = getInstanceUTC().getZone().getMillisKeepLocal(DateTimeZone.forOffsetMillis((int)timeZoneOffset), utcMillis);
+        	statement.setTime(parameter, new Time(localMillis));        	
+        }        
+        else {
+        	Object other = getObjectValue(type, block, position);
+        	if(other!=null) {
+        		statement.setObject(parameter, other);
+        	}
+            throw new PrestoException(NOT_SUPPORTED, "Unsupported column type: " + type.getDisplayName());
+        }
     }
 
 
@@ -219,8 +320,8 @@ public class ShardingJdbcPageSink extends JdbcPageSink {
     	super.abort();
     }
     
-	@Override
-	protected Object getObjectValue(Type type, Block block, int position) {
+	
+	protected final Object getObjectValue(Type type, Block block, int position) {
 		if (block.isNull(position)) {
 			return null;
 		}
@@ -280,7 +381,7 @@ public class ShardingJdbcPageSink extends JdbcPageSink {
 		if (isArrayType(type)) {
 			Type elementType = type.getTypeParameters().get(0);
 
-			Block arrayBlock = block.getBlock(position);
+			Block arrayBlock = block.getSingleValueBlock(position);
 
 			List<Object> list = new ArrayList<>(arrayBlock.getPositionCount());
 			for (int i = 0; i < arrayBlock.getPositionCount(); i++) {
@@ -294,7 +395,7 @@ public class ShardingJdbcPageSink extends JdbcPageSink {
 			Type keyType = type.getTypeParameters().get(0);
 			Type valueType = type.getTypeParameters().get(1);
 
-			Block mapBlock = block.getBlock(position);
+			Block mapBlock = block.getSingleValueBlock(position);
 
 			// map type is converted into list of fixed keys document
 			List<Object> values = new ArrayList<>(mapBlock.getPositionCount() / 2);
@@ -308,7 +409,7 @@ public class ShardingJdbcPageSink extends JdbcPageSink {
 			return unmodifiableList(values);
 		}
 		if (isRowType(type)) {
-			Block rowBlock = block.getBlock(position);
+			Block rowBlock = block.getSingleValueBlock(position);
 
 			List<Type> fieldTypes = type.getTypeParameters();
 			if (fieldTypes.size() != rowBlock.getPositionCount()) {

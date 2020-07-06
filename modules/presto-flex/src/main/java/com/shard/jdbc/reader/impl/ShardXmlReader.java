@@ -1,24 +1,22 @@
 package com.shard.jdbc.reader.impl;
 
-import com.shard.jdbc.exception.InvalidShardConfException;
-import com.shard.jdbc.reader.Reader;
-import com.shard.jdbc.shard.ShardProperty;
-import com.shard.jdbc.shard.ShardType;
-
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.eclipse.jetty.util.StringUtil;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
 import org.jdom2.input.SAXBuilder;
 
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import com.google.common.base.Strings;
+import com.shard.jdbc.exception.InvalidShardConfException;
+import com.shard.jdbc.reader.Reader;
+import com.shard.jdbc.shard.ShardProperty;
+import com.shard.jdbc.shard.ShardType;
 
 /**
  * shard configuration reader
@@ -59,11 +57,11 @@ public class ShardXmlReader extends Reader {
                             ele.getAttributeValue(CLASS_ATTRIBUTE)));
                 }
 
-                if (StringUtil.isBlank(ele.getAttributeValue(CLASS_ATTRIBUTE))) {
+                if (Strings.isNullOrEmpty(ele.getAttributeValue(CLASS_ATTRIBUTE))) {
                     throw new InvalidShardConfException(String.format("invalid configuration for shard node:[%s], missing class attribute",
                             ele.getAttributeValue(CLASS_ATTRIBUTE)));
                 }
-                if (StringUtil.isBlank(ele.getAttributeValue(TYPE_ATTRIBUTE))) {
+                if (Strings.isNullOrEmpty(ele.getAttributeValue(TYPE_ATTRIBUTE))) {
                     throw new InvalidShardConfException(String.format("invalid configuration for shard node:[%s], missing type attribute",
                             ele.getAttributeValue(TYPE_ATTRIBUTE)));
                 }
@@ -73,7 +71,7 @@ public class ShardXmlReader extends Reader {
                 //if specify shard type, then shard-property node need to be present
                 if (type.equals(ShardType.HASH) || type.equals(ShardType.RANGE) || type.equals(ShardType.RANGE_HASH)) {
                     String propName = ele.getAttributeValue(COLUMN_ATTRIBUTE);
-                    if (StringUtil.isBlank(propName)) {
+                    if (Strings.isNullOrEmpty(propName)) {
                         throw new InvalidShardConfException(String.format("invalid configuration for shard node:[%s], missing column attribute",
                                 ele.getAttributeValue(CLASS_ATTRIBUTE)));
                     }                   

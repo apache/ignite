@@ -13,10 +13,13 @@
  */
 package org.ebyhr.presto.flex;
 
-import com.google.common.collect.ImmutableList;
-import org.testng.annotations.Test;
-
 import static org.testng.Assert.assertEquals;
+
+import java.util.Arrays;
+
+import org.apache.presto.flex.FlexClient;
+import org.apache.presto.flex.FlexConfig;
+import org.testng.annotations.Test;
 
 public class TestFlexClient
 {
@@ -24,6 +27,6 @@ public class TestFlexClient
     public void testMetadata()
     {
         FlexClient client = new FlexClient(new FlexConfig());
-        assertEquals(client.getSchemaNames(), ImmutableList.of("csv", "tsv", "txt", "raw", "excel"));
+        assertEquals(client.getSchemaNames(), Arrays.asList("csv", "tsv", "txt", "raw", "excel"));
     }
 }

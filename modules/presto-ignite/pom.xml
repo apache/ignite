@@ -7,53 +7,120 @@
     <groupId>com.al.data</groupId>
     <artifactId>presto-ignite</artifactId>
     <version>2.9.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>presto-plugin</packaging>
     
-     <properties>
-     	<maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-    	<netty.version>4.1.27.Final</netty.version>
-        <presto.version>0.234-SNAPSHOT</presto.version>
-        <prestosql.version>329</prestosql.version>
-        <dep.airlift.version>0.191</dep.airlift.version>
+    <properties>
+        <air.main.basedir>${project.basedir}</air.main.basedir>
+
+        <air.maven.version>3.5.3</air.maven.version>
+        <air.check.skip-spotbugs>true</air.check.skip-spotbugs>
+        <air.check.skip-pmd>true</air.check.skip-pmd>
+        <air.check.skip-jacoco>true</air.check.skip-jacoco>
+		<air.check.skip-dependency>true</air.check.skip-dependency>
+		<air.check.skip-spi-dependency>true</air.check.skip-spi-dependency>
+		<air.check.skip-checkstyle>true</air.check.skip-checkstyle>
+
+
+        <dep.presto.version>337</dep.presto.version>
+        <dep.airlift.version>0.198</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
-        <jackson.version>2.9.8</jackson.version>    
+        <dep.jackson.version>2.10.3</dep.jackson.version>
+        <dep.testng.version>6.10</dep.testng.version>
+        <air.javadoc.lint>-missing</air.javadoc.lint>
+		<maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.targetJdk>11</project.build.targetJdk>
     </properties>
 
-    <dependencies> 
-        
- 		<dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
+    <dependencies>
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>${dep.airlift.version}</version>
         </dependency>
 
-        <!-- Presto SPI -->  
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>json</artifactId>
+            <version>${dep.airlift.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>log</artifactId>
+            <version>${dep.airlift.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>slice</artifactId>
+            <version>0.38</version>
+            <scope>provided</scope>
+            <exclusions>
+            	<exclusion>
+            		<groupId>org.openjdk.jol</groupId>
+            		<artifactId>jol-core</artifactId>
+            	</exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>29.0-jre</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>4.2.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+            <version>1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${dep.jackson.version}</version>
+        </dependency>
+
+        <!-- Presto SPI -->
+        <dependency>
+            <groupId>io.prestosql</groupId>
+            <artifactId>presto-spi</artifactId>
+          	<scope>provided</scope>
+            <version>${dep.presto.version}</version>
+            <exclusions>
+            	<exclusion>
+            		<groupId>org.openjdk.jol</groupId>
+            		<artifactId>jol-core</artifactId>
+            	</exclusion>
+            </exclusions>
+        </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
-           
+            <version>${dep.jackson.version}</version>
+            <scope>provided</scope>
         </dependency>
-
-     
-
-        <!-- Presto SPI -->
-         <dependency>
-            <groupId>com.facebook.presto</groupId>
-            <artifactId>presto-spi</artifactId>
-            <version>${presto.version}</version>
-           
-        </dependency>
-
+	
         <dependency>
-            <groupId>com.facebook.presto</groupId>
+            <groupId>io.prestosql</groupId>
             <artifactId>presto-base-jdbc</artifactId>
-            <version>${presto.version}</version>
-           
+            <version>${dep.presto.version}</version>
+            
+            <exclusions>
+            	<exclusion>
+            		<groupId>org.openjdk.jol</groupId>
+            		<artifactId>jol-core</artifactId>
+            	</exclusion>
+            </exclusions>
         </dependency> 
-        
         <!--
         <dependency>
             <groupId>com.facebook.presto</groupId>
@@ -75,9 +142,7 @@
             <artifactId>ignite-indexing</artifactId>
             <version>${project.version}</version>
         </dependency>
-    
-		
-
+	  
 
         <dependency>
             <groupId>javax.servlet</groupId>
@@ -89,71 +154,17 @@
 
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
+    
+    		
             
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-clean-plugin</artifactId>
-                <version>2.5</version>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-install-plugin</artifactId>
-                <version>2.5.1</version>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.4</version>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.6</version>
-            </plugin>
-           
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>sonar-maven-plugin</artifactId>
-                <version>1.0</version>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.17</version>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.1</version>
-            </plugin>
-            <plugin>
-                <groupId>com.facebook.presto</groupId>
+        <plugins>
+        
+        	<plugin>
+                <groupId>io.prestosql</groupId>
                 <artifactId>presto-maven-plugin</artifactId>
-                <version>0.3</version>
+                <version>6</version>
                 <extensions>true</extensions>
             </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.2</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                </configuration>
-            </plugin>
-           
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

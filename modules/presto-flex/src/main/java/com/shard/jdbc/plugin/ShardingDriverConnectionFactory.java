@@ -13,28 +13,26 @@
  */
 package com.shard.jdbc.plugin;
 
+import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.Driver;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import com.facebook.presto.plugin.jdbc.BaseJdbcConfig;
-import com.facebook.presto.plugin.jdbc.ConnectionFactory;
-import com.facebook.presto.plugin.jdbc.DriverConnectionFactory;
-import com.facebook.presto.plugin.jdbc.JdbcIdentity;
 import com.shard.jdbc.util.DbUtil;
 
-import static com.google.common.base.Preconditions.checkState;
-import static java.util.Objects.requireNonNull;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import io.prestosql.plugin.jdbc.BaseJdbcConfig;
+import io.prestosql.plugin.jdbc.ConnectionFactory;
+import io.prestosql.plugin.jdbc.DriverConnectionFactory;
+import io.prestosql.plugin.jdbc.JdbcIdentity;
+import io.prestosql.plugin.jdbc.credential.CredentialProvider;
 
 public class ShardingDriverConnectionFactory extends DriverConnectionFactory
         implements ConnectionFactory
 {
 	ShardingJdbcConfig metaDataConfig;
+	
+
 
 	public static Driver setupDriver(String driverClassName) {
 		
@@ -54,9 +52,9 @@ public class ShardingDriverConnectionFactory extends DriverConnectionFactory
 
 	}
 
-    public ShardingDriverConnectionFactory(ShardingJdbcConfig metaDataConfig, BaseJdbcConfig config)
+    public ShardingDriverConnectionFactory(ShardingJdbcConfig metaDataConfig, BaseJdbcConfig config,Properties connectionProperties,CredentialProvider credentialProvider)
     {    	
-        super(setupDriver(metaDataConfig.getDriver()), config.getConnectionUrl(), basicConnectionProperties(config));
+        super(setupDriver(metaDataConfig.getDriver()), config.getConnectionUrl(), connectionProperties,credentialProvider);
         this.metaDataConfig = metaDataConfig;
         DbUtil.init(metaDataConfig.getShardingRulePath());
     }

@@ -1,23 +1,21 @@
 package com.shard.jdbc.reader.impl;
 
-import com.shard.jdbc.database.DbInfo;
-import com.shard.jdbc.exception.DuplicateDBException;
-import com.shard.jdbc.exception.InvalidShardConfException;
-import com.shard.jdbc.reader.Reader;
-
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.eclipse.jetty.util.StringUtil;
-import org.jdom2.Document;
-import org.jdom2.Element;
-import org.jdom2.input.SAXBuilder;
-
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.input.SAXBuilder;
+
+import com.google.common.base.Strings;
+import com.shard.jdbc.database.DbInfo;
+import com.shard.jdbc.exception.DuplicateDBException;
+import com.shard.jdbc.exception.InvalidShardConfException;
+import com.shard.jdbc.reader.Reader;
 
 /**
  * database configuration reader
@@ -50,7 +48,7 @@ public class DbXmlReader extends Reader {
         //iterate every database node
         for (Element database: root.getChildren(DATABASE_NODE)) {
             String id = database.getAttributeValue(ID_ATTRIBUTE);
-            if (StringUtil.isBlank(id)) {
+            if (Strings.isNullOrEmpty(id)) {
                 throw new InvalidShardConfException("database id is mandatory, please check your database file");
             }
 

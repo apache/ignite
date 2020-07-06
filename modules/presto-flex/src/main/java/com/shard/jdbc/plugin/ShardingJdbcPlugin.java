@@ -1,6 +1,6 @@
 package com.shard.jdbc.plugin;
 
-import com.facebook.presto.plugin.jdbc.JdbcPlugin;
+import io.prestosql.plugin.jdbc.JdbcPlugin;
 
 
 public class ShardingJdbcPlugin extends JdbcPlugin {
