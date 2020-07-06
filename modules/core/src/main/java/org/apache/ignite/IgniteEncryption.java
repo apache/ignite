@@ -73,7 +73,7 @@ public interface IgniteEncryption {
     public IgniteFuture<Void> changeMasterKey(String masterKeyName);
 
     /**
-     * Starts cache group encryption key change.
+     * Starts cache group encryption key change process.
      *
      * @param cacheOrGrpNames Cache or group names.
      * @return Future that will be completed when a new key is set for writing on all nodes of the cluster.
