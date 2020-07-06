@@ -18,9 +18,11 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
+    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
@@ -32,6 +34,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Cache.Event;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
@@ -550,7 +553,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Thread.Sleep(interval);
 
             // Check that socket has no dangling notifications.
-            Assert.Fail("TODO");
+            var failoverSocket = TestUtils.GetPrivateField<ClientFailoverSocket>(Client, "_socket");
+            var socket = TestUtils.GetPrivateField<ClientSocket>(failoverSocket, "_socket");
+            var listeners = TestUtils.GetPrivateField<ICollection>(socket, "_notificationListeners");
+
+            Assert.IsNotNull(listeners);
+            Assert.IsEmpty(listeners);
         }
 
         /// <summary>

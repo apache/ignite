@@ -533,5 +533,19 @@ namespace Apache.Ignite.Core.Tests
 
             return ex;
         }
+
+        /// <summary>
+        /// Gets the private field value.
+        /// </summary>
+        public static T GetPrivateField<T>(object obj, string name)
+        {
+            Assert.IsNotNull(obj);
+
+            var field = obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.IsNotNull(field);
+
+            return (T) field.GetValue(obj);
+        }
     }
 }
