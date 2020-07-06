@@ -23,7 +23,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.FactoryBuilder;
+import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
@@ -131,6 +133,61 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
                 msg instanceof CacheContinuousQueryBatchAck, (int)(MAX_PENDING_BUFF_SIZE * 1.1));
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testPendingSendToClientOnLimitReached() throws Exception {
+        AtomicInteger keys = new AtomicInteger();
+        AtomicReference<String> err = new AtomicReference<>();
+
+        IgniteEx srv = startGrids(2);
+        IgniteEx clnt = startClientGrid();
+
+        CacheEntryEventSerializableFilter<Integer, Integer> filter = new CacheEntryEventSerializableFilter<Integer,Integer>() {
+            @Override public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
+                return evt.getKey() % 2 == 0;
+            }
+        };
+
+        ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
+        cq.setRemoteFilterFactory(FactoryBuilder.factoryOf(filter));
+        cq.setLocalListener((events) -> events.forEach(e -> {
+            if (!filter.evaluate(e))
+                err.compareAndSet(null, "Key must be filtered [e=" + e + ']');
+        }));
+        cq.setLocal(false);
+
+        spi(srv).blockMessages((nodeId, msg) -> msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 10);
+        spi(clnt).blockMessages((nodeId, msg) -> msg instanceof CacheContinuousQueryBatchAck);
+
+        IgniteInternalFuture<?> loadFut = null;
+
+        try (QueryCursor<?> qry = clnt.cache(DEFAULT_CACHE_NAME).query(cq)) {
+            awaitPartitionMapExchange();
+
+            loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+                while (!Thread.currentThread().isInterrupted())
+                    clnt.cache(DEFAULT_CACHE_NAME).put(keys.incrementAndGet(), 0);
+            }, 3, "cq-put-");
+
+            ConcurrentMap<Long, CacheContinuousQueryEntry> pending =
+                getContinuousQueryPendingBuffer(grid(0), CU.cacheId(DEFAULT_CACHE_NAME), 0);
+
+            waitForCondition(() -> pending.size() > MAX_PENDING_BUFF_SIZE, 15_000);
+
+            // Check all entries greater than limit filtered correctly.
+            waitForCondition(() -> keys.get() > MAX_PENDING_BUFF_SIZE * 2, 15_000);
+        }
+        finally {
+            TestRecordingCommunicationSpi.stopBlockAll();
+
+            if (loadFut != null)
+                loadFut.cancel();
+        }
+
+        if (err.get() != null)
+            throw new Exception(err.get());
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -194,14 +251,9 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             for (int j = 0; j < TOTAL_KEYS; j++)
                 cache.put(rnd.nextInt(TOTAL_KEYS), rnd.nextInt());
 
-            SystemView<ContinuousQueryView> rmtQryView = rmtIgnite.context().systemView().view(CQ_SYS_VIEW);
-            assertEquals(1, rmtQryView.size());
-
-            UUID routineId = rmtQryView.iterator().next().routineId();
-
             // Partition Id, Update Counter, Continuous Entry.
             ConcurrentMap<Long, CacheContinuousQueryEntry> pending =
-                getContinuousQueryPendingBuffer(rmtIgnite, routineId, CU.cacheId(DEFAULT_CACHE_NAME), 0);
+                getContinuousQueryPendingBuffer(rmtIgnite, CU.cacheId(DEFAULT_CACHE_NAME), 0);
 
             spi(locIgnite).blockMessages(locBlockPred);
 
@@ -248,17 +300,20 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
     /**
      * @param ignite Ignite remote instance.
-     * @param routineId Continuous query id.
      * @param cacheId Cache id.
      * @param partId Partition id.
      * @return Map of pending entries.
      */
     private static ConcurrentMap<Long, CacheContinuousQueryEntry> getContinuousQueryPendingBuffer(
         IgniteEx ignite,
-        UUID routineId,
         int cacheId,
         int partId
     ) {
+        SystemView<ContinuousQueryView> rmtQryView = ignite.context().systemView().view(CQ_SYS_VIEW);
+        assertEquals(1, rmtQryView.size());
+
+        UUID routineId = rmtQryView.iterator().next().routineId();
+
         CacheContinuousQueryHandler<?, ?> hnd = getRemoteContinuousQueryHandler(ignite, routineId);
         GridCacheContext<?, ?> cctx = ignite.context().cache().context().cacheContext(cacheId);
         CacheContinuousQueryEventBuffer buff = hnd.partitionBuffer(cctx, partId);
