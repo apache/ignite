@@ -124,7 +124,6 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
                 msg instanceof CacheContinuousQueryBatchAck);
     }
 
-
     /** {@inheritDoc} */
     @Override public IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)

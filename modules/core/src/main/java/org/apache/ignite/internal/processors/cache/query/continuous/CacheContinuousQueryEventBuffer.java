@@ -223,7 +223,7 @@ public class CacheContinuousQueryEventBuffer {
 
                         // Discard messages on backup and send to client if primary.
                         if (!backup)
-                            res = addResult(res, entry0, !backup);
+                            res = addResult(res, entry0.copyWithDataReset(), backup);
 
                         iter.remove();
                         pendingSize.decrementAndGet();
