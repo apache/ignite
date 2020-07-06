@@ -421,4 +421,14 @@ public class CacheView {
     public boolean isEmpty() {
         return stat.isEmpty();
     }
+
+    /** @return Total partitions count. */
+    public int totalPartitionsCount() {
+        return stat.totalPartitionsCount();
+    }
+
+    /** @return Rebalancing partitions count. */
+    public int rebalancingPartitionsCount() {
+        return stat.totalPartitionsCount();
+    }
 }

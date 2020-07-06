@@ -93,17 +93,19 @@ public class CacheViewWalker implements SystemViewRowAttributeWalker<CacheView> 
         v.accept(55, "rebalanceOrder", int.class);
         v.accept(56, "rebalanceThrottle", long.class);
         v.accept(57, "rebalanceTimeout", long.class);
-        v.accept(58, "size", int.class);
-        v.accept(59, "sqlIndexMaxInlineSize", int.class);
-        v.accept(60, "sqlOnheapCacheMaxSize", int.class);
-        v.accept(61, "sqlSchema", String.class);
-        v.accept(62, "topologyValidator", String.class);
-        v.accept(63, "writeBehindBatchSize", int.class);
-        v.accept(64, "writeBehindCoalescing", boolean.class);
-        v.accept(65, "writeBehindFlushFrequency", long.class);
-        v.accept(66, "writeBehindFlushSize", int.class);
-        v.accept(67, "writeBehindFlushThreadCount", int.class);
-        v.accept(68, "writeSynchronizationMode", CacheWriteSynchronizationMode.class);
+        v.accept(58, "rebalancingPartitionsCount", int.class);
+        v.accept(59, "size", int.class);
+        v.accept(60, "sqlIndexMaxInlineSize", int.class);
+        v.accept(61, "sqlOnheapCacheMaxSize", int.class);
+        v.accept(62, "sqlSchema", String.class);
+        v.accept(63, "topologyValidator", String.class);
+        v.accept(64, "totalPartitionsCount", int.class);
+        v.accept(65, "writeBehindBatchSize", int.class);
+        v.accept(66, "writeBehindCoalescing", boolean.class);
+        v.accept(67, "writeBehindFlushFrequency", long.class);
+        v.accept(68, "writeBehindFlushSize", int.class);
+        v.accept(69, "writeBehindFlushThreadCount", int.class);
+        v.accept(70, "writeSynchronizationMode", CacheWriteSynchronizationMode.class);
     }
 
     /** {@inheritDoc} */
@@ -166,21 +168,23 @@ public class CacheViewWalker implements SystemViewRowAttributeWalker<CacheView> 
         v.acceptInt(55, "rebalanceOrder", row.rebalanceOrder());
         v.acceptLong(56, "rebalanceThrottle", row.rebalanceThrottle());
         v.acceptLong(57, "rebalanceTimeout", row.rebalanceTimeout());
-        v.acceptInt(58, "size", row.size());
-        v.acceptInt(59, "sqlIndexMaxInlineSize", row.sqlIndexMaxInlineSize());
-        v.acceptInt(60, "sqlOnheapCacheMaxSize", row.sqlOnheapCacheMaxSize());
-        v.accept(61, "sqlSchema", String.class, row.sqlSchema());
-        v.accept(62, "topologyValidator", String.class, row.topologyValidator());
-        v.acceptInt(63, "writeBehindBatchSize", row.writeBehindBatchSize());
-        v.acceptBoolean(64, "writeBehindCoalescing", row.writeBehindCoalescing());
-        v.acceptLong(65, "writeBehindFlushFrequency", row.writeBehindFlushFrequency());
-        v.acceptInt(66, "writeBehindFlushSize", row.writeBehindFlushSize());
-        v.acceptInt(67, "writeBehindFlushThreadCount", row.writeBehindFlushThreadCount());
-        v.accept(68, "writeSynchronizationMode", CacheWriteSynchronizationMode.class, row.writeSynchronizationMode());
+        v.acceptInt(58, "rebalancingPartitionsCount", row.rebalancingPartitionsCount());
+        v.acceptInt(59, "size", row.size());
+        v.acceptInt(60, "sqlIndexMaxInlineSize", row.sqlIndexMaxInlineSize());
+        v.acceptInt(61, "sqlOnheapCacheMaxSize", row.sqlOnheapCacheMaxSize());
+        v.accept(62, "sqlSchema", String.class, row.sqlSchema());
+        v.accept(63, "topologyValidator", String.class, row.topologyValidator());
+        v.acceptInt(64, "totalPartitionsCount", row.totalPartitionsCount());
+        v.acceptInt(65, "writeBehindBatchSize", row.writeBehindBatchSize());
+        v.acceptBoolean(66, "writeBehindCoalescing", row.writeBehindCoalescing());
+        v.acceptLong(67, "writeBehindFlushFrequency", row.writeBehindFlushFrequency());
+        v.acceptInt(68, "writeBehindFlushSize", row.writeBehindFlushSize());
+        v.acceptInt(69, "writeBehindFlushThreadCount", row.writeBehindFlushThreadCount());
+        v.accept(70, "writeSynchronizationMode", CacheWriteSynchronizationMode.class, row.writeSynchronizationMode());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 69;
+        return 71;
     }
 }
