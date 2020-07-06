@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Arrays;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Arrays;
 
 /**
  * Compares fiels in serialized form when possible.

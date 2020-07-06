@@ -17,6 +17,12 @@
 
 package org.apache.ignite.yardstick.cache;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -25,13 +31,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
-
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.ignite.events.EventType.EVT_PAGE_REPLACEMENT_STARTED;
 
