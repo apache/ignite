@@ -2342,9 +2342,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (p0 != null && p0.state() == GridDhtPartitionState.MOVING)
                         moving.add(p0.id());
                 }
-
-                if (!moving.isEmpty())
-                    log.info("DBG: moving parts " + moving);
             }
 
             log.info("Finish exchange future [startVer=" + initialVersion() +
