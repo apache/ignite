@@ -1084,7 +1084,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                     var columns = columnsFunc != null ? columnsFunc(ctx) : null;
 
                     var qryHandle = new ClientContinuousQueryHandle<TK, TV>(ctx.Socket, _keepBinary, queryId, columns);
-                    
+
                     ctx.Socket.AddNotificationHandler(queryId,
                         (stream, err) => HandleContinuousQueryEvents(stream, err, listener, qryHandle));
 
@@ -1092,6 +1092,12 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 });
         }
 
+        /// <summary>
+        /// Writes the continuous query.
+        /// </summary>
+        /// <param name="ctx">Request context.</param>
+        /// <param name="continuousQuery">Query.</param>
+        /// <param name="writeInitialQueryAction">Initial query write action.</param>
         private void WriteContinuousQuery(ClientRequestContext ctx, ContinuousQueryClient<TK, TV> continuousQuery,
             Action<ClientRequestContext> writeInitialQueryAction = null)
         {
@@ -1159,7 +1165,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 var msg = _marsh.Unmarshal<string>(stream);
 
                 GetLogger().Error("Error while handling Continuous Query notification ({0}): {1}", status, msg);
-                
+
                 qryHandle.OnError(new IgniteClientException(msg, null, status));
             }
             else
