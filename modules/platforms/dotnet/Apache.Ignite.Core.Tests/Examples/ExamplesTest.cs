@@ -79,19 +79,19 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// Tests the example in a single node mode.
         /// </summary>
         /// <param name="example">The example to run.</param>
-        [Test, TestCaseSource("TestCasesLocal")]
-        public void TestLocalNode(Example example)
-        {
-            StopRemoteNodes();
+        /// [Test, TestCaseSource("TestCasesLocal")]
+        /// public void TestLocalNode(Example example)
+        /// {
+        ///     StopRemoteNodes();
 
-            if (LocalOnlyExamples.Contains(example.ExampleType))
-            {
-                Assert.IsFalse(example.NeedsTestDll, "Local-only example should not mention test dll.");
-                Assert.IsNull(example.ConfigPath, "Local-only example should not mention app.config path.");
-            }
+        ///     if (LocalOnlyExamples.Contains(example.ExampleType))
+        ///     {
+        ///         Assert.IsFalse(example.NeedsTestDll, "Local-only example should not mention test dll.");
+        ///         Assert.IsNull(example.ConfigPath, "Local-only example should not mention app.config path.");
+        ///     }
 
-            example.Run();
-        }
+        ///     example.Run();
+        /// }
 
         /// <summary>
         /// Tests the example with standalone Apache.Ignite.exe nodes.
