@@ -767,6 +767,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ctx.authentication().onLocalJoin();
 
                         ctx.encryption().onLocalJoin();
+
+                        ctx.cluster().onLocalJoin();
                     }
 
                     IgniteInternalFuture<Boolean> transitionWaitFut = ctx.state().onLocalJoin(discoCache);

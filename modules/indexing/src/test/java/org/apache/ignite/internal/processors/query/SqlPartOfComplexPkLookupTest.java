@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;

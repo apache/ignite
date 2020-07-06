@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.ignite.internal.igfs.common.IgfsLogger;
-
 import java.io.IOException;
 import java.io.OutputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.ignite.internal.igfs.common.IgfsLogger;
 
 /**
  * Secondary Hadoop file system output stream wrapper.

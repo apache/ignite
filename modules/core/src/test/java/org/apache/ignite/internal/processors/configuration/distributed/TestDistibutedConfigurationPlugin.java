@@ -21,16 +21,11 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
 
-/**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
- */
+/** */
 public class TestDistibutedConfigurationPlugin extends AbstractTestPluginProvider {
     /** */
     private GridKernalContext igniteCtx;

@@ -18,15 +18,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.UUID;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-
-import javax.cache.expiry.ExpiryPolicy;
-import java.util.UUID;
 import org.junit.Test;
 
 /**
