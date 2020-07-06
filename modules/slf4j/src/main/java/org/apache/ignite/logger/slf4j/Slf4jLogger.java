@@ -17,15 +17,21 @@
 
 package org.apache.ignite.logger.slf4j;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
+
+import java.util.UUID;
+
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 
 /**
  * SLF4J-based implementation for logging. This logger should be used
@@ -42,12 +48,19 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class Slf4jLogger implements IgniteLogger {
+public class Slf4jLogger implements IgniteLogger, LoggerNodeIdAware {
+	
+	private static final String NODE_ID = "nodeId";
+	
     /** SLF4J implementation proxy. */
     private final Logger impl;
 
     /** Quiet flag. */
     private final boolean quiet;
+    
+    /** Node ID. */
+    @GridToStringExclude
+    private volatile UUID nodeId;
 
     /**
      * Creates new logger.
@@ -171,4 +184,19 @@ public class Slf4jLogger implements IgniteLogger {
     @Override public String toString() {
         return S.toString(Slf4jLogger.class, this);
     }
+
+	@Override
+	public void setNodeId(UUID nodeId) {
+		A.notNull(nodeId, "nodeId");
+
+        this.nodeId = nodeId;
+
+        // Set nodeId as system variable to be used at configuration.
+        System.setProperty(NODE_ID, U.id8(nodeId));
+	}
+
+	@Override
+	public UUID getNodeId() {
+		return nodeId;
+	}
 }
