@@ -225,6 +225,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Onheap entries count. */
     private final LongGauge heapEntriesCnt;
 
+    /** Cache size. */
+    private final LongGauge cacheSize;
+
     /**
      * Creates cache metrics.
      *
@@ -393,6 +396,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         heapEntriesCnt = mreg.register("HeapEntriesCount",
             () -> getEntriesStat().heapEntriesCount(), "Onheap entries count.");
+
+        cacheSize = mreg.register("CacheSize",
+            () -> getEntriesStat().cacheSize(), "Local cache size.");
     }
 
     /**
@@ -495,7 +501,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCacheSize() {
-        return getEntriesStat().cacheSize();
+        return cacheSize.value();
     }
 
     /** {@inheritDoc} */

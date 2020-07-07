@@ -251,6 +251,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         assertEquals(offHeapBackupEntriesCount, ((LongMetric)mreg.findMetric("OffHeapBackupEntriesCount")).value());
         assertEquals(offHeapPrimaryEntriesCount, ((LongMetric)mreg.findMetric("OffHeapPrimaryEntriesCount")).value());
         assertEquals(heapEntriesCount, ((LongMetric)mreg.findMetric("HeapEntriesCount")).value());
+        assertEquals(cacheSize, ((LongMetric)mreg.findMetric("CacheSize")).value());
     }
 
     /**
