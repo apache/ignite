@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
@@ -62,12 +63,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
                     if (!ctx.discovery().localJoinFuture().isDone())
                         return;
 
-                    boolean start = (boolean)newVal;
-
-                    if (start)
-                        ctx.closure().runLocalSafe(writer::start);
-                    else
-                        writer.stop();
+                    onMetastorageUpdate((boolean)newVal);
                 });
             }
 
@@ -75,12 +71,12 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
                 PerformaceStatisticsProcessor.this.metastorage = metastorage;
 
                 try {
-                    Boolean enabled = metastorage.read(STAT_ENABLED_PREFIX);
+                    Boolean start = metastorage.read(STAT_ENABLED_PREFIX);
 
-                    if (enabled != null && enabled)
-                        ctx.closure().runLocalSafe(writer::start);
-                    else
-                        writer.stop();
+                    if (start == null)
+                        return;
+
+                    onMetastorageUpdate(start);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -188,5 +184,21 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     @Override public void onKernalStop(boolean cancel) {
         if (enabled())
             writer.stop();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        if (enabled())
+            writer.stop();
+    }
+
+    /** Starts or stops collecting statistics on metastorage update. */
+    private void onMetastorageUpdate(boolean start) {
+        ctx.closure().runLocalSafe(() -> {
+            if (start)
+                writer.start();
+            else
+                writer.stop();
+        });
     }
 }

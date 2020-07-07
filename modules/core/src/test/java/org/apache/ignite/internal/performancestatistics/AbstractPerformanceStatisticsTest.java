@@ -23,6 +23,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -87,9 +88,21 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         assertTrue(waitForCondition(() -> {
             List<Ignite> grids = G.allGrids();
 
-            for (Ignite grid : grids)
+            for (Ignite grid : grids) {
                 if (enabled != ((IgniteEx)grid).context().performanceStatistics().enabled())
                     return false;
+
+                Object fileWriter = GridTestUtils.getFieldValue(
+                    ((IgniteEx)grid).context().performanceStatistics(), "writer", "fileWriter");
+
+                // Make sure writer started.
+                if (enabled && fileWriter == null)
+                    return false;
+
+                // Make sure writer stopped.
+                if (!enabled && fileWriter != null)
+                    return false;
+            }
 
             return true;
         }, TIMEOUT));

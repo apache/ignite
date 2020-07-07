@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
@@ -84,6 +84,21 @@ public class FilePerformanceStatisticsWriter {
     /** Performance statistics file writer worker. */
     @Nullable private volatile FileWriter fileWriter;
 
+    /** Performance statistics file I/O. */
+    @Nullable private volatile FileIO fileIo;
+
+    /** File write buffer. */
+    @Nullable private volatile SegmentedRingByteBuffer ringByteBuffer;
+
+    /** Size of ready for flushing bytes. */
+    private final AtomicInteger readyForFlushSize = new AtomicInteger();
+
+    /** {@code True} if the small buffer warning message logged. */
+    private final AtomicBoolean smallBufLogged = new AtomicBoolean();
+
+    /** {@code True} if worker stopped due to maximum file size reached. */
+    private final AtomicBoolean stopByMaxSize = new AtomicBoolean();
+
     /** Hashcodes of cached strings. */
     private final ConcurrentSkipListSet<Integer> cachedStrings = new ConcurrentSkipListSet<>();
 
@@ -101,41 +116,38 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** Starts collecting performance statistics. */
-    public synchronized void start() {
-        if (enabled)
-            return;
-
-        FileWriter writer = fileWriter;
-
-        // Writer is stopping.
-        if (writer != null) {
-            try {
-                U.join(writer.runner());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to wait for previous writer stopping.", e);
-            }
-        }
-
-        try {
-            File file = statisticsFile(ctx);
-
-            U.delete(file);
-
-            FileIO fileIo = fileIoFactory.create(file);
-
-            fileWriter = new FileWriter(ctx, fileIo, log);
-
-            new IgniteThread(fileWriter).start();
+    public void start() {
+        synchronized (this) {
+            if (enabled)
+                return;
 
             enabled = true;
 
-            log.info("Performance statistics writer started [file=" + file.getAbsolutePath() + ']');
-        }
-        catch (IOException | IgniteCheckedException e) {
-            log.error("Failed to start performance statistics writer.", e);
+            try {
+                File file = statisticsFile(ctx);
 
-            throw new IgniteException("Failed to start performance statistics writer.", e);
+                U.delete(file);
+
+                fileIo = fileIoFactory.create(file);
+
+                ringByteBuffer = new SegmentedRingByteBuffer(DFLT_BUFFER_SIZE, DFLT_FILE_MAX_SIZE,
+                    SegmentedRingByteBuffer.BufferMode.DIRECT);
+
+                ringByteBuffer.init(0);
+
+                fileWriter = new FileWriter(ctx, log);
+
+                new IgniteThread(fileWriter).start();
+
+                log.info("Performance statistics writer started [file=" + file.getAbsolutePath() + ']');
+            }
+            catch (IOException | IgniteCheckedException e) {
+                log.error("Failed to start performance statistics writer.", e);
+
+                stopStatistics();
+
+                throw new IgniteException("Failed to start performance statistics writer.", e);
+            }
         }
     }
 
@@ -146,14 +158,31 @@ public class FilePerformanceStatisticsWriter {
                 return;
 
             enabled = false;
+
+            FileWriter fileWriter = this.fileWriter;
+
+            SegmentedRingByteBuffer buf = ringByteBuffer;
+
+            // Stop write new data.
+            if (buf != null)
+                buf.close();
+
+            // Make sure that all buffer's producers released to safe deallocate memory.
+            if (fileWriter != null)
+                U.awaitForWorkersStop(Collections.singleton(fileWriter), true, log);
+
+            if (buf != null)
+                buf.free();
+
+            U.closeQuiet(fileIo);
+
+            readyForFlushSize.set(0);
+            smallBufLogged.set(false);
+            stopByMaxSize.set(false);
+            cachedStrings.clear();
+
+            log.info("Performance statistics writer stopped.");
         }
-
-        log.info("Stopping performance statistics writer.");
-
-        FileWriter fileWriter = this.fileWriter;
-
-        if (fileWriter != null)
-            fileWriter.cancel();
     }
 
     /**
@@ -314,10 +343,21 @@ public class FilePerformanceStatisticsWriter {
         if (fileWriter == null)
             return;
 
-        SegmentedRingByteBuffer.WriteSegment seg = fileWriter.writeSegment(sizeSupplier.getAsInt() + /*type*/ 1);
+        int size = sizeSupplier.getAsInt() + /*type*/ 1;
+
+        SegmentedRingByteBuffer ringBuf = ringByteBuffer;
+
+        // Starting.
+        if (ringBuf == null)
+            return;
+
+        SegmentedRingByteBuffer.WriteSegment seg = ringBuf.offer(size);
 
         if (seg == null) {
-            fileWriter.logSmallBufferMessage();
+            if (smallBufLogged.compareAndSet(false, true)) {
+                log.warning("The performance statistics in-memory buffer size is too small. Some operations " +
+                    "will not be logged.");
+            }
 
             return;
         }
@@ -326,8 +366,12 @@ public class FilePerformanceStatisticsWriter {
         if (seg.buffer() == null) {
             seg.release();
 
-            if (!fileWriter.isCancelled())
-                fileWriter.onMaxFileSizeReached();
+            if (!fileWriter.isCancelled() && stopByMaxSize.compareAndSet(false, true)) {
+                stopStatistics();
+
+                log.warning("The performance statistics file maximum size is reached. " +
+                    "Performance statistics collecting will be stopped.");
+            }
 
             return;
         }
@@ -339,6 +383,11 @@ public class FilePerformanceStatisticsWriter {
         writer.accept(buf);
 
         seg.release();
+
+        int readySize = readyForFlushSize.addAndGet(size);
+
+        if (readySize >= DFLT_FLUSH_SIZE)
+            fileWriter.wakeUp();
     }
 
     /** @return {@code True} if string is cached. {@code False} if need write string.  */
@@ -378,91 +427,47 @@ public class FilePerformanceStatisticsWriter {
         return enabled;
     }
 
+    /** Stops collecting statistics in the cluster. */
+    void stopStatistics() {
+        try {
+            ctx.performanceStatistics().stopCollectStatistics();
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Failed to stop performance statistics.", e);
+        }
+    }
+
     /** Worker to write to performance statistics file. */
     private class FileWriter extends GridWorker {
-        /** Performance statistics file I/O. */
-        private final FileIO fileIo;
-
-        /** File write buffer. */
-        private final SegmentedRingByteBuffer ringByteBuffer;
-
-        /** Size of ready for flushing bytes. */
-        private final AtomicInteger readyForFlushSize = new AtomicInteger();
-
-        /** {@code True} if the small buffer warning message logged. */
-        private final AtomicBoolean smallBufLogged = new AtomicBoolean();
-
-        /** {@code True} if worker stopped due to maximum file size reached. */
-        private final AtomicBoolean stopByMaxSize = new AtomicBoolean();
-
         /**
          * @param ctx Kernal context.
-         * @param fileIo Performance statistics file I/O.
          * @param log Logger.
          */
-        FileWriter(GridKernalContext ctx, FileIO fileIo, IgniteLogger log) {
-            super(ctx.igniteInstanceName(), "performance-statistics-writer%" + ctx.igniteInstanceName(), log);
-
-            this.fileIo = fileIo;
-
-            ringByteBuffer = new SegmentedRingByteBuffer(DFLT_BUFFER_SIZE, DFLT_FILE_MAX_SIZE, BufferMode.DIRECT);
-
-            ringByteBuffer.init(0);
+        FileWriter(GridKernalContext ctx, IgniteLogger log) {
+            super(ctx.igniteInstanceName(), "performance-statistics-writer%" + ctx.igniteInstanceName(), log,
+                ctx.workersRegistry());
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            try {
-                while (!isCancelled()) {
-                    blockingSectionBegin();
+            while (!isCancelled()) {
+                blockingSectionBegin();
 
-                    try {
-                        synchronized (this) {
-                            while (readyForFlushSize.get() < DFLT_FLUSH_SIZE && !isCancelled())
-                                wait();
-                        }
-                    }
-                    finally {
-                        blockingSectionEnd();
-                    }
-
-                    flushBuffer();
-                }
-            }
-            finally {
-                fileWriter = null;
-
-                ringByteBuffer.close();
-
-                // Make sure that all producers released their buffers to safe deallocate memory.
-                flushBuffer();
-
-                ringByteBuffer.free();
-
-                U.closeQuiet(fileIo);
-
-                cachedStrings.clear();
-
-                log.info("Performance statistics writer stopped.");
-            }
-        }
-
-        /** @return Write segment.*/
-        SegmentedRingByteBuffer.WriteSegment writeSegment(int size) {
-            SegmentedRingByteBuffer.WriteSegment seg = ringByteBuffer.offer(size);
-
-            if (seg != null) {
-                int readySize = readyForFlushSize.addAndGet(size);
-
-                if (readySize >= DFLT_FLUSH_SIZE) {
+                try {
                     synchronized (this) {
-                        // Required to start writing data to the file.
-                        notify();
+                        while (readyForFlushSize.get() < DFLT_FLUSH_SIZE && !isCancelled())
+                            wait();
                     }
                 }
+                finally {
+                    blockingSectionEnd();
+                }
+
+                flushBuffer();
             }
 
-            return seg;
+            // Make sure that all producers released their buffers to safe deallocate memory.
+            flushBuffer();
         }
 
         /** Flushes to disk available bytes from the ring buffer. */
@@ -492,39 +497,22 @@ public class FilePerformanceStatisticsWriter {
             } catch (IOException e) {
                 log.error("Unable to write to file. Performance statistics collecting will be stopped.", e);
 
-                fileWriter.cancel();
-
                 stopStatistics();
             }
         }
 
-        /** Logs warning message about small buffer size if not logged yet. */
-        void logSmallBufferMessage() {
-            if (smallBufLogged.compareAndSet(false, true)) {
-                log.warning("The performance statistics in-memory buffer size is too small. Some operations " +
-                    "will not be logged.");
-            }
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            // Do not interrupt to try to flush buffer's data.
+            isCancelled = true;
+
+            wakeUp();
         }
 
-        /** Logs warning message and stops collecting statistics. */
-        void onMaxFileSizeReached() {
-            if (stopByMaxSize.compareAndSet(false, true)) {
-                fileWriter.cancel();
-
-                stopStatistics();
-
-                log.warning("The performance statistics file maximum size is reached. " +
-                    "Performance statistics collecting will be stopped.");
-            }
-        }
-
-        /** Stops collecting statistics. */
-        void stopStatistics() {
-            try {
-                ctx.performanceStatistics().stopCollectStatistics();
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Failed to stop performance statistics.", e);
+        /** Wake up worker to start writing data to the file. */
+        void wakeUp() {
+            synchronized (this) {
+                notify();
             }
         }
     }
