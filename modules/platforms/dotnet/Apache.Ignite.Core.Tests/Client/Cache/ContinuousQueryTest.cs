@@ -344,7 +344,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests that initial Scan query returns data that existed before the Continuous query has started.
         /// </summary>
         [Test]
-        public void TestInitialScanQuery([Values(true, false, null)] bool? getAll)
+        public void TestInitialScanQuery(
+            [Values(InitialQueryMode.GetOne, InitialQueryMode.GetAll, InitialQueryMode.ToList)] InitialQueryMode mode)
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
 
@@ -365,15 +366,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 using (var cursor = handle.GetInitialQueryCursor())
                 {
-                    if (getAll != null)
-                    {
-                        var initialItems = getAll == true ? cursor.GetAll() : cursor.ToList();
-                        CollectionAssert.AreEquivalent(initialKeys, initialItems.Select(e => e.Key));
-                    }
-                    else
+                    if (mode == InitialQueryMode.GetOne)
                     {
                         var initialItem = cursor.First();
                         CollectionAssert.Contains(initialKeys, initialItem.Key);
+                    }
+                    else
+                    {
+                        var initialItems = mode == InitialQueryMode.GetAll
+                            ? cursor.GetAll()
+                            : cursor.ToList();
+
+                        CollectionAssert.AreEquivalent(initialKeys, initialItems.Select(e => e.Key));
                     }
                 }
 
@@ -757,6 +761,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 throw new Exception(Error);
             }
+        }
+
+        /** */
+        public enum InitialQueryMode
+        {
+            GetOne,
+            GetAll,
+            ToList
         }
     }
 }
