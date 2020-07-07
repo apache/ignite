@@ -65,7 +65,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /** <inheritdoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> GetInitialQueryCursor()
         {
-            return new ClientQueryCursor<TK, TV>(_socket, _queryId, _keepBinary, null, ClientOp.QueryScanCursorGetPage);
+            // Initial query has the same resource id as the continuous query - do not close it on cursor dispose.
+            return new ClientQueryCursor<TK, TV>(_socket, _queryId, _keepBinary, null, ClientOp.QueryScanCursorGetPage,
+                closeCursorOnDispose: false);
         }
 
         /** <inheritdoc /> */

@@ -39,9 +39,19 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
         /// <param name="getPageOp">The get page op.</param>
         /// <param name="columns">The columns.</param>
-        public ClientFieldsQueryCursor(ClientSocket socket, long cursorId, bool keepBinary,
-            IBinaryStream initialBatchStream, ClientOp getPageOp, IList<string> columns)
-            : base(socket, cursorId, keepBinary, initialBatchStream, getPageOp,
+        public ClientFieldsQueryCursor(
+            ClientSocket socket,
+            long cursorId,
+            bool keepBinary,
+            IBinaryStream initialBatchStream,
+            ClientOp getPageOp,
+            IList<string> columns)
+            : base(
+                socket,
+                cursorId,
+                keepBinary,
+                initialBatchStream,
+                getPageOp,
                 r =>
                 {
                     var res = new List<object>(columns.Count);
@@ -52,7 +62,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                     }
 
                     return res;
-                })
+                },
+                closeCursorOnDispose: true)
         {
             Debug.Assert(columns != null);
 
