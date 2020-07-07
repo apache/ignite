@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="readFunc">The read function.</param>
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
-        protected QueryCursorBase(Marshaller marsh, bool keepBinary, Func<BinaryReader, T> readFunc, 
+        protected QueryCursorBase(Marshaller marsh, bool keepBinary, Func<BinaryReader, T> readFunc,
             IBinaryStream initialBatchStream = null)
         {
             Debug.Assert(marsh != null);
@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
                 if (_batchPos == BatchPosBeforeHead)
                     throw new InvalidOperationException("MoveNext has not been called.");
-                
+
                 if (_batch == null)
                     throw new InvalidOperationException("Previous call to MoveNext returned false.");
 
@@ -273,6 +273,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                     return;
                 }
 
+                // When _hasNext is false, cursor is already disposed by the server.
                 if (_hasNext)
                 {
                     Dispose(true);

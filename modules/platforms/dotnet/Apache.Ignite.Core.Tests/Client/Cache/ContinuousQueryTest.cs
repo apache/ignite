@@ -344,7 +344,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests that initial Scan query returns data that existed before the Continuous query has started.
         /// </summary>
         [Test]
-        public void TestInitialScanQuery([Values(true, false)]bool getAll)
+        public void TestInitialScanQuery([Values(true, false, null)] bool? getAll)
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
 
@@ -352,15 +352,29 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cache.PutAll(initialKeys.ToDictionary(x => x, x => x));
 
             ICacheEntryEvent<int, int> lastEvt = null;
-            var qry = new ContinuousQueryClient<int,int>(new DelegateListener<int, int>(e => lastEvt = e));
+
+            var qry = new ContinuousQueryClient<int, int>
+            {
+                Listener = new DelegateListener<int, int>(e => lastEvt = e),
+                BufferSize = 2
+            };
+
             var initialQry = new ScanQuery<int, int>();
 
             using (var handle = cache.QueryContinuous(qry, initialQry))
             {
                 using (var cursor = handle.GetInitialQueryCursor())
                 {
-                    var initialItems = getAll ? cursor.GetAll() : cursor.ToList();
-                    CollectionAssert.AreEquivalent(initialKeys, initialItems.Select(e => e.Key));
+                    if (getAll != null)
+                    {
+                        var initialItems = getAll == true ? cursor.GetAll() : cursor.ToList();
+                        CollectionAssert.AreEquivalent(initialKeys, initialItems.Select(e => e.Key));
+                    }
+                    else
+                    {
+                        var initialItem = cursor.First();
+                        CollectionAssert.Contains(initialKeys, initialItem.Key);
+                    }
                 }
 
                 cache.Put(20, 20);
