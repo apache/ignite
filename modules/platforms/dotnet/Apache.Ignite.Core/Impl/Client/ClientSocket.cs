@@ -260,6 +260,8 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (!handler.HasHandler)
             {
+                // We could use AddOrUpdate, but SetHandler must be called outside of Update call,
+                // because it causes handler execution, which, in turn, may call RemoveNotificationHandler.
                 handler.SetHandler(handlerDelegate);
             }
 
