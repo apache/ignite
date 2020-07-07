@@ -868,7 +868,22 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestTransactionScopeWithSerializableIsolationLocksKeysOnRead()
         {
-            // TODO: Add tests for all read operations.
+            Action<Func<ICache<int, int>, int, int>>
+                test = TestTransactionScopeWithSerializableIsolationLocksKeysOnRead;
+
+            test((cache, key) => cache[key]);
+            test((cache, key) => cache.Get(key));
+            test((cache, key) => cache.GetAsync(key).Result);
+            test((cache, key) => cache.GetAll(new[] {key}).Single().Key);
+            test((cache, key) => cache.GetAllAsync(new[] {key}).Result.Single().Key);
+        }
+
+        /// <summary>
+        /// Tests that read operations lock keys in Serializable mode.
+        /// </summary>
+        private void TestTransactionScopeWithSerializableIsolationLocksKeysOnRead(
+            Func<ICache<int, int>, int, int> readOp)
+        {
             var cache = Cache();
             cache.Put(1, 1);
 
@@ -876,17 +891,17 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             using (var scope = new TransactionScope(TransactionScopeOption.Required, options))
             {
-                Assert.AreEqual(1, cache.Get(1));
+                Assert.AreEqual(1, readOp(cache, 1));
 
                 var taskFinished = Task.Factory.StartNew(() => cache.Put(1, 2)).Wait(TimeSpan.FromSeconds(1));
 
-                Assert.AreEqual(1, cache.Get(1));
+                Assert.AreEqual(1, readOp(cache, 1));
                 Assert.IsFalse(taskFinished);
 
                 scope.Complete();
             }
 
-            Assert.AreEqual(2, cache.Get(1));
+            Assert.AreEqual(2, readOp(cache, 1));
         }
 
         /// <summary>
