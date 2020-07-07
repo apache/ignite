@@ -531,7 +531,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var scanQuery = new ScanQuery<int, int>
             {
-                PageSize = 1
+                PageSize = 1,
+                Filter = new ScanQueryFilter<int>(9000)
             };
 
             var cursor = cache.Query(scanQuery);
@@ -540,7 +541,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Task.Factory.StartNew(() =>
             {
                 // ReSharper disable once AccessToModifiedClosure
-                while (Interlocked.Read(ref count) < 100) { }
+                while (Interlocked.Read(ref count) < 1000) { }
                 cursor.Dispose();
             });
 
@@ -1149,8 +1150,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         // Error message
         public const string ErrMessage = "Error in ScanQueryFilter.Invoke";
 
+        public ScanQueryFilter(int maxKey = 50)
+        {
+            MaxKey = maxKey;
+        }
+
         // Error flag
         public bool ThrowErr { get; set; }
+
+        public int MaxKey { get; set; }
 
         // Injection test
         [InstanceResource]
