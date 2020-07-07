@@ -478,10 +478,8 @@ public class FilePerformanceStatisticsWriter {
                 return;
 
             try {
-                for (int i = 0; i < segs.size(); i++) {
+                for (SegmentedRingByteBuffer.ReadSegment seg : segs) {
                     updateHeartbeat();
-
-                    SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
 
                     try {
                         readyForFlushSize.addAndGet(-seg.buffer().remaining());
