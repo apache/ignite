@@ -72,7 +72,13 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
     }
 
     /**
-     *
+     * Check case when index is created on the field with invalid data type.
+     * Test steps:
+     * - create cache with query entity describes a table;
+     * - fill data (real data contains the fields that was not described by query entity);
+     * - execute alter table (ADD COLUMN with invalid type for exists field);
+     * - try to create index for the new field - exception must be throw;
+     * - checks that index isn't created.
      */
     @Test
     public void testCreateIndexOnInvalidData() throws Exception {
@@ -105,7 +111,7 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
             IgniteSQLException.class, "java.util.Date cannot be cast to java.sql.Date");
 
         // Wait for node stop if it is initiated by FailureHandler
-        U.sleep(500);
+        U.sleep(1000);
 
         List<List<?>> res = sql("SELECT val_int FROM TEST where val_int > -1").getAll();
 
@@ -120,7 +126,13 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
     }
 
     /**
-     *
+     * Check case when row with invalid field is added.
+     * Test steps:
+     * - create table;
+     * - create two index;
+     * - try add entry - exception must be thrown;
+     * - remove the index for field with invalid type;
+     * - check that select query that uses the index for valid field is successful.
      */
     @Test
     public void testAddInvalidDataToIndex() throws Exception {
@@ -131,11 +143,12 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
         sql("CREATE TABLE TEST (ID INT PRIMARY KEY, VAL_INT INT, VAL_DATE DATE) " +
             "WITH \"CACHE_NAME=test,VALUE_TYPE=ValueType0\"");
 
-        sql("CREATE INDEX TEST_VAL_DATE_IDX ON TEST(VAL_DATE)");
+        sql("CREATE INDEX TEST_0_VAL_DATE_IDX ON TEST(VAL_DATE)");
+        sql("CREATE INDEX TEST_1_VAL_INT_IDX ON TEST(VAL_INT)");
 
         BinaryObjectBuilder bob = grid().binary().builder("ValueType0");
 
-        bob.setField("VAL_INT", 0);
+        bob.setField("VAL_INT", 10);
         bob.setField("VAL_DATE", new java.util.Date());
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
@@ -145,7 +158,11 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
             },
             CachePartialUpdateCheckedException.class, "Failed to update keys");
 
-        sql("DROP INDEX TEST_VAL_DATE_IDX");
+        sql("DROP INDEX TEST_0_VAL_DATE_IDX");
+
+        List<List<?>> res = sql("SELECT VAL_INT FROM TEST WHERE VAL_INT > 0").getAll();
+
+        assertEquals(1, res.size());
     }
 
     /**
@@ -163,15 +180,11 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
      *
      */
     private static class Value {
-        /**
-         *
-         */
+        /** */
         @QuerySqlField
         int val_int;
 
-        /**
-         *
-         */
+        /** */
         java.util.Date val_date;
 
         /**
