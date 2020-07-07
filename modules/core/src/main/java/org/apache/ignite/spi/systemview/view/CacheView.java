@@ -29,11 +29,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.CacheMetricsImpl.EntriesStatMetrics;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
@@ -44,19 +41,11 @@ public class CacheView {
     /** Cache descriptor. */
     private DynamicCacheDescriptor cache;
 
-    /** Entries and partitions statistics. */
-    private EntriesStatMetrics stat;
-
     /**
      * @param cache Cache descriptor.
-     * @param proc Cache processor.
      */
-    public CacheView(DynamicCacheDescriptor cache, GridCacheProcessor proc) {
+    public CacheView(DynamicCacheDescriptor cache) {
         this.cache = cache;
-
-        GridCacheAdapter<Object, Object> internalCache = proc.internalCache(cache.cacheName());
-
-        stat = internalCache != null ? internalCache.metrics0().getEntriesStat() : new EntriesStatMetrics();
     }
 
     /** @see DynamicCacheDescriptor#groupId() */
@@ -380,55 +369,5 @@ public class CacheView {
     /** @see CacheConfiguration#getDataRegionName() */
     public String dataRegionName() {
         return cache.cacheConfiguration().getDataRegionName();
-    }
-
-    /** @return Offheap entries count. */
-    public long offHeapEntriesCount() {
-        return stat.offHeapEntriesCount();
-    }
-
-    /** @return Offheap backup entries count. */
-    public long offHeapBackupEntriesCount() {
-        return stat.offHeapBackupEntriesCount();
-    }
-
-    /** @return Offheap primary entries count. */
-    public long offHeapPrimaryEntriesCount() {
-        return stat.offHeapPrimaryEntriesCount();
-    }
-
-    /** @return Heap entries count. */
-    public long heapEntriesCount() {
-        return stat.heapEntriesCount();
-    }
-
-    /** @return Size. */
-    public int size() {
-        return stat.size();
-    }
-
-    /** @return Key size. */
-    public int keySize() {
-        return stat.keySize();
-    }
-
-    /** @return Long size. */
-    public long cacheSize() {
-        return stat.cacheSize();
-    }
-
-    /** @return Is empty. */
-    public boolean isEmpty() {
-        return stat.isEmpty();
-    }
-
-    /** @return Total partitions count. */
-    public int totalPartitionsCount() {
-        return stat.totalPartitionsCount();
-    }
-
-    /** @return Rebalancing partitions count. */
-    public int rebalancingPartitionsCount() {
-        return stat.totalPartitionsCount();
     }
 }

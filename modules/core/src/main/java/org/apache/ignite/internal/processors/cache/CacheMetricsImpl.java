@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.collection.IntSet;
@@ -212,6 +213,18 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Tx collisions info. */
     private volatile Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>> txKeyCollisionInfo;
 
+    /** Offheap entries count. */
+    private final LongGauge offHeapEntriesCnt;
+
+    /** Offheap primary entries count. */
+    private final LongGauge offHeapPrimaryEntriesCnt;
+
+    /** Offheap backup entries count. */
+    private final LongGauge offHeapBackupEntriesCnt;
+
+    /** Onheap entries count. */
+    private final LongGauge heapEntriesCnt;
+
     /**
      * Creates cache metrics.
      *
@@ -368,6 +381,18 @@ public class CacheMetricsImpl implements CacheMetrics {
         mreg.register("TxKeyCollisions", this::getTxKeyCollisions, String.class, "Tx key collisions. " +
             "Show keys and collisions queue size. Due transactional payload some keys become hot. Metric shows " +
             "corresponding keys.");
+
+        offHeapEntriesCnt = mreg.register("OffHeapEntriesCount",
+            () -> getEntriesStat().offHeapEntriesCount(), "Offheap entries count.");
+
+        offHeapPrimaryEntriesCnt = mreg.register("OffHeapPrimaryEntriesCount",
+            () -> getEntriesStat().offHeapPrimaryEntriesCount(), "Offheap primary entries count.");
+
+        offHeapBackupEntriesCnt = mreg.register("OffHeapBackupEntriesCount",
+            () -> getEntriesStat().offHeapBackupEntriesCount(), "Offheap backup entries count.");
+
+        heapEntriesCnt = mreg.register("HeapEntriesCount",
+            () -> getEntriesStat().heapEntriesCount(), "Onheap entries count.");
     }
 
     /**
@@ -438,22 +463,22 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
-        return getEntriesStat().offHeapEntriesCount();
+        return offHeapEntriesCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapEntriesCount() {
-        return getEntriesStat().heapEntriesCount();
+        return heapEntriesCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
-        return getEntriesStat().offHeapPrimaryEntriesCount();
+        return offHeapPrimaryEntriesCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapBackupEntriesCount() {
-        return getEntriesStat().offHeapBackupEntriesCount();
+        return offHeapBackupEntriesCnt.value();
     }
 
     /** {@inheritDoc} */
@@ -1536,11 +1561,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         /** Is empty. */
         private boolean isEmpty;
-
-        /** Default constructor. */
-        public EntriesStatMetrics() {
-            isEmpty = true;
-        }
 
         /**
          * @return Total partitions count.
