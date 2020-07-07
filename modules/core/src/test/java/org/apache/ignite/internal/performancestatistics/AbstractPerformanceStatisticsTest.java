@@ -23,6 +23,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -92,15 +93,15 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
                 if (enabled != ((IgniteEx)grid).context().performanceStatistics().enabled())
                     return false;
 
-                Object fileWriter = GridTestUtils.getFieldValue(
+                GridWorker fileWriter = GridTestUtils.getFieldValue(
                     ((IgniteEx)grid).context().performanceStatistics(), "writer", "fileWriter");
 
                 // Make sure writer started.
-                if (enabled && fileWriter == null)
+                if (enabled && (fileWriter == null || fileWriter.runner() == null))
                     return false;
 
                 // Make sure writer stopped.
-                if (!enabled && fileWriter != null)
+                if (!enabled && fileWriter != null && !fileWriter.isDone())
                     return false;
             }
 
