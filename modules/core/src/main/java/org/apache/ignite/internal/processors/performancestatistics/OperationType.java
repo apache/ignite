@@ -75,7 +75,9 @@ public enum OperationType {
     JOB;
 
     /** Cache operations. */
-    public static final EnumSet<OperationType> CACHE_OPS = EnumSet.range(CACHE_GET, CACHE_INVOKE_ALL);
+    public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
+        CACHE_GET_AND_PUT, CACHE_GET_AND_REMOVE, CACHE_INVOKE, CACHE_LOCK, CACHE_GET_ALL, CACHE_PUT_ALL,
+        CACHE_REMOVE_ALL, CACHE_INVOKE_ALL);
 
     /** Transaction operations. */
     public static final EnumSet<OperationType> TX_OPS = EnumSet.of(TX_COMMIT, TX_ROLLBACK);
