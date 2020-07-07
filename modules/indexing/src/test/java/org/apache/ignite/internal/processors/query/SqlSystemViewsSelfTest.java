@@ -1334,7 +1334,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.REPLICATED)
             .setDataRegionName("dr2")
-            .setEvictionFilter(new TestEvictionFilter())
+            .setEvictionFilterFactory(new TestEvictionFilterFactory())
             .setEvictionPolicyFactory(new TestEvictionPolicyFactory())
             .setOnheapCacheEnabled(true)
         );
@@ -1344,7 +1344,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.REPLICATED)
             .setDataRegionName("dr3")
-            .setEvictionFilter(new TestEvictionFilter())
+            .setEvictionFilterFactory(new TestEvictionFilterFactory())
             .setEvictionPolicyFactory(new TestEvictionPolicyFactory())
             .setOnheapCacheEnabled(true)
             .setNodeFilter(new CustomNodeFilter(Integer.MAX_VALUE))
@@ -1355,7 +1355,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.REPLICATED)
             .setDataRegionName("dr3")
-            .setEvictionFilter(new TestEvictionFilter())
+            .setEvictionFilterFactory(new TestEvictionFilterFactory())
             .setEvictionPolicyFactory(new TestEvictionPolicyFactory())
             .setOnheapCacheEnabled(true)
             .setNodeFilter(new CustomNodeFilter(1))
@@ -1373,7 +1373,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 "IS_MANAGEMENT_ENABLED, BACKUPS, AFFINITY, AFFINITY_MAPPER, " +
                 "REBALANCE_MODE, REBALANCE_BATCH_SIZE, REBALANCE_TIMEOUT, REBALANCE_DELAY, REBALANCE_THROTTLE, " +
                 "REBALANCE_BATCHES_PREFETCH_COUNT, REBALANCE_ORDER, " +
-                "EVICTION_FILTER, EVICTION_POLICY_FACTORY, " +
+                "EVICTION_FILTER_FACTORY, EVICTION_POLICY_FACTORY, " +
                 "IS_NEAR_CACHE_ENABLED, NEAR_CACHE_EVICTION_POLICY_FACTORY, NEAR_CACHE_START_SIZE, " +
                 "DEFAULT_LOCK_TIMEOUT, INTERCEPTOR, CACHE_STORE_FACTORY, " +
                 "IS_STORE_KEEP_BINARY, IS_READ_THROUGH, IS_WRITE_THROUGH, " +
@@ -1432,8 +1432,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals("TestNodeFilter", execSql("SELECT NODE_FILTER FROM " + systemSchemaName() + ".CACHES WHERE CACHE_NAME = " +
             "'cache_atomic_part'").get(0).get(0));
 
-        assertEquals("TestEvictionFilter", execSql("SELECT EVICTION_FILTER FROM " + systemSchemaName() + ".CACHES " +
-            "WHERE CACHE_NAME = 'cache_tx_repl'").get(0).get(0));
+        assertEquals("TestEvictionFilterFactory", execSql("SELECT EVICTION_FILTER_FACTORY " +
+            "FROM " + systemSchemaName() + ".CACHES WHERE CACHE_NAME = 'cache_tx_repl'").get(0).get(0));
 
         assertEquals("TestEvictionPolicyFactory", execSql("SELECT EVICTION_POLICY_FACTORY " +
             "FROM " + systemSchemaName() + ".CACHES WHERE CACHE_NAME = 'cache_tx_repl'").get(0).get(0));
@@ -1728,15 +1728,19 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /**
      *
      */
-    private static class TestEvictionFilter implements EvictionFilter<Object, Object> {
+    private static class TestEvictionFilterFactory implements Factory<EvictionFilter<Object, Object>>{
         /** {@inheritDoc} */
-        @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
-            return false;
+        @Override public EvictionFilter<Object, Object> create() {
+            return new EvictionFilter<Object, Object>() {
+                @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
+                    return false;
+                }
+            };
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "TestEvictionFilter";
+            return "TestEvictionFilterFactory";
         }
     }
 

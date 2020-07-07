@@ -215,9 +215,19 @@ public class CacheView {
         return cache.cacheConfiguration().getRebalanceOrder();
     }
 
-    /** @see CacheConfiguration#getEvictionFilter() */
+    /**
+     * @see CacheConfiguration#getEvictionFilter()
+     *
+     * @deprecated Use {@link #evictionFilterFactory()} instead.
+     */
+    @Deprecated
     public String evictionFilter() {
         return toStringSafe(cache.cacheConfiguration().getEvictionFilter());
+    }
+
+    /** @see CacheConfiguration#getEvictionFilterFactory()  */
+    public String evictionFilterFactory() {
+        return toStringSafe(cache.cacheConfiguration().getEvictionFilterFactory());
     }
 
     /** @see CacheConfiguration#getEvictionPolicyFactory() */

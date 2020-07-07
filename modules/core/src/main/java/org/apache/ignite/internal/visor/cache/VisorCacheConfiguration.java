@@ -135,7 +135,11 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     private boolean cpOnRead;
 
     /** Eviction filter. */
+    @Deprecated
     private String evictFilter;
+
+    /** Eviction filter. */
+    private String evictFilterFactory;
 
     /** Listener configurations. */
     private String lsnrConfigurations;
@@ -224,6 +228,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
 
         cpOnRead = ccfg.isCopyOnRead();
         evictFilter = compactClass(ccfg.getEvictionFilter());
+        evictFilterFactory = compactClass(ccfg.getEvictionFilterFactory());
         lsnrConfigurations = compactIterable(ccfg.getCacheEntryListenerConfigurations());
         loadPrevVal = ccfg.isLoadPreviousValue();
         dataRegName = ccfg.getDataRegionName();
@@ -450,9 +455,20 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
 
     /**
      * @return Eviction filter or {@code null}.
+     *
+     * @deprecated Use {@link #getEvictionFilterFactory()} instead.
      */
+    @Deprecated
     public String getEvictionFilter() {
         return evictFilter;
+    }
+
+    /**
+     * @return Eviction filter factory or {@code null}
+     * or if {@link #getEvictionFilter()} should be used instead.
+     */
+    public String getEvictionFilterFactory() {
+        return evictFilterFactory;
     }
 
     /**

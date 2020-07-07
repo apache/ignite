@@ -22,11 +22,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -53,12 +55,16 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     private boolean nearEnabled;
 
     /** */
-    private EvictionFilter filter;
+    private TestEvictionFilterFactory fltrFactory;
 
-    /** Policy. */
-    private EvictionPolicy<Object, Object> plc = new EvictionPolicy<Object, Object>() {
-        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
-            assert !(entry.getValue() instanceof Integer);
+    /** Policy factory. */
+    private Factory<EvictionPolicy> plcFactory = new Factory<EvictionPolicy>() {
+        @Override public EvictionPolicy create() {
+            return new EvictionPolicy<Object, Object>() {
+                @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
+                    assert !(entry.getValue() instanceof Integer);
+                }
+            };
         }
     };
 
@@ -69,16 +75,16 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
-        cc.setEvictionPolicy(notSerializableProxy(plc, EvictionPolicy.class));
+        cc.setEvictionPolicyFactory(notSerializableProxy(plcFactory, Factory.class));
         cc.setOnheapCacheEnabled(true);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setEvictionFilter(notSerializableProxy(filter, org.apache.ignite.cache.eviction.EvictionFilter.class));
+        cc.setEvictionFilterFactory(notSerializableProxy(fltrFactory, Factory.class));
         cc.setRebalanceMode(SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         if (nearEnabled) {
             NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-            nearCfg.setNearEvictionPolicy(notSerializableProxy(plc, EvictionPolicy.class));
+            nearCfg.setNearEvictionPolicyFactory(notSerializableProxy(plcFactory, Factory.class));
 
             cc.setNearConfiguration(nearCfg);
         }
@@ -134,7 +140,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @SuppressWarnings("BusyWait")
     private void checkEvictionFilter() throws Exception {
-        filter = new EvictionFilter();
+        fltrFactory = new TestEvictionFilterFactory();
 
         startGridsMultiThreaded(2);
 
@@ -148,7 +154,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < cnt; i++)
                 c.put(i, i);
 
-            Map<Object, AtomicInteger> cnts = filter.counts();
+            Map<Object, AtomicInteger> cnts = fltrFactory.counts();
 
             int exp = mode == LOCAL ? 1 : mode == REPLICATED ? 2 : nearEnabled ? 3 : 2;
 
@@ -193,7 +199,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         mode = PARTITIONED;
         nearEnabled = false;
 
-        filter = new EvictionFilter();
+        fltrFactory = new TestEvictionFilterFactory();
 
         Ignite g = startGrid();
 
@@ -223,9 +229,30 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private final class EvictionFilter implements org.apache.ignite.cache.eviction.EvictionFilter<Object, Object> {
-        /** */
+    private final class TestEvictionFilterFactory implements Factory<EvictionFilter<Object, Object>>{
+
         private final ConcurrentMap<Object, AtomicInteger> cnts = new ConcurrentHashMap<>();
+
+        @Override public EvictionFilter<Object, Object> create() {
+            return new TestEvictionFilter(cnts);
+        }
+
+        /** @return Counts. */
+        ConcurrentMap<Object, AtomicInteger> counts() {
+            return cnts;
+        }
+    }
+
+    /**
+     *
+     */
+    private final class TestEvictionFilter implements EvictionFilter<Object, Object> {
+        /** */
+        private final ConcurrentMap<Object, AtomicInteger> cnts;
+
+        public TestEvictionFilter(ConcurrentMap<Object, AtomicInteger> cnts){
+            this.cnts = cnts;
+        }
 
         /** {@inheritDoc} */
         @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
@@ -250,9 +277,5 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
             return ret;
         }
 
-        /** @return Counts. */
-        ConcurrentMap<Object, AtomicInteger> counts() {
-            return cnts;
-        }
     }
 }

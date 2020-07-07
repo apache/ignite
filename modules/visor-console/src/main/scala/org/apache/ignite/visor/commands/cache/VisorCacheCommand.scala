@@ -950,6 +950,7 @@ object VisorCacheCommand {
         cacheT += ("Eviction Policy Factory", safe(evictCfg.getPolicy))
         cacheT += ("Eviction Policy Max Size", safe(evictCfg.getPolicyMaxSize))
         cacheT += ("Eviction Filter", safe(evictCfg.getFilter))
+        cacheT += ("Eviction Filter Factory", safe(evictCfg.getFilterFactory))
 
         cacheT += ("Near Cache Enabled", bool2Str(nearCfg.isNearEnabled))
         cacheT += ("Near Start Size", nearCfg.getNearStartSize)

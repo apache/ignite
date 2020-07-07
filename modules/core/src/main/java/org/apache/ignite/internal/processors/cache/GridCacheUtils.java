@@ -1089,7 +1089,7 @@ public class GridCacheUtils {
         cache.setWriteSynchronizationMode(FULL_SYNC);
 
         cache.setEvictionPolicyFactory(null);
-        cache.setEvictionPolicy(null);
+        cache.setEvictionFilterFactory(null);
         cache.setCacheStoreFactory(null);
         cache.setNodeFilter(CacheConfiguration.ALL_NODES);
         cache.setEagerTtl(true);

@@ -424,6 +424,9 @@ public class ClusterCachesInfo {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionFilter", "Eviction filter",
                 locAttr.evictionFilterClassName(), rmtAttr.evictionFilterClassName(), true);
 
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionFilterFactory", "Eviction filter factory",
+                locAttr.evictionFilterFactoryClassName(), rmtAttr.evictionFilterFactoryClassName(), true);
+
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicy", "Eviction policy",
                 locAttr.evictionPolicyClassName(), rmtAttr.evictionPolicyClassName(), true);
 

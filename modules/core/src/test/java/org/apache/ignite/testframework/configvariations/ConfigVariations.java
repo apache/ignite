@@ -53,7 +53,7 @@ public class ConfigVariations {
     /** */
     private static final ConfigParameter<Object> EVICTION_PARAM = Parameters.complexParameter(
         Parameters.parameter("setEvictionPolicy", Parameters.factory(FifoEvictionPolicy.class)),
-        Parameters.parameter("setEvictionFilter", Parameters.factory(NoopEvictionFilter.class))
+        Parameters.parameter("setEvictionFilterFactory", Parameters.factory(NoopEvictionFilterFactory.class))
     );
 
     /** */
@@ -188,6 +188,19 @@ public class ConfigVariations {
                 return new BinaryMarshaller();
             }
         };
+    }
+
+
+    /**
+     *
+     */
+    public static class NoopEvictionFilterFactory implements Factory<EvictionFilter> {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        @Override public EvictionFilter create() {
+            return new NoopEvictionFilter();
+        }
     }
 
     /**

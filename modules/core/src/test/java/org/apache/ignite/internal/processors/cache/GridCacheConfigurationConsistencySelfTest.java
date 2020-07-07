@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 import javax.cache.Cache;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
@@ -475,6 +476,29 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Test
+    public void testDifferentEvictionFilterFactories() throws Exception {
+        checkSecondGridStartFails(
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    cfg.setEvictionFilterFactory(new FirstCacheEvictionFilterFactory());
+                    return null;
+                }
+            },
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    cfg.setEvictionFilterFactory(new SecondCacheEvictionFilterFactory());
+                    return null;
+                }
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDifferentAffinityMappers() throws Exception {
         checkSecondGridStartFails(
             new C1<CacheConfiguration, Void>() {
@@ -911,6 +935,24 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
          */
         public TestRendezvousAffinityFunction() {
             // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    private static class FirstCacheEvictionFilterFactory implements Factory<EvictionFilter> {
+        @Override public EvictionFilter create() {
+            return new FirstCacheEvictionFilter();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SecondCacheEvictionFilterFactory implements Factory<EvictionFilter> {
+        @Override public EvictionFilter create() {
+            return new SecondCacheEvictionFilter();
         }
     }
 
