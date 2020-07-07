@@ -821,6 +821,20 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         txLatch.await();
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testCacheSize() throws Exception {
+        persistence = true;
+
+        startGrid(0);
+
+        CacheMetricsMXBean mxBean = mxBean(0, CACHE1, CacheClusterMetricsMXBeanImpl.class);
+
+        long size = mxBean.getCacheSize();
+
+        assertEquals(0, size);
+    }
+
     /**
      *
      */

@@ -1221,6 +1221,9 @@ public class CacheMetricsImpl implements CacheMetrics {
      * Calculates entries count/partitions count metrics using one iteration over local partitions for all metrics
      */
     public EntriesStatMetrics getEntriesStat() {
+        if (!cctx.kernalContext().state().clusterState().state().active())
+            return new EntriesStatMetrics();
+
         int owningPartCnt = 0;
         int movingPartCnt = 0;
         long offHeapEntriesCnt = 0L;
@@ -1535,7 +1538,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         private int keySize;
 
         /** Is empty. */
-        private boolean isEmpty;
+        private boolean isEmpty = true;
 
         /**
          * @return Total partitions count.
