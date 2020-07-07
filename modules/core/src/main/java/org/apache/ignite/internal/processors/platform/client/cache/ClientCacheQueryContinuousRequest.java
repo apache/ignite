@@ -87,8 +87,12 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         ctx.incrementCursors();
 
         try {
-            IgniteCache cache = filterPlatform == ClientPlatform.JAVA && !isKeepBinary() ? rawCache(ctx) : cache(ctx);
+            IgniteCache cache = filterPlatform == ClientPlatform.JAVA && !isKeepBinary()
+                    ? rawCache(ctx)
+                    : cache(ctx);
 
+            // TODO: writeLock on resource close, read lock on notifications?
+            // ReadWriteLock closeNotifyGuard = new ReentrantReadWriteLock();
             ClientCacheQueryContinuousHandle handle = new ClientCacheQueryContinuousHandle(ctx);
             qry.setLocalListener(handle);
 
@@ -97,7 +101,7 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
 
             QueryCursor cursor = cache.query(qry);
             long cursorId = initQry == null
-                    ? ctx.resources().put(cursor)
+                    ? ctx.resources().put(new ClientCacheQueryContinuousCursor(cursor))
                     : ctx.resources().put(initQry.getClientCursor(cursor, ctx));
 
             return new ClientCacheQueryContinuousResponse(requestId(), handle, cursorId, getColumnNames(cursor));
