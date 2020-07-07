@@ -561,6 +561,8 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return TaskRunner.FromResult(val);
             }
 
+            StartTxIfNeeded();
+
             return DoOutOpAsync(CacheOp.GetAsync, w => w.WriteObject(key), reader =>
             {
                 if (reader != null)
@@ -579,6 +581,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 return true;
             }
+
+            StartTxIfNeeded();
 
             var res = DoOutInOpNullable(CacheOp.Get, key);
 
@@ -649,6 +653,8 @@ namespace Apache.Ignite.Core.Impl.Cache
                 }
             }
 
+            StartTxIfNeeded();
+
             return DoOutInOpX((int) CacheOp.GetAll,
                 writer => writer.WriteEnumerable(keys),
                 (s, r) => r == True
@@ -700,6 +706,8 @@ namespace Apache.Ignite.Core.Impl.Cache
                     // ReSharper restore AccessToDisposedClosure
                 }
             }
+
+            StartTxIfNeeded();
 
             return DoOutOpAsync(CacheOp.GetAllAsync,
                 w => w.WriteEnumerable(keys),

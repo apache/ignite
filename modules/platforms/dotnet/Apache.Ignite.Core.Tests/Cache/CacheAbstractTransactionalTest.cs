@@ -876,7 +876,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             test((cache, key) => cache.GetAsync(key).Result);
             test((cache, key) => { int val; return cache.TryGet(key, out val) ? val : 0; });
             test((cache, key) => cache.TryGetAsync(key).Result.Value);
-
             test((cache, key) => cache.GetAll(new[] {key}).Single().Value);
             test((cache, key) => cache.GetAllAsync(new[] {key}).Result.Single().Value);
         }
