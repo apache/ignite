@@ -17,10 +17,7 @@
 
 package org.apache.ignite.logger.slf4j;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
-
 import java.util.UUID;
-
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -33,32 +30,39 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
+
 /**
- * SLF4J-based implementation for logging. This logger should be used
- * by loaders that have prefer slf4j-based logging.
+ * SLF4J-based implementation for logging. This logger should be used by loaders that have prefer slf4j-based logging.
  * <p>
  * Here is an example of configuring SLF4J logger in Ignite configuration Spring file:
+ *
  * <pre name="code" class="xml">
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.slf4j.Slf4jLogger"/&gt;
  *      &lt;/property&gt;
  * </pre>
  * <p>
- * It's recommended to use Ignite's logger injection instead of using/instantiating
- * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
- * injection.
+ * It's recommended to use Ignite's logger injection instead of using/instantiating logger in your task/job code. See
+ * {@link org.apache.ignite.resources.LoggerResource} annotation about logger injection.
  */
 public class Slf4jLogger implements IgniteLogger, LoggerNodeIdAware {
-	
-	private static final String NODE_ID = "nodeId";
-	
-    /** SLF4J implementation proxy. */
+
+    private static final String NODE_ID = "nodeId";
+
+    /**
+     * SLF4J implementation proxy.
+     */
     private final Logger impl;
 
-    /** Quiet flag. */
+    /**
+     * Quiet flag.
+     */
     private final boolean quiet;
-    
-    /** Node ID. */
+
+    /**
+     * Node ID.
+     */
     @GridToStringExclude
     private volatile UUID nodeId;
 
@@ -82,121 +86,175 @@ public class Slf4jLogger implements IgniteLogger, LoggerNodeIdAware {
         quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
     }
 
-    /** {@inheritDoc} */
-    @Override public Slf4jLogger getLogger(Object ctgr) {
-        Logger impl = ctgr == null ? LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) :
-            ctgr instanceof Class ? LoggerFactory.getLogger(((Class<?>)ctgr).getName()) :
-                LoggerFactory.getLogger(ctgr.toString());
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Slf4jLogger getLogger(Object ctgr) {
+        Logger impl = ctgr == null ? LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)
+            : ctgr instanceof Class ? LoggerFactory.getLogger(((Class<?>)ctgr).getName())
+            : LoggerFactory.getLogger(ctgr.toString());
 
         return new Slf4jLogger(impl);
     }
 
-    /** {@inheritDoc} */
-    @Override public void trace(String msg) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void trace(String msg) {
         trace(null, msg);
     }
 
-    /** {@inheritDoc} */
-    @Override public void trace(@Nullable String marker, String msg) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void trace(@Nullable String marker, String msg) {
         if (!impl.isTraceEnabled())
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
         impl.trace(getMarkerOrNull(marker), msg);
     }
 
-    /** {@inheritDoc} */
-    @Override public void debug(String msg) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void debug(String msg) {
         debug(null, msg);
     }
 
-    /** {@inheritDoc} */
-    @Override public void debug(@Nullable String marker, String msg) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void debug(@Nullable String marker, String msg) {
         if (!impl.isDebugEnabled())
             warning("Logging at DEBUG level without checking if DEBUG level is enabled: " + msg);
 
         impl.debug(getMarkerOrNull(marker), msg);
     }
 
-    /** {@inheritDoc} */
-    @Override public void info(String msg) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void info(String msg) {
         info(null, msg);
     }
 
-    /** {@inheritDoc} */
-    @Override public void info(@Nullable String marker, String msg) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void info(@Nullable String marker, String msg) {
         if (!impl.isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
 
         impl.info(getMarkerOrNull(marker), msg);
     }
 
-    /** {@inheritDoc} */
-    @Override public void warning(String msg, @Nullable Throwable e) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void warning(String msg, @Nullable Throwable e) {
         warning(null, msg, e);
     }
 
-    /** {@inheritDoc} */
-    @Override public void warning(@Nullable String marker, String msg, @Nullable Throwable e) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void warning(@Nullable String marker, String msg, @Nullable Throwable e) {
         impl.warn(getMarkerOrNull(marker), msg, e);
     }
 
-    /** {@inheritDoc} */
-    @Override public void error(String msg, @Nullable Throwable e) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void error(String msg, @Nullable Throwable e) {
         error(null, msg, e);
     }
 
-    /** {@inheritDoc} */
-    @Override public void error(@Nullable String marker, String msg, @Nullable Throwable e) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void error(@Nullable String marker, String msg, @Nullable Throwable e) {
         impl.error(getMarkerOrNull(marker), msg, e);
     }
 
-    /** Returns Marker object for the specified name, or null if the name is null */
+    /**
+     * Returns Marker object for the specified name, or null if the name is null
+     */
     private Marker getMarkerOrNull(@Nullable String marker) {
         return marker != null ? MarkerFactory.getMarker(marker) : null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isTraceEnabled() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isTraceEnabled() {
         return impl.isTraceEnabled();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isInfoEnabled() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isInfoEnabled() {
         return impl.isInfoEnabled();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isDebugEnabled() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isDebugEnabled() {
         return impl.isDebugEnabled();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isQuiet() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isQuiet() {
         return quiet;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public String fileName() {
+    /**
+     * {@inheritDoc}
+     */
+    @Nullable
+    @Override
+    public String fileName() {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
         return S.toString(Slf4jLogger.class, this);
     }
 
-	@Override
-	public void setNodeId(UUID nodeId) {
-		A.notNull(nodeId, "nodeId");
+    @Override
+    public void setNodeId(UUID nodeId) {
+        A.notNull(nodeId, "nodeId");
 
         this.nodeId = nodeId;
 
         // Set nodeId as system variable to be used at configuration.
         System.setProperty(NODE_ID, U.id8(nodeId));
-	}
+    }
 
-	@Override
-	public UUID getNodeId() {
-		return nodeId;
-	}
+    @Override
+    public UUID getNodeId() {
+        return nodeId;
+    }
 }
