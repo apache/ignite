@@ -99,13 +99,6 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly ConcurrentDictionary<long, ClientNotificationHandler> _notificationListeners
             = new ConcurrentDictionary<long, ClientNotificationHandler>();
 
-        /** Server -> Client notification listeners. */
-        private readonly ConcurrentDictionary<long, ClientNotificationHandler> _oldListeners
-            = new ConcurrentDictionary<long, ClientNotificationHandler>();
-
-        /** */
-        private readonly ConcurrentQueue<long> _notifications = new ConcurrentQueue<long>();
-
         /** Expected notifications counter. */
         private long _expectedNotifications;
 
@@ -259,20 +252,16 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Adds a notification handler.
         /// </summary>
         /// <param name="notificationId">Notification id.</param>
-        /// <param name="handler">Handler delegate.</param>
-        public void AddNotificationHandler(long notificationId, ClientNotificationHandler.Handler handler)
+        /// <param name="handlerDelegate">Handler delegate.</param>
+        public void AddNotificationHandler(long notificationId, ClientNotificationHandler.Handler handlerDelegate)
         {
-            _notificationListeners.AddOrUpdate(notificationId,
-                _ =>
-                {
-                    Console.WriteLine("AddNotificationHandler: " + notificationId);
-                    return new ClientNotificationHandler(_logger, handler);
-                },
-                (_, oldHandler) =>
-                {
-                    Console.WriteLine("SetHandler: " + notificationId);
-                    return oldHandler.SetHandler(handler);
-                });
+            var handler = _notificationListeners.GetOrAdd(notificationId,
+                _ => new ClientNotificationHandler(_logger, handlerDelegate));
+
+            if (!handler.HasHandler)
+            {
+                handler.SetHandler(handlerDelegate);
+            }
 
             _listenerEvent.Set();
         }
@@ -290,10 +279,7 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             ClientNotificationHandler unused;
-            Console.WriteLine("Removing: " + notificationId);
             var removed = _notificationListeners.TryRemove(notificationId, out unused);
-            Console.WriteLine("Removed: " + notificationId);
-            _oldListeners.TryAdd(notificationId, unused);
             Debug.Assert(removed);
         }
 
@@ -463,17 +449,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 throw new IgniteClientException("Unexpected thin client notification: " + requestId);
             }
 
-            if (_oldListeners.ContainsKey(requestId))
-            {
-                Console.WriteLine("Notification for removed listener!");
-            }
-
-            _notifications.Enqueue(requestId);
-            Console.WriteLine("GetOrAddBefore: " + requestId);
             var handler = _notificationListeners.GetOrAdd(requestId, _ => new ClientNotificationHandler(_logger));
-            Console.WriteLine("GetOrAddAfter: " + requestId);
             handler.Handle(stream, null);
-            Console.WriteLine("Handled: " + requestId);
 
             return true;
         }
