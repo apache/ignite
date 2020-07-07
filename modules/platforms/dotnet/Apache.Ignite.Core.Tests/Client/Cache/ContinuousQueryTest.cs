@@ -356,11 +356,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             var qry = new ContinuousQueryClient<int, int>
             {
-                Listener = new DelegateListener<int, int>(e => lastEvt = e),
-                BufferSize = 2
+                Listener = new DelegateListener<int, int>(e => lastEvt = e)
             };
 
-            var initialQry = new ScanQuery<int, int>();
+            var initialQry = new ScanQuery<int, int>
+            {
+                PageSize = 1
+            };
 
             using (var handle = cache.QueryContinuous(qry, initialQry))
             {
