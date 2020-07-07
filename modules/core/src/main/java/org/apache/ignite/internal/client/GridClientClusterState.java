@@ -22,7 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterState;
 
 /**
- *  Interface for manage state of grid cluster and obtain information about it: ID and tag.
+ *  Interface for managing state of grid cluster and obtaining information about it: ID and tag.
  */
 public interface GridClientClusterState {
     /**

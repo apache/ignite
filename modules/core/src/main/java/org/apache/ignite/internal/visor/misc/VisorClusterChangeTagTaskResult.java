@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.id_and_tag;
+package org.apache.ignite.internal.visor.misc;
 
 import java.io.IOException;
 import java.io.ObjectInput;

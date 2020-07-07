@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.impl.id_and_tag;
+package org.apache.ignite.internal.visor.misc;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
@@ -30,16 +30,16 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class IdAndTagViewTask extends VisorOneNodeTask<Void, IdAndTagViewTaskResult> {
+public class VisorIdAndTagViewTask extends VisorOneNodeTask<Void, VisorIdAndTagViewTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<Void, IdAndTagViewTaskResult> job(Void arg) {
+    @Override protected VisorJob<Void, VisorIdAndTagViewTaskResult> job(Void arg) {
         return new IdAndTagViewJob(arg, debug);
     }
 
-    private static class IdAndTagViewJob extends VisorJob<Void, IdAndTagViewTaskResult> {
+    private static class IdAndTagViewJob extends VisorJob<Void, VisorIdAndTagViewTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -54,15 +54,15 @@ public class IdAndTagViewTask extends VisorOneNodeTask<Void, IdAndTagViewTaskRes
         }
 
         /** {@inheritDoc} */
-        @Override protected IdAndTagViewTaskResult run(@Nullable Void arg) throws IgniteException {
+        @Override protected VisorIdAndTagViewTaskResult run(@Nullable Void arg) throws IgniteException {
             return view();
         }
 
         /** */
-        private IdAndTagViewTaskResult view() {
+        private VisorIdAndTagViewTaskResult view() {
             IgniteClusterEx cl = ignite.cluster();
 
-            return new IdAndTagViewTaskResult(cl.id(), cl.tag());
+            return new VisorIdAndTagViewTaskResult(cl.id(), cl.tag());
         }
     }
 }

@@ -27,8 +27,8 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
-import org.apache.ignite.internal.client.impl.id_and_tag.IdAndTagViewTask;
-import org.apache.ignite.internal.client.impl.id_and_tag.IdAndTagViewTaskResult;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -42,9 +42,9 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
     /**
      * Closure to execute Cluster ID and Tag view action on cluster.
      */
-    private static final ClientProjectionClosure<IdAndTagViewTaskResult> ID_AND_TAG_VIEW_CL = (conn, nodeId) ->
+    private static final ClientProjectionClosure<VisorIdAndTagViewTaskResult> ID_AND_TAG_VIEW_CL = (conn, nodeId) ->
         conn.execute(
-            IdAndTagViewTask.class.getName(),
+            VisorIdAndTagViewTask.class.getName(),
             new VisorTaskArgument<>(nodeId, null, false),
             nodeId,
             false

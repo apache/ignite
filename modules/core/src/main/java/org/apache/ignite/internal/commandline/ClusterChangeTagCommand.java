@@ -23,9 +23,9 @@ import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
-import org.apache.ignite.internal.visor.id_and_tag.VisorClusterChangeTagTask;
-import org.apache.ignite.internal.visor.id_and_tag.VisorClusterChangeTagTaskArg;
-import org.apache.ignite.internal.visor.id_and_tag.VisorClusterChangeTagTaskResult;
+import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTask;
+import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTaskArg;
+import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandList.CLUSTER_CHANGE_TAG;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;

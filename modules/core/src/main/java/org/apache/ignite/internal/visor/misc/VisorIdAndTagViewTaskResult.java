@@ -15,45 +15,60 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.id_and_tag;
+package org.apache.ignite.internal.visor.misc;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
  *
  */
-public class VisorClusterChangeTagTaskArg extends IgniteDataTransferObject {
+public class VisorIdAndTagViewTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private String newTag;
+    private UUID id;
 
     /** */
-    public VisorClusterChangeTagTaskArg() {
+    private String tag;
+
+    /** Default constructor. */
+    public VisorIdAndTagViewTaskResult() {
         // No-op.
     }
 
-    /** */
-    public VisorClusterChangeTagTaskArg(String newTag) {
-        this.newTag = newTag;
+    /**
+     * @param id Cluster ID.
+     * @param tag Cluster tag.
+     */
+    public VisorIdAndTagViewTaskResult(UUID id, String tag) {
+        this.id = id;
+        this.tag = tag;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(newTag);
+        out.writeObject(id);
+        out.writeObject(tag);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        newTag = (String)in.readObject();
+        id = (UUID)in.readObject();
+        tag = (String)in.readObject();
     }
 
     /** */
-    public String newTag() {
-        return newTag;
+    public UUID id() {
+        return id;
+    }
+
+    /** */
+    public String tag() {
+        return tag;
     }
 }
