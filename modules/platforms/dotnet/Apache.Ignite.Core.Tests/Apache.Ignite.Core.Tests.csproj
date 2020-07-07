@@ -173,6 +173,7 @@
     <Compile Include="Client\ClientServerCacheAdapterExtensions.cs" />
     <Compile Include="Client\ClientServerCompatibilityTest.cs" />
     <Compile Include="Client\ClientTestBase.cs" />
+    <Compile Include="Client\ClientTestUtils.cs" />
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTests.cs" />
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTestsBase.cs" />
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTestsBaselineTopology.cs" />

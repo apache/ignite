@@ -265,6 +265,9 @@
       <Link>ThinClient\ClientServerCacheAdapterExtensions.cs</Link>
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientTestBase.cs" Link="ThinClient\ClientTestBase.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientTestUtils.cs">
+      <Link>ThinClient\ClientTestUtils.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterDiscoveryTests.cs">
       <Link>ThinClient\Cluster\ClientClusterDiscoveryTests.cs</Link>
     </Compile>
