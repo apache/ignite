@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.DotNetCore.Common
 {
-    using Apache.Ignite.Core.Tests.Client.Compute;
-
     /// <summary>
     /// Test runner.
     /// </summary>
@@ -29,12 +27,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         /// </summary>
         private static void Main(string[] args)
         {
-            var t = new ComputeClientTests();
-            t.FixtureSetUp();
-            t.TestSetUp();
-            t.TestExecuteJavaTaskAsyncMultithreaded();
-            t.TearDown();
-            t.FixtureTearDown();
+            new IgnitionStartTest().TestIgniteStartsFromAppConfig();
         }
     }
 }
