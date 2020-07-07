@@ -82,6 +82,11 @@ public class RootNode<Row> extends AbstractNode<Row>
 
     /** {@inheritDoc} */
     @Override public void cancel() {
+        if (state != State.RUNNING)
+            return;
+
+       state = State.CANCELLED;
+
        close();
     }
 
@@ -106,15 +111,10 @@ public class RootNode<Row> extends AbstractNode<Row>
 
     /** {@inheritDoc} */
     @Override public void close() {
-        if (state != State.RUNNING)
-            return;
-
         lock.lock();
         try {
-            if (state != State.RUNNING || isCancelled())
+            if (isCancelled())
                 return;
-
-            state = State.CANCELLED;
 
             context().execute(this::cancelExecutionTree);
 

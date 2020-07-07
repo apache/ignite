@@ -397,10 +397,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** {@inheritDoc} */
     @Override public void cancelQuery(UUID qryId) {
-        mailboxRegistry().outboxes(qryId).forEach(this::executeCancel);
-        mailboxRegistry().inboxes(qryId).forEach(this::executeCancel);
-
-        QueryInfo info = running.get(qryId);
+        QueryInfo info = running.remove(qryId);
 
         if (info != null)
             info.cancel();
@@ -900,18 +897,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private void onCursorClose(RootNode<?> rootNode) {
-        switch (rootNode.state()) {
-            case CANCELLED:
-                cancelQuery(rootNode.queryId());
+        assert rootNode.state() != RootNode.State.RUNNING;
 
-                break;
-            case END:
-                running.remove(rootNode.queryId());
-
-                break;
-            default:
-                throw new AssertionError();
-        }
+        running.remove(rootNode.queryId());
     }
 
     /** */
