@@ -563,10 +563,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Thread.Sleep(interval);
 
             // Check that socket has no dangling notifications.
-            var listeners = GetActiveNotificationListeners();
-
-            Assert.IsNotNull(listeners);
-            Assert.IsEmpty(listeners);
+            Assert.IsEmpty(GetActiveNotificationListeners());
         }
 
         /// <summary>
