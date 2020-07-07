@@ -55,6 +55,8 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
@@ -63,11 +65,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.testframework.junits.GridAbstractTest.getMxBean;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -948,6 +953,103 @@ public class FunctionalTest {
             t.start();
 
             t.join();
+        }
+    }
+
+    /**
+     * Test transactions with label.
+     */
+    @Test
+    public void testTransactionsWithLabel() throws Exception {
+        try (IgniteEx ignite = (IgniteEx)Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
+                .setName("cache")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            );
+
+            SystemView<TransactionView> txsView = ignite.context().systemView().view(TXS_MON_LIST);
+
+            cache.put(0, "value1");
+
+            try (ClientTransaction tx = client.transactions().withLabel("label").txStart()) {
+                cache.put(0, "value2");
+
+                assertEquals(1, F.size(txsView.iterator()));
+
+                TransactionView txv = txsView.iterator().next();
+
+                assertEquals("label", txv.label());
+
+                assertEquals("value2", cache.get(0));
+            }
+
+            assertEquals("value1", cache.get(0));
+
+            try (ClientTransaction tx = client.transactions().withLabel("label1").withLabel("label2").txStart()) {
+                cache.put(0, "value2");
+
+                assertEquals(1, F.size(txsView.iterator()));
+
+                TransactionView txv = txsView.iterator().next();
+
+                assertEquals("label2", txv.label());
+
+                tx.commit();
+            }
+
+            assertEquals("value2", cache.get(0));
+
+            // Test concurrent with label and without label transactions.
+            try (ClientTransaction tx = client.transactions().withLabel("label").txStart(PESSIMISTIC, READ_COMMITTED)) {
+                CyclicBarrier barrier = new CyclicBarrier(2);
+
+                cache.put(0, "value3");
+
+                IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+                    try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                        cache.put(1, "value3");
+
+                        barrier.await();
+
+                        assertEquals("value2", cache.get(0));
+
+                        barrier.await();
+                    }
+                    catch (InterruptedException | BrokenBarrierException ignore) {
+                        // No-op.
+                    }
+                });
+
+                barrier.await();
+
+                assertNull(cache.get(1));
+
+                assertEquals(1, F.size(txsView.iterator(), txv -> txv.label() == null));
+                assertEquals(1, F.size(txsView.iterator(), txv -> "label".equals(txv.label())));
+
+                barrier.await();
+
+                fut.get();
+            }
+
+            // Test nested transactions is not possible.
+            try (ClientTransaction tx = client.transactions().withLabel("label1").txStart()) {
+                try (ClientTransaction tx1 = client.transactions().txStart()) {
+                    fail();
+                }
+                catch (ClientException expected) {
+                    // No-op.
+                }
+
+                try (ClientTransaction tx1 = client.transactions().withLabel("label2").txStart()) {
+                    fail();
+                }
+                catch (ClientException expected) {
+                    // No-op.
+                }
+            }
         }
     }
 

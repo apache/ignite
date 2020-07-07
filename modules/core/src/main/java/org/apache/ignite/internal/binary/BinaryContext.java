@@ -844,9 +844,9 @@ public class BinaryContext {
 
             if (registerMeta) {
                 if (onlyLocReg)
-                    metaHnd.addMetaLocally(typeId, regDesc.metadata().wrap(this), false);
+                    metaHnd.addMetaLocally(typeId, regDesc.metadata(false).wrap(this), false);
                 else
-                    metaHnd.addMeta(typeId, regDesc.metadata().wrap(this), false);
+                    metaHnd.addMeta(typeId, regDesc.metadata(true).wrap(this), false);
             }
 
             descByCls.put(cls, regDesc);
@@ -1458,6 +1458,13 @@ public class BinaryContext {
         }
 
         U.clearClassCache(ldr);
+    }
+
+    /**
+     * @param typeId Type ID.
+     */
+    public synchronized void removeType(int typeId) {
+        schemas.remove(typeId);
     }
 
     /**

@@ -952,7 +952,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            BinaryClassDescriptor desc = ctx.registerClass(val, true, failIfUnregistered);
+            BinaryClassDescriptor desc = ctx.registerClass(val, false, failIfUnregistered);
 
             out.unsafeEnsure(1 + 4);
 
