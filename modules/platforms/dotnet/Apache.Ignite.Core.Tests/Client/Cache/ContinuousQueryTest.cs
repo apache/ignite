@@ -468,10 +468,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             cache[1] = 1;
 
-            var handle = cache.QueryContinuous(qry, initialQry);
+            using (var handle = cache.QueryContinuous(qry, initialQry))
+            {
+                var ex = Assert.Throws<IgniteClientException>(() => handle.GetInitialQueryCursor().GetAll());
+                StringAssert.Contains("Failed to execute query on node", ex.Message);
 
-            var ex = Assert.Throws<IgniteClientException>(() => handle.GetInitialQueryCursor().GetAll());
-            StringAssert.Contains("Failed to execute query on node", ex.Message);
+                // Listener still works:
+                // TODO
+            }
         }
 
         /// <summary>
