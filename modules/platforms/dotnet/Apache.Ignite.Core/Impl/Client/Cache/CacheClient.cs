@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
@@ -269,9 +268,16 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             // Filter is a binary object for all platforms.
             // For .NET it is a CacheEntryFilterHolder with a predefined id (BinaryTypeId.CacheEntryPredicateHolder).
-            return DoOutInOp(ClientOp.QueryScan, w => WriteScanQuery(w.Writer, scanQuery),
+            return DoOutInOp(
+                ClientOp.QueryScan,
+                w => WriteScanQuery(w.Writer, scanQuery),
                 ctx => new ClientQueryCursor<TK, TV>(
-                    ctx.Socket, ctx.Stream.ReadLong(), _keepBinary, ctx.Stream, ClientOp.QueryScanCursorGetPage));
+                    ctx.Socket,
+                    ctx.Stream.ReadLong(),
+                    _keepBinary,
+                    ctx.Stream,
+                    ClientOp.QueryScanCursorGetPage,
+                    closeCursorOnDispose: true));
         }
 
         /** <inheritDoc /> */
@@ -282,9 +288,16 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(sqlQuery.Sql, "sqlQuery.Sql");
             IgniteArgumentCheck.NotNull(sqlQuery.QueryType, "sqlQuery.QueryType");
 
-            return DoOutInOp(ClientOp.QuerySql, w => WriteSqlQuery(w.Writer, sqlQuery),
+            return DoOutInOp(
+                ClientOp.QuerySql,
+                w => WriteSqlQuery(w.Writer, sqlQuery),
                 ctx => new ClientQueryCursor<TK, TV>(
-                    ctx.Socket, ctx.Stream.ReadLong(), _keepBinary, ctx.Stream, ClientOp.QuerySqlCursorGetPage));
+                    ctx.Socket,
+                    ctx.Stream.ReadLong(),
+                    _keepBinary,
+                    ctx.Stream,
+                    ClientOp.QuerySqlCursorGetPage,
+                    closeCursorOnDispose: true));
         }
 
         /** <inheritDoc /> */
@@ -987,8 +1000,14 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             var cursorId = ctx.Stream.ReadLong();
             var columnCount = ctx.Stream.ReadInt();
 
-            return new ClientQueryCursorBase<T>(ctx.Socket, cursorId, _keepBinary, ctx.Stream,
-                ClientOp.QuerySqlFieldsCursorGetPage, r => readerFunc(r, columnCount));
+            return new ClientQueryCursorBase<T>(
+                ctx.Socket,
+                cursorId,
+                _keepBinary,
+                ctx.Stream,
+                ClientOp.QuerySqlFieldsCursorGetPage,
+                r => readerFunc(r, columnCount),
+                closeCursorOnDispose: true);
         }
 
         /// <summary>
