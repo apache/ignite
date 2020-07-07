@@ -474,13 +474,16 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             using (var handle = cache.QueryContinuous(qry, initialQry))
             {
-                var ex = Assert.Throws<IgniteClientException>(() => handle.GetInitialQueryCursor().GetAll());
-                StringAssert.Contains("Failed to execute query on node", ex.Message);
+                // Listener works:
+                cache[2] = 2;
+                TestUtils.WaitForTrueCondition(() => lastEvt != null && lastEvt.Key == 2);
+
+                // var ex = Assert.Throws<IgniteClientException>(() => handle.GetInitialQueryCursor().GetAll());
+                // StringAssert.Contains("Failed to execute query on node", ex.Message);
 
                 // Listener still works:
-                cache[2] = 2;
-                TestUtils.WaitForTrueCondition(() => lastEvt != null);
-                Assert.AreEqual(2, lastEvt.Key);
+                cache[3] = 3;
+                TestUtils.WaitForTrueCondition(() => lastEvt != null && lastEvt.Key == 3);
             }
         }
 
