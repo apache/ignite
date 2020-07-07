@@ -347,7 +347,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsTrue(tx.StartTime.Ticks > 0);
             Assert.AreEqual(tx.NodeId, GetIgnite(0).GetCluster().GetLocalNode().Id);
             Assert.AreEqual(Transactions.DefaultTimeoutOnPartitionMapExchange, TimeSpan.Zero);
-            
+
             DateTime startTime1 = tx.StartTime;
 
             tx.Commit();
@@ -859,6 +859,27 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 CheckTxOp((cache, key) => cache.Replace(key, cache[key], 100));
                 CheckTxOp((cache, key) => cache.ReplaceAsync(key, cache[key], 100));
+            }
+        }
+
+        /// <summary>
+        /// Tests that read operations lock keys in Serializable mode.
+        /// </summary>
+        [Test]
+        public void TestTransactionScopeWithSerializableIsolationLocksKeysOnRead()
+        {
+            var cache = Cache();
+            cache.Put(1, 1);
+
+            var options = new TransactionOptions {IsolationLevel = IsolationLevel.Serializable};
+
+            using (var scope = new TransactionScope(TransactionScopeOption.Required, options))
+            {
+                var before = cache.Get(1);
+
+                Task.Factory.StartNew(() => cache.Put(1, 2)).Wait();
+
+                Assert.AreEqual(1, cache.Get(1));
             }
         }
 
