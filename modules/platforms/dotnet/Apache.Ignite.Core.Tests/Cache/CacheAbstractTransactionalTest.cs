@@ -903,7 +903,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 scope.Complete();
             }
 
-            Assert.AreEqual(2, readOp(cache, 1));
+            TestUtils.WaitForTrueCondition(() => 2 == readOp(cache, 1));
         }
 
         /// <summary>
