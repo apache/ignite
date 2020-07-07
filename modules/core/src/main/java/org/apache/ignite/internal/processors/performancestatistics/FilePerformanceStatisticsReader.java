@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,7 +60,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
  */
 public class FilePerformanceStatisticsReader {
     /** File read buffer size. */
-    private static final int READ_BUFFER_SIZE = 8 * 1024 * 1024;
+    private static final int READ_BUFFER_SIZE = (int)(8 * U.MB);
 
     /** Uuid as string pattern. */
     private static final String UUID_STR_PATTERN =

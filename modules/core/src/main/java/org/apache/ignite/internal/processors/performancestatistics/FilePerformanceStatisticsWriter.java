@@ -124,7 +124,7 @@ public class FilePerformanceStatisticsWriter {
 
             FileIO fileIo = fileIoFactory.create(file);
 
-            fileWriter = new FileWriter(ctx, fileIo, DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, DFLT_FLUSH_SIZE, log);
+            fileWriter = new FileWriter(ctx, fileIo, log);
 
             new IgniteThread(fileWriter).start();
 
@@ -386,9 +386,6 @@ public class FilePerformanceStatisticsWriter {
         /** File write buffer. */
         private final SegmentedRingByteBuffer ringByteBuffer;
 
-        /** Minimal batch size to flush in bytes. */
-        private final int flushBatchSize;
-
         /** Size of ready for flushing bytes. */
         private final AtomicInteger readyForFlushSize = new AtomicInteger();
 
@@ -401,19 +398,14 @@ public class FilePerformanceStatisticsWriter {
         /**
          * @param ctx Kernal context.
          * @param fileIo Performance statistics file I/O.
-         * @param maxFileSize Maximum file size in bytes.
-         * @param bufferSize Off heap buffer size in bytes.
-         * @param flushBatchSize Minimal batch size to flush in bytes.
          * @param log Logger.
          */
-        FileWriter(GridKernalContext ctx, FileIO fileIo, long maxFileSize, int bufferSize, int flushBatchSize,
-            IgniteLogger log) {
+        FileWriter(GridKernalContext ctx, FileIO fileIo, IgniteLogger log) {
             super(ctx.igniteInstanceName(), "performance-statistics-writer%" + ctx.igniteInstanceName(), log);
 
             this.fileIo = fileIo;
-            this.flushBatchSize = flushBatchSize;
 
-            ringByteBuffer = new SegmentedRingByteBuffer(bufferSize, maxFileSize, BufferMode.DIRECT);
+            ringByteBuffer = new SegmentedRingByteBuffer(DFLT_BUFFER_SIZE, DFLT_FILE_MAX_SIZE, BufferMode.DIRECT);
 
             ringByteBuffer.init(0);
         }
@@ -426,7 +418,7 @@ public class FilePerformanceStatisticsWriter {
 
                     try {
                         synchronized (this) {
-                            while (readyForFlushSize.get() < flushBatchSize && !isCancelled())
+                            while (readyForFlushSize.get() < DFLT_FLUSH_SIZE && !isCancelled())
                                 wait();
                         }
                     }
