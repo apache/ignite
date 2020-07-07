@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -535,22 +536,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var cursor = cache.Query(scanQuery);
 
-            var key = 0;
+            long count = 0;
             Task.Factory.StartNew(() =>
             {
                 // ReSharper disable once AccessToModifiedClosure
-                while (key < 10) { }
+                while (Interlocked.Read(ref count) < 100) { }
                 cursor.Dispose();
             });
 
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            foreach (var entry in cursor)
+            foreach (var unused in cursor)
             {
-                key = entry.Key;
-                // Assert.Throws<ObjectDisposedException>(() => cursor.ToList());
+                Interlocked.Increment(ref count);
             }
 
-            Assert.AreEqual(10000, key);
+            Assert.AreEqual(10000, count);
         }
 
         /// <summary>
