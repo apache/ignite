@@ -120,8 +120,6 @@ export const reducer = (state = defaults, action) => {
 
 export const RECEIVE_CLUSTER_EDIT = Symbol('RECEIVE_CLUSTER_EDIT');
 export const RECEIVE_CACHE_EDIT = Symbol('RECEIVE_CACHE_EDIT');
-export const RECEIVE_IGFSS_EDIT = Symbol('RECEIVE_IGFSS_EDIT');
-export const RECEIVE_IGFS_EDIT = Symbol('RECEIVE_IGFS_EDIT');
 export const RECEIVE_MODELS_EDIT = Symbol('RECEIVE_MODELS_EDIT');
 export const RECEIVE_MODEL_EDIT = Symbol('RECEIVE_MODEL_EDIT');
 
@@ -137,19 +135,6 @@ export const editReducer = (state = {originalCluster: null}, action) => {
             return {
                 ...state,
                 originalCache: action.cache
-            };
-        }
-
-        case RECEIVE_IGFSS_EDIT:
-            return {
-                ...state,
-                originalIGFSs: action.igfss
-            };
-
-        case RECEIVE_IGFS_EDIT: {
-            return {
-                ...state,
-                originalIGFS: action.igfs
             };
         }
 
@@ -278,8 +263,6 @@ export const cachesActionTypes = mapStoreActionTypesFactory('CACHES');
 export const shortCachesActionTypes = mapStoreActionTypesFactory('SHORT_CACHES');
 export const modelsActionTypes = mapStoreActionTypesFactory('MODELS');
 export const shortModelsActionTypes = mapStoreActionTypesFactory('SHORT_MODELS');
-export const igfssActionTypes = mapStoreActionTypesFactory('IGFSS');
-export const shortIGFSsActionTypes = mapStoreActionTypesFactory('SHORT_IGFSS');
 
 export const itemsEditReducerFactory = (actionTypes) => {
     const setStoreReducer = setStoreReducerFactory(actionTypes);
@@ -324,7 +307,7 @@ export const editReducer2 = (state = editReducer2.getDefaults(), action) => {
             return {
                 ...state,
                 changes: {
-                    ...['caches', 'models', 'igfss'].reduce((a, t) => ({
+                    ...['caches', 'models'].reduce((a, t) => ({
                         ...a,
                         [t]: {
                             ids: action.cluster ? action.cluster[t] || [] : [],
@@ -340,7 +323,7 @@ export const editReducer2 = (state = editReducer2.getDefaults(), action) => {
             return {
                 ...state,
                 changes: {
-                    ...['caches', 'models', 'igfss'].reduce((a, t) => ({
+                    ...['caches', 'models'].reduce((a, t) => ({
                         ...a,
                         [t]: {
                             ids: state.changes.cluster ? state.changes.cluster[t] || [] : [],
@@ -396,7 +379,7 @@ export const editReducer2 = (state = editReducer2.getDefaults(), action) => {
 };
 
 editReducer2.getDefaults = () => ({
-    changes: ['caches', 'models', 'igfss'].reduce((a, t) => ({...a, [t]: {ids: [], changedItems: []}}), {cluster: null})
+    changes: ['caches', 'models'].reduce((a, t) => ({...a, [t]: {ids: [], changedItems: []}}), {cluster: null})
 });
 
 export const refsReducer = (refs) => (state, action) => {

@@ -102,7 +102,6 @@ export default class Controller {
 
         this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
         this.shortModels$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortModels);
-        this.shortIGFSs$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortIGFSs);
         this.originalCache$ = cacheID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {

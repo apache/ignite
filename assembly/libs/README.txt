@@ -79,7 +79,6 @@ The following modules are available:
 - ignite-flink (for streaming from Apache Flink into Ignite)
 - ignite-flume (for streaming events from Apache Flume into Ignite)
 - ignite-gce (for automatic cluster discovery on Google Compute Engine)
-- ignite-hadoop (for Apache Hadoop Accelerator)
 - ignite-hibernate (for Hibernate integration)
 - ignite-hibernate5 (for Hibernate5 integration)
 - ignite-indexing (for SQL querying and indexing)

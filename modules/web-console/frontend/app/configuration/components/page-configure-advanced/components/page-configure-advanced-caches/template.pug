@@ -48,7 +48,6 @@ h2.pc-page-header.ng-animate-disabled(ng-if='$ctrl.isBlocked$|async:this')
 cache-edit-form(
     cache='$ctrl.originalCache$|async:this'
     caches='$ctrl.shortCaches$|async:this'
-    igfss='$ctrl.shortIGFSs$|async:this'
     models='$ctrl.shortModels$|async:this'
     on-save='$ctrl.save($event)'
     ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'

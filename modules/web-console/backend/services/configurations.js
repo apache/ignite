@@ -21,7 +21,7 @@
 
 module.exports = {
     implements: 'services/configurations',
-    inject: ['mongo', 'services/spaces', 'services/clusters', 'services/caches', 'services/domains', 'services/igfss']
+    inject: ['mongo', 'services/spaces', 'services/clusters', 'services/caches', 'services/domains']
 };
 
 /**
@@ -30,10 +30,9 @@ module.exports = {
  * @param {ClustersService} clustersService
  * @param {CachesService} cachesService
  * @param {DomainsService} domainsService
- * @param {IgfssService} igfssService
  * @returns {ConfigurationsService}
  */
-module.exports.factory = (mongo, spacesService, clustersService, cachesService, domainsService, igfssService) => {
+module.exports.factory = (mongo, spacesService, clustersService, cachesService, domainsService) => {
     class ConfigurationsService {
         static list(userId, demo) {
             let spaces;
@@ -47,10 +46,9 @@ module.exports.factory = (mongo, spacesService, clustersService, cachesService, 
                 .then((spaceIds) => Promise.all([
                     clustersService.listBySpaces(spaceIds),
                     domainsService.listBySpaces(spaceIds),
-                    cachesService.listBySpaces(spaceIds),
-                    igfssService.listBySpaces(spaceIds)
+                    cachesService.listBySpaces(spaceIds)
                 ]))
-                .then(([clusters, domains, caches, igfss]) => ({clusters, domains, caches, igfss, spaces}));
+                .then(([clusters, domains, caches]) => ({clusters, domains, caches, spaces}));
         }
 
         static get(userId, demo, _id) {
@@ -58,10 +56,9 @@ module.exports.factory = (mongo, spacesService, clustersService, cachesService, 
                 .then((cluster) =>
                     Promise.all([
                         mongo.Cache.find({space: cluster.space, _id: {$in: cluster.caches}}).lean().exec(),
-                        mongo.DomainModel.find({space: cluster.space, _id: {$in: cluster.models}}).lean().exec(),
-                        mongo.Igfs.find({space: cluster.space, _id: {$in: cluster.igfss}}).lean().exec()
+                        mongo.DomainModel.find({space: cluster.space, _id: {$in: cluster.models}}).lean().exec()
                     ])
-                        .then(([caches, models, igfss]) => ({cluster, caches, models, igfss}))
+                        .then(([caches, models]) => ({cluster, caches, models}))
                 );
         }
     }

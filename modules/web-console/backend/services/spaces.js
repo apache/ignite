@@ -79,8 +79,7 @@ module.exports.factory = (mongo, errors) => {
             return Promise.all([
                 mongo.Cluster.deleteMany({space: {$in: spaceIds}}).exec(),
                 mongo.Cache.deleteMany({space: {$in: spaceIds}}).exec(),
-                mongo.DomainModel.deleteMany({space: {$in: spaceIds}}).exec(),
-                mongo.Igfs.deleteMany({space: {$in: spaceIds}}).exec()
+                mongo.DomainModel.deleteMany({space: {$in: spaceIds}}).exec()
             ]);
         }
     }

@@ -166,74 +166,6 @@ function migrateCaches(clustersModel, cachesModel, domainsModel) {
         .catch((err) => error('Caches migration failed', err));
 }
 
-function linkIgfsToCluster(clustersModel, cluster, igfsModel, igfs) {
-    return clustersModel.updateOne({_id: cluster._id}, {$addToSet: {igfss: igfs._id}}).exec()
-        .then(() => igfsModel.updateOne({_id: igfs._id}, {clusters: [cluster._id]}).exec())
-        .catch((err) => error(`Failed link IGFS to cluster [IGFS=${igfs.name}, cluster=${cluster.name}]`, err));
-}
-
-function cloneIgfs(clustersModel, igfsModel, igfs) {
-    const igfsId = igfs._id;
-    const clusters = igfs.clusters;
-
-    delete igfs._id;
-    igfs.clusters = [];
-
-    return _.reduce(clusters, (start, cluster, idx) => start.then(() => {
-        const newIgfs = _.clone(igfs);
-
-        newIgfs.clusters = [cluster];
-
-        if (idx > 0) {
-            return clustersModel.updateMany({_id: {$in: newIgfs.clusters}}, {$pull: {igfss: igfsId}}).exec()
-                .then(() => igfsModel.create(newIgfs))
-                .then((clone) => clustersModel.updateMany({_id: {$in: newIgfs.clusters}}, {$addToSet: {igfss: clone._id}}).exec())
-                .catch((err) => error(`Failed to clone IGFS: id=${igfsId}, name=${igfs.name}]`, err));
-        }
-
-        return igfsModel.updateOne({_id: igfsId}, {clusters: [cluster]}).exec();
-    }), Promise.resolve());
-}
-
-function migrateIgfs(clustersModel, igfsModel, igfs) {
-    const clustersCnt = _.size(igfs.clusters);
-
-    if (clustersCnt < 1) {
-        if (_debug)
-            log(`Found IGFS not linked to cluster [IGFS=${igfs.name}]`);
-
-        return getClusterForMigration(clustersModel, igfs.space)
-            .then((clusterLostFound) => linkIgfsToCluster(clustersModel, clusterLostFound, igfsModel, igfs));
-    }
-
-    if (clustersCnt > 1) {
-        if (_debug)
-            log(`Found IGFS linked to many clusters [IGFS=${igfs.name}, clustersCnt=${clustersCnt}]`);
-
-        return cloneIgfs(clustersModel, igfsModel, igfs);
-    }
-
-    // Nothing to migrate, IGFS linked to cluster 1-to-1.
-    return Promise.resolve();
-}
-
-function migrateIgfss(clustersModel, igfsModel) {
-    return igfsModel.find({}).lean().exec()
-        .then((igfss) => {
-            const igfsCnt = _.size(igfss);
-
-            if (igfsCnt > 0) {
-                log(`IGFS to migrate: ${igfsCnt}`);
-
-                return _.reduce(igfss, (start, igfs) => start.then(() => migrateIgfs(clustersModel, igfsModel, igfs)), Promise.resolve())
-                    .then(() => log('IGFS migration finished.'));
-            }
-
-            return Promise.resolve();
-        })
-        .catch((err) => error('IGFS migration failed', err));
-}
-
 function linkDomainToCluster(clustersModel, cluster, domainsModel, domain) {
     return clustersModel.updateOne({_id: cluster._id}, {$addToSet: {models: domain._id}}).exec()
         .then(() => domainsModel.updateOne({_id: domain._id}, {clusters: [cluster._id]}).exec())
@@ -371,7 +303,6 @@ exports.up = function up(done) {
     const clustersModel = this('Cluster');
     const cachesModel = this('Cache');
     const domainsModel = this('DomainModel');
-    const igfsModel = this('Igfs');
 
     process.on('unhandledRejection', function(reason, p) {
         console.log('Unhandled rejection at:', p, 'reason:', reason);
@@ -379,13 +310,10 @@ exports.up = function up(done) {
 
     Promise.resolve()
         .then(() => deduplicate('Cluster caches', clustersModel, 'caches'))
-        .then(() => deduplicate('Cluster IGFS', clustersModel, 'igfss'))
         .then(() => deduplicate('Cache clusters', cachesModel, 'clusters'))
         .then(() => deduplicate('Cache domains', cachesModel, 'domains'))
-        .then(() => deduplicate('IGFS clusters', igfsModel, 'clusters'))
         .then(() => deduplicate('Domain model caches', domainsModel, 'caches'))
         .then(() => migrateCaches(clustersModel, cachesModel, domainsModel))
-        .then(() => migrateIgfss(clustersModel, igfsModel))
         .then(() => migrateDomains(clustersModel, cachesModel, domainsModel))
         .then(() => log(`Duplicates counter: ${dup}`))
         .then(() => done())

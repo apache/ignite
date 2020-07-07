@@ -20,7 +20,6 @@ import IgniteClusterDefaults from './generator/defaults/Cluster.service';
 import IgniteClusterPlatformDefaults from './generator/defaults/Cluster.platform.service';
 import IgniteCacheDefaults from './generator/defaults/Cache.service';
 import IgniteCachePlatformDefaults from './generator/defaults/Cache.platform.service';
-import IgniteIGFSDefaults from './generator/defaults/IGFS.service';
 import IgniteEventGroups from './generator/defaults/Event-groups.service';
 
 import IgniteConfigurationGenerator from './generator/ConfigurationGenerator';
@@ -51,7 +50,6 @@ export default angular
     .service('IgniteClusterPlatformDefaults', IgniteClusterPlatformDefaults)
     .service('IgniteCacheDefaults', IgniteCacheDefaults)
     .service('IgniteCachePlatformDefaults', IgniteCachePlatformDefaults)
-    .service('IgniteIGFSDefaults', IgniteIGFSDefaults)
     .service('IgnitePropertiesGenerator', IgniteGeneratorProperties)
     .service('IgniteReadmeGenerator', IgniteReadmeGenerator)
     .service('IgniteDockerGenerator', IgniteDockerGenerator)

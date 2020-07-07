@@ -27,16 +27,6 @@ export interface ShortCache {
     name: string
 }
 
-// IGFS
-type DefaultModes = 'PRIMARY' | 'PROXY' | 'DUAL_SYNC' | 'DUAL_ASYNC';
-
-export interface ShortIGFS {
-    _id: string,
-    name: string,
-    defaultMode: DefaultModes,
-    affinnityGroupSize: number
-}
-
 // Models
 type QueryMetadataTypes = 'Annotations' | 'Configuration';
 type DomainModelKinds = 'query' | 'store' | 'both';
@@ -133,8 +123,7 @@ export interface ShortCluster {
     name: string,
     discovery: DiscoveryKinds,
     caches: number,
-    models: number,
-    igfs: number
+    models: number
 }
 
 export type ClusterLike = Cluster | ShortCluster;

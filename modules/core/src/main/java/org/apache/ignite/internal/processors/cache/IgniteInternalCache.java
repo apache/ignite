@@ -1642,20 +1642,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys);
 
     /**
-     * Checks whether this cache is IGFS data cache.
-     *
-     * @return {@code True} in case this cache is IGFS data cache.
-     */
-    public boolean isIgfsDataCache();
-
-    /**
-     * Get current amount of used IGFS space in bytes.
-     *
-     * @return Amount of used IGFS space in bytes.
-     */
-    public long igfsDataSpaceUsed();
-
-    /**
      * @param keepBinary Keep binary flag.
      * @param p Optional key/value predicate.
      * @return Scan query iterator.

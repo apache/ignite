@@ -153,17 +153,10 @@ suite('ClusterServiceTestsSuite', () => {
             .then((clusters) => {
                 assert.equal(clusters.length, 2);
 
-                assert.equal(clusters[0].name, 'cluster-igfs');
+                assert.equal(clusters[0].name, 'cluster');
                 assert.isNotNull(clusters[0].discovery);
-                assert.equal(clusters[0].cachesCount, 2);
-                assert.equal(clusters[0].modelsCount, 2);
-                assert.equal(clusters[0].igfsCount, 1);
-
-                assert.equal(clusters[1].name, 'cluster-caches');
-                assert.isNotNull(clusters[1].discovery);
-                assert.equal(clusters[1].cachesCount, 5);
-                assert.equal(clusters[1].modelsCount, 3);
-                assert.equal(clusters[1].igfsCount, 0);
+                assert.equal(clusters[0].cachesCount, 5);
+                assert.equal(clusters[0].modelsCount, 3);
             })
             .then(done)
             .catch(done);
@@ -235,7 +228,6 @@ suite('ClusterServiceTestsSuite', () => {
         const cluster = _.cloneDeep(_.head(testClusters));
 
         cluster.communication.tcpNoDelay = false;
-        cluster.igfss = [];
 
         cluster.memoryConfiguration = {
             defaultMemoryPolicySize: 10,
@@ -266,7 +258,6 @@ suite('ClusterServiceTestsSuite', () => {
                 assert.notExists(savedCluster.memoryConfiguration.defaultMemoryPolicySize);
                 assert.deepEqual(savedCluster.memoryConfiguration.memoryPolicies, cluster.memoryConfiguration.memoryPolicies);
 
-                assert.notDeepEqual(_.invokeMap(savedCluster.igfss, 'toString'), cluster.igfss);
                 assert.notDeepEqual(savedCluster.communication, cluster.communication);
             })
             .then(() => cacheService.get(testAccounts[0]._id, false, _.head(caches)._id))
@@ -313,7 +304,6 @@ suite('ClusterServiceTestsSuite', () => {
         const cluster = _.cloneDeep(_.head(testClusters));
 
         cluster.communication.tcpNoDelay = false;
-        cluster.igfss = [];
 
         cluster.memoryConfiguration = {
             defaultMemoryPolicySize: 10,
@@ -343,7 +333,6 @@ suite('ClusterServiceTestsSuite', () => {
 
                 assert.deepEqual(savedCluster.memoryConfiguration, cluster.memoryConfiguration);
 
-                assert.deepEqual(_.invokeMap(savedCluster.igfss, 'toString'), cluster.igfss);
                 assert.deepEqual(savedCluster.communication, cluster.communication);
             })
             .then(() => cacheService.get(testAccounts[0]._id, false, removedCache))

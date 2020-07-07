@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -157,7 +156,6 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         inclEvtTypes = c.getIncludeEventTypes();
         rest = new VisorRestConfiguration(c);
         userAttrs = c.getUserAttributes();
-        igfss = VisorIgfsConfiguration.list(c.getFileSystemConfiguration());
         env = new HashMap<>(System.getenv());
         sysProps = IgniteSystemProperties.snapshot();
         atomic = new VisorAtomicConfiguration(c.getAtomicConfiguration());
@@ -178,11 +176,6 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
             binaryCfg = new VisorBinaryConfiguration(bc);
 
         cacheKeyCfgs = VisorCacheKeyConfiguration.list(c.getCacheKeyConfiguration());
-
-        HadoopConfiguration hc = c.getHadoopConfiguration();
-
-        if (hc != null)
-            hadoopCfg = new VisorHadoopConfiguration(hc);
 
         ClientConnectorConfiguration ccc = c.getClientConnectorConfiguration();
 
@@ -413,7 +406,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         out.writeObject(inclEvtTypes);
         out.writeObject(rest);
         U.writeMap(out, userAttrs);
-        U.writeCollection(out, igfss);
+        U.writeCollection(out, null);
         U.writeMap(out, env);
         out.writeObject(sysProps);
         out.writeObject(atomic);
@@ -424,7 +417,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         U.writeString(out, warmupClos);
         out.writeObject(binaryCfg);
         U.writeCollection(out, cacheKeyCfgs);
-        out.writeObject(hadoopCfg);
+        out.writeObject(null);
         out.writeObject(sqlConnCfg);
         U.writeCollection(out, srvcCfgs);
         out.writeObject(dataStorage);

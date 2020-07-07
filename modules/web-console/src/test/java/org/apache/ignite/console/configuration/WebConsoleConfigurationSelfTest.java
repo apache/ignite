@@ -43,8 +43,6 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.ExecutorConfiguration;
-import org.apache.ignite.configuration.FileSystemConfiguration;
-import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
@@ -53,15 +51,6 @@ import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
-import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
-import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
-import org.apache.ignite.hadoop.mapreduce.IgniteHadoopWeightedMapReducePlanner;
-import org.apache.ignite.hadoop.util.BasicUserNameMapper;
-import org.apache.ignite.hadoop.util.ChainedUserNameMapper;
-import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
-import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
-import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi;
@@ -142,7 +131,6 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgProps.add("failureDetectionTimeout");
         igniteCfgProps.add("clientFailureDetectionTimeout");
         igniteCfgProps.add("failoverSpi");
-        igniteCfgProps.add("hadoopConfiguration");
         igniteCfgProps.add("loadBalancingSpi");
         igniteCfgProps.add("marshalLocalJobs");
 
@@ -172,7 +160,6 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgProps.add("systemThreadPoolSize");
         igniteCfgProps.add("serviceThreadPoolSize");
         igniteCfgProps.add("managementThreadPoolSize");
-        igniteCfgProps.add("igfsThreadPoolSize");
         igniteCfgProps.add("utilityCacheThreadPoolSize");
         igniteCfgProps.add("utilityCacheKeepAliveTime");
         igniteCfgProps.add("asyncCallbackPoolSize");
@@ -189,7 +176,6 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgProps.add("timeServerPortRange");
         igniteCfgProps.add("transactionConfiguration");
         igniteCfgProps.add("clientConnectorConfiguration");
-        igniteCfgProps.add("fileSystemConfiguration");
         igniteCfgProps.add("gridLogger");
         igniteCfgProps.add("pluginConfigurations");
         igniteCfgProps.add("mvccVacuumFrequency");
@@ -527,23 +513,6 @@ public class WebConsoleConfigurationSelfTest {
         metadata.put(JobStealingFailoverSpi.class,
             new MetadataInfo(jobStealingFailoverProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
-        Set<String> hadoopCfgProps = new HashSet<>();
-        hadoopCfgProps.add("mapReducePlanner");
-        hadoopCfgProps.add("finishedJobInfoTtl");
-        hadoopCfgProps.add("maxParallelTasks");
-        hadoopCfgProps.add("maxTaskQueueSize");
-        hadoopCfgProps.add("nativeLibraryNames");
-        metadata.put(HadoopConfiguration.class, new MetadataInfo(hadoopCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
-
-        Set<String> hadoopWeightMapReduceCfgProps = new HashSet<>();
-        hadoopWeightMapReduceCfgProps.add("localMapperWeight");
-        hadoopWeightMapReduceCfgProps.add("remoteMapperWeight");
-        hadoopWeightMapReduceCfgProps.add("localReducerWeight");
-        hadoopWeightMapReduceCfgProps.add("remoteReducerWeight");
-        hadoopWeightMapReduceCfgProps.add("preferLocalReducerThresholdWeight");
-        metadata.put(IgniteHadoopWeightedMapReducePlanner.class,
-            new MetadataInfo(hadoopWeightMapReduceCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
-
         Set<String> weightedRndLoadBalancingProps = new HashSet<>();
         weightedRndLoadBalancingProps.add("nodeWeight");
         weightedRndLoadBalancingProps.add("useWeights");
@@ -862,103 +831,6 @@ public class WebConsoleConfigurationSelfTest {
         hibernateBlobStoreProps.add("hibernateProperties");
         metadata.put(CacheHibernateBlobStore.class,
             new MetadataInfo(hibernateBlobStoreProps, EMPTY_FIELDS, EMPTY_FIELDS));
-
-        Set<String> igfsCfgProps = new HashSet<>();
-        igfsCfgProps.add("name");
-        igfsCfgProps.add("defaultMode");
-        // Removed since 2.0.
-        // igfsCfgProps.add("dualModeMaxPendingPutsSize");
-        // igfsCfgProps.add("dualModePutExecutorService");
-        // igfsCfgProps.add("dualModePutExecutorServiceShutdown");
-        igfsCfgProps.add("fragmentizerEnabled");
-        igfsCfgProps.add("fragmentizerConcurrentFiles");
-        igfsCfgProps.add("fragmentizerThrottlingBlockLength");
-        igfsCfgProps.add("fragmentizerThrottlingDelay");
-        igfsCfgProps.add("ipcEndpointEnabled");
-        igfsCfgProps.add("ipcEndpointConfiguration");
-        igfsCfgProps.add("blockSize");
-        // streamBufferSize field in model.
-        igfsCfgProps.add("bufferSize");
-        // Removed since 2.0.
-        // igfsCfgProps.add("streamBufferSize");
-        // igfsCfgProps.add("maxSpaceSize");
-        igfsCfgProps.add("maximumTaskRangeLength");
-        igfsCfgProps.add("managementPort");
-        igfsCfgProps.add("perNodeBatchSize");
-        igfsCfgProps.add("perNodeParallelBatchCount");
-        igfsCfgProps.add("prefetchBlocks");
-        igfsCfgProps.add("sequentialReadsBeforePrefetch");
-        // Removed since 2.0.
-        // igfsCfgProps.add("trashPurgeTimeout");
-        igfsCfgProps.add("colocateMetadata");
-        igfsCfgProps.add("relaxedConsistency");
-        igfsCfgProps.add("updateFileLengthOnFlush");
-        igfsCfgProps.add("pathModes");
-        igfsCfgProps.add("secondaryFileSystem");
-
-        Set<String> igfsCfgPropsExclude = new HashSet<>();
-        igfsCfgPropsExclude.add("dataCacheConfiguration");
-        igfsCfgPropsExclude.add("metaCacheConfiguration");
-
-        metadata.put(FileSystemConfiguration.class, new MetadataInfo(igfsCfgProps, EMPTY_FIELDS, igfsCfgPropsExclude));
-
-        Set<String> igfsBlocMapperProps = new HashSet<>();
-        igfsBlocMapperProps.add("groupSize");
-
-        metadata.put(IgfsGroupDataBlocksKeyMapper.class,
-            new MetadataInfo(igfsBlocMapperProps, EMPTY_FIELDS, EMPTY_FIELDS));
-
-        Set<String> secHadoopIgfsCfgProps = new HashSet<>();
-        secHadoopIgfsCfgProps.add("defaultUserName");
-        secHadoopIgfsCfgProps.add("fileSystemFactory");
-
-        metadata.put(IgniteHadoopIgfsSecondaryFileSystem.class, new MetadataInfo(secHadoopIgfsCfgProps, EMPTY_FIELDS,
-            EMPTY_FIELDS));
-
-        Set<String> cachingIgfsCfgProps = new HashSet<>();
-        cachingIgfsCfgProps.add("uri");
-        cachingIgfsCfgProps.add("configPaths");
-        cachingIgfsCfgProps.add("userNameMapper");
-
-        metadata.put(CachingHadoopFileSystemFactory.class,
-            new MetadataInfo(cachingIgfsCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
-
-        Set<String> kerberosIgfsCfgProps = new HashSet<>();
-        kerberosIgfsCfgProps.add("uri");
-        kerberosIgfsCfgProps.add("configPaths");
-        kerberosIgfsCfgProps.add("userNameMapper");
-        kerberosIgfsCfgProps.add("keyTab");
-        kerberosIgfsCfgProps.add("keyTabPrincipal");
-        kerberosIgfsCfgProps.add("reloginInterval");
-
-        metadata.put(KerberosHadoopFileSystemFactory.class, new MetadataInfo(kerberosIgfsCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
-
-        Set<String> chainedIgfsUsrNameMapperProps = new HashSet<>();
-        chainedIgfsUsrNameMapperProps.add("mappers");
-
-        metadata.put(ChainedUserNameMapper.class, new MetadataInfo(chainedIgfsUsrNameMapperProps, EMPTY_FIELDS, EMPTY_FIELDS));
-
-        Set<String> basicIgfsUsrNameMapperProps = new HashSet<>();
-        basicIgfsUsrNameMapperProps.add("defaultUserName");
-        basicIgfsUsrNameMapperProps.add("useDefaultUserName");
-        basicIgfsUsrNameMapperProps.add("mappings");
-
-        metadata.put(BasicUserNameMapper.class, new MetadataInfo(basicIgfsUsrNameMapperProps, EMPTY_FIELDS, EMPTY_FIELDS));
-
-        Set<String> kerberosIgfsUsrNameMapperProps = new HashSet<>();
-        kerberosIgfsUsrNameMapperProps.add("instance");
-        kerberosIgfsUsrNameMapperProps.add("realm");
-
-        metadata.put(KerberosUserNameMapper.class, new MetadataInfo(kerberosIgfsUsrNameMapperProps, EMPTY_FIELDS, EMPTY_FIELDS));
-
-        Set<String> ipcEndpointProps = new HashSet<>();
-        ipcEndpointProps.add("type");
-        ipcEndpointProps.add("host");
-        ipcEndpointProps.add("port");
-        ipcEndpointProps.add("memorySize");
-        ipcEndpointProps.add("threadCount");
-        ipcEndpointProps.add("tokenDirectoryPath");
-        metadata.put(IgfsIpcEndpointConfiguration.class, new MetadataInfo(ipcEndpointProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> qryEntityProps = new HashSet<>();
         qryEntityProps.add("keyType");

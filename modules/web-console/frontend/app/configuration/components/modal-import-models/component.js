@@ -204,7 +204,7 @@ export class ModalImportModels {
                         }]
                         : req.caches
             };
-        }, {cluster: this.cluster, models: [], caches: [], igfss: []});
+        }, {cluster: this.cluster, models: [], caches: []});
         result.cluster.models = [...new Set(result.cluster.models)];
         result.cluster.caches = [...new Set(result.cluster.caches)];
         return result;

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Comparator;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -29,6 +28,7 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
 /**
  * Visor IGFS profiler information about one file.
  */
+@Deprecated
 public class VisorIgfsProfilerEntry extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
@@ -48,7 +48,7 @@ public class VisorIgfsProfilerEntry extends VisorDataTransferObject {
     private long ts;
 
     /** IGFS mode. */
-    private IgfsMode mode;
+    private VisorIgfsMode mode;
 
     /** File size. */
     private long size;
@@ -94,7 +94,7 @@ public class VisorIgfsProfilerEntry extends VisorDataTransferObject {
     public VisorIgfsProfilerEntry(
         String path,
         long ts,
-        IgfsMode mode,
+        VisorIgfsMode mode,
         long size,
         long bytesRead,
         long readTime,
@@ -157,7 +157,7 @@ public class VisorIgfsProfilerEntry extends VisorDataTransferObject {
     /**
      * @return IGFS mode.
      */
-    public IgfsMode getMode() {
+    public VisorIgfsMode getMode() {
         return mode;
     }
 
@@ -263,7 +263,7 @@ public class VisorIgfsProfilerEntry extends VisorDataTransferObject {
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         path = U.readString(in);
         ts = in.readLong();
-        mode = IgfsMode.fromOrdinal(in.readByte());
+        mode = VisorIgfsMode.fromOrdinal(in.readByte());
         size = in.readLong();
         bytesRead = in.readLong();
         readTime = in.readLong();

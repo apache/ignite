@@ -64,15 +64,6 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 })
             .pc-form-grid-col-30
                 +form-field__number({
-                    label: 'IGFS:',
-                    model: model + '.igfsThreadPoolSize',
-                    name: '"igfsThreadPoolSize"',
-                    placeholder: 'availableProcessors',
-                    min: '1',
-                    tip: 'Thread pool that is in charge of processing outgoing IGFS messages'
-                })
-            .pc-form-grid-col-30
-                +form-field__number({
                     label: 'Rebalance:',
                     model: `${model}.rebalanceThreadPoolSize`,
                     name: '"rebalanceThreadPoolSize"',

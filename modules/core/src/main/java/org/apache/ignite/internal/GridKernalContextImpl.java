@@ -67,10 +67,6 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
-import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
-import org.apache.ignite.internal.processors.igfs.IgfsHelper;
-import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
@@ -260,18 +256,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private IgfsProcessorAdapter igfsProc;
-
-    /** */
-    @GridToStringInclude
-    private IgfsHelper igfsHelper;
-
-    /** */
-    @GridToStringInclude
-    private HadoopHelper hadoopHelper;
-
-    /** */
-    @GridToStringInclude
     private GridSegmentationProcessor segProc;
 
     /** */
@@ -281,10 +265,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private GridContinuousProcessor contProc;
-
-    /** */
-    @GridToStringExclude
-    private HadoopProcessorAdapter hadoopProc;
 
     /** */
     @GridToStringExclude
@@ -361,10 +341,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private ExecutorService mgmtExecSvc;
-
-    /** */
-    @GridToStringExclude
-    private ExecutorService igfsExecSvc;
 
     /** */
     @GridToStringExclude
@@ -491,7 +467,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param stripedExecSvc Striped executor.
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
-     * @param igfsExecSvc IGFS executor service.
      * @param dataStreamExecSvc data stream executor service.
      * @param restExecSvc REST executor service.
      * @param affExecSvc Affinity executor service.
@@ -521,7 +496,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
-        ExecutorService igfsExecSvc,
         StripedExecutor dataStreamExecSvc,
         ExecutorService restExecSvc,
         ExecutorService affExecSvc,
@@ -553,7 +527,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.stripedExecSvc = stripedExecSvc;
         this.p2pExecSvc = p2pExecSvc;
         this.mgmtExecSvc = mgmtExecSvc;
-        this.igfsExecSvc = igfsExecSvc;
         this.dataStreamExecSvc = dataStreamExecSvc;
         this.restExecSvc = restExecSvc;
         this.affExecSvc = affExecSvc;
@@ -678,12 +651,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             restProc = (IgniteRestProcessor)comp;
         else if (comp instanceof DataStreamProcessor)
             dataLdrProc = (DataStreamProcessor)comp;
-        else if (comp instanceof IgfsProcessorAdapter)
-            igfsProc = (IgfsProcessorAdapter)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
-        else if (comp instanceof HadoopProcessorAdapter)
-            hadoopProc = (HadoopProcessorAdapter)comp;
         else if (comp instanceof IgniteCacheObjectProcessor)
             cacheObjProc = (IgniteCacheObjectProcessor)comp;
         else if (comp instanceof IgnitePluginProcessor)
@@ -732,12 +701,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     public void addHelper(Object helper) {
         assert helper != null;
 
-        if (helper instanceof IgfsHelper)
-            igfsHelper = (IgfsHelper)helper;
-        else if (helper instanceof HadoopHelper)
-            hadoopHelper = (HadoopHelper)helper;
-        else
-            assert false : "Unknown helper class: " + helper.getClass();
+        assert false : "Unknown helper class: " + helper.getClass();
     }
 
     /** {@inheritDoc} */
@@ -941,28 +905,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsProcessorAdapter igfs() {
-        return igfsProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgfsHelper igfsHelper() {
-        return igfsHelper;
-    }
-
-    /** {@inheritDoc} */
-    @Override public HadoopHelper hadoopHelper() {
-        return hadoopHelper;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridContinuousProcessor continuous() {
         return contProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public HadoopProcessorAdapter hadoop() {
-        return hadoopProc;
     }
 
     /** {@inheritDoc} */
@@ -1151,11 +1095,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getPeerClassLoadingExecutorService() {
         return p2pExecSvc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getIgfsExecutorService() {
-        return igfsExecSvc;
     }
 
     /** {@inheritDoc} */

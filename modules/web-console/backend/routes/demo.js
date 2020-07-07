@@ -25,7 +25,6 @@ const _ = require('lodash');
 const clusters = require('./demo/clusters.json');
 const caches = require('./demo/caches.json');
 const domains = require('./demo/domains.json');
-const igfss = require('./demo/igfss.json');
 
 module.exports = {
     implements: 'routes/demo',
@@ -76,63 +75,44 @@ module.exports.factory = (errors, settings, mongo, spacesService) => {
                 .then((clusterDocs) => {
                     return _.map(clusterDocs, (cluster) => {
                         const addCacheToCluster = (cacheDoc) => cluster.caches.push(cacheDoc._id);
-                        const addIgfsToCluster = (igfsDoc) => cluster.igfss.push(igfsDoc._id);
 
-                        if (cluster.name.endsWith('-caches')) {
-                            const cachePromises = _.map(caches, (cacheData) => {
-                                const cache = new mongo.Cache(cacheData);
+                        const cachePromises = _.map(caches, (cacheData) => {
+                            const cache = new mongo.Cache(cacheData);
 
-                                cache.space = cluster.space;
-                                cache.clusters.push(cluster._id);
+                            cache.space = cluster.space;
+                            cache.clusters.push(cluster._id);
 
-                                return cache.save()
-                                    .then((cacheDoc) => {
-                                        const domainData = _.find(domains, (item) =>
-                                            item.databaseTable === cacheDoc.name.slice(0, -5).toUpperCase());
+                            return cache.save()
+                                .then((cacheDoc) => {
+                                    const domainData = _.find(domains, (item) =>
+                                        item.databaseTable === cacheDoc.name.slice(0, -5).toUpperCase());
 
-                                        if (domainData) {
-                                            const domain = new mongo.DomainModel(domainData);
+                                    if (domainData) {
+                                        const domain = new mongo.DomainModel(domainData);
 
-                                            domain.space = cacheDoc.space;
-                                            domain.caches.push(cacheDoc._id);
-                                            domain.clusters.push(cluster._id);
+                                        domain.space = cacheDoc.space;
+                                        domain.caches.push(cacheDoc._id);
+                                        domain.clusters.push(cluster._id);
 
-                                            return domain.save()
-                                                .then((domainDoc) => {
-                                                    cacheDoc.domains.push(domainDoc._id);
-                                                    cluster.models.push(domainDoc._id);
+                                        return domain.save()
+                                            .then((domainDoc) => {
+                                                cacheDoc.domains.push(domainDoc._id);
+                                                cluster.models.push(domainDoc._id);
 
-                                                    return cacheDoc.save();
-                                                });
-                                        }
+                                                return cacheDoc.save();
+                                            });
+                                    }
 
-                                        return cacheDoc;
-                                    });
-                            });
-
-                            return Promise.all(cachePromises)
-                                .then((cacheDocs) => {
-                                    _.forEach(cacheDocs, addCacheToCluster);
-
-                                    return cluster.save();
+                                    return cacheDoc;
                                 });
-                        }
+                        });
 
-                        if (cluster.name.endsWith('-igfs')) {
-                            return Promise.all(_.map(igfss, (igfs) => {
-                                const igfsDoc = new mongo.Igfs(igfs);
-
-                                igfsDoc.space = cluster.space;
-                                igfsDoc.clusters.push(cluster._id);
-
-                                return igfsDoc.save();
-                            }))
-                            .then((igfsDocs) => {
-                                _.forEach(igfsDocs, addIgfsToCluster);
+                        return Promise.all(cachePromises)
+                            .then((cacheDocs) => {
+                                _.forEach(cacheDocs, addCacheToCluster);
 
                                 return cluster.save();
                             });
-                        }
                     });
                 })
                 .then(() => res.sendStatus(200))

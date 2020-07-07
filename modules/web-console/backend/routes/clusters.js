@@ -23,10 +23,10 @@ const express = require('express');
 
 module.exports = {
     implements: 'routes/clusters',
-    inject: ['mongo', 'services/clusters', 'services/caches', 'services/domains', 'services/igfss']
+    inject: ['mongo', 'services/clusters', 'services/caches', 'services/domains']
 };
 
-module.exports.factory = function(mongo, clustersService, cachesService, domainsService, igfssService) {
+module.exports.factory = function(mongo, clustersService, cachesService, domainsService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -38,12 +38,6 @@ module.exports.factory = function(mongo, clustersService, cachesService, domains
 
         router.get('/:_id/models', (req, res) => {
             domainsService.shortList(req.currentUserId(), req.demo(), req.params._id)
-                .then(res.api.ok)
-                .catch(res.api.error);
-        });
-
-        router.get('/:_id/igfss', (req, res) => {
-            igfssService.shortList(req.currentUserId(), req.demo(), req.params._id)
                 .then(res.api.ok)
                 .catch(res.api.error);
         });

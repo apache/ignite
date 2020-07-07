@@ -23,7 +23,6 @@ import ConfigurationGenerator from './ConfigurationGenerator';
 
 import ClusterDefaults from './defaults/Cluster.service';
 import CacheDefaults from './defaults/Cache.service';
-import IGFSDefaults from './defaults/IGFS.service';
 
 import JavaTypes from '../../../services/JavaTypes.service';
 import {JavaTypesNonEnum} from '../JavaTypesNonEnum.service';
@@ -32,10 +31,9 @@ const generator = new ConfigurationGenerator();
 
 const clusterDflts = new ClusterDefaults();
 const cacheDflts = new CacheDefaults();
-const igfsDflts = new IGFSDefaults();
 
 const javaTypes = new JavaTypes();
-const javaTypesNonEnum = new JavaTypesNonEnum(clusterDflts, cacheDflts, igfsDflts, javaTypes);
+const javaTypesNonEnum = new JavaTypesNonEnum(clusterDflts, cacheDflts, javaTypes);
 
 export default class SharpTransformer extends AbstractTransformer {
     static generator = generator;

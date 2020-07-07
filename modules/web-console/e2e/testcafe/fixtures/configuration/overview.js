@@ -27,7 +27,6 @@ import {PageConfigurationAdvancedCluster} from '../../page-models/PageConfigurat
 import {confirmation} from '../../components/confirmation';
 import {successNotification} from '../../components/notifications';
 import * as models from '../../page-models/pageConfigurationAdvancedModels';
-import * as igfs from '../../page-models/pageConfigurationAdvancedIGFS';
 import {configureNavButton} from '../../components/topNavigation';
 
 const regularUser = createRegularUser();
@@ -110,7 +109,6 @@ test('Cluster cell values', async(t) => {
     const staticDiscovery = 'Static IPs';
     const cachesAmount = 3;
     const modelsAmount = 2;
-    const igfsAmount = 1;
 
     await t
         .click(overviewPage.createClusterConfigButton)
@@ -131,17 +129,10 @@ test('Cluster cell values', async(t) => {
             .typeText(models.general.valueType.control, `bar${i}`)
             .click(pageAdvancedConfiguration.saveButton);
     });
-    await t.click(pageAdvancedConfiguration.igfsNavButton);
-    await repeat(igfsAmount, async() => {
-        await t
-            .click(igfs.createIGFSButton)
-            .click(pageAdvancedConfiguration.saveButton);
-    });
     await t
         .click(configureNavButton)
         .expect(overviewPage.clustersTable.findCell(0, 'Name').textContent).contains(name)
         .expect(overviewPage.clustersTable.findCell(0, 'Discovery').textContent).contains(staticDiscovery)
         .expect(overviewPage.clustersTable.findCell(0, 'Caches').textContent).contains(cachesAmount)
-        .expect(overviewPage.clustersTable.findCell(0, 'Models').textContent).contains(modelsAmount)
-        .expect(overviewPage.clustersTable.findCell(0, 'IGFS').textContent).contains(igfsAmount);
+        .expect(overviewPage.clustersTable.findCell(0, 'Models').textContent).contains(modelsAmount);
 });

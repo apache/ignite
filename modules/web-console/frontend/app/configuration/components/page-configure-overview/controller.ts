@@ -123,16 +123,6 @@ export default class PageConfigureOverviewController {
                 enableFiltering: false,
                 type: 'number',
                 width: 95
-            },
-            {
-                name: 'igfs',
-                displayName: 'IGFS',
-                field: 'igfsCount',
-                cellClass: 'ui-grid-number-cell',
-                cellTemplate: cellTemplate('base.configuration.edit.advanced.igfs'),
-                enableFiltering: false,
-                type: 'number',
-                width: 80
             }
         ];
 

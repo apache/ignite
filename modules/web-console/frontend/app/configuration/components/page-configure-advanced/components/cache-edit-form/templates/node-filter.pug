@@ -21,7 +21,6 @@ include /app/configuration/mixins
 -var model = '$ctrl.clonedCache'
 -var nodeFilter = model + '.nodeFilter';
 -var nodeFilterKind = nodeFilter + '.kind';
--var igfsFilter = nodeFilterKind + ' === "IGFS"'
 -var customFilter = nodeFilterKind + ' === "Custom"'
 
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
@@ -38,22 +37,6 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     options: '::$ctrl.Caches.nodeFilterKinds',
                     tip: 'Node filter variant'
                 })
-            .pc-form-grid-col-60(
-                ng-if=igfsFilter
-            )
-                +form-field__dropdown({
-                    label: 'IGFS:',
-                    model: `${nodeFilter}.IGFS.igfs`,
-                    name: '"igfsNodeFilter"',
-                    required: true,
-                    placeholder: 'Choose IGFS',
-                    placeholderEmpty: 'No IGFS configured',
-                    options: '$ctrl.igfssMenu',
-                    tip: 'Select IGFS to filter nodes'
-                })(
-                    pc-is-in-collection='$ctrl.igfsIDs'
-                )
-                    +form-field__error({ error: 'isInCollection',  message: `Cluster doesn't have such an IGFS` })
             .pc-form-grid-col-60(ng-show=customFilter)
                 +form-field__java-class({
                     label: 'Class name:',
@@ -64,4 +47,4 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     validationActive: customFilter
                 })
         .pca-form-column-6
-            +preview-xml-java(model, 'cacheNodeFilter', 'igfss')
+            +preview-xml-java(model, 'cacheNodeFilter')

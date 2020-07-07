@@ -55,7 +55,6 @@ function deduplicateAccounts(model) {
                         model('Cluster').deleteMany({space: {$in: spaceIds}}).exec(),
                         model('Cache').deleteMany({space: {$in: spaceIds}}).exec(),
                         model('DomainModel').deleteMany({space: {$in: spaceIds}}).exec(),
-                        model('Igfs').deleteMany({space: {$in: spaceIds}}).exec(),
                         model('Notebook').deleteMany({space: {$in: spaceIds}}).exec(),
                         model('Activities').deleteMany({owner: accountIds}).exec(),
                         model('Notifications').deleteMany({owner: accountIds}).exec(),

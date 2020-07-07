@@ -44,8 +44,6 @@ export default {
     'base.configuration.edit.advanced.caches.cache': 'Advanced cluster cache edit',
     'base.configuration.edit.advanced.models': 'Advanced cluster models',
     'base.configuration.edit.advanced.models.model': 'Advanced cluster model edit',
-    'base.configuration.edit.advanced.igfs': 'Advanced cluster IGFSs',
-    'base.configuration.edit.advanced.igfs.igfs': 'Advanced cluster IGFS edit',
     'base.settings.admin': 'Admin panel',
     'base.settings.profile': 'User profile',
     'base.sql.notebook': 'Query notebook',

@@ -23,7 +23,6 @@ import {DomainModel, ShortCluster} from '../types';
 
 import {default as Caches} from '../services/Caches';
 import {default as Clusters} from '../services/Clusters';
-import {default as IGFSs} from '../services/IGFSs';
 import {default as Models} from '../services/Models';
 
 const isDefined = filter((v) => v);
@@ -70,15 +69,14 @@ const selectNames = (itemIDs, nameAt = 'name') => pipe(
 );
 
 export default class ConfigSelectors {
-    static $inject = ['Caches', 'Clusters', 'IGFSs', 'Models'];
+    static $inject = ['Caches', 'Clusters', 'Models'];
 
     /**
      * @param {Caches} Caches
      * @param {Clusters} Clusters
-     * @param {IGFSs} IGFSs
      * @param {Models} Models
      */
-    constructor(private Caches: Caches, private Clusters: Clusters, private IGFSs: IGFSs, private Models: Models) {}
+    constructor(private Caches: Caches, private Clusters: Clusters, private Models: Models) {}
 
     /**
      * @returns {(state$: Observable) => Observable<DomainModel>}
@@ -111,15 +109,9 @@ export default class ConfigSelectors {
 
     selectCache = (id) => selectMapItem('caches', id);
 
-    selectIGFS = (id) => selectMapItem('igfss', id);
-
     selectShortCaches = () => selectItems('shortCaches');
 
     selectShortCachesValue = () => (state$) => state$.pipe(this.selectShortCaches(), selectValues);
-
-    selectShortIGFSs = () => selectItems('shortIgfss');
-
-    selectShortIGFSsValue = () => (state$) => state$.pipe(this.selectShortIGFSs(), selectValues);
 
     selectShortModelsValue = () => (state$) => state$.pipe(this.selectShortModels(), selectValues);
 
@@ -131,17 +123,6 @@ export default class ConfigSelectors {
             itemFactory: () => this.Caches.getBlankCache(),
             defaultName: defaultNames.cache,
             itemID: cacheID
-        })
-    );
-
-    selectIGFSToEdit = (itemID) => (state$) => state$.pipe(
-        this.selectIGFS(itemID),
-        distinctUntilChanged(),
-        selectItemToEdit({
-            items: state$.pipe(this.selectCurrentShortIGFSs),
-            itemFactory: () => this.IGFSs.getBlankIGFS(),
-            defaultName: defaultNames.igfs,
-            itemID
         })
     );
 
@@ -168,8 +149,6 @@ export default class ConfigSelectors {
 
     selectCurrentShortCaches = currentShortItems({changesKey: 'caches', shortKey: 'shortCaches'});
 
-    selectCurrentShortIGFSs = currentShortItems({changesKey: 'igfss', shortKey: 'shortIgfss'});
-
     selectCurrentShortModels = currentShortItems({changesKey: 'models', shortKey: 'shortModels'});
 
     selectClusterShortCaches = (clusterID) => (state$) => {
@@ -193,15 +172,13 @@ export default class ConfigSelectors {
 
                 return forkJoin(
                     state$.pipe(selectMapItems('caches', cluster.caches || []), take(1)),
-                    state$.pipe(selectMapItems('models', cluster.models || []), take(1)),
-                    state$.pipe(selectMapItems('igfss', cluster.igfss || []), take(1)),
-                ).pipe(map(([caches, models, igfss]) => ({
+                    state$.pipe(selectMapItems('models', cluster.models || []), take(1))
+                ).pipe(map(([caches, models]) => ({
                     cluster,
                     caches,
                     domains: models,
-                    igfss,
                     spaces: [{_id: cluster.space, demo: isDemo}],
-                    __isComplete: !!cluster && !(!hasValues(caches) || !hasValues(models) || !hasValues(igfss))
+                    __isComplete: !!cluster && !(!hasValues(caches) || !hasValues(models))
                 })));
             })
         );

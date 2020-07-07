@@ -146,24 +146,5 @@
       "EVT_SWAP_SPACE_DATA_STORED",
       "EVT_SWAP_SPACE_DATA_EVICTED"
     ]
-  },
-  {
-    "label": "EVTS_IGFS",
-    "value": "EVTS_IGFS",
-    "class": "org.apache.ignite.events.EventType",
-    "events": [
-      "EVT_IGFS_FILE_CREATED",
-      "EVT_IGFS_FILE_RENAMED",
-      "EVT_IGFS_FILE_DELETED",
-      "EVT_IGFS_FILE_OPENED_READ",
-      "EVT_IGFS_FILE_OPENED_WRITE",
-      "EVT_IGFS_FILE_CLOSED_WRITE",
-      "EVT_IGFS_FILE_CLOSED_READ",
-      "EVT_IGFS_FILE_PURGED",
-      "EVT_IGFS_META_UPDATED",
-      "EVT_IGFS_DIR_CREATED",
-      "EVT_IGFS_DIR_RENAMED",
-      "EVT_IGFS_DIR_DELETED"
-    ]
   }
 ]

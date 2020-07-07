@@ -8,7 +8,6 @@
     "Log4j": {"artifactId": "ignite-log4j"},
     "Log4j2": {"artifactId": "ignite-log4j2"},
     "JCL": {"artifactId": "ignite-jcl"},
-    "HadoopIgfsJcl": {"artifactId": "ignite-hadoop"},
     "SLF4J": {"artifactId": "ignite-slf4j"},
 
     "Generic": [

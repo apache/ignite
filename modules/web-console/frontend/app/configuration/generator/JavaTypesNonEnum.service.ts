@@ -23,13 +23,13 @@ import merge from 'lodash/merge';
 import includes from 'lodash/includes';
 
 export class JavaTypesNonEnum {
-    static $inject = ['IgniteClusterDefaults', 'IgniteCacheDefaults', 'IgniteIGFSDefaults', 'JavaTypes'];
+    static $inject = ['IgniteClusterDefaults', 'IgniteCacheDefaults', 'JavaTypes'];
 
     enumClasses: any;
     shortEnumClasses: any;
 
-    constructor(clusterDflts, cacheDflts, igfsDflts, JavaTypes) {
-        this.enumClasses = uniq(this._enumClassesAcc(merge(clusterDflts, cacheDflts, igfsDflts), []));
+    constructor(clusterDflts, cacheDflts, JavaTypes) {
+        this.enumClasses = uniq(this._enumClassesAcc(merge(clusterDflts, cacheDflts), []));
         this.shortEnumClasses = map(this.enumClasses, (cls) => JavaTypes.shortClassName(cls));
     }
 

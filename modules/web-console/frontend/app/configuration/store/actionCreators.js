@@ -24,7 +24,6 @@ import {
     COMPLETE_CONFIGURATION,
     ADVANCED_SAVE_CLUSTER,
     ADVANCED_SAVE_CACHE,
-    ADVANCED_SAVE_IGFS,
     ADVANCED_SAVE_MODEL,
     BASIC_SAVE,
     BASIC_SAVE_AND_DOWNLOAD,
@@ -35,7 +34,7 @@ import {
 /**
  * @typedef {object} IRemoveClusterItemsAction
  * @prop {'REMOVE_CLUSTER_ITEMS'} type
- * @prop {('caches'|'igfss'|'models')} itemType
+ * @prop {('caches'|'models')} itemType
  * @prop {string} clusterID
  * @prop {Array<string>} itemIDs
  * @prop {boolean} save
@@ -44,7 +43,7 @@ import {
 
 /**
  * @param {string} clusterID
- * @param {('caches'|'igfss'|'models')} itemType
+ * @param {('caches'|'models')} itemType
  * @param {Array<string>} itemIDs
  * @param {boolean} [save=false]
  * @param {boolean} [confirm=true]
@@ -63,13 +62,13 @@ export const removeClusterItems = (clusterID, itemType, itemIDs, save = false, c
  * @typedef {object} IRemoveClusterItemsConfirmed
  * @prop {string} clusterID
  * @prop {'REMOVE_CLUSTER_ITEMS_CONFIRMED'} type
- * @prop {('caches'|'igfss'|'models')} itemType
+ * @prop {('caches'|'models')} itemType
  * @prop {Array<string>} itemIDs
  */
 
 /**
  * @param {string} clusterID
- * @param {(('caches'|'igfss'|'models'))} itemType
+ * @param {(('caches'|'models'))} itemType
  * @param {Array<string>} itemIDs
  * @returns {IRemoveClusterItemsConfirmed}
  */
@@ -84,11 +83,9 @@ const applyChangedIDs = (edit) => ({
     cluster: {
         ...edit.changes.cluster,
         caches: edit.changes.caches.ids,
-        igfss: edit.changes.igfss.ids,
         models: edit.changes.models.ids
     },
     caches: edit.changes.caches.changedItems,
-    igfss: edit.changes.igfss.changedItems,
     models: edit.changes.models.changedItems
 });
 
@@ -155,7 +152,6 @@ export const completeConfiguration = (configuration) => ({
 
 export const advancedSaveCluster = (cluster, download = false) => ({type: ADVANCED_SAVE_CLUSTER, cluster, download});
 export const advancedSaveCache = (cache, download = false) => ({type: ADVANCED_SAVE_CACHE, cache, download});
-export const advancedSaveIGFS = (igfs, download = false) => ({type: ADVANCED_SAVE_IGFS, igfs, download});
 export const advancedSaveModel = (model, download = false) => ({type: ADVANCED_SAVE_MODEL, model, download});
 
 export const basicSave = (cluster) => ({type: BASIC_SAVE, cluster});

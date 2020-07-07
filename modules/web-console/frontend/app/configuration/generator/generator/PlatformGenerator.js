@@ -266,7 +266,7 @@ export default function service(JavaTypes, clusterDflts, cacheDflts) {
             return cfg;
         }
 
-        static clusterCaches(cluster, caches, igfss, isSrvCfg, cfg = this.igniteConfigurationBean(cluster)) {
+        static clusterCaches(cluster, caches, isSrvCfg, cfg = this.igniteConfigurationBean(cluster)) {
             // const cfg = this.clusterGeneral(cluster, cfg);
             //
             // if (nonEmpty(caches)) {
@@ -428,22 +428,13 @@ export default function service(JavaTypes, clusterDflts, cacheDflts) {
         }
 
         // Generate cache node filter group.
-        static cacheNodeFilter(cache, igfss, ccfg = this.cacheConfigurationBean(cache)) {
+        static cacheNodeFilter(cache, ccfg = this.cacheConfigurationBean(cache)) {
             const kind = _.get(cache, 'nodeFilter.kind');
 
             if (kind && cache.nodeFilter[kind]) {
                 let bean = null;
 
                 switch (kind) {
-                    case 'IGFS':
-                        const foundIgfs = _.find(igfss, (igfs) => igfs._id === cache.nodeFilter.IGFS.igfs);
-
-                        if (foundIgfs) {
-                            bean = new Bean('org.apache.ignite.internal.processors.igfs.IgfsNodePredicate', 'nodeFilter', foundIgfs)
-                                .stringConstructorArgument('name');
-                        }
-
-                        break;
                     case 'Custom':
                         bean = new Bean(cache.nodeFilter.Custom.className, 'nodeFilter');
 
@@ -470,13 +461,6 @@ export default function service(JavaTypes, clusterDflts, cacheDflts) {
                     .intProperty('rebalanceDelay')
                     .intProperty('rebalanceTimeout')
                     .intProperty('rebalanceThrottle');
-            }
-
-            if (ccfg.includes('igfsAffinnityGroupSize')) {
-                const bean = new Bean('org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper', 'affinityMapper', cache)
-                    .intConstructorArgument('igfsAffinnityGroupSize');
-
-                ccfg.beanProperty('affinityMapper', bean);
             }
 
             return ccfg;
@@ -513,8 +497,7 @@ export default function service(JavaTypes, clusterDflts, cacheDflts) {
             this.cacheQuery(cache, cache.domains, ccfg);
             this.cacheStore(cache, cache.domains, ccfg);
 
-            const igfs = _.get(cache, 'nodeFilter.IGFS.instance');
-            this.cacheNodeFilter(cache, igfs ? [igfs] : [], ccfg);
+            this.cacheNodeFilter(cache, ccfg);
             this.cacheConcurrency(cache, ccfg);
             this.cacheRebalance(cache, ccfg);
             this.cacheServerNearCache(cache, ccfg);

@@ -188,13 +188,11 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     ]).exec(),
                     mongo.Cluster.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec(),
                     mongo.Cache.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec(),
-                    mongo.DomainModel.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec(),
-                    mongo.Igfs.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec()
-                ]).then(([users, clusters, caches, models, igfs]) => {
+                    mongo.DomainModel.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec()
+                ]).then(([users, clusters, caches, models]) => {
                     const clustersMap = _.mapValues(_.keyBy(clusters, '_id'), 'count');
                     const cachesMap = _.mapValues(_.keyBy(caches, '_id'), 'count');
                     const modelsMap = _.mapValues(_.keyBy(models, '_id'), 'count');
-                    const igfsMap = _.mapValues(_.keyBy(igfs, '_id'), 'count');
 
                     _.forEach(users, (user) => {
                         const counters = user.counters = {};
@@ -202,7 +200,6 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                         counters.clusters = _.sumBy(user.spaces, ({_id}) => clustersMap[_id]) || 0;
                         counters.caches = _.sumBy(user.spaces, ({_id}) => cachesMap[_id]) || 0;
                         counters.models = _.sumBy(user.spaces, ({_id}) => modelsMap[_id]) || 0;
-                        counters.igfs = _.sumBy(user.spaces, ({_id}) => igfsMap[_id]) || 0;
 
                         delete user.spaces;
                     });
@@ -237,7 +234,6 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                             mongo.Cluster.deleteMany({space: {$in: spaceIds}}).exec(),
                             mongo.Cache.deleteMany({space: {$in: spaceIds}}).exec(),
                             mongo.DomainModel.deleteMany({space: {$in: spaceIds}}).exec(),
-                            mongo.Igfs.deleteMany({space: {$in: spaceIds}}).exec(),
                             mongo.Notebook.deleteMany({space: {$in: spaceIds}}).exec(),
                             mongo.Space.deleteOne({owner: userId}).exec()
                         ]))

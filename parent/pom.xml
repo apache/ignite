@@ -324,14 +324,6 @@
                                 <packages>org.apache.ignite.client</packages>
                             </group>
                             <group>
-                                <title>File System APIs</title>
-                                <packages>org.apache.ignite.igfs*</packages>
-                            </group>
-                            <group>
-                                <title>Hadoop Accelerator APIs</title>
-                                <packages>org.apache.ignite.hadoop*</packages>
-                            </group>
-                            <group>
                                 <title>Streaming APIs</title>
                                 <packages>org.apache.ignite.streamer*::org.apache.ignite.stream*</packages>
                             </group>

@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.visor.igfs;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
@@ -30,6 +27,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task to set IGFS instance sampling state.
  */
 @GridInternal
+@Deprecated
 public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<VisorIgfsSamplingStateTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -53,17 +51,7 @@ public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<VisorIgfsSampli
 
         /** {@inheritDoc} */
         @Override protected Void run(VisorIgfsSamplingStateTaskArg arg) {
-            try {
-                ((IgfsEx)ignite.fileSystem(arg.getName())).globalSampling(arg.isEnabled());
-
-                return null;
-            }
-            catch (IllegalArgumentException iae) {
-                throw new IgniteException("Failed to set sampling state for IGFS: " + arg.getName(), iae);
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            throw new IgniteException("IGFS operations are not supported in current version of Ignite");
         }
 
         /** {@inheritDoc} */

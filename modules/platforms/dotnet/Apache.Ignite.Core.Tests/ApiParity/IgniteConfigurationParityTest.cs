@@ -37,7 +37,6 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         private static readonly string[] UnneededProperties =
         {
             "PeerClassLoadingThreadPoolSize",
-            "IgfsThreadPoolSize",
             "UtilityCacheKeepAliveTime",
             "MBeanServer",
             "isPeerClassLoadingEnabled",

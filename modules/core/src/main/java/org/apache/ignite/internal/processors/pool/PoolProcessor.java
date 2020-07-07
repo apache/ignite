@@ -125,11 +125,6 @@ public class PoolProcessor extends GridProcessorAdapter {
 
                 return ctx.utilityCachePool();
 
-            case GridIoPolicy.IGFS_POOL:
-                assert ctx.getIgfsExecutorService() != null : "IGFS pool is not configured.";
-
-                return ctx.getIgfsExecutorService();
-
             case GridIoPolicy.SERVICE_POOL:
                 assert ctx.getServiceExecutorService() != null : "Service pool is not configured.";
 

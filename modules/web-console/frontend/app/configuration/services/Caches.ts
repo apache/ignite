@@ -87,7 +87,6 @@ export default class Caches {
     normalize = omit(['__v', 'space', 'clusters']);
 
     nodeFilterKinds = [
-        {value: 'IGFS', label: 'IGFS nodes'},
         {value: 'Custom', label: 'Custom'},
         {value: null, label: 'Not set'}
     ];
