@@ -327,7 +327,7 @@ public class GridDhtPartitionDemander {
                 return null;
             }
 
-            final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId, next, lastCancelledTime);
+            final RebalanceFuture fut = new RebalanceFuture(grp, lastExchangeFut, assignments, log, rebalanceId, next, lastCancelledTime);
 
             if (!grp.localWalEnabled()) {
                 fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
@@ -482,7 +482,7 @@ public class GridDhtPartitionDemander {
 
             if (node == null) {
                 if (log.isDebugEnabled())
-                    log.debug("Supply message ignored (supplier has left cluster) [" + demandRoutineInfo(nodeId, supplyMsg) + "]");
+                    log.debug("Supply message ignored (supplier has left cluster) [" + demandRoutineInfo(nodeId, supplyMsg) + ']');
 
                 return;
             }
@@ -490,13 +490,13 @@ public class GridDhtPartitionDemander {
             // Topology already changed (for the future that supply message based on).
             if (!fut.isActual(supplyMsg.rebalanceId())) {
                 if (log.isDebugEnabled())
-                    log.debug("Supply message ignored (topology changed) [" + demandRoutineInfo(nodeId, supplyMsg) + "]");
+                    log.debug("Supply message ignored (topology changed) [" + demandRoutineInfo(nodeId, supplyMsg) + ']');
 
                 return;
             }
 
             if (log.isDebugEnabled())
-                log.debug("Received supply message [" + demandRoutineInfo(nodeId, supplyMsg) + "]");
+                log.debug("Received supply message [" + demandRoutineInfo(nodeId, supplyMsg) + ']');
 
             // Check whether there were error during supply message unmarshalling process.
             if (supplyMsg.classError() != null) {
@@ -616,7 +616,7 @@ public class GridDhtPartitionDemander {
 
                             if (log.isDebugEnabled())
                                 log.debug("Skipping rebalancing partition (state is not MOVING): " +
-                                    "[" + demandRoutineInfo(nodeId, supplyMsg) + ", p=" + p + "]");
+                                    '[' + demandRoutineInfo(nodeId, supplyMsg) + ", p=" + p + ']');
                         }
                     }
                     else {
@@ -624,7 +624,7 @@ public class GridDhtPartitionDemander {
 
                         if (log.isDebugEnabled())
                             log.debug("Skipping rebalancing partition (affinity changed): " +
-                                "[" + demandRoutineInfo(nodeId, supplyMsg) + ", p=" + p + "]");
+                                '[' + demandRoutineInfo(nodeId, supplyMsg) + ", p=" + p + ']');
                     }
                 }
 
@@ -662,7 +662,7 @@ public class GridDhtPartitionDemander {
                 else {
                     if (log.isDebugEnabled())
                         log.debug("Will not request next demand message [" + demandRoutineInfo(nodeId, supplyMsg) +
-                            ", rebalanceFuture=" + fut + "]");
+                            ", rebalanceFuture=" + fut + ']');
                 }
             }
             catch (IgniteSpiException | IgniteCheckedException e) {
@@ -985,14 +985,14 @@ public class GridDhtPartitionDemander {
      * Internal states of rebalance future.
      */
     private enum RebalanceFutureState {
-        /** Init. */
+        /** Initial state. */
         INIT,
 
-        /** Started. */
+        /** Rebalance future started and requested required partitions. */
         STARTED,
 
-        /** Marked as cancelled. */
-        MARK_CANCELLED,
+        /** Marked as cancelled. This means partitions will not be requested. */
+        MARK_CANCELLED
     }
 
     /**
@@ -1018,12 +1018,16 @@ public class GridDhtPartitionDemander {
         /** Remaining. */
         private final Map<UUID, IgniteDhtDemandedPartitionsMap> remaining = new HashMap<>();
 
-        /** Missed. */
+        /** Collection of missed partitions and partitions that could not be rebalanced from a supplier. */
         private final Map<UUID, Collection<Integer>> missed = new HashMap<>();
 
         /** Exchange ID. */
         @GridToStringExclude
         private final GridDhtPartitionExchangeId exchId;
+
+        /** Coresponding exchange future. */
+        @GridToStringExclude
+        private final GridDhtPartitionsExchangeFuture exchFut;
 
         /** Topology version. */
         private final AffinityTopologyVersion topVer;
@@ -1076,7 +1080,10 @@ public class GridDhtPartitionDemander {
         private final Map<ClusterNode, Set<Integer>> rebalancingParts;
 
         /**
-         * @param grp Cache group.
+         * Creates a new rebalance future.
+         *
+         * @param grp Cache group context.
+         * @param exchFut Exchange future.
          * @param assignments Assignments.
          * @param log Logger.
          * @param rebalanceId Rebalance id.
@@ -1085,17 +1092,21 @@ public class GridDhtPartitionDemander {
          */
         RebalanceFuture(
             CacheGroupContext grp,
+            GridDhtPartitionsExchangeFuture exchFut,
             GridDhtPreloaderAssignments assignments,
             IgniteLogger log,
             long rebalanceId,
             RebalanceFuture next,
-            AtomicLong lastCancelledTime) {
+            AtomicLong lastCancelledTime
+        ) {
             assert assignments != null;
+            assert assignments != null : "Asiignments must not be null.";
 
             this.rebalancingParts = U.newHashMap(assignments.size());
             this.assignments = assignments;
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
+            this.exchFut = exchFut;
             this.next = next;
 
             this.lastCancelledTime = lastCancelledTime;
@@ -1142,6 +1153,7 @@ public class GridDhtPartitionDemander {
             this.assignments = null;
             this.exchId = null;
             this.topVer = null;
+            this.exchFut = null;
             this.ctx = null;
             this.grp = null;
             this.log = null;
@@ -1476,6 +1488,19 @@ public class GridDhtPartitionDemander {
             if (isDone())
                 return;
 
+            IgniteDhtDemandedPartitionsMap parts = remaining.get(nodeId);
+
+            assert parts != null : "Remaining not found [grp=" + grp.cacheOrGroupName() + ", fromNode=" + nodeId +
+                ", part=" + p + "]";
+
+            if (parts.historicalMap().contains(p)) {
+                // The partition p cannot be wal rebalanced,
+                // let's exclude the given nodeId and give a try to full rebalance.
+                exchFut.markNodeAsInapplicableForHistoricalRebalance(nodeId);
+            }
+            else
+                exchFut.markNodeAsInapplicableForFullRebalance(nodeId, grp.groupId(), p);
+
             missed.computeIfAbsent(nodeId, k -> new HashSet<>());
 
             missed.get(nodeId).add(p);
@@ -1611,7 +1636,7 @@ public class GridDhtPartitionDemander {
 
                     onDone(false); // Finished but has missed partitions, will force dummy exchange
 
-                    ctx.exchange().forceReassign(exchId);
+                    ctx.exchange().forceReassign(exchId, exchFut);
 
                     return;
                 }
