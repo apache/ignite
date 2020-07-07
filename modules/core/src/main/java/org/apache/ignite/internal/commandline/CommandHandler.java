@@ -18,11 +18,24 @@
 package org.apache.ignite.internal.commandline;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.UUID;
 import java.util.logging.FileHandler;
@@ -50,6 +63,7 @@ import org.apache.ignite.logger.java.JavaLoggerFormatter;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -111,6 +125,9 @@ public class CommandHandler {
 
     /** */
     public static final String NULL = "null";
+
+    /** Node SSL PEM certificate attribute name. */
+    public static final String ATTR_SECURITY_USER_CERTIFICATE_PEM = "com.sbt.sbergrid.users.security.cert.pem";
 
     /** JULs logger. */
     private final Logger logger;
@@ -482,8 +499,29 @@ public class CommandHandler {
         if (!F.isEmpty(userName))
             clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(userName, password, clientCfg));
 
-        if (!F.isEmpty(args.sslKeyStorePath()))
-            clientCfg.setSslContextFactory(createSslSupportFactory(args));
+        if (!F.isEmpty(args.sslKeyStorePath())) {
+            GridSslBasicContextFactory sslCtxFactory = createSslSupportFactory(args);
+
+            clientCfg.setSslContextFactory(sslCtxFactory);
+
+            Map<String, String> userAttr = new HashMap<>();
+
+            String selfCertPem;
+
+            try {
+                X509Certificate selfCert = extractCertificate(loadKeyStore(sslCtxFactory.getKeyStoreFilePath(),
+                    sslCtxFactory.getKeyStorePassword()));
+
+                selfCertPem = Base64.getEncoder().encodeToString(selfCert.getEncoded());
+            }
+            catch (Exception e) {
+                throw new SecurityException("Failed to get user private key chain.", e);
+            }
+
+            userAttr.put(ATTR_SECURITY_USER_CERTIFICATE_PEM, selfCertPem);
+
+            clientCfg.setUserAttributes(userAttr);
+        }
 
         return clientCfg;
     }
@@ -535,12 +573,8 @@ public class CommandHandler {
 
         if (args.sslKeyStorePassword() != null)
             factory.setKeyStorePassword(args.sslKeyStorePassword());
-        else {
-            char[] keyStorePwd = requestPasswordFromConsole("SSL keystore password: ");
-
-            args.sslKeyStorePassword(keyStorePwd);
-            factory.setKeyStorePassword(keyStorePwd);
-        }
+        else
+            factory.setKeyStorePassword(requestPasswordFromConsole("SSL keystore password: "));
 
         factory.setKeyStoreType(args.sslKeyStoreType());
 
@@ -551,12 +585,8 @@ public class CommandHandler {
 
             if (args.sslTrustStorePassword() != null)
                 factory.setTrustStorePassword(args.sslTrustStorePassword());
-            else {
-                char[] trustStorePwd = requestPasswordFromConsole("SSL truststore password: ");
-
-                args.sslTrustStorePassword(trustStorePwd);
-                factory.setTrustStorePassword(trustStorePwd);
-            }
+            else
+                factory.setTrustStorePassword(requestPasswordFromConsole("SSL truststore password: "));
 
             factory.setTrustStoreType(args.sslTrustStoreType());
         }
@@ -665,6 +695,79 @@ public class CommandHandler {
             .map(String::trim)
             .filter(item -> !item.isEmpty())
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Loads key store with configured parameters.
+     *
+     * @param storeFilePath Path to key store file.
+     * @param keyStorePwd Store password.
+     * @return Initialized key store.
+     * @throws SecurityException If key store could not be initialized.
+     */
+    public static KeyStore loadKeyStore(String storeFilePath, char[] keyStorePwd) {
+        try (InputStream input = new FileInputStream(storeFilePath)) {
+            KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+
+            keyStore.load(input, keyStorePwd);
+
+            return keyStore;
+        }
+        catch (GeneralSecurityException e) {
+            throw new SecurityException("Failed to initialize key store (security exception occurred) [keyStorePath="
+                + storeFilePath + ']', e);
+        }
+        catch (FileNotFoundException e) {
+            throw new SecurityException("Failed to initialize key store (key store file was not found): [path=" +
+                storeFilePath + ", msg=" + e.getMessage() + ']', e);
+        }
+        catch (IOException e) {
+            throw new SecurityException(
+                "Failed to initialize key store (I/O error occurred): " + storeFilePath, e);
+        }
+    }
+
+    /**
+     * Extracts certificate from key store.
+     *
+     * @throws SecurityException If any exceptions while key store file reading occur or if the stored
+     *     certificate number different from one.
+     */
+    public static X509Certificate extractCertificate(KeyStore keyStore) {
+        try {
+            Enumeration<String> aliases = keyStore.aliases();
+
+            String selfAlias = null;
+
+            while (aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+
+                if (keyStore.entryInstanceOf(alias, KeyStore.PrivateKeyEntry.class)) {
+                    if (selfAlias != null)
+                        throw new SecurityException("Key store contains more than one user key.");
+
+                    selfAlias = alias;
+                }
+            }
+
+            if (selfAlias == null)
+                throw new SecurityException("Key store does not contain user certificates.");
+
+            Certificate[] certChain = keyStore.getCertificateChain(selfAlias);
+
+            if (F.isEmpty(certChain))
+                throw new SecurityException("Certificate chain is missing [alias: " + selfAlias + ']');
+
+            if (!(certChain[0] instanceof X509Certificate)) {
+                throw new SecurityException("Unexpected certificate type" +
+                    " [alias: " + selfAlias + "]. Expected type: java.security.cert.X509Certificate.");
+            }
+
+            return (X509Certificate)certChain[0];
+        }
+        catch (KeyStoreException e) {
+            throw new SecurityException("Key store is not initialized.", e);
+        }
     }
 
     /** */
