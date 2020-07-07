@@ -882,7 +882,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Assert.AreEqual(1, cache.Get(1));
                 Assert.IsFalse(taskFinished);
+
+                scope.Complete();
             }
+
+            Assert.AreEqual(2, cache.Get(1));
         }
 
         /// <summary>
