@@ -826,7 +826,7 @@ public class QueryEntity implements Serializable {
                     // resulting parent column comes before columns corresponding to those
                     // nested properties in the resulting table - that way nested
                     // properties override will happen properly (first parent, then children).
-                    type.addProperty(prop, key, true);
+                    type.addProperty(prop, sqlAnn, key, true);
 
                     processAnnotation(key, sqlAnn, txtAnn, cls, c, field.getType(), prop, type);
                 }
