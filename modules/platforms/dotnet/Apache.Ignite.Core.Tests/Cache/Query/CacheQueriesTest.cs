@@ -531,7 +531,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var scanQuery = new ScanQuery<int, int>
             {
-                PageSize = 1,
+                // PageSize = 1,
                 Filter = new ScanQueryFilter<int>(9000)
             };
 
@@ -1172,7 +1172,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             if (ThrowErr)
                 throw new Exception(ErrMessage);
 
-            return entry.Key < 50;
+            return entry.Key < MaxKey;
         }
     }
 
