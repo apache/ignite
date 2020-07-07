@@ -823,10 +823,12 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testCacheSize() throws Exception {
+    public void testCacheSizeOnInactiveCluster() throws Exception {
         persistence = true;
 
-        startGrid(0);
+        IgniteEx grid = startGrid(0);
+
+        assertFalse(grid.cluster().state().active());
 
         CacheMetricsMXBean mxBean = mxBean(0, CACHE1, CacheClusterMetricsMXBeanImpl.class);
 
