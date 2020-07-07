@@ -478,8 +478,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 cache[2] = 2;
                 TestUtils.WaitForTrueCondition(() => lastEvt != null && lastEvt.Key == 2);
 
-                // var ex = Assert.Throws<IgniteClientException>(() => handle.GetInitialQueryCursor().GetAll());
-                // StringAssert.Contains("Failed to execute query on node", ex.Message);
+                // TODO: GetAll causes cursor disposal - add a separate test for this.
+                var ex = Assert.Throws<IgniteClientException>(() => handle.GetInitialQueryCursor().GetAll());
+                StringAssert.Contains("Foo failed because of bar", ex.Message);
 
                 // Listener still works:
                 cache[3] = 3;
