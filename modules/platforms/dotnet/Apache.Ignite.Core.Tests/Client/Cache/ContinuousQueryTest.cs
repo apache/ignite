@@ -463,7 +463,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestExceptionInInitialQueryFilterResultsInCorrectErrorMessage()
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>());
+
+            ICacheEntryEvent<int, int> lastEvt = null;
+            var qry = new ContinuousQueryClient<int, int>(
+                new DelegateListener<int, int>(e => lastEvt = e));
+
             var initialQry = new ScanQuery<int, int>(new ExceptionalFilter());
 
             cache[1] = 1;
@@ -474,7 +478,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 StringAssert.Contains("Failed to execute query on node", ex.Message);
 
                 // Listener still works:
-                // TODO
+                cache[2] = 2;
+                TestUtils.WaitForTrueCondition(() => lastEvt != null);
+                Assert.AreEqual(2, lastEvt.Key);
             }
         }
 
