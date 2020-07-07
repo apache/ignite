@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
+    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
@@ -55,10 +56,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TearDown]
         public void TestTearDown()
         {
-            Thread.Sleep(5000);
-            var listeners = Client.GetActiveNotificationListeners();
-
-            Assert.IsEmpty(listeners);
+            Assert.IsEmpty(Client.GetActiveNotificationListeners());
         }
 
         /// <summary>
