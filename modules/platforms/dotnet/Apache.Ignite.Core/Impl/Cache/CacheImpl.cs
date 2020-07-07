@@ -537,6 +537,8 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return val;
             }
 
+            StartTxIfNeeded();
+
             return DoOutInOpX((int) CacheOp.Get,
                 w => w.Write(key),
                 (stream, res) =>

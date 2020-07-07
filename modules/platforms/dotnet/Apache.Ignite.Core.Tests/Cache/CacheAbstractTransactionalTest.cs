@@ -868,6 +868,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestTransactionScopeWithSerializableIsolationLocksKeysOnRead()
         {
+            // TODO: Add tests for all read operations.
             var cache = Cache();
             cache.Put(1, 1);
 
@@ -875,11 +876,12 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             using (var scope = new TransactionScope(TransactionScopeOption.Required, options))
             {
-                var before = cache.Get(1);
+                Assert.AreEqual(1, cache.Get(1));
 
-                Task.Factory.StartNew(() => cache.Put(1, 2)).Wait();
+                var taskFinished = Task.Factory.StartNew(() => cache.Put(1, 2)).Wait(TimeSpan.FromSeconds(1));
 
                 Assert.AreEqual(1, cache.Get(1));
+                Assert.IsFalse(taskFinished);
             }
         }
 
