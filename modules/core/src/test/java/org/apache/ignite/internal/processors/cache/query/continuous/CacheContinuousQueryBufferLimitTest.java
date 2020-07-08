@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.FactoryBuilder;
-import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
@@ -141,11 +140,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
         IgniteEx srv = startGrids(2);
         IgniteEx clnt = startClientGrid();
 
-        CacheEntryEventSerializableFilter<Integer, Integer> filter = new CacheEntryEventSerializableFilter<Integer,Integer>() {
-            @Override public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
-                return evt.getKey() % 2 == 0;
-            }
-        };
+        CacheEntryEventSerializableFilter<Integer, Integer> filter = evt -> evt.getKey() % 2 == 0;
 
         ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
         cq.setRemoteFilterFactory(FactoryBuilder.factoryOf(filter));
