@@ -121,6 +121,35 @@
             	</exclusion>
             </exclusions>
         </dependency> 
+        
+        
+        <dependency>
+            <groupId>io.prestosql</groupId>
+            <artifactId>presto-base-jdbc</artifactId>
+            <version>${dep.presto.version}</version>
+            
+            <exclusions>
+            	<exclusion>
+            		<groupId>org.openjdk.jol</groupId>
+            		<artifactId>jol-core</artifactId>
+            	</exclusion>
+            </exclusions>
+        </dependency> 
+        
+       
+        
+        <dependency>
+            <groupId>org.jdom</groupId>
+            <artifactId>jdom2</artifactId>
+            <version>2.0.6</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-dbcp2</artifactId>
+            <version>2.1.1</version>
+        </dependency>
+        
         <!--
         <dependency>
             <groupId>com.facebook.presto</groupId>
@@ -164,28 +193,6 @@
                 <artifactId>presto-maven-plugin</artifactId>
                 <version>6</version>
                 <extensions>true</extensions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.0.2</version>
-                <executions>
-                    <execution>
-                        <id>copy-dependencies</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                        	<includeScope>compile</includeScope>
-                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                            <overWriteReleases>false</overWriteReleases>
-                            <overWriteSnapshots>false</overWriteSnapshots>
-                            <overWriteIfNewer>true</overWriteIfNewer>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
 
         </plugins>

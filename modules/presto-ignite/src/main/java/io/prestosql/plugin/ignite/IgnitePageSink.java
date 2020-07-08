@@ -14,9 +14,8 @@ import static io.prestosql.spi.type.SmallintType.SMALLINT;
 import static io.prestosql.spi.type.TinyintType.TINYINT;
 import static io.prestosql.spi.type.VarbinaryType.VARBINARY;
 import static io.prestosql.spi.type.Varchars.isVarcharType;
-import static io.prestosql.plugin.ignite.TypeUtils.isArrayType;
-import static io.prestosql.plugin.ignite.TypeUtils.isMapType;
-import static io.prestosql.plugin.ignite.TypeUtils.isRowType;
+
+import static com.shard.jdbc.util.TypeUtils.*;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.concurrent.TimeUnit.DAYS;

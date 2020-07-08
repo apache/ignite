@@ -45,31 +45,6 @@ public final class IgniteSessionProperties
     public List<PropertyMetadata<?>> getSessionProperties()
     {
         return sessionProperties;
-    }
+    }    
 
-   
-    
-
-    /** 
-     * add@byron support ignite with property
-     * @return the table properties for this connector
-     */
-    public List<PropertyMetadata<?>> getTableProperties()
-    {
-    	return Arrays.asList(
-    			PropertyMetadata.stringProperty(IgniteClient.PRIMARY_KEY, "setting primay key column of table", null, false),
-    			PropertyMetadata.stringProperty("affinity_key", "setting affinity_key column of table", null, false),
-    			PropertyMetadata.stringProperty("template", "setting template of table", null, true),
-    			PropertyMetadata.stringProperty("cache_name", "setting cache name of table", null, true)
-    			
-    			);
-    }
-
-    /**add@byron
-     * @return the column properties for this connector
-     */
-    public List<PropertyMetadata<?>> getColumnProperties()
-    {
-        return Arrays.asList(PropertyMetadata.stringProperty(IgniteClient.PRIMARY_KEY, "setting column is primay key", null, false));
-    }
 }

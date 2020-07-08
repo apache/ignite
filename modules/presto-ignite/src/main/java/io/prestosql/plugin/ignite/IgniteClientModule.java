@@ -17,7 +17,8 @@ import com.google.inject.Provides;
 import com.google.inject.Scope;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-
+import com.shard.jdbc.plugin.ShardingJdbcConfig;
+import com.shard.jdbc.plugin.ShardingJdbcConnector;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
 
@@ -41,9 +42,11 @@ public class IgniteClientModule implements Module {
         binder.bind(JdbcClient.class).annotatedWith(ForBaseJdbc.class).to(IgniteClient.class).in(Scopes.SINGLETON);
         
         binder.bind(IgnitePageSinkProvider.class).in(Scopes.SINGLETON);
+        binder.bind(ShardingJdbcConnector.class).in(Scopes.SINGLETON);
         
         bindSessionPropertiesProvider(binder, IgniteSessionProperties.class);
         configBinder(binder).bindConfig(BaseJdbcConfig.class);
+        configBinder(binder).bindConfig(ShardingJdbcConfig.class);
         configBinder(binder).bindConfig(IgniteConfig.class);
         
         
@@ -53,18 +56,12 @@ public class IgniteClientModule implements Module {
     @Provides
     @Singleton
     @ForBaseJdbc
-    public static ConnectionFactory createConnectionFactory(BaseJdbcConfig config, CredentialProvider credentialProvider, IgniteConfig igniteConfig)
+    public static ConnectionFactory createConnectionFactory(BaseJdbcConfig config, ShardingJdbcConfig shardingJdbcConfig, CredentialProvider credentialProvider, IgniteConfig igniteConfig)
             throws SQLException
     {
-        Properties connectionProperties = new Properties();
-        connectionProperties.setProperty("useInformationSchema", Boolean.toString(true));
-        connectionProperties.setProperty("nullCatalogMeansCurrent", "false");
-        connectionProperties.setProperty("useUnicode", "true");
-        connectionProperties.setProperty("characterEncoding", "utf8");
-        connectionProperties.setProperty("tinyInt1isBit", "false");
-        
+        Properties connectionProperties = new Properties();       
 
-        basicConnectionProperties(connectionProperties,igniteConfig);
+        basicConnectionProperties(connectionProperties,shardingJdbcConfig);
         
         Driver driver = igniteConfig.isThinConnection() ? 
 				 new IgniteJdbcThinDriver():new IgniteJdbcDriver();
@@ -77,7 +74,7 @@ public class IgniteClientModule implements Module {
     }
     
 
-    public static Properties basicConnectionProperties(Properties connectionProperties,IgniteConfig config)
+    public static Properties basicConnectionProperties(Properties connectionProperties,ShardingJdbcConfig config)
     {
        
         if (config.getUser() != null) {

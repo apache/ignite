@@ -54,7 +54,7 @@ public class ExcelPlugin implements FilePlugin {
             }
             return columnTypes;
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to operate %s file", table));
+            throw new RuntimeException(String.format("Failed to operate %s file,because %s", table,e.getMessage()));
         }
     }
 

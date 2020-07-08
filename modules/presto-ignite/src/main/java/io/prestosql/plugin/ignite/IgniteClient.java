@@ -5,16 +5,21 @@ import io.prestosql.plugin.jdbc.*;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.connector.ColumnMetadata;
 import io.prestosql.spi.connector.ConnectorSession;
+import io.prestosql.spi.connector.ConnectorSplitSource;
 import io.prestosql.spi.connector.ConnectorTableMetadata;
+import io.prestosql.spi.connector.FixedSplitSource;
 import io.prestosql.spi.connector.SchemaTableName;
 import io.prestosql.spi.type.DoubleType;
 import io.prestosql.spi.type.Type;
+import io.prestosql.spi.type.TypeManager;
 import io.prestosql.spi.type.VarcharType;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-
+import com.shard.jdbc.plugin.ShardingJdbcClient;
+import com.shard.jdbc.plugin.ShardingJdbcConfig;
+import com.shard.jdbc.plugin.ShardingJdbcSplit;
 
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.IgniteJdbcDriver;
@@ -50,16 +55,13 @@ import static io.prestosql.spi.type.Varchars.isVarcharType;
 import static com.google.common.collect.Iterables.getOnlyElement;
 
 
-public class IgniteClient extends BaseJdbcClient {
-	
-	public static final String PRIMARY_KEY = "primary_key";
-	protected static final Logger log = Logger.get(IgniteClient.class);
+public class IgniteClient extends ShardingJdbcClient {
 
 	IgniteConfig igniteConfig;
 
     @Inject
-    public IgniteClient(BaseJdbcConfig config, IgniteConfig igniteConfig,DriverConnectionFactory connectionFactory) {
-    	 super(config, "", connectionFactory);       		
+    public IgniteClient(BaseJdbcConfig config, ShardingJdbcConfig shardingConfig, IgniteConfig igniteConfig,ConnectionFactory connectionFactory,TypeManager typeManager) {
+    	 super(config, shardingConfig, connectionFactory,typeManager);       		
     	 this.igniteConfig = igniteConfig;
     }
 
@@ -77,9 +79,6 @@ public class IgniteClient extends BaseJdbcClient {
             throw new RuntimeException(e);
         }
     }
-
-   
-
    
 
     protected String getTableWithString(ConnectorTableMetadata tableMetadata, String tableName)
@@ -260,74 +259,33 @@ public class IgniteClient extends BaseJdbcClient {
     }
     
 
+
     @Override
-    public JdbcOutputTableHandle beginInsertTable(ConnectorSession session, JdbcTableHandle tableHandle, List<JdbcColumnHandle> columns)
+    public ConnectorSplitSource getSplits(ConnectorSession session, JdbcTableHandle tableHandle)
     {
-        SchemaTableName schemaTableName = tableHandle.getSchemaTableName();
-        JdbcIdentity identity = JdbcIdentity.from(session);
+    	JdbcSplit jdbcSplit = new ShardingJdbcSplit(
+				"",
+            tableHandle.getCatalogName(),
+            tableHandle.getSchemaName(),
+            tableHandle.getTableName(),
+            tableHandle.getConstraint(),
+            Optional.empty());
+		
+        return new FixedSplitSource(ImmutableList.of(jdbcSplit));
+    }
 
-        ImmutableList.Builder<String> columnNames = ImmutableList.builder();
-        ImmutableList.Builder<Type> columnTypes = ImmutableList.builder();
-        ImmutableList.Builder<JdbcTypeHandle> jdbcColumnTypes = ImmutableList.builder();
-        
-        try (Connection connection = connectionFactory.openConnection(identity)) {
-            boolean uppercase = connection.getMetaData().storesUpperCaseIdentifiers();
-            String remoteSchema = toRemoteSchemaName(identity, connection, schemaTableName.getSchemaName());
-            String remoteTable = toRemoteTableName(identity, connection, remoteSchema, schemaTableName.getTableName());
-            String tableName = remoteTable;//generateTemporaryTableName();
-            if (uppercase) {
-                tableName = tableName.toUpperCase(ENGLISH);
-            }
-            String catalog = connection.getCatalog();
-
-           
-            for (JdbcColumnHandle column : columns) {
-                columnNames.add(column.getColumnName());
-                columnTypes.add(column.getColumnType());
-                jdbcColumnTypes.add(column.getJdbcTypeHandle());
-            }
-
-            copyTableSchema(connection, catalog, remoteSchema, remoteTable, tableName, columnNames.build());
-
-            return new JdbcOutputTableHandle(
-                    catalog,
-                    remoteSchema,
-                    remoteTable,
-                    columnNames.build(),
-                    columnTypes.build(),
-                    Optional.of(jdbcColumnTypes.build()),
-                    tableName);
+    @Override
+    public Connection getConnection(JdbcIdentity identity, JdbcSplit split)
+            throws SQLException
+    {
+        Connection connection = connectionFactory.openConnection(identity);
+        try {
+            connection.setReadOnly(true);
         }
         catch (SQLException e) {
-            //throw new PrestoException(JDBC_ERROR, e);        	
-        	log.info("Begin insert table, Table already exists  for "+schemaTableName.getTableName());
-        	
-        	return new JdbcOutputTableHandle(                     
-        			 null,
-        			 schemaTableName.getSchemaName(),
-        			 schemaTableName.getTableName(),
-                     columnNames.build(),
-                     columnTypes.build(),
-                     Optional.of(jdbcColumnTypes.build()),
-                     schemaTableName.getTableName());
+            connection.close();
+            throw e;
         }
-    }
-    
-    @Override
-    public void commitCreateTable(JdbcIdentity identity, JdbcOutputTableHandle handle)
-    {
-    	log.info("commitCreateTable "+identity+" for "+handle.getTableName());
-    }
-    
-    @Override
-    public void rollbackCreateTable(JdbcIdentity identity, JdbcOutputTableHandle handle)
-    {
-    	log.info("rollbackCreateTable "+identity+" for "+handle.getTableName());
-    }
-    
-    @Override
-    public void finishInsertTable(JdbcIdentity identity, JdbcOutputTableHandle handle)
-    {
-    	log.info("finishInsertTable "+identity+" for "+handle.getTableName());
+        return connection;
     }
 }
