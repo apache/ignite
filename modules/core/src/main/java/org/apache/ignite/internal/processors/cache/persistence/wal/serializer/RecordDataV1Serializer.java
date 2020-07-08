@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -298,12 +297,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         in.readFully(encData);
 
-        Serializable key = encMgr.groupKey(grpId, keyId);
+        GroupKey grpKey = encMgr.groupKey(grpId, keyId);
 
-        if (key == null)
+        if (grpKey == null)
             return new T3<>(null, grpId, plainRecType);
 
-        byte[] clData = encSpi.decrypt(encData, key);
+        byte[] clData = encSpi.decrypt(encData, grpKey.key());
 
         return new T3<>(new ByteBufferBackedDataInputImpl().buffer(ByteBuffer.wrap(clData)), grpId, plainRecType);
     }

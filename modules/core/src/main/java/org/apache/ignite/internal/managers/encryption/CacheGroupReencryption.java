@@ -591,8 +591,8 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                 assert cnt <= store.pages() : "cnt=" + cnt + ", max=" + store.pages();
 
                 if (log.isDebugEnabled()) {
-                    log.debug("Partition reencryption is started [" +
-                        "p=" + partId + ", remain=" + (cnt - pageNum) + ", total=" + cnt + "]");
+                    log.debug("Partition reencryption is started [grpId=" + grpId +
+                        ", p=" + partId + ", remain=" + (cnt - pageNum) + ", total=" + cnt + "]");
                 }
 
                 while (pageNum < cnt) {
@@ -656,7 +656,8 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition reencryption is finished " +
-                        "[p=" + partId +
+                        "[grpId=" + grpId +
+                        ", p=" + partId +
                         ", remain=" + (cnt - pageNum) +
                         ", total=" + cnt +
                         ", cancelled=" + isCancelled() +

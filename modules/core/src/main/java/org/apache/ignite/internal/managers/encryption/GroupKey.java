@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Cache group encryption key with identifier.
  */
-public class GroupKey {
+public class GroupKey implements Serializable {
     /** Encryption key ID. */
     private final int id;
 
@@ -30,10 +31,10 @@ public class GroupKey {
     private final Serializable key;
 
     /**
-     * @param key Encryption key.
      * @param id Encryption key ID.
+     * @param key Encryption key.
      */
-    public GroupKey(Serializable key, int id) {
+    public GroupKey(int id, Serializable key) {
         this.id = id;
         this.key = key;
     }
@@ -46,9 +47,42 @@ public class GroupKey {
     }
 
     /**
+     * @return Unsigned encryption key ID.
+     */
+    public int unsignedId() {
+        return id & 0xff;
+    }
+
+    /**
      * @return Encryption key.
      */
     public Serializable key() {
         return key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GroupKey grpKey = (GroupKey)o;
+
+        return id == grpKey.id &&
+            Objects.equals(key, grpKey.key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(id, key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "GroupKey{" +
+            "id=" + id +
+            '}';
     }
 }

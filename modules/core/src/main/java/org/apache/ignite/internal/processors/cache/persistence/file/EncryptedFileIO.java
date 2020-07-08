@@ -260,41 +260,6 @@ public class EncryptedFileIO implements FileIO {
         assert encrypted.remaining() >= pageSize;
         assert encrypted.limit() >= pageSize;
 
-        int keyId = checkCRC(encrypted);
-
-        encrypted.limit(encryptedDataSize());
-
-        Serializable key = encMgr.groupKey(groupId, keyId);
-
-        assert key != null : keyId;
-
-        encSpi.decryptNoPadding(encrypted, key, destBuf);
-
-        destBuf.put(zeroes); //Forcibly purge page buffer tail.
-    }
-
-    /**
-     * Stores CRC in res.
-     *
-     * @param res Destination buffer.
-     */
-    private void storeCRC(ByteBuffer res) {
-        int crc = FastCrc.calcCrc(res, encryptedDataSize());
-
-        res.put((byte) (crc >> 24));
-        res.put((byte) (crc >> 16));
-        res.put((byte) (crc >> 8));
-        res.put((byte) crc);
-    }
-
-    /**
-     * Checks encrypted data integrity.
-     *
-     * @param encrypted Encrypted data buffer.
-     * @return Encryption key identifier.
-     * @throws IOException If data integrity is broken.
-     */
-    private int checkCRC(ByteBuffer encrypted) throws IOException {
         int crc = FastCrc.calcCrc(encrypted, encryptedDataSize());
 
         int storedCrc = 0;
@@ -313,7 +278,29 @@ public class EncryptedFileIO implements FileIO {
 
         encrypted.position(encrypted.position() - (encryptedDataSize() + 4 /* CRC size. */ + 1 /* key identifier. */));
 
-        return keyId;
+        encrypted.limit(encryptedDataSize());
+
+        GroupKey grpKey = encMgr.groupKey(groupId, keyId);
+
+        assert grpKey != null : keyId;
+
+        encSpi.decryptNoPadding(encrypted, grpKey.key(), destBuf);
+
+        destBuf.put(zeroes); //Forcibly purge page buffer tail.
+    }
+
+    /**
+     * Stores CRC in res.
+     *
+     * @param res Destination buffer.
+     */
+    private void storeCRC(ByteBuffer res) {
+        int crc = FastCrc.calcCrc(res, encryptedDataSize());
+
+        res.put((byte) (crc >> 24));
+        res.put((byte) (crc >> 16));
+        res.put((byte) (crc >> 8));
+        res.put((byte) crc);
     }
 
     /**

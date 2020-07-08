@@ -205,6 +205,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
      * @param discoBlock  {@code True} to block discovery, {@code False} to block communication SPI.
      */
     private void checkNodeFailsDuringRotation(boolean stopCrd, boolean prepare, boolean discoBlock) throws Exception {
+        cleanPersistenceDir();
+
         DistributedProcessType type = prepare ?
             DistributedProcessType.CACHE_GROUP_KEY_CHANGE_PREPARE : DistributedProcessType.CACHE_GROUP_KEY_CHANGE_FINISH;
 

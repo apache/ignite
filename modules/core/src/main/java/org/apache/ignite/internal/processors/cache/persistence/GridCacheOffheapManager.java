@@ -1109,6 +1109,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     null,
                     null);
             }
+            catch (Throwable e) {
+                e.printStackTrace();
+
+                throw e;
+            }
             finally {
                 pageMem.writeUnlock(grpId, metaId, metaPage, null, allocated);
             }
