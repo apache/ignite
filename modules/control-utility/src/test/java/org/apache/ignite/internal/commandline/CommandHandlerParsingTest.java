@@ -49,6 +49,7 @@ import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
+import static org.apache.ignite.internal.commandline.CommandList.CLUSTER_CHANGE_TAG;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
@@ -336,7 +337,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAutoConfirmationFlag() {
         for (CommandList cmdL : CommandList.values()) {
-            // SET_STATE command have mandatory argument, which used in confirmation message.
+            // SET_STATE command has mandatory argument used in confirmation message.
             Command cmd = cmdL != SET_STATE ? cmdL.command() : parseArgs(asList(cmdL.text(), "ACTIVE")).command();
 
             if (cmd.confirmationPrompt() == null)
@@ -346,6 +347,8 @@ public class CommandHandlerParsingTest {
 
             if (cmdL == SET_STATE)
                 args = parseArgs(asList(cmdL.text(), "ACTIVE"));
+            else if (cmdL == CLUSTER_CHANGE_TAG)
+                args = parseArgs(asList(cmdL.text(), "newTagValue"));
             else
                 args = parseArgs(asList(cmdL.text()));
 
@@ -411,6 +414,16 @@ public class CommandHandlerParsingTest {
                     assertEquals("xid1", txTaskArg.getXid());
                     assertEquals(10_000, txTaskArg.getMinDuration().longValue());
                     assertEquals(VisorTxOperation.KILL, txTaskArg.getOperation());
+
+                    break;
+                }
+
+                case CLUSTER_CHANGE_TAG: {
+                    args = parseArgs(asList(cmdL.text(), "newTagValue", "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                    break;
                 }
 
                 default:
@@ -631,6 +644,7 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.ENCRYPTION ||
             cmd == CommandList.KILL ||
             cmd == CommandList.SNAPSHOT ||
+            cmd == CommandList.CLUSTER_CHANGE_TAG ||
             cmd == CommandList.METADATA;
     }
 }

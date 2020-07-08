@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.UUID;
 import java.util.logging.Logger;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
@@ -43,6 +44,14 @@ public class StateCommand implements Command<Void> {
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             GridClientClusterState state = client.state();
+
+            UUID id = state.id();
+            String tag = state.tag();
+
+            log.info("Cluster  ID: " + id);
+            log.info("Cluster tag: " + tag);
+
+            log.info(CommandHandler.DELIM);
 
             ClusterState clusterState = state.state();
 
