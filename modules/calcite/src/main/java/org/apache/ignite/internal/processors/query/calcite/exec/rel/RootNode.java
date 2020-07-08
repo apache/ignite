@@ -81,7 +81,7 @@ public class RootNode<Row> extends AbstractNode<Row>
     }
 
     /** */
-    private void closeExecutionTree() {
+    public void closeExecutionTree() {
         checkThread();
 
         if (isClosed())
@@ -105,8 +105,6 @@ public class RootNode<Row> extends AbstractNode<Row>
         try {
             if (state == State.RUNNING)
                 state = State.CANCELLED;
-
-            context().execute(this::closeExecutionTree);
 
             cond.signalAll();
         }
@@ -168,6 +166,8 @@ public class RootNode<Row> extends AbstractNode<Row>
     /** {@inheritDoc} */
     @Override public void onError(Throwable e) {
         checkThread();
+
+        System.out.println("+++ onError");
 
         assert Objects.isNull(ex) : "The error has been handled. Previous error: " + ex;
 

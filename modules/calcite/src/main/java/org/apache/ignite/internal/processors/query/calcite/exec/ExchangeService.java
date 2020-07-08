@@ -57,7 +57,7 @@ public interface ExchangeService extends Service {
      * @param exchangeId Exchange ID.
      * @param batchId Batch ID.
      */
-    void cancelInbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
+    void closeInbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
 
     /**
      * Sends cancel request.
@@ -66,7 +66,7 @@ public interface ExchangeService extends Service {
      * @param fragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
      */
-    void cancelOutbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException;
+    void closeOutbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException;
 
     /**
      * @param nodeId Target node ID.

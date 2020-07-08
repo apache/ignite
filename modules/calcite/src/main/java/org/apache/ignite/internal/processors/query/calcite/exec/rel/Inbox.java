@@ -203,9 +203,15 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
     public void onError(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, Throwable err) {
         rmtEx = new RemoteException(nodeId, queryId, fragmentId, exchangeId, err);
 
-        if (downstream != null)
-            downstream.onError(rmtEx);
+        onError(rmtEx);
+    }
 
+    /**
+     * @param ex Error.
+     */
+    public void onError(Throwable ex) {
+        if (downstream != null)
+            downstream.onError(ex);
     }
 
     /** */
@@ -433,7 +439,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
         /** */
         private void cancel() {
             try {
-                exchange.cancelOutbox(nodeId, queryId(), srcFragmentId, exchangeId);
+                exchange.closeOutbox(nodeId, queryId(), srcFragmentId, exchangeId);
             }
             catch (IgniteCheckedException e) {
                 context().planningContext().logger().warning("Cannot send cancel message", e);

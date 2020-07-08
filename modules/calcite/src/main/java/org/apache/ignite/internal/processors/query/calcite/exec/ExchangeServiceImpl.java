@@ -28,10 +28,10 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
-import org.apache.ignite.internal.processors.query.calcite.message.InboxCancelMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.InboxCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.processors.query.calcite.message.OutboxCancelMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.OutboxCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
@@ -113,13 +113,13 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelOutbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException {
-        cancelInbox(nodeId, qryId, fragmentId, exchangeId, -1);
+    @Override public void closeOutbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException {
+        closeInbox(nodeId, qryId, fragmentId, exchangeId, -1);
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelInbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
-        messageService().send(nodeId, new OutboxCancelMessage(qryId, fragmentId, exchangeId));
+    @Override public void closeInbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException {
+        messageService().send(nodeId, new OutboxCloseMessage(qryId, fragmentId, exchangeId));
     }
 
     /** {@inheritDoc} */
@@ -148,15 +148,15 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void init() {
-        messageService().register((n, m) -> onMessage(n, (InboxCancelMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
-        messageService().register((n, m) -> onMessage(n, (OutboxCancelMessage) m), MessageType.QUERY_OUTBOX_CANCEL_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (InboxCloseMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (OutboxCloseMessage) m), MessageType.QUERY_OUTBOX_CANCEL_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (ErrorMessage) m), MessageType.QUERY_ERROR_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage) m), MessageType.QUERY_ACKNOWLEDGE_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchMessage) m), MessageType.QUERY_BATCH_MESSAGE);
     }
 
     /** */
-    protected void onMessage(UUID nodeId, InboxCancelMessage msg) {
+    protected void onMessage(UUID nodeId, InboxCloseMessage msg) {
         Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
 
         if (inbox != null)
@@ -172,7 +172,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** */
-    protected void onMessage(UUID nodeId, OutboxCancelMessage msg) {
+    protected void onMessage(UUID nodeId, OutboxCloseMessage msg) {
         Collection<Outbox<?>> outboxes = mailboxRegistry().outboxes(msg.queryId());
 
         if (outboxes != null)

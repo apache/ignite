@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -93,6 +94,36 @@ public class CancelTest extends GridCommonAbstractTest {
             },
             IgniteSQLException.class, "The query was cancelled while executing"
         );
+
+        startGrid(2);
+
+        awaitPartitionMapExchange();
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testNodeStop() throws Exception {
+        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> cursors =
+            engine.query(null, "PUBLIC",
+                "SELECT * FROM TEST",
+                X.EMPTY_OBJECT_ARRAY);
+
+        Iterator<List<?>> it = cursors.get(0).iterator();
+
+        it.next();
+
+        stopGrid(1);
+
+//        while (it.hasNext())
+//            it.next();
+
+        U.sleep(1000);
+
+        it.next();
 
         startGrid(2);
 

@@ -165,7 +165,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         registry.unregister(this);
 
         // Send cancel message for the Inbox to close Inboxes created by batch message race.
-        nodeBuffers.values().forEach(Buffer::cancel);
+        nodeBuffers.values().forEach(Buffer::close);
 
         super.close();
     }
@@ -201,7 +201,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     /** */
     private void sendCancel(UUID nodeId, int batchId) {
         try {
-            exchange.cancelInbox(nodeId, queryId(), targetFragmentId, exchangeId, batchId);
+            exchange.closeInbox(nodeId, queryId(), targetFragmentId, exchangeId, batchId);
         }
         catch (IgniteCheckedException e) {
             U.warn(context().planningContext().logger(), "Failed to send cancel message.", e);
@@ -309,7 +309,7 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
         }
 
         /** */
-        public void cancel() {
+        public void close() {
             if (hwm == Integer.MAX_VALUE)
                 return;
 

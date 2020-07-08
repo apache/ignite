@@ -29,8 +29,8 @@ public enum MessageType {
     QUERY_START_RESPONSE(301, QueryStartResponse::new),
     QUERY_BATCH_MESSAGE(302, QueryBatchMessage::new),
     QUERY_ACKNOWLEDGE_MESSAGE(303, QueryBatchAcknowledgeMessage::new),
-    QUERY_INBOX_CANCEL_MESSAGE(304, InboxCancelMessage::new),
-    QUERY_OUTBOX_CANCEL_MESSAGE(305, OutboxCancelMessage::new),
+    QUERY_INBOX_CANCEL_MESSAGE(304, InboxCloseMessage::new),
+    QUERY_OUTBOX_CANCEL_MESSAGE(305, OutboxCloseMessage::new),
     QUERY_ERROR_MESSAGE(306, ErrorMessage::new),
     GENERIC_ROW_MESSAGE(307, GenericRowMessage::new),
 

@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Downstream;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
@@ -397,10 +398,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** {@inheritDoc} */
     @Override public void cancelQuery(UUID qryId) {
-        QueryInfo info = running.remove(qryId);
+        QueryInfo info = running.get(qryId);
 
         if (info != null)
-            info.cancel();
+            info.root.close();
     }
 
     /** {@inheritDoc} */
@@ -899,27 +900,28 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onCursorClose(RootNode<?> rootNode) {
         assert rootNode.state() != RootNode.State.RUNNING;
 
-        running.remove(rootNode.queryId());
+        QueryInfo info = running.get(rootNode.queryId());
+
+        assert Objects.nonNull(info);
+
+        info.close();
     }
 
     /** */
     private void onNodeLeft(UUID nodeId) {
+        log.info("+++ onNodeLeft");
+
         running.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(nodeId));
 
         final Predicate<Node<?>> p = new OriginatingFilter(nodeId);
 
+        ClusterTopologyCheckedException ex = new ClusterTopologyCheckedException("Node left [nodeId=" + nodeId + ']');
+
         mailboxRegistry().outboxes(null).stream()
-            .filter(p).forEach(this::executeCancel);
+            .filter(p).forEach(n -> n.context().execute(() -> n.onError(ex)));
 
         mailboxRegistry().inboxes(null).stream()
-            .filter(p).forEach(this::executeCancel);
-    }
-
-    /** */
-    private void executeCancel(final Node<?> node) {
-        node.context().execute(() -> {
-            U.closeQuiet(node);
-        });
+            .filter(p).forEach(n -> n.context().execute(() -> n.onError(ex)));
     }
 
     /** */
@@ -928,10 +930,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         RUNNING,
 
         /** */
-        CANCELLING,
+        CLOSING,
 
         /** */
-        CANCELLED
+        CLOSED
     }
 
     /** */
@@ -1023,7 +1025,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         /** {@inheritDoc} */
         @Override public void doCancel() {
-            cancel();
+            close();
         }
 
         /** */
@@ -1049,22 +1051,22 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         /**
          * Can be called multiple times after receive each error at {@link #onResponse(RemoteFragmentKey, Throwable)}.
          */
-        private void cancel() {
+        private void close() {
             QueryState state0 = null;
 
             synchronized (this) {
-                if (state == QueryState.CANCELLED)
+                if (state == QueryState.CLOSED)
                     return;
 
                 if (state == QueryState.RUNNING)
-                    state0 = state = QueryState.CANCELLING;
+                    state0 = state = QueryState.CLOSING;
 
-                if (state == QueryState.CANCELLING && waiting.isEmpty())
-                    state0 = state = QueryState.CANCELLED;
+                if (state == QueryState.CLOSING && waiting.isEmpty())
+                    state0 = state = QueryState.CLOSED;
             }
 
-            if (state0 == QueryState.CANCELLED) {
-                root.close();
+            if (state0 == QueryState.CLOSED) {
+                root.context().execute(root::closeExecutionTree);
 
                 running.remove(ctx.queryId());
             }
@@ -1087,7 +1089,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
 
             if (!F.isEmpty(fragments)) {
-                ClusterTopologyCheckedException ex = new ClusterTopologyCheckedException("Failed to start query, node left. nodeId=" + nodeId);
+                ClusterTopologyCheckedException ex = new ClusterTopologyCheckedException(
+                    "Failed to start query, node left. nodeId=" + nodeId);
 
                 for (RemoteFragmentKey fragment : fragments)
                     onResponse(fragment, ex);
@@ -1123,7 +1126,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
 
             if (cancel)
-                cancel();
+                close();
         }
     }
 

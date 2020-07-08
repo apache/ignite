@@ -25,7 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class InboxCancelMessage implements ExecutionContextAware {
+public class InboxCloseMessage implements ExecutionContextAware {
     /** */
     private UUID queryId;
 
@@ -39,10 +39,10 @@ public class InboxCancelMessage implements ExecutionContextAware {
     private int batchId;
 
     /** */
-    public InboxCancelMessage(){}
+    public InboxCloseMessage(){}
 
     /** */
-    public InboxCancelMessage(UUID queryId, long fragmentId, long exchangeId, int batchId) {
+    public InboxCloseMessage(UUID queryId, long fragmentId, long exchangeId, int batchId) {
         this.queryId = queryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
@@ -156,7 +156,7 @@ public class InboxCancelMessage implements ExecutionContextAware {
 
         }
 
-        return reader.afterMessageRead(InboxCancelMessage.class);
+        return reader.afterMessageRead(InboxCloseMessage.class);
     }
 
     /** {@inheritDoc} */
