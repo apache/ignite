@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -472,19 +473,20 @@ public class FilePerformanceStatisticsWriter {
                 }
 
                 flush();
-            } catch (IOException e) {
+            }
+            catch (InterruptedException | ClosedByInterruptException e) {
+                try {
+                    flush();
+                }
+                catch (IOException ignored) {
+                    // No-op.
+                }
+            }
+            catch (IOException e) {
                 log.error("Unable to write to file. Performance statistics collecting will be stopped.", e);
 
                 if (!isCancelled())
                     stopStatistics();
-            }
-            catch (InterruptedException ignored) {
-                try {
-                    flush();
-                }
-                catch (IOException e) {
-                    // No-op.
-                }
             }
         }
 
