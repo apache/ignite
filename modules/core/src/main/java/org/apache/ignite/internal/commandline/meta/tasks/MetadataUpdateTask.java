@@ -23,8 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.commandline.cache.CheckIndexInlineSizes;
-import org.apache.ignite.internal.commandline.meta.subcommands.MetadataUpdateCommand;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,7 +32,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Task for {@link MetadataUpdateCommand} command.
+ * Task for update specified binary type.
  */
 @GridInternal
 public class MetadataUpdateTask extends VisorMultiNodeTask<MetadataMarshalled, MetadataMarshalled, MetadataMarshalled> {
@@ -58,7 +56,7 @@ public class MetadataUpdateTask extends VisorMultiNodeTask<MetadataMarshalled, M
     }
 
     /**
-     * Job for {@link CheckIndexInlineSizes} command.
+     * Job for update specified binary type.
      */
     private static class MetadataUpdateJob extends VisorJob<MetadataMarshalled, MetadataMarshalled> {
         /** */

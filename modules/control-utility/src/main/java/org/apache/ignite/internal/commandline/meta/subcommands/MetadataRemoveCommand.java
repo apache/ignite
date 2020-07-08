@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
+import org.apache.ignite.internal.commandline.meta.MetadataCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataMarshalled;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataRemoveTask;
@@ -56,7 +57,7 @@ public class MetadataRemoveCommand
     @Override public MetadataTypeArgs parseArguments0(CommandArgIterator argIter) {
         outFile = null;
 
-        MetadataTypeArgs argType = MetadataTypeArgs.parseArguments(argIter);
+        MetadataTypeArgs argType = MetadataCommand.parseArgs(argIter);
 
         while (argIter.hasNextSubArg() && outFile == null) {
             String opt = argIter.nextArg("");

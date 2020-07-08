@@ -129,4 +129,36 @@ public class MetadataCommand implements Command<Object> {
     @Override public Object arg() {
         return delegate.arg();
     }
+
+    /**
+     * @param argIter Command line arguments iterator.
+     * @return Metadata type argument.
+     */
+    public static MetadataTypeArgs parseArgs(CommandArgIterator argIter) {
+        String typeName = null;
+        Integer typeId = null;
+
+        while (argIter.hasNextSubArg() && typeName == null && typeId == null) {
+            String optName = argIter.nextArg("Expecting " + MetadataTypeArgs.TYPE_NAME + " or " + MetadataTypeArgs.TYPE_ID);
+
+            switch (optName) {
+                case MetadataTypeArgs.TYPE_NAME:
+                    typeName = argIter.nextArg("type name");
+
+                    break;
+
+                case MetadataTypeArgs.TYPE_ID:
+                    typeId = argIter.nextIntArg("typeId");
+
+                    break;
+            }
+        }
+
+        if (typeName == null && typeId == null) {
+            throw new IllegalArgumentException("Type to remove is not specified. " +
+                "Please add one of the options: --typeName <type_name> or --typeId <type_id>");
+        }
+
+        return new MetadataTypeArgs(typeName, typeId);
+    }
 }

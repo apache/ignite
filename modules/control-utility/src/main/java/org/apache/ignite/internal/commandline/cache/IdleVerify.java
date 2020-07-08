@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -41,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTask;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
@@ -62,6 +60,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCo
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.DUMP;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.SKIP_ZEROS;
+import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.logParsedArgs;
 
 /**
  *
@@ -324,28 +323,6 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
         logParsedArgs(taskArg, System.out::print);
 
         res.print(System.out::print);
-    }
-
-    /**
-     * Passes idle_verify parsed arguments to given log consumer.
-     *
-     * @param args idle_verify arguments.
-     * @param logConsumer Logger.
-     */
-    public static void logParsedArgs(VisorIdleVerifyTaskArg args, Consumer<String> logConsumer) {
-        SB options = new SB("idle_verify task was executed with the following args: ");
-
-        options
-            .a("caches=[")
-            .a(args.caches() == null ? "" : String.join(", ", args.caches()))
-            .a("], excluded=[")
-            .a(args.excludeCaches() == null ? "" : String.join(", ", args.excludeCaches()))
-            .a("]")
-            .a(", cacheFilter=[")
-            .a(args.cacheFilterEnum().toString())
-            .a("]\n");
-
-        logConsumer.accept(options.toString());
     }
 
     /**

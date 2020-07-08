@@ -34,6 +34,7 @@
             <includes>
                 <include>org.apache.ignite:ignite-spring</include>
                 <include>org.apache.ignite:ignite-indexing</include>
+                <include>org.apache.ignite:ignite-control-utility</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -143,6 +144,7 @@
                 <exclude>org.apache.ignite:ignite-extdata-platform</exclude>
                 <exclude>org.apache.ignite:ignite-compatibility</exclude>
                 <exclude>org.apache.ignite:ignite-sqlline</exclude>
+                <exclude>org.apache.ignite:ignite-control-utility</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

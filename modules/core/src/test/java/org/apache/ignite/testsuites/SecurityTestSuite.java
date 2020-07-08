@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.security.GridCommandHandlerSslWithSecurityTest;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
@@ -107,7 +106,6 @@ import org.junit.runners.Suite;
     ContinuousQueryWithTransformerSandboxTest.class,
 
     IgniteSecurityProcessorTest.class,
-    GridCommandHandlerSslWithSecurityTest.class,
     MultipleSSLContextsTest.class
 })
 public class SecurityTestSuite {

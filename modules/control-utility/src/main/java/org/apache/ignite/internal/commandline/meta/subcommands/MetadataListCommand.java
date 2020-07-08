@@ -26,7 +26,7 @@ import org.apache.ignite.internal.commandline.meta.tasks.MetadataListResult;
 
 /** */
 public class MetadataListCommand
-    extends MetadataAbstractSubCommand<MetadataAbstractSubCommand.VoidDto, MetadataListResult>
+    extends MetadataAbstractSubCommand<VoidDto, MetadataListResult>
 {
     /** {@inheritDoc} */
     @Override protected String taskName() {
