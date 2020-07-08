@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -47,11 +48,22 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
     private final String pwd = "testPwd";
 
     /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALLOW_ALL, null, false))
             .setSslContextFactory(sslTrustedFactory("node01", "trustone"))
-            .setConnectorConfiguration(new ConnectorConfiguration().setSslEnabled(true));
+            .setConnectorConfiguration(
+                new ConnectorConfiguration()
+                    .setSslEnabled(true)
+                    .setSslFactory(sslTrustedFactory("connectorServer", "trustthree"))
+            );
     }
 
     /**
@@ -100,13 +112,36 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
         args.add(login);
 
         args.add("--keystore");
-        args.add(keyStorePath("node01"));
+        args.add(keyStorePath("connectorServer"));
 
         args.add("--truststore");
-        args.add(keyStorePath("trustone"));
+        args.add(keyStorePath("trustthree"));
 
         assertEquals(EXIT_CODE_OK, cmd.execute(args));
         assertEquals(1, keyStorePwdCnt.get());
         assertEquals(1, trustStorePwdCnt.get());
+    }
+
+    /**
+     * Checks that control.sh script can connect to the cluster, that has SSL enabled.
+     */
+    @Test
+    public void testConnector() throws Exception {
+        IgniteEx crd = startGrid();
+
+        crd.cluster().active(true);
+
+        CommandHandler hnd = new CommandHandler();
+
+        int exitCode = hnd.execute(Arrays.asList(
+            "--state",
+            "--user", login,
+            "--password", pwd,
+            "--keystore", keyStorePath("connectorClient"),
+            "--keystore-password", keyStorePassword(),
+            "--truststore", keyStorePath("trustthree"),
+            "--truststore-password", keyStorePassword()));
+
+        assertEquals(EXIT_CODE_OK, exitCode);
     }
 }
