@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             using (var tx = transactions.TxStart())
             {
+                Assert.IsNotNull(transactions.Tx);
                 Assert.AreEqual(TransactionConcurrency.Optimistic, tx.Concurrency);
                 Assert.AreEqual(TransactionIsolation.Serializable, tx.Isolation);
 
@@ -64,12 +65,38 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// Tests ambient optimistic transactions (with <see cref="TransactionScope"/>.
+        /// Tests ambient optimistic transactions (with <see cref="TransactionScope"/>).
         /// </summary>
         [Test]
         public void TestAmbientOptimisticTransactionThrowsExceptionOnConflict()
         {
-            // TODO
+            var cache = GetCache();
+            var transactions = Ignite.GetTransactions();
+
+            using (var scope = new TransactionScope())
+            {
+                var old = cache[1];
+
+                Assert.IsNotNull(transactions.Tx);
+                Assert.AreEqual(TransactionConcurrency.Optimistic, transactions.Tx.Concurrency);
+                Assert.AreEqual(TransactionIsolation.Serializable, transactions.Tx.Isolation);
+
+                Task.Factory.StartNew(() =>
+                {
+                    Assert.IsNull(transactions.Tx);
+                    cache[1] = -1;
+                }).Wait();
+
+                Assert.AreEqual(old, cache[1]);
+                cache[1] = old + 1;
+
+                var ex = Assert.Throws<TransactionOptimisticException>(() => scope.Complete());
+                StringAssert.StartsWith(
+                    "Failed to prepare transaction, read/write conflict [key=1, keyCls=java.lang.Integer, val=-1",
+                    ex.Message);
+            }
+
+            Assert.AreEqual(-1, cache[1]);
         }
 
         /** <inheritdoc /> */
