@@ -73,28 +73,29 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cache = GetCache();
             var transactions = Ignite.GetTransactions();
 
-            using (var scope = new TransactionScope())
+            var scope = new TransactionScope();
+            var old = cache[1];
+
+            Assert.IsNotNull(transactions.Tx);
+            Assert.AreEqual(TransactionConcurrency.Optimistic, transactions.Tx.Concurrency);
+            Assert.AreEqual(TransactionIsolation.Serializable, transactions.Tx.Isolation);
+
+            Task.Factory.StartNew(() =>
             {
-                var old = cache[1];
+                Assert.IsNull(transactions.Tx);
+                cache[1] = -1;
+            }).Wait();
 
-                Assert.IsNotNull(transactions.Tx);
-                Assert.AreEqual(TransactionConcurrency.Optimistic, transactions.Tx.Concurrency);
-                Assert.AreEqual(TransactionIsolation.Serializable, transactions.Tx.Isolation);
+            Assert.AreEqual(old, cache[1]);
+            cache[1] = old + 1;
 
-                Task.Factory.StartNew(() =>
-                {
-                    Assert.IsNull(transactions.Tx);
-                    cache[1] = -1;
-                }).Wait();
+            // Complete() just sets a flag, actual Commit is called from Dispose().
+            scope.Complete();
 
-                Assert.AreEqual(old, cache[1]);
-                cache[1] = old + 1;
-
-                var ex = Assert.Throws<TransactionOptimisticException>(() => scope.Complete());
-                StringAssert.StartsWith(
-                    "Failed to prepare transaction, read/write conflict [key=1, keyCls=java.lang.Integer, val=-1",
-                    ex.Message);
-            }
+            var ex = Assert.Throws<TransactionOptimisticException>(() => scope.Dispose());
+            StringAssert.StartsWith(
+                "Failed to prepare transaction, read/write conflict [key=1, keyCls=java.lang.Integer, val=-1",
+                ex.Message);
 
             Assert.AreEqual(-1, cache[1]);
         }
