@@ -812,10 +812,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             ctx.Stream.WriteByte((byte) flags);
 
-            if (flags.HasFlag(ClientCacheRequestFlag.WithExpiryPolicy))
+            if ((flags & ClientCacheRequestFlag.WithExpiryPolicy) == ClientCacheRequestFlag.WithExpiryPolicy)
                 ExpiryPolicySerializer.WritePolicy(ctx.Writer, _expiryPolicy);
-            
-            if(flags.HasFlag(ClientCacheRequestFlag.WithTransactional))
+
+            if ((flags & ClientCacheRequestFlag.WithTransactional) == ClientCacheRequestFlag.WithTransactional)
                 ctx.Writer.WriteInt(tx.Id);
 
             if (writeAction != null)
