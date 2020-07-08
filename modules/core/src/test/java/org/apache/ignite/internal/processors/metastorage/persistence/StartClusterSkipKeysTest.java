@@ -131,28 +131,35 @@ public class StartClusterSkipKeysTest extends GridCommonAbstractTest {
 
         assertTrue(G.allGrids().isEmpty());
 
-        // 3. Recovery metastorage from remote node data and check on local JVM.
-        startLocalNode = true;
+        System.setProperty(IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS, String.valueOf(true));
 
-        ignite = startGrid(1);
+        try {
+            // 3. Recovery metastorage from remote node data and check on local JVM.
+            startLocalNode = true;
 
-        ignite.cluster().state(ClusterState.ACTIVE);
+            ignite = startGrid(1);
 
-        startGrid(0);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
-        waitForTopology(2);
+            startGrid(0);
 
-        DistributedMetaStorage metastorage = ignite.context().distributedMetastorage();
+            waitForTopology(2);
 
-        assertEquals(VALUE_2, metastorage.read(KEY_2));
+            DistributedMetaStorage metastorage = ignite.context().distributedMetastorage();
 
-        assertNull(metastorage.read(KEY_1));
+            assertEquals(VALUE_2, metastorage.read(KEY_2));
 
-        String newVal1 = "newVal1";
+            assertNull(metastorage.read(KEY_1));
 
-        metastorage.write(KEY_1, newVal1);
+            String newVal1 = "newVal1";
 
-        assertEquals(newVal1, metastorage.read(KEY_1));
+            metastorage.write(KEY_1, newVal1);
+
+            assertEquals(newVal1, metastorage.read(KEY_1));
+        }
+        finally {
+            System.clearProperty(IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS);
+        }
     }
 
     /** Job for a remote JVM Ignite instance to write to metastorage and stop. */

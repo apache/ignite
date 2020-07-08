@@ -55,10 +55,6 @@ class DistributedMetaStorageUtil {
      */
     private static final String CLEANUP_GUARD_KEY = "clean";
 
-    /** If true, unmarshalling errors will be skipped. */
-    private static final boolean SKIP_UNMARSHAL_ERR =
-        IgniteSystemProperties.getBoolean(IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS);
-
     /** */
     public static byte[] marshal(JdkMarshaller marshaller, Serializable val) throws IgniteCheckedException {
         return val == null ? null : marshaller.marshal(val);
@@ -69,7 +65,7 @@ class DistributedMetaStorageUtil {
         try {
             return valBytes == null ? null : marshaller.unmarshal(valBytes, U.gridClassLoader());
         } catch (Exception e) {
-            if (SKIP_UNMARSHAL_ERR) {
+            if (IgniteSystemProperties.getBoolean(IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS)) {
                 U.error(null, "Distributed metastorage value can't be unmarshalled and will be skipped.", e);
 
                 return null;
