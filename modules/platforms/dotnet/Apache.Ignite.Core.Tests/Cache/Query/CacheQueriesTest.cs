@@ -523,16 +523,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Checks that scan query is thread-safe and throws correct exception when disposed from another thread.
         /// </summary>
         [Test]
-        public void TestScanQueryDisposedFromAnotherThread()
+        public void TestScanQueryDisposedFromAnotherThreadThrowsObjectDisposedException()
         {
             var cache = GetIgnite().GetOrCreateCache<int, int>(TestUtils.TestName);
 
-            cache.PutAll(Enumerable.Range(1, 10000).ToDictionary(x => x, x => x));
+            const int totalCount = 10000;
+            cache.PutAll(Enumerable.Range(1, totalCount).ToDictionary(x => x, x => x));
 
             var scanQuery = new ScanQuery<int, int>
             {
-                // PageSize = 1,
-                Filter = new ScanQueryFilter<int>(9000)
+                Filter = new ScanQueryFilter<int>(int.MaxValue)
             };
 
             var cursor = cache.Query(scanQuery);
@@ -541,17 +541,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Task.Factory.StartNew(() =>
             {
                 // ReSharper disable once AccessToModifiedClosure
-                while (Interlocked.Read(ref count) < 1000) { }
+                while (Interlocked.Read(ref count) < totalCount / 10) { }
                 cursor.Dispose();
             });
 
-            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            foreach (var unused in cursor)
+            Assert.Throws<ObjectDisposedException>(() =>
             {
-                Interlocked.Increment(ref count);
-            }
-
-            Assert.AreEqual(10000, count);
+                foreach (var unused in cursor)
+                {
+                    Interlocked.Increment(ref count);
+                }
+            });
         }
 
         /// <summary>
