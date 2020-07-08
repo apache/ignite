@@ -41,6 +41,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
         /** Read func. */
         private readonly Func<BinaryReader, T> _readFunc;
+        
+        /** Dispose lock object. */
+        private readonly object _disposeSyncRoot = new object();
 
         /** Whether "GetAll" was called. */
         private bool _getAllCalled;
@@ -93,14 +96,17 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                 throw new InvalidOperationException("Failed to get all entries because GetEnumerator() " +
                                                     "method has already been called.");
 
-            ThrowIfDisposed();
+            lock (_disposeSyncRoot)
+            {
+                ThrowIfDisposed();
 
-            var res = GetAllInternal();
+                var res = GetAllInternal();
 
-            _getAllCalled = true;
-            _hasNext = false;
+                _getAllCalled = true;
+                _hasNext = false;
 
-            return res;
+                return res;
+            }
         }
 
         #region Public IEnumerable methods
@@ -205,9 +211,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         private void RequestBatch()
         {
-            _batch = _hasNext ? GetBatch() : null;
+            lock (_disposeSyncRoot)
+            {
+                ThrowIfDisposed();
+                
+                _batch = _hasNext ? GetBatch() : null;
 
-            _batchPos = 0;
+                _batchPos = 0;
+            }
         }
 
         /// <summary>
@@ -266,7 +277,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** <inheritdoc /> */
         public void Dispose()
         {
-            lock (this)
+            lock (_disposeSyncRoot)
             {
                 if (_disposed)
                 {
