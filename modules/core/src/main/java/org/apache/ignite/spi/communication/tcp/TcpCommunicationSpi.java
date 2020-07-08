@@ -3168,6 +3168,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         fut.onDone(client0);
                     }
                     catch (NodeUnreachableException e) {
+                        log.warning(e.getMessage());
+
                         fut = handleUnreachableNodeException(node, connIdx, fut, e);
                     }
                     catch (Throwable e) {
@@ -3632,8 +3634,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         if (!(Thread.currentThread() instanceof IgniteDiscoveryThread) && locNodeIsSrv) {
             if (node.isClient() && forceClientToServerConnections(node)) {
-                String msg = "Failed to connect to node " + node.id() +
-                    " because it is started in virtualized environment; inverse connection will be requested.";
+                String msg = "Failed to connect to node " + node.id() + " because it is started" +
+                    " in 'forceClientToServerConnections' mode; inverse connection will be requested.";
 
                 throw new NodeUnreachableException(msg);
             }
