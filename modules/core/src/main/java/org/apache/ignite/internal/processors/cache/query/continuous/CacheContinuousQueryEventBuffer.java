@@ -205,35 +205,39 @@ public class CacheContinuousQueryEventBuffer {
                     continue;
             }
             else {
-                if (batch.endCntr < ackedUpdCntr.get())
-                    batch.tryRollOver(entry.topologyVersion());
-
-                if (pendingCurrSize.get() > MAX_PENDING_BUFF_SIZE) {
-                    LT.warn(log, "Buffer for pending events reached max of its size " +
-                        "[cacheId=" + entry.cacheId() + ", maxSize=" + MAX_PENDING_BUFF_SIZE +
-                        ", partId=" + entry.partition() + ']');
-
-                    // Remove first BUFF_SIZE keys.
-                    int keysToRemove = BUF_SIZE;
-
-                    Iterator<Map.Entry<Long, CacheContinuousQueryEntry>> iter = pending.entrySet().iterator();
-
-                    while (iter.hasNext() && keysToRemove > 0) {
-                        CacheContinuousQueryEntry entry0 = iter.next().getValue();
-
-                        // Discard messages on backup and send to client if primary.
-                        if (!backup)
-                            res = addResult(res, entry0.copyWithDataReset(), backup);
-
-                        iter.remove();
-                        pendingCurrSize.decrementAndGet();
-
-                        keysToRemove--;
-                    }
-                }
+                if (batch.endCntr < ackedUpdCntr.get() && batch.tryRollOver(entry.topologyVersion()) == RETRY)
+                    continue;
 
                 pendingCurrSize.incrementAndGet();
                 pending.put(cntr, entry);
+
+                if (pendingCurrSize.get() > MAX_PENDING_BUFF_SIZE) {
+                    synchronized (pending) {
+                        if (pendingCurrSize.get() <= MAX_PENDING_BUFF_SIZE)
+                            break;
+
+                        LT.warn(log, "Buffer for pending events reached max of its size " +
+                            "[cacheId=" + entry.cacheId() + ", maxSize=" + MAX_PENDING_BUFF_SIZE +
+                            ", partId=" + entry.partition() + ']');
+
+                        // Remove first BUFF_SIZE keys.
+                        int keysToRemove = BUF_SIZE;
+
+                        Iterator<Map.Entry<Long, CacheContinuousQueryEntry>> iter = pending.entrySet().iterator();
+
+                        while (iter.hasNext() && keysToRemove > 0) {
+                            CacheContinuousQueryEntry entry0 = iter.next().getValue();
+
+                            // Discard messages on backup and send to client if primary.
+                            if (!backup)
+                                res = addResult(res, entry0.copyWithDataReset(), backup);
+
+                            iter.remove();
+                            pendingCurrSize.decrementAndGet();
+                            keysToRemove--;
+                        }
+                    }
+                }
             }
 
             break;
@@ -292,24 +296,28 @@ public class CacheContinuousQueryEventBuffer {
      * @return New result.
      */
     @Nullable private Object processPending(@Nullable Object res, Batch batch, boolean backup) {
-        if (pending.floorKey(batch.endCntr) != null) {
+        if (pending.floorKey(batch.endCntr) == null)
+            return res;
+
+        synchronized (pending) {
             for (Map.Entry<Long, CacheContinuousQueryEntry> p : pending.headMap(batch.endCntr, true).entrySet()) {
                 long cntr = p.getKey();
 
                 assert cntr <= batch.endCntr;
 
-                if (pending.remove(p.getKey()) != null) {
-                    pendingCurrSize.decrementAndGet();
+                if (pending.remove(cntr) == null)
+                    continue;
 
-                    if (cntr < batch.startCntr)
-                        res = addResult(res, p.getValue(), backup);
-                    else
-                        res = batch.processEntry0(res, p.getKey(), p.getValue(), backup);
-                }
+                if (cntr < batch.startCntr)
+                    res = addResult(res, p.getValue(), backup);
+                else
+                    res = batch.processEntry0(res, p.getKey(), p.getValue(), backup);
+
+                pendingCurrSize.decrementAndGet();
             }
-        }
 
-        return res;
+            return res;
+        }
     }
 
     /**
@@ -541,14 +549,19 @@ public class CacheContinuousQueryEventBuffer {
         /**
          * @param topVer Topology version of current processing entry.
          */
-        private synchronized void tryRollOver(AffinityTopologyVersion topVer) {
+        private synchronized Object tryRollOver(AffinityTopologyVersion topVer) {
             if (entries == null)
-                return;
+                return RETRY;
 
             long ackedUpdCntr0 = ackedUpdCntr.get();
 
-            if (endCntr < ackedUpdCntr0)
+            if (endCntr < ackedUpdCntr0) {
                 rollOver(ackedUpdCntr0 + 1, 0, topVer);
+
+                return RETRY;
+            }
+
+            return null;
         }
 
         /**
