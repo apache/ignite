@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.delegate;
 
-import org.apache.ignite.lifecycle.LifecycleAware;
-
 import java.io.IOException;
+import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
  * Hadoop file system factory delegate.

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.security.cert.Certificate;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
