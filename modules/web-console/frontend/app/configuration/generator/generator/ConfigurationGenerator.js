@@ -129,7 +129,7 @@ export default class IgniteConfigurationGenerator {
         this.clusterTransactions(cluster.transactionConfiguration, available, cfg);
         this.clusterUserAttributes(cluster, cfg);
 
-        this.clusterCaches(cluster, cluster.caches, available, targetVer, client, cfg);
+        this.clusterCaches(cluster, cluster.caches, available, client, cfg);
 
         return cfg;
     }
