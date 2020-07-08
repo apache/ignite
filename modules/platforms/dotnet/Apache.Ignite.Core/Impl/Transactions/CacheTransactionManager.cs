@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 }
                 catch (Exception)
                 {
-                    // Prepare failed - here is our only chance to release Ignite transaction.
+                    // Prepare failed - release Ignite transaction (we won't have another chance to do this).
                     igniteTx.Dispose();
                     throw;
                 }
