@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -168,8 +167,13 @@ public class FilePerformanceStatisticsWriter {
 
             SegmentedRingByteBuffer buf = ringByteBuffer;
 
-            if (buf != null)
+            if (buf != null) {
+                buf.close();
+
+                buf.poll();
+
                 buf.free();
+            }
 
             U.closeQuiet(fileIo);
 
@@ -463,27 +467,33 @@ public class FilePerformanceStatisticsWriter {
                         blockingSectionEnd();
                     }
 
-                    writtenToFile += flush(false);
+                    writtenToFile += flush();
                 }
 
-                flush(true);
+                flush();
+            } catch (IOException e) {
+                log.error("Unable to write to file. Performance statistics collecting will be stopped.", e);
+
+                if (!isCancelled())
+                    stopStatistics();
             }
             catch (InterruptedException ignored) {
                 // Make sure that all producers released their buffers to safe deallocate memory.
-                flush(true);
+                try {
+                    flush();
+                }
+                catch (IOException e) {
+                    // No-op.
+                }
             }
         }
 
         /**
          * Flushes to disk available bytes from the ring buffer.
          *
-         * @param closeBuf {@code True} if close buffer.
          * @return Count of written bytes.
          */
-        private int flush(boolean closeBuf) {
-            if (closeBuf)
-                ringByteBuffer.close();
-
+        private int flush() throws IOException {
             List<SegmentedRingByteBuffer.ReadSegment> segs = ringByteBuffer.poll();
 
             if (segs == null)
@@ -491,26 +501,18 @@ public class FilePerformanceStatisticsWriter {
 
             int written = 0;
 
-            try {
-                for (SegmentedRingByteBuffer.ReadSegment seg : segs) {
-                    updateHeartbeat();
+            for (SegmentedRingByteBuffer.ReadSegment seg : segs) {
+                updateHeartbeat();
 
-                    try {
-                        written += fileIo.writeFully(seg.buffer());
-                    }
-                    finally {
-                        seg.release();
-                    }
+                try {
+                    written += fileIo.writeFully(seg.buffer());
                 }
-
-                fileIo.force();
-            } catch (ClosedChannelException ignored) {
-                // No-op.
-            } catch (IOException e) {
-                log.error("Unable to write to file. Performance statistics collecting will be stopped.", e);
-
-                stopStatistics();
+                finally {
+                    seg.release();
+                }
             }
+
+            fileIo.force();
 
             return written;
         }
