@@ -46,7 +46,7 @@ public class EvictLargePartitionBeforeNodeLeftTest extends GridCommonAbstractTes
 
             List<Integer> keys = partitionKeys(g0.cache(DEFAULT_CACHE_NAME), p0, 20_000, 0);
 
-            try(IgniteDataStreamer<Object, Object> ds = g0.dataStreamer(DEFAULT_CACHE_NAME)){
+            try (IgniteDataStreamer<Object, Object> ds = g0.dataStreamer(DEFAULT_CACHE_NAME)) {
                 for (Integer key : keys)
                     ds.addData(key, key);
             }
