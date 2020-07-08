@@ -51,7 +51,6 @@ RUN cd /opt && curl -O $APACHE_ARCHIVE/ignite/2.8.0/apache-ignite-2.8.0-bin.zip 
 RUN cd /opt && curl -O $APACHE_ARCHIVE/ignite/2.8.1/apache-ignite-2.8.1-bin.zip && unzip apache-ignite-2.8.1-bin.zip && mv /opt/apache-ignite-2.8.1-bin /opt/ignite-2.8.1
 
 RUN rm /opt/apache-ignite-*-bin.zip
-RUN chmod a+wr /opt -R
 
 # Install spark
 ARG SPARK_VERSION="2.3.4"
