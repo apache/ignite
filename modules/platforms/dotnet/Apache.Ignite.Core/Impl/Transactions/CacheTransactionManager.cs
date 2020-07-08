@@ -97,7 +97,16 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
             if (igniteTx != null && Enlistment.Value != null)
             {
-                ((Transaction) igniteTx).Prepare();
+                try
+                {
+                    ((Transaction) igniteTx).Prepare();
+                }
+                catch (Exception)
+                {
+                    // Prepare failed - here is our only chance to release Ignite transaction.
+                    igniteTx.Dispose();
+                    throw;
+                }
             }
 
             preparingEnlistment.Prepared();
