@@ -384,14 +384,7 @@ public class FilePerformanceStatisticsWriter {
 
         seg.release();
 
-        int readySize = readyForFlushSize.updateAndGet(val -> {
-            if (val > DFLT_FLUSH_SIZE)
-                return 0;
-
-            return val + size;
-        });
-
-        if (readySize == 0)
+        if (readyForFlushSize.updateAndGet(val -> val > DFLT_FLUSH_SIZE ? 0 : val + size) == 0)
             fileWriter.wakeUp();
     }
 
