@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -462,23 +463,27 @@ public class FilePerformanceStatisticsWriter {
                         blockingSectionEnd();
                     }
 
-                    writtenToFile += flush();
+                    writtenToFile += flush(false);
                 }
-            }
-            finally {
-                ringByteBuffer.close();
 
+                flush(true);
+            }
+            catch (InterruptedException ignored) {
                 // Make sure that all producers released their buffers to safe deallocate memory.
-                flush();
+                flush(true);
             }
         }
 
         /**
          * Flushes to disk available bytes from the ring buffer.
          *
+         * @param closeBuf {@code True} if close buffer.
          * @return Count of written bytes.
          */
-        private int flush() {
+        private int flush(boolean closeBuf) {
+            if (closeBuf)
+                ringByteBuffer.close();
+
             List<SegmentedRingByteBuffer.ReadSegment> segs = ringByteBuffer.poll();
 
             if (segs == null)
@@ -499,11 +504,12 @@ public class FilePerformanceStatisticsWriter {
                 }
 
                 fileIo.force();
+            } catch (ClosedChannelException ignored) {
+                // No-op.
             } catch (IOException e) {
                 log.error("Unable to write to file. Performance statistics collecting will be stopped.", e);
 
-                if (!isCancelled())
-                    stopStatistics();
+                stopStatistics();
             }
 
             return written;
