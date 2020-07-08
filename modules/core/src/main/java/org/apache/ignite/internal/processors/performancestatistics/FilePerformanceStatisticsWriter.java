@@ -459,10 +459,9 @@ public class FilePerformanceStatisticsWriter {
                     blockingSectionBegin();
 
                     try {
-                        if (bufCnt == readyForFlushSize.get() / DFLT_FLUSH_SIZE) {
-                            synchronized (this) {
+                        synchronized (this) {
+                            if (bufCnt == readyForFlushSize.get() / DFLT_FLUSH_SIZE)
                                 wait();
-                            }
                         }
                     }
                     finally {
