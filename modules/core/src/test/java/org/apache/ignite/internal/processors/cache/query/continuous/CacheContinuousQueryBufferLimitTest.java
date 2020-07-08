@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.FactoryBuilder;
@@ -79,8 +78,8 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     /** Total number of cache keys. */
     private static final int TOTAL_KEYS = 1024;
 
-    /** Timeout to wait for pending buffer overflow. */
-    private static final long OVERFLOW_TIMEOUT_MS = 10_000L;
+    /** Maximum of keys processed by CQ to check buffer being overflowed. */
+    private static final long OVERFLOW_KEYS_COUNT = MAX_PENDING_BUFF_SIZE * 5;
 
     /** Default remote no-op filter. */
     private static final CacheEntryEventSerializableFilter<Integer, Integer> RMT_FILTER = e -> true;
@@ -137,6 +136,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     @Test
     public void testPendingSendToClientOnLimitReached() throws Exception {
         AtomicInteger keys = new AtomicInteger();
+        AtomicInteger rcvKeys = new AtomicInteger();
         AtomicReference<String> err = new AtomicReference<>();
 
         IgniteEx srv = startGrids(2);
@@ -151,13 +151,15 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
         ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
         cq.setRemoteFilterFactory(FactoryBuilder.factoryOf(filter));
         cq.setLocalListener((events) -> events.forEach(e -> {
+            rcvKeys.incrementAndGet();
+
             if (!filter.evaluate(e))
                 err.compareAndSet(null, "Key must be filtered [e=" + e + ']');
         }));
         cq.setLocal(false);
 
-        spi(srv).blockMessages((nodeId, msg) -> msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 10);
-        spi(clnt).blockMessages((nodeId, msg) -> msg instanceof CacheContinuousQueryBatchAck);
+        spi(grid(0)).blockMessages((nodeId, msg) -> (msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 7) ||
+            msg instanceof CacheContinuousQueryBatchAck);
 
         IgniteInternalFuture<?> loadFut = null;
 
@@ -169,13 +171,19 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
                     clnt.cache(DEFAULT_CACHE_NAME).put(keys.incrementAndGet(), 0);
             }, 3, "cq-put-");
 
+            // Partition Id, Update Counter, Continuous Entry.
             ConcurrentMap<Long, CacheContinuousQueryEntry> pending =
-                getContinuousQueryPendingBuffer(grid(0), CU.cacheId(DEFAULT_CACHE_NAME), 0);
+                getContinuousQueryPendingBuffer(grid(1), CU.cacheId(DEFAULT_CACHE_NAME), 0);
 
-            waitForCondition(() -> pending.size() > MAX_PENDING_BUFF_SIZE, 15_000);
+            waitForCondition(() -> {
+                System.out.println(">>>> " + pending.size());
 
-            // Check all entries greater than limit filtered correctly.
-            waitForCondition(() -> keys.get() > MAX_PENDING_BUFF_SIZE * 2, 15_000);
+                return pending.size() > MAX_PENDING_BUFF_SIZE;
+            }, 15_000);
+
+            // Entries are checked by CacheEntryUpdatedListener which has been set to CQ. Check that all
+            // entries greater than pending limit filtered correctly (entries are sent to client on buffer overflow).
+            assertTrue(waitForCondition(() -> keys.get() > OVERFLOW_KEYS_COUNT, 15_000));
         }
         finally {
             TestRecordingCommunicationSpi.stopBlockAll();
@@ -183,6 +191,8 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             if (loadFut != null)
                 loadFut.cancel();
         }
+
+        assertTrue("rcvKeys=" + rcvKeys.get() + ", limit=" + (OVERFLOW_KEYS_COUNT / 2), waitForCondition(() -> rcvKeys.get() >= (OVERFLOW_KEYS_COUNT / 2) - 1, 15_000L));
 
         if (err.get() != null)
             throw new Exception(err.get());
@@ -221,7 +231,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
         int pendingLimit
     ) throws Exception
     {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        AtomicInteger keys = new AtomicInteger();
 
         IgniteEx locIgnite = startGrid(0);
         IgniteEx rmtIgnite = startGrid(1);
@@ -248,9 +258,6 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
         try (QueryCursor<?> qry = locIgnite.cache(DEFAULT_CACHE_NAME).query(cq)) {
             awaitPartitionMapExchange();
 
-            for (int j = 0; j < TOTAL_KEYS; j++)
-                cache.put(rnd.nextInt(TOTAL_KEYS), rnd.nextInt());
-
             // Partition Id, Update Counter, Continuous Entry.
             ConcurrentMap<Long, CacheContinuousQueryEntry> pending =
                 getContinuousQueryPendingBuffer(rmtIgnite, CU.cacheId(DEFAULT_CACHE_NAME), 0);
@@ -259,14 +266,15 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
             updFut = GridTestUtils.runMultiThreadedAsync(() -> {
                 while (!Thread.currentThread().isInterrupted())
-                    cache.put(rnd.nextInt(TOTAL_KEYS), rnd.nextInt());
+                    cache.put(keys.incrementAndGet(), 0);
             }, 3, "cq-put-");
 
             assertNotNull("Partition remote buffers must be inited", pending);
 
-            log.warning("Waiting for pending buffer being overflowed within " + OVERFLOW_TIMEOUT_MS + " ms.");
+            log.warning("Waiting for pending buffer being overflowed within " + OVERFLOW_KEYS_COUNT +
+                " number of keys.");
 
-            boolean await = waitForCondition(() -> pending.size() > pendingLimit, OVERFLOW_TIMEOUT_MS);
+            boolean await = waitForCondition(() -> pending.size() > pendingLimit, () -> keys.get() < OVERFLOW_KEYS_COUNT);
 
             assertFalse("Pending buffer exceeded the limit despite entries have been acked " +
                     "[lastAcked=" + lastAcked + ", pending=" + S.compact(pending.keySet(), i -> i + 1) + ']',
