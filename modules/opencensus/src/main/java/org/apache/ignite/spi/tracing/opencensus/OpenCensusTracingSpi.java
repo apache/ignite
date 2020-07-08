@@ -17,20 +17,20 @@
 
 package org.apache.ignite.spi.tracing.opencensus;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 import io.opencensus.trace.Sampler;
 import io.opencensus.trace.Tracing;
 import io.opencensus.trace.export.SpanExporter;
 import io.opencensus.trace.samplers.Samplers;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.tracing.TracingSpiType;
-import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.opencensus.spi.tracing.OpenCensusTraceExporter;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.tracing.TracingSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
