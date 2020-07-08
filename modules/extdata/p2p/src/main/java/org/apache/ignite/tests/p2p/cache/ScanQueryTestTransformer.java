@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,19 +15,28 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.DotNetCore.Common
-{
-    /// <summary>
-    /// Test runner.
-    /// </summary>
-    internal class TestRunner
-    {
-        /// <summary>
-        /// Console entry point.
-        /// </summary>
-        private static void Main(string[] args)
-        {
-            new IgnitionStartTest().TestIgniteStartsFromAppConfig();
-        }
+package org.apache.ignite.tests.p2p.cache;
+
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.lang.IgniteClosure;
+
+/**
+ * Test class to verify p2p class loading for transformer of Scan Query
+ * (see {@link IgniteCache#query(Query, IgniteClosure)}).
+ */
+public class ScanQueryTestTransformer implements IgniteClosure<Cache.Entry<Integer, Integer>, Integer> {
+    /** */
+    private final int scaleFactor;
+
+    /** */
+    public ScanQueryTestTransformer(int scaleFactor) {
+        this.scaleFactor = scaleFactor;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Integer apply(Cache.Entry<Integer, Integer> entry) {
+        return entry.getValue() * scaleFactor;
     }
 }

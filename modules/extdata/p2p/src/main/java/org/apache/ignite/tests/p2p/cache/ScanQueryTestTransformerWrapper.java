@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,19 +15,27 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.DotNetCore.Common
-{
-    /// <summary>
-    /// Test runner.
-    /// </summary>
-    internal class TestRunner
-    {
-        /// <summary>
-        /// Console entry point.
-        /// </summary>
-        private static void Main(string[] args)
-        {
-            new IgnitionStartTest().TestIgniteStartsFromAppConfig();
+package org.apache.ignite.tests.p2p.cache;
+
+import javax.cache.Cache;
+import org.apache.ignite.lang.IgniteClosure;
+
+/** */
+public class ScanQueryTestTransformerWrapper {
+    /** */
+    private final int scaleFactor;
+
+    /** */
+    private final IgniteClosure<Cache.Entry<Integer, Integer>, Integer> clo = new IgniteClosure<Cache.Entry<Integer, Integer>, Integer>() {
+        @Override public Integer apply(Cache.Entry<Integer, Integer> entry) {
+            return entry.getValue() * scaleFactor;
         }
+    };
+
+    /**
+     * @param scaleFactor Scale factor.
+     */
+    public ScanQueryTestTransformerWrapper(int scaleFactor) {
+        this.scaleFactor = scaleFactor;
     }
 }
