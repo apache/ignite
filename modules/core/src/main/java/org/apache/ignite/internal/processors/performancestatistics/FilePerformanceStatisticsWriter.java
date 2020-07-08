@@ -384,7 +384,9 @@ public class FilePerformanceStatisticsWriter {
 
         seg.release();
 
-        if (readyForFlushSize.updateAndGet(val -> val > DFLT_FLUSH_SIZE ? 0 : val + size) == 0)
+        int bufCnt = readyForFlushSize.get() / DFLT_FLUSH_SIZE;
+
+        if (readyForFlushSize.addAndGet(size) / DFLT_FLUSH_SIZE > bufCnt)
             fileWriter.wakeUp();
     }
 
@@ -450,18 +452,22 @@ public class FilePerformanceStatisticsWriter {
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 while (!isCancelled()) {
+                    long bufCnt = readyForFlushSize.get() / DFLT_FLUSH_SIZE;
+
+                    flushBuffer();
+
                     blockingSectionBegin();
 
                     try {
-                        synchronized (this) {
-                            wait();
+                        if (bufCnt == readyForFlushSize.get() / DFLT_FLUSH_SIZE) {
+                            synchronized (this) {
+                                wait();
+                            }
                         }
                     }
                     finally {
                         blockingSectionEnd();
                     }
-
-                    flushBuffer();
                 }
             }
             finally {
