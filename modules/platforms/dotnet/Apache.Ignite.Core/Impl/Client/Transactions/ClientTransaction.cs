@@ -31,27 +31,23 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** Ignite. */
         private readonly IgniteClient _ignite;
 
-        /* Transactions. */
-        private readonly ClientTransactions _transactions;
+        /** Socket. */
+        private readonly ClientSocket _socket;
 
         /** Transaction is closed. */
         private volatile bool _closed; 
-
-        /** Owning thread ID. */
-        private readonly int _threadId;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="id">ID.</param>
         /// <param name="ignite"></param>
-        /// <param name="transactions"></param>
-        public ClientTransaction(int id, IgniteClient ignite, ClientTransactions transactions)
+        /// <param name="socket"></param>
+        public ClientTransaction(int id, IgniteClient ignite, ClientSocket socket)
         {
             _id = id;
             _ignite = ignite;
-            _transactions = transactions;
-            _threadId = Thread.CurrentThread.ManagedThreadId;
+            _socket = socket;
         }
 
         /** <inheritdoc /> */
@@ -85,8 +81,15 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             get { return _id; }
         }
 
-        /** <inheritdoc /> */
-        public bool Closed
+        public ClientSocket Socket
+        {
+            get { return _socket; }
+        }
+
+        /// <summary>
+        /// Returns if transaction is closed.
+        /// </summary>
+        internal bool Closed
         {
             get { return _closed; }
         }
@@ -110,7 +113,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                 }
                 finally
                 {
-                    // _transactions.ClearCurrentTx();
                     _closed = true;
                 }
             }

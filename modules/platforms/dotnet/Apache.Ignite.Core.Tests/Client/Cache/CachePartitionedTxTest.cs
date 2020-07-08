@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cache.Put(key1, 1);
             cache.Put(key2, 2);
 
-            using (Client.Transactions.TxStart())
+            using (Client.GetTransactions().TxStart())
             {
                 cache.Put(key1, 10);
                 cache.Put(key2, 20);

@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                 throw new IgniteClientException("A transaction has already been started by the current thread.");
             }
 
-            var txId = _ignite.Socket.DoOutInOp(
+            var tx = _ignite.Socket.DoOutInOp(
                 ClientOp.TxStart,
                 ctx =>
                 {
@@ -143,10 +143,13 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                     ctx.Writer.WriteTimeSpanAsLong(timeout);
                     ctx.Writer.WriteString(label);
                 },
-                ctx => ctx.Reader.ReadInt()
+                ctx => new ClientTransaction(
+                    ctx.Reader.ReadInt(),
+                    _ignite,
+                    ctx.Socket)
             );
 
-            _currentTx.Value = new ClientTransaction(txId, _ignite, this);
+            _currentTx.Value = tx;
             return _currentTx.Value;
         }
 

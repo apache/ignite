@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cache.Put(1, 1);
             cache.Put(2, 2);
 
-            using (var tx = Client.Transactions.TxStart())
+            using (var tx = Client.GetTransactions().TxStart())
             {
                 cache.Put(1, 10);
                 cache.Put(2, 20);
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cache.Put(1, 1);
             cache.Put(2, 2);
 
-            using (var tx = Client.Transactions.TxStart())
+            using (var tx = Client.GetTransactions().TxStart())
             {
                 cache.Put(1, 10);
                 cache.Put(2, 20);
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cache.Put(1, 1);
             cache.Put(2, 2);
 
-            using (var tx = Client.Transactions.TxStart())
+            using (var tx = Client.GetTransactions().TxStart())
             {
                 cache.Put(1, 10);
                 cache.Put(2, 20);
@@ -115,8 +115,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             Assert.Throws<IgniteClientException>(() =>
             {
-                using (Client.Transactions.TxStart())
-                using (Client.Transactions.TxStart())
+                using (Client.GetTransactions().TxStart())
+                using (Client.GetTransactions().TxStart())
                 {
                     // No-op.
                 }
@@ -131,8 +131,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             Assert.DoesNotThrow(() =>
             {
-                using (Client.Transactions.TxStart())
-                using (GetClient().Transactions.TxStart())
+                using (Client.GetTransactions().TxStart())
+                using (GetClient().GetTransactions().TxStart())
                 {
                     // No-op.
                 }
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cache.Put(1, 1);
             cache.Put(2, 2);
 
-            using (Client.Transactions.WithLabel(label1).TxStart())
+            using (Client.GetTransactions().WithLabel(label1).TxStart())
             {
                 var igniteTx = GetIgnite().GetTransactions()
                    .GetLocalActiveTransactions()
@@ -167,7 +167,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
 
-            using (var tx = Client.Transactions.WithLabel(label1).TxStart())
+            using (var tx = Client.GetTransactions().WithLabel(label1).TxStart())
             {
                 var igniteTx = GetIgnite().GetTransactions()
                    .GetLocalActiveTransactions()
@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(10, cache.Get(1));
             Assert.AreEqual(20, cache.Get(2));
 
-            using (Client.Transactions.WithLabel(label1).WithLabel(label2).TxStart())
+            using (Client.GetTransactions().WithLabel(label1).WithLabel(label2).TxStart())
             {
                 var tx = GetIgnite().GetTransactions()
                    .GetLocalActiveTransactions()
@@ -194,8 +194,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.Throws<IgniteClientException>(() =>
             {
-                using (Client.Transactions.WithLabel(label1).TxStart())
-                using (Client.Transactions.TxStart())
+                using (Client.GetTransactions().WithLabel(label1).TxStart())
+                using (Client.GetTransactions().TxStart())
                 {
                     // No-op.
                 }
@@ -203,8 +203,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             
             Assert.Throws<IgniteClientException>(() =>
             {
-                using (Client.Transactions.TxStart())
-                using (Client.Transactions.WithLabel(label1).TxStart())
+                using (Client.GetTransactions().TxStart())
+                using (Client.GetTransactions().WithLabel(label1).TxStart())
                 {
                     // No-op.
                 }
@@ -212,8 +212,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             
             Assert.Throws<IgniteClientException>(() =>
             {
-                using (Client.Transactions.WithLabel(label1).TxStart())
-                using (Client.Transactions.WithLabel(label1).TxStart())
+                using (Client.GetTransactions().WithLabel(label1).TxStart())
+                using (Client.GetTransactions().WithLabel(label1).TxStart())
                 {
                     // No-op.
                 }
@@ -298,7 +298,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestTransactionScopeWithManualIgniteTx()
         {
             var cache = TransactionalCache();
-            var transactions = Client.Transactions;
+            var transactions = Client.GetTransactions();
 
             cache[1] = 1;
 
@@ -384,7 +384,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestTransactionScopeOptions()
         {
             var cache = TransactionalCache();
-            var transactions = (IClientTransactionsInternal) Client.Transactions;
+            var transactions = (IClientTransactionsInternal) Client.GetTransactions();
 
             var modes = new[]
             {
@@ -516,7 +516,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 act(cache, 1);
 
-                Assert.IsNotNull(((IClientTransactionsInternal) Client.Transactions).CurrentTx,
+                Assert.IsNotNull(((IClientTransactionsInternal) Client.GetTransactions()).CurrentTx,
                     "Transaction has not started.");
             }
         }
@@ -547,7 +547,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     act(cache, 1);
 
-                    Assert.IsNotNull(((IClientTransactionsInternal)Client.Transactions).CurrentTx,
+                    Assert.IsNotNull(((IClientTransactionsInternal)Client.GetTransactions()).CurrentTx,
                         "Transaction has not started.");
                 }
 

@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Gets Ignite transactions facade.
         /// </summary>
-        IClientTransactions Transactions { get; }
+        IClientTransactions GetTransactions();
 
         /// <summary>
         /// Gets the configuration.

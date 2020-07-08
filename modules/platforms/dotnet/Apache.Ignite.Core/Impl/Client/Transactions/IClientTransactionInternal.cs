@@ -25,5 +25,10 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Transaction ID.
         /// </summary>
         int Id { get; }
+
+        /// <summary>
+        /// Socket associated with transaction. 
+        /// </summary>
+        ClientSocket Socket { get; }
     }
 }

@@ -205,9 +205,9 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        IClientTransactions IIgniteClient.Transactions
+        IClientTransactions IIgniteClient.GetTransactions()
         {
-            get { return _transactions; }
+            return _transactions;
         }
 
         /** Internal transactions representation. */
