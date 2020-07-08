@@ -1150,15 +1150,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         // Error message
         public const string ErrMessage = "Error in ScanQueryFilter.Invoke";
 
-        public ScanQueryFilter(int maxKey = 50)
+        /** */
+        private readonly int _maxKey = 50;
+
+        public ScanQueryFilter()
         {
-            MaxKey = maxKey;
+            // No-op.
+        }
+
+        public ScanQueryFilter(int maxKey)
+        {
+            _maxKey = maxKey;
         }
 
         // Error flag
         public bool ThrowErr { get; set; }
-
-        public int MaxKey { get; set; }
 
         // Injection test
         [InstanceResource]
@@ -1172,7 +1178,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             if (ThrowErr)
                 throw new Exception(ErrMessage);
 
-            return entry.Key < MaxKey;
+            return entry.Key < _maxKey;
         }
     }
 
