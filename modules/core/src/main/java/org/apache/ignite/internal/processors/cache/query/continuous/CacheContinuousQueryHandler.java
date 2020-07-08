@@ -99,10 +99,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     static final int LSNR_MAX_BUF_SIZE =
         IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE", 10_000);
 
-    /** Maximum size of buffer for pending events. Default value is {@code 10_000}. */
-    public final int maxPendingBuffSize =
-        IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE", 10_000);
-
     /**
      * Transformer implementation for processing received remote events.
      * They are already transformed so we simply return transformed value for event.
