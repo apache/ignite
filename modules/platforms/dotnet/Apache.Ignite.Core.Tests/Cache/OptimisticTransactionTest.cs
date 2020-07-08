@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System.Threading.Tasks;
     using System.Transactions;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -33,28 +35,32 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestExplicitOptimisticTransactionThrowsExceptionOnConflict()
         {
-            // TODO
-            var cache = Ignite.GetOrCreateCache<int, int>(TestUtils.TestName);
+            var cache = GetCache();
+            var transactions = Ignite.GetTransactions();
 
-            cache[1] = 1;
-
-            using (var tx = Ignite.GetTransactions().TxStart())
+            using (var tx = transactions.TxStart())
             {
                 Assert.AreEqual(TransactionConcurrency.Optimistic, tx.Concurrency);
                 Assert.AreEqual(TransactionIsolation.Serializable, tx.Isolation);
 
-                cache[1] = 2;
+                var old = cache[1];
 
                 Task.Factory.StartNew(() =>
                 {
-                    Assert.IsNull(Ignite.GetTransactions().Tx);
-                    return cache[1] = 3;
+                    Assert.IsNull(transactions.Tx);
+                    cache[1] = -1;
                 }).Wait();
 
-                tx.Commit();
+                Assert.AreEqual(old, cache[1]);
+                cache[1] = old + 1;
+
+                var ex = Assert.Throws<TransactionOptimisticException>(() => tx.Commit());
+                StringAssert.StartsWith(
+                    "Failed to prepare transaction, read/write conflict [key=1, keyCls=java.lang.Integer, val=-1",
+                    ex.Message);
             }
 
-            Assert.AreEqual(2, cache[1]);
+            Assert.AreEqual(-1, cache[1]);
         }
 
         /// <summary>
@@ -77,6 +83,23 @@ namespace Apache.Ignite.Core.Tests.Cache
                     DefaultTransactionIsolation = TransactionIsolation.Serializable
                 }
             };
+        }
+
+        /// <summary>
+        /// Gets the cache.
+        /// </summary>
+        private ICache<int, int> GetCache()
+        {
+            var cacheConfiguration = new CacheConfiguration(TestUtils.TestName)
+            {
+                AtomicityMode = CacheAtomicityMode.Transactional
+            };
+
+            var cache = Ignite.GetOrCreateCache<int, int>(cacheConfiguration);
+
+            cache[1] = 1;
+
+            return cache;
         }
     }
 }
