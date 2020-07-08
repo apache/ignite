@@ -38,7 +38,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
