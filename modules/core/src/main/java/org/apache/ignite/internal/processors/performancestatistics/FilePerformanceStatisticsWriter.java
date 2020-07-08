@@ -451,11 +451,9 @@ public class FilePerformanceStatisticsWriter {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
+                long bufCnt = 0;
+
                 while (!isCancelled()) {
-                    long bufCnt = readyForFlushSize.get() / DFLT_FLUSH_SIZE;
-
-                    flushBuffer();
-
                     blockingSectionBegin();
 
                     try {
@@ -467,6 +465,10 @@ public class FilePerformanceStatisticsWriter {
                     finally {
                         blockingSectionEnd();
                     }
+
+                    flushBuffer();
+
+                    bufCnt = readyForFlushSize.get() / DFLT_FLUSH_SIZE;
                 }
             }
             finally {
