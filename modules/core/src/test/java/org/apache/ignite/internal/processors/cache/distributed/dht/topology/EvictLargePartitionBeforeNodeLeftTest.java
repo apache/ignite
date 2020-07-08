@@ -16,8 +16,13 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 
 /**
  * Tests if currently evicting partition is owned after last supplier has left.
+ *
+ * Add a test for persistent mode with delayed checkpoint after eviction.
  */
 public class EvictLargePartitionBeforeNodeLeftTest extends GridCommonAbstractTest {
+    /** */
+    private boolean persistence;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -58,11 +63,13 @@ public class EvictLargePartitionBeforeNodeLeftTest extends GridCommonAbstractTes
 
             GridDhtTopologyFuture fut = g0.cachex(DEFAULT_CACHE_NAME).context().topology().topologyVersionFuture();
 
-            assertEquals(new AffinityTopologyVersion(3, 0), fut.topologyVersion());
+            assertEquals(new AffinityTopologyVersion(3, 0), fut.initialVersion());
 
             fut.get();
 
-            assertEquals(OWNING, g0.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(p0).state());
+            GridDhtLocalPartition part = g0.cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(p0);
+
+            assertEquals(OWNING, part.state());
         }
         finally {
             stopAllGrids();

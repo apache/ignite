@@ -626,7 +626,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             GridDhtPartitionState partState = getPartState(state);
 
-            assert partState == OWNING || partState == RENTING : "Only partitions in state OWNING or RENTING can be moved to MOVING state";
+            assert partState == OWNING || partState == RENTING :
+                "Only partitions in state OWNING or RENTING can be moved to MOVING state";
 
             if (casState(state, MOVING))
                 break;
@@ -1148,7 +1149,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     // This is required because normal updates are possible to moving partition which is currently cleared.
                     // We can clean OWNING partition if a partition has been reset from lost state.
                     // In this case new updates must be preserved.
-                    if ((state() == MOVING || state() == OWNING) && row.version().order() > order)
+                    if (row.version().order() > order)
                         continue;
 
                     if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
