@@ -64,6 +64,9 @@ public enum CommandList {
     /** Snapshot commands. */
     SNAPSHOT("--snapshot", new SnapshotCommand()),
 
+    /** Change Cluster tag command. */
+    CLUSTER_CHANGE_TAG("--change-tag", new ClusterChangeTagCommand()),
+
     /** Metadata commands. */
     METADATA("--meta", new MetadataCommand());
 

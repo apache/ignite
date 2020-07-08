@@ -100,6 +100,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -236,6 +237,37 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(ACTIVE, ignite.cluster().state());
 
         assertContains(log, testOut.toString(), "Cluster state changed to ACTIVE");
+    }
+
+    /**
+     * Verifies that update-tag action obeys its specification: doesn't allow updating tag on inactive cluster,
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterChangeTag() throws Exception {
+        final String newTag = "new_tag";
+
+        IgniteEx cl = startGrid(0);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--change-tag", newTag));
+
+        String out = testOut.toString();
+
+        //because cluster is inactive
+        assertTrue(out.contains("Error has occurred during tag update:"));
+
+        cl.cluster().active(true);
+
+        //because new tag should be non-empty string
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--change-tag", ""));
+
+        assertEquals(EXIT_CODE_OK, execute("--change-tag", newTag));
+
+        boolean tagUpdated = GridTestUtils.waitForCondition(() -> newTag.equals(cl.cluster().tag()), 10_000);
+        assertTrue("Tag has not been updated in 10 seconds", tagUpdated);
     }
 
     /**
@@ -403,6 +435,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testState() throws Exception {
+        final String newTag = "new_tag";
+
         Ignite ignite = startGrids(1);
 
         assertFalse(ignite.cluster().active());
@@ -412,6 +446,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
         assertContains(log, testOut.toString(), "Cluster is inactive");
+
+        String out = testOut.toString();
+
+        UUID clId = ignite.cluster().id();
+        String clTag = ignite.cluster().tag();
+
+        assertTrue(out.contains("Cluster  ID: " + clId));
+        assertTrue(out.contains("Cluster tag: " + clTag));
 
         ignite.cluster().active(true);
 
@@ -430,6 +472,25 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
         assertContains(log, testOut.toString(), "Cluster is active (read-only)");
+
+        boolean tagUpdated = GridTestUtils.waitForCondition(() -> {
+            try {
+                ignite.cluster().tag(newTag);
+            }
+            catch (IgniteCheckedException e) {
+                return false;
+            }
+
+            return true;
+        }, 10_000);
+
+        assertTrue("Tag has not been updated in 10 seconds.", tagUpdated);
+
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        out = testOut.toString();
+
+        assertTrue(out.contains("Cluster tag: " + newTag));
     }
 
     /**
