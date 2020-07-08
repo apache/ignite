@@ -54,13 +54,6 @@
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-hadoop</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-aws</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
