@@ -80,6 +80,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                     Assert.Fail(entry.Message);
                 }
             }
+
+            Assert.IsEmpty(Client.GetActiveNotificationListeners());
         }
 
         /// <summary>
