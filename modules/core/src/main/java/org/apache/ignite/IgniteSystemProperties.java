@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageListener;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
@@ -1325,6 +1326,13 @@ public final class IgniteSystemProperties {
      * Default is 1000 ms.
      */
     public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
+
+    /**
+     * When set to {@code true}, {@link DistributedMetaStorage} keys that values can't be unmarshalled will be skipped.
+     * {@link DistributedMetaStorageListener} and explicit reads will get {@code null} values.
+     * By default, {@code false}.
+     */
+    public static final String IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS = "IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS";
 
     /**
      * Enforces singleton.

@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS;
 
 /** */
 class DistributedMetaStorageUtil {
@@ -52,6 +55,10 @@ class DistributedMetaStorageUtil {
      */
     private static final String CLEANUP_GUARD_KEY = "clean";
 
+    /** If true, unmarshalling errors will be skipped. */
+    private static final boolean SKIP_UNMARSHAL_ERR =
+        IgniteSystemProperties.getBoolean(IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS);
+
     /** */
     public static byte[] marshal(JdkMarshaller marshaller, Serializable val) throws IgniteCheckedException {
         return val == null ? null : marshaller.marshal(val);
@@ -59,7 +66,17 @@ class DistributedMetaStorageUtil {
 
     /** */
     public static Serializable unmarshal(JdkMarshaller marshaller, byte[] valBytes) throws IgniteCheckedException {
-        return valBytes == null ? null : marshaller.unmarshal(valBytes, U.gridClassLoader());
+        try {
+            return valBytes == null ? null : marshaller.unmarshal(valBytes, U.gridClassLoader());
+        } catch (Exception e) {
+            if (SKIP_UNMARSHAL_ERR) {
+                U.error(null, "Distributed metastorage value can't be unmarshalled and will be skipped.", e);
+
+                return null;
+            }
+
+            throw e;
+        }
     }
 
     /** */

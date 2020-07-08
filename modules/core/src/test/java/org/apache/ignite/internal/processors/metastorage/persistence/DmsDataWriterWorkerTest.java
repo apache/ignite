@@ -210,8 +210,7 @@ public class DmsDataWriterWorkerTest {
             ver,
             new DistributedMetaStorageKeyValuePair[] {toKeyValuePair(update)},
             new DistributedMetaStorageHistoryItem[] {update},
-            new DistributedMetaStorageHistoryItem[] {histItem("key4", "val4")}, // Has to be ignored.
-            null
+            new DistributedMetaStorageHistoryItem[] {histItem("key4", "val4")} // Has to be ignored.
         ));
 
         stopWorker();

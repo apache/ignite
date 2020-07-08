@@ -33,12 +33,14 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  * Tests metastorage restore from previous cluster with different class path.
@@ -109,6 +111,7 @@ public class StartClusterSkipKeysTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @Test
+    @WithSystemProperty(key = IGNITE_SKIP_METASTORAGE_UNKNOWN_KEYS, value = "true")
     public void testStartWithUnknownKey() throws Exception {
         assertFalse(U.inClassPath(VALUE_1_CLASSNAME));
 
@@ -144,7 +147,13 @@ public class StartClusterSkipKeysTest extends GridCommonAbstractTest {
 
         assertEquals(VALUE_2, metastorage.read(KEY_2));
 
-        assertThrowsAnyCause(log, () -> metastorage.read(KEY_1), ClassNotFoundException.class, null);
+        assertNull(metastorage.read(KEY_1));
+
+        String newVal1 = "newVal1";
+
+        metastorage.write(KEY_1, newVal1);
+
+        assertEquals(newVal1, metastorage.read(KEY_1));
     }
 
     /** Job for a remote JVM Ignite instance to write to metastorage and stop. */
