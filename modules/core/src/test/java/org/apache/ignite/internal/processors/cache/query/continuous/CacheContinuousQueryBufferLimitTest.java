@@ -182,8 +182,6 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
                 loadFut.cancel();
         }
 
-        assertTrue("rcvKeys=" + rcvKeys.get() + ", limit=" + (OVERFLOW_KEYS_COUNT / 2), waitForCondition(() -> rcvKeys.get() >= (OVERFLOW_KEYS_COUNT / 2) - 1, 15_000L));
-
         if (err.get() != null)
             throw new Exception(err.get());
     }
