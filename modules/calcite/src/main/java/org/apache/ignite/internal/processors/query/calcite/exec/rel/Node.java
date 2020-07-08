@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
  * <p/><b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request(int)}, {@link Node#cancel()},
  * {@link Downstream#push(Object)} and {@link Downstream#end()} methods should be used from one single thread.
  */
-public interface Node<Row> {
+public interface Node<Row> extends AutoCloseable {
     /**
      * Returns runtime context allowing access to the tables in a database.
      *
@@ -52,9 +52,4 @@ public interface Node<Row> {
      * Requests next bunch of rows.
      */
     void request(int rowsCnt);
-
-    /**
-     * Cancels execution.
-     */
-    void cancel();
 }

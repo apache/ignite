@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -25,9 +26,11 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -82,6 +85,51 @@ public class CancelTest extends GridCommonAbstractTest {
         it.next();
 
         cursors.forEach(QueryCursor::close);
+
+        GridTestUtils.assertThrows(log, () -> {
+                it.next();
+
+                return null;
+            },
+            IgniteSQLException.class, "The query was cancelled while executing"
+        );
+
+        startGrid(2);
+
+        awaitPartitionMapExchange();
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testReadToEnd() throws Exception {
+        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> cursors =
+            engine.query(null, "PUBLIC",
+                "SELECT * FROM TEST WHERE ID < 1",
+                X.EMPTY_OBJECT_ARRAY);
+
+        Iterator<List<?>> it = cursors.get(0).iterator();
+
+        it.next();
+
+        GridTestUtils.assertThrows(log, () -> {
+                it.next();
+
+                return null;
+            },
+            NoSuchElementException.class, null
+        );
+
+        GridTestUtils.assertThrows(log, () -> {
+                it.next();
+
+                return null;
+            },
+            NoSuchElementException.class, null
+        );
 
         startGrid(2);
 

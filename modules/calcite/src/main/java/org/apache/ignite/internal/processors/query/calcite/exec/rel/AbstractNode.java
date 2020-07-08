@@ -58,7 +58,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     protected List<Node<Row>> sources;
 
     /** */
-    protected boolean canceled;
+    protected boolean closed;
 
     /**
      * @param ctx Execution context.
@@ -86,23 +86,23 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() {
+    @Override public void close() {
         checkThread();
 
-        if (canceled)
+        if (closed)
             return;
 
-        canceled = true;
+        closed = true;
 
         if (!F.isEmpty(sources))
-            sources.forEach(Node::cancel);
+            sources.forEach(U::closeQuiet);
     }
 
     /**
      * @return {@code true} if the subtree is canceled.
      */
-    public boolean isCancelled() {
-        return canceled;
+    public boolean isClosed() {
+        return closed;
     }
 
     /** */

@@ -158,21 +158,16 @@ public class Outbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, D
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() {
-        if (isCancelled())
+    @Override public void close() {
+        if (isClosed())
             return;
 
-        close();
+        registry.unregister(this);
 
         // Send cancel message for the Inbox to close Inboxes created by batch message race.
         nodeBuffers.values().forEach(Buffer::cancel);
 
-        super.cancel();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        registry.unregister(this);
+        super.close();
     }
 
     /** {@inheritDoc} */

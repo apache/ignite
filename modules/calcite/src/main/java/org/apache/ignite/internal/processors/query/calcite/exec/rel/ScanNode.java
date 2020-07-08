@@ -62,18 +62,13 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() {
-        if (isCancelled())
+    @Override public void close() {
+        if (isClosed())
             return;
 
-        close();
-
-        super.cancel();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
         Commons.closeQuiet(it);
+
+        super.close();
     }
 
     /** {@inheritDoc} */
@@ -98,7 +93,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             Thread thread = Thread.currentThread();
 
             while (requested > 0 && it.hasNext()) {
-                if (isCancelled())
+                if (isClosed())
                     return;
 
                 if (thread.isInterrupted())

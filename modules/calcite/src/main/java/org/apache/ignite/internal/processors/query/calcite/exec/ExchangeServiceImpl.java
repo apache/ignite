@@ -160,7 +160,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
 
         if (inbox != null)
-            inbox.cancel();
+            inbox.close();
         else if (log.isDebugEnabled()) {
             log.debug("Stale inbox cancel message received: [" +
                 "nodeId=" + nodeId + ", " +
@@ -176,7 +176,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         Collection<Outbox<?>> outboxes = mailboxRegistry().outboxes(msg.queryId());
 
         if (outboxes != null)
-            outboxes.forEach(Outbox::cancel);
+            outboxes.forEach(Outbox::close);
         else if (log.isDebugEnabled()) {
             log.debug("Stale oubox cancel message received: [" +
                 "nodeId=" + nodeId + ", " +

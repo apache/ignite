@@ -80,26 +80,16 @@ public class RootNode<Row> extends AbstractNode<Row>
         return context().queryId();
     }
 
-    /** {@inheritDoc} */
-    @Override public void cancel() {
-        if (state != State.RUNNING)
-            return;
-
-       state = State.CANCELLED;
-
-       close();
-    }
-
     /** */
-    private void cancelExecutionTree() {
+    private void closeExecutionTree() {
         checkThread();
 
-        if (isCancelled())
+        if (isClosed())
             return;
 
         buff.clear();
 
-        super.cancel();
+        super.close();
     }
 
     /**
@@ -113,10 +103,10 @@ public class RootNode<Row> extends AbstractNode<Row>
     @Override public void close() {
         lock.lock();
         try {
-            if (isCancelled())
-                return;
+            if (state == State.RUNNING)
+                state = State.CANCELLED;
 
-            context().execute(this::cancelExecutionTree);
+            context().execute(this::closeExecutionTree);
 
             cond.signalAll();
         }
@@ -186,7 +176,7 @@ public class RootNode<Row> extends AbstractNode<Row>
         else
             ex = new IgniteSQLException("An error occurred while query executing.", IgniteQueryErrorCode.UNKNOWN, e);
 
-        cancel();
+        close();
     }
 
     /** {@inheritDoc} */

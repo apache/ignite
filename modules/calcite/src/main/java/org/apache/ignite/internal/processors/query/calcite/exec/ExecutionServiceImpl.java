@@ -916,8 +916,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private void executeCancel(Node<?> node) {
-        node.context().execute(node::cancel);
+    private void executeCancel(final Node<?> node) {
+        node.context().execute(() -> {
+            U.closeQuiet(node);
+        });
     }
 
     /** */
@@ -1044,26 +1046,28 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 throw new IgniteSQLException("Failed to execute query.", error);
         }
 
-        /** */
+        /**
+         * Can be called multiple times after receive each error at {@link #onResponse(RemoteFragmentKey, Throwable)}.
+         */
         private void cancel() {
-            boolean cancelLoc = false;
             QueryState state0 = null;
 
             synchronized (this) {
                 if (state == QueryState.CANCELLED)
                     return;
 
-                if (state == QueryState.RUNNING) {
-                    cancelLoc = true;
+                if (state == QueryState.RUNNING)
                     state0 = state = QueryState.CANCELLING;
-                }
+
+                if (state == QueryState.CANCELLING && waiting.isEmpty())
+                    state0 = state = QueryState.CANCELLED;
             }
 
-            if (cancelLoc)
-                root.cancel();
+            if (state0 == QueryState.CANCELLED) {
+                root.close();
 
-            if (state0 == QueryState.CANCELLED)
                 running.remove(ctx.queryId());
+            }
         }
 
         /** */

@@ -37,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A part of exchange.
  */
-public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, AutoCloseable {
+public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row> {
     /** */
     private final ExchangeService exchange;
 
@@ -151,20 +151,15 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() {
-        if (isCancelled())
+    @Override public void close() {
+        if (isClosed())
             return;
 
         buffers.forEach(Buffer::cancel);
 
-        close();
-
-        super.cancel();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
         registry.unregister(this);
+
+        super.close();
     }
 
     /** {@inheritDoc} */
@@ -218,6 +213,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         assert downstream != null;
 
         inLoop = true;
+
         try {
             if (comp != null)
                 pushOrdered();
@@ -225,8 +221,14 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
                 pushUnordered();
         }
         catch (Exception e) {
+            try {
+                close();
+            }
+            catch (Exception e2) {
+                e.addSuppressed(e2);
+            }
+
             downstream.onError(e);
-            close();
         }
         finally {
             inLoop = false;
@@ -259,7 +261,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         }
 
         while (requested > 0 && !heap.isEmpty()) {
-            if (isCancelled())
+            if (isClosed())
                 return;
 
             Buffer buf = heap.poll().right;
@@ -297,7 +299,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements SingleNode<Row>, Au
         int idx = 0, noProgress = 0;
 
         while (requested > 0 && !buffers.isEmpty()) {
-            if (isCancelled())
+            if (isClosed())
                 return;
 
             Buffer buf = buffers.get(idx);
