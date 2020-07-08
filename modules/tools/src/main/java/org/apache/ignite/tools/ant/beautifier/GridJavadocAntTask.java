@@ -166,7 +166,8 @@ public class GridJavadocAntTask extends MatchingTask {
             // Parse HTML.
             Jerry doc = Jerry.jerry(fileContent);
 
-            if (file.endsWith("overview-summary.html") || file.endsWith("index.html")) {
+            // TODO https://issues.apache.org/jira/browse/IGNITE-13202 Check also index.html file.
+            if (file.endsWith("overview-summary.html")) {
                 // Try to find Other Packages section.
                 Jerry otherPackages =
                     doc.find("div.contentContainer table.overviewSummary caption span:contains('Other Packages')");
