@@ -158,7 +158,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
         }));
         cq.setLocal(false);
 
-        spi(grid(0)).blockMessages((nodeId, msg) -> (msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 7) ||
+        spi(srv).blockMessages((nodeId, msg) -> (msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 7) ||
             msg instanceof CacheContinuousQueryBatchAck);
 
         IgniteInternalFuture<?> loadFut = null;
