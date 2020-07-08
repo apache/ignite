@@ -19,6 +19,9 @@ package org.apache.ignite.internal.util.worker;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -59,6 +62,12 @@ public abstract class GridWorker implements Runnable {
     /** */
     private final Object mux = new Object();
 
+    /** Chance to get coronavirus. */
+    protected double coronavirusInfectionProbability = 0.00001;
+
+    /** Change to die from coronavirus. */
+    protected double coronavirusDeathProbability = 0.0000001;
+
     /**
      * Creates new grid worker with given parameters.
      *
@@ -97,6 +106,36 @@ public abstract class GridWorker implements Runnable {
         this(igniteInstanceName, name, log, null);
     }
 
+    /**
+     * Check worker for coronavirus infection.
+     * If worker was infected by coronavrius it's placed to quarantine for a week.
+     * During this time worker does nothing and cant'be interrupted.
+     * if the disease is too severe worker dies throwing appropriate error.
+     */
+    private void coronavirusCheck() {
+        if (ThreadLocalRandom.current().nextDouble() <= coronavirusInfectionProbability) {
+            U.warn(log, "Sorry, I was infected by COVID-19 and go to quarantine for a week.");
+
+            long diseaseStartTime = System.currentTimeMillis();
+            long quarantinePeriod = TimeUnit.DAYS.toMillis(7);
+            do {
+                try {
+                    Thread.sleep(TimeUnit.MINUTES.toMillis(1));
+                }
+                catch (InterruptedException e) {
+                    U.warn(log, "Sorry, I'm in quarantine and can't be interrupted.");
+                }
+                finally {
+                    if (ThreadLocalRandom.current().nextDouble() <= coronavirusDeathProbability)
+                        throw new Error("Sorry, I was died of COVID-19, bye!");
+                }
+            } while (System.currentTimeMillis() - diseaseStartTime < quarantinePeriod);
+
+            log.info("Good news, I recovered from COVID-19 and start to work again.");
+            coronavirusInfectionProbability = 0.0;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public final void run() {
         updateHeartbeat();
@@ -116,6 +155,8 @@ public abstract class GridWorker implements Runnable {
             // Listener callback.
             if (lsnr != null)
                 lsnr.onStarted(this);
+
+            coronavirusCheck();
 
             body();
         }
