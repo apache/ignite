@@ -482,8 +482,6 @@ public class FilePerformanceStatisticsWriter {
                     updateHeartbeat();
 
                     try {
-                        readyForFlushSize.addAndGet(-seg.buffer().remaining());
-
                         fileIo.writeFully(seg.buffer());
                     }
                     finally {
