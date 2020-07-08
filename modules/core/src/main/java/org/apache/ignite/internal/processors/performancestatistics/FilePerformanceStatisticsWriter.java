@@ -384,9 +384,14 @@ public class FilePerformanceStatisticsWriter {
 
         seg.release();
 
-        int readySize = readyForFlushSize.addAndGet(size);
+        int readySize = readyForFlushSize.updateAndGet(val -> {
+            if (val > DFLT_FLUSH_SIZE)
+                return 0;
 
-        if (readySize >= DFLT_FLUSH_SIZE)
+            return val + size;
+        });
+
+        if (readySize == 0)
             fileWriter.wakeUp();
     }
 
@@ -450,24 +455,26 @@ public class FilePerformanceStatisticsWriter {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!isCancelled()) {
-                blockingSectionBegin();
+            try {
+                while (!isCancelled()) {
+                    blockingSectionBegin();
 
-                try {
-                    synchronized (this) {
-                        while (readyForFlushSize.get() < DFLT_FLUSH_SIZE && !isCancelled())
+                    try {
+                        synchronized (this) {
                             wait();
+                        }
                     }
-                }
-                finally {
-                    blockingSectionEnd();
-                }
+                    finally {
+                        blockingSectionEnd();
+                    }
 
+                    flushBuffer();
+                }
+            }
+            finally {
+                // Make sure that all producers released their buffers to safe deallocate memory.
                 flushBuffer();
             }
-
-            // Make sure that all producers released their buffers to safe deallocate memory.
-            flushBuffer();
         }
 
         /** Flushes to disk available bytes from the ring buffer. */
@@ -497,14 +504,6 @@ public class FilePerformanceStatisticsWriter {
 
                 stopStatistics();
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() {
-            // Do not interrupt to try to flush buffer's data.
-            isCancelled = true;
-
-            wakeUp();
         }
 
         /** Wake up worker to start writing data to the file. */
