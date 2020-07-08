@@ -52,7 +52,6 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         metricName(THREAD_POOLS, "GridSystemExecutor"),
         metricName(THREAD_POOLS, "GridClassLoadingExecutor"),
         metricName(THREAD_POOLS, "GridManagementExecutor"),
-        metricName(THREAD_POOLS, "GridIgfsExecutor"),
         metricName(THREAD_POOLS, "GridAffinityExecutor"),
         metricName(THREAD_POOLS, "GridCallbackExecutor"),
         metricName(THREAD_POOLS, "GridQueryExecutor"),
