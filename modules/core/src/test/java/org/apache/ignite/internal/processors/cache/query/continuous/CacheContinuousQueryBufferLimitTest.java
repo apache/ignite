@@ -171,16 +171,6 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
                     clnt.cache(DEFAULT_CACHE_NAME).put(keys.incrementAndGet(), 0);
             }, 3, "cq-put-");
 
-            // Partition Id, Update Counter, Continuous Entry.
-            ConcurrentMap<Long, CacheContinuousQueryEntry> pending =
-                getContinuousQueryPendingBuffer(grid(1), CU.cacheId(DEFAULT_CACHE_NAME), 0);
-
-            waitForCondition(() -> {
-                System.out.println(">>>> " + pending.size());
-
-                return pending.size() > MAX_PENDING_BUFF_SIZE;
-            }, 15_000);
-
             // Entries are checked by CacheEntryUpdatedListener which has been set to CQ. Check that all
             // entries greater than pending limit filtered correctly (entries are sent to client on buffer overflow).
             assertTrue(waitForCondition(() -> keys.get() > OVERFLOW_KEYS_COUNT, 15_000));
