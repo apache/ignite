@@ -894,13 +894,22 @@ namespace Apache.Ignite.Core.Tests.Cache
             using (var scope = new TransactionScope(TransactionScopeOption.Required, options))
             {
                 Assert.AreEqual(1, readOp(cache, 1));
+                Assert.IsNotNull(GetIgnite(0).GetTransactions().Tx);
 
-                var taskFinished = Task.Factory.StartNew(() => cache.Put(1, 2)).Wait(TimeSpan.FromSeconds(1));
+                var evt = new ManualResetEventSlim();
+
+                var task = Task.Factory.StartNew(() =>
+                {
+                    cache.PutAsync(1, 2);
+                    evt.Set();
+                });
+
+                evt.Wait();
 
                 Assert.AreEqual(1, readOp(cache, 1));
-                Assert.IsFalse(taskFinished);
 
                 scope.Complete();
+                task.Wait();
             }
 
             TestUtils.WaitForTrueCondition(() => 2 == readOp(cache, 1));
