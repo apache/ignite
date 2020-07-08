@@ -289,7 +289,7 @@ import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastRecei
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends IgniteSpiAdapter implements CommunicationSpi<Message> {
     /** Time threshold to log too long connection establish. */
-    private static final int CONNECTION_ESTABLISH_THRESHOLD_MS = 100;
+    protected static final int CONNECTION_ESTABLISH_THRESHOLD_MS = 100;
 
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
@@ -3206,10 +3206,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         final long time = System.currentTimeMillis() - start;
 
-            if (time > CONNECTION_ESTABLISH_THRESHOLD_MS) {
-                if (log.isInfoEnabled())
-                    log.info("TCP client created [client=" + clientString(client, node) + ", duration=" + time + "ms]");
-            }
+            if (time > CONNECTION_ESTABLISH_THRESHOLD_MS)
+                log.warning("TCP client creation took longer than expected [threshold=" + CONNECTION_ESTABLISH_THRESHOLD_MS +
+                    "ms, client=" + clientString(client, node) + ", duration=" + time + "ms]");
             else if (log.isDebugEnabled())
                 log.debug("TCP client created [client=" + clientString(client, node) + ", duration=" + time + "ms]");
 
