@@ -85,13 +85,13 @@ public class FilePerformanceStatisticsWriter {
     @Nullable private volatile FileWriter fileWriter;
 
     /** Performance statistics file I/O. */
-    @Nullable private volatile FileIO fileIo;
+    private volatile FileIO fileIo;
 
     /** File write buffer. */
     @Nullable private volatile SegmentedRingByteBuffer ringByteBuffer;
 
-    /** Size of ready for flushing bytes. */
-    private final AtomicInteger readyForFlushSize = new AtomicInteger();
+    /** Count of written to buffer bytes. */
+    private final AtomicInteger writtenToBuffer = new AtomicInteger();
 
     /** {@code True} if the small buffer warning message logged. */
     private final AtomicBoolean smallBufLogged = new AtomicBoolean();
@@ -161,22 +161,18 @@ public class FilePerformanceStatisticsWriter {
 
             FileWriter fileWriter = this.fileWriter;
 
-            SegmentedRingByteBuffer buf = ringByteBuffer;
-
-            // Stop write new data.
-            if (buf != null)
-                buf.close();
-
             // Make sure that all buffer's producers released to safe deallocate memory.
             if (fileWriter != null)
                 U.awaitForWorkersStop(Collections.singleton(fileWriter), true, log);
+
+            SegmentedRingByteBuffer buf = ringByteBuffer;
 
             if (buf != null)
                 buf.free();
 
             U.closeQuiet(fileIo);
 
-            readyForFlushSize.set(0);
+            writtenToBuffer.set(0);
             smallBufLogged.set(false);
             stopByMaxSize.set(false);
             cachedStrings.clear();
@@ -384,9 +380,9 @@ public class FilePerformanceStatisticsWriter {
 
         seg.release();
 
-        int bufCnt = readyForFlushSize.get() / DFLT_FLUSH_SIZE;
+        int bufCnt = writtenToBuffer.get() / DFLT_FLUSH_SIZE;
 
-        if (readyForFlushSize.addAndGet(size) / DFLT_FLUSH_SIZE > bufCnt)
+        if (writtenToBuffer.addAndGet(size) / DFLT_FLUSH_SIZE > bufCnt)
             fileWriter.wakeUp();
     }
 
@@ -451,14 +447,14 @@ public class FilePerformanceStatisticsWriter {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
-                long bufCnt = 0;
+                long writtenToFile = 0;
 
                 while (!isCancelled()) {
                     blockingSectionBegin();
 
                     try {
                         synchronized (this) {
-                            if (bufCnt == readyForFlushSize.get() / DFLT_FLUSH_SIZE)
+                            if (writtenToFile / DFLT_FLUSH_SIZE == writtenToBuffer.get() / DFLT_FLUSH_SIZE)
                                 wait();
                         }
                     }
@@ -466,30 +462,36 @@ public class FilePerformanceStatisticsWriter {
                         blockingSectionEnd();
                     }
 
-                    flushBuffer();
-
-                    bufCnt = readyForFlushSize.get() / DFLT_FLUSH_SIZE;
+                    writtenToFile += flush();
                 }
             }
             finally {
+                ringByteBuffer.close();
+
                 // Make sure that all producers released their buffers to safe deallocate memory.
-                flushBuffer();
+                flush();
             }
         }
 
-        /** Flushes to disk available bytes from the ring buffer. */
-        private void flushBuffer() {
+        /**
+         * Flushes to disk available bytes from the ring buffer.
+         *
+         * @return Count of written bytes.
+         */
+        private int flush() {
             List<SegmentedRingByteBuffer.ReadSegment> segs = ringByteBuffer.poll();
 
             if (segs == null)
-                return;
+                return 0;
+
+            int written = 0;
 
             try {
                 for (SegmentedRingByteBuffer.ReadSegment seg : segs) {
                     updateHeartbeat();
 
                     try {
-                        fileIo.writeFully(seg.buffer());
+                        written += fileIo.writeFully(seg.buffer());
                     }
                     finally {
                         seg.release();
@@ -503,6 +505,8 @@ public class FilePerformanceStatisticsWriter {
                 if (!isCancelled())
                     stopStatistics();
             }
+
+            return written;
         }
 
         /** Wake up worker to start writing data to the file. */
