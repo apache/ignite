@@ -38,9 +38,6 @@ namespace Apache.Ignite.Examples
         /// </summary>
         public static void Run()
         {
-            Console.WriteLine();
-            Console.WriteLine(">>> Before Cache put-get example started.");
-
             var ignite = Ignition.TryGetIgnite() ?? Ignition.StartFromApplicationConfiguration();
             Console.WriteLine();
             Console.WriteLine(">>> Cache put-get example started.");
@@ -80,9 +77,6 @@ namespace Apache.Ignite.Examples
         /// <param name="ignite">Ignite instance.</param>
         private static void PutGetBinary(IIgnite ignite)
         {
-            Console.WriteLine();
-            Console.WriteLine(">>> Before Retrieved organization name from binary object");
-
             var cache = ignite.GetCache<int, Organization>(CacheName);
 
             // Create new Organization to store in cache.

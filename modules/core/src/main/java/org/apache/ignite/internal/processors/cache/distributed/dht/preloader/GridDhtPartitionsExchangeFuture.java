@@ -2333,24 +2333,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             return false;
 
         if (log.isInfoEnabled()) {
-            Set<Integer> moving = new LinkedHashSet<>();
-
-            CacheGroupContext grp = cctx.cache().cacheGroup(CU.cacheId("dotnet_binary_cache"));
-
-            if (grp != null) {
-                for (GridDhtLocalPartition p0 : grp.topology().localPartitions()) {
-                    if (p0 != null && p0.state() == GridDhtPartitionState.MOVING)
-                        moving.add(p0.id());
-                }
-            }
-
             log.info("Finish exchange future [startVer=" + initialVersion() +
                 ", resVer=" + res +
                 ", err=" + err +
                 ", rebalanced=" + rebalanced() +
-                ", wasRebalanced=" + wasRebalanced() +
-                ", moving=" + moving +
-                ']');
+                ", wasRebalanced=" + wasRebalanced() + ']');
         }
 
         assert res != null || err != null;

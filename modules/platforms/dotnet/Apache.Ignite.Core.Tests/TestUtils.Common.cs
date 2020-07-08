@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests
     public static partial class TestUtils
     {
         /** Indicates long running and/or memory/cpu intensive test. */
-        public const string CategoryIntensive = "LONG_TEST_2";
+        public const string CategoryIntensive = "LONG_TEST";
 
         /** Indicates examples tests. */
         public const string CategoryExamples = "EXAMPLES_TEST";

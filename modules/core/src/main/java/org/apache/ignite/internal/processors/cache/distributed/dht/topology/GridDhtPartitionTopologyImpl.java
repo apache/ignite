@@ -2200,9 +2200,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, GridDhtPartitionsExchangeFuture fut) {
-        if (grp.groupId() == CU.cacheId("dotnet_binary_cache"))
-            log.info("DBG: detectLostPartitions 1");
-
         ctx.database().checkpointReadLock();
 
         try {
@@ -2229,9 +2226,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 // Calculate how data loss is handled.
                 boolean safe = grp.config().getPartitionLossPolicy() != IGNORE || !compatibleWithIgnorePlc;
 
-                if (grp.groupId() == CU.cacheId("dotnet_binary_cache"))
-                    log.info("DBG: detectLostPartitions 2 safe=" + safe + " lostParts=" + lostParts + " node2part=" + node2part.toFullString());
-
                 int parts = grp.affinity().partitions();
 
                 Set<Integer> recentlyLost = null;
@@ -2240,9 +2234,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 for (int part = 0; part < parts; part++) {
                     boolean lost = F.contains(lostParts, part);
-
-                    if (grp.groupId() == CU.cacheId("dotnet_binary_cache"))
-                        log.info("DBG: detectLostPartitions 3 p=" + part + " lost=" + lost);
 
                     if (!lost) {
                         boolean hasOwner = false;
@@ -2287,9 +2278,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (lost) {
                         GridDhtLocalPartition locPart = localPartition(part, resTopVer, false, true);
 
-                        if (grp.groupId() == CU.cacheId("dotnet_binary_cache"))
-                            log.info("DBG: detectLostPartitions 4 p=" + part + " locPart=" + locPart);
-
                         if (locPart != null) {
                             if (locPart.state() == LOST)
                                 continue;
@@ -2319,10 +2307,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             if (p0 != null && p0 != EVICTED)
                                 entry.getValue().put(part, safe ? LOST : OWNING);
                         }
-                    }
-                    else {
-                        if (grp.groupId() == CU.cacheId("dotnet_binary_cache"))
-                            log.info("DBG: detectLostPartitions 5 p=" + part);
                     }
                 }
 
