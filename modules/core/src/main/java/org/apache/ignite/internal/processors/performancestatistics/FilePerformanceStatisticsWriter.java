@@ -495,7 +495,8 @@ public class FilePerformanceStatisticsWriter {
             } catch (IOException e) {
                 log.error("Unable to write to file. Performance statistics collecting will be stopped.", e);
 
-                stopStatistics();
+                if (!isCancelled())
+                    stopStatistics();
             }
         }
 
