@@ -170,6 +170,7 @@ public class FilePerformanceStatisticsWriter {
             if (buf != null) {
                 buf.close();
 
+                // Make sure that all producers released their buffers to safe deallocate memory.
                 buf.poll();
 
                 buf.free();
@@ -478,7 +479,6 @@ public class FilePerformanceStatisticsWriter {
                     stopStatistics();
             }
             catch (InterruptedException ignored) {
-                // Make sure that all producers released their buffers to safe deallocate memory.
                 try {
                     flush();
                 }
