@@ -136,7 +136,6 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     @Test
     public void testPendingSendToClientOnLimitReached() throws Exception {
         AtomicInteger keys = new AtomicInteger();
-        AtomicInteger rcvKeys = new AtomicInteger();
         AtomicReference<String> err = new AtomicReference<>();
 
         IgniteEx srv = startGrids(2);
@@ -151,8 +150,6 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
         ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
         cq.setRemoteFilterFactory(FactoryBuilder.factoryOf(filter));
         cq.setLocalListener((events) -> events.forEach(e -> {
-            rcvKeys.incrementAndGet();
-
             if (!filter.evaluate(e))
                 err.compareAndSet(null, "Key must be filtered [e=" + e + ']');
         }));
