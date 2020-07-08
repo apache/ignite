@@ -1221,7 +1221,9 @@ public class CacheMetricsImpl implements CacheMetrics {
      * Calculates entries count/partitions count metrics using one iteration over local partitions for all metrics
      */
     public EntriesStatMetrics getEntriesStat() {
-        if (!cctx.kernalContext().state().clusterState().state().active())
+        AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+
+        if (AffinityTopologyVersion.NONE.equals(topVer))
             return new EntriesStatMetrics();
 
         int owningPartCnt = 0;
@@ -1252,8 +1254,6 @@ public class CacheMetricsImpl implements CacheMetrics {
                 }
             }
             else {
-                AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
-
                 IntSet primaries = ImmutableIntSet.wrap(cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
                 IntSet backups = ImmutableIntSet.wrap(cctx.affinity().backupPartitions(cctx.localNodeId(), topVer));
 
