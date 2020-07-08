@@ -66,7 +66,7 @@ public class ClusterChangeTagCommand implements Command<String> {
             else
                 logger.warning("Error has occurred during tag update: " + res.errorMessage());
         }
-        catch (Throwable e) {
+       catch (Throwable e) {
             logger.severe("Failed to execute Cluster ID and tag command: ");
             logger.severe(CommandLogger.errorMessage(e));
 
