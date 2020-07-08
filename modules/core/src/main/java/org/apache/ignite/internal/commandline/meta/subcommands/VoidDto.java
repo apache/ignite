@@ -15,20 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.commandline.meta.subcommands;
 
-import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
-import org.apache.ignite.internal.processors.cache.index.IoStatisticsBasicIndexSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
- * Cache tests using indexing.
+ *
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    StartCachesInParallelTest.class,
-    IoStatisticsBasicIndexSelfTest.class
-})
-public class IgniteCacheWithIndexingAndPersistenceTestSuite {
+public class VoidDto extends IgniteDataTransferObject {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        // No-op.
+    }
 }

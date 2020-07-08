@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.commandline.meta.subcommands;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.util.Collection;
@@ -122,24 +119,5 @@ public abstract class MetadataAbstractSubCommand<
      */
     protected String printInt(int val) {
         return "0x" + Integer.toHexString(val).toUpperCase() + " (" + val + ')';
-    }
-
-    /**
-     *
-     */
-    public static class VoidDto extends IgniteDataTransferObject {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(byte protoVer, ObjectInput in)
-            throws IOException, ClassNotFoundException {
-            // No-op.
-        }
     }
 }
