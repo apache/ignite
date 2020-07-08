@@ -98,6 +98,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 ex.Message);
 
             Assert.AreEqual(-1, cache[1]);
+            Assert.IsNull(transactions.Tx);
         }
 
         /** <inheritdoc /> */
