@@ -125,6 +125,9 @@ This utility can do the following commands:
     Parameters:
       snapshot_name  - Snapshot name.
 
+  Change cluster tag to new value:
+    control.(sh|bat) --change-tag newTagValue [--yes]
+
   Print metadata command help:
     control.(sh|bat) --meta help
 
