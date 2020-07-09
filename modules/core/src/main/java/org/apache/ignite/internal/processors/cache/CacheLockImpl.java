@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
-import org.apache.ignite.internal.processors.performancestatistics.PerformaceStatisticsProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -56,6 +55,9 @@ class CacheLockImpl<K, V> implements Lock {
     /** Lock start time in nanoseconds. */
     private volatile long startTime;
 
+    /** Performance statistics enabled flag. */
+    private final boolean performanceStatsEnabled;
+
     /**
      * @param gate Gate.
      * @param delegate Delegate.
@@ -68,6 +70,7 @@ class CacheLockImpl<K, V> implements Lock {
         this.delegate = delegate;
         this.opCtx = opCtx;
         this.keys = keys;
+        this.performanceStatsEnabled = delegate.context().kernalContext().performanceStatistics().enabled();
     }
 
     /** {@inheritDoc} */
@@ -95,12 +98,12 @@ class CacheLockImpl<K, V> implements Lock {
     private void incrementLockCounter() {
         assert (lockedThread == null && cntr == 0) || (lockedThread == Thread.currentThread() && cntr > 0);
 
+        if (performanceStatsEnabled && cntr == 0)
+            startTime = System.nanoTime();
+
         cntr++;
 
         lockedThread = Thread.currentThread();
-
-        if (startTime == 0)
-            startTime = System.nanoTime();
     }
 
     /** {@inheritDoc} */
@@ -196,18 +199,15 @@ class CacheLockImpl<K, V> implements Lock {
             cntr--;
 
             if (cntr == 0) {
-                PerformaceStatisticsProcessor stat = delegate.context().kernalContext().performanceStatistics();
+                lockedThread = null;
 
-                if (stat.enabled()) {
-                    stat.cacheOperation(OperationType.CACHE_LOCK,
+                if (performanceStatsEnabled) {
+                    delegate.context().kernalContext().performanceStatistics().cacheOperation(
+                        OperationType.CACHE_LOCK,
                         delegate.context().cacheId(),
                         U.currentTimeMillis(),
                         System.nanoTime() - startTime);
                 }
-
-                startTime = 0;
-
-                lockedThread = null;
             }
 
             delegate.unlockAll(keys);
