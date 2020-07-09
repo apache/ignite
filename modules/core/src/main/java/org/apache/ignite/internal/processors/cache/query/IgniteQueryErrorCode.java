@@ -100,6 +100,9 @@ public final class IgniteQueryErrorCode {
     /** Cache not found. */
     public final static int CACHE_NOT_FOUND = 4006;
 
+    /** Field type mismatch. e.g.: cause is {@link ClassCastException}. */
+    public static final int FIELD_TYPE_MISMATCH = 5006;
+
     /** */
     private IgniteQueryErrorCode() {
         // No-op.
