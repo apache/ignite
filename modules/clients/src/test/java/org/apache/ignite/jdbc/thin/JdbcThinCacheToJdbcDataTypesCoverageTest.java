@@ -182,7 +182,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23662")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13231")
     @Test
     @Override public void testCharacterDataType() throws Exception {
         checkBasicCacheOperations(
@@ -215,7 +215,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-28896")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13232")
     @Test
     @Override public void testObjectArrayDataType() throws Exception {
         super.testObjectArrayDataType();
@@ -278,7 +278,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23659")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13233")
     @Test
     @Override public void testDateDataType() throws Exception {
         checkBasicCacheOperations(
@@ -291,7 +291,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23665")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12326")
     @Test
     @Override public void testSqlDateDataType() throws Exception {
         super.testSqlDateDataType();
@@ -318,7 +318,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23664, https://ggsystems.atlassian.net/browse/GG-23665")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12312, https://issues.apache.org/jira/browse/IGNITE-12326")
     @Test
     @Override public void testLocalDateDataType() throws Exception {
         checkBasicCacheOperations(
@@ -330,7 +330,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23664")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12312")
     @Test
     @Override public void testLocalDateTimeDataType() throws Exception {
         checkBasicCacheOperations(
@@ -342,7 +342,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23664")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12312")
     @Test
     @Override public void testLocalTimeDataType() throws Exception {
         checkBasicCacheOperations(

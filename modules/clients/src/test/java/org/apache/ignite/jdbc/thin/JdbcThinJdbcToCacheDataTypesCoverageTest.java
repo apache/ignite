@@ -107,7 +107,7 @@ public class JdbcThinJdbcToCacheDataTypesCoverageTest extends SqlDataTypesCovera
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23665")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12326")
     @Test
     @Override public void testDateDataType() throws Exception {
         super.testDateDataType();

@@ -79,7 +79,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
                 return "FifoEvictionPolicyFactory";
             }
         },
-        // TODO: 28.08.19 https://ggsystems.atlassian.net/browse/GG-23429
+        // TODO: 28.08.19 https://issues.apache.org/jira/browse/IGNITE-12310
 //        new SortedEvictionPolicyFactory(10, 1, 0) {
 //            @Override public String toString() {
 //                return "SortedEvictionPolicyFactory";

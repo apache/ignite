@@ -181,7 +181,7 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23434")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12314")
     @Test
     public void testByteArrayDataType() throws Exception {
         checkBasicCacheOperations(
@@ -228,7 +228,7 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23435")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12315")
     @Test
     public void testQueueDataType() throws Exception {
         ArrayBlockingQueue<Integer> queueToCheck = new ArrayBlockingQueue<>(5);
