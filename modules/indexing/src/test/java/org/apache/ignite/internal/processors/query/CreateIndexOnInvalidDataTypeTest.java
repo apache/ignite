@@ -40,7 +40,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
- * Checks add filed with invalid data type to index.
+ * Checks add field with invalid data type to index.
  */
 public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest {
     /** Keys count. */
