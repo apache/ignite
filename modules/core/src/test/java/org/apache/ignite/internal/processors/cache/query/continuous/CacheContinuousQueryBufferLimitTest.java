@@ -101,8 +101,8 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     public static Collection<?> parameters() {
         return Arrays.asList(new Object[][] {
             {REPLICATED, ATOMIC},
-            {REPLICATED, TRANSACTIONAL},
             {PARTITIONED, ATOMIC},
+            {REPLICATED, TRANSACTIONAL},
             {PARTITIONED, TRANSACTIONAL}
         });
     }
@@ -142,6 +142,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
         IgniteEx srv = startGrids(2);
         IgniteEx clnt = startClientGrid();
 
+        IgniteCache<Integer, Integer> cache = clnt.cache(DEFAULT_CACHE_NAME);
         CacheEntryEventSerializableFilter<Integer, Integer> filter = evt -> evt.getKey() % 2 == 0;
 
         ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
@@ -157,17 +158,20 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
         IgniteInternalFuture<?> loadFut = null;
 
-        try (QueryCursor<?> qry = clnt.cache(DEFAULT_CACHE_NAME).query(cq)) {
+        try (QueryCursor<?> qry = cache.query(cq)) {
             awaitPartitionMapExchange();
 
             loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
                 while (!Thread.currentThread().isInterrupted())
-                    clnt.cache(DEFAULT_CACHE_NAME).put(keys.incrementAndGet(), 0);
+                    cache.put(keys.incrementAndGet(), 0);
             }, 3, "cq-put-");
 
             // Entries are checked by CacheEntryUpdatedListener which has been set to CQ. Check that all
             // entries greater than pending limit filtered correctly (entries are sent to client on buffer overflow).
-            assertTrue("keys=" + keys.get(), waitForCondition(() -> keys.get() > OVERFLOW_KEYS_COUNT, 15_000));
+            boolean await = waitForCondition(() -> keys.get() > OVERFLOW_KEYS_COUNT, 15_000);
+
+            assertTrue("Number of keys to put must reach the limit [keys=" + keys.get() +
+                ", limit=" + OVERFLOW_KEYS_COUNT + ']', await);
         }
         finally {
             TestRecordingCommunicationSpi.stopBlockAll();
