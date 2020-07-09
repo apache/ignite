@@ -15,27 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp.messages;
+package org.apache.ignite.spi.communication.tcp.internal;
 
-import java.util.UUID;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 
 /**
- * Wrapped for custom message that must not be delivered to the client nodes.
+ * Marker future implementation, just like {@code ConnectFuture}, but meaning that we're waiting for the inverse
+ * connection.
  */
-@TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryServerOnlyCustomEventMessage extends TcpDiscoveryCustomEventMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * @param creatorNodeId Creator node id.
-     * @param msg Message.
-     * @param msgBytes Serialized message.
-     */
-    public TcpDiscoveryServerOnlyCustomEventMessage(UUID creatorNodeId, @NotNull DiscoverySpiCustomMessage msg,
-        @NotNull byte[] msgBytes) {
-        super(creatorNodeId, msg, msgBytes);
-    }
+public class ConnectionRequestFuture extends GridFutureAdapter<GridCommunicationClient> {
 }
