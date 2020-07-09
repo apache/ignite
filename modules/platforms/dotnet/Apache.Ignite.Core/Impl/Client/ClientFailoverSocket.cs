@@ -259,7 +259,7 @@ namespace Apache.Ignite.Core.Impl.Client
             var tx = _transactions.CurrentTx;
             if (tx != null)
             {
-                if (tx.Socket.IsDisposed && !_config.ReconnectDisabled)
+                if (tx.Socket.IsDisposed)
                 {
                     throw new IgniteClientException("Transaction context has been lost due to connection errors.");
                 }

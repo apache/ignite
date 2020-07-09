@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // No-op.
         }
 
+        /** <inhertiDoc /> */
         protected override string GetCacheName()
         {
             return "local_" + base.GetCacheName();
