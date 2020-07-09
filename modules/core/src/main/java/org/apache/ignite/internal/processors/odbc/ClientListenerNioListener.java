@@ -24,6 +24,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
@@ -237,6 +239,12 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /** {@inheritDoc} */
     @Override public void onSessionIdleTimeout(GridNioSession ses) {
         ses.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onFailure(FailureType failureType, Throwable failure) {
+        if (failure instanceof OutOfMemoryError)
+            ctx.failure().process(new FailureContext(failureType, failure));
     }
 
     /**
