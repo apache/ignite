@@ -185,9 +185,9 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
      * @return Security aware IgnitePredicate.
      */
     private <T> IgnitePredicate<Event> securityAwareRemoteFilter(IgnitePredicate<T> original) {
-        IgnitePredicate<Event> res = (IgnitePredicate<Event>) original;
+        IgnitePredicate<Event> res = (IgnitePredicate<Event>)original;
 
-        if(ctx.security().enabled()){
+        if (ctx.security().enabled()) {
             final UUID subjId = ctx.security().securityContext().subject().id();
 
             return new SecurityAwarePredicate<>(subjId, res);
