@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
@@ -39,7 +40,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -114,7 +116,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     @Test
     public void testContinuousQueryBatchSwitchOnAck() throws Exception {
         doTestContinuousQueryPendingBufferLimit((n, msg) ->
-            msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 10, MAX_PENDING_BUFF_SIZE / 10);
+            cachePutOperationRequestMessage(msg) && msgCntr.getAndIncrement() == 10, MAX_PENDING_BUFF_SIZE / 10);
     }
 
     /**
@@ -127,7 +129,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     @Test
     public void testContinuousQueryPendingBufferLimit() throws Exception {
         doTestContinuousQueryPendingBufferLimit((n, msg) ->
-            (msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 10) ||
+            (cachePutOperationRequestMessage(msg) && msgCntr.getAndIncrement() == 10) ||
                 msg instanceof CacheContinuousQueryBatchAck, (int)(MAX_PENDING_BUFF_SIZE * 1.1));
     }
 
@@ -150,7 +152,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
         }));
         cq.setLocal(false);
 
-        spi(srv).blockMessages((nodeId, msg) -> (msg instanceof GridCacheIdMessage && msgCntr.getAndIncrement() == 7) ||
+        spi(srv).blockMessages((nodeId, msg) -> (cachePutOperationRequestMessage(msg) && msgCntr.getAndIncrement() == 7) ||
             msg instanceof CacheContinuousQueryBatchAck);
 
         IgniteInternalFuture<?> loadFut = null;
@@ -165,7 +167,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
             // Entries are checked by CacheEntryUpdatedListener which has been set to CQ. Check that all
             // entries greater than pending limit filtered correctly (entries are sent to client on buffer overflow).
-            assertTrue(waitForCondition(() -> keys.get() > OVERFLOW_KEYS_COUNT, 15_000));
+            assertTrue("keys=" + keys.get(), waitForCondition(() -> keys.get() > OVERFLOW_KEYS_COUNT, 15_000));
         }
         finally {
             TestRecordingCommunicationSpi.stopBlockAll();
@@ -265,6 +267,23 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
             if (updFut != null)
                 updFut.cancel();
+        }
+    }
+
+    /**
+     * @param msg Cache message.
+     * @return {@code true} if message is initial for cache operation.
+     */
+    private boolean cachePutOperationRequestMessage(Message msg) {
+        switch (atomicityMode) {
+            case ATOMIC:
+                return msg instanceof GridDhtAtomicUpdateRequest;
+
+            case TRANSACTIONAL:
+                return msg instanceof GridDhtTxPrepareRequest;
+
+            default:
+                throw new IgniteException("Unsupported atomicity mode: " + atomicityMode);
         }
     }
 
