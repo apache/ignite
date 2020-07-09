@@ -21,7 +21,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.collect.Lists;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -250,7 +249,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
      */
     private void doTestCoordinatorFail(List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeScenarios) throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(5);
-        crd.cluster().active(true);
+        awaitPartitionMapExchange();
 
         IgniteEx latchCrd = grid(LATCH_CRD_INDEX);
 
