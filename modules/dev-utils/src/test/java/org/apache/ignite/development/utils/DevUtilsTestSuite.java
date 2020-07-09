@@ -27,6 +27,8 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     IgniteIndexReaderTest.class,
+    IgniteWalConverterTest.class,
+    IgniteWalConverterArgumentsTest.class,
     IgniteWalConverterSensitiveDataTest.class
 })
 public class DevUtilsTestSuite {

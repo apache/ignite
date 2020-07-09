@@ -1,12 +1,11 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Copyright 2019 GridGain Systems, Inc. and Contributors.
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the GridGain Community Edition License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +17,7 @@
 package org.apache.ignite.development.utils;
 
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,8 +31,10 @@ import static org.apache.ignite.development.utils.ProcessSensitiveDataUtils.md5;
  * Wrapper {@link DataEntry} for sensitive data output.
  */
 class DataEntryWrapper extends DataEntry {
-    /** Unwrapped DataEntry. */
-    @Nullable private final UnwrapDataEntry unwrapDataEntry;
+    /**
+     * Source DataEntry.
+     */
+    @Nullable private final DataEntry source;
 
     /** Strategy for the processing of sensitive data. */
     private final ProcessSensitiveData sensitiveData;
@@ -60,29 +61,100 @@ class DataEntryWrapper extends DataEntry {
             dataEntry.partitionCounter()
         );
 
-        this.sensitiveData = sensitiveData;
+        this.source = dataEntry;
 
-        this.unwrapDataEntry = UnwrapDataEntry.class.isInstance(dataEntry) ? (UnwrapDataEntry)dataEntry : null;
+        this.sensitiveData = sensitiveData;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        if (isNull(unwrapDataEntry))
-            return super.toString();
+        final String keyStr;
+        final String valueStr;
+        if (source instanceof UnwrappedDataEntry) {
+            final UnwrappedDataEntry unwrappedDataEntry = (UnwrappedDataEntry)this.source;
 
-        Object key = unwrapDataEntry.unwrappedKey();
-        Object value = unwrapDataEntry.unwrappedValue();
+            keyStr = toString(unwrappedDataEntry.unwrappedKey(), this.source.key());
 
-        if (HASH == sensitiveData) {
-            key = valueOf(key).hashCode();
-            value = valueOf(value).hashCode();
+            valueStr = toString(unwrappedDataEntry.unwrappedValue(), this.source.value());
         }
-        else if (MD5 == sensitiveData) {
-            key = md5(valueOf(key));
-            value = md5(valueOf(value));
+        else {
+            keyStr = toString(null, this.source.key());
+
+            valueStr = toString(null, this.source.value());
         }
 
-        return new SB().a(unwrapDataEntry.getClass().getSimpleName())
-            .a("[k = ").a(key).a(", v = [ ").a(value).a("], super = [").a(super.toString()).a("]]").toString();
+        return new SB(this.source.getClass().getSimpleName())
+            .a("[k = ").a(keyStr)
+            .a(", v = [").a(valueStr).a("]")
+            .a(", super = [").a(S.toString(DataEntry.class, source)).a("]]")
+            .toString();
+    }
+
+    /**
+     * Returns a string representation of the entry key or entry value.
+     *
+     * @param value unwrappedKey or unwrappedValue
+     * @param co    key or value
+     * @return String presentation of the entry key or entry value depends on {@code isValue}.
+     */
+    public String toString(Object value, CacheObject co) {
+        String str;
+        if (sensitiveData == HIDE)
+            return "";
+
+        if (sensitiveData == HASH)
+            if (value != null)
+                return Integer.toString(value.hashCode());
+            else
+                return Integer.toString(co.hashCode());
+
+        if (value instanceof String)
+            str = (String)value;
+        else if (value instanceof BinaryObject)
+            str = value.toString();
+        else if (value != null)
+            str = toStringRecursive(value.getClass(), value);
+        else if (co instanceof BinaryObject)
+            str = co.toString();
+        else
+            str = null;
+
+        if (str == null || str.isEmpty()) {
+
+            try {
+                CacheObjectValueContext ctx = null;
+                try {
+                    ctx = IgniteUtils.field(source, "cacheObjValCtx");
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+                str = Base64.getEncoder().encodeToString(co.valueBytes(ctx));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        if (sensitiveData == MD5)
+            str = ProcessSensitiveDataUtils.md5(str);
+
+        return str;
+    }
+
+    /**
+     * Produces auto-generated output of string presentation for given object (given the whole hierarchy).
+     *
+     * @param cls Declaration class of the object.
+     * @param obj Object to get a string presentation for.
+     * @return String presentation of the given object.
+     */
+    public static String toStringRecursive(Class cls, Object obj) {
+        String result = null;
+
+        if (cls != Object.class)
+            result = S.toString(cls, obj, toStringRecursive(cls.getSuperclass(), obj));
+
+        return result;
     }
 }

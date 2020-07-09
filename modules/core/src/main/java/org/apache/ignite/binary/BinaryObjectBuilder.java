@@ -83,7 +83,7 @@ public interface BinaryObjectBuilder {
      * Collections and maps returned from this method are modifiable.
      *
      * @param name Field name.
-     * @return Filed value.
+     * @return Field value.
      */
     public <T> T getField(String name);
 
