@@ -531,13 +531,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            StartTxIfNeeded();
+
             TV val;
             if (CanUsePlatformCache && _platformCache.TryGetValue(key, out val))
             {
                 return val;
             }
-
-            StartTxIfNeeded();
 
             return DoOutInOpX((int) CacheOp.Get,
                 w => w.Write(key),
@@ -555,13 +555,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            StartTxIfNeeded();
+
             TV val;
             if (CanUsePlatformCache && _platformCache.TryGetValue(key, out val))
             {
                 return TaskRunner.FromResult(val);
             }
-
-            StartTxIfNeeded();
 
             return DoOutOpAsync(CacheOp.GetAsync, w => w.WriteObject(key), reader =>
             {
@@ -577,12 +577,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            StartTxIfNeeded();
+
             if (CanUsePlatformCache && _platformCache.TryGetValue(key, out value))
             {
                 return true;
             }
-
-            StartTxIfNeeded();
 
             var res = DoOutInOpNullable(CacheOp.Get, key);
 
@@ -605,6 +605,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         public ICollection<ICacheEntry<TK, TV>> GetAll(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
+
+            StartTxIfNeeded();
 
             if (CanUsePlatformCache)
             {
@@ -655,8 +657,6 @@ namespace Apache.Ignite.Core.Impl.Cache
                 }
             }
 
-            StartTxIfNeeded();
-
             return DoOutInOpX((int) CacheOp.GetAll,
                 writer => writer.WriteEnumerable(keys),
                 (s, r) => r == True
@@ -669,6 +669,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         public Task<ICollection<ICacheEntry<TK, TV>>> GetAllAsync(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
+
+            StartTxIfNeeded();
 
             if (CanUsePlatformCache)
             {
@@ -708,8 +710,6 @@ namespace Apache.Ignite.Core.Impl.Cache
                     // ReSharper restore AccessToDisposedClosure
                 }
             }
-
-            StartTxIfNeeded();
 
             return DoOutOpAsync(CacheOp.GetAllAsync,
                 w => w.WriteEnumerable(keys),
