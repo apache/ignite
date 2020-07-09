@@ -40,7 +40,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
- * Tests for local query execution in lazy mode.
+ * Checks add filed with invalid data type to index.
  */
 public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest {
     /** Keys count. */
@@ -50,10 +50,12 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setFailureHandler(new StopNodeFailureHandler())
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)
-                )
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setPersistenceEnabled(true)
+                    )
             );
     }
 
@@ -86,15 +88,19 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
 
         grid().cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<Integer, Value> c = grid().createCache(new CacheConfiguration<Integer, Value>()
-            .setName("test")
-            .setSqlSchema("PUBLIC")
-            .setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Value.class)
-                    .setTableName("TEST")
+        IgniteCache<Integer, Value> c = grid().createCache(
+            new CacheConfiguration<Integer, Value>()
+                .setName("test")
+                .setSqlSchema("PUBLIC")
+                .setQueryEntities(
+                    Collections.singleton(
+                        new QueryEntity(Integer.class, Value.class)
+                            .setTableName("TEST")
+                    )
                 )
-            )
-            .setBackups(1)
-            .setAffinity(new RendezvousAffinityFunction(false, 10)));
+                .setBackups(1)
+                .setAffinity(new RendezvousAffinityFunction(false, 10))
+        );
 
         for (int i = 0; i < KEY_CNT; ++i)
             c.put(i, new Value(i));
@@ -160,9 +166,12 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
 
         sql("DROP INDEX TEST_0_VAL_DATE_IDX");
 
+        // Check successful insert after index is dropped.
+        grid().cache("test").put(1, bob.build());
+
         List<List<?>> res = sql("SELECT VAL_INT FROM TEST WHERE VAL_INT > 0").getAll();
 
-        assertEquals(1, res.size());
+        assertEquals(2, res.size());
     }
 
     /**

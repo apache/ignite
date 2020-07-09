@@ -846,7 +846,7 @@ public class GridH2Table extends TableBase {
      * @param idx Index to add row to.
      * @param row Row to add to index.
      * @param prevRow Previous row state, if any.
-     * @param prevErr Error on index add
+     * @param prevErr Error on index add.
      */
     private IgniteCheckedException addToIndex(
         GridH2IndexBase idx,
