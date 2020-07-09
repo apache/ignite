@@ -36,6 +36,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -48,19 +49,23 @@ import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
- *
+ * Tesing index full and partial rebuild.
  */
-public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
+public class GridIndexRebuildTest extends GridCommonAbstractTest {
     public static final String FIRST_CACHE = "cache1";
 
     public static final String SECOND_CACHE = "cache2";
+
+    /** */
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -122,17 +127,18 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
 
         configuration.setCacheConfiguration(ccfgFirst, ccfgSecond);
 
+        configuration.setGridLogger(listeningLog);
+
         return configuration;
     }
 
     /**
-     * We start several nodes, populate caches, then start replacing values.
-     * After that one node is killed, their index.bin files would be removed.
-     * Finally, we restart the node, index rebuild starting after recovery.
-     * And we checke indexes by "validate indexes" task.
+     * We start several nodes, populate caches, then start replacing values. After that one node is killed, their
+     * index.bin files would be removed. Finally, we restart the node, index rebuild starting after recovery. And we
+     * checke indexes by "validate indexes" task.
      */
     @Test
-    public void test() throws Exception {
+    public void testFullIndexRebuild() throws Exception {
 
         long start = System.currentTimeMillis();
 
@@ -140,10 +146,10 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
 
         grid1.cluster().active(true);
 
-        final int accountCount = 2048;
+        final int accountCnt = 2048;
 
         try (IgniteDataStreamer streamer = grid1.dataStreamer(FIRST_CACHE)) {
-            for (long i = 0; i < accountCount; i++) {
+            for (long i = 0; i < accountCnt; i++) {
                 streamer.addData(i, new Account(i));
             }
 
@@ -151,7 +157,7 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
         }
 
         try (IgniteDataStreamer streamer = grid1.dataStreamer(SECOND_CACHE)) {
-            for (long i = 0; i < accountCount; i++) {
+            for (long i = 0; i < accountCnt; i++) {
                 streamer.addData(i, new Account(i));
             }
 
@@ -171,7 +177,10 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
                     try {
                         cache1.put(i, new Account(i));
 
-                        cache2.put(i, new Account(i));
+                        if (i % 13 == 7)
+                            cache2.put(i, new Account2(i));
+                        else
+                            cache2.put(i, new Account(i));
 
                         i++;
                     }
@@ -182,17 +191,17 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
             }
         }).start();
 
-        File workDirectory = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
         long diff = System.currentTimeMillis() - start;
 
         U.sleep(7500 - (diff % 5000));
 
-        IgniteProcessProxy.kill(getTestIgniteInstanceName(3));
+        stopGrid(3);
 
         stop.set(true);
 
-        for (File grp : new File(workDirectory, U.maskForFileName(getTestIgniteInstanceName(3))).listFiles()) {
+        for (File grp : new File(workDir, U.maskForFileName(getTestIgniteInstanceName(3))).listFiles()) {
             new File(grp, "index.bin").delete();
         }
 
@@ -202,19 +211,19 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
 
         U.sleep(3_000);
 
-        ImmutableSet<UUID> nodes = ImmutableSet.of(((IgniteProcessProxy)grid(3)).getId(),
-            ((IgniteProcessProxy)grid(2)).getId());
+        ImmutableSet<UUID> nodes = ImmutableSet.of(grid(2).localNode().id(), grid(3).localNode().id());
 
         VisorValidateIndexesTaskArg arg = new VisorValidateIndexesTaskArg(null,
             null, 10000, 1, true, true);
 
-        VisorTaskArgument<VisorValidateIndexesTaskArg> argument = new VisorTaskArgument<>(nodes, arg, true);
+        VisorTaskArgument<VisorValidateIndexesTaskArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
 
-        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> execute = grid1.context().task().execute(new VisorValidateIndexesTask(), argument);
+        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> exec = grid1.context().task().
+            execute(new VisorValidateIndexesTask(), visorTaskArg);
 
-        VisorValidateIndexesTaskResult result = execute.get();
+        VisorValidateIndexesTaskResult res = exec.get();
 
-        Map<UUID, VisorValidateIndexesJobResult> results = result.results();
+        Map<UUID, VisorValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 
@@ -225,6 +234,103 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
         }
 
         assertFalse(hasIssue);
+    }
+
+    /**
+     * We start several nodes, populate caches, then start replacing values. After that one node is killed, new index
+     * created. Finally, we restart the node, index rebuild starting after recovery. And we checke indexes by "validate
+     * indexes" task.
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testPartialIndexRebuild() throws Exception {
+        LogListener lsnr = LogListener
+            .matches("B+Tree is corrupted")
+            .build();
+
+        listeningLog.registerListener(lsnr);
+
+        long start = System.currentTimeMillis();
+
+        IgniteEx grid1 = startGrids(4);
+
+        grid1.cluster().active(true);
+
+        final int accountCnt = 2048;
+
+        try (IgniteDataStreamer streamer = grid1.dataStreamer(SECOND_CACHE)) {
+            for (long i = 0; i < accountCnt; i++)
+                streamer.addData(i, new Account(i));
+
+            streamer.flush();
+        }
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteCache<Object, Object> cache2 = grid1.cache(SECOND_CACHE);
+
+        new Thread(new Runnable() {
+            @Override public void run() {
+                long i = 0;
+
+                while (!stop.get()) {
+                    try {
+                        if (i % 13 == 7)
+                            cache2.put(i, new Account2(i));
+                        else
+                            cache2.put(i, new Account(i));
+
+                        i++;
+                    }
+                    catch (Throwable e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
+
+        long diff = System.currentTimeMillis() - start;
+
+        U.sleep(7500 - (diff % 5000));
+
+        stopGrid(3);
+
+        stop.set(true);
+
+        cache2.query(new SqlFieldsQuery("CREATE INDEX idx" +
+            UUID.randomUUID().toString().replaceAll("-", "_") + " on Account (amount)")).getAll();
+
+        startGrid(3);
+
+        awaitPartitionMapExchange();
+
+        U.sleep(3_000);
+
+        ImmutableSet<UUID> nodes = ImmutableSet.of(grid(2).localNode().id(), grid(3).localNode().id());
+
+        VisorValidateIndexesTaskArg arg = new VisorValidateIndexesTaskArg(null,
+            null, 10000, 1, true, true);
+
+        VisorTaskArgument<VisorValidateIndexesTaskArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
+
+        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> execute = grid1.context().task().
+            execute(new VisorValidateIndexesTask(), visorTaskArg);
+
+        VisorValidateIndexesTaskResult res = execute.get();
+
+        Map<UUID, VisorValidateIndexesJobResult> results = res.results();
+
+        boolean hasIssue = false;
+
+        for (VisorValidateIndexesJobResult jobResult : results.values()) {
+            System.err.println(jobResult);
+
+            hasIssue |= jobResult.hasIssues();
+        }
+
+        assertFalse(hasIssue);
+
+        assertFalse("B+Tree is corrupted.", lsnr.check());
     }
 
     /** */
@@ -246,12 +352,8 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
-    }
-
     /** */
+    @SuppressWarnings("unused")
     public class Account {
         /** */
         private Long id;
@@ -272,6 +374,43 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
             name = "Account" + id;
             amount = id * 1000;
             updateDate = new Date();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            Account account = (Account)o;
+            return Objects.equals(id, account.id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id);
+        }
+    }
+
+    /** */
+    @SuppressWarnings("unused")
+    public static class Account2 {
+        /** */
+        private Long id;
+        /** */
+        private String name2;
+        /** */
+        private Long Wamount2;
+        /** */
+        private Date updateDate2;
+
+        /** */
+        public Account2(Long id) {
+            this.id = id;
+
+            name2 = "Account" + id;
+            Wamount2 = id * 1000;
+            updateDate2 = new Date();
         }
 
         /** {@inheritDoc} */
