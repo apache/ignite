@@ -107,12 +107,6 @@ public class JdbcThinJdbcToCacheDataTypesCoverageTest extends SqlDataTypesCovera
     }
 
     /** {@inheritDoc} */
-    @Test
-    @Override public void testGeometryDataType() throws Exception {
-        super.testGeometryDataType();
-    }
-
-    /** {@inheritDoc} */
     @Ignore("https://ggsystems.atlassian.net/browse/GG-23665")
     @Test
     @Override public void testDateDataType() throws Exception {

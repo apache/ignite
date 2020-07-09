@@ -31,10 +31,6 @@ import org.apache.ignite.internal.processors.cache.AbstractDataTypesCoverageTest
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -270,23 +266,6 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
     }
 
     /**
-     * https://apacheignite-sql.readme.io/docs/data-types#section-geometry
-     *
-     * @throws Exception If failed.
-     */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23066")
-    @Test
-    public void testGeometryDataType() throws Exception {
-        GeometryFactory geometryFactory = new GeometryFactory();
-
-        checkBasicSqlOperations(SqlDataType.GEOMETRY,
-            new Quoted(new Point(
-                new CoordinateArraySequence(new Coordinate[] {new Coordinate(1.1, 2.2)}),geometryFactory)),
-            new Quoted(new Point(
-                new CoordinateArraySequence(new Coordinate[] {new Coordinate(3.3, 4.4)}),geometryFactory)));
-    }
-
-    /**
      * Create table based on test-parameters-dependent template with both id (PK) and val of {@code dataType}.
      * Process sql CRUD and verify that all operations works as expected via SELECT:
      * <ul>
@@ -498,13 +477,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
         UUID(UUID.class),
 
         /** */
-        BINARY(byte[].class),
-
-        /**
-         * Please pay attention that point is just an example of GEOMETRY data types.
-         * It might have sense to add few more Geometry data types to check when basic functionality will be fixed.
-         */
-        GEOMETRY(org.locationtech.jts.geom.Point.class);
+        BINARY(byte[].class);
 
         /**
          * Corresponding java type https://docs.oracle.com/javase/1.5.0/docs/guide/jdbc/getstart/mapping.html
