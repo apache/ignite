@@ -2859,7 +2859,7 @@ public class IgniteConfiguration {
      *
      * @param state New cluster state on start.
      * @return {@code this} for chaining.
-     * @see #getClusterStateOnStart() 
+     * @see #getClusterStateOnStart()
      */
     public IgniteConfiguration setClusterStateOnStart(ClusterState state) {
         this.clusterStateOnStart = state;

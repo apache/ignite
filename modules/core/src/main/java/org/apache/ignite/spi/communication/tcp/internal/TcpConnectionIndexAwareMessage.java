@@ -15,27 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp.messages;
+package org.apache.ignite.spi.communication.tcp.internal;
 
-import java.util.UUID;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * Wrapped for custom message that must not be delivered to the client nodes.
- */
-@TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryServerOnlyCustomEventMessage extends TcpDiscoveryCustomEventMessage {
+/** */
+public interface TcpConnectionIndexAwareMessage extends Message {
     /** */
-    private static final long serialVersionUID = 0L;
+    public static final int UNDEFINED_CONNECTION_INDEX = -1;
 
     /**
-     * @param creatorNodeId Creator node id.
-     * @param msg Message.
-     * @param msgBytes Serialized message.
+     * @return {@link #UNDEFINED_CONNECTION_INDEX} if standard index has to be used. Desired connection index otherwise.
      */
-    public TcpDiscoveryServerOnlyCustomEventMessage(UUID creatorNodeId, @NotNull DiscoverySpiCustomMessage msg,
-        @NotNull byte[] msgBytes) {
-        super(creatorNodeId, msg, msgBytes);
-    }
+    public int connectionIndex();
 }
