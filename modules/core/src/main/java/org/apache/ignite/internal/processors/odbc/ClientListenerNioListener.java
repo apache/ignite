@@ -222,12 +222,15 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                 });
             }
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             handler.unregisterRequest(req.requestId());
 
             U.error(log, "Failed to process client request [req=" + req + ']', e);
 
             ses.send(parser.encode(handler.handleException(e, req)));
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 

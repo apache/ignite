@@ -512,7 +512,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handleException(Exception e, ClientListenerRequest req) {
+    @Override public ClientListenerResponse handleException(Throwable e, ClientListenerRequest req) {
         return exceptionToResult(e);
     }
 
@@ -1327,7 +1327,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param e Exception to convert.
      * @return resulting {@link JdbcResponse}.
      */
-    private JdbcResponse exceptionToResult(Exception e) {
+    private JdbcResponse exceptionToResult(Throwable e) {
         if (e instanceof QueryCancelledException)
             return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, e.getMessage());
         if (e instanceof TransactionSerializationException)
