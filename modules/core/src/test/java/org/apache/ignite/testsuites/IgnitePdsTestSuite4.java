@@ -23,8 +23,8 @@ import java.util.List;
 
 import org.apache.ignite.cache.BreakRebalanceChainTest;
 import org.apache.ignite.cache.NotOptimizedRebalanceTest;
-import org.apache.ignite.cache.RebalanceCancellationTest;
 import org.apache.ignite.cache.RebalanceAfterResettingLostPartitionTest;
+import org.apache.ignite.cache.RebalanceCancellationTest;
 import org.apache.ignite.cache.RebalanceCompleteDuringExchangeTest;
 import org.apache.ignite.cache.ResetLostPartitionTest;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
