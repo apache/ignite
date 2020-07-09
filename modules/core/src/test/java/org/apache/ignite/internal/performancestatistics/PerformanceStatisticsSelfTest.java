@@ -102,8 +102,12 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         String taskName = "testTask";
         int executions = 5;
 
-        LogListener taskLsnr = matches("task ").andMatches("taskName=" + taskName).times(executions).build();
-        LogListener jobLsnr = matches("job ").times(executions).build();
+        LogListener taskLsnr = matches(s -> s.startsWith("task") &&
+            s.contains("nodeId=" + ignite.context().localNodeId()) &&
+            s.contains("taskName=" + taskName)).times(executions).build();
+
+        LogListener jobLsnr = matches(s -> s.startsWith("job") &&
+            s.contains("nodeId=" + ignite.context().localNodeId())).times(executions).build();
 
         startCollectStatistics();
 
@@ -121,7 +125,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
     /** @throws Exception If failed. */
     @Test
-    public void testCacheOperations() throws Exception {
+    public void testCacheOperation() throws Exception {
         checkCacheOperation(CACHE_PUT, cache -> cache.put(1, 1));
         checkCacheOperation(CACHE_PUT, cache -> cache.putAsync(2, 2).get());
 
@@ -161,19 +165,21 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         checkCacheOperation(CACHE_INVOKE, cache -> cache.invokeAsync(10, CACHE_ENTRY_PROC).get());
 
         checkCacheOperation(CACHE_INVOKE_ALL, cache -> cache.invokeAll(Collections.singleton(10), ENTRY_PROC));
-        checkCacheOperation(CACHE_INVOKE_ALL, cache -> cache.invokeAllAsync(Collections.singleton(10), ENTRY_PROC).get());
+        checkCacheOperation(CACHE_INVOKE_ALL,
+            cache -> cache.invokeAllAsync(Collections.singleton(10), ENTRY_PROC).get());
 
         checkCacheOperation(CACHE_INVOKE_ALL, cache -> cache.invokeAll(Collections.singleton(10), CACHE_ENTRY_PROC));
         checkCacheOperation(CACHE_INVOKE_ALL,
             cache -> cache.invokeAllAsync(Collections.singleton(10), CACHE_ENTRY_PROC).get());
     }
 
-    /** */
+    /** Checks cache operation. */
     private void checkCacheOperation(OperationType op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
-        LogListener lsnr = matches("cacheOperation ")
-            .andMatches("type=" + op)
-            .andMatches("cacheId=" + ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId())
-            .build();
+        LogListener lsnr = matches(s -> s.startsWith("cacheOperation") &&
+            s.contains("nodeId=" + ignite.context().localNodeId()) &&
+            s.contains("type=" + op) &&
+            s.contains("cacheId=" + ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId()))
+            .times(1).build();
 
         startCollectStatistics();
 
@@ -184,19 +190,21 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
     /** @throws Exception If failed. */
     @Test
-    public void testTransactions() throws Exception {
+    public void testTransaction() throws Exception {
         checkTx(true);
 
         checkTx(false);
     }
 
-    /** @param commit {@code True} if check transaction commit. */
-    private void checkTx(boolean commit) throws Exception {
+    /** @param commited {@code True} if check transaction commited. */
+    private void checkTx(boolean commited) throws Exception {
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+        int cacheId = ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId();
 
-        LogListener lsnr = matches("transaction ")
-            .andMatches("cacheIds=[" + ignite.context().cache().cache(DEFAULT_CACHE_NAME).context().cacheId() + ']')
-            .andMatches("commited=" + commit).build();
+        LogListener lsnr = matches(s -> s.startsWith("transaction") &&
+            s.contains("nodeId=" + ignite.context().localNodeId()) &&
+            s.contains("cacheIds=[" + cacheId + ']') &&
+            s.contains("commited=" + commited)).times(1).build();
 
         startCollectStatistics();
 
@@ -204,7 +212,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
             for (int i = 0; i < 10; i++)
                 cache.put(i, i * 2);
 
-            if (commit)
+            if (commited)
                 tx.commit();
             else
                 tx.rollback();

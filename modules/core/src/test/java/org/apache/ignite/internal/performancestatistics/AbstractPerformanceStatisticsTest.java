@@ -19,6 +19,7 @@ package org.apache.ignite.internal.performancestatistics;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
@@ -68,7 +69,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         waitForStatisticsEnabled(true);
     }
 
-    /** Stops collecting performance statistics and checks listeners on all grids. */
+    /** Stops collecting performance statistics and checks listeners. */
     protected static void stopCollectStatisticsAndCheck(LogListener... lsnrs) throws Exception {
         List<Ignite> grids = G.allGrids();
 
@@ -80,37 +81,31 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         waitForStatisticsEnabled(false);
 
-        assertTrue(waitForCondition(() -> {
-            ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
+        ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
 
-            for (LogListener lsnr : lsnrs) {
-                lsnr.reset();
+        for (LogListener lsnr : lsnrs)
+            log.registerListener(lsnr);
 
-                log.registerListener(lsnr);
-            }
+        readToLog(log);
 
-            try {
-                readToLog(log);
-            }
-            catch (Exception e) {
-                fail("Failed to read file.");
-            }
-
-            for (LogListener lsnr : lsnrs)
-                if (!lsnr.check()) return false;
-
-            return true;
-        }, TIMEOUT));
+        for (LogListener lsnr : lsnrs)
+            assertTrue(lsnr.check());
     }
 
-    /** Wait for statistics enabled/disabled. */
+    /** Wait for statistics started/stopped in the cluster. */
     protected static void waitForStatisticsEnabled(boolean enabled) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
             List<Ignite> grids = G.allGrids();
 
             for (Ignite grid : grids) {
-                if (enabled != ((IgniteEx)grid).context().performanceStatistics().enabled())
+                GridKernalContext ctx = ((IgniteEx)grid).context();
+
+                if (enabled != ctx.performanceStatistics().enabled())
                     return false;
+
+                // Make sure that writer flushed data and stopped.
+                if (!enabled)
+                    return U.field(ctx.performanceStatistics(), "writer") == null;
             }
 
             return true;

@@ -21,6 +21,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
 /**
@@ -40,8 +41,6 @@ public class TopologyChangesTest extends AbstractPerformanceStatisticsTest {
                     new DataRegionConfiguration().setPersistenceEnabled(persistence)
                 )
         );
-
-        cfg.setConsistentId(igniteInstanceName);
 
         return cfg;
     }
@@ -78,7 +77,7 @@ public class TopologyChangesTest extends AbstractPerformanceStatisticsTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testClusterRestart() throws Exception {
+    public void testClusterRestartWithPersistence() throws Exception {
         persistence = true;
 
         startGrids(2);
@@ -99,7 +98,23 @@ public class TopologyChangesTest extends AbstractPerformanceStatisticsTest {
     /** @throws Exception If failed. */
     @Test
     public void testClientReconnected() throws Exception {
-        startGrid(0);
+        checkClientReconnect(false);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testClientReconnectedWithPersistence() throws Exception {
+        persistence = true;
+
+        checkClientReconnect(true);
+    }
+
+    /** @throws Exception If failed. */
+    private void checkClientReconnect(boolean persistence) throws Exception {
+        IgniteEx grid = startGrid(0);
+
+        if (persistence)
+            grid.cluster().state(ClusterState.ACTIVE);
 
         startCollectStatistics();
 
@@ -108,10 +123,14 @@ public class TopologyChangesTest extends AbstractPerformanceStatisticsTest {
         waitForStatisticsEnabled(true);
 
         stopGrid(0);
-        startGrid(0);
+
+        grid = startGrid(0);
+
+        if (persistence)
+            grid.cluster().state(ClusterState.ACTIVE);
 
         waitForTopology(2);
 
-        waitForStatisticsEnabled(false);
+        waitForStatisticsEnabled(persistence);
     }
 }

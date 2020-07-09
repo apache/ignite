@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.FilePe
  */
 public class TestFilePerformanceStatisticsReader {
     /**
-     * Reads statistics to a log.
+     * Reads performance statistics to a log.
      *
      * @param log Log to write operations to.
      */
