@@ -97,7 +97,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ACTIVE_KEY_ID_FOR_GROUP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -239,7 +238,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Cache groups for which encryption key was changed, and they must be re-encrypted. */
     private final Set<Integer> reencryptGroups = new GridConcurrentHashSet<>();
 
-    /** Cache groups for which encryption key was changed manually. */
+    /** Cache groups for which encryption key was changed on node join. */
     private final Set<Integer> reencryptGroupsForced = new GridConcurrentHashSet<>();
 
     /** WAL segments encrypted with previous encrypted keys, mapped to cache group encryption key identifiers. */
@@ -577,6 +576,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
+        assert !writeToMetaStoreEnabled;
+
         if (ctx.clientNode())
             return;
 
@@ -587,32 +588,38 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         for (Map.Entry<Integer, Object> entry : encKeysFromCluster.entrySet()) {
             int grpId = entry.getKey();
-
             GroupKey locGrpKey = groupKey(grpId);
-            Integer rmtKeyId = null;
 
-            byte[] key;
+            GroupKey rmtKey;
 
             if (entry.getValue() instanceof T2) {
                 T2<Integer, byte[]> pair = (T2<Integer, byte[]>)entry.getValue();
 
-                rmtKeyId = pair.get1();
-                key = pair.get2();
+                rmtKey = new GroupKey(pair.get1(), getSpi().decryptKey(pair.get2()));
             }
-            else // Compatibility
-                key = (byte[])entry.getValue();
+            else
+                rmtKey = new GroupKey(INITIAL_KEY_ID, getSpi().decryptKey((byte[])entry.getValue()));
 
-            if (locGrpKey != null && F.eq(locGrpKey.unsignedId(), rmtKeyId)) {
+            if (locGrpKey != null && F.eq(locGrpKey.unsignedId(), rmtKey.unsignedId())) {
                 U.quietAndInfo(log, "Skip group key received from coordinator. Already exists. [grp=" +
-                    grpId + "]");
+                    grpId + ", keyId=" + rmtKey.unsignedId() + "]");
 
                 continue;
             }
 
             U.quietAndInfo(log, "Store group key received from coordinator [grp=" + grpId +
-                ", keyId=" + rmtKeyId + "]");
+                ", keyId=" + rmtKey.unsignedId() + "]");
 
-            addGroupKey(grpId, key, rmtKeyId == null ? INITIAL_KEY_ID : rmtKeyId);
+            List<GroupKey> keys = grpEncKeys.computeIfAbsent(grpId, list -> new CopyOnWriteArrayList<>());
+            GroupKey prevKey = replaceActiveKey(keys, rmtKey);
+
+            if (prevKey == null)
+                continue;
+
+            awaitWalSegments.computeIfAbsent(ctx.cache().context().wal().currentSegment(), map -> new HashMap<>())
+                .computeIfAbsent(grpId, map -> new HashSet<>()).add(prevKey.unsignedId());
+
+            reencryptGroupsForced.add(grpId);
         }
     }
 
@@ -683,8 +690,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private GroupKey replaceActiveKey(List<GroupKey> keys, GroupKey newKey) {
         assert newKey != null;
 
-        if (keys.isEmpty())
+        if (keys.isEmpty()) {
+            keys.add(0, newKey);
+
             return null;
+        }
 
         GroupKey prevGrpKey = keys.get(0);
 
@@ -724,20 +734,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             Serializable encKey = withMasterKeyChangeReadLock(() -> getSpi().decryptKey(key));
 
             synchronized (metaStorageMux) {
-                List<GroupKey> keys = grpEncKeys.computeIfAbsent(grpId, list -> new CopyOnWriteArrayList<>());
+                List<GroupKey> prevKeys = grpEncKeys.put(grpId,
+                    new CopyOnWriteArrayList<>(Collections.singleton(new GroupKey(id, encKey))));
 
-                keys.add(0, new GroupKey(id, encKey));
+                assert prevKeys == null;
 
-                boolean updateWalSegments = keys.size() != 1;
-
-                if (updateWalSegments) {
-                    long walIdx = ctx.cache().context().wal().currentSegment();
-
-                    awaitWalSegments.computeIfAbsent(walIdx, v -> new HashMap<>())
-                        .computeIfAbsent(grpId, v -> new HashSet<>()).add(keys.get(1).unsignedId());
-                }
-
-                writeToMetaStore(grpId, true, updateWalSegments);
+                writeToMetaStore(grpId, true, false);
             }
         } catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to write cache group encryption key [grpId=" + grpId + ']', e);
@@ -1079,72 +1081,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                         grpEncKeys.put(grpId, keys);
                     }
-
-                    GroupKey currKey = groupKey(grpId);
-
-                    int activeKeyId = currKey == null ? INITIAL_KEY_ID : currKey.unsignedId();
-
-                    String sysProp = IGNITE_ACTIVE_KEY_ID_FOR_GROUP + grpId;
-
-                    int overridenKeyId = IgniteSystemProperties.getInteger(sysProp, Integer.MIN_VALUE);
-
-                    if (overridenKeyId != Integer.MIN_VALUE) {
-                        if (overridenKeyId == activeKeyId) {
-                            log.warning("Restored group key idenitifier equals to identifier of system property " +
-                                sysProp + ". It is strongly recommended to remove this " +
-                                "system property [keyId=" + overridenKeyId + ']');
-                        }
-                        else {
-                            List<GroupKey> keys = grpEncKeys.get(grpId);
-
-                            boolean containsKey = false;
-
-                            if (keys != null) {
-                                for (GroupKey grpKey : keys) {
-                                    if (grpKey.id() == overridenKeyId) {
-                                        containsKey = true;
-
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (containsKey) {
-                                if (overridenKeyId < activeKeyId && activeKeyId != 0xff) {
-                                    log.warning("Group key idenitifier that was set using system property " +
-                                        sysProp + " may be incorrect, if node cannot join cluster, remove this " +
-                                        "property [curr=" + activeKeyId + ", new=" + overridenKeyId + "]");
-                                }
-
-                                if (log.isInfoEnabled()) {
-                                    log.info("Group key idenitifier is set using system property " + sysProp +
-                                        " [prev=" + activeKeyId + ", new=" + overridenKeyId + "]");
-                                }
-
-                                reencryptGroupsForced.add(grpId);
-
-                                activeKeyId = overridenKeyId;
-                            } else {
-                                log.error("Incorrect value was set for system property " + sysProp +
-                                    " [value=" + overridenKeyId + ", available=" + keys + "]");
-                            }
-                        }
-                    }
-
-                    List<GroupKey> grpKeys = grpEncKeys.get(grpId);
-                    GroupKey newGrpKey = groupKey(grpId, activeKeyId);
-                    GroupKey currGrpKey = groupKey(grpId);
-
-                    GroupKey prevGrpKey = newGrpKey == currGrpKey ? null : replaceActiveKey(grpKeys, newGrpKey);
-
-                    if (prevGrpKey != null) {
-                        assert !reencryptGroupsForced.isEmpty();
-
-                        long walIdx = ctx.cache().context().wal().currentSegment();
-
-                        awaitWalSegments.computeIfAbsent(walIdx, v -> new HashMap<>())
-                            .computeIfAbsent(grpId, v -> new HashSet<>()).add(prevGrpKey.unsignedId());
-                    }
             }, true);
 
             // Try to read keys in previous format.
@@ -1165,8 +1101,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     keys.add(new GroupKey(INITIAL_KEY_ID, entry.getValue()));
 
                     grpEncKeys.put(entry.getKey(), keys);
-
-//                    grpKeyIds.put(entry.getKey(), INITIAL_KEY_ID);
                 }
             }
 
@@ -1230,11 +1164,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         while (itr.hasNext()) {
             int grpId = itr.next();
 
-            reencryption.storePagesCount(grpId);
+            itr.remove();
+
+            CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
+
+            if (grp == null)
+                continue;
+
+            reencryption.storePagesCount(grp);
 
             reencryptGroups.add(grpId);
-
-            itr.remove();
         }
 
         startReencryption(reencryptGroups, true);
@@ -2162,7 +2101,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                 try {
                     for (int grpId : grpIds) {
-                        Map<Integer, Integer> offsets = reencryption.storePagesCount(grpId);
+                        CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
+
+                        if (grp == null)
+                            continue;
+
+                        Map<Integer, Integer> offsets = reencryption.storePagesCount(grp);
 
                         encryptionStatus.put(grpId, offsets);
 

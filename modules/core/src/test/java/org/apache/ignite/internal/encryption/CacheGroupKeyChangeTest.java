@@ -54,7 +54,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ACTIVE_KEY_ID_FOR_GROUP;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.INITIAL_KEY_ID;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -290,38 +289,17 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         checkGroupKey(grpId, keyId, MAX_AWAIT_MILLIS);
 
-        if (prepare) {
-            IgniteEx stoppedNode = startGrid(stopped);
+        IgniteEx stoppedNode = startGrid(stopped);
 
-            stoppedNode.resetLostPartitions(Collections.singleton(ENCRYPTED_CACHE));
+        stoppedNode.resetLostPartitions(Collections.singleton(ENCRYPTED_CACHE));
 
-            awaitPartitionMapExchange();
+        awaitPartitionMapExchange();
 
-            forceCheckpoint(stoppedNode);
+        checkGroupKey(grpId, keyId, MAX_AWAIT_MILLIS);
 
-            stoppedNode.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
+        stoppedNode.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
 
-            checkGroupKey(grpId, keyId + 1, MAX_AWAIT_MILLIS);
-        }
-        else {
-            System.setProperty(IGNITE_ACTIVE_KEY_ID_FOR_GROUP + grpId, String.valueOf(keyId));
-
-            try {
-                IgniteEx stoppedNode = startGrid(stopped);
-
-                stoppedNode.resetLostPartitions(Collections.singleton(ENCRYPTED_CACHE));
-
-                awaitPartitionMapExchange();
-
-                forceCheckpoint(stoppedNode);
-
-                stoppedNode.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
-
-                checkGroupKey(grpId, keyId + 1, MAX_AWAIT_MILLIS);
-            } finally {
-                System.clearProperty(IGNITE_ACTIVE_KEY_ID_FOR_GROUP + grpId);
-            }
-        }
+        checkGroupKey(grpId, keyId + 1, MAX_AWAIT_MILLIS);
     }
 
     /**

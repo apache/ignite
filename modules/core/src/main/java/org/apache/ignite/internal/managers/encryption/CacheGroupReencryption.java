@@ -322,14 +322,12 @@ public class CacheGroupReencryption implements DbCheckpointListener {
     /**
      * Save current pages count for reencryption.
      *
-     * @param grpId Cache group ID.
+     * @param grp Cache group.
      * @return Map of partitions with current page count.
      * @throws IgniteCheckedException If failed.
      */
-    public Map<Integer, Integer> storePagesCount(int grpId) throws IgniteCheckedException {
+    public Map<Integer, Integer> storePagesCount(CacheGroupContext grp) throws IgniteCheckedException {
         Map<Integer, Integer> offsets = new HashMap<>();
-
-        CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
         ctx.cache().context().database().checkpointReadLock();
 
@@ -612,30 +610,13 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
                                 long page = pageMem.acquirePage(grpId, pageId);
 
-                                boolean skipDirty = encrCtx.skipDirty();
-
                                 try {
                                     // Can skip rewriting a dirty page if the checkpoint has been completed.
-                                    if (skipDirty && pageMem.isDirty(grpId, pageId, page))
+                                    if (encrCtx.skipDirty() && pageMem.isDirty(grpId, pageId, page))
                                         continue;
 
-                                    long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
-
-                                    try {
-                                        if (skipDirty ||
-                                            !PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, pageId, page, wal, null))
-                                            continue;
-
-                                        // If checkpoint has not been completed and the page is dirty - save snapshot.
-                                        byte[] payload = PageUtils.getBytes(pageAddr, 0, pageSize);
-
-                                        FullPageId fullPageId = new FullPageId(pageId, grpId);
-
-                                        wal.log(new PageSnapshot(fullPageId, payload, pageSize));
-                                    }
-                                    finally {
-                                        pageMem.writeUnlock(grpId, pageId, page, null, true, false);
-                                    }
+                                    pageMem.writeLock(grpId, pageId, page, true);
+                                    pageMem.writeUnlock(grpId, pageId, page, null, true);
                                 }
                                 finally {
                                     pageMem.releasePage(grpId, pageId, page);

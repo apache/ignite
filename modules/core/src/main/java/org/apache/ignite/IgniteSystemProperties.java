@@ -1894,14 +1894,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REENCRYPTION_THROTTLE = "IGNITE_REENCRYPTION_THROTTLE";
 
     /**
-     * Cache group encryption key identifier that the node will use during the recovery.
-     * <p>
-     * If a node fails during cache group key rotation it will not be able to join the cluster with the old key.
-     * Set up this property with the new key identifier to complete key rotation on node startup.
-     */
-    public static final String IGNITE_ACTIVE_KEY_ID_FOR_GROUP = "IGNITE_ACTIVE_KEY_ID_FOR_GROUP_";
-
-    /**
      * Enables extended logging of indexes create/rebuild process. Default {@code false}.
      * <p/>
      * <b>Warning</b>: enabling that option can lead to performance degradation of index creation, rebuilding and  node
