@@ -1072,15 +1072,11 @@ public class GridNioServer<T> {
      * Stop polling for write availability if write queue is empty.
      */
     private void stopPollingForWrite(SelectionKey key, GridSelectorNioSessionImpl ses) {
-        if (ses.procWrite.get()) {
+        if (ses.writeQueue().isEmpty()) {
             ses.procWrite.set(false);
 
-            if (ses.writeQueue().isEmpty()) {
-                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-            }
-            else
-                ses.procWrite.set(true);
+            if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
+                key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
         }
     }
 
