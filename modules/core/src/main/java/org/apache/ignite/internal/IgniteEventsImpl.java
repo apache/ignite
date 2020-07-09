@@ -133,7 +133,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
 
         try {
             GridEventConsumeHandler hnd = new GridEventConsumeHandler((IgniteBiPredicate<UUID, Event>)locLsnr,
-                (IgnitePredicate<Event>)rmtFilter, types);
+                securityAwareRemoteFilter(rmtFilter), types);
 
             return saveOrGet(ctx.continuous().startRoutine(
                 hnd,
@@ -162,7 +162,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
 
         try {
             GridEventConsumeHandler hnd = new GridEventConsumeHandler((IgniteBiPredicate<UUID, Event>)locLsnr,
-                (IgnitePredicate<Event>)rmtFilter, types);
+                securityAwareRemoteFilter(rmtFilter), types);
 
             return new IgniteFutureImpl<>(ctx.continuous().startRoutine(
                 hnd,
@@ -178,6 +178,23 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
         finally {
             unguard();
         }
+    }
+
+    /**
+     * @param original Original IgnitePredicate.
+     * @return Security aware IgnitePredicate.
+     */
+    private <T> IgnitePredicate<Event> securityAwareRemoteFilter(IgnitePredicate<T> original) {
+        IgnitePredicate<Event> res = (IgnitePredicate<Event>) original;
+
+        if(ctx.security().enabled()){
+            final UUID subjId = ctx.security().securityContext().subject().id();
+
+            return new SecurityAwarePredicate<>(subjId, res);
+
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
