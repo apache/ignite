@@ -21,9 +21,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.collect.Lists;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -299,7 +301,13 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
         syncLatch.countDown();
 
         // Wait for distributed latch completion.
-        finishAllLatches.get(5000);
+        try {
+            finishAllLatches.get(10000);
+        } catch (IgniteFutureTimeoutCheckedException e) {
+            U.dumpThreads(log);
+
+            fail("Failed to wait");
+        }
 
         Assert.assertFalse("All nodes should complete latches without errors", hasErrors.get());
     }
