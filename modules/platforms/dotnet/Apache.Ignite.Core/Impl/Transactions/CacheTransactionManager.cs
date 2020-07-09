@@ -82,6 +82,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether there is an active transaction.
+        /// </summary>
         public bool IsInTx()
         {
             return _transactions.Tx != null;
