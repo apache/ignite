@@ -57,31 +57,29 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
     /** */
     private static final String MVCC_CACHE = "mvccCache";
 
-    /** */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<Object, Object> ccfg1 = new CacheConfiguration<>(ATOMIC_CACHE)
+            .setReadFromBackup(false)
             .setAtomicityMode(ATOMIC)
             .setBackups(2)
             .setWriteSynchronizationMode(PRIMARY_SYNC);
 
         CacheConfiguration<Object, Object> ccfg2 = new CacheConfiguration<>(TX_CACHE)
+            .setReadFromBackup(false)
             .setAtomicityMode(TRANSACTIONAL)
             .setBackups(2)
             .setWriteSynchronizationMode(PRIMARY_SYNC);
 
         CacheConfiguration<Object, Object> ccfg3 = new CacheConfiguration<>(MVCC_CACHE)
+            .setReadFromBackup(false)
             .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
             .setBackups(2)
             .setWriteSynchronizationMode(PRIMARY_SYNC);
 
         cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
-
-        cfg.setClientMode(clientMode);
 
         return cfg;
     }
@@ -92,9 +90,7 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
 
         startGrids(SRVS);
 
-        clientMode = true;
-
-        Ignite client = startGrid(SRVS);
+        Ignite client = startClientGrid(SRVS);
 
         assertTrue(client.configuration().isClientMode());
     }

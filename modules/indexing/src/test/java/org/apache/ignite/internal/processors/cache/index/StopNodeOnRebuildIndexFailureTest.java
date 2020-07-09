@@ -33,7 +33,6 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -55,9 +54,6 @@ public class StopNodeOnRebuildIndexFailureTest extends GridCommonAbstractTest {
 
     /** Create index sql. */
     private static final String CREATE_INDEX_SQL = "CREATE INDEX " + INDEX_NAME + " ON " + SQL_TABLE + " (name)";
-
-    /** Normal BPlusTree page handler wrapper. */
-    private PageHandlerWrapper<BPlusTree.Result> prevPageHndWrapper;
 
     /** */
     private final AtomicBoolean exceptionWasThrown = new AtomicBoolean();
@@ -91,11 +87,9 @@ public class StopNodeOnRebuildIndexFailureTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        prevPageHndWrapper = BPlusTree.pageHndWrapper;
-
         exceptionWasThrown.set(false);
 
-        BPlusTree.pageHndWrapper = (tree, hnd) -> {
+        BPlusTree.testHndWrapper = (tree, hnd) -> {
             if (tree.getName().toUpperCase().contains(INDEX_NAME)) {
                 PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
 
@@ -118,10 +112,10 @@ public class StopNodeOnRebuildIndexFailureTest extends GridCommonAbstractTest {
                             if (t instanceof Error)
                                 throw (Error)t;
 
-                            if(t instanceof RuntimeException)
+                            if (t instanceof RuntimeException)
                                 throw (RuntimeException) t;
 
-                            if(t instanceof IgniteCheckedException)
+                            if (t instanceof IgniteCheckedException)
                                 throw (IgniteCheckedException) t;
                         }
                         catch (Throwable t) {
@@ -161,7 +155,7 @@ public class StopNodeOnRebuildIndexFailureTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        BPlusTree.pageHndWrapper = prevPageHndWrapper;
+        BPlusTree.testHndWrapper = null;
     }
 
     /**
@@ -210,7 +204,7 @@ public class StopNodeOnRebuildIndexFailureTest extends GridCommonAbstractTest {
 
         Throwable t = throwableSupplier.get();
 
-        if(t instanceof Exception && !(t instanceof RuntimeException || t instanceof IgniteCheckedException))
+        if (t instanceof Exception && !(t instanceof RuntimeException || t instanceof IgniteCheckedException))
             throw new IllegalArgumentException("Invalid throwable class " + t.getClass());
 
         IgniteEx ignite = startGrid(0);

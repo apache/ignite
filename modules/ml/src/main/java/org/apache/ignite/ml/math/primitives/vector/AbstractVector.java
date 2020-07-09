@@ -59,16 +59,16 @@ public abstract class AbstractVector implements Vector {
     private IgniteUuid guid = IgniteUuid.randomUuid();
 
     /** Cached value for length squared. */
-    private double lenSq = 0.0;
+    private double lenSq;
 
     /** Maximum cached element. */
-    private Element maxElm = null;
+    private Element maxElm;
 
     /** Minimum cached element. */
-    private Element minElm = null;
+    private Element minElm;
 
     /** Readonly flag (false by default). */
-    private boolean readOnly = false;
+    private boolean readOnly;
 
     /** Read-only error message. */
     private static final String RO_MSG = "Vector is read-only.";
@@ -152,7 +152,7 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     * Gets serializable value from storage and casts it to targe type T.
+     * Gets serializable value from storage and casts it to target type T.
      *
      * @param i Index.
      * @return Value.
@@ -407,7 +407,7 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public Iterable<Element> all() {
         return new Iterable<Element>() {
-            private int idx = 0;
+            private int idx;
 
             /** {@inheritDoc} */
             @NotNull
@@ -469,7 +469,7 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public Iterable<Element> nonZeroes() {
         return new Iterable<Element>() {
-            private int idx = 0;
+            private int idx;
             private int idxNext = -1;
 
             /** {@inheritDoc} */
@@ -680,11 +680,6 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public boolean isDense() {
         return sto.isDense();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return sto.isDistributed();
     }
 
     /** {@inheritDoc} */

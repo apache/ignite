@@ -46,8 +46,7 @@ public class Mse implements Metric<Double, EmptyContext<Double>, RegressionMetri
     /**
      * {@inheritDoc}
      */
-    @Override
-    public Mse initBy(RegressionMetricStatsAggregator aggr) {
+    @Override public Mse initBy(RegressionMetricStatsAggregator aggr) {
         value = aggr.getMSE();
         return this;
     }

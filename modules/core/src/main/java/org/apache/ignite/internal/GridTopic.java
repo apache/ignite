@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.UUID;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -142,7 +143,10 @@ public enum GridTopic {
     TOPIC_SERVICES,
 
     /** */
-    TOPIC_DEADLOCK_DETECTION;
+    TOPIC_DEADLOCK_DETECTION,
+
+    /** Message topic for the distributed process. See {@link DistributedProcess}. */
+    TOPIC_DISTRIBUTED_PROCESS;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();
@@ -285,13 +289,13 @@ public enum GridTopic {
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeByte(topic.ordinal());
-            U.writeGridUuid(out, id);
+            U.writeIgniteUuid(out, id);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             topic = fromOrdinal(in.readByte());
-            id = U.readGridUuid(in);
+            id = U.readIgniteUuid(in);
         }
 
         /** {@inheritDoc} */
@@ -353,14 +357,14 @@ public enum GridTopic {
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeByte(topic.ordinal());
-            U.writeGridUuid(out, id1);
+            U.writeIgniteUuid(out, id1);
             U.writeUuid(out, id2);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             topic = fromOrdinal(in.readByte());
-            id1 = U.readGridUuid(in);
+            id1 = U.readIgniteUuid(in);
             id2 = U.readUuid(in);
         }
 
@@ -623,7 +627,7 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return topic.ordinal() + id1.hashCode () + (int)(id2 ^ (id2 >>> 32));
+            return topic.ordinal() + id1.hashCode() + (int)(id2 ^ (id2 >>> 32));
         }
 
         /** {@inheritDoc} */
@@ -795,14 +799,14 @@ public enum GridTopic {
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeByte(topic.ordinal());
-            U.writeGridUuid(out, id1);
+            U.writeIgniteUuid(out, id1);
             out.writeLong(id2);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             topic = fromOrdinal(in.readByte());
-            id1 = U.readGridUuid(in);
+            id1 = U.readIgniteUuid(in);
             id2 = in.readLong();
         }
 

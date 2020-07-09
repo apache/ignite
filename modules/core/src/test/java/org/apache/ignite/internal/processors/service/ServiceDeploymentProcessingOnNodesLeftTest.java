@@ -40,7 +40,7 @@ public class ServiceDeploymentProcessingOnNodesLeftTest extends ServiceDeploymen
         try {
             startGrids(4);
 
-            IgniteEx client = startGrid(getConfiguration("client").setClientMode(true));
+            IgniteEx client = startClientGrid(getConfiguration("client"));
 
             IgniteEx ignite1 = grid(1);
             IgniteEx ignite2 = grid(2);
@@ -77,8 +77,8 @@ public class ServiceDeploymentProcessingOnNodesLeftTest extends ServiceDeploymen
         try {
             Ignite ignite0 = startGrids(4);
 
-            IgniteEx client1 = startGrid(getConfiguration("client1").setClientMode(true));
-            IgniteEx client2 = startGrid(getConfiguration("client2").setClientMode(true));
+            IgniteEx client1 = startClientGrid(getConfiguration("client1"));
+            IgniteEx client2 = startClientGrid(getConfiguration("client2"));
 
             IgniteEx ignite1 = grid(1);
 

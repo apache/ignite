@@ -47,6 +47,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAliveCa
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAttributesSelfTest;
 import org.apache.ignite.internal.managers.discovery.IgniteTopologyPrintFormatSelfTest;
 import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTest;
+import org.apache.ignite.internal.processors.cache.ClusterActiveStateChangeWithNodeOutOfBaselineTest;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustInMemoryTest;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustTest;
 import org.apache.ignite.internal.processors.cluster.ClusterReadOnlyModeNodeJoinTest;
@@ -103,7 +104,8 @@ import org.junit.runners.Suite;
     LongJVMPauseDetectorTest.class,
     ClusterMetricsSelfTest.class,
     DeploymentRequestOfUnknownClassProcessingTest.class,
-    NodeWithFilterRestartTest.class
+    NodeWithFilterRestartTest.class,
+    ClusterActiveStateChangeWithNodeOutOfBaselineTest.class
 })
 public class IgniteKernalSelfTestSuite {
 }

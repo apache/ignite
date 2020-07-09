@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
@@ -62,25 +62,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(client);
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        client = false;
     }
 
     /** {@inheritDoc} */
@@ -128,9 +116,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
 
-        client = true;
-
-        final Ignite c = startGrid(3);
+        final Ignite c = startClientGrid(3);
 
         TestRecordingCommunicationSpi.spi(srv0).blockMessages(GridDhtAffinityAssignmentResponse.class, c.name());
 
@@ -200,11 +186,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         srv1.createCache(cfg);
 
-        client = true;
-
-        final Ignite c = startGrid(3);
-
-        client = false;
+        final Ignite c = startClientGrid(3);
 
         TestRecordingCommunicationSpi.spi(srv1).blockMessages(GridDhtAffinityAssignmentResponse.class, c.name());
 
@@ -278,15 +260,11 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         List<String> cacheNames = startCaches(ignite(0), 100);
 
-        client = true;
-
-        Ignite c = startGrid(SRVS);
+        Ignite c = startClientGrid(SRVS);
 
         assertTrue(c.configuration().isClientMode());
 
         awaitPartitionMapExchange();
-
-        client = false;
 
         TestRecordingCommunicationSpi.spi(ignite(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
@@ -356,14 +334,10 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         final List<String> cacheNames = startCaches(srv0, KEYS);
 
-        client = true;
-
         final List<Ignite> clients = new ArrayList<>();
 
         for (int i = 0; i < CLIENTS; i++)
-            clients.add(startGrid(SRVS1 + i));
-
-        client = false;
+            clients.add(startClientGrid(SRVS1 + i));
 
         final CyclicBarrier barrier = new CyclicBarrier(clients.size() + SRVS2);
 
@@ -447,14 +421,10 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         final List<String> cacheNames = startCaches(ignite(0), 1000);
 
-        client = true;
-
         final List<Ignite> clients = new ArrayList<>();
 
         for (int i = 0; i < CLIENTS; i++)
-            clients.add(startGrid(SRVS + i));
-
-        client = false;
+            clients.add(startClientGrid(SRVS + i));
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -548,7 +518,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     private List<String> startCaches(Ignite node, int keys) {
         List<String> cacheNames = new ArrayList<>();
 
-        final Map<Integer, Integer> map = new HashMap<>();
+        final Map<Integer, Integer> map = new TreeMap<>();
 
         for (int i = 0; i < keys; i++)
             map.put(i, i);

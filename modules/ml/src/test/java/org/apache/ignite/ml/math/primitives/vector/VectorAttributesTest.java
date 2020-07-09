@@ -37,20 +37,19 @@ public class VectorAttributesTest {
             DenseVector.class),
         new AttrCfg("isArrayBased", Vector::isArrayBased,
             DenseVector.class),
-        new AttrCfg("guidNotNull", v -> v.guid() == null), // IMPL NOTE this is somewhat artificial
-        new AttrCfg("isDistributed", Vector::isDistributed));
+        new AttrCfg("guidNotNull", v -> v.guid() == null)); // IMPL NOTE this is somewhat artificial
 
     /** */
     private final List<Specification> specFixture = Arrays.asList(
         new Specification(new DenseVector(1)),
         new Specification(new DelegatingVector(new DenseVector(1)),
             DenseVector.class, "isDense", "isArrayBased", "isSequentialAccess",
-            "isRandomAccess", "isDistributed"),
+            "isRandomAccess"),
         new Specification(new SparseLocalVectorSequentialAccess(1)),
         new Specification(new SparseLocalVectorRandomAccess(1)),
         new Specification(new VectorizedViewMatrix(new DenseMatrix(1, 1), 0, 0, 1, 1),
             DenseVector.class, "isDense",
-            "isRandomAccess", "isDistributed")); // TODO: IGNITE-5723, find out why "isSequentialAccess" fails here
+            "isRandomAccess")); // TODO: IGNITE-5723, find out why "isSequentialAccess" fails here
 
     /** */
     @Test
@@ -68,12 +67,6 @@ public class VectorAttributesTest {
     @Test
     public void guidTest() {
         assertAttribute("guidNotNull");
-    }
-
-    /** */
-    @Test
-    public void isDistributedTest() {
-        assertAttribute("isDistributed");
     }
 
     /** */

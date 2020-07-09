@@ -54,50 +54,15 @@ class ZookeeperDiscoverySpiTestHelper {
     static final String IGNITE_ZK_ROOT = ZookeeperDiscoverySpi.DFLT_ROOT_PATH;
 
     /** */
-    private static final ThreadLocal<Boolean> clientThreadLoc = new ThreadLocal<>();
-
-    /** */
     private final Consumer<String> info;
 
     /** */
     private final AtomicInteger clusterNum;
 
     /** */
-    private boolean client;
-
-    /** */
     ZookeeperDiscoverySpiTestHelper(Consumer<String> info, AtomicInteger clusterNum) {
         this.info = info;
         this.clusterNum = clusterNum;
-    }
-
-    /**
-     * @param clientMode Client mode flag for started nodes.
-     */
-    void clientMode(boolean clientMode) {
-        client = clientMode;
-    }
-
-    /** */
-    boolean clientMode() {
-        return client;
-    }
-
-    /**
-     * @param clientMode Client mode flag for nodes started from current thread.
-     */
-    void clientModeThreadLocal(boolean clientMode) {
-        clientThreadLoc.set(clientMode);
-    }
-
-    /** */
-    Boolean clientModeThreadLocal() {
-        return clientThreadLoc.get();
-    }
-
-    /** */
-    void clientModeThreadLocalReset() {
-        clientThreadLoc.set(null);
     }
 
     /** */
@@ -143,7 +108,7 @@ class ZookeeperDiscoverySpiTestHelper {
                             return false;
                         }
 
-                        Assert.assertEquals("Unexpected event [topVer=" + expEvt.topologyVersion() +//todo check
+                        Assert.assertEquals("Unexpected event [topVer=" + expEvt.topologyVersion() + //todo check
                             ", exp=" + U.gridEventName(expEvt.type()) +
                             ", evt=" + evt0 + ']', expEvt.type(), evt0.type());
                     }
@@ -279,7 +244,7 @@ class ZookeeperDiscoverySpiTestHelper {
         final ZookeeperClient zkClient = new ZookeeperClient(log, connectStr, 10_000, null);
 
         try {
-            Assert.assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {//todo check
+            Assert.assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { //todo check
                 @Override public boolean apply() {
                     try {
                         List<String> c = zkClient.getChildren(IGNITE_ZK_ROOT + "/" + ZkIgnitePaths.ALIVE_NODES_DIR);

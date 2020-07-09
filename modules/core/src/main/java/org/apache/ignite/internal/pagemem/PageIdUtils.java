@@ -85,7 +85,7 @@ public final class PageIdUtils {
      * @return Page link.
      */
     public static long link(long pageId, int itemId) {
-        assert itemId >= 0 && itemId <= MAX_ITEMID_NUM: itemId;
+        assert itemId >= 0 && itemId <= MAX_ITEMID_NUM : itemId;
         assert (pageId >> (FLAG_SIZE + PART_ID_SIZE + PAGE_IDX_SIZE)) == 0 : U.hexLong(pageId);
 
         return pageId | (((long)itemId) << (FLAG_SIZE + PART_ID_SIZE + PAGE_IDX_SIZE));
@@ -220,8 +220,7 @@ public final class PageIdUtils {
             ", flags=" + Integer.toBinaryString(flag(pageId)) +
             ", partId=" + partId(pageId) +
             ", index=" + pageIndex(pageId) +
-            ")"
-            ;
+            ")";
     }
 
     /**

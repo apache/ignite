@@ -33,8 +33,8 @@ import org.jetbrains.annotations.NotNull;
  * @see SystemView
  */
 public class SystemViewInnerCollectionsAdapter<C, R, D> extends AbstractSystemView<R> {
-    /** Collections of the data containers. */
-    private final Collection<C> containers;
+    /** Iterable of the data containers. */
+    private final Iterable<C> containers;
 
     /** Function to extract collection of the data from container. */
     private final Function<C, Collection<D>> dataExtractor;
@@ -45,18 +45,17 @@ public class SystemViewInnerCollectionsAdapter<C, R, D> extends AbstractSystemVi
     /**
      * @param name Name.
      * @param desc Description.
-     * @param rowCls Row class.
      * @param walker Walker.
      * @param containers Container of data.
      * @param dataExtractor Data extractor function.
      * @param rowFunc Row function.
      */
-    public SystemViewInnerCollectionsAdapter(String name, String desc, Class<R> rowCls,
+    public SystemViewInnerCollectionsAdapter(String name, String desc,
         SystemViewRowAttributeWalker<R> walker,
-        Collection<C> containers,
+        Iterable<C> containers,
         Function<C, Collection<D>> dataExtractor,
         BiFunction<C, D, R> rowFunc) {
-        super(name, desc, rowCls, walker);
+        super(name, desc, walker);
 
         this.containers = containers;
         this.dataExtractor = dataExtractor;

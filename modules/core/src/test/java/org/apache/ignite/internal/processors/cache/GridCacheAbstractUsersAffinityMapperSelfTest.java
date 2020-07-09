@@ -181,7 +181,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
     /**
      * Users affinity mapper.
      */
-    private static class UsersAffinityKeyMapper extends GridCacheDefaultAffinityKeyMapper{
+    private static class UsersAffinityKeyMapper extends GridCacheDefaultAffinityKeyMapper {
         /** {@inheritDoc} */
         @Override public Object affinityKey(Object key) {
             GridArgumentCheck.notNull(key, "key");

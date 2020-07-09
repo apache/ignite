@@ -428,7 +428,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (Ignition.Start(cfg))
             {
-                var marshDir = Path.Combine(cfg.WorkDirectory, "marshaller");
+                var marshDir = Path.Combine(cfg.WorkDirectory, "db", "marshaller");
 
                 Assert.IsTrue(Directory.Exists(marshDir));
             }
@@ -661,7 +661,8 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber" &&
                                                   !p.Name.Contains("ThreadPoolSize") && p.Name != "MaxSize" &&
-                                                  p.Name != "HandshakeTimeout" && p.Name != "ConcurrencyLevel"))
+                                                  p.Name != "HandshakeTimeout" && p.Name != "ConcurrencyLevel" &&
+                                                  p.Name != "Logger"))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);
@@ -692,20 +693,20 @@ namespace Apache.Ignite.Core.Tests
                     JoinTimeout = TimeSpan.FromSeconds(5),
                     IpFinder = new TcpDiscoveryStaticIpFinder
                     {
-                        Endpoints = new[] {"127.0.0.1:49900", "127.0.0.1:49901"}
+                        Endpoints = new[] {"127.0.0.1:47503", "127.0.0.1:47504"}
                     },
                     ClientReconnectDisabled = true,
                     ForceServerMode = true,
                     IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
                     LocalAddress = "127.0.0.1",
-                    LocalPort = 49900,
+                    LocalPort = 47503,
                     LocalPortRange = 13,
                     ReconnectCount = 11,
                     StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
                     ThreadPriority = 6,
                     TopologyHistorySize = 1234567
                 },
-                EncryptionSpi = new KeystoreEncryptionSpi()
+                EncryptionSpi = new KeystoreEncryptionSpi
                 {
                     KeySize = 192,
                     KeyStorePassword = "love_sex_god",
@@ -713,7 +714,7 @@ namespace Apache.Ignite.Core.Tests
                     MasterKeyName = KeystoreEncryptionSpi.DefaultMasterKeyName
                 },
                 IgniteInstanceName = "gridName1",
-                IgniteHome = IgniteHome.Resolve(null),
+                IgniteHome = IgniteHome.Resolve(),
                 IncludedEventTypes = EventType.DiscoveryAll,
                 MetricsExpireTime = TimeSpan.FromMinutes(7),
                 MetricsHistorySize = 125,

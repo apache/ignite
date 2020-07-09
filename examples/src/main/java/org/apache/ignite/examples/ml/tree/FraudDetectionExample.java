@@ -21,6 +21,8 @@ import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
@@ -32,8 +34,6 @@ import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example of using classification algorithms for fraud detection problem.
@@ -46,6 +46,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * .
  */
 public class FraudDetectionExample {
+    /** Run example. */
     public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -78,7 +79,8 @@ public class FraudDetectionExample {
                 );
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {
@@ -99,7 +101,7 @@ public class FraudDetectionExample {
         IgniteCache<Integer, Vector> dataCache,
         DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer,
         Vectorizer<Integer, Vector, Integer, Double> vectorizer, TrainTestSplit<Integer, Vector> splitter) {
-        System.out.println(">>> Start traininig.");
+        System.out.println(">>> Start training.");
         IgniteModel<Vector, Double> mdl = trainer.fit(
             ignite, dataCache,
             splitter.getTrainFilter(),

@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -192,7 +192,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
 
-                    if (--writeAttempts <= 0 && fail!= null && fail.get())
+                    if (--writeAttempts <= 0 && fail != null && fail.get())
                         throw new IOException("No space left on device");
 
                     return super.write(srcBuf);

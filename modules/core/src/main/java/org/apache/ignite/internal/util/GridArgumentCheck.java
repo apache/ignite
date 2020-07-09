@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import java.util.Collection;
+
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -142,6 +143,19 @@ public class GridArgumentCheck {
      * @param name Argument name.
      */
     public static void notEmpty(int[] arr, String name) {
+        notNull(arr, name);
+
+        if (arr.length == 0)
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
+     * Checks that given array is not empty.
+     *
+     * @param arr Array.
+     * @param name Argument name.
+     */
+    public static void notEmpty(long[] arr, String name) {
         notNull(arr, name);
 
         if (arr.length == 0)

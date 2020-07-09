@@ -86,7 +86,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid("server");
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /** {@inheritDoc} */
@@ -114,11 +114,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
             cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
         }
-        else {
+        else
             GridQueryProcessor.idxCls = FailedIndexing.class;
-
-            cfg.setClientMode(true);
-        }
 
         return cfg;
     }
@@ -261,7 +258,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn,
-            String colNamePtrn){
+            String colNamePtrn) {
             return null;
         }
     }

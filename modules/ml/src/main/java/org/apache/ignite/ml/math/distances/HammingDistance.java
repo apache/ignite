@@ -16,9 +16,6 @@
  */
 package org.apache.ignite.ml.math.distances;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
@@ -35,26 +32,9 @@ public class HammingDistance implements DistanceMeasure {
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b)
         throws CardinalityException {
-        IgniteDoubleFunction<Double> fun = (value -> {
-            if (value == 0) return 0.0;
-            else return 1.0;
-        });
+        IgniteDoubleFunction<Double> fun = (value -> value == 0 ? 0.0 : 1.0);
+
         return MatrixUtil.localCopyOf(a).minus(b).foldMap(Functions.PLUS, fun, 0d);
-    }
-
-    /** {@inheritDoc} */
-    @Override public double compute(Vector a, double[] b) throws CardinalityException {
-        throw new UnsupportedOperationException("It's not supported yet");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // No-op
     }
 
     /** {@inheritDoc} */

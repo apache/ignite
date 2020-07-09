@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
@@ -35,11 +37,17 @@ class ClientCacheRequest extends ClientRequest {
     /** "Under transaction" flag mask. */
     private static final byte TRANSACTIONAL_FLAG_MASK = 0x02;
 
+    /** "With expiry policy" flag mask. */
+    private static final byte FLAG_WITH_EXPIRY_POLICY = 0x04;
+
     /** Cache ID. */
     private final int cacheId;
 
     /** Flags. */
     private final byte flags;
+
+    /** Expiry policy. */
+    private final ExpiryPolicy expiryPolicy;
 
     /**
      * Constructor.
@@ -52,6 +60,10 @@ class ClientCacheRequest extends ClientRequest {
         cacheId = reader.readInt();
 
         flags = reader.readByte();
+
+        expiryPolicy = withExpiryPolicy()
+                ? new PlatformExpiryPolicy(reader.readLong(), reader.readLong(), reader.readLong())
+                : null;
     }
 
     /**
@@ -83,6 +95,15 @@ class ClientCacheRequest extends ClientRequest {
     }
 
     /**
+     *  Gets a value indicating whether expiry policy is set in this request.
+     *
+     * @return expiry policy flag value.
+     */
+    private boolean withExpiryPolicy() {
+        return (flags & FLAG_WITH_EXPIRY_POLICY) == FLAG_WITH_EXPIRY_POLICY;
+    }
+
+    /**
      * Gets the cache for current cache id, ignoring any flags.
      *
      * @param ctx Kernal context.
@@ -93,7 +114,11 @@ class ClientCacheRequest extends ClientRequest {
 
         String cacheName = cacheDesc.cacheName();
 
-        return ctx.kernalContext().grid().cache(cacheName);
+        IgniteCache<Object, Object> cache = ctx.kernalContext().grid().cache(cacheName);
+        if (withExpiryPolicy())
+            cache = cache.withExpiryPolicy(expiryPolicy);
+        
+        return cache;
     }
 
     /**

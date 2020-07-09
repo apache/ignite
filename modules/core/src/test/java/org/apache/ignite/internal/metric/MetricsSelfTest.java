@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.metric;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
@@ -30,7 +28,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -49,6 +47,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertArrayEquals;
@@ -61,7 +60,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Before
     public void setUp() throws Exception {
-        mreg = new MetricRegistry("group", null);
+        mreg = new MetricRegistry("group", name -> null, name -> null, null);
     }
 
     /** */
@@ -71,7 +70,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         run(l::increment, 100);
 
-        assertEquals(100*100, l.value());
+        assertEquals(100 * 100, l.value());
 
         l.reset();
 
@@ -85,7 +84,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         run(l::increment, 100);
 
-        assertEquals(100*100, l.value());
+        assertEquals(100 * 100, l.value());
 
         l.reset();
 
@@ -99,7 +98,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         run(() -> l.add(1), 100);
 
-        assertEquals(100*100f, l.value(), .000001);
+        assertEquals(100 * 100f, l.value(), .000001);
 
         l.reset();
 
@@ -113,7 +112,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         run(() -> l.add(1), 100);
 
-        assertEquals(100*100, l.value());
+        assertEquals(100 * 100, l.value());
 
         l.reset();
 
@@ -231,7 +230,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHistogram() throws Exception {
-        HistogramMetric h = mreg.histogram("hmtest", new long[] {10, 100, 500}, "test");
+        HistogramMetricImpl h = mreg.histogram("hmtest", new long[] {10, 100, 500}, "test");
 
         List<IgniteInternalFuture> futs = new ArrayList<>();
 
@@ -243,17 +242,17 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         }));
 
         futs.add(runAsync(() -> {
-            for (int i = 0; i < cnt*2; i++)
+            for (int i = 0; i < cnt * 2; i++)
                 h.value(99);
         }));
 
         futs.add(runAsync(() -> {
-            for (int i = 0; i < cnt*3; i++)
+            for (int i = 0; i < cnt * 3; i++)
                 h.value(500);
         }));
 
         futs.add(runAsync(() -> {
-            for (int i = 0; i < cnt*4; i++)
+            for (int i = 0; i < cnt * 4; i++)
                 h.value(501);
         }));
 
@@ -263,15 +262,15 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         long[] res = h.value();
 
         assertEquals(cnt, res[0]);
-        assertEquals(cnt*2, res[1]);
-        assertEquals(cnt*3, res[2]);
-        assertEquals(cnt*4, res[3]);
+        assertEquals(cnt * 2, res[1]);
+        assertEquals(cnt * 3, res[2]);
+        assertEquals(cnt * 4, res[3]);
     }
 
     /** */
     @Test
     public void testGetMetrics() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", null);
+        MetricRegistry mreg = new MetricRegistry("group", name -> null, name -> null, null);
 
         mreg.longMetric("test1", "");
         mreg.longMetric("test2", "");
@@ -292,7 +291,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRemove() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", null);
+        MetricRegistry mreg = new MetricRegistry("group", name -> null, name -> null, null);
 
         AtomicLongMetric cntr = mreg.longMetric("my.name", null);
         AtomicLongMetric cntr2 = mreg.longMetric("my.name.x", null);
@@ -342,11 +341,9 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHistogramNames() throws Exception {
-        HistogramMetric h = new HistogramMetric("test", null, new long[]{10, 50, 500});
+        HistogramMetricImpl h = new HistogramMetricImpl("test", null, new long[]{10, 50, 500});
 
-        Map<String, T2<long[], String[]>> cache = new HashMap<>();
-
-        String[] names = histogramBucketNames(h, cache);
+        String[] names = histogramBucketNames(h);
 
         assertArrayEquals(new String[] {
             "test_0_10",
@@ -354,16 +351,21 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
             "test_50_500",
             "test_500_inf"
         }, names);
-
-        assertTrue("Computed values should be cached", names == histogramBucketNames(h, cache));
     }
 
+    /** */
+    @Test
+    public void testFromFullName() {
+        assertEquals(new T2<>("org.apache", "ignite"), fromFullName("org.apache.ignite"));
+
+        assertEquals(new T2<>("org", "apache"), fromFullName("org.apache"));
+    }
 
     /** */
     private void run(Runnable r, int cnt) throws org.apache.ignite.IgniteCheckedException {
         List<IgniteInternalFuture> futs = new ArrayList<>();
 
-        for (int i=0; i<cnt; i++) {
+        for (int i = 0; i < cnt; i++) {
             futs.add(runAsync(() -> {
                 for (int j = 0; j < cnt; j++)
                     r.run();

@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -38,8 +39,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// Initializes a new instance of the <see cref="AffinityFunctionSpringTest"/> class.
         /// </summary>
         public AffinityFunctionSpringTest() : base(6,
-            "config\\cache\\affinity\\affinity-function.xml",
-            "config\\cache\\affinity\\affinity-function2.xml")
+            Path.Combine("Config", "Cache", "Affinity", "affinity-function.xml"),
+            Path.Combine("Config", "Cache", "Affinity", "affinity-function2.xml"))
         {
             // No-op.
         }
@@ -94,6 +95,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             Assert.AreEqual(3, aff.GetPartition(4L));
         }
 
+        // ReSharper disable once UnusedType.Local (used from config)
         private class TestFunc : IAffinityFunction   // [Serializable] is not necessary
         {
             [InstanceResource]

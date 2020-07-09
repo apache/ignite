@@ -92,8 +92,6 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
 
         cfg.setCacheConfiguration(atomicCfg, txCfg, mvccTxCfg);
 
-        cfg.setClientMode(igniteInstanceName.contains("client"));
-
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
 
         return cfg;
@@ -103,7 +101,7 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid("server-1");
         startGrid("server-2");
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /** {@inheritDoc} */

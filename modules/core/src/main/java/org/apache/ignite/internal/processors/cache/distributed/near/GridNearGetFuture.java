@@ -403,7 +403,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
                     Set<ClusterNode> invalidNodesSet = getInvalidNodes(part, topVer);
 
-                    ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, invalidNodesSet, part, canRemap);
+                    ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, invalidNodesSet, part, canRemap,
+                        forcePrimary);
 
                     if (affNode == null) {
                         onDone(serverNotFoundError(part, topVer));
@@ -483,6 +484,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         assert dht.context().affinityNode() : this;
 
         while (true) {
+            cctx.shared().database().checkpointReadLock();
+
             GridCacheEntryEx dhtEntry = null;
 
             try {
@@ -558,6 +561,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 return false;
             }
             finally {
+                cctx.shared().database().checkpointReadUnlock();
+
                 if (dhtEntry != null)
                     // Near cache is enabled, so near entry will be enlisted in the transaction.
                     // Always touch DHT entry in this case.

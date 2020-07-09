@@ -318,8 +318,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         catch (Exception e) {
             error("Failed to delete DB files: " + e, e);
         }
-
-        helper.clientModeThreadLocalReset();
     }
 
     /**
@@ -346,7 +344,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
      * @return True if nodes equal by consistent id.
      */
     private boolean equalsTopologies(Collection<ClusterNode> nodes1, Collection<ClusterNode> nodes2) {
-        if(nodes1.size() != nodes2.size())
+        if (nodes1.size() != nodes2.size())
             return false;
 
         Set<Object> consistentIds1 = nodes1.stream()
@@ -422,13 +420,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(zkSpi);
 
         cfg.setCacheConfiguration(getCacheConfiguration());
-
-        Boolean clientMode = helper.clientModeThreadLocal();
-
-        if (clientMode != null)
-            cfg.setClientMode(clientMode);
-        else
-            cfg.setClientMode(helper.clientMode());
 
         if (userAttrs != null)
             cfg.setUserAttributes(userAttrs);

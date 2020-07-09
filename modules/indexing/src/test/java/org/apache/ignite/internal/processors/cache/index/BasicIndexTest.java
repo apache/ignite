@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,33 +26,33 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 import static org.apache.ignite.internal.processors.query.h2.database.H2Tree.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
+import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
 /**
  * A set of basic tests for caches with indexes.
@@ -100,16 +99,10 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         igniteCfg.setConsistentId(igniteInstanceName);
 
-        if (igniteInstanceName.startsWith(CLIENT_NAME)) {
-            igniteCfg.setClientMode(true);
-
-            if (clientLog != null)
+        if (igniteInstanceName.startsWith(CLIENT_NAME) && clientLog != null)
                 igniteCfg.setGridLogger(clientLog);
-        }
-        else {
-            if (srvLog != null)
+        else if (srvLog != null)
                 igniteCfg.setGridLogger(srvLog);
-        }
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
         fields.put("keyStr", String.class.getName());
@@ -149,7 +142,8 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             );
         }
 
-        return igniteCfg;
+        return igniteCfg
+            .setFailureHandler(new StopNodeFailureHandler());
     }
 
     /**
@@ -186,7 +180,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** */
     @Test
     public void testNoIndexesNoPersistence() throws Exception {
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -204,6 +198,17 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    private int[] inlineSizeVariations() {
+        int[] baseVariations = {0, 10, 20, 50, 100};
+
+        // Determine if scaling is needed, we are not accurate here
+        if (GridTestUtils.SF.apply(baseVariations.length) < baseVariations.length)
+            return new int[] {0, 20, 100};
+
+        return baseVariations;
+    }
+
+    /** */
     @Test
     public void testAllIndexesNoPersistence() throws Exception {
         indexes = Arrays.asList(
@@ -215,7 +220,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             new QueryIndex("valPojo")
         );
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -235,7 +240,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** */
     @Test
     public void testDynamicIndexesNoPersistence() throws Exception {
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -408,7 +413,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         srvLog.unregisterListener(lsnr);
 
-        IgniteEx client = startGrid(CLIENT_NAME);
+        IgniteEx client = startClientGrid(CLIENT_NAME);
 
         cache = client.cache(DEFAULT_CACHE_NAME);
 
@@ -491,10 +496,21 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             String s0 = sqlIns;
 
             for (int f = 0; f < reqFlds.length; ++f)
-                s0 += i + ((f < reqFlds.length - 1) ? ", " : ")");
+                s0 += (i + f) + ((f < reqFlds.length - 1) ? ", " : ")");
 
             qryProc.querySqlFields(new SqlFieldsQuery(s0), true).getAll();
         }
+    }
+
+    /**
+     * Checks index usage instead of full scan.
+     * @param res Result set.
+     * @return {@code True} if index usage found.
+     */
+    private boolean checkIdxUsage(List<List<?>> res, String idx) {
+        String plan = res.get(0).get(0).toString();
+
+        return idx != null ? plan.contains(idx) : !plan.contains(SCAN_INDEX_NAME_SUFFIX);
     }
 
     /**
@@ -618,7 +634,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         IgniteEx ig0 = startGrid(0);
 
-        IgniteEx client = startGrid(CLIENT_NAME);
+        IgniteEx client = startClientGrid(CLIENT_NAME);
 
         GridQueryProcessor qryProc = ig0.context().query();
 
@@ -646,6 +662,80 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Tests IN with EQUALS index usage.
+     */
+    @Test
+    public void testInWithEqualsIdxUsage() throws Exception {
+        inlineSize = 10;
+
+        isPersistenceEnabled = false;
+
+        String idxName = "idx2";
+
+        IgniteEx ig0 = startGrid(0);
+
+        GridQueryProcessor qryProc = ig0.context().query();
+
+        populateTable(qryProc, TEST_TBL_NAME, 2, "FIRST_NAME", "LAST_NAME",
+            "ADDRESS", "LANG");
+
+        String sqlIdx2 = String.format("create index \"%s\" on %s(LANG)", idxName, TEST_TBL_NAME);
+
+        qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx2), true).getAll();
+
+        List<List<?>> res = qryProc.querySqlFields(new SqlFieldsQuery("explain select * from " + TEST_TBL_NAME +
+            " where LANG in (?1, ?2) and (ADDRESS = ?1 or ADDRESS = ?2)").setArgs(3, 4), true).getAll();
+
+        assertTrue(checkIdxUsage(res, idxName));
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("explain select * from " + TEST_TBL_NAME +
+            " where LANG in (select ADDRESS from " + TEST_TBL_NAME + " where ADDRESS in(?1, ?2)) " +
+            "and (ADDRESS = ?1 or ADDRESS = ?2)").setArgs(3, 4), true).getAll();
+
+        assertTrue(checkIdxUsage(res, idxName));
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("explain select * from " + TEST_TBL_NAME +
+            " where LANG in (?1, ?2) and (ADDRESS = ?3 or ADDRESS = ?3)").setArgs(3, 4, 5), true).getAll();
+
+        assertTrue(checkIdxUsage(res, idxName));
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("explain select * from " + TEST_TBL_NAME +
+            " where LANG in (?1, ?2) and ADDRESS = ?3").setArgs(3, 4, 5), true).getAll();
+
+        assertTrue(checkIdxUsage(res, idxName));
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("explain select * from " + TEST_TBL_NAME +
+            " where LANG in (3, 4) and ADDRESS = 5"), true).getAll();
+
+        assertTrue(checkIdxUsage(res, idxName));
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("select * from " + TEST_TBL_NAME +
+            " where LANG in (?1, ?2) and (ADDRESS = ?3 or ADDRESS = ?4) ORDER BY LAST_NAME")
+            .setArgs(3, 4, 5, 6), true).getAll();
+
+        assertEquals(res.size(), 0);
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("select * from " + TEST_TBL_NAME +
+            " where LANG in (?3, ?4) and (ADDRESS = ?1 or ADDRESS = ?2) ORDER BY LAST_NAME")
+            .setArgs(3, 4, 5, 6), true).getAll();
+
+        assertEquals(res.size(), 1);
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("select * from " + TEST_TBL_NAME +
+            " where LANG in (?2, ?3) and (ADDRESS = ?1 or ADDRESS = ?2) ORDER BY LAST_NAME")
+            .setArgs(3, 4, 5), true).getAll();
+
+        assertEquals(res.size(), 2);
+
+        assertEquals(res.get(0).get(0), "1");
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("select * from " + TEST_TBL_NAME +
+            " where LANG in (4, 5) and (ADDRESS = 3 or ADDRESS = 4) ORDER BY LAST_NAME"), true).getAll();
+
+        assertEquals(res.size(), 2);
+    }
+
+    /**
      * Tests different fields sequence in indexes.
      * Last field not participate in any index.
      */
@@ -668,7 +758,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "FIRST_NAME", "LAST_NAME", "ADDRESS"));
 
-        assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME,  "LAST_NAME", "ADDRESS"));
+        assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LAST_NAME", "ADDRESS"));
     }
 
     /**
@@ -694,7 +784,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "FIRST_NAME", "LAST_NAME", "ADDRESS"));
 
-        assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME,  "LAST_NAME", "ADDRESS"));
+        assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LAST_NAME", "ADDRESS"));
     }
 
     /** */
@@ -702,7 +792,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testNoIndexesWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -741,7 +831,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -779,21 +869,15 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         srvLog = new ListeningTestLogger(false, log);
 
         String msg1 = "curSize=1";
-
         String msg2 = "curSize=2";
-
         String msg3 = "curSize=3";
 
         LogListener lstn1 = LogListener.matches(msg1).build();
-
         LogListener lstn2 = LogListener.matches(msg2).build();
-
         LogListener lstn3 = LogListener.matches(msg3).build();
 
         srvLog.registerListener(lstn1);
-
         srvLog.registerListener(lstn2);
-
         srvLog.registerListener(lstn3);
 
         IgniteEx ig0 = startGrid(0);
@@ -804,23 +888,21 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         IgniteCache<Key, Val> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 1 PARALLEL 28"));
+        execSql(cache, "create index \"idx1\" on Val(valLong) INLINE_SIZE 1 PARALLEL 28");
 
-        List<List<?>> res = cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
+        List<List<?>> res = execSql(cache, "explain select * from Val where valLong > ?", 10);
 
         log.info("exp: " + res.get(0).get(0));
 
         assertTrue(lstn1.check());
 
-        cache.query(new SqlFieldsQuery("drop index \"idx1\"")).getAll();
-
-        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 2 PARALLEL 28"));
-
-        cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
+        execSql(cache, "drop index \"idx1\"");
+        execSql(cache, "create index \"idx1\" on Val(valLong) INLINE_SIZE 2 PARALLEL 28");
+        execSql(cache, "explain select * from Val where valLong > ?", 10);
 
         assertTrue(lstn2.check());
 
-        cache.query(new SqlFieldsQuery("drop index \"idx1\"")).getAll();
+        execSql(cache, "drop index \"idx1\"");
 
         stopAllGrids();
 
@@ -830,9 +912,8 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         cache = ig0.cache(DEFAULT_CACHE_NAME);
 
-        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 3 PARALLEL 28"));
-
-        cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
+        execSql(cache, "create index \"idx1\" on Val(valLong) INLINE_SIZE 3 PARALLEL 28");
+        execSql(cache, "explain select * from Val where valLong > ?", 10);
 
         assertTrue(lstn3.check());
 
@@ -841,12 +922,21 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         cleanPersistenceDir();
     }
 
+    /**
+     * @param cache Cache.
+     * @param qry Query.
+     * @param args Args.
+     */
+    private List<List<?>> execSql(IgniteCache<?, ?> cache, String qry, Object... args) {
+        return cache.query(new SqlFieldsQuery(qry).setArgs(args)).getAll();
+    }
+
     /** */
     @Test
     public void testDynamicIndexesWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -885,7 +975,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testDynamicIndexesDropWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -930,7 +1020,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testNoIndexesWithPersistenceIndexRebuild() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -943,7 +1033,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             checkAll();
 
-            List<Path> idxPaths = getIndexBinPaths();
+            List<Path> idxPaths = getIndexBinPaths(DEFAULT_CACHE_NAME);
 
             // Shutdown gracefully to ensure there is a checkpoint with index.bin.
             // Otherwise index.bin rebuilding may not work.
@@ -979,7 +1069,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -992,7 +1082,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             checkAll();
 
-            List<Path> idxPaths = getIndexBinPaths();
+            List<Path> idxPaths = getIndexBinPaths(DEFAULT_CACHE_NAME);
 
             // Shutdown gracefully to ensure there is a checkpoint with index.bin.
             // Otherwise index.bin rebuilding may not work.
@@ -1019,7 +1109,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testDynamicIndexesWithPersistenceIndexRebuild() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -1041,7 +1131,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             checkAll();
 
-            List<Path> idxPaths = getIndexBinPaths();
+            List<Path> idxPaths = getIndexBinPaths(DEFAULT_CACHE_NAME);
 
             // Shutdown gracefully to ensure there is a checkpoint with index.bin.
             // Otherwise index.bin rebuilding may not work.
@@ -1061,6 +1151,35 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             cleanPersistenceDir();
         }
+    }
+
+    /**
+     */
+    @Test
+    public void testStopNodeOnSqlQueryWithIncompatibleType() throws Exception {
+        inlineSize = 10;
+
+        startGrid();
+
+        sql("CREATE TABLE TEST (ID INT PRIMARY KEY, val_int INT, VAL_OBJ OTHER)");
+        sql("CREATE INDEX TEST_VAL_INT ON TEST(VAL_INT)");
+        sql("CREATE INDEX TEST_VAL_OBJ ON TEST(VAL_OBJ)");
+
+        sql("INSERT INTO TEST VALUES (0, 0, ?)", new Pojo(0));
+
+        GridTestUtils.assertThrows(log, () -> {
+            sql("SELECT * FROM TEST WHERE VAL_OBJ < CURRENT_TIMESTAMP()").getAll();
+
+            return null;
+        }, CacheException.class, null);
+
+        GridTestUtils.assertThrows(log, () -> {
+            sql("SELECT * FROM TEST WHERE VAL_INT < CURRENT_TIMESTAMP()").getAll();
+
+            return null;
+        }, CacheException.class, null);
+
+        assertFalse(grid().context().isStopping());
     }
 
     /** */
@@ -1220,28 +1339,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         }
     }
 
-    /**
-     * Must be called when the grid is up.
-     */
-    private List<Path> getIndexBinPaths() {
-        return G.allGrids().stream()
-            .map(grid -> (IgniteEx) grid)
-            .map(grid -> {
-                IgniteInternalCache<Object, Object> cachex = grid.cachex(DEFAULT_CACHE_NAME);
-
-                assertNotNull(cachex);
-
-                FilePageStoreManager pageStoreMgr = (FilePageStoreManager) cachex.context().shared().pageStore();
-
-                assertNotNull(pageStoreMgr);
-
-                File cacheWorkDir = pageStoreMgr.cacheWorkDir(cachex.configuration());
-
-                return cacheWorkDir.toPath().resolve("index.bin");
-            })
-            .collect(Collectors.toList());
-    }
-
     /** */
     private void createDynamicIndexes(String... cols) {
         IgniteCache<Key, Val> cache = grid(0).cache(DEFAULT_CACHE_NAME);
@@ -1281,6 +1378,26 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** */
     private static Val val(long i) {
         return new Val(String.format("bar%03d", i), i, new Pojo(i));
+    }
+
+    /**
+     * @param sql SQL query.
+     * @param args Query parameters.
+     * @return Results cursor.
+     */
+    private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
+        return sql(grid(), sql, args);
+    }
+
+    /**
+     * @param ign Node.
+     * @param sql SQL query.
+     * @param args Query parameters.
+     * @return Results cursor.
+     */
+    private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object... args) {
+        return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
+            .setArgs(args), false);
     }
 
     /** */

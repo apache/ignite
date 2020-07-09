@@ -18,15 +18,14 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_4_0;
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.PARTITION_AWARENESS;
 
 /**
  * Thin client response.
  */
-public class ClientResponse extends ClientListenerResponse {
+public class ClientResponse extends ClientListenerResponse implements ClientOutgoingMessage {
     /** Request id. */
     private final long reqId;
 
@@ -76,11 +75,11 @@ public class ClientResponse extends ClientListenerResponse {
         ClientAffinityTopologyVersion affinityVer) {
         writer.writeLong(reqId);
 
-        ClientListenerProtocolVersion ver = ctx.currentVersion();
+        ClientProtocolContext protocolCtx = ctx.currentProtocolContext();
 
-        assert ver != null;
+        assert protocolCtx != null;
 
-        if (ver.compareTo(VER_1_4_0) >= 0) {
+        if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
             boolean error = status() != ClientStatus.SUCCESS;
 
             short flags = ClientFlag.makeFlags(error, affinityVer.isChanged());
@@ -107,7 +106,7 @@ public class ClientResponse extends ClientListenerResponse {
      * @param ctx Connection context.
      * @param writer Writer.
      */
-    public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         encode(ctx, writer, ctx.checkAffinityTopologyVersion());
     }
 

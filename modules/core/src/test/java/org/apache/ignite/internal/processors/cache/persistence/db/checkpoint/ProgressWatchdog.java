@@ -161,7 +161,7 @@ class ProgressWatchdog {
                 || name.contains("db-checkpoint-thread")
                 || name.contains("wal-file-archiver")
                 || name.contains("data-streamer")
-                || (clientThreadsName!=null && name.contains(clientThreadsName))) {
+                || (clientThreadsName != null && name.contains(clientThreadsName))) {
                 String str = threadInfo.toString();
 
                 if (name.contains("db-checkpoint-thread")) {
@@ -269,13 +269,13 @@ class ProgressWatchdog {
         long cpBufPages = 0;
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)(cacheSctx.database());
-        AtomicInteger wrPageCntr = db.writtenPagesCounter();
+        AtomicInteger wrPageCntr = db.getCheckpointer().currentProgress().writtenPagesCounter();
         long cpWrittenPages = wrPageCntr == null ? 0 : wrPageCntr.get();
 
-        AtomicInteger syncedPagesCntr = db.syncedPagesCounter();
+        AtomicInteger syncedPagesCntr = db.getCheckpointer().currentProgress().syncedPagesCounter();
         int cpSyncedPages = syncedPagesCntr == null ? 0 : syncedPagesCntr.get();
 
-        AtomicInteger evictedPagesCntr = db.evictedPagesCntr();
+        AtomicInteger evictedPagesCntr = db.getCheckpointer().currentProgress().evictedPagesCounter();
         int cpEvictedPages = evictedPagesCntr == null ? 0 : evictedPagesCntr.get();
 
         int pageSize = pageMemory == null ? 0 : pageMemory.pageSize();
@@ -360,8 +360,8 @@ class ProgressWatchdog {
             "cpWriteSpeed=" + cpWriteSpeed + " " +
             "cpSyncSpeed=" + cpSyncSpeed + " " +
             "walSpeed= " + walSpeed + " " +
-            "walWorkSeg.="+walWorkSegments + " " +
-            "markDirtySpeed=" + markDirtySpeed +" " +
+            "walWorkSeg.=" + walWorkSegments + " " +
+            "markDirtySpeed=" + markDirtySpeed + " " +
             "Avg. " + operation + " " + averagePutPerSec + " recs/sec, " +
             "dirtyP=" + dirtyPages + ", " +
             "cpWrittenP.=" + cpWrittenPages + ", " +

@@ -54,7 +54,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
     public void testQueryLocal() throws Exception {
         // Let's do it twice to see how prepared statement caching behaves - without recompilation
         // check for cached prepared statements this would fail.
-        for (int i = 0; i < 2; i ++) {
+        for (int i = 0; i < 2; i++) {
             IgniteCache<Integer, String> cache = jcache(Integer.class, String.class);
 
             cache.put(1, "value1");
@@ -102,9 +102,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
     /** {@inheritDoc} */
     @Test
     @Override public void testLocalSqlQueryFromClient() throws Exception {
-        try {
-            Ignite g = startGrid("client");
-
+        try (Ignite g = startClientGrid("client")) {
             IgniteCache<Integer, Integer> c = jcache(g, Integer.class, Integer.class);
 
             for (int i = 0; i < 10; i++)
@@ -114,7 +112,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
 
             qry.setLocal(true);
 
-            try(QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = c.query(qry)) {
+            try (QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = c.query(qry)) {
                 assertNotNull(qryCursor);
 
                 List<Cache.Entry<Integer, Integer>> res = qryCursor.getAll();
@@ -124,17 +122,12 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
                 assertEquals(5, res.size());
             }
         }
-        finally {
-            stopGrid("client");
-        }
     }
 
     /** {@inheritDoc} */
     @Test
     @Override public void testLocalSqlFieldsQueryFromClient() throws Exception {
-        try {
-            Ignite g = startGrid("client");
-
+        try (Ignite g = startClientGrid("client")) {
             IgniteCache<UUID, Person> c = jcache(g, UUID.class, Person.class);
 
             Person p = new Person("Jon", 1500);
@@ -145,7 +138,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
 
             qry.setLocal(true);
 
-            try(FieldsQueryCursor<List<?>> qryCursor = c.query(qry)) {
+            try (FieldsQueryCursor<List<?>> qryCursor = c.query(qry)) {
                 assertNotNull(qryCursor);
 
                 List<List<?>> res = qryCursor.getAll();
@@ -154,9 +147,6 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
 
                 assertEquals(1, res.size());
             }
-        }
-        finally {
-            stopGrid("client");
         }
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -66,6 +67,6 @@ public class ClusterReadOnlyModeAbstractTest extends GridCommonAbstractTest {
      * @param readOnly Read only.
      */
     protected void changeClusterReadOnlyMode(boolean readOnly) {
-        grid(0).cluster().readOnly(readOnly);
+        grid(0).cluster().state(readOnly ? ClusterState.ACTIVE_READ_ONLY : ClusterState.ACTIVE);
     }
 }

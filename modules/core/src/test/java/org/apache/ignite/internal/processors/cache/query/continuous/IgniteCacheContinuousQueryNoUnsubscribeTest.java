@@ -37,15 +37,11 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
     /** */
     private static AtomicInteger cntr = new AtomicInteger();
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-        cfg.setClientMode(client);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -91,9 +87,7 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
     private void checkNoUnsubscribe(boolean client) throws Exception {
         cntr.set(0);
 
-        this.client = client;
-
-        try (Ignite ignite = startGrid(3)) {
+        try (Ignite ignite = client ? startClientGrid(3) : startGrid(3)) {
             ContinuousQuery qry = new ContinuousQuery();
 
             qry.setLocalListener(new CacheEntryUpdatedListener() {
@@ -112,8 +106,6 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
 
             assertEquals(1, cntr.get());
         }
-
-        this.client = false;
 
         try (Ignite newSrv = startGrid(3)) {
             awaitPartitionMapExchange();

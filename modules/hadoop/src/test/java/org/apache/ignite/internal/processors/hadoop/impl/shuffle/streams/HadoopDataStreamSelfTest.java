@@ -25,7 +25,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-
 import java.util.List;
 import org.apache.ignite.internal.processors.hadoop.shuffle.direct.HadoopDirectDataInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.direct.HadoopDirectDataOutput;
@@ -73,7 +72,7 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
 
         write(out);
 
-        byte [] inBuf = Arrays.copyOf(out.buffer(), out.position());
+        byte[] inBuf = Arrays.copyOf(out.buffer(), out.position());
 
         HadoopDirectDataInput in = new HadoopDirectDataInput(inBuf);
 
@@ -123,7 +122,7 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
 
         byteArrayOs.close();
 
-        try (DataInputStream in =  new DataInputStream(new ByteArrayInputStream(byteArrayOs.toByteArray()))) {
+        try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(byteArrayOs.toByteArray()))) {
             return readLineStrings(in);
         }
     }
@@ -162,7 +161,7 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
 
         out.write(val.getBytes());
 
-        byte [] inBuf = Arrays.copyOf(out.buffer(), out.position());
+        byte[] inBuf = Arrays.copyOf(out.buffer(), out.position());
 
         HadoopDirectDataInput in = new HadoopDirectDataInput(inBuf);
 

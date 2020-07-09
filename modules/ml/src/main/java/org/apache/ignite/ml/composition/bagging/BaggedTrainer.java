@@ -170,7 +170,6 @@ public class BaggedTrainer<L> extends
 
     /**
      * This method is never called, instead of constructing logic of update from
-     * {@link DatasetTrainer#isUpdateable} and
      * {@link DatasetTrainer#updateModel}
      * in this class we explicitly override update method.
      *

@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Reflection;
     using System.Text.RegularExpressions;
     using NUnit.Framework;
 
@@ -36,8 +35,10 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCsprojToolsVersion()
         {
-            var projFiles = GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
-                .Where(x => !x.FullName.ToLower().Contains("dotnetcore")).ToArray();
+            var projFiles = TestUtils.GetDotNetSourceDir()
+                .GetFiles("*.csproj", SearchOption.AllDirectories)
+                .Where(x => !x.FullName.ToLower().Contains("dotnetcore") && !x.FullName.Contains("Benchmark"))
+                .ToArray();
             
             Assert.GreaterOrEqual(projFiles.Length, 7);
             CheckFiles(projFiles, x => !x.Contains("ToolsVersion=\"4.0\""), "Invalid csproj files: ");
@@ -88,7 +89,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IEnumerable<FileInfo> GetReleaseCsprojFiles()
         {
-            return GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
+            return TestUtils.GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
                 .Where(x => x.Name != "Apache.Ignite.csproj" &&
                             !x.Name.Contains("Test") &&
                             !x.Name.Contains("Example") &&
@@ -111,7 +112,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSlnToolsVersion()
         {
-            var slnFiles = GetDotNetSourceDir().GetFiles("*.sln", SearchOption.AllDirectories)
+            var slnFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.sln", SearchOption.AllDirectories)
                 .Where(x => !x.Name.Contains("DotNetCore")).ToArray();
 
             Assert.GreaterOrEqual(slnFiles.Length, 2);
@@ -134,7 +135,7 @@ namespace Apache.Ignite.Core.Tests
                 "CacheTest.cs"
             };
 
-            var srcFiles = GetDotNetSourceDir()
+            var srcFiles = TestUtils.GetDotNetSourceDir()
                 .GetFiles("*.cs", SearchOption.AllDirectories)
                 .Where(x => !allowedFiles.Contains(x.Name));
 
@@ -150,25 +151,6 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(0, invalidFiles.Length,
                 errorText + string.Join("\n ", invalidFiles.Select(x => x.FullName)));
-        }
-
-        /// <summary>
-        /// Gets the dot net source dir.
-        /// </summary>
-        private static DirectoryInfo GetDotNetSourceDir()
-        {
-            // ReSharper disable once AssignNullToNotNullAttribute
-            var dir = new DirectoryInfo(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
-
-            while (dir != null)
-            {
-                if (dir.GetFiles().Any(x => x.Name == "Apache.Ignite.sln"))
-                    return dir;
-
-                dir = dir.Parent;
-            }
-
-            throw new InvalidOperationException("Could not resolve Ignite.NET source directory.");
         }
     }
 }

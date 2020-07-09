@@ -46,8 +46,7 @@ public class Rmse implements Metric<Double, EmptyContext<Double>, RegressionMetr
     /**
      * {@inheritDoc}
      */
-    @Override
-    public Rmse initBy(RegressionMetricStatsAggregator aggr) {
+    @Override public Rmse initBy(RegressionMetricStatsAggregator aggr) {
         mse.initBy(aggr);
         return this;
     }

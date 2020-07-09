@@ -49,9 +49,6 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
 
         cfg.setIgniteInstanceName(igniteInstanceName);
 
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -67,7 +64,7 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
     public void testAsyncCacheFuture() throws Exception {
         startGrid(0);
 
-        startGrid(1);
+        startClientGrid(1);
 
         testGet(false, false);
 

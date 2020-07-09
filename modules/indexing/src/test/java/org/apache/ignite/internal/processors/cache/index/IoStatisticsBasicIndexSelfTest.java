@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +29,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import com.google.common.collect.Sets;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -53,6 +55,7 @@ import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanIm
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
+import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -173,6 +176,32 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
         checkAll();
 
         checkStat();
+    }
+
+    /** Checks that {@link MetricRegistry} with the sorted index IO statistics removed on index drop. */
+    @Test
+    public void testMetricRegistryRemovedOnIndexDrop() throws Exception {
+        indexes = Collections.emptyList();
+
+        startGrid();
+
+        grid().cluster().active(true);
+
+        execute(grid(), "CREATE TABLE t(id int, name varchar, primary key (id))");
+
+        execute(grid(), "CREATE INDEX MY_IDX ON t(name)");
+
+        MetricRegistry mreg =
+            grid().context().metric().registry(metricName(SORTED_INDEX.metricGroupName(), "SQL_PUBLIC_T", "MY_IDX"));
+
+        assertTrue(mreg.iterator().hasNext());
+        assertNotNull(mreg.findMetric("name"));
+
+        execute(grid(), "DROP INDEX MY_IDX");
+
+        mreg = grid().context().metric().registry(metricName(SORTED_INDEX.metricGroupName(), "SQL_PUBLIC_T", "MY_IDX"));
+
+        assertFalse(mreg.iterator().hasNext());
     }
 
     /** */
@@ -394,7 +423,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     public Set<String> deriveStatisticNames(IgniteEx ignite, IoStatisticsType statType) {
         assert statType != null;
 
-        Stream<MetricRegistry> grpsStream = ioStats(ignite, statType);
+        Stream<ReadOnlyMetricRegistry> grpsStream = ioStats(ignite, statType);
 
         return grpsStream.flatMap(grp -> StreamSupport.stream(grp.spliterator(), false))
             .filter(m -> m.name().endsWith("name"))
@@ -403,7 +432,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     }
 
     /** @return Stream of MetricGroup for specified {@link statType}. */
-    private Stream<MetricRegistry> ioStats(IgniteEx ignite, IoStatisticsType statType) {
+    private Stream<ReadOnlyMetricRegistry> ioStats(IgniteEx ignite, IoStatisticsType statType) {
         GridMetricManager mmgr = ignite.context().metric();
 
         return StreamSupport.stream(mmgr.spliterator(), false)
@@ -556,5 +585,19 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
         @Override public String toString() {
             return S.toString(Pojo.class, this);
         }
+    }
+
+    /**
+     * Execute query on given node.
+     *
+     * @param node Node.
+     * @param sql Statement.
+     */
+    private List<List<?>> execute(Ignite node, String sql, Object... args) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql)
+            .setArgs(args)
+            .setSchema("PUBLIC");
+
+        return queryProcessor(node).querySqlFields(qry, true).getAll();
     }
 }

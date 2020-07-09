@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -44,10 +43,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
+import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -170,7 +168,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
         test(converter, null, new Runnable() {
             @Override public void run() {
-                try(Socket sock = new Socket(InetAddress.getLocalHost(), port);
+                try (Socket sock = new Socket(InetAddress.getLocalHost(), port);
                     OutputStream os = new BufferedOutputStream(sock.getOutputStream())) {
 
                     for (int i = 0; i < CNT; i++) {
@@ -199,7 +197,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     public void testDelimiterBasedDefaultConverter() throws Exception {
         test(null, DELIM, new Runnable() {
             @Override public void run() {
-                try(Socket sock = new Socket(InetAddress.getLocalHost(), port);
+                try (Socket sock = new Socket(InetAddress.getLocalHost(), port);
                     OutputStream os = new BufferedOutputStream(sock.getOutputStream())) {
                     Marshaller marsh = new JdkMarshaller();
 
@@ -236,7 +234,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
         test(converter, DELIM, new Runnable() {
             @Override public void run() {
-                try(Socket sock = new Socket(InetAddress.getLocalHost(), port);
+                try (Socket sock = new Socket(InetAddress.getLocalHost(), port);
                     OutputStream os = new BufferedOutputStream(sock.getOutputStream())) {
 
                     for (int i = 0; i < CNT; i++) {

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.util.mbeans;
 
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.BaselineNode;
@@ -26,8 +28,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.Test;
 
 /**
@@ -43,7 +43,6 @@ public class GridMBeanBaselineTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setClientMode(igniteInstanceName.equals(getTestIgniteInstanceName(CLIENT_IDX)))
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setCheckpointFrequency(2_000)
                 .setDefaultDataRegionConfiguration(
@@ -75,9 +74,9 @@ public class GridMBeanBaselineTest extends GridCommonAbstractTest {
     @Test
     public void testIgniteKernalNodeInBaselineTest() throws Exception {
         try {
-            IgniteEx ignite0 = (IgniteEx)startGrids(NODES);
+            IgniteEx ignite0 = startGrids(NODES);
 
-            startGrid(CLIENT_IDX);
+            startClientGrid(CLIENT_IDX);
 
             ignite0.cluster().active(true);
 

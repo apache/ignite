@@ -17,14 +17,14 @@
 
 package org.apache.ignite.ml.math.primitives.vector.storage;
 
-import it.unimi.dsi.fastutil.ints.IntArraySet;
-import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import it.unimi.dsi.fastutil.ints.IntArraySet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
 
@@ -113,11 +113,6 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
 
     /** {@inheritDoc} */
     @Override public boolean isDense() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
         return false;
     }
 

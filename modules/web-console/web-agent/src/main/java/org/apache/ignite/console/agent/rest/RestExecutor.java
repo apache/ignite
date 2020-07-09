@@ -24,6 +24,8 @@ import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -32,8 +34,6 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.X509TrustManager;
 import okhttp3.Dispatcher;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
@@ -211,7 +211,7 @@ public class RestExecutor implements AutoCloseable {
 
         int urlsCnt = nodeURIs.size();
 
-        for (int i = 0;  i < urlsCnt; i++) {
+        for (int i = 0; i < urlsCnt; i++) {
             Integer currIdx = (startIdx + i) % urlsCnt;
 
             String nodeUrl = nodeURIs.get(currIdx);

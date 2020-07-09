@@ -422,7 +422,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 assert !primary.isLocal() || !cctx.kernalContext().clientNode() || write.context().isLocal();
 
                 // Minor optimization to not create MappingKey: on client node can not have mapping for local node.
-                Object key =  cctx.kernalContext().clientNode() ? primary.id() :
+                Object key = cctx.kernalContext().clientNode() ? primary.id() :
                     new MappingKey(primary.id(), primary.isLocal() && updated.hasNearCacheEntries());
 
                 GridDistributedTxMapping prev = map.put(key, updated);

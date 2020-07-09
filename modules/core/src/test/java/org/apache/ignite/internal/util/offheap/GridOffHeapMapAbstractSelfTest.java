@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Test;
 
 /**
@@ -152,7 +152,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
             map.insert(hash(key), key.getBytes(), val.getBytes());
 
             assertTrue("Failed to insert for index: " + i, map.contains(hash(key), key.getBytes()));
-            assertEquals(val,  new String(map.get(hash(key), key.getBytes())));
+            assertEquals(val, new String(map.get(hash(key), key.getBytes())));
             assertEquals(i + 1, map.totalSize());
         }
 
@@ -180,7 +180,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
             map.insert(hash(key), key.getBytes(), val.getBytes());
 
             assertTrue(map.contains(hash(key), key.getBytes()));
-            assertEquals(val,  new String(map.get(hash(key), key.getBytes())));
+            assertEquals(val, new String(map.get(hash(key), key.getBytes())));
         }
 
         for (Map.Entry<String, String> e : kv.entrySet()) {
@@ -210,7 +210,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
             map.insert(hash(key), key.getBytes(), val.getBytes());
 
             assertTrue(map.contains(hash(key), key.getBytes()));
-            assertEquals(val,  new String(map.get(hash(key), key.getBytes())));
+            assertEquals(val, new String(map.get(hash(key), key.getBytes())));
             assertEquals(i + 1, map.totalSize());
         }
 
@@ -231,7 +231,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
             assertTrue(map.put(hash(key), key.getBytes(), val.getBytes()));
 
             assertTrue(map.contains(hash(key), key.getBytes()));
-            assertEquals(val,  new String(map.get(hash(key), key.getBytes())));
+            assertEquals(val, new String(map.get(hash(key), key.getBytes())));
             assertEquals(i + 1, map.totalSize());
         }
 
@@ -254,13 +254,13 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
             assertTrue(map.put(hash(key), key.getBytes(), val1.getBytes()));
 
             assertTrue(map.contains(hash(key), key.getBytes()));
-            assertEquals(val1,  new String(map.get(hash(key), key.getBytes())));
+            assertEquals(val1, new String(map.get(hash(key), key.getBytes())));
             assertEquals(i + 1, map.totalSize());
 
             assertFalse(map.put(hash(key), key.getBytes(), val2.getBytes()));
 
             assertTrue(map.contains(hash(key), key.getBytes()));
-            assertEquals(val2,  new String(map.get(hash(key), key.getBytes())));
+            assertEquals(val2, new String(map.get(hash(key), key.getBytes())));
             assertEquals(i + 1, map.totalSize());
         }
 
@@ -484,7 +484,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
         Map<String, String> m = new HashMap<>();
 
         for (int i = 0; i < loadCnt; i++)
-            m.put(string(),  string());
+            m.put(string(), string());
 
         int cnt = 0;
 
@@ -519,7 +519,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
         Map<String, String> m = new HashMap<>();
 
         for (int i = 0; i < loadCnt; i++)
-            m.put(string(),  string());
+            m.put(string(), string());
 
         int cnt = 0;
 

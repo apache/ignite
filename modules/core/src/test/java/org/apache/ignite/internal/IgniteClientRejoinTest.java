@@ -97,8 +97,6 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
             dspi.setJoinTimeout(60_000);
             dspi.setClientReconnectDisabled(clientReconnectDisabled);
-
-            cfg.setClientMode(true);
         }
 
         // TODO: IGNITE-4833
@@ -125,7 +123,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         final int CLIENTS_NUM = 5;
 
         for (int i = 0; i < CLIENTS_NUM; i++)
-            clientNodes.add(startGrid("client" + i));
+            clientNodes.add(startClientGrid("client" + i));
 
         blockAll = true;
 
@@ -223,7 +221,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
                             }
                         });
 
-                    return startGrid(nodeName, optimize(cfg), null);
+                    return startClientGrid(nodeName, optimize(cfg));
                 }
             });
 
@@ -297,7 +295,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
                     String igniteInstanceName = "client" + idx;
 
-                    return startGrid(igniteInstanceName, getConfiguration(igniteInstanceName)
+                    return startClientGrid(igniteInstanceName, getConfiguration(igniteInstanceName)
                         .setFailureHandler(new TestFailureHandler(true, failureHndLatch)));
                 }
             });

@@ -844,7 +844,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
-                if (fut.exchangeDone() && fut.topologyVersion().equals(topVer)){
+                if (fut.exchangeDone() && fut.topologyVersion().equals(topVer)) {
                     Throwable err = null;
 
                     // Before cache validation, make sure that this topology future is already completed.
@@ -855,7 +855,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                         err = fut.error();
                     }
 
-                    err = (err == null)? fut.validateCache(cctx, recovery, read, null, keys): err;
+                    err = (err == null) ? fut.validateCache(cctx, recovery, read, null, keys) : err;
 
                     if (err != null) {
                         onDone(err);
@@ -895,8 +895,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         try {
             if (cctx.topology().stopping()) {
                 onDone(
-                    cctx.shared().cache().isCacheRestarting(cctx.name())?
-                        new IgniteCacheRestartingException(cctx.name()):
+                    cctx.shared().cache().isCacheRestarting(cctx.name()) ?
+                        new IgniteCacheRestartingException(cctx.name()) :
                         new CacheStoppedException(cctx.name()));
 
                 return;
@@ -1647,10 +1647,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
                 if (res.compatibleRemapVersion()) {
                     if (tx != null) {
-                        // Versions are compatible.
-                        cctx.shared().exchange().
-                            lastAffinityChangedTopologyVersion(res.clientRemapVersion(), tx.topologyVersionSnapshot());
-
                         tx.onRemap(res.clientRemapVersion(), false);
 
                         // Use remapped version for all subsequent mappings.

@@ -38,9 +38,10 @@ public:
         m_out << "]" << std::endl;
     }
     /// \todo Copying char-by-char is ineffective!
-    std::string escape(const std::string s)
+    std::string escape(const std::string &s)
     {
         std::string result;
+        result.reserve(s.length());
 
         for (size_t i = 0; i < s.length(); i++)
         {
@@ -60,7 +61,7 @@ public:
         return result;
     }
 
-    void writeProperty(const char* const name, const std::string value)
+    void writeProperty(const std::string& name, const std::string& value)
     {
         m_out << ' ' << name << "='" << escape(value) << '\'';
     }
@@ -79,7 +80,7 @@ private:
 //BEGIN Public helper functions
 std::string getFlowIdFromEnvironment()
 {
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#if (defined(WIN32) || defined(_WIN32) || defined(__WIN32)) && !defined(__CYGWIN__) && !defined(__MINGW32__)
     char* flowId = 0;
     size_t sz = 0;
     std::string result;
@@ -98,7 +99,7 @@ std::string getFlowIdFromEnvironment()
 
 bool underTeamcity()
 {
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#if (defined(WIN32) || defined(_WIN32) || defined(__WIN32)) && !defined(__CYGWIN__) && !defined(__MINGW32__)
     char* teamCityProjectName = 0;
     size_t sz = 0;
     bool result = false;

@@ -27,8 +27,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_LOG_THRES
  */
 public interface PagesWriteThrottlePolicy {
     /** Max park time. */
-    public long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(IgniteSystemProperties.getInteger
-            (IGNITE_THROTTLE_LOG_THRESHOLD, 10));
+    public long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(
+        IgniteSystemProperties.getInteger(IGNITE_THROTTLE_LOG_THRESHOLD, 10));
 
     /**
      * Callback to apply throttling delay.
@@ -52,4 +52,11 @@ public interface PagesWriteThrottlePolicy {
      * Callback to notify throttling policy checkpoint was finished.
      */
     void onFinishCheckpoint();
+
+    /**
+     * @return {@code True} if throttling should be enabled, and {@code False} otherwise.
+     */
+    default boolean shouldThrottle() {
+        return false;
+    }
 }

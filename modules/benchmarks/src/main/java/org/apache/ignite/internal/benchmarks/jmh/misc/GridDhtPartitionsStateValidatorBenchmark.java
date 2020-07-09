@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.misc;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.IntStream;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
@@ -35,12 +40,6 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.IntStream;
 
 import static org.openjdk.jmh.annotations.Scope.Thread;
 
@@ -120,7 +119,7 @@ public class GridDhtPartitionsStateValidatorBenchmark extends JmhAbstractBenchma
             Map<Integer, Long> cacheSizesMap = new HashMap<>();
 
             IntStream.range(0, PARTS).forEach(k -> { localPartitions.add(partitionMock(k, k + 1, k + 1));
-                long us = k > 20 && k <= 30 ? 0 :k + 2L;
+                long us = k > 20 && k <= 30 ? 0 : k + 2L;
                 updateCountersMap.put(k, new T2<>(k + 2L, us));
                 cacheSizesMap.put(k, us); });
 

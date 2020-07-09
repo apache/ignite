@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache;
 
-import javax.cache.CacheException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.CacheException;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
@@ -234,7 +234,7 @@ public class QueryEntity implements Serializable {
         }
 
         for (QueryIndex queryIndex : target.getIndexes()) {
-            if(currentIndexes.containsKey(queryIndex.getName())) {
+            if (currentIndexes.containsKey(queryIndex.getName())) {
                 checkEquals(
                     conflicts,
                     "index " + queryIndex.getName(),
@@ -756,13 +756,10 @@ public class QueryEntity implements Serializable {
      * @return Type descriptor.
      */
     private static QueryEntityTypeDescriptor processKeyAndValueClasses(
-        Class<?> keyCls,
-        Class<?> valCls
+        @NotNull Class<?> keyCls,
+        @NotNull Class<?> valCls
     ) {
-        QueryEntityTypeDescriptor d = new QueryEntityTypeDescriptor();
-
-        d.keyClass(keyCls);
-        d.valueClass(valCls);
+        QueryEntityTypeDescriptor d = new QueryEntityTypeDescriptor(keyCls, valCls);
 
         processAnnotationsInClass(true, d.keyClass(), d, null);
         processAnnotationsInClass(false, d.valueClass(), d, null);
@@ -829,7 +826,7 @@ public class QueryEntity implements Serializable {
                     // resulting parent column comes before columns corresponding to those
                     // nested properties in the resulting table - that way nested
                     // properties override will happen properly (first parent, then children).
-                    type.addProperty(prop, key, true);
+                    type.addProperty(prop, sqlAnn, key, true);
 
                     processAnnotation(key, sqlAnn, txtAnn, cls, c, field.getType(), prop, type);
                 }

@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cluster activation event.
@@ -57,7 +58,9 @@ import org.apache.ignite.lang.IgnitePredicate;
  * event storage SPI if they are disabled in Ignite configuration.
  * @see EventType#EVT_CLUSTER_ACTIVATED
  * @see EventType#EVT_CLUSTER_DEACTIVATED
+ * @deprecated Use {@link ClusterStateChangeEvent} instead.
  */
+@Deprecated
 public class ClusterActivationEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
@@ -66,7 +69,7 @@ public class ClusterActivationEvent extends EventAdapter {
     private final Collection<BaselineNode> baselineNodes;
 
     /**
-     * Creates deployment event with given parameters.
+     * Creates activation event with given parameters.
      *
      * @param node Node.
      * @param msg Optional event message.
@@ -86,7 +89,7 @@ public class ClusterActivationEvent extends EventAdapter {
      *
      * @return Baseline nodes.
      */
-    public Collection<BaselineNode> baselineNodes() {
+    public @Nullable Collection<BaselineNode> baselineNodes() {
         return baselineNodes;
     }
 }

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.service;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -34,15 +33,6 @@ import org.junit.Test;
  */
 public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(igniteInstanceName.contains("client"));
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
@@ -54,7 +44,7 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
     public void testClientReconnect() throws Exception {
         startGrid("server");
 
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         client.services().deployClusterSingleton("my-service", new MyServiceImpl());
 
@@ -91,7 +81,7 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
     public void testClientReconnectLongServiceInit() throws Exception {
         startGrid("server");
 
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         client.services().deployClusterSingleton("my-service", new MyLongInitServiceImpl());
 

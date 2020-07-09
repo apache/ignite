@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import java.util.Map;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.client.SslMode;
@@ -89,8 +90,30 @@ public final class ClientConfiguration implements Serializable {
     /** @serial User password. */
     private String userPwd;
 
+    /** User attributes. */
+    private Map<String, String> userAttrs;
+
     /** Tx config. */
     private ClientTransactionConfiguration txCfg = new ClientTransactionConfiguration();
+
+    /**
+     * Whether partition awareness should be enabled.
+     *
+     * When {@code true} client attempts to send the request directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.
+     * By default {@code false} only one connection is established at a given moment to a random server node.
+     */
+    private boolean partitionAwarenessEnabled;
+
+    /**
+     * Reconnect throttling period (in milliseconds). There are no more than {@code reconnectThrottlingRetries}
+     * attempts to reconnect will be made within {@code reconnectThrottlingPeriod} in case of connection loss.
+     * Throttling is disabled if either {@code reconnectThrottlingRetries} or {@code reconnectThrottlingPeriod} is 0.
+     */
+    private long reconnectThrottlingPeriod = 30_000L;
+
+    /** Reconnect throttling retries. See {@code reconnectThrottlingPeriod}. */
+    private int reconnectThrottlingRetries = 3;
 
     /**
      * @return Host addresses.
@@ -416,8 +439,88 @@ public final class ClientConfiguration implements Serializable {
         return this;
     }
 
+    /**
+     * @return Whether partition awareness should be enabled.
+     */
+    public boolean isPartitionAwarenessEnabled() {
+        return partitionAwarenessEnabled;
+    }
+
+    /**
+     * Enable or disable partition awareness.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setPartitionAwarenessEnabled(boolean partitionAwarenessEnabled) {
+        this.partitionAwarenessEnabled = partitionAwarenessEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets reconnect throttling period.
+     */
+    public long getReconnectThrottlingPeriod() {
+        return reconnectThrottlingPeriod;
+    }
+
+    /**
+     * Sets reconnect throttling period.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setReconnectThrottlingPeriod(long reconnectThrottlingPeriod) {
+        this.reconnectThrottlingPeriod = reconnectThrottlingPeriod;
+
+        return this;
+    }
+
+    /**
+     * Gets reconnect throttling retries.
+     */
+    public int getReconnectThrottlingRetries() {
+        return reconnectThrottlingRetries;
+    }
+
+    /**
+     * Sets reconnect throttling retries.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setReconnectThrottlingRetries(int reconnectThrottlingRetries) {
+        this.reconnectThrottlingRetries = reconnectThrottlingRetries;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ClientConfiguration.class, this);
+    }
+
+    /**
+     * Returns user attributes which can be used on server node.
+     *
+     * @return User attributes.
+     */
+    public Map<String, String> getUserAttributes() {
+        return userAttrs;
+    }
+
+    /**
+     * Sets user attributes which can be used to send additional info to the server nodes.
+     *
+     * Sent attributes can be accessed on server nodes from
+     * {@link org.apache.ignite.internal.processors.rest.request.GridRestRequest GridRestRequest} or
+     * {@link org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext
+     * ClientListenerAbstractConnectionContext} (depends on client type).
+     *
+     * @param userAttrs User attributes.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setUserAttributes(Map<String, String> userAttrs) {
+        this.userAttrs = userAttrs;
+
+        return this;
     }
 }

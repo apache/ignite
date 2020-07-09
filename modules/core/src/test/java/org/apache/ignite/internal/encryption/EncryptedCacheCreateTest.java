@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.encryption;
 
-import com.google.common.primitives.Bytes;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import com.google.common.primitives.Bytes;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -123,8 +123,8 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
         String encValPart = "AAAAAAAAAA";
         String plainValPart = "BBBBBBBBBB";
 
-        StringBuilder longEncVal = new StringBuilder(encValPart.length()*100);
-        StringBuilder longPlainVal = new StringBuilder(plainValPart.length()*100);
+        StringBuilder longEncVal = new StringBuilder(encValPart.length() * 100);
+        StringBuilder longPlainVal = new StringBuilder(plainValPart.length() * 100);
 
         for (int i = 0; i < 100; i++) {
             longEncVal.append(encValPart);

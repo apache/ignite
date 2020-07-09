@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.cluster.ClusterState;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -159,34 +160,34 @@ public enum GridRestCommand {
     /** Close query. */
     CLOSE_SQL_QUERY("qrycls"),
 
-    /** @deprecated Use {@link #CLUSTER_ACTIVATE} instead. */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#ACTIVE} instead. */
     @Deprecated
     CLUSTER_ACTIVE("active"),
 
-    /** @deprecated Use {@link #CLUSTER_DEACTIVATE} instead. */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#INACTIVE} instead. */
     @Deprecated
     CLUSTER_INACTIVE("inactive"),
 
-    /** */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#ACTIVE} instead. */
+    @Deprecated
     CLUSTER_ACTIVATE("activate"),
 
-    /** */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#INACTIVE} instead. */
+    @Deprecated
     CLUSTER_DEACTIVATE("deactivate"),
 
-    /** */
+    /** @deprecated Use {@link #CLUSTER_STATE} instead. */
+    @Deprecated
     CLUSTER_CURRENT_STATE("currentstate"),
 
-    /** Current cluster name. */
+    /** */
     CLUSTER_NAME("clustername"),
 
     /** */
-    CLUSTER_CURRENT_READ_ONLY_MODE("currentreadonlymode"),
+    CLUSTER_STATE("state"),
 
     /** */
-    CLUSTER_READ_ONLY_ENABLE("readonlyenable"),
-
-    /** */
-    CLUSTER_READ_ONLY_DISABLE("readonlydisable"),
+    CLUSTER_SET_STATE("setstate"),
 
     /** */
     BASELINE_CURRENT_STATE("baseline"),

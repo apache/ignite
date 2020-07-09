@@ -663,6 +663,9 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Changes Ignite grid state to active or inactive.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
@@ -673,6 +676,9 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Clears partition's lost state and moves caches to a normal mode.
+     * <p>
+     * To avoid permanent data loss for persistent caches it's recommended to return all previously failed baseline
+     * nodes to the topology before calling this method.
      */
     public void resetLostPartitions(Collection<String> cacheNames);
 
@@ -723,4 +729,16 @@ public interface Ignite extends AutoCloseable {
      * @return {@link DataStorageMetrics} snapshot.
      */
     public DataStorageMetrics dataStorageMetrics();
+
+    /**
+     * Gets an instance of {@link IgniteEncryption} interface.
+     *
+     * @return Instance of {@link IgniteEncryption} interface.
+     */
+    public IgniteEncryption encryption();
+
+    /**
+     * @return Snapshot manager.
+     */
+    public IgniteSnapshot snapshot();
 }

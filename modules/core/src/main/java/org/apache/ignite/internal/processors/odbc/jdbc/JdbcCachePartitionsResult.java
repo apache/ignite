@@ -23,8 +23,7 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinAffinityAwarenessMappingGroup;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionAwarenessMappingGroup;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -32,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class JdbcCachePartitionsResult extends JdbcResult {
     /** Partitions Mappings. */
-    private List<JdbcThinAffinityAwarenessMappingGroup> mappings;
+    private List<JdbcThinPartitionAwarenessMappingGroup> mappings;
 
     /**
      * Default constructor.
@@ -47,7 +46,7 @@ public class JdbcCachePartitionsResult extends JdbcResult {
      * @param mappings Partitions mappings.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public JdbcCachePartitionsResult(List<JdbcThinAffinityAwarenessMappingGroup> mappings) {
+    public JdbcCachePartitionsResult(List<JdbcThinPartitionAwarenessMappingGroup> mappings) {
         super(CACHE_PARTITIONS);
 
         this.mappings = mappings;
@@ -56,33 +55,38 @@ public class JdbcCachePartitionsResult extends JdbcResult {
     /**
      * @return Partitons mappings.
      */
-    public List<JdbcThinAffinityAwarenessMappingGroup> getMappings() {
+    public List<JdbcThinPartitionAwarenessMappingGroup> getMappings() {
         return Collections.unmodifiableList(mappings);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        super.writeBinary(writer, ver);
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.writeBinary(writer, protoCtx);
 
         assert mappings != null;
 
         writer.writeInt(mappings.size());
 
-        for (JdbcThinAffinityAwarenessMappingGroup mappingGroup : mappings)
-            mappingGroup.writeBinary(writer, ver);
+        for (JdbcThinPartitionAwarenessMappingGroup mappingGroup : mappings)
+            mappingGroup.writeBinary(writer, protoCtx);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        super.readBinary(reader, ver);
-        List<JdbcThinAffinityAwarenessMappingGroup> res = new ArrayList<>();
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.readBinary(reader, protoCtx);
+
+        List<JdbcThinPartitionAwarenessMappingGroup> res = new ArrayList<>();
 
         int mappingsSize = reader.readInt();
 
         for (int i = 0; i < mappingsSize; i++)
-            res.add(JdbcThinAffinityAwarenessMappingGroup.readGroup(reader, ver));
+            res.add(JdbcThinPartitionAwarenessMappingGroup.readGroup(reader, protoCtx));
 
         mappings = res;
     }

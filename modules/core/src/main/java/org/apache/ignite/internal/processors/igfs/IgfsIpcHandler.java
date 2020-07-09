@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.Closeable;
+import java.io.DataInput;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -42,14 +49,6 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Closeable;
-import java.io.DataInput;
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * IGFS IPC handler.
@@ -161,7 +160,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                         final GridFutureAdapter<IgfsMessage> fut0 = new GridFutureAdapter<>();
 
                         pool.execute(new Runnable() {
-                            @Override public void run()  {
+                            @Override public void run() {
                                 try {
                                     fut0.onDone(execute(ses, cmd, msg, in));
                                 }

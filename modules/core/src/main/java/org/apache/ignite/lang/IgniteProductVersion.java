@@ -41,6 +41,12 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Size of the {@link #revHash }*/
+    public static final int REV_HASH_SIZE = 20;
+
+    /** Size in bytes of serialized: 3 bytes (maj, min, maintenance version), 8 bytes - timestamp */
+    public static final int SIZE_IN_BYTES = 3 + 8 + REV_HASH_SIZE;
+
     /** Regexp parse pattern. */
     private static final Pattern VER_PATTERN =
         Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\\d+))?(-([\\da-f]+))?");
@@ -90,15 +96,17 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @param revHash Revision hash.
      */
     public IgniteProductVersion(byte major, byte minor, byte maintenance, String stage, long revTs, byte[] revHash) {
-        if (revHash != null && revHash.length != 20)
-            throw new IllegalArgumentException("Invalid length for SHA1 hash (must be 20): " + revHash.length);
+        if (revHash != null && revHash.length != REV_HASH_SIZE) {
+            throw new IllegalArgumentException("Invalid length for SHA1 hash (must be "
+                + REV_HASH_SIZE + "): " + revHash.length);
+        }
 
         this.major = major;
         this.minor = minor;
         this.maintenance = maintenance;
         this.stage = stage;
         this.revTs = revTs;
-        this.revHash = revHash != null ? revHash : new byte[20];
+        this.revHash = revHash != null ? revHash : new byte[REV_HASH_SIZE];
     }
 
     /**

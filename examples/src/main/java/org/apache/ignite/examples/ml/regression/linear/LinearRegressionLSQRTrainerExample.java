@@ -21,6 +21,8 @@ import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -28,8 +30,6 @@ import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Run linear regression model based on <a href="http://web.stanford.edu/group/SOL/software/lsqr/">LSQR algorithm</a>
@@ -65,7 +65,7 @@ public class LinearRegressionLSQRTrainerExample {
                 System.out.println(">>> Perform the training to get the model.");
 
                 // This object is used to extract features and vectors from upstream entities which are
-                // essentialy tuples of the form (key, value) (in our case (Integer, Vector)).
+                // essentially tuples of the form (key, value) (in our case (Integer, Vector)).
                 // Key part of tuple in our example is ignored.
                 // Label is extracted from 0th entry of the value (which is a Vector)
                 // and features are all remaining vector part. Alternatively we could use
@@ -87,7 +87,8 @@ public class LinearRegressionLSQRTrainerExample {
                 System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {

@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
@@ -42,8 +43,8 @@ import static org.apache.ignite.Ignition.localIgnite;
  * Testing operation security context when the compute task is executed on remote nodes.
  * <p>
  * The initiator node broadcasts a task to 'run' nodes that starts compute task. That compute task is executed on
- * 'check' nodes and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification that
- * operation security context is the initiator context.
+ * 'check' nodes and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification that operation
+ * security context is the initiator context.
  */
 public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
     /** {@inheritDoc} */
@@ -64,25 +65,13 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
 
         startClientAllowAll(CLNT_ENDPOINT);
 
-        G.allGrids().get(0).cluster().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_RUN, 1)
-            .expect(CLNT_RUN, 1)
-            .expect(SRV_CHECK, 2)
-            .expect(CLNT_CHECK, 2)
-            .expect(SRV_ENDPOINT, 4)
-            .expect(CLNT_ENDPOINT, 4);
+        G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** */
     @Test
     public void test() {
-        runAndCheck(grid(SRV_INITIATOR), operations());
-        runAndCheck(grid(CLNT_INITIATOR), operations());
+        runAndCheck(operations());
     }
 
     /**
@@ -90,16 +79,8 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
      */
     private Stream<IgniteRunnable> operations() {
         return Stream.of(
-            () -> {
-                VERIFIER.register();
-
-                localIgnite().compute().execute(new ComputeTaskClosure(nodesToCheck(), endpoints()), 0);
-            },
-            () -> {
-                VERIFIER.register();
-
-                localIgnite().compute().executeAsync(new ComputeTaskClosure(nodesToCheck(), endpoints()), 0).get();
-            }
+            () -> localIgnite().compute().execute(new ComputeTaskClosure(nodesToCheckIds(), endpointIds()), 0),
+            () -> localIgnite().compute().executeAsync(new ComputeTaskClosure(nodesToCheckIds(), endpointIds()), 0).get()
         );
     }
 
@@ -127,7 +108,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
         }
 
         /** {@inheritDoc} */
-        @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Integer arg) {
             Map<ComputeJob, ClusterNode> res = new HashMap<>();
 
@@ -142,9 +123,9 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
                         }
 
                         @Override public Object execute() {
-                            VERIFIER.register();
+                            VERIFIER.register(OPERATION_CHECK);
 
-                            compute(loc, endpoints).broadcast(() -> VERIFIER.register());
+                            compute(loc, endpoints).broadcast(() -> VERIFIER.register(OPERATION_ENDPOINT));
 
                             return null;
                         }

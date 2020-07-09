@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import org.apache.commons.logging.Log;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.IOException;
-import java.io.OutputStream;
 
 /**
  * IGFS Hadoop output stream implementation.
@@ -152,7 +151,7 @@ public class HadoopIgfsOutputStream extends OutputStream implements HadoopIgfsSt
                 log.debug("Closed output stream [delegate=" + delegate + ", writeTime=" + writeTime / 1000 +
                     ", userTime=" + userTime / 1000 + ']');
         }
-        else if(connBroken)
+        else if (connBroken)
             throw new IOException(
                 "Failed to close stream, because connection was broken (data could have been lost).");
     }

@@ -101,9 +101,6 @@ public class CacheRegisterMetadataLocallyTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        if (igniteInstanceName.equals("client"))
-            cfg.setClientMode(true);
-
         cfg.setCacheConfiguration(cacheConfiguration(STATIC_CACHE_NAME, StaticKey.class, StaticValue.class));
 
         return cfg;
@@ -195,7 +192,7 @@ public class CacheRegisterMetadataLocallyTest extends GridCommonAbstractTest {
 
         assertTrue(cache.containsKey(key));
 
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         IgniteCache<K, V> clientCache = client.cache(cache.getName());
 
@@ -241,7 +238,7 @@ public class CacheRegisterMetadataLocallyTest extends GridCommonAbstractTest {
      */
     private void assertCommunicationMessages() {
         communicationMessages.forEach(cm ->
-            assertFalse(cm.toString(), cm instanceof MetadataRequestMessage || cm instanceof MetadataResponseMessage)
+            assertFalse(cm.getClass().getName(), cm instanceof MetadataRequestMessage || cm instanceof MetadataResponseMessage)
         );
     }
 

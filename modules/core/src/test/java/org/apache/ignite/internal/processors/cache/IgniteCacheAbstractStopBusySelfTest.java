@@ -60,10 +60,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbstractTest {
     /** */
-    public static final int CLN_GRD = 0;
+    private static final int CLN_GRD = 0;
 
     /** */
-    public static final int SRV_GRD = 1;
+    private static final int SRV_GRD = 1;
 
     /** */
     public static final String CACHE_NAME = "StopTest";
@@ -80,14 +80,14 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @return Cache mode.
      */
-    protected CacheMode cacheMode(){
+    protected CacheMode cacheMode() {
         return CacheMode.PARTITIONED;
     }
 
     /**
      * @return Cache atomicity mode.
      */
-    protected CacheAtomicityMode atomicityMode(){
+    protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL;
     }
 
@@ -103,13 +103,8 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         commSpi.setTcpNoDelay(true);
 
-        if (igniteInstanceName.endsWith(String.valueOf(CLN_GRD)))
-            cfg.setClientMode(true);
-
         cacheCfg.setRebalanceMode(SYNC);
-
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-
         cacheCfg.setBackups(1);
 
         cfg.setCommunicationSpi(commSpi);
@@ -127,7 +122,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         startGrid(SRV_GRD);
 
-        startGrid(CLN_GRD);
+        startClientGrid(CLN_GRD);
 
         blocked = new CountDownLatch(1);
 
@@ -286,7 +281,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
         try {
             fut.get();
         }
-        catch (IgniteCheckedException gridException){
+        catch (IgniteCheckedException gridException) {
             e = gridException;
         }
 
@@ -332,7 +327,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
         try {
             fut.get();
         }
-        catch (IgniteCheckedException gridException){
+        catch (IgniteCheckedException gridException) {
             e = gridException;
         }
 

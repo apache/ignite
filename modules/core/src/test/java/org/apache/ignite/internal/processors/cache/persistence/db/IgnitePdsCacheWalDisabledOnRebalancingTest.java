@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -54,8 +55,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
-
 /**
  * Test scenarios with rebalancing, IGNITE_DISABLE_WAL_DURING_REBALANCING optimization and topology changes
  * such as client nodes join/leave, server nodes from BLT leave/join, server nodes out of BLT join/leave.
@@ -77,6 +76,12 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
     private static final int CACHE_SIZE = 2_000;
 
     /** */
+    private static final String CACHE1_NAME = "cache1";
+
+    /** */
+    private static final String CACHE2_NAME = "cache2";
+
+    /** */
     private static final String CACHE3_NAME = "cache3";
 
     /** Function to generate cache values. */
@@ -90,20 +95,6 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
     /** */
     private boolean useBlockingFileIO;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -130,12 +121,12 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         // This is required because some tests do full clearing of persistence folder losing BLT info on next join.
         cfg.setConsistentId(igniteInstanceName);
 
-        CacheConfiguration ccfg1 = new CacheConfiguration("cache1")
+        CacheConfiguration ccfg1 = new CacheConfiguration(CACHE1_NAME)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.REPLICATED)
             .setAffinity(new RendezvousAffinityFunction(false, CACHE1_PARTS_NUM));
 
-        CacheConfiguration ccfg2 = new CacheConfiguration("cache2")
+        CacheConfiguration ccfg2 = new CacheConfiguration(CACHE2_NAME)
             .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.PARTITIONED)
@@ -149,9 +140,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
 
-        if ("client".equals(igniteInstanceName))
-            cfg.setClientMode(true);
-        else {
+        if (!"client".equals(igniteInstanceName)) {
             DataStorageConfiguration dsCfg = new DataStorageConfiguration()
                 .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4)
                 .setWalMode(WALMode.LOG_ONLY)
@@ -204,7 +193,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         IgniteEx ig1 = startGrid(1);
 
-        startGrid("client");
+        startClientGrid("client");
 
         stopGrid("client");
 
@@ -291,6 +280,8 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
     @Test
     public void testRebalancedPartitionsOwningWithConcurrentAffinityChange() throws Exception {
         Ignite ig0 = startGridsMultiThreaded(4);
+
+        ig0.cluster().baselineAutoAdjustEnabled(false);
         fillCache(ig0.dataStreamer(CACHE3_NAME), CACHE_SIZE, GENERATING_FUNC);
 
         // Stop idx=2 to prepare for baseline topology change later.
@@ -383,9 +374,13 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         // Wait for rebalance (all partitions will be in MOVING state until cp is finished).
         startGrid(1).cachex(CACHE3_NAME).context().group().preloader().rebalanceFuture().get();
 
-        startGrid("client");
+        startClientGrid("client");
+
+        assertFalse(grid(1).cache(CACHE2_NAME).lostPartitions().isEmpty());
 
         fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
+
+        ig0.resetLostPartitions(Collections.singleton(CACHE2_NAME));
 
         awaitPartitionMapExchange();
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -27,17 +26,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -47,16 +46,18 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -69,7 +70,10 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Serializable {
     /** */
-    protected boolean pds = false;
+    protected boolean pds;
+
+    /** */
+    private final ListeningTestLogger testLog = new ListeningTestLogger(log);
 
     /** */
     private static class RoundRobinVariableSizeAffinityFunction implements AffinityFunction {
@@ -165,6 +169,8 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         cfg.setCacheConfiguration(cCfg1, cCfg2, cCfg3, cCfg4);
 
+        cfg.setGridLogger(testLog);
+
         if (pds) {
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -199,17 +205,9 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
      * @param cacheOrGrpName Cache group name.
      * @return MBean instance and MetricRegistry for the specified group.
      */
-    protected T2<CacheGroupMetricsMXBean, MetricRegistry> cacheGroupMetrics(int nodeIdx, String cacheOrGrpName)
-        throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), "Cache groups", cacheOrGrpName);
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
+    protected T2<CacheGroupMetricsMXBean, MetricRegistry> cacheGroupMetrics(int nodeIdx, String cacheOrGrpName) {
         return new T2<>(
-            MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, CacheGroupMetricsMXBean.class, true),
+            getMxBean(getTestIgniteInstanceName(nodeIdx), "Cache groups", cacheOrGrpName, CacheGroupMetricsMXBean.class),
             grid(nodeIdx).context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, cacheOrGrpName))
         );
     }
@@ -414,5 +412,90 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
             mxBean0Grp1.get2().<LongMetric>findMetric("TotalAllocatedPages").value() +
             mxBean0Grp2.get2().<LongMetric>findMetric("TotalAllocatedPages").value() +
             mxBean0Grp3.get2().<LongMetric>findMetric("TotalAllocatedPages").value());
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testClientNodePds() throws Exception {
+        checkClientNode(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testClientNodeNoPds() throws Exception {
+        checkClientNode(false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void checkClientNode(boolean pds) throws Exception {
+        this.pds = pds;
+
+        startGrid(0);
+
+        IgniteEx client = startClientGrid(1);
+
+        if (pds)
+            client.cluster().state(ClusterState.ACTIVE);
+
+        AtomicReference<Exception> err = new AtomicReference<>();
+
+        Consumer<String> lsnr = new Consumer<String>() {
+            @Override public void accept(String s) {
+                if (s.contains("Exception"))
+                    err.set(new IgniteException("Error was logged: " + s));
+            }
+        };
+
+        testLog.registerListener(lsnr);
+
+        String[] names = new String[] {"group1", "group2", "cache4"};
+
+        for (String name : names) {
+            T2<CacheGroupMetricsMXBean, MetricRegistry> grp1 = cacheGroupMetrics(1, name);
+
+            for (Metric metric : grp1.get2())
+                metric.getAsString();
+        }
+
+        testLog.unregisterListener(lsnr);
+
+        if (err.get() != null)
+            throw err.get();
+    }
+
+    /**
+     * Verifies metric for initialized local partitions.
+     * It is incremented when partition is actually created on node and decremented when it is destroyed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInitializedLocalPartitions() throws Exception {
+        pds = true;
+
+        cleanPersistenceDir();
+
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        MetricRegistry group1Metrics = cacheGroupMetrics(0, "group1").get2();
+
+        AtomicLongMetric locPartsNum = group1Metrics.findMetric("InitializedLocalPartitionsNumber");
+
+        assertEquals(0, locPartsNum.value());
+
+        IgniteCache cache = ignite.cache("cache1");
+
+        for (int i = 0; i < 10; i++)
+            cache.put(i, new byte[100]);
+
+        assertEquals(10, locPartsNum.value());
     }
 }

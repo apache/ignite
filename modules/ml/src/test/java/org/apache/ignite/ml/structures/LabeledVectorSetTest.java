@@ -66,7 +66,7 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
         String[] featureNames = new String[] {"x", "y"};
-        final LabeledVectorSet dataset = new LabeledVectorSet(mtx, lbs, featureNames, false);
+        final LabeledVectorSet dataset = new LabeledVectorSet(mtx, lbs, featureNames);
 
         assertEquals(dataset.getFeatureName(0), "x");
     }
@@ -84,7 +84,7 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
                 {-2.0, -1.0}};
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
-        final LabeledVectorSet dataset = new LabeledVectorSet(mtx, lbs, null, false);
+        final LabeledVectorSet dataset = new LabeledVectorSet(mtx, lbs, null);
 
         assertEquals(dataset.colSize(), 2);
         assertEquals(dataset.rowSize(), 6);
@@ -102,8 +102,8 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
 
         assertEquals(0, new LabeledVectorSet().rowSize());
         assertEquals(1, new LabeledVectorSet(1, 2).rowSize());
-        assertEquals(1, new LabeledVectorSet(1, 2, true).rowSize());
-        assertEquals(1, new LabeledVectorSet(1, 2, null, true).rowSize());
+        assertEquals(1, new LabeledVectorSet(1, 2).rowSize());
+        assertEquals(1, new LabeledVectorSet(1, 2, null).rowSize());
     }
 
     /** */
@@ -205,7 +205,7 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
     public void testLoadingFileWithMissedData() throws URISyntaxException, IOException {
         Path path = Paths.get(Objects.requireNonNull(getClass().getClassLoader().getResource(IRIS_MISSED_DATA)).toURI());
 
-        LabeledVectorSet training = LabeledDatasetLoader.loadFromTxtFile(path, ",", false, false);
+        LabeledVectorSet training = LabeledDatasetLoader.loadFromTxtFile(path, ",", false);
 
         assertEquals(training.features(2).get(1), 0.0, 0);
     }

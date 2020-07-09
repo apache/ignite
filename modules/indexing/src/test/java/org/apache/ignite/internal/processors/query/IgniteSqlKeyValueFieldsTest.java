@@ -49,7 +49,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /**
  * Test hidden _key, _val, _ver columns
  */
-public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
+public class IgniteSqlKeyValueFieldsTest extends AbstractIndexingCommonTest {
     /** */
     private static String NODE_BAD_CONF_MISS_KEY_FIELD = "badConf1";
 
@@ -95,8 +95,6 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         ccfgs.add(buildCacheConfiguration(CACHE_SQL));
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
-        if (gridName.equals(NODE_CLIENT))
-            c.setClientMode(true);
 
         return c;
     }
@@ -111,7 +109,7 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
         startGrid(0);
-        startGrid(NODE_CLIENT);
+        startClientGrid(NODE_CLIENT);
     }
 
     /** {@inheritDoc} */
@@ -310,7 +308,7 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         checkInsert(cache2, "insert into Integer (_key, _val) values (?, ?)", 100, 1);
         checkInsert(cache2, "insert into Integer (_key, _val) values (?, ?)", 200, 2);
 
-        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select p.id, j._key from Person p, \""+ CACHE_JOB +"\".Integer j where p.id = j._val"));
+        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select p.id, j._key from Person p, \"" + CACHE_JOB + "\".Integer j where p.id = j._val"));
         List<List<?>> results = cursor.getAll();
         assertEquals(2, results.size());
         assertEquals(1, results.get(0).get(0));
@@ -516,13 +514,13 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
     }
 
     /** */
-    private void checkInsert(IgniteCache<?, ?> cache, String qry, Object ... args) throws Exception {
+    private void checkInsert(IgniteCache<?, ?> cache, String qry, Object... args) throws Exception {
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(qry).setArgs(args));
         assertEquals(1, ((Number) cursor.getAll().get(0).get(0)).intValue());
     }
 
     /** */
-    private void checkSelect(IgniteCache<?, ?> cache, String selectQry, Object ... expected) {
+    private void checkSelect(IgniteCache<?, ?> cache, String selectQry, Object... expected) {
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(selectQry));
 
         List<List<?>> results = cursor.getAll();
@@ -530,7 +528,7 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         assertEquals(1, results.size());
 
         List<?> row0 = results.get(0);
-        for(int col = 0; col < expected.length; ++col)
+        for (int col = 0; col < expected.length; ++col)
             assertEquals(expected[col], row0.get(col));
     }
 

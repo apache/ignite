@@ -31,7 +31,6 @@ import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -146,7 +145,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      * @param cache Ignite cache.
      * @throws Exception If failed.
      */
-    private void fillCache(final IgniteCache<Integer, Object> cache) throws Exception{
+    private void fillCache(final IgniteCache<Integer, Object> cache) throws Exception {
         final byte[] val = new byte[VAL_SIZE];
 
         for (int i = 0; i < MAX_VALS_AMOUNT * 4; i++)
@@ -341,10 +340,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         Ignite node = grid();
 
         Ignite node1 = startGrid(1);
-
-        Ignition.setClientMode(true);
-
-        Ignite node2 = startGrid(2);
+        Ignite node2 = startClientGrid(2);
 
         waitForDiscovery(node2, node1, node);
 

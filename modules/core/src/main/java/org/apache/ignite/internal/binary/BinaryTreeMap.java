@@ -17,18 +17,17 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.TreeMap;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
-
-import java.io.ObjectStreamException;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Binary {@link TreeMap} wrapper.
@@ -77,7 +76,7 @@ public class BinaryTreeMap implements Binarylizable, Serializable {
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReader rawReader = reader.rawReader();
 
-        Comparator comp =  rawReader.readObject();
+        Comparator comp = rawReader.readObject();
 
         map = comp == null ? new TreeMap() : new TreeMap(comp);
 

@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.DataInput;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.DataInput;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * Output stream to store data into grid cache with separate blocks.
@@ -126,7 +125,7 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
             // Increment metrics.
             bytes += writeLen;
 
-            byte [] dataBuf = new byte[writeLen];
+            byte[] dataBuf = new byte[writeLen];
 
             if (data instanceof ByteBuffer) {
                 ByteBuffer byteBuf = (ByteBuffer)data;

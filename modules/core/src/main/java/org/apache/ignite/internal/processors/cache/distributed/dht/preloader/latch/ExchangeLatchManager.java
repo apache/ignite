@@ -241,29 +241,28 @@ public class ExchangeLatchManager {
     }
 
     /**
-     * Drops the latch created by {@link #getOrCreate(String, AffinityTopologyVersion)}. The corresponding
-     * latch should be created before this method is invoked.
+     * Drops client latches created by {@link #getOrCreate(String, AffinityTopologyVersion)}. The corresponding
+     * latches should be created before this method is invoked.
      * <p>
-     * This method must be called when it is guaranteed that all nodes have processed the latch messages. In
+     * This method must be called when it is guaranteed that all nodes have processed the latches messages. In
      * the context of partitions map exchange this can be done when exchange future is completed.
      *
-     * @param id Latch id.
      * @param topVer Latch topology version.
      */
-    public void dropLatch(String id, AffinityTopologyVersion topVer) {
+    public void dropClientLatches(AffinityTopologyVersion topVer) {
         lock.lock();
 
         try {
-            final CompletableLatchUid latchUid = new CompletableLatchUid(id, topVer);
+            for (CompletableLatchUid latchUid : clientLatches.keySet()) {
+                if (latchUid.topVer.equals(topVer)) {
+                    ClientLatch latch = clientLatches.remove(latchUid);
 
-            ClientLatch clientLatch = clientLatches.remove(latchUid);
-            ServerLatch srvLatch = serverLatches.remove(latchUid);
+                    if (log.isDebugEnabled())
+                        log.debug("Dropping client latch [id=" + latchUid + ", latch=" + latch + ']');
 
-            if (log.isDebugEnabled())
-                log.debug("Dropping latch [id=" + id + ", topVer=" + topVer + ", srvLatch=" + srvLatch +
-                    ", clientLatch=" + clientLatch + ']');
-
-            pendingAcks.remove(latchUid);
+                    pendingAcks.remove(latchUid);
+                }
+            }
         }
         finally {
             lock.unlock();
@@ -275,6 +274,7 @@ public class ExchangeLatchManager {
      *
      * @param topVer Topology version.
      * @return Collection of nodes with at least one cache configured.
+     * @throws IgniteException If nodes for the given {@code topVer} cannot be found in the discovery history.
      */
     private Collection<ClusterNode> aliveNodesForTopologyVer(AffinityTopologyVersion topVer) {
         if (topVer == AffinityTopologyVersion.NONE)
@@ -286,9 +286,9 @@ public class ExchangeLatchManager {
                 return histNodes.stream().filter(n -> !n.isClient() && !n.isDaemon() && discovery.alive(n))
                     .collect(Collectors.toList());
             else
-                throw new IgniteException("Topology " + topVer + " not found in discovery history "
-                    + "; consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is "
-                    + IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE, -1));
+                throw new IgniteException("Topology " + topVer + " not found in discovery history. "
+                        + "Consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is "
+                        + IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE, -1));
         }
     }
 
@@ -351,11 +351,10 @@ public class ExchangeLatchManager {
      * Checks that latch manager can use V2 protocol and skip joining nodes from latch participants.
      *
      * @param topVer Topology version.
+     * @throws IgniteException If nodes for the given {@code topVer} cannot be found in the discovery history.
      */
     public boolean canSkipJoiningNodes(AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> applicableNodes = topVer.equals(AffinityTopologyVersion.NONE)
-            ? discovery.aliveServerNodes()
-            : discovery.topology(topVer.topologyVersion());
+        Collection<ClusterNode> applicableNodes = aliveNodesForTopologyVer(topVer);
 
         return applicableNodes.stream()
             .allMatch(node -> node.version().compareTo(PROTOCOL_V2_VERSION_SINCE) >= 0);
@@ -375,12 +374,21 @@ public class ExchangeLatchManager {
         lock.lock();
 
         try {
+            CompletableLatchUid latchUid = new CompletableLatchUid(message.latchId(), message.topVer());
+
+            if (discovery.topologyVersionEx().compareTo(message.topVer()) < 0) {
+                // It means that this node doesn't receive changed topology version message yet
+                // but received ack message from client latch.
+                // It can happen when we don't have guarantees of received message order for example in ZookeeperSpi.
+                pendingAcks.computeIfAbsent(latchUid, id -> new GridConcurrentHashSet<>()).add(from);
+
+                return;
+            }
+
             ClusterNode coordinator = getLatchCoordinator(message.topVer());
 
             if (coordinator == null)
                 return;
-
-            CompletableLatchUid latchUid = new CompletableLatchUid(message.latchId(), message.topVer());
 
             if (message.isFinal()) {
                 if (log.isDebugEnabled())
@@ -625,8 +633,14 @@ public class ExchangeLatchManager {
             if (log.isDebugEnabled())
                 log.debug("Count down [latch=" + latchId() + ", remaining=" + remaining + "]");
 
-            if (remaining == 0)
+            if (remaining == 0) {
                 complete();
+
+                serverLatches.remove(id);
+
+                if (log.isDebugEnabled())
+                    log.debug("Dropping server latch [id=" + id + ", latch=" + this + ']');
+            }
         }
 
         /** {@inheritDoc} */

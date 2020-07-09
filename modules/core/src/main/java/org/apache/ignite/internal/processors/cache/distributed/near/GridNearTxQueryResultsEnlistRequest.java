@@ -268,7 +268,7 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
                     val = ((IgniteBiTuple)row).getValue();
                 }
 
-                assert key != null && (keysOnly || val != null): "key=" + key + ", val=" + val;
+                assert key != null && (keysOnly || val != null) : "key=" + key + ", val=" + val;
 
                 KeyCacheObject key0 = cctx.toCacheKeyObject(key);
 

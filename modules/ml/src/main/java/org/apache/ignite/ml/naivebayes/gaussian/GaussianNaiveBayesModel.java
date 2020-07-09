@@ -17,13 +17,12 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.BayesModel;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Simple naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as {@code
@@ -71,32 +70,30 @@ public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesMod
 
     /** Returns a number of class to which the input belongs. */
     @Override public Double predict(Vector vector) {
-        double[] probapilityPowers = probabilityPowers(vector);
+        double[] probabilityPowers = probabilityPowers(vector);
 
         int max = 0;
-        for (int i = 0; i < probapilityPowers.length; i++) {
-            probapilityPowers[i] += Math.log(classProbabilities[i]);
+        for (int i = 0; i < probabilityPowers.length; i++) {
+            probabilityPowers[i] += Math.log(classProbabilities[i]);
 
-            if (probapilityPowers[i] > probapilityPowers[max]) {
+            if (probabilityPowers[i] > probabilityPowers[max])
                 max = i;
-            }
         }
         return labels[max];
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double[] probabilityPowers(Vector vector) {
-        double[] probapilityPowers = new double[classProbabilities.length];
+    @Override public double[] probabilityPowers(Vector vector) {
+        double[] probabilityPowers = new double[classProbabilities.length];
 
         for (int i = 0; i < classProbabilities.length; i++) {
             for (int j = 0; j < vector.size(); j++) {
                 double x = vector.get(j);
-                double parobability = gauss(x, means[i][j], variances[i][j]);
-                probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
+                double probability = gauss(x, means[i][j], variances[i][j]);
+                probabilityPowers[i] += (probability > 0 ? Math.log(probability) : .0);
             }
         }
-        return probapilityPowers;
+        return probabilityPowers;
     }
 
     /** A getter for means.*/

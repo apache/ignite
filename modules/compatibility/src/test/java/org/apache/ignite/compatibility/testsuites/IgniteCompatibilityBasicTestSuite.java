@@ -17,8 +17,11 @@
 
 package org.apache.ignite.compatibility.testsuites;
 
+import org.apache.ignite.compatibility.cache.LocalCacheTest;
 import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
+import org.apache.ignite.compatibility.persistence.MetaStorageCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.MigratingToWalV2SerializerWithCompactionTest;
+import org.apache.ignite.compatibility.persistence.MoveBinaryMetadataCompatibility;
 import org.apache.ignite.compatibility.persistence.PersistenceBasicCompatibilityTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -29,10 +32,11 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     PersistenceBasicCompatibilityTest.class,
-
     FoldersReuseCompatibilityTest.class,
-
-    MigratingToWalV2SerializerWithCompactionTest.class
+    MigratingToWalV2SerializerWithCompactionTest.class,
+    MetaStorageCompatibilityTest.class,
+    LocalCacheTest.class,
+    MoveBinaryMetadataCompatibility.class
 })
 public class IgniteCompatibilityBasicTestSuite {
 }

@@ -35,7 +35,6 @@ import static org.junit.Assert.assertEquals;
 
 /** Tests for {@link CompoundNaiveBayesModel} */
 public class CompoundNaiveBayesModelTest {
-
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
@@ -48,7 +47,7 @@ public class CompoundNaiveBayesModelTest {
         Vector observation = VectorUtils.of(6, 130, 8);
 
         CompoundNaiveBayesModel model = new CompoundNaiveBayesModel()
-            .wirhPriorProbabilities(classProbabilities)
+            .withPriorProbabilities(classProbabilities)
             .withLabels(labels)
             .withGaussianModel(gaussianModel);
 
@@ -64,7 +63,7 @@ public class CompoundNaiveBayesModelTest {
         Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
 
         CompoundNaiveBayesModel model = new CompoundNaiveBayesModel()
-            .wirhPriorProbabilities(classProbabilities)
+            .withPriorProbabilities(classProbabilities)
             .withLabels(labels)
             .withDiscreteModel(discreteModel);
 
@@ -73,23 +72,23 @@ public class CompoundNaiveBayesModelTest {
 
     /** Test. */
     @Test
-    public void testPredictGausAndDiscrete() {
-        DiscreteNaiveBayesModel discreteModel =
+    public void testPredictGaussAndDiscrete() {
+        DiscreteNaiveBayesModel discreteMdl =
             new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, null);
 
-        GaussianNaiveBayesModel gaussianModel =
+        GaussianNaiveBayesModel gaussianMdl =
             new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, null);
 
-        CompoundNaiveBayesModel model = new CompoundNaiveBayesModel()
-            .wirhPriorProbabilities(classProbabilities)
+        CompoundNaiveBayesModel mdl = new CompoundNaiveBayesModel()
+            .withPriorProbabilities(classProbabilities)
             .withLabels(labels)
-            .withGaussianModel(gaussianModel)
+            .withGaussianModel(gaussianMdl)
             .withGaussianFeatureIdsToSkip(asList(3, 4, 5, 6, 7))
-            .withDiscreteModel(discreteModel)
+            .withDiscreteModel(discreteMdl)
             .withDiscreteFeatureIdsToSkip( asList(0, 1, 2));
 
         Vector observation = VectorUtils.of(6, 130, 8, 1, 0, 1, 1, 0);
 
-        assertEquals(LABEL_2, model.predict(observation), PRECISION);
+        assertEquals(LABEL_2, mdl.predict(observation), PRECISION);
     }
 }

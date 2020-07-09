@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -931,7 +931,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      * @param keys Keys.
      */
     private int prepareTx(Ignite ignite, List<Integer> keys) throws IgniteCheckedException {
-        try(Transaction tx = ignite.transactions().txStart()) {
+        try (Transaction tx = ignite.transactions().txStart()) {
             for (Integer key : keys)
                 ignite.cache(CACHE_NAME).put(key, key);
 
@@ -964,7 +964,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
             assertNotNull(it);
 
-            while(it.hasNextX())
+            while (it.hasNextX())
                 rows.add(it.next());
         }
 
@@ -991,10 +991,10 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 ids[i] = bucket[i].tailId;
         }
 
-        AtomicLong[] bucketsSize = GridTestUtils.getFieldValue(reuseList, PagesList.class, "bucketsSize");
-        assertEquals(1, bucketsSize.length);
+        AtomicLongArray bucketsSize = GridTestUtils.getFieldValue(reuseList, PagesList.class, "bucketsSize");
+        assertEquals(1, bucketsSize.length());
 
-        return new T2<>(ids, (int)bucketsSize[0].get());
+        return new T2<>(ids, (int)bucketsSize.get(0));
     }
 
     /**
@@ -1070,12 +1070,12 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 AtomicReferenceArray<PagesList.Stripe[]> buckets = GridTestUtils.getFieldValue(freeList,
                     AbstractFreeList.class, "buckets");
 
-                AtomicLong[] bucketsSize = GridTestUtils.getFieldValue(freeList, PagesList.class, "bucketsSize");
+                AtomicLongArray bucketsSize = GridTestUtils.getFieldValue(freeList, PagesList.class, "bucketsSize");
 
                 assertNotNull(buckets);
                 assertNotNull(bucketsSize);
                 assertTrue(buckets.length() > 0);
-                assertEquals(bucketsSize.length, buckets.length());
+                assertEquals(bucketsSize.length(), buckets.length());
 
                 Map<Integer, long[]> tailsPerBucket = new HashMap<>();
 
@@ -1100,10 +1100,10 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     }
                 }
 
-                int[] cntsPerBucket = new int[bucketsSize.length];
+                int[] cntsPerBucket = new int[bucketsSize.length()];
 
-                for (int i = 0; i < bucketsSize.length; i++) {
-                    cntsPerBucket[i] = (int)bucketsSize[i].get();
+                for (int i = 0; i < bucketsSize.length(); i++) {
+                    cntsPerBucket[i] = (int)bucketsSize.get(i);
 
                     if (cntsPerBucket[i] > 0)
                         foundNonEmpty = true;

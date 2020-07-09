@@ -56,8 +56,8 @@ public class PageUtils {
      */
     public static byte[] getBytes(long addr, int off, int len) {
         assert addr > 0 : addr;
-        assert off >= 0 : off;
-        assert len >= 0 : len;
+        assert off >= 0;
+        assert len >= 0;
 
         byte[] bytes = new byte[len];
 

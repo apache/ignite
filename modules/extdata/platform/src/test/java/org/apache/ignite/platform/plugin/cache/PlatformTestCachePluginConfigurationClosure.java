@@ -17,13 +17,12 @@
 
 package org.apache.ignite.platform.plugin.cache;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.platform.PlatformCachePluginConfigurationClosure;
-
-import java.util.ArrayList;
-import java.util.Collections;
 
 /**
  * Test config closure.

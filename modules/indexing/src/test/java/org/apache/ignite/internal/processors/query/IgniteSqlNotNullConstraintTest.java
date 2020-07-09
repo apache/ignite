@@ -61,42 +61,42 @@ import org.junit.Test;
 /** */
 public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
     /** Name of client node. */
-    private static String NODE_CLIENT = "client";
+    private static final String NODE_CLIENT = "client";
 
     /** Number of server nodes. */
-    private static int NODE_COUNT = 2;
+    private static final int NODE_COUNT = 2;
 
     /** Cache prefix. */
-    private static String CACHE_PREFIX = "person";
+    private static final String CACHE_PREFIX = "person";
 
     /** Transactional person cache. */
-    private static String CACHE_PERSON = "person-PARTITIONED-TRANSACTIONAL";
+    private static final String CACHE_PERSON = "person-PARTITIONED-TRANSACTIONAL";
 
     /** Name of SQL table. */
-    private static String TABLE_PERSON = "\"" + CACHE_PERSON + "\".\"PERSON\"";
+    private static final String TABLE_PERSON = "\"" + CACHE_PERSON + "\".\"PERSON\"";
 
     /** Template of cache with read-through setting. */
-    private static String CACHE_READ_THROUGH = "cacheReadThrough";
+    private static final String CACHE_READ_THROUGH = "cacheReadThrough";
 
     /** Template of cache with interceptor setting. */
-    private static String CACHE_INTERCEPTOR = "cacheInterceptor";
+    private static final String CACHE_INTERCEPTOR = "cacheInterceptor";
 
     /** Expected error message. */
-    private static String ERR_MSG = "Null value is not allowed for column 'NAME'";
+    private static final String ERR_MSG = "Null value is not allowed for column 'NAME'";
 
     /** Expected error message for read-through restriction. */
-    private static String READ_THROUGH_ERR_MSG = "NOT NULL constraint is not supported when " +
+    private static final String READ_THROUGH_ERR_MSG = "NOT NULL constraint is not supported when " +
         "CacheConfiguration.readThrough is enabled.";
 
     /** Expected error message for cache interceptor restriction. */
-    private static String INTERCEPTOR_ERR_MSG = "NOT NULL constraint is not supported when " +
+    private static final String INTERCEPTOR_ERR_MSG = "NOT NULL constraint is not supported when " +
         "CacheConfiguration.interceptor is set.";
 
     /** Name of the node which configuration includes restricted cache config. */
-    private static String READ_THROUGH_CFG_NODE_NAME = "nodeCacheReadThrough";
+    private static final String READ_THROUGH_CFG_NODE_NAME = "nodeCacheReadThrough";
 
     /** Name of the node which configuration includes restricted cache config. */
-    private static String INTERCEPTOR_CFG_NODE_NAME = "nodeCacheInterceptor";
+    private static final String INTERCEPTOR_CFG_NODE_NAME = "nodeCacheInterceptor";
 
     /** OK value. */
     private final Person okValue = new Person("Name", 18);
@@ -112,23 +112,15 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
         ccfgs.addAll(cacheConfigurations());
 
-        if (gridName.equals(READ_THROUGH_CFG_NODE_NAME)) {
+        if (gridName.equals(READ_THROUGH_CFG_NODE_NAME))
             ccfgs.add(buildCacheConfigurationRestricted("BadCfgTestCacheRT", true, false, true));
 
-            c.setClientMode(true);
-        }
-
-        if (gridName.equals(INTERCEPTOR_CFG_NODE_NAME)) {
+        if (gridName.equals(INTERCEPTOR_CFG_NODE_NAME))
             ccfgs.add(buildCacheConfigurationRestricted("BadCfgTestCacheINT", false, true, true));
-
-            c.setClientMode(true);
-        }
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
         if (gridName.equals(NODE_CLIENT)) {
-            c.setClientMode(true);
-
             // Not allowed to have local cache on client without memory config
             c.setDataStorageConfiguration(new DataStorageConfiguration());
         }
@@ -218,7 +210,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
         startGrids(NODE_COUNT);
 
-        startGrid(NODE_CLIENT);
+        startClientGrid(NODE_CLIENT);
 
         // Add cache template with read-through cache store.
         grid(NODE_CLIENT).addCacheConfiguration(
@@ -939,7 +931,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
         // Node start-up failure (read-through cache store).
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return startGrid(READ_THROUGH_CFG_NODE_NAME);
+                return startClientGrid(READ_THROUGH_CFG_NODE_NAME);
             }
         }, IgniteCheckedException.class, READ_THROUGH_ERR_MSG);
 
@@ -958,7 +950,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
         // Node start-up failure (interceptor).
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return startGrid(INTERCEPTOR_CFG_NODE_NAME);
+                return startClientGrid(INTERCEPTOR_CFG_NODE_NAME);
             }
         }, IgniteCheckedException.class, INTERCEPTOR_ERR_MSG);
 
@@ -977,7 +969,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
-                    "WITH \"template=" + CACHE_READ_THROUGH+ "\"");
+                    "WITH \"template=" + CACHE_READ_THROUGH + "\"");
             }
         }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
     }

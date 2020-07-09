@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.impl;
 
+import java.security.Permissions;
 import java.util.Arrays;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
@@ -26,26 +27,36 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 /** */
 public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvider {
     /** Login. */
-    private final String login;
+    protected final String login;
 
     /** Password. */
-    private final String pwd;
+    protected final String pwd;
 
     /** Permissions. */
-    private final SecurityPermissionSet perms;
-
-    /** Global authentication. */
-    private final boolean globalAuth;
-
-    /** Users security data. */
-    private final TestSecurityData[] clientData;
+    protected final SecurityPermissionSet perms;
 
     /** */
-    public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms, boolean globalAuth,
-        TestSecurityData... clientData) {
+    private final Permissions sandboxPerms;
+
+    /** Global authentication. */
+    protected final boolean globalAuth;
+
+    /** Users security data. */
+    protected final TestSecurityData[] clientData;
+
+    /** */
+    public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+        boolean globalAuth, TestSecurityData... clientData) {
+        this(login, pwd, perms, null, globalAuth, clientData);
+    }
+
+    /** */
+    public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+        Permissions sandboxPerms, boolean globalAuth, TestSecurityData... clientData) {
         this.login = login;
         this.pwd = pwd;
         this.perms = perms;
+        this.sandboxPerms = sandboxPerms != null ? sandboxPerms : new Permissions();
         this.globalAuth = globalAuth;
         this.clientData = clientData.clone();
     }
@@ -53,7 +64,7 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     /** {@inheritDoc} */
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
         return new TestSecurityProcessor(ctx,
-            new TestSecurityData(login, pwd, perms),
+            new TestSecurityData(login, pwd, perms, sandboxPerms),
             Arrays.asList(clientData),
             globalAuth);
     }

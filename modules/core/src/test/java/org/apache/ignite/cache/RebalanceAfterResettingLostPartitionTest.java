@@ -17,10 +17,16 @@
 
 package org.apache.ignite.cache;
 
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
@@ -32,18 +38,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-
-import java.util.Collections;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache" + UUID.randomUUID().toString();
@@ -77,7 +75,7 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
 
         cfg.setConsistentId(igniteInstanceName);
 
-        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration().setWalSegmentSize(4 * 1024 * 1024);
 
         storageCfg.getDefaultDataRegionConfiguration()
             .setPersistenceEnabled(true)
@@ -89,8 +87,8 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
             .setName(CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setBackups(1)
-            .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE));
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1));
 
         return cfg;
     }
@@ -144,11 +142,11 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
         stopGrid(0);
 
         // Returning first node to the cluster.
-        startGrid(0);
+        IgniteEx g0 = startGrid(0);
 
         assertTrue(Objects.requireNonNull(
             grid(0).cachex(CACHE_NAME)).context().topology().localPartitions().stream().allMatch(
-            p -> p.state() == GridDhtPartitionState.OWNING));
+            p -> p.state() == GridDhtPartitionState.LOST));
 
         // Verify that partition loss is detected.
         assertTrue(Objects.requireNonNull(
@@ -156,7 +154,7 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
             p -> p.state() == GridDhtPartitionState.LOST));
 
         // Reset lost partitions and wait for PME.
-        grid(1).resetLostPartitions(Collections.singletonList(CACHE_NAME));
+        grid(1).resetLostPartitions(Arrays.asList(CACHE_NAME, "ignite-sys-cache"));
 
         awaitPartitionMapExchange();
 

@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -29,13 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * File or directory information.
@@ -189,7 +188,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
     @Override public String property(String name) throws IllegalArgumentException {
         String val = props.get(name);
 
-        if (val ==  null)
+        if (val == null)
             throw new IllegalArgumentException("File property not found [path=" + path + ", name=" + name + ']');
 
         return val;

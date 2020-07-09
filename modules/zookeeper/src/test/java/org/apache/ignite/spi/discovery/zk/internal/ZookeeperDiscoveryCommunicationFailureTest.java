@@ -441,9 +441,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
 
         startGridsMultiThreaded(10);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(10, 5);
+        startClientGridsMultiThreaded(10, 5);
 
         int nodesCnt = 15;
 
@@ -471,11 +469,10 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
                 // No-op.
             }
 
-            boolean clientMode = ThreadLocalRandom.current().nextBoolean();
-
-            helper.clientMode(clientMode);
-
-            startGrid(nodeIdx++);
+            if (ThreadLocalRandom.current().nextBoolean())
+                startClientGrid(nodeIdx++);
+            else
+                startGrid(nodeIdx++);
 
             nodesCnt = nodesCnt - KillRandomCommunicationFailureResolver.LAST_KILLED_NODES.size() + 1;
 
@@ -520,9 +517,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
 
         startGrids(3);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(3, 2);
+        startClientGridsMultiThreaded(3, 2);
 
         ZkTestCommunicationSpi.testSpi(ignite(0)).initCheckResult(5, 0, 1);
         ZkTestCommunicationSpi.testSpi(ignite(1)).initCheckResult(5, 0, 1);
@@ -912,9 +907,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
 
         startGridsMultiThreaded(5);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(5, 5);
+        startClientGridsMultiThreaded(5, 5);
 
         final int NODES = 10;
 
@@ -942,7 +935,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
         private IgniteLogger log;
 
         /** */
-        Map<String, CacheConfiguration<?, ?>>  caches;
+        Map<String, CacheConfiguration<?, ?>> caches;
 
         /** */
         Map<String, List<List<ClusterNode>>> affMap;
@@ -1102,7 +1095,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
             while (idxs.size() < killNodes) {
                 int idx = rnd.nextInt(nodes.size());
 
-                if(!nodes.get(idx).isClient() && !idxs.contains(idx) && --srvCnt < 1)
+                if (!nodes.get(idx).isClient() && !idxs.contains(idx) && --srvCnt < 1)
                     continue;
 
                 idxs.add(idx);
@@ -1126,7 +1119,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
          * @param killOrders Killed nodes order.
          * @return Factory.
          */
-        static IgniteOutClosure<CommunicationFailureResolver> factory(final Collection<Long> killOrders)  {
+        static IgniteOutClosure<CommunicationFailureResolver> factory(final Collection<Long> killOrders) {
             return new IgniteOutClosure<CommunicationFailureResolver>() {
                 @Override public CommunicationFailureResolver apply() {
                     return new TestNodeKillCommunicationFailureResolver(killOrders);

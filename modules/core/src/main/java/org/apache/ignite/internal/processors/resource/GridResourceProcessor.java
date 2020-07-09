@@ -83,6 +83,18 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
+
+        // The IgniteSecurity started for this moment,
+        // and we can make a decision on what instance of Ignite injector should be used.
+        if (ctx.security().sandbox().enabled()) {
+            injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] =
+                new GridResourceProxiedIgniteInjector(ctx.grid());
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         ioc.undeployAll();
 
@@ -322,15 +334,12 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             case LOAD_BALANCER:
             case TASK_CONTINUOUS_MAPPER:
             case CACHE_STORE_SESSION:
+            case FILESYSTEM_RESOURCE:
                 res = new GridResourceBasicInjector<>(param);
                 break;
 
             case JOB_CONTEXT:
                 res = new GridResourceJobContextInjector((ComputeJobContext)param);
-                break;
-
-            case FILESYSTEM_RESOURCE:
-                res = new GridResourceBasicInjector<>(param);
                 break;
 
             default:
@@ -397,7 +406,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         injectToJob(dep, taskCls, obj, ses, jobCtx);
 
         if (obj instanceof GridInternalWrapper) {
-            Object usrObj = ((GridInternalWrapper)obj).userObject();
+            Object usrObj = ((GridInternalWrapper<?>)obj).userObject();
 
             if (usrObj != null)
                 injectToJob(dep, taskCls, usrObj, ses, jobCtx);

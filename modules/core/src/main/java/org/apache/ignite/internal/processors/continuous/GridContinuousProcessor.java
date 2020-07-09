@@ -63,6 +63,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageResultsCollector;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
+import org.apache.ignite.internal.managers.systemview.walker.ContinuousQueryViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -115,7 +116,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class GridContinuousProcessor extends GridProcessorAdapter {
     /** */
-    public static final String CQ_SYS_VIEW = metricName("query", "continuous");
+    public static final String CQ_SYS_VIEW = metricName("continuous", "queries");
 
     /** */
     public static final String CQ_SYS_VIEW_DESC = "Continuous queries";
@@ -181,7 +182,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         ctx.systemView().registerView(CQ_SYS_VIEW, CQ_SYS_VIEW_DESC,
-            ContinuousQueryView.class,
+            new ContinuousQueryViewWalker(),
             new ReadOnlyCollectionView2X<>(rmtInfos.entrySet(), locInfos.entrySet()),
             e -> new ContinuousQueryView(e.getKey(), e.getValue()));
 
@@ -517,7 +518,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         if (discoProtoVer == 2) {
-            if (data.hasJoiningNodeData())    {
+            if (data.hasJoiningNodeData()) {
                 ContinuousRoutinesJoiningNodeDiscoveryData nodeData = (ContinuousRoutinesJoiningNodeDiscoveryData)
                     data.joiningNodeData();
 
@@ -1012,7 +1013,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             assert discoProtoVer == 2 : discoProtoVer;
 
             byte[] nodeFilterBytes = nodeFilter != null ? U.marshal(marsh, nodeFilter) : null;
-            byte[] hndBytes =  U.marshal(marsh, hnd);
+            byte[] hndBytes = U.marshal(marsh, hnd);
 
             StartRequestDataV2 reqData = new StartRequestDataV2(nodeFilterBytes,
                 hndBytes,
@@ -1471,7 +1472,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         // Load partition counters.
-        if (hnd.isQuery()) {
+        if (err == null && hnd.isQuery()) {
             GridCacheProcessor proc = ctx.cache();
 
             if (proc != null) {

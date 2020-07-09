@@ -26,10 +26,13 @@ import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Descriptor of type.
@@ -64,13 +67,24 @@ public class QueryEntityTypeDescriptor {
     private QueryEntityIndexDescriptor fullTextIdx;
 
     /** */
-    private Class<?> keyCls;
+    private final Class<?> keyCls;
 
     /** */
-    private Class<?> valCls;
+    private final Class<?> valCls;
 
     /** */
     private boolean valTextIdx;
+
+    /**
+     * Constructor.
+     *
+     * @param keyCls QueryEntity key class.
+     * @param valCls QueryEntity value class.
+     */
+    public QueryEntityTypeDescriptor(@NotNull Class<?> keyCls, @NotNull Class<?> valCls) {
+        this.keyCls = keyCls;
+        this.valCls = valCls;
+    }
 
     /**
      * @return Indexes.
@@ -140,15 +154,6 @@ public class QueryEntityTypeDescriptor {
     }
 
     /**
-     * Sets value class.
-     *
-     * @param valCls Value class.
-     */
-    public void valueClass(Class<?> valCls) {
-        this.valCls = valCls;
-    }
-
-    /**
      * @return Key class.
      */
     public Class<?> keyClass() {
@@ -156,31 +161,29 @@ public class QueryEntityTypeDescriptor {
     }
 
     /**
-     * Set key class.
-     *
-     * @param keyCls Key class.
-     */
-    public void keyClass(Class<?> keyCls) {
-        this.keyCls = keyCls;
-    }
-
-    /**
      * Adds property to the type descriptor.
      *
      * @param prop Property.
+     * @param sqlAnn SQL annotation, can be {@code null}.
      * @param key Property ownership flag (key or not).
      * @param failOnDuplicate Fail on duplicate flag.
      */
-    public void addProperty(QueryEntityClassProperty prop, boolean key, boolean failOnDuplicate) {
-        String name = prop.fullName();
+    public void addProperty(QueryEntityClassProperty prop, QuerySqlField sqlAnn, boolean key, boolean failOnDuplicate) {
+        String propName = prop.name();
 
-        if (props.put(name, prop) != null && failOnDuplicate)
-            throw new CacheException("Property with name '" + name + "' already exists.");
+        if (sqlAnn != null && !F.isEmpty(sqlAnn.name()))
+            propName = sqlAnn.name();
 
-        fields.put(name, prop.type());
+        if (props.put(propName, prop) != null && failOnDuplicate) {
+            throw new CacheException("Property with name '" + propName + "' already exists for " +
+                (key ? "key" : "value") + ": " +
+                "QueryEntity [key=" + keyCls.getName() + ", value=" + valCls.getName() + ']');
+        }
+
+        fields.put(prop.fullName(), prop.type());
 
         if (key)
-            keyProps.add(name);
+            keyProps.add(prop.fullName());
     }
 
     /**

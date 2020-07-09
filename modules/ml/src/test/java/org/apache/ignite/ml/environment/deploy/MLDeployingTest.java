@@ -61,7 +61,7 @@ public class MLDeployingTest extends GridCommonAbstractTest {
     private static final String EXT_PREPROCESSOR_2 = "org.apache.ignite.tests.p2p.ml.CustomPreprocessor2";
 
     /** */
-    private static final int NUMBER_OF_COMPUTE_RETTRIES = 3;
+    private static final int NUMBER_OF_COMPUTE_RETRIES = 3;
 
     /** */
     private Ignite ignite1;
@@ -80,7 +80,6 @@ public class MLDeployingTest extends GridCommonAbstractTest {
             .setIpFinder(new TcpDiscoveryVmIpFinder()
                 .setAddresses(Arrays.asList("127.0.0.1:47500..47509"))));
 
-        cfg.setClientMode(false);
         cfg.setPeerClassLoadingEnabled(true);
 
         return cfg;
@@ -160,9 +159,9 @@ public class MLDeployingTest extends GridCommonAbstractTest {
         try {
             cache = prepareCache(ignite1, cacheName);
             body.accept(new CacheBasedDatasetBuilder<>(ignite1, cache)
-                .withRetriesNumber(NUMBER_OF_COMPUTE_RETTRIES));
+                .withRetriesNumber(NUMBER_OF_COMPUTE_RETRIES));
         } finally {
-            if(cache != null)
+            if (cache != null)
                 cache.destroy();
         }
     }
@@ -171,16 +170,16 @@ public class MLDeployingTest extends GridCommonAbstractTest {
     private void fitAndTestModel(CacheBasedDatasetBuilder<Integer, Vector> datasetBuilder,
         Preprocessor<Integer, Vector> preprocessor) {
         LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer();
-        LogisticRegressionModel model = trainer.fit(datasetBuilder, preprocessor);
+        LogisticRegressionModel mdl = trainer.fit(datasetBuilder, preprocessor);
 
         // For this case any answer is valid.
-        assertEquals(0., model.predict(VectorUtils.of(0., 0.)), 1.);
+        assertEquals(0., mdl.predict(VectorUtils.of(0., 0.)), 1.);
     }
 
     /** */
     private Vectorizer<Integer, Vector, Integer, Double> createVectorizer() throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException {
-        ClassLoader loader = getExternalClassLoader();
-        Class<?> clazz = loader.loadClass(EXT_VECTORIZER);
+        ClassLoader ldr = getExternalClassLoader();
+        Class<?> clazz = ldr.loadClass(EXT_VECTORIZER);
 
         Constructor ctor = clazz.getConstructor();
         Vectorizer<Integer, Vector, Integer, Double> vectorizer =
@@ -191,22 +190,21 @@ public class MLDeployingTest extends GridCommonAbstractTest {
 
     /** */
     private Preprocessor<Integer, Vector> createPreprocessor(Preprocessor<Integer, Vector> basePreprocessor,
-        String className) throws Exception {
-        ClassLoader loader = getExternalClassLoader();
-        Class<?> clazz = loader.loadClass(className);
+        String clsName) throws Exception {
+        ClassLoader ldr = getExternalClassLoader();
+        Class<?> clazz = ldr.loadClass(clsName);
 
         Constructor ctor = clazz.getConstructor(Preprocessor.class);
         return (Preprocessor<Integer, Vector>)ctor.newInstance(basePreprocessor);
     }
 
     /** */
-    @NotNull private PreprocessingTrainer makePreprocessorTrainer(String preprocessorClassName) throws Exception {
+    @NotNull private PreprocessingTrainer makePreprocessorTrainer(String preprocessorClsName) throws Exception {
         return new PreprocessingTrainer() {
-            @Override
-            public Preprocessor fit(LearningEnvironmentBuilder envBuilder, DatasetBuilder datasetBuilder,
+            @Override public Preprocessor fit(LearningEnvironmentBuilder envBuilder, DatasetBuilder datasetBuilder,
                 Preprocessor basePreprocessor) {
                 try {
-                    return createPreprocessor(basePreprocessor, preprocessorClassName);
+                    return createPreprocessor(basePreprocessor, preprocessorClsName);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -224,7 +222,7 @@ public class MLDeployingTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteCache<Integer, Vector> prepareCache(Ignite ignite, String cacheName) {
-        IgniteCache<Integer, Vector> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Vector>(cacheName));
+        IgniteCache<Integer, Vector> cache = ignite.getOrCreateCache(new CacheConfiguration<>(cacheName));
 
         for (int i = 0; i < xor.length; i++)
             cache.put(i, VectorUtils.of(xor[i]));
@@ -235,6 +233,9 @@ public class MLDeployingTest extends GridCommonAbstractTest {
     /** */
     @FunctionalInterface
     private static interface TestCacheConsumer {
+        /**
+         * @param datasetBuilder Dataset builder.
+         */
         public void accept(CacheBasedDatasetBuilder<Integer, Vector> datasetBuilder) throws Exception;
     }
 }

@@ -63,7 +63,7 @@ public class OneHotEncoderPreprocessorTest {
                     put("A", 0);
                     put("B", 1);
                 }
-            }},
+            } },
             vectorizer,
             new HashSet() {
                 {
@@ -101,7 +101,7 @@ public class OneHotEncoderPreprocessorTest {
                         put("42", 0);
                         put("43", 1);
                     }
-                }},
+                } },
             vectorizer,
             new HashSet() {
                 {
@@ -176,7 +176,7 @@ public class OneHotEncoderPreprocessorTest {
      * @see UnknownCategorialValueException
      */
     @Test
-    public void testApplyWithUnknownGategorialValues() {
+    public void testApplyWithUnknownCategorialValues() {
         Vector[] data = new Vector[] {
             new DenseVector(new Serializable[] {"1", "Moscow", "A"}),
             new DenseVector(new Serializable[] {"2", "Moscow", "A"}),
@@ -200,7 +200,7 @@ public class OneHotEncoderPreprocessorTest {
                     put("A", 0);
                     put("B", 1);
                 }
-            }},
+            } },
             vectorizer,
             new HashSet() {
                 {

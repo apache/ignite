@@ -17,6 +17,12 @@
 
 package org.apache.ignite.spi.discovery;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -30,12 +36,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 import org.junit.Test;
 
 /**
@@ -58,7 +58,6 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
             : new TcpDiscoverySpi();
 
         return super.getConfiguration(igniteInstanceName)
-            .setClientMode(igniteInstanceName.startsWith(CLIENT_INSTANCE_NAME))
             .setClientFailureDetectionTimeout(1_000)
             .setMetricsUpdateFrequency(500)
             .setDiscoverySpi(discoSpi
@@ -89,7 +88,7 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
     public void testClientConnectToCluster() throws Exception {
         clientMetricsUpdateCnt = 0;
 
-        IgniteEx client = startGrid(CLIENT_INSTANCE_NAME);
+        IgniteEx client = startClientGrid(CLIENT_INSTANCE_NAME);
 
         assertTrue(clientMetricsUpdateCnt > 0);
 

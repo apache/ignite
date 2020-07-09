@@ -64,9 +64,6 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
-    /** */
-    private boolean clientMode;
-
     /** {@inheritDoc */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -80,9 +77,6 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
         cfg.setCommunicationSpi(new SingleMessageInterceptorCommunicationSpi(2));
 
-        if (clientMode)
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -94,8 +88,6 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
     /** {@inheritDoc */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        clientMode = false;
     }
 
     /**
@@ -140,7 +132,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
     public void testPartitionCountersConsistencyOnExchange() throws Exception {
         // Reopen https://issues.apache.org/jira/browse/IGNITE-10766 if starts failing with forced MVCC
 
-        IgniteEx ignite = (IgniteEx) startGrids(4);
+        IgniteEx ignite = startGrids(4);
         ignite.cluster().active(true);
 
         awaitPartitionMapExchange();
@@ -148,11 +140,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
         final String atomicCacheName = "atomic-cache";
         final String txCacheName = "tx-cache";
 
-        clientMode = true;
-
-        Ignite client = startGrid(4);
-
-        clientMode = false;
+        Ignite client = startClientGrid(4);
 
         IgniteCache atomicCache = client.getOrCreateCache(new CacheConfiguration<>(atomicCacheName)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)

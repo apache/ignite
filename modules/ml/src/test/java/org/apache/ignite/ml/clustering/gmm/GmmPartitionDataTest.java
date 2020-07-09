@@ -32,6 +32,7 @@ import static org.junit.Assert.assertEquals;
  * Tests for {@link GmmPartitionDataTest}.
  */
 public class GmmPartitionDataTest {
+    /** Data. */
     private GmmPartitionData data;
 
     /** */

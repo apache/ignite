@@ -17,8 +17,6 @@
 
 package org.apache.ignite.messaging;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +25,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -64,7 +64,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     public void testSendDefaultMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        send(ignite1.message(), msgStr, new IgniteBiInClosure<String, Thread> () {
+        send(ignite1.message(), msgStr, new IgniteBiInClosure<String, Thread>() {
             @Override public void apply(String msg, Thread thread) {
                 Assert.assertEquals(Thread.currentThread(), thread);
                 Assert.assertEquals(msgStr, msg);
@@ -81,7 +81,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     public void testSendAsyncMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        send(ignite1.message(), msgStr,  new IgniteBiInClosure<String, Thread> () {
+        send(ignite1.message(), msgStr, new IgniteBiInClosure<String, Thread>() {
             @Override public void apply(String msg, Thread thread) {
                 Assert.assertTrue(!Thread.currentThread().equals(thread));
                 Assert.assertEquals(msgStr, msg);
@@ -99,8 +99,8 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
 
-        sendWith2Nodes(ignite2, ignite1.message(), msgStr, new IgniteBiInClosure<String, Thread> () {
-            @Override public  void apply(String msg, Thread thread) {
+        sendWith2Nodes(ignite2, ignite1.message(), msgStr, new IgniteBiInClosure<String, Thread>() {
+            @Override public void apply(String msg, Thread thread) {
                 Assert.assertEquals(Thread.currentThread(), thread);
                 Assert.assertEquals(msgStr, msg);
             }
@@ -117,8 +117,8 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
 
-        sendWith2Nodes(ignite2, ignite1.message(), msgStr,  new IgniteBiInClosure<String, Thread> () {
-            @Override public  void apply(String msg, Thread thread) {
+        sendWith2Nodes(ignite2, ignite1.message(), msgStr, new IgniteBiInClosure<String, Thread>() {
+            @Override public void apply(String msg, Thread thread) {
                 Assert.assertTrue(!Thread.currentThread().equals(thread));
                 Assert.assertEquals(msgStr, msg);
             }
@@ -136,7 +136,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
 
         final List<String> msgs = orderedMessages();
 
-        sendOrdered(ignite1.message(), msgs, new IgniteBiInClosure< List<String>,  List<Thread>> () {
+        sendOrdered(ignite1.message(), msgs, new IgniteBiInClosure<List<String>, List<Thread>>() {
             @Override public void apply(List<String> received, List<Thread> threads) {
                 assertFalse(threads.contains(Thread.currentThread()));
                 assertTrue(msgs.equals(received));
@@ -324,7 +324,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
             final Ignite ignite2,
             final IgniteMessaging igniteMsg,
             final String msgStr,
-            final IgniteBiInClosure<String, Thread>  cls,
+            final IgniteBiInClosure<String, Thread> cls,
             final boolean async
     ) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
@@ -424,7 +424,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      * @param cls Callback for compare result.
      * @throws Exception If failed.
      */
-    private<T> void sendOrdered(
+    private <T> void sendOrdered(
             final IgniteMessaging igniteMsg,
             final List<T> msgs,
             final IgniteBiInClosure<List<T>,List<Thread>> cls
@@ -469,7 +469,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     /**
      *
      */
-    private static class Message implements Serializable{
+    private static class Message implements Serializable {
         /** Thread name. */
         private final String threadName;
 

@@ -148,6 +148,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Marshal data.
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="action"></param>
+        public void Marshal(IBinaryStream stream, Action<BinaryWriter> action)
+        {
+            BinaryWriter writer = StartMarshal(stream);
+
+            action(writer);
+
+            FinishMarshal(writer);
+        }
+
+        /// <summary>
         /// Marshals an object.
         /// </summary>
         /// <param name="val">Value.</param>
@@ -276,17 +290,35 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Metadata or null.</returns>
         public BinaryType GetBinaryType(int typeId)
         {
+            // NOTE: This method results can't (easily) be cached because binary metadata is changing on the fly:
+            // New fields and enum values can be added.
             if (Ignite != null)
             {
                 var meta = Ignite.BinaryProcessor.GetBinaryType(typeId);
 
                 if (meta != null)
                 {
+                    UpdateOrCreateBinaryTypeHolder(meta);
+
                     return meta;
                 }
             }
 
             return BinaryType.Empty;
+        }
+
+        /// <summary>
+        /// Gets cached metadata for the given type ID.
+        /// NOTE: Returned value is potentially stale.
+        /// Caller is responsible for refreshing the value as needed by invoking <see cref="GetBinaryType"/>.
+        /// </summary>
+        /// <param name="typeId">Type ID.</param>
+        /// <returns>Metadata or null.</returns>
+        public BinaryTypeHolder GetCachedBinaryTypeHolder(int typeId)
+        {
+            BinaryTypeHolder holder;
+            _metas.TryGetValue(typeId, out holder);
+            return holder;
         }
 
         /// <summary>
@@ -314,37 +346,80 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Binary type handler.</returns>
         public IBinaryTypeHandler GetBinaryTypeHandler(IBinaryTypeDescriptor desc)
         {
-            BinaryTypeHolder holder;
-
-            if (!_metas.TryGetValue(desc.TypeId, out holder))
-            {
-                lock (this)
-                {
-                    if (!_metas.TryGetValue(desc.TypeId, out holder))
-                    {
-                        IDictionary<int, BinaryTypeHolder> metas0 =
-                            new Dictionary<int, BinaryTypeHolder>(_metas);
-
-                        holder = new BinaryTypeHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName,
-                            desc.IsEnum, this);
-
-                        metas0[desc.TypeId] = holder;
-
-                        _metas = metas0;
-                    }
-                }
-            }
+            var holder = GetBinaryTypeHolder(desc);
 
             if (holder != null)
             {
                 ICollection<int> ids = holder.GetFieldIds();
 
-                bool newType = ids.Count == 0 && !holder.Saved();
+                bool newType = ids.Count == 0 && !holder.IsSaved;
 
                 return new BinaryTypeHashsetHandler(ids, newType);
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Gets the binary type holder.
+        /// </summary>
+        /// <param name="desc">Descriptor.</param>
+        /// <returns>Holder</returns>
+        private BinaryTypeHolder GetBinaryTypeHolder(IBinaryTypeDescriptor desc)
+        {
+            BinaryTypeHolder holder;
+            if (_metas.TryGetValue(desc.TypeId, out holder))
+            {
+                return holder;
+            }
+            
+            lock (this)
+            {
+                if (!_metas.TryGetValue(desc.TypeId, out holder))
+                {
+                    var metas0 = new Dictionary<int, BinaryTypeHolder>(_metas);
+
+                    holder = new BinaryTypeHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName,
+                        desc.IsEnum, this);
+
+                    metas0[desc.TypeId] = holder;
+
+                    _metas = metas0;
+                }
+            }
+
+            return holder;
+        }
+        
+        /// <summary>
+        /// Updates or creates cached binary type holder. 
+        /// </summary>
+        private void UpdateOrCreateBinaryTypeHolder(BinaryType meta)
+        {
+            BinaryTypeHolder holder;
+            if (_metas.TryGetValue(meta.TypeId, out holder))
+            {
+                holder.Merge(meta);
+                return;
+            }
+            
+            lock (this)
+            {
+                if (_metas.TryGetValue(meta.TypeId, out holder))
+                {
+                    holder.Merge(meta);
+                    return;
+                }
+                
+                var metas0 = new Dictionary<int, BinaryTypeHolder>(_metas);
+
+                holder = new BinaryTypeHolder(meta.TypeId, meta.TypeName, meta.AffinityKeyFieldName, meta.IsEnum, this);
+                holder.Merge(meta);
+
+                metas0[meta.TypeId] = holder;
+
+                _metas = metas0;
+            }
         }
 
         /// <summary>
@@ -726,6 +801,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(0, r => new AssemblyRequestResult(r));
             AddSystemType<PeerLoadingObjectHolder>(0, null, serializer: new PeerLoadingObjectHolderSerializer());
             AddSystemType<MultidimensionalArrayHolder>(0, null, serializer: new MultidimensionalArraySerializer());
+            AddSystemType(BinaryTypeId.IgniteBiTuple, r => new IgniteBiTuple(r));
         }
 
         /// <summary>

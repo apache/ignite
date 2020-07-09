@@ -122,8 +122,7 @@ public final class GridCacheMvcc {
     }
 
     /**
-     * @return Remote candidate only if it's first in the list and is marked
-     *      as <tt>'used'</tt>.
+     * @return Remote candidate only if it's first in the list and is marked as <tt>'used'</tt>.
      */
     @Nullable private GridCacheMvccCandidate remoteOwner() {
         if (rmts != null) {
@@ -499,7 +498,7 @@ public final class GridCacheMvcc {
                 if (!cur.version().equals(baseVer) && committedVers.contains(cur.version())) {
                     cur.setOwner();
 
-                    assert localOwners() == null || localOwner().nearLocal(): "Cannot not have local owner and " +
+                    assert localOwners() == null || localOwner().nearLocal() : "Cannot not have local owner and " +
                         "remote completed transactions at the same time [baseVer=" + baseVer +
                         ", committedVers=" + committedVers +
                         ", rolledbackVers=" + rolledbackVers +
@@ -873,7 +872,7 @@ public final class GridCacheMvcc {
                     if (c.owner())
                         continue;
 
-                    assert !c.ready() || (c.read() && cand.read()):
+                    assert !c.ready() || (c.read() && cand.read()) :
                         "Cannot have more then one ready near-local candidate [c=" + c + ", cand=" + cand +
                             ", mvcc=" + this + ']';
 

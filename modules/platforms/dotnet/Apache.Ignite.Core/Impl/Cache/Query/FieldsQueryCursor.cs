@@ -33,9 +33,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="keepBinary">Keep poratble flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="readerFunc">The reader function.</param>
-        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
+        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary,
             Func<IBinaryRawReader, int, T> readerFunc)
             : base(target, keepBinary, r =>
             {
@@ -61,16 +61,23 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         private const int OpGetFieldNames = 7;
 
         /** */
+        private const int OpGetFieldsMeta = 8;
+
+        /** */
         private IList<string> _fieldNames;
+
+        /** */
+        private IList<IQueryCursorField> _fieldsMeta;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="keepBinary">Keep poratble flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="readerFunc">The reader function.</param>
-        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
-            Func<IBinaryRawReader, int, IList<object>> readerFunc) : base(target, keepBinary, readerFunc)
+        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary,
+            Func<IBinaryRawReader, int, IList<object>> readerFunc = null)
+            : base(target, keepBinary, readerFunc ?? ReadFieldsArrayList)
         {
             // No-op.
         }
@@ -84,6 +91,38 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                        (_fieldNames = new ReadOnlyCollection<string>(
                            Target.OutStream(OpGetFieldNames, reader => reader.ReadStringCollection())));
             }
+        }
+
+        /** <inheritdoc /> */
+        public IList<IQueryCursorField> Fields
+        {
+            get
+            {
+                if (_fieldsMeta == null)
+                {
+                    var metadata = Target.OutStream(
+                        OpGetFieldsMeta,
+                        reader => reader.ReadCollectionRaw(stream =>
+                            new QueryCursorField(stream) as IQueryCursorField));
+
+                    _fieldsMeta = new ReadOnlyCollection<IQueryCursorField>(metadata ?? new List<IQueryCursorField>());
+                }
+
+                return _fieldsMeta;
+            }
+        }
+
+        /// <summary>
+        /// Reads the fields array list.
+        /// </summary>
+        public static List<object> ReadFieldsArrayList(IBinaryRawReader reader, int count)
+        {
+            var res = new List<object>(count);
+
+            for (var i = 0; i < count; i++)
+                res.Add(reader.ReadObject<object>());
+
+            return res;
         }
     }
 }

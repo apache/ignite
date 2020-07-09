@@ -17,13 +17,11 @@
 
 package org.apache.ignite.ml.nn;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
@@ -43,22 +41,21 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 /**
  * Class encapsulating logic of multilayer perceptron.
  */
-public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron>,
-    Serializable {
+public final class MultilayerPerceptron implements SmoothParametrized<MultilayerPerceptron> {
     /**
      * This MLP architecture.
      */
-    protected MLPArchitecture architecture;
+    private MLPArchitecture architecture;
 
     /**
      * List containing layers parameters.
      */
-    protected List<MLPLayer> layers;
+    private List<MLPLayer> layers;
 
     /**
      * MLP which is 'below' this MLP (i.e. below output goes to this MLP as input).
      */
-    protected MultilayerPerceptron below;
+    private MultilayerPerceptron below;
 
     /**
      * Construct MLP from given architecture and parameters initializer.
@@ -112,7 +109,7 @@ public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, 
      * @param above MLP to be above.
      * @param below MLP to be below.
      */
-    protected MultilayerPerceptron(MultilayerPerceptron above, MultilayerPerceptron below) {
+    private MultilayerPerceptron(MultilayerPerceptron above, MultilayerPerceptron below) {
         this.layers = above.layers;
         this.architecture = above.architecture;
         this.below = below;
@@ -338,7 +335,7 @@ public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, 
     }
 
     /** Count of layers in below MLP. */
-    protected int belowLayersCount() {
+    private int belowLayersCount() {
         return below != null ? below.layersCount() : 0;
     }
 
@@ -407,7 +404,7 @@ public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, 
      * @param layersParams List of layers parameters.
      * @return This MLP parameters as vector.
      */
-    protected Vector paramsAsVector(List<MLPLayer> layersParams) {
+    private Vector paramsAsVector(List<MLPLayer> layersParams) {
         int off = 0;
         Vector res = new DenseVector(architecture().parametersCount());
 
@@ -549,10 +546,10 @@ public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, 
     }
 
     /**
-     * Differentiate nonlinearity.
+     * Differentiate non-linearity.
      *
      * @param linearOut Linear output of current layer.
-     * @param nonlinearity Nonlinearity of current layer.
+     * @param nonlinearity Non-linearity of current layer.
      * @return Gradients matrix.
      */
     private Matrix differentiateNonlinearity(Matrix linearOut,
@@ -572,13 +569,13 @@ public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, 
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         StringBuilder builder = new StringBuilder("MultilayerPerceptron [\n");
-        if(below != null)
+        if (below != null)
             builder.append("below = \n").append(below.toString(pretty)).append("\n\n");
         builder.append("layers = [").append(pretty ? "\n" : "");
-        for(int i = 0; i < layers.size(); i++) {
+        for (int i = 0; i < layers.size(); i++) {
             MLPLayer layer = layers.get(i);
             builder.append("\tlayer").append(i).append(" = [\n");
-            if(layer.biases != null)
+            if (layer.biases != null)
                 builder.append("\t\tbias = ").append(Tracer.asAscii(layer.biases, "%.4f", false)).append("\n");
             String matrix = Tracer.asAscii(layer.weights, "%.4f").replaceAll("\n", "\n\t\t\t");
             builder.append("\t\tweights = [\n\t\t\t").append(matrix).append("\n\t\t]");

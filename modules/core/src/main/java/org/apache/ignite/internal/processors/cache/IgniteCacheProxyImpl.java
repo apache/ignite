@@ -80,6 +80,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -205,7 +207,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      *
      * @return Init latch.
      */
-    public CountDownLatch getInitLatch(){
+    public CountDownLatch getInitLatch() {
         return initLatch;
     }
 
@@ -520,13 +522,13 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * @param filter Filter.
+     * @param query Query.
      * @param grp Optional cluster group.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private QueryCursor<Cache.Entry<K, V>> query(final Query filter, @Nullable ClusterGroup grp)
+    private QueryCursor<Cache.Entry<K, V>> query(final Query query, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
         GridCacheContext<K, V> ctx = getContextSafe();
 
@@ -538,40 +540,40 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         final CacheQueryFuture fut;
 
-        if (filter instanceof TextQuery) {
-            TextQuery p = (TextQuery)filter;
+        if (query instanceof TextQuery) {
+            TextQuery q = (TextQuery)query;
 
-            qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), isKeepBinary);
+            qry = ctx.queries().createFullTextQuery(q.getType(), q.getText(), q.getLimit(), isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.TEXT, p.getText(), ctx,
+            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.TEXT, q.getText(), ctx,
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
                     @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
                         return qry.execute();
                     }
                 }, false);
         }
-        else if (filter instanceof SpiQuery) {
+        else if (query instanceof SpiQuery) {
             qry = ctx.queries().createSpiQuery(isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SPI, filter.getClass().getSimpleName(),
+            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SPI, query.getClass().getSimpleName(),
                 ctx, new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
                     @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
-                        return qry.execute(((SpiQuery)filter).getArgs());
+                        return qry.execute(((SpiQuery)query).getArgs());
                     }
                 }, false);
         }
         else {
-            if (filter instanceof SqlFieldsQuery)
+            if (query instanceof SqlFieldsQuery)
                 throw new CacheException("Use methods 'queryFields' and 'localQueryFields' for " +
                     SqlFieldsQuery.class.getSimpleName() + ".");
 
-            throw new CacheException("Unsupported query type: " + filter);
+            throw new CacheException("Unsupported query type: " + query);
         }
 
         return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K, V>>() {
@@ -624,11 +626,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     private ClusterGroup projection(boolean loc) {
         GridCacheContext<K, V> ctx = getContextSafe();
 
-        if (loc || ctx.isLocal() || ctx.isReplicatedAffinityNode())
+        if (loc || ctx.isLocal())
             return ctx.kernalContext().grid().cluster().forLocal();
-
-        if (ctx.isReplicated())
-            return ctx.kernalContext().grid().cluster().forDataNodes(cacheName).forRandom();
 
         return null;
     }
@@ -717,30 +716,45 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 keepBinary,
                 qry.isIncludeExpired());
 
-            final QueryCursor<Cache.Entry<K, V>> cur =
-                qry.getInitialQuery() != null ? query(qry.getInitialQuery()) : null;
+            try {
+                final QueryCursor<Cache.Entry<K, V>> cur =
+                        qry.getInitialQuery() != null ? query(qry.getInitialQuery()) : null;
 
-            return new QueryCursor<Cache.Entry<K, V>>() {
-                @Override public Iterator<Cache.Entry<K, V>> iterator() {
-                    return cur != null ? cur.iterator() : new GridEmptyIterator<Cache.Entry<K, V>>();
-                }
-
-                @Override public List<Cache.Entry<K, V>> getAll() {
-                    return cur != null ? cur.getAll() : Collections.<Cache.Entry<K, V>>emptyList();
-                }
-
-                @Override public void close() {
-                    if (cur != null)
-                        cur.close();
-
-                    try {
-                        ctx.kernalContext().continuous().stopRoutine(routineId).get();
+                return new QueryCursorEx<Entry<K, V>>() {
+                    @Override public Iterator<Cache.Entry<K, V>> iterator() {
+                        return cur != null ? cur.iterator() : new GridEmptyIterator<Cache.Entry<K, V>>();
                     }
-                    catch (IgniteCheckedException e) {
-                        throw U.convertException(e);
+
+                    @Override public List<Cache.Entry<K, V>> getAll() {
+                        return cur != null ? cur.getAll() : Collections.<Cache.Entry<K, V>>emptyList();
                     }
-                }
-            };
+
+                    @Override public void close() {
+                        if (cur != null)
+                            cur.close();
+
+                        try {
+                            ctx.kernalContext().continuous().stopRoutine(routineId).get();
+                        } catch (IgniteCheckedException e) {
+                            throw U.convertException(e);
+                        }
+                    }
+
+                    @Override public void getAll(Consumer<Entry<K, V>> c) {
+                        // No-op.
+                    }
+
+                    @Override public List<GridQueryFieldMetadata> fieldsMeta() {
+                        //noinspection rawtypes
+                        return cur instanceof QueryCursorEx ? ((QueryCursorEx)cur).fieldsMeta() : null;
+                    }
+                };
+            } catch (Throwable t) {
+                // Initial query failed: stop the routine.
+                ctx.kernalContext().continuous().stopRoutine(routineId).get();
+
+                throw t;
+            }
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -2209,7 +2223,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @Override public IgniteFuture<?> indexReadyFuture() {
         GridCacheContext<K, V> ctx = getContextSafe();
 
-        IgniteInternalFuture fut = ctx.shared().database().indexRebuildFuture(ctx.cacheId());
+        IgniteInternalFuture fut = ctx.shared().kernalContext().query().indexRebuildFuture(ctx.cacheId());
 
         if (fut == null)
             return new IgniteFinishedFutureImpl<>();
@@ -2286,7 +2300,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /**
      * @param fut Finish restart future.
      */
-    public void registrateFutureRestart(GridFutureAdapter<?> fut){
+    public void registrateFutureRestart(GridFutureAdapter<?> fut) {
         RestartFuture currentFut = restartFut.get();
 
         if (currentFut != null)

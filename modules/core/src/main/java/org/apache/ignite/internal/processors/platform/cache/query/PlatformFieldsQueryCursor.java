@@ -17,20 +17,23 @@
 
 package org.apache.ignite.internal.processors.platform.cache.query;
 
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-
-import java.util.List;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
  * Interop cursor for fields query.
  */
+@SuppressWarnings("rawtypes")
 public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<?>> {
     /** Gets field names. */
     private static final int OP_GET_FIELD_NAMES = 7;
+
+    /** Gets field types. */
+    private static final int OP_GET_FIELDS_META = 8;
 
     /**
      * Constructor.
@@ -55,20 +58,31 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
             writer.writeObjectDetached(val);
 
         int rowEndPos = writer.out().position();
-        
+
         writer.writeInt(rowSizePos, rowEndPos - rowSizePos);
     }
 
     /** {@inheritDoc} */
     @Override public void processOutStream(int type, final BinaryRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_GET_FIELD_NAMES) {
-            FieldsQueryCursor fq = (FieldsQueryCursor) cursor();
+            List<GridQueryFieldMetadata> fieldsMeta = cursor().fieldsMeta();
 
-            int cnt = fq.getColumnsCount();
-            writer.writeInt(cnt);
+            writer.writeInt(fieldsMeta.size());
 
-            for (int i = 0; i < cnt; i++) {
-                writer.writeString(fq.getFieldName(i));
+            for (GridQueryFieldMetadata meta : fieldsMeta)
+                writer.writeString(meta.fieldName());
+        } else if (type == OP_GET_FIELDS_META) {
+            List<GridQueryFieldMetadata> metas = cursor().fieldsMeta();
+
+            if (metas == null) {
+                writer.writeInt(0);
+            } else {
+                writer.writeInt(metas.size());
+
+                for (GridQueryFieldMetadata meta : metas) {
+                    writer.writeString(meta.fieldName());
+                    writer.writeString(meta.fieldTypeName());
+                }
             }
         } else {
             super.processOutStream(type, writer);

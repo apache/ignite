@@ -205,7 +205,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(S.INCLUDE_SENSITIVE ? getClass().getSimpleName() : "KeyCacheObject",
+        return S.toString(S.includeSensitive() ? getClass().getSimpleName() : "KeyCacheObject",
             "part", part, true,
             "val", val, true,
             "hasValBytes", valBytes != null, false);

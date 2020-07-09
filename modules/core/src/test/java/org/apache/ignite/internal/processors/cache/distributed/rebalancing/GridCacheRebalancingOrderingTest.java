@@ -118,8 +118,6 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (isFirstGrid(igniteInstanceName)) {
-            cfg.setClientMode(true);
-
             assert cfg.getDiscoverySpi() instanceof TcpDiscoverySpi : cfg.getDiscoverySpi();
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
@@ -271,7 +269,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEvents() throws Exception {
-        Ignite ignite = startGrid(0);
+        Ignite ignite = startClientGrid(0);
 
         ServerStarter srvStarter = startServers();
 

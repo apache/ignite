@@ -59,11 +59,6 @@ public interface CacheDataRow extends MvccUpdateVersionAware, CacheSearchRow, St
      */
     public void key(KeyCacheObject key);
 
-    /**
-     * @param cacheId Cache ID.
-     */
-    public void cacheId(int cacheId);
-
     /** {@inheritDoc} */
     @Override public default IOVersions<? extends AbstractDataPageIO> ioVersions() {
         return DataPageIO.VERSIONS;

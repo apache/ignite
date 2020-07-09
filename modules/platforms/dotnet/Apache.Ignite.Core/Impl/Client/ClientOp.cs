@@ -68,6 +68,19 @@ namespace Apache.Ignite.Core.Impl.Client
         BinaryTypeNameGet = 3000,
         BinaryTypeNamePut = 3001,
         BinaryTypeGet = 3002,
-        BinaryTypePut = 3003
+        BinaryTypePut = 3003,
+
+        // Cluster.
+        ClusterIsActive = 5000,
+        ClusterChangeState = 5001,
+        ClusterChangeWalState = 5002,
+        ClusterGetWalState = 5003,
+        ClusterGroupGetNodeIds = 5100,
+        ClusterGroupGetNodesInfo = 5101,
+        ClusterGroupGetNodesEndpoints = 5102,
+        
+        // Compute.
+        ComputeTaskExecute = 6000,
+        ComputeTaskFinished = 6001
     }
 }

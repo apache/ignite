@@ -87,8 +87,6 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setClientMode(CLIENT_GRID_NAME.equals(gridName));
-
         if (!cfg.isClientMode()) {
             String val = "node" + getTestIgniteInstanceIndex(gridName);
             cfg.setUserAttributes(Collections.singletonMap(TEST_ATTR, val));
@@ -153,7 +151,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(GRIDS_CNT);
 
-        IgniteEx client = startGrid("client");
+        IgniteEx client = startClientGrid(CLIENT_GRID_NAME);
 
         assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
@@ -168,7 +166,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(GRIDS_CNT);
 
-        IgniteEx client = startGrid("client");
+        IgniteEx client = startClientGrid(CLIENT_GRID_NAME);
 
         assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
@@ -220,7 +218,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(GRIDS_CNT);
 
-        IgniteEx client = startGrid("client");
+        IgniteEx client = startClientGrid(CLIENT_GRID_NAME);
 
         assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
@@ -241,7 +239,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(GRIDS_CNT);
 
-        IgniteEx client = startGrid("client");
+        IgniteEx client = startClientGrid(CLIENT_GRID_NAME);
 
         assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
@@ -308,7 +306,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         preloadPartition(() -> {
             try {
-                return startGrid(CLIENT_GRID_NAME);
+                return startClientGrid(CLIENT_GRID_NAME);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -323,7 +321,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         preloadPartition(() -> {
             try {
-                return startGrid(CLIENT_GRID_NAME);
+                return startClientGrid(CLIENT_GRID_NAME);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -338,7 +336,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         preloadPartition(() -> {
             try {
-                return startGrid(CLIENT_GRID_NAME);
+                return startClientGrid(CLIENT_GRID_NAME);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -353,7 +351,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         preloadPartition(() -> {
             try {
-                return startGrid(CLIENT_GRID_NAME);
+                return startClientGrid(CLIENT_GRID_NAME);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -472,7 +470,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         preloadPartition(() -> {
             try {
-                return startGrid(CLIENT_GRID_NAME);
+                return startClientGrid(CLIENT_GRID_NAME);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -487,7 +485,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         preloadPartition(() -> {
             try {
-                return startGrid(CLIENT_GRID_NAME);
+                return startClientGrid(CLIENT_GRID_NAME);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -669,7 +667,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         int realSize = 0;
 
-        while(cursor.hasNext()) {
+        while (cursor.hasNext()) {
             realSize++;
 
             cursor.next();

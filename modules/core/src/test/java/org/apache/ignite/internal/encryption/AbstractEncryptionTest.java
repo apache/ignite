@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Set;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
@@ -68,6 +70,15 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     /** */
     public static final String KEYSTORE_PASSWORD = "love_sex_god";
 
+    /** */
+    public static final String MASTER_KEY_NAME_2 = "ignite.master.key2";
+
+    /** */
+    public static final String MASTER_KEY_NAME_3 = "ignite.master.key3";
+
+    /** */
+    public static final String MASTER_KEY_NAME_MULTIBYTE_ENCODED = "мастер.ключ.1";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
@@ -93,7 +104,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private char[] keystorePassword() {
+    protected char[] keystorePassword() {
         return KEYSTORE_PASSWORD.toCharArray();
     }
 
@@ -152,7 +163,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         assertNotNull(cache);
 
-        for (long i=0; i<100; i++)
+        for (long i = 0; i < 100; i++)
             assertEquals("" + i, cache.get(i));
     }
 
@@ -225,12 +236,16 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         gen.init(KeystoreEncryptionSpi.DEFAULT_KEY_SIZE);
 
-        SecretKey key = gen.generateKey();
+        String[] keyNames = {DEFAULT_MASTER_KEY_NAME, MASTER_KEY_NAME_2, MASTER_KEY_NAME_3, MASTER_KEY_NAME_MULTIBYTE_ENCODED};
 
-        ks.setEntry(
-            DEFAULT_MASTER_KEY_NAME,
-            new KeyStore.SecretKeyEntry(key),
-            new KeyStore.PasswordProtection(KEYSTORE_PASSWORD.toCharArray()));
+        for (String name : keyNames) {
+            SecretKey key = gen.generateKey();
+
+            ks.setEntry(
+                name,
+                new KeyStore.SecretKeyEntry(key),
+                new KeyStore.PasswordProtection(KEYSTORE_PASSWORD.toCharArray()));
+        }
 
         File keyStoreFile = new File(keystorePath);
 
@@ -241,5 +256,17 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         }
 
         return keyStoreFile;
+    }
+
+    /**
+     * @param name Master key name.
+     * @return {@code True} if all nodes have the provided master key name.
+     */
+    protected boolean checkMasterKeyName(String name) {
+        for (Ignite grid : G.allGrids())
+            if (!((IgniteEx)grid).context().clientNode() && !name.equals(grid.encryption().getMasterKeyName()))
+                return false;
+
+        return true;
     }
 }

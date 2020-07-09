@@ -17,22 +17,23 @@
 
 package org.apache.ignite.ml.selection.paramgrid;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.DoubleConsumer;
+import org.apache.ignite.ml.math.functions.IgniteDoubleConsumer;
 
 /**
  * Keeps the grid of parameters.
  */
-public class ParamGrid {
+public class ParamGrid implements Serializable {
     /** Parameter values by parameter index. */
     private Map<Integer, Double[]> paramValuesByParamIdx = new HashMap<>();
 
     /** Parameter names by parameter index. */
-    private Map<Integer, DoubleConsumer> settersByParamIdx = new HashMap<>();
+    private Map<Integer, IgniteDoubleConsumer> settersByParamIdx = new HashMap<>();
 
     /** Parameter names by parameter index. */
     private Map<Integer, String> paramNamesByParamIdx = new HashMap<>();
@@ -55,7 +56,7 @@ public class ParamGrid {
      * @param params The array of the given hyper parameter values.
      * @return The updated ParamGrid.
      */
-    public ParamGrid addHyperParam(String paramName, DoubleConsumer setter, Double[] params) {
+    public ParamGrid addHyperParam(String paramName, IgniteDoubleConsumer setter, Double[] params) {
         paramValuesByParamIdx.put(paramCntr, params);
         paramNamesByParamIdx.put(paramCntr, paramName);
         settersByParamIdx.put(paramCntr, setter);
@@ -64,7 +65,7 @@ public class ParamGrid {
     }
 
     /**
-     * Set up the hyperparameter searching strategy.
+     * Set up the hyper-parameter searching strategy.
      *
      * @param paramSearchStgy Parameter search strategy.
      */
@@ -73,14 +74,13 @@ public class ParamGrid {
         return this;
     }
 
-
     /** Returns the Hyper-parameter tuning strategy. */
     public HyperParameterTuningStrategy getHyperParameterTuningStrategy() {
         return paramSearchStgy;
     }
 
     /** Returns setter for parameter with the given index. */
-    public DoubleConsumer getSetterByIndex(int idx) {
+    public IgniteDoubleConsumer getSetterByIndex(int idx) {
         return settersByParamIdx.get(idx);
     }
 

@@ -22,7 +22,7 @@ import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassif
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 
 /**
- * Recall metric class for binary classiticaion.
+ * Recall metric class for binary classification.
  */
 public class Recall<L extends Serializable> extends BinaryClassificationMetric<L> {
     /**

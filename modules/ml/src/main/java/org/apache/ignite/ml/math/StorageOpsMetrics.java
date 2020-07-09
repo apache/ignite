@@ -33,11 +33,6 @@ public interface StorageOpsMetrics {
     public boolean isArrayBased();
 
     /**
-     * Checks whether implementation is JVM-local or distributed (multi-JVM).
-     */
-    public boolean isDistributed();
-
-    /**
      * @return true if all stored data are values of Number class.
      */
     public boolean isNumeric();

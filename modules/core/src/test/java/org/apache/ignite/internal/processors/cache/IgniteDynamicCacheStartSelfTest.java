@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
@@ -58,6 +59,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_STARTED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
+
 /**
  * Test for dynamic cache start.
  */
@@ -86,9 +90,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     private boolean testAttribute = true;
 
     /** */
-    private boolean client;
-
-    /** */
     private boolean daemon;
 
     /**
@@ -104,11 +105,8 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (client) {
-            cfg.setClientMode(true);
-
+        if (cfg.isClientMode())
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        }
 
         cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE_NAME, testAttribute));
 
@@ -120,7 +118,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        cfg.setIncludeEventTypes(EventType.EVT_CACHE_STARTED, EventType.EVT_CACHE_STOPPED, EventType.EVT_CACHE_NODES_LEFT);
+        cfg.setIncludeEventTypes(EVT_CACHE_STARTED, EVT_CACHE_STOPPED, EventType.EVT_CACHE_NODES_LEFT);
 
         if (daemon)
             cfg.setDaemon(true);
@@ -785,12 +783,12 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             lsnrs[i] = new IgnitePredicate<CacheEvent>() {
                 @Override public boolean apply(CacheEvent e) {
                     switch (e.type()) {
-                        case EventType.EVT_CACHE_STARTED:
+                        case EVT_CACHE_STARTED:
                             starts[idx].countDown();
 
                             break;
 
-                        case EventType.EVT_CACHE_STOPPED:
+                        case EVT_CACHE_STOPPED:
                             stops[idx].countDown();
 
                             break;
@@ -825,6 +823,41 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < nodeCount(); i++)
             ignite(i).events().stopLocalListen(lsnrs[i]);
+    }
+
+    /** */
+    @Test
+    public void testRemoteListenShouldGetCacheEventFromEveryNode() throws Exception {
+        CountDownLatch[] evts = new CountDownLatch[] {new CountDownLatch(nodeCount())};
+        int[] evtType = new int[] {EVT_CACHE_STARTED};
+
+        UUID lsnrId = ignite(0).events().remoteListen((uuid, evt) -> {
+            assertEquals(DYNAMIC_CACHE_NAME, ((CacheEvent)evt).cacheName());
+            assertEquals(evt.type(), evtType[0]);
+
+            evts[0].countDown();
+
+            return true;
+        }, evt -> true, EventType.EVTS_CACHE_LIFECYCLE);
+
+        try {
+            IgniteCache<Object, Object> cache = ignite(0).createCache(DYNAMIC_CACHE_NAME);
+
+            evts[0].await(10, TimeUnit.SECONDS);
+
+            evts[0] = new CountDownLatch(nodeCount());
+            evtType[0] = EVT_CACHE_STOPPED;
+
+            cache.destroy();
+
+            evts[0].await(10, TimeUnit.SECONDS);
+        }
+        finally {
+            ignite(0).events().stopRemoteListen(lsnrId);
+
+            if (ignite(0).cache(DYNAMIC_CACHE_NAME) != null)
+                ignite(0).cache(DYNAMIC_CACHE_NAME).destroy();
+        }
     }
 
     /**
@@ -1288,8 +1321,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                client = true;
-
                 int iter = 0;
 
                 while (!stop.get()) {
@@ -1298,7 +1329,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
                     iter++;
 
-                    try (Ignite ignite = startGrid(nodeCount())) {
+                    try (Ignite ignite = startClientGrid(nodeCount())) {
                         assertTrue(ignite.configuration().isClientMode());
                     }
                 }

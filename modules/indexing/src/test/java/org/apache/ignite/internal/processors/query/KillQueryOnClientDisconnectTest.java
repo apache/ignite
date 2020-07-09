@@ -55,14 +55,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test KILL QUERY requested from client which disconnected from cluster during cancellation in progress.
  */
-
 @RunWith(JUnit4.class)
 public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** Node configration conter. */
-    private static int cntr;
 
     /** Statement. */
     protected Statement stmt;
@@ -74,9 +70,8 @@ public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        cntr = 0;
-
-        startGrids(2);
+        startGrids(1);
+        startClientGrid(1);
 
         for (int i = 0; i < 1000; ++i)
             grid(0).cache(GridAbstractTest.DEFAULT_CACHE_NAME).put(i, i);
@@ -135,9 +130,6 @@ public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
-
-        if (++cntr == 2)
-            cfg.setClientMode(true);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             /** {@inheritDoc} */

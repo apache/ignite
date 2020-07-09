@@ -34,12 +34,12 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionSerializationException;
@@ -56,18 +56,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -130,10 +118,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
      */
     private void concurrentUpdatePartition(CacheAtomicityMode atomicityMode, boolean cacheGrp) throws Exception {
         Ignite srv = startGrid(0);
-
-        client = true;
-
-        Ignite client = startGrid(1);
+        Ignite client = startClientGrid(1);
 
         List<AtomicInteger> cntrs = new ArrayList<>();
         List<String> caches = new ArrayList<>();
@@ -183,15 +168,15 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
         assertEquals(KEYS, keys.size());
 
-        final int THREADS = 10;
-        final int UPDATES = 1000;
+        final int THREADS = SF.applyLB(10, 4);
+        final int UPDATES = SF.applyLB(1000, 100);
 
         final List<IgniteCache<Object, Object>> srvCaches = new ArrayList<>();
 
         for (String cacheName : caches)
             srvCaches.add(srv.cache(cacheName));
 
-        for (int i = 0; i < 15; i++) {
+        for (int i = 0; i < SF.applyLB(15, 5); i++) {
             log.info("Iteration: " + i);
 
             GridTestUtils.runMultiThreaded(new Callable<Void>() {
@@ -202,7 +187,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                         for (int c = 0; c < srvCaches.size(); c++) {
                             if (atomicityMode == ATOMIC)
                                 srvCaches.get(c).put(keys.get(rnd.nextInt(KEYS)), i);
-                            else  {
+                            else {
                                 IgniteCache<Object, Object> cache0 = srvCaches.get(c);
                                 IgniteTransactions txs = cache0.unwrap(Ignite.class).transactions();
 
@@ -326,10 +311,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
      */
     private void concurrentUpdatesAndQueryStart(CacheAtomicityMode atomicityMode, boolean cacheGrp) throws Exception {
         Ignite srv = startGrid(0);
-
-        client = true;
-
-        Ignite client = startGrid(1);
+        Ignite client = startClientGrid(1);
 
         List<String> caches = new ArrayList<>();
 
@@ -382,12 +364,12 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
         for (String cacheName : caches)
             srvCaches.add(srv.cache(cacheName));
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < SF.applyLB(5, 2); i++) {
             log.info("Iteration: " + i);
 
             final AtomicBoolean stop = new AtomicBoolean();
 
-            List<T2<AtomicInteger, QueryCursor> > qrys = new ArrayList<>();
+            List<T2<AtomicInteger, QueryCursor>> qrys = new ArrayList<>();
 
             try {
                 IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
@@ -395,10 +377,10 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                         while (!stop.get()) {
-                            for (IgniteCache<Object, Object> srvCache : srvCaches)  {
+                            for (IgniteCache<Object, Object> srvCache : srvCaches) {
                                 if (atomicityMode == ATOMIC)
                                     srvCache.put(keys.get(rnd.nextInt(KEYS)), rnd.nextInt(100) - 200);
-                                else  {
+                                else {
                                     IgniteTransactions txs = srvCache.unwrap(Ignite.class).transactions();
 
                                     boolean committed = false;
@@ -448,7 +430,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                         for (IgniteCache<Object, Object> srvCache : srvCaches) {
                             if (atomicityMode == ATOMIC)
                                 srvCache.put(keys.get(rnd.nextInt(KEYS)), i);
-                            else  {
+                            else {
                                 IgniteTransactions txs = srvCache.unwrap(Ignite.class).transactions();
 
                                 boolean committed = false;
@@ -474,7 +456,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                 }
             }, THREADS, "update");
 
-            for (T2<AtomicInteger, QueryCursor>  qry : qrys) {
+            for (T2<AtomicInteger, QueryCursor> qry : qrys) {
                 final AtomicInteger evtCnt = qry.get1();
 
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -485,7 +467,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                     }
                 }, 30000);
 
-                assertEquals(THREADS * UPDATES, qry.get1().get());
+                assertEquals(THREADS * UPDATES, evtCnt.get());
 
                 qry.get2().close();
             }

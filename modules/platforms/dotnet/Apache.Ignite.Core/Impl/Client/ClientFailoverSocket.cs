@@ -31,12 +31,17 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
+    using Apache.Ignite.Core.Impl.Log;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Socket wrapper with reconnect/failover functionality: reconnects on failure.
     /// </summary>
-    internal class ClientFailoverSocket : IClientSocket
+    internal class ClientFailoverSocket : IDisposable
     {
+        /** Unknown topology version. */
+        private const long UnknownTopologyVersion = -1;
+        
         /** Underlying socket. */
         private ClientSocket _socket;
 
@@ -49,26 +54,41 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Marshaller. */
         private readonly Marshaller _marsh;
 
-        /** Endpoints with corresponding hosts. */
+        /** Endpoints with corresponding hosts - from config. */
         private readonly List<SocketEndpoint> _endPoints;
 
-        /** Locker. */
-        private readonly object _syncRoot = new object();
+        /** Map from node ID to connected socket. */
+        private volatile Dictionary<Guid, ClientSocket> _nodeSocketMap = new Dictionary<Guid, ClientSocket>();
+
+        /** Discovered nodes map. Represents current topology. */
+        private volatile Dictionary<Guid, ClientDiscoveryNode> _discoveryNodes;
+
+        /** Main socket lock. */
+        private readonly object _socketLock = new object();
+
+        /** Topology change lock. */
+        private readonly object _topologyUpdateLock = new object();
 
         /** Disposed flag. */
-        private bool _disposed;
+        private volatile bool _disposed;
 
-        /** Current affinity topology version. */
-        private AffinityTopologyVersion? _affinityTopologyVersion;
+        /** Current affinity topology version. Store as object to make volatile. */
+        private volatile object _affinityTopologyVersion;
 
-        /** Map from node ID to connected socket. */
-        private volatile Dictionary<Guid, ClientSocket> _nodeSocketMap;
+        /** Topology version that <see cref="_discoveryNodes"/> corresponds to. */
+        private long _discoveryTopologyVersion = UnknownTopologyVersion;
 
         /** Map from cache ID to partition mapping. */
         private volatile ClientCacheTopologyPartitionMap _distributionMap;
 
+        /** Enable discovery flag. */
+        private volatile bool _enableDiscovery = true;
+
         /** Distribution map locker. */
         private readonly object _distributionMapSyncRoot = new object();
+
+        /** Logger. */
+        private readonly ILogger _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
@@ -98,23 +118,28 @@ namespace Apache.Ignite.Core.Impl.Client
                 throw new IgniteClientException("Failed to resolve all specified hosts.");
             }
 
+            _logger = (_config.Logger ?? NoopLogger.Instance).GetLogger(GetType());
+            
             Connect();
         }
 
-        /** <inheritdoc /> */
-        public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc,
+        /// <summary>
+        /// Performs a send-receive operation.
+        /// </summary>
+        public T DoOutInOp<T>(ClientOp opId, Action<ClientRequestContext> writeAction, 
+            Func<ClientResponseContext, T> readFunc,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
             return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
         }
 
         /// <summary>
-        /// Performs a send-receive operation with affinity awareness.
+        /// Performs a send-receive operation with partition awareness.
         /// </summary>
         public T DoOutInOpAffinity<T, TKey>(
             ClientOp opId,
-            Action<IBinaryStream> writeAction,
-            Func<IBinaryStream, T> readFunc,
+            Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc,
             int cacheId,
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
@@ -125,12 +150,12 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Performs an async send-receive operation with affinity awareness.
+        /// Performs an async send-receive operation with partition awareness.
         /// </summary>
         public Task<T> DoOutInOpAffinityAsync<T, TKey>(
             ClientOp opId,
-            Action<IBinaryStream> writeAction,
-            Func<IBinaryStream, T> readFunc,
+            Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc,
             int cacheId,
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
@@ -140,39 +165,80 @@ namespace Apache.Ignite.Core.Impl.Client
             return socket.DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
         }
 
-        /** <inheritdoc /> */
-        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
+        /// <summary>
+        /// Performs an async send-receive operation.
+        /// </summary>
+        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<ClientRequestContext> writeAction, 
+            Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
             return GetSocket().DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
         }
 
-        /** <inheritdoc /> */
-        public ClientProtocolVersion ServerVersion
+        /// <summary>
+        /// Gets the current protocol version.
+        /// Only used for tests.
+        /// </summary>
+        public ClientProtocolVersion CurrentProtocolVersion
         {
             get { return GetSocket().ServerVersion; }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the remote endpoint.
+        /// </summary>
         public EndPoint RemoteEndPoint
         {
             get
             {
-                lock (_syncRoot)
-                {
-                    return _socket != null ? _socket.RemoteEndPoint : null;
-                }
+                var socket = GetSocket();
+                return socket != null ? socket.RemoteEndPoint : null;
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the local endpoint.
+        /// </summary>
         public EndPoint LocalEndPoint
         {
             get
             {
-                lock (_syncRoot)
+                var socket = GetSocket();
+                return socket != null ? socket.LocalEndPoint : null;
+            }
+        }
+
+        /// <summary>
+        /// Gets active connections.
+        /// </summary>
+        public IEnumerable<IClientConnection> GetConnections()
+        {
+            var map = _nodeSocketMap;
+
+            foreach (var socket in map.Values)
+            {
+                if (!socket.IsDisposed)
                 {
-                    return _socket != null ? _socket.LocalEndPoint : null;
+                    yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint,
+                        socket.ServerNodeId.GetValueOrDefault());
                 }
+            }
+
+            foreach (var socketEndpoint in _endPoints)
+            {
+                var socket = socketEndpoint.Socket;
+
+                if (socket == null || socket.IsDisposed)
+                {
+                    continue;
+                }
+
+                if (socket.ServerNodeId != null && map.ContainsKey(socket.ServerNodeId.Value))
+                {
+                    continue;
+                }
+                
+                yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint,
+                    socket.ServerNodeId.GetValueOrDefault());
             }
         }
 
@@ -181,7 +247,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private ClientSocket GetSocket()
         {
-            lock (_syncRoot)
+            lock (_socketLock)
             {
                 ThrowIfDisposed();
 
@@ -196,7 +262,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
         {
-            if (!_config.EnableAffinityAwareness)
+            ThrowIfDisposed();
+            
+            if (!_config.EnablePartitionAwareness)
             {
                 return null;
             }
@@ -246,7 +314,8 @@ namespace Apache.Ignite.Core.Impl.Client
             Justification = "There is no finalizer.")]
         public void Dispose()
         {
-            lock (_syncRoot)
+            lock (_socketLock)
+            lock (_topologyUpdateLock)
             {
                 _disposed = true;
 
@@ -265,18 +334,36 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     _nodeSocketMap = null;
                 }
+
+                foreach (var socketEndpoint in _endPoints)
+                {
+                    if (socketEndpoint.Socket != null)
+                    {
+                        socketEndpoint.Socket.Dispose();
+                    }
+                }
             }
         }
 
         /// <summary>
-        /// Connects the socket.
+        /// Gets next connected socket, or connects a new one.
         /// </summary>
-        private void Connect()
+        private ClientSocket GetNextSocket()
         {
             List<Exception> errors = null;
             var startIdx = (int) Interlocked.Increment(ref _endPointIndex);
-            _socket = null;
 
+            // Check socket map first, if available: it includes all cluster nodes.
+            var map = _nodeSocketMap;
+            foreach (var socket in map.Values)
+            {
+                if (!socket.IsDisposed)
+                {
+                    return socket;
+                }
+            }
+
+            // Fall back to initially known endpoints.
             for (var i = 0; i < _endPoints.Count; i++)
             {
                 var idx = (startIdx + i) % _endPoints.Count;
@@ -284,18 +371,12 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (endPoint.Socket != null && !endPoint.Socket.IsDisposed)
                 {
-                    _socket = endPoint.Socket;
-                    break;
+                    return endPoint.Socket;
                 }
 
                 try
                 {
-                    _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, null,
-                        OnAffinityTopologyVersionChange);
-
-                    endPoint.Socket = _socket;
-
-                    break;
+                    return Connect(endPoint);
                 }
                 catch (SocketException e)
                 {
@@ -308,56 +389,125 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
             }
 
-            if (_socket == null && errors != null)
+            throw new AggregateException("Failed to establish Ignite thin client connection, " +
+                                         "examine inner exceptions for details.", errors);
+        }
+
+        /// <summary>
+        /// Connects the socket.
+        /// </summary>
+        private void Connect()
+        {
+            _socket = GetNextSocket();
+
+            if (_config.EnablePartitionAwareness && !_socket.Features.HasOp(ClientOp.CachePartitions))
             {
-                throw new AggregateException("Failed to establish Ignite thin client connection, " +
-                                             "examine inner exceptions for details.", errors);
+                _config.EnablePartitionAwareness = false;
+
+                _logger.Warn("Partition awareness has been disabled: server protocol version {0} " +
+                             "is lower than required {1}",
+                    _socket.ServerVersion,
+                    ClientFeatures.GetMinVersion(ClientOp.CachePartitions)
+                );
             }
 
-            if (_config.EnableAffinityAwareness)
+            if (!_socket.Features.HasFeature(ClientBitmaskFeature.ClusterGroupGetNodesEndpoints))
             {
-                InitSocketMap();
+                _enableDiscovery = false;
+
+                _logger.Warn("Automatic server node discovery is not supported by the server");
             }
+        }
+
+        /// <summary>
+        /// Connects to the given endpoint.
+        /// </summary>
+        private ClientSocket Connect(SocketEndpoint endPoint)
+        {
+            var socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host,
+                _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
+
+            endPoint.Socket = socket;
+
+            return socket;
         }
 
         /// <summary>
         /// Updates current Affinity Topology Version.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "Thread root must catch all exceptions to avoid crashing the process.")]
         private void OnAffinityTopologyVersionChange(AffinityTopologyVersion affinityTopologyVersion)
         {
             _affinityTopologyVersion = affinityTopologyVersion;
+
+            if (_discoveryTopologyVersion < affinityTopologyVersion.Version &&_config.EnablePartitionAwareness)
+            {
+                ThreadPool.QueueUserWorkItem(_ =>
+                {
+                    try
+                    {
+                        lock (_topologyUpdateLock)
+                        {
+                            if (!_disposed)
+                            {
+                                DiscoverEndpoints();
+                                InitSocketMap();
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Log(LogLevel.Error, e, "Failed to update topology information");
+                    }
+                });
+            }
         }
 
         /// <summary>
         /// Gets the endpoints: all combinations of IP addresses and ports according to configuration.
         /// </summary>
-        private static IEnumerable<SocketEndpoint> GetIpEndPoints(IgniteClientConfiguration cfg)
+        private IEnumerable<SocketEndpoint> GetIpEndPoints(IgniteClientConfiguration cfg)
         {
             foreach (var e in Endpoint.GetEndpoints(cfg))
             {
                 var host = e.Host;
                 Debug.Assert(host != null);  // Checked by GetEndpoints.
 
-                // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
+                for (var port = e.Port; port <= e.PortRange + e.Port; port++)
+                {
+                    foreach (var ip in GetIps(e.Host))
+                    {
+                        yield return new SocketEndpoint(new IPEndPoint(ip, port), e.Host);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets IP address list from a given host.
+        /// When host is an IP already - parses it. Otherwise, resolves DNS name to IPs.
+        /// </summary>
+        private IEnumerable<IPAddress> GetIps(string host, bool suppressExceptions = false)
+        {
+            try
+            {
                 IPAddress ip;
 
-                if (IPAddress.TryParse(host, out ip))
+                // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
+                return IPAddress.TryParse(host, out ip) ? new[] {ip} : Dns.GetHostEntry(host).AddressList;
+
+            }
+            catch (SocketException e)
+            {
+                _logger.Debug(e, "Failed to parse host: " + host);
+
+                if (suppressExceptions)
                 {
-                    for (var i = 0; i <= e.PortRange; i++)
-                    {
-                        yield return new SocketEndpoint(new IPEndPoint(ip, e.Port + i), host);
-                    }
+                    return Enumerable.Empty<IPAddress>();
                 }
-                else
-                {
-                    for (var i = 0; i <= e.PortRange; i++)
-                    {
-                        foreach (var x in Dns.GetHostEntry(host).AddressList)
-                        {
-                            yield return new SocketEndpoint(new IPEndPoint(x, e.Port + i), host);
-                        }
-                    }
-                }
+
+                throw;
             }
         }
 
@@ -374,7 +524,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 return false;
             }
 
-            return map.AffinityTopologyVersion >= _affinityTopologyVersion.Value;
+            return map.AffinityTopologyVersion >= (AffinityTopologyVersion) _affinityTopologyVersion;
         }
 
         /// <summary>
@@ -392,8 +542,8 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 DoOutInOp(
                     ClientOp.CachePartitions,
-                    s => WriteDistributionMapRequest(cacheId, s),
-                    s => ReadDistributionMapResponse(s));
+                    s => WriteDistributionMapRequest(cacheId, s.Stream),
+                    s => ReadDistributionMapResponse(s.Stream));
             }
         }
 
@@ -405,7 +555,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             for (int i = 0; i < size; i++)
             {
-                var grp = new ClientCacheAffinityAwarenessGroup(s);
+                var grp = new ClientCachePartitionAwarenessGroup(s);
 
                 if (grp.PartitionMap == null)
                 {
@@ -443,7 +593,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 foreach (var cache in grp.Caches)
                 {
-                    mapping[cache.Key] = new ClientCachePartitionMap(cache.Key, partNodeIds, cache.Value);
+                    mapping[cache.Key] = new ClientCachePartitionMap(partNodeIds, cache.Value);
                 }
             }
 
@@ -492,33 +642,187 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private void InitSocketMap()
         {
-            var map = new Dictionary<Guid, ClientSocket>();
+            var map = new Dictionary<Guid, ClientSocket>(_nodeSocketMap);
 
-            foreach (var endPoint in _endPoints)
+            var defaultSocket = _socket;
+            if (defaultSocket != null && !defaultSocket.IsDisposed && defaultSocket.ServerNodeId != null)
             {
-                if (endPoint.Socket == null || endPoint.Socket.IsDisposed)
-                {
-                    try
-                    {
-                        var socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, null,
-                            OnAffinityTopologyVersionChange);
+                map[defaultSocket.ServerNodeId.Value] = defaultSocket;
+            }
 
-                        endPoint.Socket = socket;
-                    }
-                    catch (SocketException)
+            if (_discoveryNodes != null)
+            {
+                // Discovery enabled: make sure we have connection to all nodes in the cluster.
+                foreach (var node in _discoveryNodes.Values)
+                {
+                    ClientSocket socket;
+                    if (map.TryGetValue(node.Id, out socket) && !socket.IsDisposed)
                     {
                         continue;
                     }
+
+                    socket = TryConnect(node);
+
+                    if (socket != null)
+                    {
+                        map[node.Id] = socket;
+                    }
                 }
 
-                var nodeId = endPoint.Socket.ServerNodeId;
-                if (nodeId != null)
+                // Dispose and remove any connections not in current topology.
+                var toRemove = new List<Guid>();
+                
+                foreach (var pair in map)
                 {
-                    map[nodeId.Value] = endPoint.Socket;
+                    if (!_discoveryNodes.ContainsKey(pair.Key))
+                    {
+                        pair.Value.Dispose();
+                        toRemove.Add(pair.Key);
+                    }
+                }
+
+                foreach (var nodeId in toRemove)
+                {
+                    map.Remove(nodeId);
+                }
+            }
+            else
+            {
+                // Discovery disabled: fall back to endpoints from config.
+                foreach (var endPoint in _endPoints)
+                {
+                    if (endPoint.Socket == null || endPoint.Socket.IsDisposed)
+                    {
+                        try
+                        {
+                            Connect(endPoint);
+                        }
+                        catch (SocketException)
+                        {
+                            continue;
+                        }
+                    }
+
+                    // ReSharper disable once PossibleNullReferenceException (Connect ensures that).
+                    var nodeId = endPoint.Socket.ServerNodeId;
+                    if (nodeId != null)
+                    {
+                        map[nodeId.Value] = endPoint.Socket;
+                    }
+                }
+            }
+            
+            _nodeSocketMap = map;
+        }
+
+        private ClientSocket TryConnect(ClientDiscoveryNode node)
+        {
+            foreach (var addr in node.Addresses)
+            {
+                foreach (var ip in GetIps(addr, true))
+                {
+                    try
+                    {
+                        var ipEndpoint = new IPEndPoint(ip, node.Port);
+
+                        var socket = new ClientSocket(_config, ipEndpoint, addr,
+                            _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
+
+                        if (socket.ServerNodeId == node.Id)
+                        {
+                            return socket;
+                        }
+
+                        _logger.Debug(
+                            "Autodiscovery connection succeeded, but node id does not match: {0}, {1}. " +
+                            "Expected node id: {2}. Actual node id: {3}. Connection dropped.",
+                            addr, node.Port, node.Id, socket.ServerNodeId);
+                    }
+                    catch (SocketException socketEx)
+                    {
+                        // Ignore: failure to connect is expected.
+                        _logger.Debug(socketEx, "Autodiscovery connection failed: {0}, {1}", addr, node.Port);
+                    }
                 }
             }
 
-            _nodeSocketMap = map;
+            return null;
+        }
+
+        /// <summary>
+        /// Updates endpoint info.
+        /// </summary>
+        private void DiscoverEndpoints()
+        {
+            if (!_enableDiscovery)
+            {
+                return;
+            }
+            
+            var newVer = GetTopologyVersion();
+
+            if (newVer <= _discoveryTopologyVersion)
+            {
+                return;
+            }
+
+            var discoveryNodes = _discoveryNodes == null
+                ? new Dictionary<Guid, ClientDiscoveryNode>()
+                : new Dictionary<Guid, ClientDiscoveryNode>(_discoveryNodes);
+
+            _discoveryTopologyVersion = GetServerEndpoints(
+                _discoveryTopologyVersion, newVer, discoveryNodes);
+            
+            _discoveryNodes = discoveryNodes;
+        }
+
+        /// <summary>
+        /// Gets all server endpoints.
+        /// </summary>
+        private long GetServerEndpoints(long startTopVer, long endTopVer, IDictionary<Guid, ClientDiscoveryNode> dict)
+        {
+            return DoOutInOp(ClientOp.ClusterGroupGetNodesEndpoints,
+                ctx =>
+                {
+                    ctx.Writer.WriteLong(startTopVer);
+                    ctx.Writer.WriteLong(endTopVer);
+                },
+                ctx =>
+                {
+                    var s = ctx.Stream;
+
+                    var topVer = s.ReadLong();
+
+                    var addedCnt = s.ReadInt();
+
+                    for (var i = 0; i < addedCnt; i++)
+                    {
+                        var id = BinaryUtils.ReadGuid(s);
+                        var port = s.ReadInt();
+                        var addresses = ctx.Reader.ReadStringCollection();
+                        
+                        dict[id] = new ClientDiscoveryNode(id, port, addresses);
+                    }
+
+                    var removedCnt = s.ReadInt();
+
+                    for (var i = 0; i < removedCnt; i++)
+                    {
+                        dict.Remove(BinaryUtils.ReadGuid(s));
+                    }
+                    
+                    return topVer;
+                });
+        }
+
+        /// <summary>
+        /// Gets current topology version.
+        /// </summary>
+        private long GetTopologyVersion()
+        {
+            var ver = _affinityTopologyVersion;
+            
+            return ver == null ? UnknownTopologyVersion : ((AffinityTopologyVersion) ver).Version;
         }
     }
 }

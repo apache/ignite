@@ -45,6 +45,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.processors.query.property.QueryPropertyAccesso
 import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
@@ -577,7 +579,7 @@ public class QueryUtils {
         Set<String> keyFields = qryEntity.getKeyFields();
         Set<String> notNulls = qryEntity.getNotNullFields();
         Map<String, Object> dlftVals = qryEntity.getDefaultFieldValues();
-        Map<String, Integer> precision  = qryEntity.getFieldsPrecision();
+        Map<String, Integer> precision = qryEntity.getFieldsPrecision();
         Map<String, Integer> scale = qryEntity.getFieldsScale();
 
         boolean hasKeyFields = (keyFields != null);
@@ -623,25 +625,13 @@ public class QueryUtils {
         }
 
         // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
-        String keyFieldName = qryEntity.getKeyFieldName();
+        // Also if fields are not set then _KEY and _VAL will be created as visible,
+        // so we have to add binary properties for them
+        if ((qryEntity.getKeyFieldName() == null && F.mapContainsKey(precision, KEY_FIELD_NAME)) || F.isEmpty(fields))
+            addKeyValueProperty(ctx, qryEntity, d, KEY_FIELD_NAME, true);
 
-        if (keyFieldName == null)
-            keyFieldName = KEY_FIELD_NAME;
-
-        if (!F.isEmpty(precision) && precision.containsKey(keyFieldName) &&
-            !fields.containsKey(keyFieldName)) {
-            addKeyValueValidationProperty(ctx, qryEntity, d, keyFieldName, true);
-        }
-
-        String valFieldName = qryEntity.getValueFieldName();
-
-        if (valFieldName == null)
-            valFieldName = VAL_FIELD_NAME;
-
-        if (!F.isEmpty(precision) && precision.containsKey(valFieldName) &&
-            !fields.containsKey(valFieldName)) {
-            addKeyValueValidationProperty(ctx, qryEntity, d, valFieldName, false);
-        }
+        if ((qryEntity.getValueFieldName() == null && F.mapContainsKey(precision, VAL_FIELD_NAME)) || F.isEmpty(fields))
+            addKeyValueProperty(ctx, qryEntity, d, VAL_FIELD_NAME, false);
 
         processIndexes(qryEntity, d);
     }
@@ -655,11 +645,11 @@ public class QueryUtils {
      * @param name Field name.
      * @throws IgniteCheckedException
      */
-    private static void addKeyValueValidationProperty(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d,
+    private static void addKeyValueProperty(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d,
         String name, boolean isKey) throws IgniteCheckedException {
 
         Map<String, Object> dfltVals = qryEntity.getDefaultFieldValues();
-        Map<String, Integer> precision  = qryEntity.getFieldsPrecision();
+        Map<String, Integer> precision = qryEntity.getFieldsPrecision();
         Map<String, Integer> scale = qryEntity.getFieldsScale();
 
         String typeName = isKey ? qryEntity.getKeyType() : qryEntity.getValueType();
@@ -787,7 +777,7 @@ public class QueryUtils {
 
             d.addIndex(idxDesc);
         }
-        else if (idxTyp == QueryIndexType.FULLTEXT){
+        else if (idxTyp == QueryIndexType.FULLTEXT) {
             for (String field : idx.getFields().keySet()) {
                 String alias = d.aliases().get(field);
 
@@ -1479,6 +1469,16 @@ public class QueryUtils {
     }
 
     /**
+     * Returns true if the exception is triggered by query cancel.
+     *
+     * @param e Exception.
+     * @return {@code true} if exception is caused by cancel.
+     */
+    public static boolean wasCancelled(Throwable e) {
+        return X.cause(e, QueryCancelledException.class) != null;
+    }
+
+    /**
      * Converts exception in to IgniteSqlException.
      * @param e Exception.
      * @return IgniteSqlException.
@@ -1493,17 +1493,17 @@ public class QueryUtils {
 
             code = ((IgniteSQLException)e).statusCode();
         }
-        else if (e instanceof TransactionDuplicateKeyException){
+        else if (e instanceof TransactionDuplicateKeyException) {
             code = IgniteQueryErrorCode.DUPLICATE_KEY;
 
             sqlState = IgniteQueryErrorCode.codeToSqlState(code);
         }
-        else if (e instanceof TransactionSerializationException){
+        else if (e instanceof TransactionSerializationException) {
             code = IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
 
             sqlState = IgniteQueryErrorCode.codeToSqlState(code);
         }
-        else if (e instanceof TransactionAlreadyCompletedException){
+        else if (e instanceof TransactionAlreadyCompletedException) {
             code = IgniteQueryErrorCode.TRANSACTION_COMPLETED;
 
             sqlState = IgniteQueryErrorCode.codeToSqlState(code);

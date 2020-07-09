@@ -54,14 +54,14 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
      */
     @Test
     public void testDataBag() throws Exception {
-        startGrid(configuration(0, false));
-        startGrid(configuration(1, false));
+        startGrid(configuration(0));
+        startGrid(configuration(1));
 
         assertEquals(3, joinSrvCnt);
         assertEquals(0, joinCliCnt);
 
-        startGrid(configuration(2, true));
-        startGrid(configuration(3, true));
+        startClientGrid(configuration(2));
+        startClientGrid(configuration(3));
 
         assertEquals(5, joinSrvCnt);
         assertEquals(4, joinCliCnt);
@@ -72,12 +72,12 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
      */
     @Test
     public void testDiscoveryServerOnlyCustomMessage() throws Exception {
-        startGrid(configuration(0, false));
-        startGrid(configuration(1, false));
-        startGrid(configuration(2, true));
-        startGrid(configuration(3, true));
+        startGrid(configuration(0));
+        startGrid(configuration(1));
+        startClientGrid(configuration(2));
+        startClientGrid(configuration(3));
 
-        final boolean [] recvMsg = new boolean[4];
+        final boolean[] recvMsg = new boolean[4];
 
         for (int i = 0; i < 4; ++i) {
             final int idx0 = i;
@@ -108,11 +108,10 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
 
     /**
      * @param nodeIdx Node index.
-     * @param client Client flag.
      * @return Ignite configuration.
      * @throws Exception On error.
      */
-    private IgniteConfiguration configuration(int nodeIdx, boolean client) throws Exception {
+    private IgniteConfiguration configuration(int nodeIdx) throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(nodeIdx));
 
         TcpDiscoverySpi testSpi = new TestDiscoverySpi();
@@ -120,8 +119,6 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
         testSpi.setIpFinder(sharedStaticIpFinder);
 
         cfg.setDiscoverySpi(testSpi);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -199,11 +196,6 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @Override public boolean isMutable() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean stopProcess() {
             return false;
         }
 

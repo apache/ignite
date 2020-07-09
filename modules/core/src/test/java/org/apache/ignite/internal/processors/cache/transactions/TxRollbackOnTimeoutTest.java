@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -96,14 +96,9 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        boolean client = "client".equals(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        if (!client) {
+        if (!"client".equals(igniteInstanceName)) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
             if (nearCacheEnabled())
@@ -147,7 +142,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      * @return Started client.
      */
     private Ignite startClient() throws Exception {
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         assertTrue(client.configuration().isClientMode());
 
@@ -497,7 +492,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
             fut.cancel(); // Try to interrupt hanging threads.
 
-            throw  e;
+            throw e;
         }
 
         log.info("Tx test stats: started=" + cntr0.sum() +
@@ -813,12 +808,12 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     private void testEnlistMany(boolean write) throws Exception {
         final Ignite client = startClient();
 
-        Map<Integer, Integer> entries = new HashMap<>();
+        Map<Integer, Integer> entries = new TreeMap<>();
 
         for (int i = 0; i < 1000000; i++)
             entries.put(i, i);
 
-        try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 0)) {
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 0)) {
             if (write)
                 client.cache(CACHE_NAME).putAll(entries);
             else
@@ -1009,7 +1004,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             if (obj.getClass().isAssignableFrom(GridNearTxLocal.class)) {
                 log.error("Last saved exception: " + saved, saved);
 
-                fail("Not removed [mode=" + mode + ", timeout=" + timeout + ", tx=" + obj +']');
+                fail("Not removed [mode=" + mode + ", timeout=" + timeout + ", tx=" + obj + ']');
             }
         }
     }

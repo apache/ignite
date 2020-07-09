@@ -1028,11 +1028,11 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         startGrids();
 
-        IgniteConfiguration clientCfg = getConfiguration("client").setClientMode(true);
+        IgniteConfiguration clientCfg = getConfiguration("client");
 
         ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
 
-        Ignite client = startGrid("client", clientCfg);
+        Ignite client = startClientGrid("client", clientCfg);
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
@@ -1057,7 +1057,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      */
     @Test
     public void testNearExpiresWithCacheStore() throws Exception {
-        if(cacheMode() != PARTITIONED)
+        if (cacheMode() != PARTITIONED)
             return;
 
         factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1));
@@ -1066,11 +1066,11 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         startGridsMultiThreaded(gridCount());
 
-        IgniteConfiguration clientCfg = getConfiguration("client").setClientMode(true);
+        IgniteConfiguration clientCfg = getConfiguration("client");
 
         ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
 
-        Ignite client = startGrid("client", clientCfg);
+        Ignite client = startClientGrid("client", clientCfg);
 
         CacheConfiguration ccfg = cacheConfiguration("testCache");
 
@@ -1090,7 +1090,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         waitExpired(key);
 
-        for(int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < gridCount(); i++)
             assertNull(jcache(i).localPeek(key, CachePeekMode.BACKUP, CachePeekMode.PRIMARY));
 
         assertEquals(null, cache.get(key));

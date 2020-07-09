@@ -246,7 +246,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override  public boolean storeWriteThrough() {
+    @Override public boolean storeWriteThrough() {
         return storeWriteThrough;
     }
 
@@ -302,10 +302,10 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addInvalidPartition(GridCacheContext cacheCtx, int part) {
-        super.addInvalidPartition(cacheCtx, part);
+    @Override public void addInvalidPartition(int cacheId, int part) {
+        super.addInvalidPartition(cacheId, part);
 
-        txState.invalidPartition(part);
+        txState.invalidPartition(cacheId, part, xidVersion());
     }
 
     /**
@@ -331,7 +331,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             addExplicit(entry);
         }
         catch (GridDhtInvalidPartitionException e) {
-            addInvalidPartition(cacheCtx, e.partition());
+            addInvalidPartition(cacheCtx.cacheId(), e.partition());
         }
     }
 

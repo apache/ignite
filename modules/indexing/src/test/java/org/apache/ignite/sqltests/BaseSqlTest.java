@@ -47,7 +47,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -58,7 +57,9 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /**
  * Test base for test for sql features.
@@ -117,17 +118,6 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
 
     /** Random for generator. */
     private Random rnd = new Random();
-
-    /**
-     * Makes configuration for client node.
-     */
-    private IgniteConfiguration clientConfiguration() throws Exception {
-        IgniteConfiguration clCfg = getConfiguration(CLIENT_NODE_NAME);
-
-        clCfg.setClientMode(true);
-
-        return optimize(clCfg);
-    }
 
     /**
      * Fills tables with data.
@@ -266,7 +256,7 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
         startGrid(SRV1_NAME, getConfiguration(SRV1_NAME), null);
         startGrid(SRV2_NAME, getConfiguration(SRV2_NAME), null);
 
-        client = (IgniteEx)startGrid(CLIENT_NODE_NAME, clientConfiguration(), null);
+        client = startClientGrid(CLIENT_NODE_NAME);
 
         boolean locExp = explain;
         explain = false;
@@ -364,6 +354,13 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Shortcut for {@link #executeFrom(String, Ignite, String)}, that has two String arguments.
+     */
+    protected Result executeFrom(String qry, Ignite node, String schema) {
+        return executeFrom(new SqlFieldsQuery(qry).setSchema(schema), node);
+    }
+
+    /**
      * Shortcut for {@link #execute(SqlFieldsQuery)}.
      *
      * @param qry query string.
@@ -399,7 +396,8 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
 
                 String explanation = (String)res.get(0).get(0);
 
-                log.debug("Node: " + node.name() + ": Execution plan for query " + qry + ":\n" + explanation);
+                if (log.isDebugEnabled())
+                    log.debug("Node: " + node.name() + ": Execution plan for query " + qry + ":\n" + explanation);
             }
             catch (Exception exc) {
                 log.error("Ignoring exception gotten explaining query : " + qry, exc);
@@ -1258,6 +1256,36 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
             GridTestUtils.assertThrows(log,
                 () -> executeFrom(distributedJoinQry(false, qry), node),
                 IgniteSQLException.class, "Failed to parse query.");
+        });
+    }
+
+    /**
+     * Init rule for expected exception
+     */
+    @Rule
+    public ExpectedException expectedEx = ExpectedException.none();
+
+    /**
+     * Check schema for validation
+     */
+    @Test
+    public void testCheckEmptySchema() {
+        expectedEx.expect(IgniteSQLException.class);
+        expectedEx.expectMessage("Failed to set schema for DB connection. " +
+                "Schema name could not be an empty string"
+        );
+
+        String sqlQuery = "SELECT * FROM Employee limit 1";
+
+        testAllNodes(node -> {
+            executeFrom(sqlQuery, node, "");
+            executeFrom(sqlQuery, node, " ");
+            assertTrue("Check valid schema",
+                    executeFrom(sqlQuery, node, "PUBLIC").values().stream().count() > 0
+            );
+            assertTrue("Check null schema",
+                    executeFrom(sqlQuery, node, null).values().stream().count() > 0
+            );
         });
     }
 

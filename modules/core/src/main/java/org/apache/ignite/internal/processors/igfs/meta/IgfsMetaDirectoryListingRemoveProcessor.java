@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.processors.igfs.meta;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.HashMap;
+import java.util.Map;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
@@ -30,16 +39,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsListingEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Remove entry from directory listing.
@@ -100,13 +99,13 @@ public class IgfsMetaDirectoryListingRemoveProcessor implements EntryProcessor<I
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, fileName);
-        U.writeGridUuid(out, fileId);
+        U.writeIgniteUuid(out, fileId);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         fileName = U.readString(in);
-        fileId = U.readGridUuid(in);
+        fileId = U.readIgniteUuid(in);
     }
 
     /** {@inheritDoc} */

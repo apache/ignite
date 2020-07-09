@@ -24,16 +24,17 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -43,8 +44,11 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -97,6 +101,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** */
     private final IgniteBiPredicate<Object, Object> filter;
+
+    /** Limits returned records quantity. */
+    private int limit;
 
     /** Transformer. */
     private IgniteClosure<?, ?> transform;
@@ -231,6 +238,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param part Partition.
      * @param clsName Class name.
      * @param clause Clause.
+     * @param limit Response limit. Set to 0 for no limits.
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
      * @param subjId Security subject ID.
@@ -251,6 +259,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable Integer part,
         @Nullable String clsName,
         String clause,
+        int limit,
         boolean incMeta,
         boolean keepBinary,
         UUID subjId,
@@ -270,6 +279,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.part = part;
         this.clsName = clsName;
         this.clause = clause;
+        this.limit = limit;
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
         this.subjId = subjId;
@@ -385,6 +395,20 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         A.ensure(timeout >= 0, "timeout >= 0");
 
         this.timeout = timeout;
+
+        return this;
+    }
+
+    /**
+     * @return Response limit. Returns 0 for no limits.
+     **/
+    public int limit() {
+        return limit;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheQuery<T> limit(int limit) {
+        this.limit = limit;
 
         return this;
     }
@@ -536,6 +560,20 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 
+        if (!cctx.isLocal()) {
+            GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+
+            Set<Integer> lostParts = cacheAdapter.topology().lostPartitions();
+
+            if (!lostParts.isEmpty()) {
+                if (part == null || lostParts.contains(part)) {
+                    throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
+                        "has been lostParts [cacheName=" + cctx.name() +
+                        ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
+                }
+            }
+        }
+
         // Affinity nodes snapshot.
         Collection<ClusterNode> nodes = new ArrayList<>(nodes());
 
@@ -545,12 +583,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             if (part != null) {
                 if (forceLocal) {
                     throw new IgniteCheckedException("No queryable nodes for partition " + part
-                        + " [forced local query=" + this + "]");
-                }
-
-                if (isSafeLossPolicy()) {
-                    throw new IgniteCheckedException("Failed to execute scan query because cache partition has been " +
-                        "lost [cacheName=" + cctx.name() + ", part=" + part + "]");
+                            + " [forced local query=" + this + "]");
                 }
             }
 
@@ -601,16 +634,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
-     * @return true if current PartitionLossPolicy corresponds to *_SAFE values.
-     */
-    private boolean isSafeLossPolicy() {
-        PartitionLossPolicy lossPlc = cctx.cache().configuration().getPartitionLossPolicy();
-
-        return lossPlc == PartitionLossPolicy.READ_ONLY_SAFE ||
-            lossPlc == PartitionLossPolicy.READ_WRITE_SAFE;
-    }
-
-    /**
      * @return Nodes to execute on.
      */
     private Collection<ClusterNode> nodes() throws IgniteCheckedException {
@@ -634,12 +657,31 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (prj != null || part != null)
                     return nodes(cctx, prj, part);
 
-                if (cctx.affinityNode())
+                GridDhtPartitionTopology topology = cctx.topology();
+
+                if (cctx.affinityNode() && !topology.localPartitionMap().hasMovingPartitions())
                     return Collections.singletonList(cctx.localNode());
 
-                Collection<ClusterNode> affNodes = nodes(cctx, null, null);
+                topology.readLock();
 
-                return affNodes.isEmpty() ? affNodes : Collections.singletonList(F.rand(affNodes));
+                try {
+
+                    Collection<ClusterNode> affNodes = nodes(cctx, null, null);
+
+                    List<ClusterNode> nodes = new ArrayList<>(affNodes);
+
+                    Collections.shuffle(nodes);
+
+                    for (ClusterNode node : nodes) {
+                        if (!topology.partitions(node.id()).hasMovingPartitions())
+                            return Collections.singletonList(node);
+                    }
+
+                    return affNodes;
+                }
+                finally {
+                    topology.readUnlock();
+                }
 
             case PARTITIONED:
                 return nodes(cctx, prj, part);

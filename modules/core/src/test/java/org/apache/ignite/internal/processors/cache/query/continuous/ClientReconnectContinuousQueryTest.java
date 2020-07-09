@@ -74,9 +74,7 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
         commSpi.setSlowClientQueueLimit(50);
         commSpi.setIdleConnectionTimeout(300_000);
 
-        if (getTestIgniteInstanceName(CLIENT_IDX).equals(gridName))
-            cfg.setClientMode(true);
-        else {
+        if (!getTestIgniteInstanceName(CLIENT_IDX).equals(gridName)) {
             CacheConfiguration ccfg = defaultCacheConfiguration();
 
             ccfg.setAtomicityMode(atomicityMode());
@@ -106,9 +104,9 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
     @Test
     public void testClientReconnect() throws Exception {
         try {
-            startGrids(2);
+            startGrid(0);
 
-            final IgniteEx client = grid(CLIENT_IDX);
+            final IgniteEx client = startClientGrid(CLIENT_IDX);
 
             client.events().localListen(new DisconnectListener(), EventType.EVT_CLIENT_NODE_DISCONNECTED);
 

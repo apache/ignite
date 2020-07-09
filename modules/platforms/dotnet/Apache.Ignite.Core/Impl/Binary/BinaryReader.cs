@@ -725,14 +725,20 @@ namespace Apache.Ignite.Core.Impl.Binary
                         ? _marsh.GetDescriptor(ReadUnregisteredType(typeOverride))
                         : _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId, true, null, typeOverride);
 
-                    // Instantiate object. 
+                    if (desc == null)
+                    {
+                        throw new BinaryObjectException(string.Format(
+                            "No matching type found for object [typeId={0}, userType={1}].",
+                            hdr.TypeId, hdr.IsUserType));
+                    }
+
                     if (desc.Type == null)
                     {
                         throw new BinaryObjectException(string.Format(
                             "No matching type found for object [typeId={0}, typeName={1}]. " +
                             "This usually indicates that assembly with specified type is not loaded on a node. " +
                             "When using Apache.Ignite.exe, make sure to load assemblies with -assembly parameter. " +
-                            "Alternatively, set IgniteConfiguration.PeerAssemblyLoadingEnabled to true.",
+                            "Alternatively, set IgniteConfiguration.PeerAssemblyLoadingMode to CurrentAppDomain.",
                             desc.TypeId, desc.TypeName));
                     }
 
@@ -864,6 +870,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             get;
             private set;
+        }
+
+        /// <summary>
+        /// Gets the schema for the current object, if any.
+        /// </summary>
+        public int[] Schema
+        {
+            get { return _frame.Schema; }
         }
 
         /// <summary>

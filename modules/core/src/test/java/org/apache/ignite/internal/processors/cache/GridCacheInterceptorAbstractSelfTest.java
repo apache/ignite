@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
@@ -42,7 +43,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -300,11 +300,11 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         Collection<CacheEntry<String, Integer>> c;
         Map<String, Integer> map;
 
-        if (needVer){
+        if (needVer) {
             c = cache.getEntries(keys);
 
             assertTrue(c.isEmpty());
-        }else {
+        } else {
             map = cache.getAll(keys);
 
             for (String key : keys)
@@ -941,7 +941,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         // Interceptor returns incremented new value.
         interceptor.retInterceptor = new PutIncrementInterceptor();
 
-        Map<String, Integer> map = new HashMap<>();
+        Map<String, Integer> map = new TreeMap<>();
 
         final String key1;
         String key2;
@@ -1030,7 +1030,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     @SuppressWarnings("unchecked")
     private void testBatchRemove(Operation op) throws Exception {
-        Map<String, Integer> map = new HashMap<>();
+        Map<String, Integer> map = new TreeMap<>();
 
         final String key1;
         String key2;
@@ -1587,7 +1587,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
             Object ret = retInterceptor.onBeforePut(entry, newVal);
 
-            System.out.println("Before put [key=" + entry.getKey() + ", oldVal=" + entry.getValue()+ ", newVal=" + newVal
+            System.out.println("Before put [key=" + entry.getKey() + ", oldVal=" + entry.getValue() + ", newVal=" + newVal
                 + ", ret=" + ret + ']');
 
             invokeCnt.incrementAndGet();

@@ -34,8 +34,12 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -61,45 +65,70 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientFlag;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.CURRENT_VER;
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.USER_ATTRIBUTES;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.LATEST_VER;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_0_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_1_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_3_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_4_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_7_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.AUTHORIZATION;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.BITMAP_FEATURES;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.PARTITION_AWARENESS;
 
 /**
  * Implements {@link ClientChannel} over TCP.
  */
 class TcpClientChannel implements ClientChannel {
+    /** Protocol version used by default on first connection attempt. */
+    private static final ProtocolVersion DEFAULT_VERSION = LATEST_VER;
+
+    /** Receiver thread prefix. */
+    static final String RECEIVER_THREAD_PREFIX = "thin-client-channel#";
+
     /** Supported protocol versions. */
     private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
+        V1_7_0,
+        V1_6_0,
         V1_5_0,
         V1_4_0,
+        V1_3_0,
         V1_2_0,
-        V1_1_0, 
+        V1_1_0,
         V1_0_0
     );
 
-    /** Timeout before next attempt to lock channel and process next response by current thread. */
-    private static final long PAYLOAD_WAIT_TIMEOUT = 10L;
+    /** Protocol context. */
+    private ProtocolContext protocolCtx;
 
-    /** Protocol version agreed with the server. */
-    private ProtocolVersion ver = CURRENT_VER;
+    /** Server node ID. */
+    private UUID srvNodeId;
+
+    /** Server topology version. */
+    private AffinityTopologyVersion srvTopVer;
 
     /** Channel. */
     private final Socket sock;
@@ -116,14 +145,24 @@ class TcpClientChannel implements ClientChannel {
     /** Send lock. */
     private final Lock sndLock = new ReentrantLock();
 
-    /** Receive lock. */
-    private final Lock rcvLock = new ReentrantLock();
-
     /** Pending requests. */
     private final Map<Long, ClientRequestFuture> pendingReqs = new ConcurrentHashMap<>();
 
+    /** Topology change listeners. */
+    private final Collection<Consumer<ClientChannel>> topChangeLsnrs = new CopyOnWriteArrayList<>();
+
+    /** Notification listeners. */
+    private final Collection<NotificationListener> notificationLsnrs = new CopyOnWriteArrayList<>();
+
+    /** Closed flag. */
+    private final AtomicBoolean closed = new AtomicBoolean();
+
+    /** Receiver thread (processes incoming messages). */
+    private Thread receiverThread;
+
     /** Constructor. */
-    TcpClientChannel(ClientChannelConfiguration cfg) throws ClientConnectionException, ClientAuthenticationException {
+    TcpClientChannel(ClientChannelConfiguration cfg)
+        throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         validateConfiguration(cfg);
 
         try {
@@ -136,22 +175,45 @@ class TcpClientChannel implements ClientChannel {
             throw handleIOError("addr=" + cfg.getAddress(), e);
         }
 
-        handshake(cfg.getUserName(), cfg.getUserPassword());
+        handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
-        dataInput.close();
-        out.close();
-        sock.close();
+    @Override public void close() {
+        close(null);
+    }
 
-        for (ClientRequestFuture pendingReq : pendingReqs.values())
-            pendingReq.onDone(new ClientConnectionException("Channel is closed"));
+    /**
+     * Close the channel with cause.
+     */
+    private void close(Throwable cause) {
+        if (closed.compareAndSet(false, true)) {
+            U.closeQuiet(dataInput);
+            U.closeQuiet(out);
+            U.closeQuiet(sock);
+
+            sndLock.lock(); // Lock here to prevent creation of new pending requests.
+
+            try {
+                for (ClientRequestFuture pendingReq : pendingReqs.values())
+                    pendingReq.onDone(new ClientConnectionException("Channel is closed", cause));
+
+                if (receiverThread != null)
+                    receiverThread.interrupt();
+            }
+            finally {
+                sndLock.unlock();
+            }
+
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T service(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter,
-        Function<PayloadInputChannel, T> payloadReader) throws ClientConnectionException, ClientAuthorizationException {
+    @Override public <T> T service(
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientConnectionException, ClientAuthorizationException, ClientServerError, ClientException {
         long id = send(op, payloadWriter);
 
         return receive(id, payloadReader);
@@ -163,13 +225,18 @@ class TcpClientChannel implements ClientChannel {
      * @return Request ID.
      */
     private long send(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
-        throws ClientConnectionException {
+        throws ClientException, ClientConnectionException {
         long id = reqId.getAndIncrement();
 
         // Only one thread at a time can have access to write to the channel.
         sndLock.lock();
 
         try (PayloadOutputChannel payloadCh = new PayloadOutputChannel(this)) {
+            if (closed())
+                throw new ClientConnectionException("Channel is closed");
+
+            initReceiverThread(); // Start the receiver thread with the first request.
+
             pendingReqs.put(id, new ClientRequestFuture());
 
             BinaryOutputStream req = payloadCh.out();
@@ -203,39 +270,18 @@ class TcpClientChannel implements ClientChannel {
      * @return Received operation payload or {@code null} if response has no payload.
      */
     private <T> T receive(long reqId, Function<PayloadInputChannel, T> payloadReader)
-        throws ClientConnectionException, ClientAuthorizationException {
+        throws ClientServerError, ClientException, ClientConnectionException, ClientAuthorizationException {
         ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
         assert pendingReq != null : "Pending request future not found for request " + reqId;
 
-        // Each thread creates a future on request sent and returns a response when this future is completed.
-        // Only one thread at a time can have access to read from the channel. This thread reads the next available
-        // response and complete corresponding future. All other concurrent threads wait for their own futures with
-        // a timeout and periodically try to lock the channel to process the next response.
         try {
-            while (true) {
-                if (rcvLock.tryLock()) {
-                    try {
-                        if (!pendingReq.isDone())
-                            processNextResponse();
-                    }
-                    finally {
-                        rcvLock.unlock();
-                    }
-                }
+            byte[] payload = pendingReq.get();
 
-                try {
-                    byte[] payload = pendingReq.get(PAYLOAD_WAIT_TIMEOUT);
+            if (payload == null || payloadReader == null)
+                return null;
 
-                    if (payload == null || payloadReader == null)
-                        return null;
-
-                    return payloadReader.apply(new PayloadInputChannel(this, payload));
-                }
-                catch (IgniteFutureTimeoutCheckedException ignore) {
-                    // Next cycle if timed out.
-                }
-            }
+            return payloadReader.apply(new PayloadInputChannel(this, payload));
         }
         catch (IgniteCheckedException e) {
             if (e.getCause() instanceof ClientError)
@@ -252,34 +298,71 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /**
-     * Process next response from the input stream and complete corresponding future.
+     * Init and start receiver thread if it wasn't started before.
+     *
+     * Note: Method should be called only under external synchronization.
      */
-    private void processNextResponse() throws ClientProtocolError, ClientConnectionException {
-        int resSize = dataInput.readInt();
+    private void initReceiverThread() {
+        if (receiverThread == null) {
+            Socket sock = this.sock;
 
-        if (resSize <= 0)
-            throw new ClientProtocolError(String.format("Invalid response size: %s", resSize));
+            String sockInfo = sock == null ? null : sock.getInetAddress().getHostName() + ":" + sock.getPort();
 
-        long bytesReadOnStartReq = dataInput.totalBytesRead();
+            receiverThread = new Thread(() -> {
+                try {
+                    while (!closed())
+                        processNextMessage();
+                }
+                catch (Throwable e) {
+                    close(e);
+                }
+            }, RECEIVER_THREAD_PREFIX + sockInfo);
+
+            receiverThread.setDaemon(true);
+
+            receiverThread.start();
+        }
+    }
+
+    /**
+     * Process next message from the input stream and complete corresponding future.
+     */
+    private void processNextMessage() throws ClientProtocolError, ClientConnectionException {
+        int msgSize = dataInput.readInt();
+
+        if (msgSize <= 0)
+            throw new ClientProtocolError(String.format("Invalid message size: %s", msgSize));
+
+        long bytesReadOnStartMsg = dataInput.totalBytesRead();
 
         long resId = dataInput.readLong();
 
-        ClientRequestFuture pendingReq = pendingReqs.get(resId);
-
-        if (pendingReq == null)
-            throw new ClientProtocolError(String.format("Unexpected response ID [%s]", resId));
-
         int status = 0;
+
+        ClientOperation notificationOp = null;
 
         BinaryInputStream resIn;
 
-        if (ver.compareTo(V1_4_0) >= 0) {
+        if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
             short flags = dataInput.readShort();
 
             if ((flags & ClientFlag.AFFINITY_TOPOLOGY_CHANGED) != 0) {
-                // TODO: IGNITE-11898 Implement Best Effort Affinity for java thin client.
-                dataInput.readLong(); // topVer.
-                dataInput.readInt(); // minorTopVer.
+                long topVer = dataInput.readLong();
+                int minorTopVer = dataInput.readInt();
+
+                srvTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
+
+                for (Consumer<ClientChannel> lsnr : topChangeLsnrs)
+                    lsnr.accept(this);
+            }
+
+            if ((flags & ClientFlag.NOTIFICATION) != 0) {
+                short notificationCode = dataInput.readShort();
+
+                notificationOp = ClientOperation.fromCode(notificationCode);
+
+                if (notificationOp == null || !notificationOp.isNotification())
+                    throw new ClientProtocolError(String.format("Unexpected notification code [%d]", notificationCode));
             }
 
             if ((flags & ClientFlag.ERROR) != 0)
@@ -288,31 +371,67 @@ class TcpClientChannel implements ClientChannel {
         else
             status = dataInput.readInt();
 
-        int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartReq);
+        int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartMsg);
+
+        byte[] res = null;
+        Exception err = null;
 
         if (status == 0) {
-            if (resSize <= hdrSize)
-                pendingReq.onDone();
-            else
-                pendingReq.onDone(dataInput.read(resSize - hdrSize));
+            if (msgSize > hdrSize)
+                res = dataInput.read(msgSize - hdrSize);
         }
+        else if (status == ClientStatus.SECURITY_VIOLATION)
+            err = new ClientAuthorizationException();
         else {
-            resIn = new BinaryHeapInputStream(dataInput.read(resSize - hdrSize));
+            resIn = new BinaryHeapInputStream(dataInput.read(msgSize - hdrSize));
 
-            String err = new BinaryReaderExImpl(null, resIn, null, true).readString();
+            String errMsg = new BinaryReaderExImpl(null, resIn, null, true).readString();
 
-            switch (status) {
-                case ClientStatus.SECURITY_VIOLATION:
-                    pendingReq.onDone(new ClientAuthorizationException());
-                default:
-                    pendingReq.onDone(new ClientServerError(err, status, resId));
-            }
+            err = new ClientServerError(errMsg, status, resId);
+        }
+
+        if (notificationOp == null) { // Respone received.
+            ClientRequestFuture pendingReq = pendingReqs.get(resId);
+
+            if (pendingReq == null)
+                throw new ClientProtocolError(String.format("Unexpected response ID [%s]", resId));
+
+            pendingReq.onDone(res, err);
+        }
+        else { // Notification received.
+            for (NotificationListener lsnr : notificationLsnrs)
+                lsnr.acceptNotification(this, notificationOp, resId, res, err);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public ProtocolVersion serverVersion() {
-        return ver;
+    @Override public ProtocolContext protocolCtx() {
+        return protocolCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID serverNodeId() {
+        return srvNodeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion serverTopologyVersion() {
+        return srvTopVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addTopologyChangeListener(Consumer<ClientChannel> lsnr) {
+        topChangeLsnrs.add(lsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addNotificationListener(NotificationListener lsnr) {
+        notificationLsnrs.add(lsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean closed() {
+        return closed.get();
     }
 
     /** Validate {@link ClientConfiguration}. */
@@ -350,48 +469,66 @@ class TcpClientChannel implements ClientChannel {
         return sock;
     }
 
-    /** Serialize String for thin client protocol. */
-    private static byte[] marshalString(String s) {
-        try (BinaryOutputStream out = new BinaryHeapOutputStream(s == null ? 1 : s.length() + 20);
-             BinaryRawWriterEx writer = new BinaryWriterExImpl(null, out, null, null)
-        ) {
-            writer.writeString(s);
-
-            return out.arrayCopy();
-        }
-    }
-
     /** Client handshake. */
-    private void handshake(String user, String pwd)
-        throws ClientConnectionException, ClientAuthenticationException {
-        handshakeReq(user, pwd);
-        handshakeRes(user, pwd);
+    private void handshake(ProtocolVersion ver, String user, String pwd, Map<String, String> userAttrs)
+        throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
+        handshakeReq(ver, user, pwd, userAttrs);
+        handshakeRes(ver, user, pwd, userAttrs);
     }
 
     /** Send handshake request. */
-    private void handshakeReq(String user, String pwd) throws ClientConnectionException {
-        try (BinaryOutputStream req = new BinaryHeapOutputStream(32)) {
-            req.writeInt(0); // reserve an integer for the request size
-            req.writeByte((byte)1); // handshake code, always 1
-            req.writeShort(ver.major());
-            req.writeShort(ver.minor());
-            req.writeShort(ver.patch());
-            req.writeByte((byte)2); // client code, always 2
+    private void handshakeReq(ProtocolVersion proposedVer, String user, String pwd,
+        Map<String, String> userAttrs) throws ClientConnectionException {
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
 
-            if (ver.compareTo(V1_1_0) >= 0 && user != null && !user.isEmpty()) {
-                req.writeByteArray(marshalString(user));
-                req.writeByteArray(marshalString(pwd));
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
+            ProtocolContext protocolCtx = protocolContextFromVersion(proposedVer);
+
+            writer.writeInt(0); // reserve an integer for the request size
+            writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+
+            writer.writeShort(proposedVer.major());
+            writer.writeShort(proposedVer.minor());
+            writer.writeShort(proposedVer.patch());
+
+            writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
+
+            if (protocolCtx.isFeatureSupported(BITMAP_FEATURES)) {
+                byte[] features = ProtocolBitmaskFeature.featuresAsBytes(protocolCtx.features());
+                writer.writeByteArray(features);
             }
 
-            req.writeInt(0, req.position() - 4); // actual size
+            if (protocolCtx.isFeatureSupported(USER_ATTRIBUTES))
+                writer.writeMap(userAttrs);
 
-            write(req.array(), req.position());
+            boolean authSupported = protocolCtx.isFeatureSupported(AUTHORIZATION);
+
+            if (authSupported && user != null && !user.isEmpty()) {
+                writer.writeString(user);
+                writer.writeString(pwd);
+            }
+
+            writer.out().writeInt(0, writer.out().position() - 4);// actual size
+
+            write(writer.array(), writer.out().position());
         }
     }
 
+    /**
+     * @param ver Protocol version.
+     * @return Protocol context for a version.
+     */
+    private ProtocolContext protocolContextFromVersion(ProtocolVersion ver) {
+        EnumSet<ProtocolBitmaskFeature> features = null;
+        if (ProtocolContext.isFeatureSupported(ver, BITMAP_FEATURES))
+            features = ProtocolBitmaskFeature.allFeaturesAsEnumSet();
+
+        return new ProtocolContext(ver, features);
+    }
+
     /** Receive and handle handshake response. */
-    private void handshakeRes(String user, String pwd)
-        throws ClientConnectionException, ClientAuthenticationException {
+    private void handshakeRes(ProtocolVersion proposedVer, String user, String pwd, Map<String, String> userAttrs)
+        throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         int resSize = dataInput.readInt();
 
         if (resSize <= 0)
@@ -399,40 +536,46 @@ class TcpClientChannel implements ClientChannel {
 
         BinaryInputStream res = new BinaryHeapInputStream(dataInput.read(resSize));
 
-        try (BinaryReaderExImpl r = new BinaryReaderExImpl(null, res, null, true)) {
-            if (res.readBoolean()) { // Success flag.
-                if (ver.compareTo(V1_4_0) >= 0)
-                    // TODO: IGNITE-11898 Implement Best Effort Affinity for java thin client.
-                    r.readUuid(); // Server node UUID.
-            }
-            else {
+        try (BinaryReaderExImpl reader = new BinaryReaderExImpl(null, res, null, true)) {
+            boolean success = res.readBoolean();
+
+            if (success) {
+                byte[] features = new byte[0];
+
+                if (ProtocolContext.isFeatureSupported(proposedVer, BITMAP_FEATURES))
+                    features = reader.readByteArray();
+
+                protocolCtx = new ProtocolContext(proposedVer, ProtocolBitmaskFeature.enumSet(features));
+
+                if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
+                    // Reading server UUID
+                    srvNodeId = reader.readUuid();
+                }
+            } else {
                 ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
 
-                String err = r.readString();
-
+                String err = reader.readString();
                 int errCode = ClientStatus.FAILED;
 
                 if (res.remaining() > 0)
-                    errCode = r.readInt();
+                    errCode = reader.readInt();
 
                 if (errCode == ClientStatus.AUTH_FAILED)
                     throw new ClientAuthenticationException(err);
-                else if (ver.equals(srvVer))
+                else if (proposedVer.equals(srvVer))
                     throw new ClientProtocolError(err);
                 else if (!supportedVers.contains(srvVer) ||
-                    (srvVer.compareTo(V1_1_0) < 0 && user != null && !user.isEmpty()))
+                    (!ProtocolContext.isFeatureSupported(srvVer, AUTHORIZATION) && !F.isEmpty(user)))
                     // Server version is not supported by this client OR server version is less than 1.1.0 supporting
                     // authentication and authentication is required.
                     throw new ClientProtocolError(String.format(
                         "Protocol version mismatch: client %s / server %s. Server details: %s",
-                        ver,
+                        proposedVer,
                         srvVer,
                         err
                     ));
                 else { // Retry with server version.
-                    ver = srvVer;
-
-                    handshake(user, pwd);
+                    handshake(srvVer, user, pwd, userAttrs);
                 }
             }
         }
@@ -471,7 +614,7 @@ class TcpClientChannel implements ClientChannel {
      * Auxiliary class to read byte buffers and numeric values, counting total bytes read.
      * Numeric values are read in the little-endian byte order.
      */
-    private class ByteCountingDataInput {
+    private class ByteCountingDataInput implements AutoCloseable {
         /** Input stream. */
         private final InputStream in;
 
@@ -561,7 +704,7 @@ class TcpClientChannel implements ClientChannel {
         /**
          * Close input stream.
          */
-        public void close() throws IOException {
+        @Override public void close() throws IOException {
             in.close();
         }
     }

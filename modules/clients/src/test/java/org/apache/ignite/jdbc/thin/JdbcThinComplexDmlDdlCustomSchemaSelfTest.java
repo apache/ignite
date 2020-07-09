@@ -17,11 +17,11 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.junit.Test;
 
 /**
@@ -41,7 +41,7 @@ public class JdbcThinComplexDmlDdlCustomSchemaSelfTest extends JdbcThinComplexDm
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setSqlSchemas(SCHEMA_1, SCHEMA_2);
+        cfg.setSqlConfiguration(new SqlConfiguration().setSqlSchemas(SCHEMA_1, SCHEMA_2));
 
         return cfg;
     }

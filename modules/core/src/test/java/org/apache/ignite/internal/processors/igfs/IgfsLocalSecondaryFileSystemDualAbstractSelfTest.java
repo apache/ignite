@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
@@ -27,14 +34,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Test;
 
 /**
@@ -261,7 +260,7 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
     /**
      * @param dir Directory to clean.
      */
-    private static void cleanDirectory(File dir){
+    private static void cleanDirectory(File dir) {
         File[] entries = dir.listFiles();
 
         if (entries != null) {

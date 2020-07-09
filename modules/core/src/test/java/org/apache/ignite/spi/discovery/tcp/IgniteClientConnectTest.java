@@ -22,10 +22,11 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -191,11 +192,9 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
         IgniteConfiguration clientCfg = getConfiguration("client");
 
-        clientCfg.setClientMode(true);
-
         clientJustStarted.set(true);
 
-        IgniteEx client = startGrid(clientCfg);
+        IgniteEx client = startClientGrid(clientCfg);
 
         latch.countDown();
 

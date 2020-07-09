@@ -65,9 +65,6 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(new TcpDiscoverySpiWithOrderedIps().setIpFinder(ipFinder));
 
-        if (igniteInstanceName.startsWith("client"))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -92,7 +89,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
         new GridTestThread(new Runnable() {
             @Override public void run() {
                 try {
-                    while(!Thread.currentThread().isInterrupted()) {
+                    while (!Thread.currentThread().isInterrupted()) {
                         Socket clientSock = srvSock.accept();
 
                         connCnt.getAndIncrement();
@@ -179,7 +176,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
     private void simpleTest() {
         try {
             Ignite srv = startGrid("server");
-            Ignite client = startGrid("client");
+            Ignite client = startClientGrid("client");
 
             awaitPartitionMapExchange();
 

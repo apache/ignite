@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.Nullable;
@@ -32,9 +32,6 @@ import org.jetbrains.annotations.Nullable;
  * Binary objects marshaller.
  */
 public class GridBinaryMarshaller {
-    /** */
-    public static final ThreadLocal<Boolean> KEEP_BINARIES = ThreadLocal.withInitial(() -> true);
-
     /** Binary context in TLS store. */
     private static final ThreadLocal<BinaryContextHolder> BINARY_CTX =
         ThreadLocal.withInitial(BinaryContextHolder::new);
@@ -301,10 +298,22 @@ public class GridBinaryMarshaller {
         if (arr[0] == NULL)
             return null;
 
+        return deserialize(BinaryHeapInputStream.create(arr, 0), ldr, null);
+    }
+
+    /**
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param hnds Handles.
+     * @return Deserialized object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    @Nullable public <T> T deserialize(BinaryInputStream in, @Nullable ClassLoader ldr,
+        @Nullable BinaryReaderHandles hnds) throws BinaryObjectException {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T)new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, 0), ldr, true).deserialize();
+            return (T)new BinaryReaderExImpl(ctx, in, ldr, hnds, true).deserialize();
         }
         finally {
             popContext(oldCtx);

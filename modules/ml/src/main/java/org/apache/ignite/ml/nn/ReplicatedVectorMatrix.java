@@ -87,11 +87,6 @@ class ReplicatedVectorMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return vector.isDistributed();
-    }
-
-    /** {@inheritDoc} */
     @Override public double maxValue() {
         return vector.maxValue();
     }

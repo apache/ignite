@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,25 +14,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.springdata.misc;
 
 import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
+import org.apache.ignite.springdata20.repository.IgniteRepository;
 import org.apache.ignite.springdata20.repository.config.Query;
 import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.apache.ignite.springdata20.repository.IgniteRepository;
+import org.springframework.data.repository.query.Param;
 
 /**
- *
+ * Test repository.
  */
 @RepositoryConfig(cacheName = "PersonCache")
 public interface PersonRepository extends IgniteRepository<Person, Integer> {
     /** */
     public List<Person> findByFirstName(String val);
+
+    /** */
+    @Query("firstName = ?")
+    public List<PersonProjection> queryByFirstNameWithProjection(String val);
+
+    /** */
+    @Query("firstName = :firstname")
+    public List<PersonProjection> queryByFirstNameWithProjectionNamedParameter(@Param("firstname") String val);
+
+    /** */
+    @Query("firstName = :firstname")
+    public <P> List<P> queryByFirstNameWithProjectionNamedParameter(Class<P> dynamicProjection, @Param("firstname") String val);
+
+    /** */
+    @Query("firstName = :firstname")
+    public <P> P queryOneByFirstNameWithProjectionNamedParameter(Class<P> dynamicProjection, @Param("firstname") String val);
+
+    /** */
+    @Query("firstName = ?#{[1]}")
+    public List<PersonProjection> queryByFirstNameWithProjectionNamedIndexedParameter(@Param("notUsed") String notUsed, @Param("firstname") String val);
+
+    /** */
+    @Query(textQuery = true, value = "#{#firstname}", limit = 2)
+    public List<PersonProjection> textQueryByFirstNameWithProjectionNamedParameter(@Param("firstname") String val);
+
+    @Query(value = "select * from (sElecT * from #{#entityName} where firstName = :firstname)", forceFieldsQuery = true)
+    public List<PersonProjection> queryByFirstNameWithProjectionNamedParameterAndTemplateDomainEntityVariable(@Param("firstname") String val);
+
+    @Query(value = "firstName = ?#{sampleExtension.transformParam(#firstname)}")
+    public List<PersonProjection> queryByFirstNameWithProjectionNamedParameterWithSpELExtension(@Param("firstname") String val);
 
     /** */
     public List<Person> findByFirstNameContaining(String val);
@@ -66,7 +95,7 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     public Cache.Entry<Integer, Person> findTopBySecondNameLike(String val);
 
     /** */
-    public Person findTopBySecondNameStartingWith(String val);
+    public PersonProjection findTopBySecondNameStartingWith(String val);
 
     /** */
     @Query("firstName = ?")
@@ -101,17 +130,17 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     /** Remove Query */
     public List<Person> removeByFirstName(String firstName);
 
-    /** Delete using @Query */
-    @Query("DELETE FROM Person WHERE secondName = ?")
-    public void deleteBySecondNameQuery(String secondName);
+    /** Delete using @Query with keyword in lower-case */
+    @Query("delete FROM Person WHERE secondName = ?")
+    public void deleteBySecondNameLowerCase(String secondName);
 
     /** Delete using @Query but with errors on the query */
     @Query("DELETE FROM Person WHERE firstName = ? AND ERRORS = 'ERRORS'")
     public void deleteWrongByFirstNameQuery(String firstName);
 
-    /** Update using @Query */
-    @Query("UPDATE Person SET secondName = ? WHERE firstName = ?")
-    public int setFixedSecondNameFor(String secondName, String firstName);
+    /** Update using @Query with keyword in mixed-case */
+    @Query("upDATE Person SET secondName = ? WHERE firstName = ?")
+    public int setFixedSecondNameMixedCase(String secondName, String firstName);
 
     /** Update using @Query but with errors on the query */
     @Query("UPDATE Person SET secondName = ? WHERE firstName = ? AND ERRORS = 'ERRORS'")

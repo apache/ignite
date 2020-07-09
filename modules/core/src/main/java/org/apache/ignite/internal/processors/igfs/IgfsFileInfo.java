@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -29,13 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * IGFS file info.
@@ -217,8 +216,8 @@ public final class IgfsFileInfo extends IgfsEntryInfo implements Binarylizable {
 
         out.writeInt(blockSize);
         out.writeLong(len);
-        U.writeGridUuid(out, lockId);
-        U.writeGridUuid(out, affKey);
+        U.writeIgniteUuid(out, lockId);
+        U.writeIgniteUuid(out, affKey);
         out.writeObject(fileMap);
         out.writeBoolean(evictExclude);
     }
@@ -229,8 +228,8 @@ public final class IgfsFileInfo extends IgfsEntryInfo implements Binarylizable {
 
         blockSize = in.readInt();
         len = in.readLong();
-        lockId = U.readGridUuid(in);
-        affKey = U.readGridUuid(in);
+        lockId = U.readIgniteUuid(in);
+        affKey = U.readIgniteUuid(in);
         fileMap = (IgfsFileMap)in.readObject();
         evictExclude = in.readBoolean();
     }

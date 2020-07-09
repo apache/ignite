@@ -31,10 +31,14 @@ import org.apache.ignite.internal.GridKernalGatewayImpl;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.LongJVMPauseDetector;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -82,6 +86,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                 null,
                 null,
                 null,
+                null,
                 cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
                     Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders(),
                 null,
@@ -94,6 +99,13 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         GridTestUtils.setFieldValue(grid(), "ctx", this);
 
         config().setGridLogger(log);
+
+        if (cfg.getMetricExporterSpi() == null || cfg.getMetricExporterSpi().length == 0)
+            cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
+
+        add(new GridMetricManager(this));
+        add(new GridResourceProcessor(this));
+        add(new GridInternalSubscriptionProcessor(this));
     }
 
     /**
@@ -136,7 +148,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      *
      * @param execSvc Executor service
      */
-    public void setExecutorService(ExecutorService execSvc){
+    public void setExecutorService(ExecutorService execSvc) {
         this.execSvc = execSvc;
     }
 

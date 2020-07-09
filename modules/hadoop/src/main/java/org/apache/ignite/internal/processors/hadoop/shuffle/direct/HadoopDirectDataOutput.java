@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle.direct;
 
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.DataOutput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UTFDataFormatException;
 import java.nio.charset.StandardCharsets;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
 
@@ -139,7 +138,7 @@ public class HadoopDirectDataOutput extends OutputStream implements DataOutput {
 
     /** {@inheritDoc} */
     @Override public void writeBytes(@NotNull String str) throws IOException {
-        for(int i = 0; i < str.length(); ++i)
+        for (int i = 0; i < str.length(); ++i)
             write((byte)str.charAt(i));
     }
 

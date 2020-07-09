@@ -368,7 +368,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
             private <K, V> Preprocessor<K, V> getNewExtractor(
                 Preprocessor<K, V> extractor) {
                 IgniteFunction<LabeledVector<L1>, LabeledVector<L>> func = lv -> new LabeledVector<>(lv.features(), new2Old.apply(lv.label()));
-                return new PatchedPreprocessor<K, V, L1, L>(func, extractor);
+                return new PatchedPreprocessor<>(func, extractor);
             }
 
             /** */

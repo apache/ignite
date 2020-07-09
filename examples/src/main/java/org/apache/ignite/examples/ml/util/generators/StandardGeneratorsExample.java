@@ -57,15 +57,15 @@ public class StandardGeneratorsExample {
         RingsDataStream ringsDataStream = new RingsDataStream(7, 5.0, 5.0);
         Tracer.showClassificationDatasetHtml("Rings", ringsDataStream, 1500, 0, 1, true);
 
-        // Examples of lineary separable classes, a set of uniform distributed points on plane that can be splitted
+        // Examples of linear separable classes, a set of uniform distributed points on plane that can be splitted
         // on two classes by diagonal hyperplane. Each example represents a different margin - distance between
         // points and diagonal hyperplane. If margin < 0 then points of different classes are mixed.
-        TwoSeparableClassesDataStream linearySeparableClasses1 = new TwoSeparableClassesDataStream(0., 20.);
-        TwoSeparableClassesDataStream linearySeparableClasses2 = new TwoSeparableClassesDataStream(5., 20.);
-        TwoSeparableClassesDataStream linearySeparableClasses3 = new TwoSeparableClassesDataStream(-5., 20.);
-        Tracer.showClassificationDatasetHtml("Two separable classes (margin = 0.0)", linearySeparableClasses1, 1500, 0, 1, true);
-        Tracer.showClassificationDatasetHtml("Two separable classes (margin = 5.0)", linearySeparableClasses2, 1500, 0, 1, true);
-        Tracer.showClassificationDatasetHtml("Two separable classes (margin = -5.0)", linearySeparableClasses3, 1500, 0, 1, true);
+        TwoSeparableClassesDataStream linearSeparableClasses1 = new TwoSeparableClassesDataStream(0., 20.);
+        TwoSeparableClassesDataStream linearSeparableClasses2 = new TwoSeparableClassesDataStream(5., 20.);
+        TwoSeparableClassesDataStream linearSeparableClasses3 = new TwoSeparableClassesDataStream(-5., 20.);
+        Tracer.showClassificationDatasetHtml("Two separable classes (margin = 0.0)", linearSeparableClasses1, 1500, 0, 1, true);
+        Tracer.showClassificationDatasetHtml("Two separable classes (margin = 5.0)", linearSeparableClasses2, 1500, 0, 1, true);
+        Tracer.showClassificationDatasetHtml("Two separable classes (margin = -5.0)", linearSeparableClasses3, 1500, 0, 1, true);
 
         // Example of regression dataset with base function y(x) = |x^2 - 10|.
         RegressionDataStream regression = RegressionDataStream.twoDimensional(

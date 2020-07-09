@@ -44,6 +44,9 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -52,14 +55,11 @@ import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopComponent;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
-import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobPhase;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
-import org.apache.ignite.hadoop.HadoopMapReducePlan;
-import org.apache.ignite.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounterWriter;
@@ -500,12 +500,12 @@ public class HadoopJobTracker extends HadoopComponent {
             if (meta == null) {
                 fut.onDone();
 
-                activeFinishFuts.remove(jobId , fut);
+                activeFinishFuts.remove(jobId, fut);
             }
             else if (meta.phase() == PHASE_COMPLETE) {
                 fut.onDone(jobId, meta.failCause());
 
-                activeFinishFuts.remove(jobId , fut);
+                activeFinishFuts.remove(jobId, fut);
             }
 
             return fut;
@@ -562,7 +562,7 @@ public class HadoopJobTracker extends HadoopComponent {
             assert (status.state() != FAILED) || status.failCause() != null :
                 "Invalid task status [info=" + info + ", status=" + status + ']';
 
-            assert state != null || (ctx.jobUpdateLeader() && (info.type() == COMMIT || info.type() == ABORT)):
+            assert state != null || (ctx.jobUpdateLeader() && (info.type() == COMMIT || info.type() == ABORT)) :
                 "Missing local state for finished task [info=" + info + ", status=" + status + ']';
 
             StackedProcessor incrCntrs = null;
@@ -694,7 +694,7 @@ public class HadoopJobTracker extends HadoopComponent {
             }
 
             // Iteration over all local entries is correct since system cache is REPLICATED.
-            for (IgniteCache.Entry<HadoopJobId, HadoopJobMetadata>  entry : entries) {
+            for (IgniteCache.Entry<HadoopJobId, HadoopJobMetadata> entry : entries) {
                 HadoopJobMetadata meta = entry.getValue();
 
                 HadoopJobId jobId = meta.jobId();
@@ -1666,7 +1666,7 @@ public class HadoopJobTracker extends HadoopComponent {
             final HadoopJobPhase currPhase = meta.phase();
 
             assert currPhase == PHASE_CANCELLING || currPhase == PHASE_COMPLETE
-                    || err != null: "Invalid phase for cancel: " + currPhase;
+                    || err != null : "Invalid phase for cancel: " + currPhase;
 
             Collection<Integer> rdcCp = new HashSet<>(cp.pendingReducers());
 

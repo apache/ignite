@@ -64,14 +64,10 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     /** */
     private static final int CLIENT_GRID_CNT = 14;
 
-    /** */
-    private static volatile boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(clientMode);
         cfg.setFailureDetectionTimeout(5_000);
 
         return cfg;
@@ -111,13 +107,9 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
      * @throws Exception If any error occurs.
      */
     private void massiveServersShutdown(final StopType stopType) throws Exception {
-        clientMode = false;
-
         startGridsMultiThreaded(GRID_CNT);
 
-        clientMode = true;
-
-        startGridsMultiThreaded(GRID_CNT, CLIENT_GRID_CNT);
+        startClientGridsMultiThreaded(GRID_CNT, CLIENT_GRID_CNT);
 
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -298,7 +290,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
             }
 
             // Clean up ignite instance from static map in IgnitionEx.grids
-            if (stopType == StopType.SIMULATE_FAIL){
+            if (stopType == StopType.SIMULATE_FAIL) {
                 for (int i = 0; i < srvsToKill; i++) {
                     grid(i).close();
                 }

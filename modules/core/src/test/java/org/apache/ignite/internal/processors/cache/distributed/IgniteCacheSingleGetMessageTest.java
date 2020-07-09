@@ -50,14 +50,9 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
     /** */
     private static final int SRVS = 4;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
@@ -72,11 +67,7 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(SRVS);
 
-        client = true;
-
-        startGridsMultiThreaded(SRVS, 1);
-
-        client = false;
+        startClientGridsMultiThreaded(SRVS, 1);
     }
 
     /**

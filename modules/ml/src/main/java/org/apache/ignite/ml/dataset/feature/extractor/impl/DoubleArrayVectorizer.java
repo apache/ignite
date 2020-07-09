@@ -37,18 +37,18 @@ public final class DoubleArrayVectorizer<K> extends ExtractionUtils.ArrayLikeVec
      *
      * @param coords Coordinates.
      */
-    public DoubleArrayVectorizer(Integer ... coords) {
+    public DoubleArrayVectorizer(Integer... coords) {
         super(coords);
     }
 
     /** {@inheritDoc} */
-    @Override protected Double feature(Integer coord, K key, double[] value) {
-        return value[coord];
+    @Override protected Double feature(Integer coord, K key, double[] val) {
+        return val[coord];
     }
 
     /** {@inheritDoc} */
-    @Override protected int sizeOf(K key, double[] value) {
-        return value.length;
+    @Override protected int sizeOf(K key, double[] val) {
+        return val.length;
     }
 
     /** {@inheritDoc} */

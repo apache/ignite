@@ -109,7 +109,8 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         String cacheName,
         String qry,
         String typeName,
-        IndexingQueryFilter filter
+        IndexingQueryFilter filter,
+        int limit
     ) throws IgniteCheckedException {
         return null;
     }
@@ -152,7 +153,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         List<String> cols,
         boolean ifTblExists,
         boolean ifColExists
-    ) throws IgniteCheckedException  {
+    ) throws IgniteCheckedException {
 
     }
 
@@ -300,6 +301,11 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public @Nullable GridCacheContextInfo registeredCacheInfo(String cacheName) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void closeCacheOnClient(String cacheName) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

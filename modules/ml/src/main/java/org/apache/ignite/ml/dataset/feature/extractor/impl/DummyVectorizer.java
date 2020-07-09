@@ -38,18 +38,18 @@ public final class DummyVectorizer<K> extends ExtractionUtils.ArrayLikeVectorize
      *
      * @param coords Coordinates.
      */
-    public DummyVectorizer(Integer ... coords) {
+    public DummyVectorizer(Integer... coords) {
         super(coords);
     }
 
     /** {@inheritDoc} */
-    @Override protected Serializable feature(Integer coord, K key, Vector value) {
-        return value.getRaw(coord);
+    @Override protected Serializable feature(Integer coord, K key, Vector val) {
+        return val.getRaw(coord);
     }
 
     /** {@inheritDoc} */
-    @Override protected int sizeOf(K key, Vector value) {
-        return value.size();
+    @Override protected int sizeOf(K key, Vector val) {
+        return val.size();
     }
 
     /** {@inheritDoc} */

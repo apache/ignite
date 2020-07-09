@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
@@ -40,13 +41,13 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
  * TransactionsMXBean implementation.
  */
 public class TransactionsMXBeanImpl implements TransactionsMXBean {
-    /** */
-    private final GridKernalContextImpl ctx;
+    /** Kernal context. */
+    private final GridKernalContext ctx;
 
     /**
      * @param ctx Context.
      */
-    public TransactionsMXBeanImpl(GridKernalContextImpl ctx) {
+    public TransactionsMXBeanImpl(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 
@@ -117,6 +118,17 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public void cancel(String xid) {
+        A.notNull(xid, "xid");
+
+        IgniteCompute compute = ctx.cluster().get().compute();
+
+        compute.execute(new VisorTxTask(),
+            new VisorTaskArgument<>(ctx.localNodeId(), new VisorTxTaskArg(VisorTxOperation.KILL,
+                1, null, null, null, null, null, xid, null, null, null), false));
+    }
+
+    /** {@inheritDoc} */
     @Override public long getTxTimeoutOnPartitionMapExchange() {
         return ctx.config().getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
     }
@@ -124,7 +136,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     /** {@inheritDoc} */
     @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
         try {
-            ctx.grid().context().cache().setTxTimeoutOnPartitionMapExchange(timeout);
+            ctx.cache().context().tm().setTxTimeoutOnPartitionMapExchange(timeout);
         }
         catch (Exception e) {
             throw new RuntimeException(e.getMessage());
@@ -138,7 +150,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
     /** {@inheritDoc} */
     @Override public void setTxOwnerDumpRequestsAllowed(boolean allowed) {
-        ctx.cache().setTxOwnerDumpRequestsAllowed(allowed);
+        ctx.cache().context().tm().setTxOwnerDumpRequestsAllowedDistributed(allowed);
     }
 
     /** {@inheritDoc} */
@@ -148,7 +160,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
     /** {@inheritDoc} */
     @Override public void setLongTransactionTimeDumpThreshold(long threshold) {
-        ctx.cache().longTransactionTimeDumpThreshold(threshold);
+        ctx.cache().context().tm().longTransactionTimeDumpThresholdDistributed(threshold);
     }
 
     /** {@inheritDoc} */
@@ -158,7 +170,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
     /** {@inheritDoc} */
     @Override public void setTransactionTimeDumpSamplesCoefficient(double coefficient) {
-        ctx.cache().transactionTimeDumpSamplesCoefficient(coefficient);
+        ctx.cache().context().tm().transactionTimeDumpSamplesCoefficientDistributed(coefficient);
     }
 
     /** {@inheritDoc} */
@@ -168,7 +180,27 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
     /** {@inheritDoc} */
     @Override public void setTransactionTimeDumpSamplesPerSecondLimit(int limit) {
-        ctx.cache().longTransactionTimeDumpSamplesPerSecondLimit(limit);
+        ctx.cache().context().tm().longTransactionTimeDumpSamplesPerSecondLimit(limit);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setLongOperationsDumpTimeout(long timeout) {
+        ctx.cache().context().tm().longOperationsDumpTimeoutDistributed(timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLongOperationsDumpTimeout() {
+        return ctx.cache().context().tm().longOperationsDumpTimeout();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTxKeyCollisionsInterval(int timeout) {
+        ctx.cache().context().tm().collisionsDumpIntervalDistributed(timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTxKeyCollisionsInterval() {
+        return ctx.cache().context().tm().collisionsDumpInterval();
     }
 
     /** {@inheritDoc} */

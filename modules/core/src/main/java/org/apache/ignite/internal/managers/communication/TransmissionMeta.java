@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Class represents a file meta information to send to the remote node. Used to initiate a new file transfer
  * process or to continue the previous unfinished from the last transmitted point.
  */
-class TransmissionMeta implements Externalizable {
+public class TransmissionMeta implements Externalizable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.fs;
 
-import java.util.concurrent.ConcurrentHashMap;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
  * Maps values by keys.
@@ -197,7 +196,7 @@ public class HadoopLazyConcurrentMap<K, V extends Closeable> {
      * @param <K> the type of the key.
      * @param <V> the type of the value.
      */
-    public interface ValueFactory <K, V> {
+    public interface ValueFactory<K, V> {
         /**
          * Creates the new value. Should never return null.
          *

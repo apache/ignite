@@ -35,7 +35,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * These indexes could be defined via .withEncodedFeature(featureIndex) call.
  * </p>
  * <p>
- * NOTE: it doesn’t add new column but change data in-place.
+ * NOTE: it does not add new column but change data in-place.
  * </p>
  *
  * @param <K> Type of a key in {@code upstream} data.

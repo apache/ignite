@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.environment.deploy;
 
+import java.io.Serializable;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,24 +25,24 @@ import org.slf4j.LoggerFactory;
 /**
  * Default implementation of {@link DeployingContext} class.
  */
-public class DeployingContextImpl implements DeployingContext {
+public class DeployingContextImpl implements DeployingContext, Serializable {
     /** Logger. */
     private static final Logger logger = LoggerFactory.getLogger(DeployingContextImpl.class);
 
     /** Preprocessor class. */
-    private transient Class<?> preprocessorClass;
+    private transient Class<?> preprocessorCls;
 
     /** Client class loader. */
-    private transient ClassLoader clientClassLoader;
+    private transient ClassLoader clientClsLdr;
 
     /** {@inheritDoc} */
     @Override public Class<?> userClass() {
-        return preprocessorClass == null ? this.getClass() : preprocessorClass;
+        return preprocessorCls == null ? this.getClass() : preprocessorCls;
     }
 
     /** {@inheritDoc} */
     @Override public ClassLoader clientClassLoader() {
-        return clientClassLoader == null ? this.getClass().getClassLoader() : clientClassLoader;
+        return clientClsLdr == null ? this.getClass().getClassLoader() : clientClsLdr;
     }
 
     /** {@inheritDoc} */
@@ -51,7 +52,7 @@ public class DeployingContextImpl implements DeployingContext {
             return;
         }
 
-        if (preprocessorClass != null)
+        if (preprocessorCls != null)
             logger.warn("Reinitialize deploying context [class=" + jobObj.getClass().getName() + "]");
 
         Object objectToDeploy = jobObj;
@@ -64,13 +65,13 @@ public class DeployingContextImpl implements DeployingContext {
         }
 
         assert objectToDeploy != null;
-        preprocessorClass = objectToDeploy.getClass();
-        clientClassLoader = preprocessorClass.getClassLoader();
+        preprocessorCls = objectToDeploy.getClass();
+        clientClsLdr = preprocessorCls.getClassLoader();
     }
 
     /** {@inheritDoc} */
     @Override public void init(DeployingContext other) {
-        this.clientClassLoader = other.clientClassLoader();
-        this.preprocessorClass = other.userClass();
+        this.clientClsLdr = other.clientClassLoader();
+        this.preprocessorCls = other.userClass();
     }
 }

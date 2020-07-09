@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
@@ -28,7 +27,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * Simple linear regression model which predicts result value Y as a linear combination of input variables:
  * Y = weights * X + intercept.
  */
-public final class LinearRegressionModel implements IgniteModel<Vector, Double>, Exportable<LinearRegressionModel>, Serializable {
+public final class LinearRegressionModel implements IgniteModel<Vector, Double>, Exportable<LinearRegressionModel> {
     /** */
     private static final long serialVersionUID = -105984600091550226L;
 

@@ -70,7 +70,7 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
 
     /** {@inheritDoc} */
     @MXBeanDescription("Total size in bytes for checkpoint buffer.")
-    @Override  long getCheckpointBufferSize();
+    @Override long getCheckpointBufferSize();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Duration of the last checkpoint in milliseconds.")
@@ -149,17 +149,16 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
      * {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)} configuration property.
      *
      * @param rateTimeInterval Time interval (in milliseconds) used for allocation and eviction rates calculations.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
     @MXBeanDescription(
         "Sets time interval for pages allocation and eviction monitoring purposes."
     )
-    @MXBeanParametersNames(
-        "rateTimeInterval"
-    )
-    @MXBeanParametersDescriptions(
-        "Time interval (in milliseconds) to set."
-    )
-    public void rateTimeInterval(long rateTimeInterval);
+    @Deprecated
+    public void rateTimeInterval(
+        @MXBeanParameter(name = "rateTimeInterval", description = "Time interval (in milliseconds) to set.")
+            long rateTimeInterval
+    );
 
     /**
      * Sets a number of sub-intervals the whole {@link #rateTimeInterval(long)} will be split into to calculate
@@ -167,17 +166,15 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
      * property.
      *
      * @param subInts A number of sub-intervals.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
     @MXBeanDescription(
         "Sets a number of sub-intervals to calculate allocation and eviction rates metrics."
     )
-    @MXBeanParametersNames(
-        "subInts"
-    )
-    @MXBeanParametersDescriptions(
-        "Number of subintervals to set."
-    )
-    public void subIntervals(int subInts);
+    @Deprecated
+    public void subIntervals(
+        @MXBeanParameter(name = "subInts", description = "Number of subintervals to set.") int subInts
+    );
 
     /** {@inheritDoc} */
     @MXBeanDescription("Storage space allocated, in bytes.")

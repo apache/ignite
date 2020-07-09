@@ -92,13 +92,13 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
     @Test
     public void testReturnsCorrectLabelProbalities() {
 
-        DiscreteNaiveBayesModel model = trainer.fit(
+        DiscreteNaiveBayesModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(binarizedData, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         double[] expectedProbabilities = {6. / binarizedData.size(), 7. / binarizedData.size()};
-        Assert.assertArrayEquals(expectedProbabilities, model.getClsProbabilities(), PRECISION);
+        Assert.assertArrayEquals(expectedProbabilities, mdl.getClsProbabilities(), PRECISION);
     }
 
     /** Test. */
@@ -108,12 +108,12 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
             .setBucketThresholds(binarizedDatathresholds)
             .withEquiprobableClasses();
 
-        DiscreteNaiveBayesModel model = trainer.fit(
+        DiscreteNaiveBayesModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(binarizedData, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        Assert.assertArrayEquals(new double[] {.5, .5}, model.getClsProbabilities(), PRECISION);
+        Assert.assertArrayEquals(new double[] {.5, .5}, mdl.getClsProbabilities(), PRECISION);
     }
 
     /** Test. */
@@ -124,12 +124,12 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
             .setBucketThresholds(binarizedDatathresholds)
             .setPriorProbabilities(priorProbabilities);
 
-        DiscreteNaiveBayesModel model = trainer.fit(
+        DiscreteNaiveBayesModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(binarizedData, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        Assert.assertArrayEquals(priorProbabilities, model.getClsProbabilities(), PRECISION);
+        Assert.assertArrayEquals(priorProbabilities, mdl.getClsProbabilities(), PRECISION);
     }
 
     /** Test. */
@@ -140,14 +140,14 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
             {{0, 1}, {3. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 5. / 7}, {4. / 7, 3. / 7,}}
         };
 
-        DiscreteNaiveBayesModel model = trainer.fit(
+        DiscreteNaiveBayesModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(binarizedData, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         for (int i = 0; i < expectedPriorProbabilites.length; i++) {
             for (int j = 0; j < expectedPriorProbabilites[i].length; j++)
-                Assert.assertArrayEquals(expectedPriorProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
+                Assert.assertArrayEquals(expectedPriorProbabilites[i][j], mdl.getProbabilities()[i][j], PRECISION);
         }
     }
 
@@ -167,7 +167,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
                 {2. / 4, 1. / 4, 1. / 4, 0}}
         };
 
-        DiscreteNaiveBayesModel model = trainer
+        DiscreteNaiveBayesModel mdl = trainer
             .setBucketThresholds(thresholds)
             .fit(
                 new LocalDatasetBuilder<>(data, parts),
@@ -176,7 +176,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
 
         for (int i = 0; i < expectedPriorProbabilites.length; i++) {
             for (int j = 0; j < expectedPriorProbabilites[i].length; j++)
-                Assert.assertArrayEquals(expectedPriorProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
+                Assert.assertArrayEquals(expectedPriorProbabilites[i][j], mdl.getProbabilities()[i][j], PRECISION);
         }
     }
 

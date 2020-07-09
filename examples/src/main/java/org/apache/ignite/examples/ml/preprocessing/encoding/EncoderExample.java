@@ -21,6 +21,8 @@ import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.ObjectArrayVectorizer;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
@@ -30,13 +32,11 @@ import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example that shows how to use String Encoder preprocessor to encode features presented as a strings.
  * <p>
- * Code in this example launches Ignite grid and fills the cache with test data (based on muschrooms dataset).</p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on mushrooms dataset).</p>
  * <p>
  * After that it defines preprocessors that extract features from an upstream data and encode string values (categories)
  * to double values in specified range.</p>
@@ -49,7 +49,7 @@ public class EncoderExample {
     /**
      * Run example.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Train Decision Tree model on mushrooms.csv dataset.");
 

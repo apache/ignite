@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
+import org.h2.engine.Constants;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
+import org.h2.index.IndexCondition;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
@@ -30,8 +33,6 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
-
-import java.util.HashSet;
 
 /**
  * Meta view H2 index.
@@ -82,14 +83,22 @@ public class SqlSystemIndex extends BaseIndex {
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         HashSet<Column> allColsSet) {
-        long rowCnt = getRowCountApproximation();
+        double colsCost = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColsSet);
+        if (masks != null) {
+            for (Column col : columns) {
+                // We can effictivly use only EQUALITY condition in system views.
+                if ((masks[col.getColumnId()] & IndexCondition.EQUALITY) != 0)
+                    colsCost /= 2;
+            }
+        }
+
+        double idxCost = Constants.COST_ROW_OFFSET + colsCost;
 
         if (((SystemViewH2Adapter)table).view.isDistributed())
-            baseCost = baseCost * DISTRIBUTED_MUL;
+            idxCost *= DISTRIBUTED_MUL;
 
-        return baseCost;
+        return idxCost;
     }
 
     /** {@inheritDoc} */

@@ -50,10 +50,7 @@ public class TxRollbackOnMapOnInvalidTopologyTest extends GridCommonAbstractTest
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-
-        cfg.setClientMode(igniteInstanceName.equals("client"));
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -72,7 +69,7 @@ public class TxRollbackOnMapOnInvalidTopologyTest extends GridCommonAbstractTest
 
         startGridsMultiThreaded(GRIDS);
 
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /** {@inheritDoc} */
@@ -172,7 +169,7 @@ public class TxRollbackOnMapOnInvalidTopologyTest extends GridCommonAbstractTest
         startGrid(GRIDS);
         awaitPartitionMapExchange();
 
-        try(Transaction tx = near.transactions().txStart()) {
+        try (Transaction tx = near.transactions().txStart()) {
             near.cache(DEFAULT_CACHE_NAME).put(part, part);
 
             tx.commit();

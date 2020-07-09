@@ -17,9 +17,9 @@
 
 package org.apache.ignite.examples.ml.dataset;
 
-import com.github.fommil.netlib.BLAS;
 import java.io.Serializable;
 import java.util.Arrays;
+import com.github.fommil.netlib.BLAS;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -78,7 +78,7 @@ public class AlgorithmSpecificDatasetExample {
             try {
                 persons = createCache(ignite);
 
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(1);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(1);
 
                 IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[] {lv.label()});
 

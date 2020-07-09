@@ -17,9 +17,6 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Row;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,7 +24,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.Row;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
@@ -42,10 +41,10 @@ public class PersistenceController {
     private final KeyValuePersistenceSettings persistenceSettings;
 
     /** List of key unique POJO fields (skipping aliases pointing to the same Cassandra table column). */
-    private final List<PojoField> keyUniquePojoFields;
+    private final List<? extends PojoField> keyUniquePojoFields;
 
     /** List of value unique POJO fields (skipping aliases pointing to the same Cassandra table column). */
-    private final List<PojoField> valUniquePojoFields;
+    private final List<? extends PojoField> valUniquePojoFields;
 
     /** CQL statement template to insert row into Cassandra table. */
     private final String writeStatementTempl;
@@ -91,7 +90,7 @@ public class PersistenceController {
 
         keyUniquePojoFields = settings.getKeyPersistenceSettings().cassandraUniqueFields();
 
-        List<PojoField> _valUniquePojoFields = settings.getValuePersistenceSettings().cassandraUniqueFields();
+        List<? extends PojoField> _valUniquePojoFields = settings.getValuePersistenceSettings().cassandraUniqueFields();
 
         if (_valUniquePojoFields == null || _valUniquePojoFields.isEmpty()) {
             valUniquePojoFields = _valUniquePojoFields;
@@ -421,7 +420,7 @@ public class PersistenceController {
      *
      * @return next offset
      */
-    private int bindValues(PersistenceStrategy stgy, Serializer serializer, List<PojoField> fields, Object obj,
+    private int bindValues(PersistenceStrategy stgy, Serializer serializer, List<? extends PojoField> fields, Object obj,
                             Object[] values, int offset) {
         if (PersistenceStrategy.PRIMITIVE == stgy) {
             if (PropertyMappingHelper.getCassandraType(obj.getClass()) == null ||

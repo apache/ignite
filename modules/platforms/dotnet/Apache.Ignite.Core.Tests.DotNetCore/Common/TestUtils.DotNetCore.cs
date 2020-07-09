@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.DotNetCore.Common;
 
@@ -43,7 +44,8 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestJavaOptions(),
                 IgniteInstanceName = name,
                 Logger = TestLogger.Instance,
-                WorkDirectory = WorkDir
+                WorkDirectory = WorkDir,
+                FailureHandler = new NoOpFailureHandler()
             };
         }
 

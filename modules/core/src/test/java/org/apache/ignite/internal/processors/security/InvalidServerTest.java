@@ -47,7 +47,7 @@ public class InvalidServerTest extends AbstractSecurityTest {
                 if (msg instanceof TcpDiscoveryNodeAddedMessage && msg.verified())
                     TestSecurityProcessor.PERMS.remove(new SecurityCredentials(TEST_SERVER_NAME, ""));
             }
-        });
+        }.setIpFinder(LOCAL_IP_FINDER));
 
         return cfg;
     }

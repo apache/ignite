@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.metric.LongMetric;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -69,8 +70,10 @@ public class CacheGroupMetricsImpl {
     /** */
     private final LongMetric sparseStorageSize;
 
+    /** Number of local partitions initialized on current node. */
+    private final AtomicLongMetric initLocalPartitionsNumber;
+
     /** Interface describing a predicate of two integers. */
-    @FunctionalInterface
     private interface IntBiPredicate {
         /**
          * Predicate body.
@@ -89,7 +92,7 @@ public class CacheGroupMetricsImpl {
 
         DataStorageConfiguration dsCfg = ctx.shared().kernalContext().config().getDataStorageConfiguration();
 
-        boolean persistentEnabled = CU.isPersistentCache(cacheCfg, dsCfg);
+        boolean persistentEnabled = !ctx.shared().kernalContext().clientNode() && CU.isPersistentCache(cacheCfg, dsCfg);
 
         MetricRegistry mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
 
@@ -105,6 +108,8 @@ public class CacheGroupMetricsImpl {
 
         idxBuildCntPartitionsLeft = mreg.longMetric("IndexBuildCountPartitionsLeft",
             "Number of partitions need processed for finished indexes create or rebuilding.");
+
+        initLocalPartitionsNumber = mreg.longMetric("InitializedLocalPartitionsNumber", "Number of local partitions initialized on current node.");
 
         DataRegion region = ctx.dataRegion();
 
@@ -170,10 +175,6 @@ public class CacheGroupMetricsImpl {
         mreg.register("TotalAllocatedSize",
             this::getTotalAllocatedSize,
             "Total size of memory allocated for group, in bytes.");
-
-        mreg.register("Tombstones",
-            this::getTombstones,
-            "Number of tombstone entries.");
     }
 
     /** */
@@ -181,9 +182,9 @@ public class CacheGroupMetricsImpl {
         return idxBuildCntPartitionsLeft.value();
     }
 
-    /** Set number of partitions need processed for finished indexes create or rebuilding. */
-    public void setIndexBuildCountPartitionsLeft(long idxBuildCntPartitionsLeft) {
-        this.idxBuildCntPartitionsLeft.value(idxBuildCntPartitionsLeft);
+    /** Add number of partitions need processed for finished indexes create or rebuilding. */
+    public void addIndexBuildCountPartitionsLeft(long idxBuildCntPartitionsLeft) {
+        this.idxBuildCntPartitionsLeft.add(idxBuildCntPartitionsLeft);
     }
 
     /**
@@ -191,6 +192,20 @@ public class CacheGroupMetricsImpl {
      */
     public void decrementIndexBuildCountPartitionsLeft() {
         idxBuildCntPartitionsLeft.decrement();
+    }
+
+    /**
+     * Increments number of local partitions initialized on current node.
+     */
+    public void incrementInitializedLocalPartitions() {
+        initLocalPartitionsNumber.increment();
+    }
+
+    /**
+     * Decrements number of local partitions initialized on current node.
+     */
+    public void decrementInitializedLocalPartitions() {
+        initLocalPartitionsNumber.decrement();
     }
 
     /** */
@@ -258,12 +273,20 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public int getMinimumNumberOfPartitionCopies() {
-        return numberOfPartitionCopies((targetVal, nextVal) -> nextVal < targetVal);
+        return numberOfPartitionCopies(new IntBiPredicate() {
+            @Override public boolean apply(int targetVal, int nextVal) {
+                return nextVal < targetVal;
+            }
+        });
     }
 
     /** */
     public int getMaximumNumberOfPartitionCopies() {
-        return numberOfPartitionCopies((targetVal, nextVal) -> nextVal > targetVal);
+        return numberOfPartitionCopies(new IntBiPredicate() {
+            @Override public boolean apply(int targetVal, int nextVal) {
+                return nextVal > targetVal;
+            }
+        });
     }
 
     /**
@@ -441,12 +464,16 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getTotalAllocatedPages() {
-        return grpPageAllocationTracker.value();
+        return ctx.shared().kernalContext().clientNode() ?
+            0 :
+            grpPageAllocationTracker.value();
     }
 
     /** */
     public long getTotalAllocatedSize() {
-        return getTotalAllocatedPages() * ctx.dataRegion().pageMemory().pageSize();
+        return ctx.shared().kernalContext().clientNode() ?
+            0 :
+            getTotalAllocatedPages() * ctx.dataRegion().pageMemory().pageSize();
     }
 
     /** */
@@ -459,14 +486,16 @@ public class CacheGroupMetricsImpl {
         return sparseStorageSize == null ? 0 : sparseStorageSize.value();
     }
 
-    /** */
-    public long getTombstones() {
-        return ctx.topology().localPartitions().stream()
-            .map(part -> part.dataStore().tombstonesCount()).reduce(Long::sum).orElse(0L);
-    }
-
     /** Removes all metric for cache group. */
     public void remove() {
+        if (ctx.shared().kernalContext().isStopping())
+            return;
+
+        if (ctx.config().getNearConfiguration() != null)
+            ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), true));
+
+        ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), false));
+
         ctx.shared().kernalContext().metric().remove(metricGroupName());
     }
 

@@ -81,7 +81,7 @@ public class EncoderTrainerTest extends TrainerTest {
         data.put(5, VectorUtils.of(2.0, 45.0));
         data.put(6, VectorUtils.of(14.0, 12.0));
 
-        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 1);
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1);
 
         DatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
@@ -110,7 +110,7 @@ public class EncoderTrainerTest extends TrainerTest {
         data.put(5, VectorUtils.of(2.0, 45.0));
         data.put(6, VectorUtils.of(14.0, 12.0));
 
-        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 1);
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1);
 
         DatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
@@ -209,7 +209,7 @@ public class EncoderTrainerTest extends TrainerTest {
 
         final Vectorizer<Integer, Object[], Integer, Object> vectorizer = new ObjectArrayVectorizer<Integer>(1, 2).labeled(0);
 
-        DatasetBuilder<Integer, Object[]> datasetBuilder = new LocalDatasetBuilder<Integer, Object[]>(data, parts);
+        DatasetBuilder<Integer, Object[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
         EncoderTrainer<Integer, Object[]> labelEncoderTrainer = new EncoderTrainer<Integer, Object[]>()
             .withEncoderType(EncoderType.LABEL_ENCODER);

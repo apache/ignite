@@ -12,7 +12,7 @@
   </PropertyGroup>  
   
   <ItemGroup>
-    <PackageReference Include="Remotion.Linq" Version="2.0.1" />
+    <PackageReference Include="Remotion.Linq" Version="2.1.2" />
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
   </ItemGroup>
   

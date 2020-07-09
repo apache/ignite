@@ -42,9 +42,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.endsWith("1"))
-            cfg.setClientMode(true);
-        else {
+        if (!igniteInstanceName.endsWith("1")) {
             assert igniteInstanceName.endsWith("2");
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -62,7 +60,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         startGrid(2);
 
-        startGrid(1);
+        startClientGrid(1);
     }
 
     /** {@inheritDoc} */

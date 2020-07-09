@@ -76,7 +76,7 @@ public class HadoopSnappyTest extends GridCommonAbstractTest {
             byte[] expBytes = new byte[BYTE_SIZE];
             byte[] actualBytes = new byte[BYTE_SIZE];
 
-            for (int i = 0; i < expBytes.length ; i++)
+            for (int i = 0; i < expBytes.length; i++)
                 expBytes[i] = (byte)ThreadLocalRandom.current().nextInt(16);
 
             SnappyCodec codec = new SnappyCodec();

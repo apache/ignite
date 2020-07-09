@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import com.google.common.base.Joiner;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import com.google.common.base.Joiner;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.ignite.IgniteCheckedException;
@@ -123,7 +123,7 @@ abstract class HadoopTasksVersionsAbstractTest extends HadoopAbstractWordCountTe
 
         HadoopTestTaskContext ctx = new HadoopTestTaskContext(taskInfo, gridJob);
 
-        for (int i = 0; i < words.length; i+=2) {
+        for (int i = 0; i < words.length; i += 2) {
             List<IntWritable> valList = new ArrayList<>();
 
             for (int j = 0; j < Integer.parseInt(words[i + 1]); j++)

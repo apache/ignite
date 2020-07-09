@@ -26,7 +26,7 @@ import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for DeployingContextImpl.
@@ -37,7 +37,7 @@ public class DeployingContextImplTest {
 
     /** */
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         environment = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
     }
 

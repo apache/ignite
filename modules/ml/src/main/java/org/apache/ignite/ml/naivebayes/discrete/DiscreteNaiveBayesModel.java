@@ -17,13 +17,12 @@
 
 package org.apache.ignite.ml.naivebayes.discrete;
 
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.BayesModel;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Discrete naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as
@@ -84,21 +83,19 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
     @Override public Double predict(Vector vector) {
         double[] probapilityPowers = probabilityPowers(vector);
 
-        int maxLabelIndex = 0;
+        int maxLbIdx = 0;
         for (int i = 0; i < probapilityPowers.length; i++) {
             probapilityPowers[i] += Math.log(clsProbabilities[i]);
 
-            if (probapilityPowers[i] > probapilityPowers[maxLabelIndex]) {
-                maxLabelIndex = i;
-            }
+            if (probapilityPowers[i] > probapilityPowers[maxLbIdx])
+                maxLbIdx = i;
         }
 
-        return labels[maxLabelIndex];
+        return labels[maxLbIdx];
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double[] probabilityPowers(Vector vector) {
+    @Override public double[] probabilityPowers(Vector vector) {
         double[] probapilityPowers = new double[clsProbabilities.length];
 
         for (int i = 0; i < clsProbabilities.length; i++) {

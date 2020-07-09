@@ -17,7 +17,7 @@
 
 package org.apache.ignite.testframework.junits.common;
 
-import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -35,12 +36,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.integration.CompletionListener;
 import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
+import javax.management.ObjectInstance;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
@@ -67,6 +68,7 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -91,12 +93,16 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -105,7 +111,6 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -117,6 +122,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestNode;
@@ -130,10 +136,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -567,7 +575,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         boolean waitNode2PartUpdate,
         @Nullable Collection<ClusterNode> nodes
     ) throws InterruptedException {
-        awaitPartitionMapExchange(waitEvicts, waitNode2PartUpdate, nodes, false);
+        awaitPartitionMapExchange(waitEvicts, waitNode2PartUpdate, nodes, false, null);
     }
 
     /**
@@ -591,6 +599,26 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         boolean waitNode2PartUpdate,
         @Nullable Collection<ClusterNode> nodes,
         boolean printPartState
+    ) throws InterruptedException {
+        awaitPartitionMapExchange(waitEvicts, waitNode2PartUpdate, nodes, printPartState, null);
+    }
+
+    /**
+     * @param waitEvicts If {@code true} will wait for evictions finished.
+     * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
+     * @param nodes Optional nodes. If {@code null} method will wait for all nodes, for non null collection nodes will
+     *      be filtered
+     * @param printPartState If {@code true} will print partition state if evictions not happened.
+     * @param cacheNames Wait for specific caches.
+     * @throws InterruptedException If interrupted.
+     */
+    @SuppressWarnings("BusyWait")
+    protected void awaitPartitionMapExchange(
+        boolean waitEvicts,
+        boolean waitNode2PartUpdate,
+        @Nullable Collection<ClusterNode> nodes,
+        boolean printPartState,
+        @Nullable Set<String> cacheNames
     ) throws InterruptedException {
         long timeout = getPartitionMapExchangeTimeout();
 
@@ -654,7 +682,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             for (IgniteCacheProxy<?, ?> c : g0.context().cache().jcaches()) {
                 CacheConfiguration cfg = c.context().config();
 
-                if (cfg == null)
+                if (cfg == null || cacheNames != null && !cacheNames.contains(cfg.getName()))
                     continue;
 
                 if (cfg.getCacheMode() != LOCAL &&
@@ -706,7 +734,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 GridDhtLocalPartition loc = top.localPartition(p, readyVer, false);
 
                                 boolean notPrimary = !affNodes.isEmpty() &&
-                                    !exchMgr.rebalanceTopologyVersion().equals(AffinityTopologyVersion.NONE) &&
                                     !affNodes.get(0).equals(dht.context().affinity().primaryByPartition(p, readyVer));
 
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
@@ -840,7 +867,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param c Cache proxy.
      */
-    protected void printPartitionState(IgniteCache<?, ?> c) {
+    protected static void printPartitionState(IgniteCache<?, ?> c) {
         printPartitionState(c.getConfiguration(CacheConfiguration.class).getName(), 0);
     }
 
@@ -850,15 +877,31 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      * Print partitionState for cache.
      */
-    protected void printPartitionState(String cacheName, int firstParts) {
+    protected static void printPartitionState(String cacheName, int firstParts) {
+        printPartitionState(cacheName, firstParts, G.allGrids());
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param firstParts Count partition for print (will be print first count partition).
+     * @param nodes Grid nodes.
+     *
+     * Print partitionState for cache.
+     */
+    protected static void printPartitionState(String cacheName, int firstParts, List<? extends Ignite> nodes) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("----preload sync futures----\n");
 
-        for (Ignite ig : G.allGrids()) {
+        for (Ignite ig : nodes) {
             IgniteKernal k = ((IgniteKernal)ig);
 
-            IgniteInternalFuture<?> syncFut = k.internalCache(cacheName)
+            GridCacheAdapter<Object, Object> adapter = k.internalCache(cacheName);
+
+            if (adapter == null)
+                continue;
+
+            IgniteInternalFuture<?> syncFut = adapter
                 .preloader()
                 .syncFuture();
 
@@ -873,10 +916,15 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         sb.append("----rebalance futures----\n");
 
-        for (Ignite ig : G.allGrids()) {
+        for (Ignite ig : nodes) {
             IgniteKernal k = ((IgniteKernal)ig);
 
-            IgniteInternalFuture<?> f = k.internalCache(cacheName)
+            GridCacheAdapter<Object, Object> adapter = k.internalCache(cacheName);
+
+            if (adapter == null)
+                continue;
+
+            IgniteInternalFuture<?> f = adapter
                 .preloader()
                 .rebalanceFuture();
 
@@ -886,22 +934,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     .append(" res=").append(f.isDone() ? f.get() : "N/A")
                     .append(" topVer=")
                     .append((U.hasField(f, "topVer") ?
-                        String.valueOf(U.<Object>field(f, "topVer")) : "[unknown] may be it is finished future"))
+                        String.valueOf(U.<Object>field(f, "topVer")) : "N/A"))
                     .append("\n");
 
-                Map<UUID, T2<Long, Collection<Integer>>> remaining = U.field(f, "remaining");
+                Map<UUID, IgniteDhtDemandedPartitionsMap> remaining = U.field(f, "remaining");
 
-                sb.append("remaining:");
-
-                if (remaining.isEmpty())
-                    sb.append("empty\n");
-                else
-                    for (Map.Entry<UUID, T2<Long, Collection<Integer>>> e : remaining.entrySet())
-                        sb.append("\nuuid=").append(e.getKey())
-                            .append(" startTime=").append(e.getValue().getKey())
-                            .append(" parts=").append(Arrays.toString(e.getValue().getValue().toArray()))
-                            .append("\n");
-
+                sb.append("remaining: ");
+                sb.append(remaining.toString());
+                sb.append("\n");
             }
             catch (Throwable e) {
                 log.error(e.getMessage());
@@ -910,14 +950,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         sb.append("----partition state----\n");
 
-        for (Ignite g : G.allGrids()) {
+        for (Ignite g : nodes) {
             IgniteKernal g0 = (IgniteKernal)g;
 
             sb.append("localNodeId=").append(g0.localNode().id())
                 .append(" grid=").append(g0.name())
                 .append("\n");
 
-            IgniteCacheProxy<?, ?> cache = g0.context().cache().jcache(cacheName);
+            IgniteCacheProxy<?, ?> cache = null;
+            try {
+                cache = g0.context().cache().jcache(cacheName);
+            } catch (IllegalArgumentException e) {
+                continue; // Client topology.
+            }
 
             GridDhtCacheAdapter<?, ?> dht = dht(cache);
 
@@ -957,20 +1002,44 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     .append("\n");
 
                 for (UUID nodeId : F.nodeIds(g0.context().discovery().allNodes())) {
-                    if (!nodeId.equals(g0.localNode().id()))
-                        sb.append(" nodeId=")
-                            .append(nodeId)
-                            .append(" part=")
-                            .append(p)
-                            .append(" counters=")
-                            .append(part == null ? "NA" : part.dataStore().partUpdateCounter())
-                            .append(" fullSize=")
-                            .append(part == null ? "NA" : part.fullSize())
-                            .append(" state=")
-                            .append(top.partitionState(nodeId, p))
-                            .append(" isAffNode=")
-                            .append(affNodes.contains(nodeId))
-                            .append("\n");
+                    if (!nodeId.equals(g0.localNode().id())) {
+                        top.readLock();
+
+                        // Peek to remote state directly to distinguish if a partition is EVICTED or yet not initialized.
+                        GridDhtPartitionFullMap map = U.field(top, "node2part");
+
+                        try {
+                            final GridDhtPartitionMap nodeMap = map.get(nodeId);
+
+                            if (nodeMap == null)
+                                continue; // Skip client node.
+
+                            final GridDhtPartitionState rmtState = nodeMap.get(p);
+
+                            if (rmtState != null) {
+                                sb.append(" nodeId=")
+                                    .append(nodeId)
+                                    .append(" part=")
+                                    .append(p)
+                                    .append(" state=")
+                                    .append(rmtState)
+                                    .append(" isAffNode=")
+                                    .append(affNodes.contains(nodeId))
+                                    .append("\n");
+                            }
+                            else {
+                                sb.append(" nodeId=")
+                                    .append(nodeId)
+                                    .append(" part=")
+                                    .append(p)
+                                    .append(" is null")
+                                    .append("\n");
+                            }
+                        }
+                        finally {
+                            top.readUnlock();
+                        }
+                    }
                 }
             }
 
@@ -1204,7 +1273,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         List<Integer> keys = new ArrayList<>(cnt);
 
-        while(c < cnt) {
+        while (c < cnt) {
             if (cctx.affinity().partition(k) == part) {
                 if (skip0 < skipCnt) {
                     k++;
@@ -1242,7 +1311,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
 
             private void advance() {
-                while(cctx.affinity().partition(cur = next++) != part);
+                while (cctx.affinity().partition(cur = next++) != part);
             }
 
             @Override public boolean hasNext() {
@@ -1417,7 +1486,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         BitSet before = m1.get(ign.cluster().localNode());
         BitSet after = m2.get(ign.cluster().localNode());
 
-        for (int p = before.nextSetBit(0); p >= 0; p = before.nextSetBit(p+1)) {
+        for (int p = before.nextSetBit(0); p >= 0; p = before.nextSetBit(p + 1)) {
             if (!after.get(p)) {
                 partsToRet.add(p);
 
@@ -1859,8 +1928,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
+            false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
     }
 
     /**
@@ -2104,7 +2175,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Conflicts result.
      * @throws IgniteException If none caches or node found.
      */
-    protected IdleVerifyResultV2 idleVerify(Ignite ig, String... caches) {
+    protected IdleVerifyResultV2 idleVerify(Ignite ig, @Nullable String... caches) {
         IgniteEx ig0 = (IgniteEx)ig;
 
         Set<String> cacheNames = new HashSet<>();
@@ -2180,7 +2251,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         int mode = putType != null && putType.length > 0 ? putType[0] : 0;
 
-        Map<Integer, Integer> map = keys.stream().collect(Collectors.toMap(k -> k, k -> k));
+        Map<Integer, Integer> map = keys.stream().collect(Collectors.toMap(k -> k, k -> k, (a, b) -> a, TreeMap::new));
 
         switch (mode) {
             case 0:
@@ -2195,7 +2266,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 break;
 
             default:
-                try(IgniteDataStreamer<Integer, Integer> ds = grid(gridName).dataStreamer(cacheName)) {
+                try (IgniteDataStreamer<Integer, Integer> ds = grid(gridName).dataStreamer(cacheName)) {
                     ds.allowOverwrite(mode == 2);
 
                     ds.addData(map);
@@ -2348,30 +2419,187 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Returns MX bean by specified group name and class.
+     * Checks that return types of all registered ignite metrics methods are correct.
+     * Also checks that all classes from {@code namesToCheck} are registered as mbeans.
      *
-     * @param igniteInstanceName Ignite instance name.
-     * @param grp Name of the group.
-     * @param cls Bean class.
-     * @param implCls Bean implementation class.
-     * @param <T> Type parameter for bean class.
-     * @param <I> Type parameter for bean implementation class.
-     * @return MX bean.
-     * @throws Exception If failed.
+     * @param ignite Ignite instance to collect metrics from.
+     * @param namesToCheck Mbean classes names that must be registered in {@code MBeanServer}.
+     * @throws Exception If failed to obtain mbeans.
      */
-    protected <T, I> T getMxBean(
-        String igniteInstanceName,
-        String grp,
-        Class<T> cls,
-        Class<I> implCls
-    ) throws Exception {
-        ObjectName mbeanName = U.makeMBeanName(igniteInstanceName, grp, implCls.getSimpleName());
+    protected void validateMbeans(Ignite ignite, String... namesToCheck) throws Exception {
+        logMbeansValidation(getNotRegisteredMbeans(ignite, namesToCheck), "Not registered mbeans");
+        logMbeansValidation(getInvalidMbeansMethods(ignite), "Invalid metrics methods");
+    }
 
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
+    /**
+     * @param ignite Ignite instance to collect metrics from.
+     * @param namesToCheck Mbean classes names that must be registered in {@code MBeanServer}.
+     * @return {@code Set} of class names that are contained in {@code namesToCheck}
+     *          but not registered in {@code MBeanServer}.
+     */
+    protected Set<String> getNotRegisteredMbeans(Ignite ignite, String... namesToCheck) {
+        MBeanServer srv = ignite.configuration().getMBeanServer();
 
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
+        Set<String> beancClsNames = srv.queryMBeans(null, null).stream()
+            .map(ObjectInstance::getClassName)
+            .collect(toSet());
 
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, cls, true);
+        return Arrays.stream(namesToCheck)
+            .filter(nameToCheck -> beancClsNames.stream().noneMatch(clsName -> clsName.contains(nameToCheck)))
+            .collect(toSet());
+    }
+
+    /**
+     * @param ignite Ignite instance to collect metrics from.
+     * @return {@code Set} of metrics methods that have forbidden return types.
+     * @throws Exception If failed to obtain metrics.
+     */
+    protected Set<String> getInvalidMbeansMethods(Ignite ignite) throws Exception {
+        Set<String> sysMetricsPackages = new HashSet<>();
+        sysMetricsPackages.add("sun.management");
+        sysMetricsPackages.add("javax.management");
+
+        MBeanServer srv = ignite.configuration().getMBeanServer();
+
+        Set<String> invalidMethods = new HashSet<>();
+
+        final Set<ObjectInstance> instances = srv.queryMBeans(null, null);
+
+        for (ObjectInstance instance: instances) {
+            final String clsName = instance.getClassName();
+
+            if (sysMetricsPackages.stream().anyMatch(clsName::startsWith))
+                continue;
+
+            Class c;
+
+            try {
+                c = Class.forName(clsName);
+            }
+            catch (ClassNotFoundException e) {
+                log.warning("Failed to load class: " + clsName);
+
+                continue;
+            }
+
+            for (Class interf : c.getInterfaces()) {
+                for (Method m : interf.getMethods()) {
+                    if (!m.isAnnotationPresent(MXBeanDescription.class))
+                        continue;
+
+                    if (!validateMetricsMethod(m))
+                        invalidMethods.add(m.toString());
+                }
+            }
+        }
+
+        return invalidMethods;
+    }
+
+    /**  */
+    private void logMbeansValidation(Set<String> invalidSet, String errorMsgPrefix) {
+        if (!invalidSet.isEmpty()) {
+            log.info("****************************************");
+            log.info(errorMsgPrefix + ":");
+
+            invalidSet.stream()
+                .sorted()
+                .forEach(log::info);
+
+            log.info("****************************************");
+
+            fail(errorMsgPrefix + " detected^");
+        }
+    }
+
+    /**
+     * Validates return type for metrics method.
+     * Validity rules are not carved in stone and can be changed in future.
+     * See https://issues.apache.org/jira/browse/IGNITE-12629.
+     *
+     * @param m Metric method to check.
+     * @return {@code True} if method return type is allowed.
+     */
+    private boolean validateMetricsMethod(Method m) {
+        Set<String> primitives = new HashSet<>();
+        primitives.add("char");
+        primitives.add("short");
+        primitives.add("int");
+        primitives.add("long");
+        primitives.add("double");
+        primitives.add("float");
+        primitives.add("byte");
+        primitives.add("boolean");
+        primitives.add("void");
+
+        Set<String> allowedPackages = new HashSet<>();
+        allowedPackages.add("java.lang");
+        allowedPackages.add("java.util");
+
+        final String returnTypeName = m.getGenericReturnType().getTypeName();
+
+        if (primitives.stream().anyMatch(type -> type.equals(returnTypeName) || (type + "[]").equals(returnTypeName)))
+            return true;
+
+        String[] parts = returnTypeName.split("[<>,]");
+
+        for (String part: parts) {
+            if (allowedPackages.stream().noneMatch(pack -> part.trim().startsWith(pack)))
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Enable checkpoints on a specific nodes.
+     *
+     * @param nodes Ignite nodes.
+     * @param enable {@code True} For checkpoint enabling.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void enableCheckpoints(Collection<Ignite> nodes, boolean enable) throws IgniteCheckedException {
+        for (Ignite node : nodes) {
+            assert !node.cluster().localNode().isClient();
+
+            IgniteCacheDatabaseSharedManager dbMgr = (((IgniteEx)node).context()
+                .cache().context().database());
+
+            assert dbMgr instanceof GridCacheDatabaseSharedManager;
+
+            GridCacheDatabaseSharedManager dbMgr0 = (GridCacheDatabaseSharedManager) dbMgr;
+
+            dbMgr0.enableCheckpoints(enable).get();
+        }
+    }
+
+    /**
+     * Enable checkpoints on a specific nodes.
+     *
+     * @param node Ignite node.
+     * @param enable {@code True} For checkpoint enabling.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void enableCheckpoints(Ignite node, boolean enable) throws IgniteCheckedException {
+        enableCheckpoints(Collections.singletonList(node), enable);
+    }
+
+    /**
+     * Loads data into a cache using stream data source.
+     *
+     * @param ignite Ignite.
+     * @param cache Cache.
+     * @param stream Key-value source stream.
+     */
+    protected void load(IgniteEx ignite, String cache, Stream<Integer> stream) {
+        try (IgniteDataStreamer<Object, Object> s = ignite.dataStreamer(cache)) {
+            final Iterator<Integer> it = stream.iterator();
+
+            while (it.hasNext()) {
+                Integer key = it.next();
+
+                s.addData(key, key);
+            }
+        }
     }
 }

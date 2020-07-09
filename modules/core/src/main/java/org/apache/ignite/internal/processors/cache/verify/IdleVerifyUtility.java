@@ -19,15 +19,28 @@ package org.apache.ignite.internal.processors.cache.verify;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -35,25 +48,24 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IdleVerifyUtility {
     /** Cluster not idle message. */
-    public static final String CLUSTER_NOT_IDLE_MSG = "Checkpoint with dirty pages started! Cluster not idle!";
+    public static final String GRID_NOT_IDLE_MSG =
+        "Cluster not idle. Modifications found in caches or groups: ";
 
     /**
-     * See {@link IdleVerifyUtility#checkPartitionsPageCrcSum(FilePageStore, CacheGroupContext, int, byte,
-     * AtomicBoolean)}.
+     * See {@link IdleVerifyUtility#checkPartitionsPageCrcSum(FilePageStore, CacheGroupContext, int, byte)}.
      */
     public static void checkPartitionsPageCrcSum(
         @Nullable FilePageStoreManager pageStoreMgr,
         CacheGroupContext grpCtx,
         int partId,
-        byte pageType,
-        AtomicBoolean cpFlag
+        byte pageType
     ) throws IgniteCheckedException, GridNotIdleException {
         if (!grpCtx.persistenceEnabled() || pageStoreMgr == null)
             return;
 
         FilePageStore pageStore = (FilePageStore)pageStoreMgr.getStore(grpCtx.groupId(), partId);
 
-        checkPartitionsPageCrcSum(pageStore, grpCtx, partId, pageType, cpFlag);
+        checkPartitionsPageCrcSum(pageStore, grpCtx, partId, pageType);
     }
 
     /**
@@ -64,7 +76,6 @@ public class IdleVerifyUtility {
      * @param grpCtx Passed cache group context.
      * @param partId Partition id.
      * @param pageType Page type. Possible types {@link PageIdAllocator#FLAG_DATA}, {@link PageIdAllocator#FLAG_IDX}.
-     * @param cpFlag Checkpoint flag for detecting start checkpoint with dirty pages.
      * @throws IgniteCheckedException If reading page failed.
      * @throws GridNotIdleException If cluster not idle.
      */
@@ -72,8 +83,7 @@ public class IdleVerifyUtility {
         FilePageStore pageStore,
         CacheGroupContext grpCtx,
         int partId,
-        byte pageType,
-        AtomicBoolean cpFlag
+        byte pageType
     ) throws IgniteCheckedException, GridNotIdleException {
         assert pageType == PageIdAllocator.FLAG_DATA || pageType == PageIdAllocator.FLAG_IDX : pageType;
 
@@ -86,31 +96,169 @@ public class IdleVerifyUtility {
         for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
             buf.clear();
 
-            if (cpFlag.get())
-                throw new GridNotIdleException(CLUSTER_NOT_IDLE_MSG);
-
             pageStore.read(pageId, buf, true);
         }
-
-        if (cpFlag.get())
-            throw new GridNotIdleException(CLUSTER_NOT_IDLE_MSG);
     }
 
     /**
-     * @param db Shared DB manager.
-     * @return {@code True} if checkpoint is now, {@code False} otherwise.
+     * Gather updateCounters info.
+     * Holds {@link org.apache.ignite.internal.processors.cache.PartitionUpdateCounter#copy} of update counters.
+     *
+     * @param ign Ignite instance.
+     * @param grpIds Group Id`s.
+     * @return Current groups distribution with update counters per partitions.
      */
-    public static boolean isCheckpointNow(@Nullable IgniteCacheDatabaseSharedManager db) {
-        if (!(db instanceof GridCacheDatabaseSharedManager))
-            return false;
+    public static Map<Integer, Map<Integer, PartitionUpdateCounter>> getUpdateCountersSnapshot(
+        IgniteEx ign,
+        Set<Integer> grpIds
+    ) {
+        Map<Integer, Map<Integer, PartitionUpdateCounter>> partsWithCountersPerGrp = new HashMap<>();
 
-        GridCacheDatabaseSharedManager.CheckpointProgress progress =
-            ((GridCacheDatabaseSharedManager)db).getCheckpointer().currentProgress();
+        for (Integer grpId : grpIds) {
+            CacheGroupContext grpCtx = ign.context().cache().cacheGroup(grpId);
 
-        if (progress == null)
-            return false;
+            if (grpCtx == null)
+                throw new GridNotIdleException("Group not found: " + grpId + "."
+                        + " Possible reasons: rebalance in progress or concurrent cache destroy.");
 
-        return progress.started() && !progress.finished();
+            GridDhtPartitionTopology top = grpCtx.topology();
+
+            Map<Integer, PartitionUpdateCounter> partsWithCounters =
+                partsWithCountersPerGrp.computeIfAbsent(grpId, k -> new HashMap<>());
+
+            for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
+                if (part.state() != GridDhtPartitionState.OWNING)
+                    continue;
+
+                @Nullable PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
+
+                partsWithCounters.put(part.id(), updCntr == null ? null : updCntr.copy());
+            }
+        }
+
+        return partsWithCountersPerGrp;
+    }
+
+    /**
+     * Prints diff between incoming update counters snapshots.
+     *
+     * @param ig Ignite instance.
+     * @param diff Compared groups diff.
+     * @return Formatted diff representation.
+     */
+    public static String formatUpdateCountersDiff(IgniteEx ig, List<Integer> diff) {
+        SB sb = null;
+
+        if (!diff.isEmpty()) {
+            sb = new SB();
+
+            for (int grpId0 : diff) {
+                if (sb.length() != 0)
+                    sb.a(", ");
+                else
+                    sb.a("\"");
+
+                DynamicCacheDescriptor desc = ig.context().cache().cacheDescriptor(grpId0);
+
+                CacheGroupContext grpCtx = ig.context().cache().cacheGroup(desc == null ? grpId0 : desc.groupId());
+
+                sb.a(grpCtx.cacheOrGroupName());
+            }
+
+            sb.a("\"");
+        }
+
+        return sb != null ? sb.toString() : "";
+    }
+
+    /**
+     * Compares two sets with partitions and upd counters per group distribution.
+     *
+     * @param ign Ignite instance.
+     * @param cntrsIn Group id`s with counters per partitions per groups distribution.
+     * @param grpId Group id to compare.
+     * @return Diff with grpId info between two sets.
+     */
+    public static List<Integer> compareUpdateCounters(
+        IgniteEx ign,
+        Map<Integer, Map<Integer, PartitionUpdateCounter>> cntrsIn,
+        Integer grpId
+    ) {
+        Map<Integer, Map<Integer, PartitionUpdateCounter>> curCntrs =
+            getUpdateCountersSnapshot(ign, Collections.singleton(grpId));
+
+        if (curCntrs.isEmpty())
+            throw new GridNotIdleException("No OWNING partitions for group: " + grpId);
+
+        return compareUpdateCounters(ign, cntrsIn, curCntrs);
+    }
+
+    /**
+     * Compares two sets with partitions and upd counters per group distribution.
+     *
+     * @param ign Ignite instance.
+     * @param cntrsEth Ethalon group id`s with counters per partitions per groups distribution.
+     * @param curCntrs Group id`s with counters per partitions per groups distribution compare with.
+     * @return Diff with grpId info between two sets.
+     */
+    public static List<Integer> compareUpdateCounters(
+        IgniteEx ign,
+        Map<Integer, Map<Integer, PartitionUpdateCounter>> cntrsEth,
+        Map<Integer, Map<Integer, PartitionUpdateCounter>> curCntrs
+    ) {
+        List<Integer> diff = new ArrayList<>();
+
+        Integer grpId;
+        for (Map.Entry<Integer, Map<Integer, PartitionUpdateCounter>> curEntry : curCntrs.entrySet()) {
+            Map<Integer, PartitionUpdateCounter> partsWithCntrsCur = curEntry.getValue();
+
+            grpId = curEntry.getKey();
+
+            if (partsWithCntrsCur == null)
+                throw new GridNotIdleException("Group not found: " + grpId + "."
+                    + " Possible reasons: rebalance in progress or concurrent cache destroy.");
+
+            Map<Integer, PartitionUpdateCounter> partsWithCntrsIn = cntrsEth.get(grpId);
+
+            if (!partsWithCntrsIn.equals(partsWithCntrsCur))
+                diff.add(grpId);
+        }
+
+        return diff;
+    }
+
+    /**
+     * Idle checker.
+     */
+    public static class IdleChecker implements IgniteInClosure<Integer> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final IgniteEx ig;
+
+        /** Group id`s snapshot with partitions and counters distrubution. */
+        private final Map<Integer, Map<Integer, PartitionUpdateCounter>> partsWithCntrsPerGrp;
+
+        /** */
+        public IdleChecker(IgniteEx ig, Map<Integer, Map<Integer, PartitionUpdateCounter>> partsWithCntrsPerGrp) {
+            this.ig = ig;
+            this.partsWithCntrsPerGrp = partsWithCntrsPerGrp;
+        }
+
+        /** */
+        @Override public void apply(Integer grpId) {
+            List<Integer> diff;
+
+            diff = compareUpdateCounters(ig, partsWithCntrsPerGrp, grpId);
+
+            if (!F.isEmpty(diff)) {
+                String res = formatUpdateCountersDiff(ig, diff);
+
+                if (!res.isEmpty())
+                    throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[" + res + "]");
+            }
+        }
     }
 
     /** */

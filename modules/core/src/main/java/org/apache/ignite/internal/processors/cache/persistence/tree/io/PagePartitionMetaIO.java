@@ -59,7 +59,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
         setUpdateCounter(pageAddr, 0);
         setGlobalRemoveId(pageAddr, 0);
         setPartitionState(pageAddr, (byte)-1);
-        setSizesPageId(pageAddr, 0);
+        setCountersPageId(pageAddr, 0);
     }
 
     /**
@@ -80,6 +80,8 @@ public class PagePartitionMetaIO extends PageMetaIO {
     /**
      * @param pageAddr Page address.
      * @param size Partition size.
+     *
+     * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setSize(long pageAddr, long size) {
         if (getSize(pageAddr) == size)
@@ -101,6 +103,8 @@ public class PagePartitionMetaIO extends PageMetaIO {
     /**
      * @param pageAddr Page address.
      * @param cntr Partition update counter.
+     *
+     * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setUpdateCounter(long pageAddr, long cntr) {
         if (getUpdateCounter(pageAddr) == cntr)
@@ -122,6 +126,8 @@ public class PagePartitionMetaIO extends PageMetaIO {
     /**
      * @param pageAddr Page address.
      * @param rmvId Global remove ID.
+     *
+     * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setGlobalRemoveId(long pageAddr, long rmvId) {
         if (getGlobalRemoveId(pageAddr) == rmvId)
@@ -142,6 +148,8 @@ public class PagePartitionMetaIO extends PageMetaIO {
     /**
      * @param pageAddr Partition metadata page address.
      * @param state State.
+     *
+     * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setPartitionState(long pageAddr, byte state) {
         if (getPartitionState(pageAddr) == state)
@@ -153,22 +161,22 @@ public class PagePartitionMetaIO extends PageMetaIO {
     }
 
     /**
-     * Returns page identifier related to page with logical cache sizes in cache group.
+     * Returns partition counters page identifier, page with caches in cache group sizes.
      *
      * @param pageAddr Partition metadata page address.
      * @return Next meta partial page ID or {@code 0} if it does not exist.
      */
-    public long getCacheSizesPageId(long pageAddr) {
+    public long getCountersPageId(long pageAddr) {
         return PageUtils.getLong(pageAddr, NEXT_PART_META_PAGE_OFF);
     }
 
     /**
-     * Sets new reference to page with logical cache sizes in cache group.
+     * Sets new reference to partition counters page (logical cache sizes).
      *
      * @param pageAddr Partition metadata page address.
      * @param cntrsPageId New cache sizes page ID.
      */
-    public void setSizesPageId(long pageAddr, long cntrsPageId) {
+    public void setCountersPageId(long pageAddr, long cntrsPageId) {
         PageUtils.putLong(pageAddr, NEXT_PART_META_PAGE_OFF, cntrsPageId);
     }
 
@@ -222,26 +230,11 @@ public class PagePartitionMetaIO extends PageMetaIO {
     /**
      * @param pageAddr Page address.
      * @param link Link.
+     *
+     * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setGapsLink(long pageAddr, long link) {
         throw new UnsupportedOperationException("Gaps link is not supported by " +
-            "this PagePartitionMetaIO version: ver=" + getVersion());
-    }
-
-    /**
-     * @param pageAddr Page address.
-     */
-    public long getTombstonesCount(long pageAddr) {
-        throw new UnsupportedOperationException("Tombstones count is not supported by " +
-            "this PagePartitionMetaIO version: ver=" + getVersion());
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param tombstonesCount Tombstones count.
-     */
-    public boolean setTombstonesCount(long pageAddr, long tombstonesCount) {
-        throw new UnsupportedOperationException("Tombstones count is not supported by " +
             "this PagePartitionMetaIO version: ver=" + getVersion());
     }
 
@@ -255,7 +248,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
             .a(",\n\tupdateCounter=").a(getUpdateCounter(pageAddr))
             .a(",\n\tglobalRemoveId=").a(getGlobalRemoveId(pageAddr))
             .a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")")
-            .a(",\n\tcacheSizesPageId=").a(getCacheSizesPageId(pageAddr))
+            .a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr))
             .a("\n]");
     }
 }

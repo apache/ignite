@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.persistence;
 
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinInActiveNodeToActiveCluster;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinInActiveNodeToActiveCluster;
 
 /**
  *
@@ -60,7 +60,7 @@ public class JoinInActiveNodeToActiveClusterWithPersistence extends JoinInActive
         return b;
     }
 
-    @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationInClusterTemplate() throws Exception{
+    @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationInClusterTemplate() throws Exception {
         return persistent(super.joinClientStaticCacheConfigurationInClusterTemplate());
     }
 

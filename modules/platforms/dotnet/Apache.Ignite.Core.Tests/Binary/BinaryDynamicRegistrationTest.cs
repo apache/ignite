@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 var ex = Assert.Throws<BinaryObjectException>(() => ignite.GetCache<int, Foo>("default").Get(1));
 
-                Assert.IsTrue(ex.Message.Contains("Unknown pair"));
+                StringAssert.Contains("Failed to resolve class name", ex.Message);
             }
         }
 
@@ -458,7 +458,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         private static void ClearMarshallerWorkDir()
         {
             // Delete all *.classname files within IGNITE_HOME
-            var home = IgniteHome.Resolve(null);
+            var home = IgniteHome.Resolve();
 
             var files = Directory.GetFiles(home, "*.classname*", SearchOption.AllDirectories);
 

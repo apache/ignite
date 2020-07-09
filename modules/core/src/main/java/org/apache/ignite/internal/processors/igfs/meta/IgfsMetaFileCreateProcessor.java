@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.processors.igfs.meta;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Map;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -30,15 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Map;
 
 /**
  * File create processor.
@@ -131,8 +130,8 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
         IgfsUtils.writeProperties(out, props);
 
         out.writeInt(blockSize);
-        U.writeGridUuid(out, affKey);
-        U.writeGridUuid(out, lockId);
+        U.writeIgniteUuid(out, affKey);
+        U.writeIgniteUuid(out, lockId);
         out.writeBoolean(evictExclude);
 
         out.writeLong(len);
@@ -146,8 +145,8 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
         props = IgfsUtils.readProperties(in);
 
         blockSize = in.readInt();
-        affKey = U.readGridUuid(in);
-        lockId = U.readGridUuid(in);
+        affKey = U.readIgniteUuid(in);
+        lockId = U.readIgniteUuid(in);
         evictExclude = in.readBoolean();
 
         len = in.readLong();

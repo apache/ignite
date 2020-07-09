@@ -19,35 +19,37 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.TRANSACTIONS;
 
 /**
  * Implementation of {@link ClientTransactions} over TCP protocol.
  */
 class TcpClientTransactions implements ClientTransactions {
-    /** Transaction label. */
-    private String lb;
-
     /** Channel. */
     private final ReliableChannel ch;
 
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
-    /** Current thread transaction id. */
-    private final ThreadLocal<Integer> threadLocTxId = new ThreadLocal<>();
+    /** Tx counter (used to generate tx UID). */
+    private final AtomicLong txCnt = new AtomicLong();
 
-    /** Tx map. */
-    private final Map<Integer, TcpClientTransaction> txMap = new ConcurrentHashMap<>();
+    /** Current thread transaction UID. */
+    private final ThreadLocal<Long> threadLocTxUid = new ThreadLocal<>();
+
+    /** Tx map (Tx UID to Tx). */
+    private final Map<Long, TcpClientTransaction> txMap = new ConcurrentHashMap<>();
 
     /** Tx config. */
     private final ClientTransactionConfiguration txCfg;
@@ -61,18 +63,18 @@ class TcpClientTransactions implements ClientTransactions {
 
     /** {@inheritDoc} */
     @Override public ClientTransaction txStart() {
-        return txStart0(null, null, null);
+        return txStart0(null, null, null, null);
     }
 
     /** {@inheritDoc} */
     @Override public ClientTransaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation) {
-        return txStart0(concurrency, isolation, null);
+        return txStart0(concurrency, isolation, null, null);
     }
 
     /** {@inheritDoc} */
     @Override public ClientTransaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
         long timeout) {
-        return txStart0(concurrency, isolation, timeout);
+        return txStart0(concurrency, isolation, timeout, null);
     }
 
     /**
@@ -80,17 +82,20 @@ class TcpClientTransactions implements ClientTransactions {
      * @param isolation Isolation.
      * @param timeout Timeout.
      */
-    private ClientTransaction txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation, Long timeout) {
+    private ClientTransaction txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation, Long timeout,
+        String lb) {
         TcpClientTransaction tx0 = tx();
 
         if (tx0 != null)
-            throw new ClientException("A transaction has already started by the current thread.");
+            throw new ClientException("A transaction has already been started by the current thread.");
 
         tx0 = ch.service(ClientOperation.TX_START,
             req -> {
-                if (req.clientChannel().serverVersion().compareTo(V1_5_0) < 0) {
-                    throw new ClientProtocolError(String.format("Transactions have not supported by the server's " +
-                        "protocol version %s, required version %s", req.clientChannel().serverVersion(), V1_5_0));
+                ProtocolContext protocolCtx = req.clientChannel().protocolCtx();
+
+                if (!protocolCtx.isFeatureSupported(TRANSACTIONS)) {
+                    throw new ClientProtocolError(String.format("Transactions are not supported by the server's " +
+                        "protocol version %s, required version %s", protocolCtx.version(), TRANSACTIONS.verIntroduced()));
                 }
 
                 try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), req.out(), null, null)) {
@@ -103,45 +108,85 @@ class TcpClientTransactions implements ClientTransactions {
             res -> new TcpClientTransaction(res.in().readInt(), res.clientChannel())
         );
 
-        threadLocTxId.set(tx0.txId);
+        threadLocTxUid.set(tx0.txUid);
 
-        txMap.put(tx0.txId, tx0);
+        txMap.put(tx0.txUid, tx0);
 
         return tx0;
     }
 
     /** {@inheritDoc} */
     @Override public ClientTransactions withLabel(String lb) {
-        if (lb == null)
-            throw new NullPointerException();
+        A.notNull(lb, "lb");
 
-        TcpClientTransactions txs = new TcpClientTransactions(ch, marsh, txCfg);
-
-        txs.lb = lb;
-
-        return txs;
+        return new ClientTransactionsWithLabel(lb);
     }
 
     /**
      * Current thread transaction.
      */
     TcpClientTransaction tx() {
-        Integer txId = threadLocTxId.get();
+        Long txUid = threadLocTxUid.get();
 
-        if (txId == null)
+        if (txUid == null)
             return null;
 
-        TcpClientTransaction tx0 = txMap.get(txId);
+        TcpClientTransaction tx0 = txMap.get(txUid);
 
         // Also check isClosed() flag, since transaction can be closed by another thread.
         return tx0 == null || tx0.isClosed() ? null : tx0;
     }
 
     /**
+     * Transactions "withLabel" facade.
+     */
+    private class ClientTransactionsWithLabel implements ClientTransactions {
+        /** Transaction label. */
+        private final String lb;
+
+        /**
+         * @param lb Transaction's label.
+         */
+        ClientTransactionsWithLabel(String lb) {
+            this.lb = lb;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClientTransaction txStart() throws ClientServerError, ClientException {
+            return txStart0(null, null, null, lb);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClientTransaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation)
+            throws ClientServerError, ClientException {
+            return txStart0(concurrency, isolation, null, lb);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClientTransaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
+            long timeout) throws ClientServerError, ClientException {
+            return txStart0(concurrency, isolation, timeout, lb);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClientTransactions withLabel(String lb) throws ClientException {
+            A.notNull(lb, "lb");
+
+            if (lb.equals(this.lb))
+                return this;
+
+            return new ClientTransactionsWithLabel(lb);
+        }
+    }
+
+    /**
      *
      */
     class TcpClientTransaction implements ClientTransaction {
-        /** Transaction id. */
+        /** Unique client-side transaction id. */
+        private final long txUid;
+
+        /** Server-side transaction id. */
         private final int txId;
 
         /** Client channel. */
@@ -155,18 +200,19 @@ class TcpClientTransactions implements ClientTransactions {
          * @param clientCh Client channel.
          */
         private TcpClientTransaction(int id, ClientChannel clientCh) {
+            txUid = txCnt.incrementAndGet();
             txId = id;
             this.clientCh = clientCh;
         }
 
         /** {@inheritDoc} */
         @Override public void commit() {
-            Integer threadTxId;
+            Long threadTxUid;
 
-            if (closed || (threadTxId = threadLocTxId.get()) == null)
+            if (closed || (threadTxUid = threadLocTxUid.get()) == null)
                 throw new ClientException("The transaction is already closed");
 
-            if (txId != threadTxId)
+            if (txUid != threadTxUid)
                 throw new ClientException("You can commit transaction only from the thread it was started");
 
             endTx(true);
@@ -202,14 +248,14 @@ class TcpClientTransactions implements ClientTransactions {
                     }, null);
             }
             finally {
-                txMap.remove(txId);
+                txMap.remove(txUid);
 
                 closed = true;
 
-                Integer threadTxId = threadLocTxId.get();
+                Long threadTxUid = threadLocTxUid.get();
 
-                if (threadTxId != null && txId == threadTxId)
-                    threadLocTxId.set(null);
+                if (threadTxUid != null && txUid == threadTxUid)
+                    threadLocTxUid.set(null);
             }
         }
 
