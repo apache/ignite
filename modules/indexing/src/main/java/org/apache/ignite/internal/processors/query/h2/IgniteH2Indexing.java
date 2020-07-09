@@ -49,6 +49,7 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -86,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMeta
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -196,6 +198,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD;
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.TX_SIZE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
@@ -1174,6 +1177,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Exception failReason = null;
 
+        List<? extends FieldsQueryCursor<List<?>>> res;
+
         try {
             if (!dml.mvccEnabled() && !updateInTxAllowed && ctx.cache().context().tm().inUserTx()) {
                 throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
@@ -1183,7 +1188,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             if (!qryDesc.local()) {
-                return executeUpdateDistributed(
+                res = executeUpdateDistributed(
                     qryDesc,
                     qryParams,
                     dml,
@@ -1200,13 +1205,33 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     cancel
                 );
 
-                return singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
+                res = singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
                     @SuppressWarnings("NullableProblems")
                     @Override public Iterator<List<?>> iterator() {
                         return new IgniteSingletonIterator<>(singletonList(updRes.counter()));
                     }
                 }, cancel, true, false));
             }
+
+            GridCacheContext cctx = dml.plan().cacheContext();
+
+            if (cctx != null && cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                ctx.event().record(new CacheQueryExecutedEvent<>(
+                    ctx.discovery().localNode(),
+                    CacheQueryType.SQL_FIELDS.name() + " query executed.",
+                    EVT_CACHE_QUERY_EXECUTED,
+                    CacheQueryType.SQL_FIELDS.name(),
+                    cctx.name(),
+                    null,
+                    qryDesc.sql(),
+                    null,
+                    null,
+                    qryParams.arguments(),
+                    ctx.localNodeId(),
+                    null));
+            }
+
+            return res;
         }
         catch (IgniteException e) {
             failReason = e;
@@ -1301,6 +1326,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // Execute SELECT FOR UPDATE if needed.
             if (select.forUpdate() && inTx)
                 iter = lockSelectedRows(iter, mvccCctx, timeout, qryParams.pageSize());
+
+            if (mvccCctx != null && mvccCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                ctx.event().record(new CacheQueryExecutedEvent<>(
+                    ctx.discovery().localNode(),
+                    CacheQueryType.SQL_FIELDS.name() + " query executed.",
+                    EVT_CACHE_QUERY_EXECUTED,
+                    CacheQueryType.SQL_FIELDS.name(),
+                    mvccCctx.name(),
+                    null,
+                    qryDesc.sql(),
+                    null,
+                    null,
+                    qryParams.arguments(),
+                    ctx.localNodeId(),
+                    null));
+            }
 
             RegisteredQueryCursor<List<?>> cursor =
                 new RegisteredQueryCursor<>(iter, cancel, runningQueryManager(), qryParams.lazy(), qryId);

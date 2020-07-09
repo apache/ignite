@@ -46,6 +46,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -63,7 +64,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -1542,6 +1546,90 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         finally {
             for (int i = 0; i < gridCount(); i++)
                 grid(i).events().stopLocalListen(lsnrs[i], EVT_CACHE_QUERY_EXECUTED);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientSqlQueryEvents() throws Exception {
+        checkClientSqlQueryEvents(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientTxSqlQueryEvents() throws Exception {
+        checkClientSqlQueryEvents(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkClientSqlQueryEvents(boolean tx) throws Exception {
+        CountDownLatch execLatch = new CountDownLatch(9);
+
+        IgnitePredicate<Event> lsnr = evt -> {
+            assert evt instanceof CacheQueryExecutedEvent;
+
+            System.out.println(">>> EVENT: " + evt);
+
+            CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
+
+            assertEquals("SQL_PUBLIC_TEST_TABLE", qe.cacheName());
+            assertNotNull(qe.clause());
+            assertNull(qe.scanQueryFilter());
+            assertNull(qe.continuousQueryFilter());
+
+            execLatch.countDown();
+
+            return true;
+        };
+
+        ignite().events().localListen(lsnr, EVT_CACHE_QUERY_EXECUTED);
+
+        ClientConfiguration cc = new ClientConfiguration().setAddresses(Config.SERVER);
+
+        try (IgniteClient client = Ignition.startClient(cc)) {
+            if (tx)
+                client.query(new SqlFieldsQuery("BEGIN WORK"));
+
+            client.query(new SqlFieldsQuery("create table TEST_TABLE(key int primary key, val int)"))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("insert into TEST_TABLE values (?, ?)").setArgs(1, 1))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("update TEST_TABLE set val = ?2 where key = ?1").setArgs(1, 2))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("select * from TEST_TABLE"))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("create index idx_1 on TEST_TABLE(key)"))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("drop index idx_1"))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("alter table TEST_TABLE add column val2 int"))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("alter table TEST_TABLE drop val2"))
+                .getAll();
+
+            client.query(new SqlFieldsQuery("drop table TEST_TABLE"))
+                .getAll();
+
+            if (tx)
+                client.query(new SqlFieldsQuery("COMMIT TRANSACTION"));
+
+            assertTrue(execLatch.await(3_000, MILLISECONDS));
+        }
+        finally {
+            ignite().events().stopLocalListen(lsnr, EVT_CACHE_QUERY_EXECUTED);
         }
     }
 

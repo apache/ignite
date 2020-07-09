@@ -45,6 +45,7 @@ import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -132,6 +134,7 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
@@ -408,7 +411,7 @@ public class CommandProcessor {
             assert cmdH2 == null;
 
             if (isDdl(cmdNative))
-                runCommandNativeDdl(sql, cmdNative);
+                runCommandNativeDdl(sql, cmdNative, params);
             else if (cmdNative instanceof SqlBulkLoadCommand) {
                 res = processBulkLoadCommand((SqlBulkLoadCommand) cmdNative, qryId);
 
@@ -434,7 +437,7 @@ public class CommandProcessor {
         else {
             assert cmdH2 != null;
 
-            runCommandH2(sql, cmdH2);
+            runCommandH2(sql, cmdH2, params);
         }
 
         return new CommandResult(res, unregister);
@@ -557,9 +560,12 @@ public class CommandProcessor {
      *
      * @param sql Original SQL.
      * @param cmd Command.
+     * @param params Parameters.
      */
-    private void runCommandNativeDdl(String sql, SqlCommand cmd) {
+    private void runCommandNativeDdl(String sql, SqlCommand cmd, QueryParameters params) {
         IgniteInternalFuture fut = null;
+
+        GridCacheContext cctx = null;
 
         try {
             isDdlOnSchemaSupported(cmd.schemaName());
@@ -603,6 +609,8 @@ public class CommandProcessor {
 
                 fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
                     newIdx, cmd0.ifNotExists(), cmd0.parallel());
+
+                cctx = tbl.cacheContext();
             }
             else if (cmd instanceof SqlDropIndexCommand) {
                 SqlDropIndexCommand cmd0 = (SqlDropIndexCommand)cmd;
@@ -614,6 +622,8 @@ public class CommandProcessor {
 
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd0.schemaName(), cmd0.indexName(),
                         cmd0.ifExists());
+
+                    cctx = tbl.cacheContext();
                 }
                 else {
                     if (cmd0.ifExists())
@@ -653,6 +663,8 @@ public class CommandProcessor {
                 }
 
                 fut = new GridFinishedFuture();
+
+                cctx = tbl.cacheContext();
             }
             else if (cmd instanceof SqlCreateUserCommand) {
                 SqlCreateUserCommand addCmd = (SqlCreateUserCommand)cmd;
@@ -675,6 +687,22 @@ public class CommandProcessor {
 
             if (fut != null)
                 fut.get();
+
+            if (cctx != null && cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                ctx.event().record(new CacheQueryExecutedEvent<>(
+                    ctx.discovery().localNode(),
+                    CacheQueryType.SQL_FIELDS.name() + " query executed.",
+                    EVT_CACHE_QUERY_EXECUTED,
+                    CacheQueryType.SQL_FIELDS.name(),
+                    cctx.name(),
+                    null,
+                    sql,
+                    null,
+                    null,
+                    params.arguments(),
+                    ctx.localNodeId(),
+                    null));
+            }
         }
         catch (SchemaOperationException e) {
             throw convert(e);
@@ -692,9 +720,12 @@ public class CommandProcessor {
      *
      * @param sql SQL.
      * @param cmdH2 Command.
+     * @param params Parameters.
      */
-    private void runCommandH2(String sql, GridSqlStatement cmdH2) {
+    private void runCommandH2(String sql, GridSqlStatement cmdH2, QueryParameters params) {
         IgniteInternalFuture fut = null;
+
+        GridCacheContext cctx = null;
 
         try {
             finishActiveTxIfNecessary();
@@ -737,6 +768,8 @@ public class CommandProcessor {
 
                 fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
                     newIdx, cmd.ifNotExists(), 0);
+
+                cctx = tbl.cacheContext();
             }
             else if (cmdH2 instanceof GridSqlDropIndex) {
                 GridSqlDropIndex cmd = (GridSqlDropIndex) cmdH2;
@@ -750,6 +783,8 @@ public class CommandProcessor {
 
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
                         cmd.ifExists());
+
+                    cctx = tbl.cacheContext();
                 }
                 else {
                     if (cmd.ifExists())
@@ -812,6 +847,8 @@ public class CommandProcessor {
                             cmd.encrypted(),
                             cmd.parallelism()
                         );
+
+                        cctx = schemaMgr.dataTable(cmd.schemaName(), cmd.tableName()).cacheContext();
                     }
                 }
             }
@@ -830,7 +867,29 @@ public class CommandProcessor {
                 else {
                     ctx.security().authorize(tbl.cacheName(), SecurityPermission.CACHE_DESTROY);
 
+                    cctx = tbl.cacheContext();
+
+                    boolean evt = cctx != null && cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
+
                     ctx.query().dynamicTableDrop(tbl.cacheName(), cmd.tableName(), cmd.ifExists());
+
+                    if (evt) { // We can't check cache context after table drop.
+                        ctx.event().record(new CacheQueryExecutedEvent<>(
+                            ctx.discovery().localNode(),
+                            CacheQueryType.SQL_FIELDS.name() + " query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            CacheQueryType.SQL_FIELDS.name(),
+                            cctx.name(),
+                            null,
+                            sql,
+                            null,
+                            null,
+                            params.arguments(),
+                            ctx.localNodeId(),
+                            null));
+                    }
+
+                    cctx = null;
                 }
             }
             else if (cmdH2 instanceof GridSqlAlterTableAddColumn) {
@@ -886,6 +945,8 @@ public class CommandProcessor {
                         fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
                             tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
                     }
+
+                    cctx = tbl.cacheContext();
                 }
             }
             else if (cmdH2 instanceof GridSqlAlterTableDropColumn) {
@@ -903,7 +964,7 @@ public class CommandProcessor {
                 else {
                     assert tbl.rowDescriptor() != null;
 
-                    GridCacheContext cctx = tbl.cacheContext();
+                    cctx = tbl.cacheContext();
 
                     assert cctx != null;
 
@@ -952,6 +1013,22 @@ public class CommandProcessor {
 
             if (fut != null)
                 fut.get();
+
+            if (cctx != null && cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                ctx.event().record(new CacheQueryExecutedEvent<>(
+                    ctx.discovery().localNode(),
+                    CacheQueryType.SQL_FIELDS.name() + " query executed.",
+                    EVT_CACHE_QUERY_EXECUTED,
+                    CacheQueryType.SQL_FIELDS.name(),
+                    cctx.name(),
+                    null,
+                    sql,
+                    null,
+                    null,
+                    params.arguments(),
+                    ctx.localNodeId(),
+                    null));
+            }
         }
         catch (SchemaOperationException e) {
             U.error(null, "DDL operation failure", e);
