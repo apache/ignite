@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,18 +22,21 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
@@ -75,7 +79,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
      * Based on:
      * https://docs.oracle.com/javase/1.5.0/docs/guide/jdbc/getstart/mapping.html
      */
-    private static Map<Class, IgniteBiTuple<Integer, Class>> javaClsToSqlTypeMap;
+    private static final Map<Class, IgniteBiTuple<Integer, Class>> javaClsToSqlTypeMap;
 
     static {
         Map<Class, IgniteBiTuple<Integer, Class>> innerMap = new HashMap<>();
@@ -102,6 +106,9 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
         javaClsToSqlTypeMap = Collections.unmodifiableMap(innerMap);
     }
 
+    /** As stmt parameter. */
+    private boolean asPreparedParam;
+
     /** URL. */
     private String url = affinityAwareness ?
         "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true" :
@@ -110,9 +117,6 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     /** Connection. */
     private Connection conn;
 
-    /** Statement. */
-    private Statement stmt;
-
     /** Expected ex. */
     @Rule
     public ExpectedException expEx = ExpectedException.none();
@@ -120,10 +124,11 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
 
 
     /** @inheritDoc */
-    @SuppressWarnings("RedundantMethodOverride")
     @Before
     @Override public void init() throws Exception {
         super.init();
+
+        asPreparedParam = false;
     }
 
     /**
@@ -133,12 +138,6 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
      */
     @After
     public void tearDown() throws Exception {
-        if (stmt != null && !stmt.isClosed()) {
-            stmt.close();
-
-            assert stmt.isClosed();
-        }
-
         if (conn != null && !conn.isClosed()) {
             conn.close();
 
@@ -216,24 +215,22 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-28896")
     @Test
     @Override public void testObjectArrayDataType() throws Exception {
-        expEx.expect(SQLException.class);
-        expEx.expectMessage("Custom objects are not supported");
-
         super.testObjectArrayDataType();
     }
 
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-20663")
     @Test
     @Override public void testListDataType() throws Exception {
-        expEx.expect(SQLException.class);
-        expEx.expectMessage("Custom objects are not supported");
+        asPreparedParam = true;
 
-        super.testListDataType();
+        checkBasicCacheOperations(new ArrayList<>());
+        checkBasicCacheOperations((Serializable)Collections.singletonList("Aaa"));
+        checkBasicCacheOperations((Serializable)Arrays.asList("String", Boolean.TRUE, 'A', 1));
     }
 
     /**
@@ -241,22 +238,11 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
      */
     @Test
     @Override public void testSetDataType() throws Exception {
-        expEx.expect(SQLException.class);
-        expEx.expectMessage("Custom objects are not supported");
+        asPreparedParam = true;
 
-        super.testSetDataType();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-20663")
-    @Test
-    @Override public void testQueueDataType() throws Exception {
-        expEx.expect(SQLException.class);
-        expEx.expectMessage("Custom objects are not supported");
-
-        super.testQueueDataType();
+        checkBasicCacheOperations(new HashSet<>());
+        checkBasicCacheOperations((Serializable)Collections.singleton("Aaa"));
+        checkBasicCacheOperations((Serializable)Arrays.asList("String", Boolean.TRUE, 'A', 1));
     }
 
     /**
@@ -264,8 +250,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
      */
     @Test
     @Override public void testObjectBasedOnPrimitivesDataType() throws Exception {
-        expEx.expect(SQLException.class);
-        expEx.expectMessage("Custom objects are not supported");
+        asPreparedParam = true;
 
         super.testObjectBasedOnPrimitivesDataType();
     }
@@ -275,8 +260,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
      */
     @Test
     @Override public void testObjectBasedOnPrimitivesAndCollectionsDataType() throws Exception {
-        expEx.expect(SQLException.class);
-        expEx.expectMessage("Custom objects are not supported");
+        asPreparedParam = true;
 
         super.testObjectBasedOnPrimitivesAndCollectionsDataType();
     }
@@ -286,8 +270,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
      */
     @Test
     @Override public void testObjectBasedOnPrimitivesAndCollectionsAndNestedObjectsDataType() throws Exception {
-        expEx.expect(SQLException.class);
-        expEx.expectMessage("Custom objects are not supported");
+        asPreparedParam = true;
 
         super.testObjectBasedOnPrimitivesAndCollectionsAndNestedObjectsDataType();
     }
@@ -311,32 +294,25 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     @Ignore("https://ggsystems.atlassian.net/browse/GG-23665")
     @Test
     @Override public void testSqlDateDataType() throws Exception {
-        checkBasicCacheOperations(
-            new Dated(new java.sql.Date(Long.MIN_VALUE)),
-            new Dated(new java.sql.Date(Long.MAX_VALUE)));
+        super.testSqlDateDataType();
     }
 
     /**
      * @throws Exception If failed.
      */
-    @Test
-    @Override public void testCalendarDataType() throws Exception {
-        expEx.expect(SQLException.class);
-        expEx.expectMessage("Custom objects are not supported");
-
-        super.testCalendarDataType();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    // TODO: 04.09.19 Add Instant data type support: https://ggsystems.atlassian.net/browse/GG-23663
     @Test
     @Override public void testInstantDataType() throws Exception {
-        expEx.expect(SQLException.class);
-        expEx.expectMessage("Custom objects are not supported");
+        asPreparedParam = true;
 
         super.testInstantDataType();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Override public void testCalendarDataType() throws Exception {
+        asPreparedParam = true;
+
+        super.testCalendarDataType();
     }
 
     /**
@@ -391,8 +367,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
      */
     @Test
     @Override public void testBigIntegerDataType() throws Exception {
-        expEx.expect(SQLException.class);
-        expEx.expectMessage("Custom objects are not supported");
+        asPreparedParam = true;
 
         super.testBigIntegerDataType();
     }
@@ -405,7 +380,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
      * @throws Exception If failed.
      */
     @Override protected void checkBasicCacheOperations(Serializable... valsToCheck) throws Exception {
-        checkBasicCacheOperations((Object o)-> o, valsToCheck);
+        checkBasicCacheOperations((Object o) -> o, valsToCheck);
     }
 
     /**
@@ -417,8 +392,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected void checkBasicCacheOperations(Function converterToSqlExpVal, Serializable... valsToCheck)
-        throws Exception {
+    private void checkBasicCacheOperations(Function converterToSqlExpVal, Serializable... valsToCheck) throws Exception {
         assert valsToCheck.length > 0;
 
         Object originalValItem = valsToCheck[0] instanceof SqlStrConvertedValHolder ?
@@ -435,7 +409,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
                 (lhs, rhs) -> EqualsBuilder.reflectionEquals(
                     lhs, rhs, false, lhs.getClass(), true);
 
-        String uuidPostfix =  UUID.randomUUID().toString().replaceAll("-", "_");
+        String uuidPostfix = UUID.randomUUID().toString().replaceAll("-", "_");
 
         String cacheName = "cache" + uuidPostfix;
 
@@ -462,14 +436,10 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
                 .setQueryEntities(Collections.singletonList(
                     new QueryEntity(dataType, dataType).setTableName(tblName))));
 
-        // Prepare jdbc thin statement.
-        prepareStatement(cacheName);
-
         Map<Serializable, Serializable> keyValMap = new HashMap<>();
 
         for (int i = 0; i < valsToCheck.length; i++)
             keyValMap.put(valsToCheck[i], valsToCheck[valsToCheck.length - i - 1]);
-
 
         for (Map.Entry<Serializable, Serializable> keyValEntry : keyValMap.entrySet()) {
             Object originalKey;
@@ -477,7 +447,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
 
             if (keyValEntry.getKey() instanceof SqlStrConvertedValHolder) {
                 originalKey = ((SqlStrConvertedValHolder) keyValEntry.getKey()).originalVal();
-                sqlStrKey =  ((SqlStrConvertedValHolder) keyValEntry.getKey()).sqlStrVal();
+                sqlStrKey = ((SqlStrConvertedValHolder) keyValEntry.getKey()).sqlStrVal();
             }
             else {
                 originalKey = keyValEntry.getKey();
@@ -492,12 +462,27 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
             cache.put(originalKey, originalVal);
 
             // Check SELECT query.
-            checkQuery(converterToSqlExpVal, equalsProcessor, dataType, originalKey, originalVal,
-                "SELECT * FROM " + tblName);
+            try (PreparedStatement stmt = prepareStatement(cacheName, "SELECT * FROM " + tblName)) {
+                checkQuery(converterToSqlExpVal, equalsProcessor, originalVal.getClass(), originalKey, originalVal, stmt);
+            }
 
             // Check SELECT query with where clause.
-            checkQuery(converterToSqlExpVal, equalsProcessor, dataType, originalKey, originalVal,
-                "SELECT * FROM " + tblName + " WHERE _key = " + sqlStrKey);
+            if (asPreparedParam) {
+                try (PreparedStatement stmt = prepareStatement(cacheName, "SELECT * FROM " + tblName + " WHERE _key = ?")) {
+                    if (originalKey.getClass().isArray())
+                        stmt.setArray(1, conn.createArrayOf("OTHER", (Object[])originalKey));
+                    else
+                        stmt.setObject(1, originalKey);
+
+                    checkQuery(converterToSqlExpVal, equalsProcessor, originalVal.getClass(), originalKey, originalVal, stmt);
+                }
+            }
+            else {
+                try (PreparedStatement stmt = prepareStatement(cacheName, "SELECT * FROM " + tblName
+                    + " WHERE _key = " + sqlStrKey)) {
+                    checkQuery(converterToSqlExpVal, equalsProcessor, originalVal.getClass(), originalKey, originalVal, stmt);
+                }
+            }
 
             // Check DELETE.
             checkDelete(tblName, cache, originalKey);
@@ -511,15 +496,12 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
      * @param cacheName Cache name.
      * @throws SQLException If Failed.
      */
-    private void prepareStatement(String cacheName) throws SQLException {
+    private PreparedStatement prepareStatement(String cacheName, String qry) throws SQLException {
         conn = DriverManager.getConnection(url);
 
         conn.setSchema('"' + cacheName + '"');
 
-        stmt = conn.createStatement();
-
-        assert stmt != null;
-        assert !stmt.isClosed();
+        return conn.prepareStatement(qry);
     }
 
     /**
@@ -535,30 +517,32 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
         // Delete from cache.
         cache.remove(originalKey);
 
-        try {
-            if (writeSyncMode == CacheWriteSynchronizationMode.FULL_ASYNC &&
-                !waitForCondition(new GridAbsPredicateX() {
-                                      @Override public boolean applyx() throws IgniteCheckedException {
-                                          try {
-                                              return !stmt.executeQuery("SELECT * FROM " + tblName).next();
+        try (PreparedStatement stmt = prepareStatement(cache.getName(), "SELECT * FROM " + tblName)) {
+            try {
+                if (writeSyncMode == CacheWriteSynchronizationMode.FULL_ASYNC &&
+                    !waitForCondition(new GridAbsPredicateX() {
+                                          @Override public boolean applyx() throws IgniteCheckedException {
+                                              try {
+                                                  return !stmt.executeQuery().next();
+                                              }
+                                              catch (SQLException e) {
+                                                  throw new IgniteCheckedException(e);
+                                              }
                                           }
-                                          catch (SQLException e) {
-                                              throw new IgniteCheckedException(e);
-                                          }
-                                      }
-                                  },
-                    TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE))
-                fail("Deleted data are still retrievable via SELECT.");
+                                      },
+                        TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE))
+                    fail("Deleted data are still retrievable via SELECT.");
+            }
+            catch (GridClosureException e) {
+                throw (SQLException)e.getCause().getCause();
+            }
+
+            ResultSet rs = stmt.executeQuery();
+
+            assertNotNull(rs);
+
+            assertFalse("Unexpected rows count.", rs.next());
         }
-        catch (GridClosureException e) {
-            throw (SQLException)e.getCause().getCause();
-        }
-
-        ResultSet rs = stmt.executeQuery("SELECT * FROM " + tblName);
-
-        assertNotNull(rs);
-
-        assertFalse("Unexpected rows count.", rs.next());
     }
 
     /**
@@ -569,20 +553,20 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
      * @param dataType Data type.
      * @param originalKey Original key.
      * @param originalVal Original value.
-     * @param selectQry Select query to execute.
+     * @param stmt Prepared statement.
      * @throws IgniteCheckedException If failed.
      * @throws SQLException If failed.
      */
     @SuppressWarnings("unchecked")
     private void checkQuery(Function converterToSqlExpVal, BiFunction<Object, Object, Boolean> equalsProcessor,
-        Class<?> dataType, Object originalKey, Object originalVal, String selectQry)
+        Class<?> dataType, Object originalKey, Object originalVal, PreparedStatement stmt)
         throws IgniteCheckedException, SQLException {
         try {
             if (writeSyncMode == CacheWriteSynchronizationMode.FULL_ASYNC &&
                 !waitForCondition(new GridAbsPredicateX() {
                                       @Override public boolean applyx() throws IgniteCheckedException {
                                           try {
-                                              return stmt.executeQuery(selectQry).next();
+                                              return stmt.executeQuery().next();
                                           }
                                           catch (SQLException e) {
                                               throw new IgniteCheckedException(e);
@@ -596,7 +580,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
             throw (SQLException)e.getCause().getCause();
         }
 
-        ResultSet rs = stmt.executeQuery(selectQry);
+        ResultSet rs = stmt.executeQuery();
 
         assertNotNull(rs);
 
@@ -604,9 +588,12 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
 
         assertNotNull(meta);
 
-        int metaType = javaClsToSqlTypeMap.get(dataType).get1();
+        IgniteBiTuple<Integer, Class> typeClsPair = javaClsToSqlTypeMap
+            .getOrDefault(dataType, new IgniteBiTuple<>(Types.OTHER, originalVal.getClass()));
 
-        Object expJavaDataType = javaClsToSqlTypeMap.get(dataType).get2();
+        int metaType = typeClsPair.get1();
+
+        Object expJavaDataType = typeClsPair.get2();
 
         assertEquals("Unexpected metadata data type name for key.", metaType, meta.getColumnType(1));
         assertEquals("Unexpected metadata data type name for value.", metaType, meta.getColumnType(2));
