@@ -15,27 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp.messages;
+package org.apache.ignite.spi.communication.tcp.internal;
 
-import java.util.UUID;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 
-/**
- * Wrapped for custom message that must not be delivered to the client nodes.
- */
-@TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryServerOnlyCustomEventMessage extends TcpDiscoveryCustomEventMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+/** Helper interface to ask other nodes to open connections. */
+public interface ConnectionRequestor {
     /**
-     * @param creatorNodeId Creator node id.
-     * @param msg Message.
-     * @param msgBytes Serialized message.
+     * Request opening of TCP connection from node {@code node} with index {@code connIdx}.
+     *
+     * @param node Node.
+     * @param connIdx Connection index.
      */
-    public TcpDiscoveryServerOnlyCustomEventMessage(UUID creatorNodeId, @NotNull DiscoverySpiCustomMessage msg,
-        @NotNull byte[] msgBytes) {
-        super(creatorNodeId, msg, msgBytes);
-    }
+    public void request(ClusterNode node, int connIdx) throws IgniteCheckedException;
 }
