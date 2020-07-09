@@ -223,8 +223,6 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         }
         catch (Exception e) {
             log.error("Failed to start performance statistics writer.", e);
-
-            stopWriter();
         }
     }
 
