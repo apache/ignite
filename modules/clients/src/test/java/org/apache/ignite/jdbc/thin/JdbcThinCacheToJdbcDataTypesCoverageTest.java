@@ -84,24 +84,24 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     static {
         Map<Class, IgniteBiTuple<Integer, Class>> innerMap = new HashMap<>();
 
-        innerMap.put(Boolean.class,             new IgniteBiTuple<>(Types.BOOLEAN,      Boolean.class));
-        innerMap.put(Integer.class,             new IgniteBiTuple<>(Types.INTEGER,      Integer.class));
-        innerMap.put(Byte.class,                new IgniteBiTuple<>(Types.TINYINT,      Byte.class));
-        innerMap.put(Short.class,               new IgniteBiTuple<>(Types.SMALLINT,     Short.class));
-        innerMap.put(Long.class,                new IgniteBiTuple<>(Types.BIGINT,       Long.class));
-        innerMap.put(BigDecimal.class,          new IgniteBiTuple<>(Types.DECIMAL,      BigDecimal.class));
-        innerMap.put(Double.class,              new IgniteBiTuple<>(Types.DOUBLE,       Double.class));
-        innerMap.put(Float.class,               new IgniteBiTuple<>(Types.FLOAT,        Float.class));
-        innerMap.put(java.sql.Time.class,       new IgniteBiTuple<>(Types.TIME,         java.sql.Time.class));
-        innerMap.put(java.sql.Date.class,       new IgniteBiTuple<>(Types.DATE,         java.sql.Date.class));
-        innerMap.put(java.sql.Timestamp.class,  new IgniteBiTuple<>(Types.TIMESTAMP,    java.sql.Timestamp.class));
-        innerMap.put(String.class,              new IgniteBiTuple<>(Types.VARCHAR,      String.class));
-        innerMap.put(Character.class,           new IgniteBiTuple<>(Types.OTHER,        Character.class));
-        innerMap.put(byte[].class,              new IgniteBiTuple<>(Types.BINARY,       byte[].class));
-        innerMap.put(java.util.Date.class,      new IgniteBiTuple<>(Types.TIMESTAMP,    java.sql.Timestamp.class));
-        innerMap.put(LocalDate.class,           new IgniteBiTuple<>(Types.DATE,         java.sql.Date.class));
-        innerMap.put(LocalDateTime.class,       new IgniteBiTuple<>(Types.TIMESTAMP,    java.sql.Timestamp.class));
-        innerMap.put(LocalTime.class,           new IgniteBiTuple<>(Types.TIME,         java.sql.Time.class));
+        innerMap.put(Boolean.class, new IgniteBiTuple<>(Types.BOOLEAN, Boolean.class));
+        innerMap.put(Integer.class, new IgniteBiTuple<>(Types.INTEGER, Integer.class));
+        innerMap.put(Byte.class, new IgniteBiTuple<>(Types.TINYINT, Byte.class));
+        innerMap.put(Short.class, new IgniteBiTuple<>(Types.SMALLINT, Short.class));
+        innerMap.put(Long.class, new IgniteBiTuple<>(Types.BIGINT, Long.class));
+        innerMap.put(BigDecimal.class, new IgniteBiTuple<>(Types.DECIMAL, BigDecimal.class));
+        innerMap.put(Double.class, new IgniteBiTuple<>(Types.DOUBLE, Double.class));
+        innerMap.put(Float.class, new IgniteBiTuple<>(Types.FLOAT, Float.class));
+        innerMap.put(java.sql.Time.class, new IgniteBiTuple<>(Types.TIME, java.sql.Time.class));
+        innerMap.put(java.sql.Date.class, new IgniteBiTuple<>(Types.DATE, java.sql.Date.class));
+        innerMap.put(java.sql.Timestamp.class, new IgniteBiTuple<>(Types.TIMESTAMP, java.sql.Timestamp.class));
+        innerMap.put(String.class, new IgniteBiTuple<>(Types.VARCHAR, String.class));
+        innerMap.put(Character.class, new IgniteBiTuple<>(Types.OTHER, Character.class));
+        innerMap.put(byte[].class, new IgniteBiTuple<>(Types.BINARY, byte[].class));
+        innerMap.put(java.util.Date.class, new IgniteBiTuple<>(Types.TIMESTAMP, java.sql.Timestamp.class));
+        innerMap.put(LocalDate.class, new IgniteBiTuple<>(Types.DATE, java.sql.Date.class));
+        innerMap.put(LocalDateTime.class, new IgniteBiTuple<>(Types.TIMESTAMP, java.sql.Timestamp.class));
+        innerMap.put(LocalTime.class, new IgniteBiTuple<>(Types.TIME, java.sql.Time.class));
 
         javaClsToSqlTypeMap = Collections.unmodifiableMap(innerMap);
     }
