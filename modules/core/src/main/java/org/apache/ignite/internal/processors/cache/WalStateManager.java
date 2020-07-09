@@ -64,7 +64,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
 
@@ -420,17 +420,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             List<GridDhtLocalPartition> locParts = grp.topology().localPartitions();
 
-            boolean hasOwning = false;
+            int moving = 0;
 
             for (GridDhtLocalPartition locPart : locParts) {
-                if (locPart.state() == OWNING) {
-                    hasOwning = true;
-
-                    break;
-                }
+                if (locPart.state() == MOVING)
+                    moving++;
             }
 
-            if (!hasOwning && !locParts.isEmpty()) {
+            if (!locParts.isEmpty() && moving == locParts.size()) {
                 grp.localWalEnabled(false, true);
 
                 names.add(grp.cacheOrGroupName());
