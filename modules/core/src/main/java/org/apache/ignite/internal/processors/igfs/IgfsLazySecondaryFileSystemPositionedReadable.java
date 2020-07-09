@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.IOException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.io.IOException;
 
 /**
  * Lazy readable entity which is opened on demand.

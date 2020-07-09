@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.hadoop.HadoopInputSplit;
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
+import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Split serialized in external file.

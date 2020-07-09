@@ -25,7 +25,6 @@ import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.commandline.cache.CheckIndexInlineSizes;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,7 +39,7 @@ import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Task for {@link MetadataRemoveTask} command.
+ * Task for remove specified binary type.
  */
 @GridInternal
 public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, MetadataMarshalled, MetadataMarshalled> {
@@ -64,7 +63,7 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
     }
 
     /**
-     * Job for {@link CheckIndexInlineSizes} command.
+     * Job for remove specified binary type from.
      */
     private static class MetadataRemoveJob extends VisorJob<MetadataTypeArgs, MetadataMarshalled> {
         /** */
