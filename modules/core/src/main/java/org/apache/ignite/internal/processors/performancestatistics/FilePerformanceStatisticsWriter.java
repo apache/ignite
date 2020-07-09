@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -45,7 +44,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
@@ -55,7 +53,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
 
 /**
- * Performance statistics collector based on logging to a file.
+ * Performance statistics writer based on logging to a file.
  * <p>
  * Each node collects statistics to a file placed under {@link #PERFORMANCE_STAT_DIR}.
  * <p>
@@ -64,6 +62,9 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
  * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
 public class FilePerformanceStatisticsWriter {
+    /** Directory to store performance statistics files. Placed under Ignite work directory. */
+    public static final String PERFORMANCE_STAT_DIR = "performanceStatistics";
+
     /** Default maximum file size in bytes. Performance statistics will be stopped when the size exceeded. */
     public static final long DFLT_FILE_MAX_SIZE = 32 * U.GB;
 
@@ -73,23 +74,17 @@ public class FilePerformanceStatisticsWriter {
     /** Default minimal batch size to flush in bytes. */
     public static final int DFLT_FLUSH_SIZE = (int)(8 * U.MB);
 
-    /** Directory to store performance statistics files. Placed under Ignite work directory. */
-    public static final String PERFORMANCE_STAT_DIR = "performanceStatistics";
-
     /** Factory to provide I/O interface. */
     private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
 
-    /** Performance statistics enabled flag. */
-    private volatile boolean enabled;
-
     /** Performance statistics file writer worker. */
-    @Nullable private volatile FileWriter fileWriter;
+    private final FileWriter fileWriter;
 
     /** Performance statistics file I/O. */
-    private volatile FileIO fileIo;
+    private final FileIO fileIo;
 
     /** File write buffer. */
-    @Nullable private volatile SegmentedRingByteBuffer ringByteBuffer;
+    private final SegmentedRingByteBuffer ringByteBuffer;
 
     /** Count of written to buffer bytes. */
     private final AtomicInteger writtenToBuffer = new AtomicInteger();
@@ -103,89 +98,48 @@ public class FilePerformanceStatisticsWriter {
     /** Hashcodes of cached strings. */
     private final ConcurrentSkipListSet<Integer> cachedStrings = new ConcurrentSkipListSet<>();
 
-    /** Kernal context. */
-    private final GridKernalContext ctx;
-
     /** Logger. */
     private final IgniteLogger log;
 
     /** @param ctx Kernal context. */
-    public FilePerformanceStatisticsWriter(GridKernalContext ctx) {
+    public FilePerformanceStatisticsWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
         log = ctx.log(getClass());
 
-        this.ctx = ctx;
+        File file = statisticsFile(ctx);
+
+        U.delete(file);
+
+        fileIo = fileIoFactory.create(file);
+
+        log.info("Performance statistics file created [file=" + file.getAbsolutePath() + ']');
+
+        ringByteBuffer = new SegmentedRingByteBuffer(DFLT_BUFFER_SIZE, DFLT_FILE_MAX_SIZE,
+            SegmentedRingByteBuffer.BufferMode.DIRECT);
+
+        fileWriter = new FileWriter(ctx, log);
     }
 
     /** Starts collecting performance statistics. */
     public void start() {
-        synchronized (this) {
-            if (enabled)
-                return;
-
-            enabled = true;
-
-            try {
-                File file = statisticsFile(ctx);
-
-                U.delete(file);
-
-                fileIo = fileIoFactory.create(file);
-
-                ringByteBuffer = new SegmentedRingByteBuffer(DFLT_BUFFER_SIZE, DFLT_FILE_MAX_SIZE,
-                    SegmentedRingByteBuffer.BufferMode.DIRECT);
-
-                ringByteBuffer.init(0);
-
-                fileWriter = new FileWriter(ctx, log);
-
-                new IgniteThread(fileWriter).start();
-
-                log.info("Performance statistics writer started [file=" + file.getAbsolutePath() + ']');
-            }
-            catch (IOException | IgniteCheckedException e) {
-                log.error("Failed to start performance statistics writer.", e);
-
-                stopStatistics();
-
-                throw new IgniteException("Failed to start performance statistics writer.", e);
-            }
-        }
+        new IgniteThread(fileWriter).start();
     }
 
     /** Stops collecting performance statistics. */
     public void stop() {
-        synchronized (this) {
-            if (!enabled)
-                return;
+        // Stop accepting new records.
+        ringByteBuffer.close();
 
-            enabled = false;
+        U.awaitForWorkersStop(Collections.singleton(fileWriter), true, log);
 
-            FileWriter fileWriter = this.fileWriter;
+        // Make sure that all producers released their buffers to safe deallocate memory (in case of worker
+        // stopped abnormally).
+        ringByteBuffer.poll();
 
-            // Make sure that all buffer's producers released to safe deallocate memory.
-            if (fileWriter != null)
-                U.awaitForWorkersStop(Collections.singleton(fileWriter), true, log);
+        ringByteBuffer.free();
 
-            SegmentedRingByteBuffer buf = ringByteBuffer;
+        U.closeQuiet(fileIo);
 
-            if (buf != null) {
-                buf.close();
-
-                // Make sure that all producers released their buffers to safe deallocate memory.
-                buf.poll();
-
-                buf.free();
-            }
-
-            U.closeQuiet(fileIo);
-
-            writtenToBuffer.set(0);
-            smallBufLogged.set(false);
-            stopByMaxSize.set(false);
-            cachedStrings.clear();
-
-            log.info("Performance statistics writer stopped.");
-        }
+        cachedStrings.clear();
     }
 
     /**
@@ -340,21 +294,9 @@ public class FilePerformanceStatisticsWriter {
      * @param writer Record writer.
      */
     private void doWrite(OperationType op, IntSupplier sizeSupplier, Consumer<ByteBuffer> writer) {
-        FileWriter fileWriter = this.fileWriter;
-
-        // Writer stopping.
-        if (fileWriter == null)
-            return;
-
         int size = sizeSupplier.getAsInt() + /*type*/ 1;
 
-        SegmentedRingByteBuffer ringBuf = ringByteBuffer;
-
-        // Starting.
-        if (ringBuf == null)
-            return;
-
-        SegmentedRingByteBuffer.WriteSegment seg = ringBuf.offer(size);
+        SegmentedRingByteBuffer.WriteSegment seg = ringByteBuffer.offer(size);
 
         if (seg == null) {
             if (smallBufLogged.compareAndSet(false, true)) {
@@ -370,8 +312,6 @@ public class FilePerformanceStatisticsWriter {
             seg.release();
 
             if (!fileWriter.isCancelled() && stopByMaxSize.compareAndSet(false, true)) {
-                stopStatistics();
-
                 log.warning("The performance statistics file maximum size is reached. " +
                     "Performance statistics collecting will be stopped.");
             }
@@ -425,21 +365,6 @@ public class FilePerformanceStatisticsWriter {
         buf.putLong(uuid.localId());
     }
 
-    /** @return {@code True} if collecting performance statistics enabled. */
-    public boolean enabled() {
-        return enabled;
-    }
-
-    /** Stops collecting statistics in the cluster. */
-    void stopStatistics() {
-        try {
-            ctx.performanceStatistics().stopCollectStatistics();
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to stop performance statistics.", e);
-        }
-    }
-
     /** Worker to write to performance statistics file. */
     private class FileWriter extends GridWorker {
         /**
@@ -474,7 +399,7 @@ public class FilePerformanceStatisticsWriter {
 
                 flush();
             }
-            catch (InterruptedException | ClosedByInterruptException e) {
+            catch (InterruptedException e) {
                 try {
                     flush();
                 }
@@ -482,11 +407,11 @@ public class FilePerformanceStatisticsWriter {
                     // No-op.
                 }
             }
+            catch (ClosedByInterruptException ignored) {
+                // No-op.
+            }
             catch (IOException e) {
-                log.error("Unable to write to file. Performance statistics collecting will be stopped.", e);
-
-                if (!isCancelled())
-                    stopStatistics();
+                log.error("Unable to write to the performance statistics file.", e);
             }
         }
 

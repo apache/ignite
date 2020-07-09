@@ -23,8 +23,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -42,14 +40,23 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     public static final long TIMEOUT = 30_000;
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PERFORMANCE_STAT_DIR, false));
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
         stopAllGrids();
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PERFORMANCE_STAT_DIR, false));
     }
 
     /** Starts collecting performance statistics. */
-    public static void startCollectStatistics() throws Exception {
+    protected static void startCollectStatistics() throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
@@ -62,7 +69,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** Stops collecting performance statistics and checks listeners on all grids. */
-    public static void stopCollectStatisticsAndCheck(LogListener... lsnrs) throws Exception {
+    protected static void stopCollectStatisticsAndCheck(LogListener... lsnrs) throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
@@ -73,35 +80,36 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         waitForStatisticsEnabled(false);
 
-        ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
+        assertTrue(waitForCondition(() -> {
+            ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
 
-        for (LogListener lsnr : lsnrs)
-            log.registerListener(lsnr);
+            for (LogListener lsnr : lsnrs) {
+                lsnr.reset();
 
-        readToLog(log);
+                log.registerListener(lsnr);
+            }
 
-        for (LogListener lsnr : lsnrs)
-            assertTrue(lsnr.check());
+            try {
+                readToLog(log);
+            }
+            catch (Exception e) {
+                fail("Failed to read file.");
+            }
+
+            for (LogListener lsnr : lsnrs)
+                if (!lsnr.check()) return false;
+
+            return true;
+        }, TIMEOUT));
     }
 
     /** Wait for statistics enabled/disabled. */
-    public static void waitForStatisticsEnabled(boolean enabled) throws IgniteInterruptedCheckedException {
+    protected static void waitForStatisticsEnabled(boolean enabled) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
             List<Ignite> grids = G.allGrids();
 
             for (Ignite grid : grids) {
                 if (enabled != ((IgniteEx)grid).context().performanceStatistics().enabled())
-                    return false;
-
-                GridWorker fileWriter = GridTestUtils.getFieldValue(
-                    ((IgniteEx)grid).context().performanceStatistics(), "writer", "fileWriter");
-
-                // Make sure writer started.
-                if (enabled && (fileWriter == null || fileWriter.runner() == null))
-                    return false;
-
-                // Make sure writer stopped.
-                if (!enabled && fileWriter != null && !fileWriter.isDone())
                     return false;
             }
 

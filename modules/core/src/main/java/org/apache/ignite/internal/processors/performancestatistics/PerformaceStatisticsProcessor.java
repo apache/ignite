@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 
@@ -44,16 +46,17 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     private static final String STAT_ENABLED_PREFIX = "performanceStatistics.enabled";
 
     /** Performance statistics writer. */
-    private final FilePerformanceStatisticsWriter writer;
+    @Nullable private volatile FilePerformanceStatisticsWriter writer;
+
+    /** Performance statistics enabled flag. */
+    private volatile boolean enabled;
 
     /** Metastorage with the write access. */
-    private volatile DistributedMetaStorage metastorage;
+    @Nullable private volatile DistributedMetaStorage metastorage;
 
     /** @param ctx Kernal context. */
     public PerformaceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
-
-        writer = new FilePerformanceStatisticsWriter(ctx);
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
@@ -85,9 +88,69 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         });
     }
 
-    /** @return {@code True} if collecting performance statistics is enabled. */
-    public boolean enabled() {
-        return writer.enabled();
+    /**
+     * @param type Operation type.
+     * @param cacheId Cache id.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in nanoseconds.
+     */
+    public void cacheOperation(OperationType type, int cacheId, long startTime, long duration) {
+        write(writer -> writer.cacheOperation(type, cacheId, startTime, duration));
+    }
+
+    /**
+     * @param cacheIds Cache IDs.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in nanoseconds.
+     * @param commited {@code True} if commited.
+     */
+    public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commited) {
+        write(writer -> writer.transaction(cacheIds, startTime, duration, commited));
+    }
+
+    /**
+     * @param type Cache query type.
+     * @param text Query text in case of SQL query. Cache name in case of SCAN query.
+     * @param id Query id.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in nanoseconds.
+     * @param success Success flag.
+     */
+    public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
+        write(writer -> writer.query(type, text, id, startTime, duration, success));
+    }
+
+    /**
+     * @param type Cache query type.
+     * @param queryNodeId Originating node id.
+     * @param id Query id.
+     * @param logicalReads Number of logical reads.
+     * @param physicalReads Number of physical reads.
+     */
+    public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads, long physicalReads) {
+        write(writer -> writer.queryReads(type, queryNodeId, id, logicalReads, physicalReads));
+    }
+
+    /**
+     * @param sesId Session id.
+     * @param taskName Task name.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration.
+     * @param affPartId Affinity partition id.
+     */
+    public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
+        write(writer -> writer.task(sesId, taskName, startTime, duration, affPartId));
+    }
+
+    /**
+     * @param sesId Session id.
+     * @param queuedTime Time job spent on waiting queue.
+     * @param startTime Start time in milliseconds.
+     * @param duration Job execution time.
+     * @param timedOut {@code True} if job is timed out.
+     */
+    public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
+        write(writer -> writer.job(sesId, queuedTime, startTime, duration, timedOut));
     }
 
     /**
@@ -115,90 +178,77 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         metastorage.write(STAT_ENABLED_PREFIX, false);
     }
 
-    /**
-     * @param type Operation type.
-     * @param cacheId Cache id.
-     * @param startTime Start time in milliseconds.
-     * @param duration Duration in nanoseconds.
-     */
-    public void cacheOperation(OperationType type, int cacheId, long startTime, long duration) {
-        writer.cacheOperation(type, cacheId, startTime, duration);
-    }
-
-    /**
-     * @param cacheIds Cache IDs.
-     * @param startTime Start time in milliseconds.
-     * @param duration Duration in nanoseconds.
-     * @param commited {@code True} if commited.
-     */
-    public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commited) {
-        writer.transaction(cacheIds, startTime, duration, commited);
-    }
-
-    /**
-     * @param type Cache query type.
-     * @param text Query text in case of SQL query. Cache name in case of SCAN query.
-     * @param id Query id.
-     * @param startTime Start time in milliseconds.
-     * @param duration Duration in nanoseconds.
-     * @param success Success flag.
-     */
-    public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
-        writer.query(type, text, id, startTime, duration, success);
-    }
-
-    /**
-     * @param type Cache query type.
-     * @param queryNodeId Originating node id.
-     * @param id Query id.
-     * @param logicalReads Number of logical reads.
-     * @param physicalReads Number of physical reads.
-     */
-    public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads, long physicalReads) {
-        writer.queryReads(type, queryNodeId, id, logicalReads, physicalReads);
-    }
-
-    /**
-     * @param sesId Session id.
-     * @param taskName Task name.
-     * @param startTime Start time in milliseconds.
-     * @param duration Duration.
-     * @param affPartId Affinity partition id.
-     */
-    public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
-        writer.task(sesId, taskName, startTime, duration, affPartId);
-    }
-
-    /**
-     * @param sesId Session id.
-     * @param queuedTime Time job spent on waiting queue.
-     * @param startTime Start time in milliseconds.
-     * @param duration Job execution time.
-     * @param timedOut {@code True} if job is timed out.
-     */
-    public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
-        writer.job(sesId, queuedTime, startTime, duration, timedOut);
+    /** @return {@code True} if collecting performance statistics is enabled. */
+    public boolean enabled() {
+        return enabled;
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         if (enabled())
-            writer.stop();
+            stopWriter();
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         if (enabled())
-            writer.stop();
+            stopWriter();
     }
 
     /** Starts or stops collecting statistics on metastorage update. */
     private void onMetastorageUpdate(boolean start) {
         ctx.closure().runLocalSafe(() -> {
             if (start)
-                writer.start();
+                startWriter();
             else
-                writer.stop();
+                stopWriter();
         });
+    }
+
+    /** Starts performance statistics writer. */
+    private void startWriter() {
+        try {
+            synchronized (this) {
+                if (enabled)
+                    return;
+
+                writer = new FilePerformanceStatisticsWriter(ctx);
+
+                writer.start();
+
+                enabled = true;
+            }
+
+            log.info("Performance statistics writer started.");
+        }
+        catch (Exception e) {
+            log.error("Failed to start performance statistics writer.", e);
+
+            stopWriter();
+        }
+    }
+
+    /** Stops performance statistics writer. */
+    private void stopWriter() {
+        synchronized (this) {
+            if (!enabled)
+                return;
+
+            enabled = false;
+
+            writer.stop();
+
+            writer = null;
+
+            log.info("Performance statistics writer stopped.");
+        }
+    }
+
+    /** Writes statistics. */
+    private void write(Consumer<FilePerformanceStatisticsWriter> c) {
+        FilePerformanceStatisticsWriter writer = this.writer;
+
+        if (writer != null)
+            c.accept(writer);
     }
 }
