@@ -61,16 +61,6 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 return;
             }
 
-            if (Enlistment.Value != null)
-            {
-                // We are already enlisted.
-                // .NET transaction mechanism allows nested transactions,
-                // and they can be processed differently depending on TransactionScopeOption.
-                // Ignite, however, allows only one active transaction per thread.
-                // Therefore we enlist only once on the first transaction that we encounter.
-                return;
-            }
-
             var ambientTx = System.Transactions.Transaction.Current;
 
             if (ambientTx != null && ambientTx.TransactionInformation.Status == TransactionStatus.Active)
