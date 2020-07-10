@@ -224,6 +224,7 @@ import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExcept
 import org.apache.ignite.internal.processors.query.SqlMergeOnClientNodeTest;
 import org.apache.ignite.internal.processors.query.SqlMergeTest;
 import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
+import org.apache.ignite.internal.processors.query.SqlNotNullKeyValueFieldTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelfTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistorySelfTest;
@@ -520,6 +521,7 @@ import org.junit.runners.Suite;
     IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest.class,
     IgniteCacheDistributedPartitionQueryConfigurationSelfTest.class,
     IgniteSqlKeyValueFieldsTest.class,
+    SqlNotNullKeyValueFieldTest.class,
     IgniteSqlRoutingTest.class,
     IgniteSqlNotNullConstraintTest.class,
     LongIndexNameTest.class,
