@@ -1236,11 +1236,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param part Partition.
      * @return Event buffer.
      */
-    private CacheContinuousQueryEventBuffer partitionBuffer(final GridCacheContext cctx, int part) {
+    CacheContinuousQueryEventBuffer partitionBuffer(final GridCacheContext cctx, int part) {
         CacheContinuousQueryEventBuffer buf = entryBufs.get(part);
 
         if (buf == null) {
-            buf = new CacheContinuousQueryEventBuffer(part) {
+            buf = new CacheContinuousQueryEventBuffer(part, ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY)) {
                 @Override protected long currentPartitionCounter(boolean backup) {
                     GridDhtLocalPartition locPart = cctx.topology().localPartition(part, null, false);
 
