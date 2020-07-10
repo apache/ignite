@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     /// Cache transaction enlistment manager, 
     /// allows using Ignite transactions via standard <see cref="TransactionScope"/>.
     /// </summary>
-    internal class ClientCacheTransactionManager : IEnlistmentNotification
+    internal class ClientCacheTransactionManager : ISinglePhaseNotification
     {
         /** */
         private readonly IClientTransactionsInternal _transactions;
@@ -123,6 +123,22 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             Debug.Assert(enlistment != null);
 
             enlistment.Done();
+        }
+        
+        void ISinglePhaseNotification.SinglePhaseCommit(SinglePhaseEnlistment enlistment)
+        {
+            Debug.Assert(enlistment != null);
+
+            var igniteTx = _transactions.CurrentTx;
+
+            if (igniteTx != null && _enlistment.Value != null)
+            {
+                igniteTx.Commit();
+                igniteTx.Dispose();
+                _enlistment.Value = null;
+            }
+
+            enlistment.Committed();
         }
     }
 }
