@@ -160,8 +160,8 @@ public class ExchangeLatchManager {
 
         serverLatches.put(latchUid, latch);
 
-        if (log.isDebugEnabled())
-            log.debug("Server latch is created [latch=" + latchUid + ", participantsSize=" + participants.size() + "]");
+        if (log.isInfoEnabled())
+            log.info("Server latch is created [latch=" + latchUid + ", participantsSize=" + participants.size() + "]");
 
         if (pendingAcks.containsKey(latchUid)) {
             Set<UUID> acks = pendingAcks.get(latchUid);
@@ -192,8 +192,8 @@ public class ExchangeLatchManager {
 
         ClientLatch latch = new ClientLatch(latchUid, coordinator, participants);
 
-        if (log.isDebugEnabled())
-            log.debug("Client latch is created [latch=" + latchUid
+        if (log.isInfoEnabled())
+            log.info("Client latch is created [latch=" + latchUid
                 + ", crd=" + coordinator
                 + ", participantsSize=" + participants.size() + "]");
 
@@ -257,8 +257,8 @@ public class ExchangeLatchManager {
                 if (latchUid.topVer.equals(topVer)) {
                     ClientLatch latch = clientLatches.remove(latchUid);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Dropping client latch [id=" + latchUid + ", latch=" + latch + ']');
+                    if (log.isInfoEnabled())
+                        log.info("Dropping client latch [id=" + latchUid + ", latch=" + latch + ']');
 
                     pendingAcks.remove(latchUid);
                 }
@@ -391,8 +391,8 @@ public class ExchangeLatchManager {
                 return;
 
             if (message.isFinal()) {
-                if (log.isDebugEnabled())
-                    log.debug("Process final ack [latch=" + latchUid + ", from=" + from + "]");
+                if (log.isInfoEnabled())
+                    log.info("Process final ack [latch=" + latchUid + ", from=" + from + "]");
 
                 assert serverLatches.containsKey(latchUid) || clientLatches.containsKey(latchUid);
 
@@ -403,8 +403,8 @@ public class ExchangeLatchManager {
                 }
             }
             else {
-                if (log.isDebugEnabled())
-                    log.debug("Process ack [latch=" + latchUid + ", from=" + from + "]");
+                if (log.isInfoEnabled())
+                    log.info("Process ack [latch=" + latchUid + ", from=" + from + "]");
 
                 if (serverLatches.containsKey(latchUid)) {
                     ServerLatch latch = serverLatches.get(latchUid);
@@ -470,8 +470,8 @@ public class ExchangeLatchManager {
         lock.lock();
 
         try {
-            if (log.isDebugEnabled())
-                log.debug("Process node left " + left.id());
+            if (log.isInfoEnabled())
+                log.info("Process node left " + left.id());
 
             ClusterNode coordinator = getLatchCoordinator(topVer);
 
@@ -515,8 +515,8 @@ public class ExchangeLatchManager {
                 ServerLatch latch = latchEntry.getValue();
 
                 if (latch.hasParticipant(left.id()) && !latch.hasAck(left.id())) {
-                    if (log.isDebugEnabled())
-                        log.debug("Process node left [latch=" + latchEntry.getKey() + ", left=" + left.id() + "]");
+                    if (log.isInfoEnabled())
+                        log.info("Process node left [latch=" + latchEntry.getKey() + ", left=" + left.id() + "]");
 
                     latch.ack(left.id());
                 }
@@ -552,13 +552,13 @@ public class ExchangeLatchManager {
                     GridIoPolicy.SYSTEM_POOL
                 );
 
-                if (log.isDebugEnabled())
-                    log.debug("Ack has sent [latch=" + latchUid + ", final=" + finalAck + ", to=" + nodeId + "]");
+                if (log.isInfoEnabled())
+                    log.info("Ack has sent [latch=" + latchUid + ", final=" + finalAck + ", to=" + nodeId + "]");
             }
         }
         catch (IgniteCheckedException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send ack [latch=" + latchUid + ", final=" + finalAck + ", to=" + nodeId +
+            if (log.isInfoEnabled())
+                log.info("Failed to send ack [latch=" + latchUid + ", final=" + finalAck + ", to=" + nodeId +
                     ", err=" + e.getMessage() + ']');
         }
     }
@@ -611,8 +611,8 @@ public class ExchangeLatchManager {
          * @param from Node.
          */
         private void ack(UUID from) {
-            if (log.isDebugEnabled())
-                log.debug("Ack is accepted [latch=" + latchId() + ", from=" + from + "]");
+            if (log.isInfoEnabled())
+                log.info("Ack is accepted [latch=" + latchId() + ", from=" + from + "]");
 
             countDown0(from);
         }
@@ -630,16 +630,16 @@ public class ExchangeLatchManager {
 
             int remaining = permits.decrementAndGet();
 
-            if (log.isDebugEnabled())
-                log.debug("Count down [latch=" + latchId() + ", remaining=" + remaining + "]");
+            if (log.isInfoEnabled())
+                log.info("Count down [latch=" + latchId() + ", remaining=" + remaining + "]");
 
             if (remaining == 0) {
                 complete();
 
                 serverLatches.remove(id);
 
-                if (log.isDebugEnabled())
-                    log.debug("Dropping server latch [id=" + id + ", latch=" + this + ']');
+                if (log.isInfoEnabled())
+                    log.info("Dropping server latch [id=" + id + ", latch=" + this + ']');
             }
         }
 
@@ -698,8 +698,8 @@ public class ExchangeLatchManager {
          */
         private void newCoordinator(ClusterNode coordinator) {
             synchronized (this) {
-                if (log.isDebugEnabled())
-                    log.debug("Coordinator is changed [latch=" + latchId() + ", newCrd=" + coordinator.id() +
+                if (log.isInfoEnabled())
+                    log.info("Coordinator is changed [latch=" + latchId() + ", newCrd=" + coordinator.id() +
                         ", ackSent=" + ackSent + "]");
 
                 this.coordinator = coordinator;
