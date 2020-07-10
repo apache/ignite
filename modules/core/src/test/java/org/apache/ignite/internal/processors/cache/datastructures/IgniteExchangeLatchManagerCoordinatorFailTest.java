@@ -293,7 +293,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
             U.sleep(10);
 
             if (hasErrors.get())
-                throw new Exception("All nodes should complete latches without errors");
+                throw new Exception("All nodes should complete shared latch without errors");
         }
 
         latchCrd.close();
