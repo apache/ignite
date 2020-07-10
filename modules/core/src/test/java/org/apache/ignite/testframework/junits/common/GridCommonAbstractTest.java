@@ -1906,7 +1906,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                     topEx.retryReadyFuture().get();
                 }
-                else
+                else if (!(e.getCause() instanceof TransactionRollbackException))
                     throw e;
             }
             catch (ClusterTopologyException e) {
