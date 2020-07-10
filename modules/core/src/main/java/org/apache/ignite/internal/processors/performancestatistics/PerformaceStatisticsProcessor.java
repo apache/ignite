@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -39,7 +40,10 @@ import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 /**
  * Performance statistics processor.
  * <p>
- * Manages collecting statistics.
+ * Manages collecting performance statistics.
+ *
+ * @see FilePerformanceStatisticsWriter
+ * @see FilePerformanceStatisticsReader
  */
 public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     /** Prefix for performance statistics enabled property name. */
@@ -164,6 +168,9 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         if (!allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.PERFORMANCE_STATISTICS))
             throw new IllegalStateException("Not all nodes in the cluster support collecting performance statistics.");
 
+        if (ctx.isStopping())
+            throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
+
         metastorage.write(STAT_ENABLED_PREFIX, true);
     }
 
@@ -174,6 +181,9 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
      */
     public void stopCollectStatistics() throws IgniteCheckedException {
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
+
+        if (ctx.isStopping())
+            throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
         metastorage.write(STAT_ENABLED_PREFIX, false);
     }
@@ -217,9 +227,9 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
                 writer.start();
 
                 enabled = true;
-            }
 
-            log.info("Performance statistics writer started.");
+                log.info("Performance statistics writer started.");
+            }
         }
         catch (Exception e) {
             log.error("Failed to start performance statistics writer.", e);
@@ -242,7 +252,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         }
     }
 
-    /** Writes statistics. */
+    /** Writes statistics through passed writer. */
     private void write(Consumer<FilePerformanceStatisticsWriter> c) {
         FilePerformanceStatisticsWriter writer = this.writer;
 

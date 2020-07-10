@@ -311,10 +311,8 @@ public class FilePerformanceStatisticsWriter {
         if (seg.buffer() == null) {
             seg.release();
 
-            if (!fileWriter.isCancelled() && stopByMaxSize.compareAndSet(false, true)) {
-                log.warning("The performance statistics file maximum size is reached. " +
-                    "Performance statistics collecting will be stopped.");
-            }
+            if (!fileWriter.isCancelled() && stopByMaxSize.compareAndSet(false, true))
+                log.warning("The performance statistics file maximum size is reached.");
 
             return;
         }

@@ -18,7 +18,6 @@
 package org.apache.ignite.mxbean;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
@@ -27,13 +26,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 @IgniteExperimental
 @MXBeanDescription("MBean provide access to performance statistics management.")
 public interface PerformanceStatisticsMBean {
-    /**
-     * Start collecting performance statistics in the cluster with default settings.
-     *
-     * @see FilePerformanceStatisticsWriter#DFLT_FILE_MAX_SIZE
-     * @see FilePerformanceStatisticsWriter#DFLT_BUFFER_SIZE
-     * @see FilePerformanceStatisticsWriter#DFLT_FLUSH_SIZE
-     */
+    /** Start collecting performance statistics in the cluster. */
     @MXBeanDescription("Start collecting performance statistics in the cluster.")
     public void start() throws IgniteCheckedException;
 
