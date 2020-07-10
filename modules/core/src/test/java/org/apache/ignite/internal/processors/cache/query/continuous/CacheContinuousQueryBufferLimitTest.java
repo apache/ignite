@@ -80,7 +80,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     private static final int TOTAL_KEYS = 1024;
 
     /** Maximum of keys processed by CQ to check buffer being overflowed. */
-    private static final long OVERFLOW_KEYS_COUNT = MAX_PENDING_BUFF_SIZE * 5;
+    private static final long OVERFLOW_KEYS_COUNT = MAX_PENDING_BUFF_SIZE * 3;
 
     /** Default remote no-op filter. */
     private static final CacheEntryEventSerializableFilter<Integer, Integer> RMT_FILTER = e -> true;
@@ -162,16 +162,13 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             awaitPartitionMapExchange();
 
             loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
-                while (!Thread.currentThread().isInterrupted()) {
+                while (!Thread.currentThread().isInterrupted())
                     cache.put(keys.incrementAndGet(), 0);
-
-                    doSleep(10);
-                }
             }, 6, "cq-put-");
 
             // Entries are checked by CacheEntryUpdatedListener which has been set to CQ. Check that all
             // entries greater than pending limit filtered correctly (entries are sent to client on buffer overflow).
-            boolean await = waitForCondition(() -> keys.get() > OVERFLOW_KEYS_COUNT, 15_000);
+            boolean await = waitForCondition(() -> keys.get() > OVERFLOW_KEYS_COUNT, 30_000);
 
             assertTrue("Number of keys to put must reach the limit [keys=" + keys.get() +
                 ", limit=" + OVERFLOW_KEYS_COUNT + ']', await);
