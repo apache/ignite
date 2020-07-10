@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -93,18 +92,18 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** Wait for statistics started/stopped in the cluster. */
-    protected static void waitForStatisticsEnabled(boolean enabled) throws IgniteInterruptedCheckedException {
+    protected static void waitForStatisticsEnabled(boolean performanceStatsEnabled) throws Exception {
         assertTrue(waitForCondition(() -> {
             List<Ignite> grids = G.allGrids();
 
             for (Ignite grid : grids) {
                 GridKernalContext ctx = ((IgniteEx)grid).context();
 
-                if (enabled != ctx.performanceStatistics().enabled())
+                if (performanceStatsEnabled != ctx.performanceStatistics().enabled())
                     return false;
 
                 // Make sure that writer flushed data and stopped.
-                if (!enabled)
+                if (!performanceStatsEnabled)
                     return U.field(ctx.performanceStatistics(), "writer") == null;
             }
 

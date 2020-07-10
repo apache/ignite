@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
  */
 public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     /** Prefix for performance statistics enabled property name. */
-    private static final String STAT_ENABLED_PREFIX = "performanceStatistics.enabled";
+    private static final String PERFORMANCE_STAT_ENABLED_PREFIX = "performanceStatistics.enabled";
 
     /** Performance statistics writer. */
     @Nullable private volatile FilePerformanceStatisticsWriter writer;
@@ -65,7 +65,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
             @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-                metastorage.listen(STAT_ENABLED_PREFIX::equals, (key, oldVal, newVal) -> {
+                metastorage.listen(PERFORMANCE_STAT_ENABLED_PREFIX::equals, (key, oldVal, newVal) -> {
                     // Skip history on local join.
                     if (!ctx.discovery().localJoinFuture().isDone())
                         return;
@@ -78,12 +78,12 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
                 PerformaceStatisticsProcessor.this.metastorage = metastorage;
 
                 try {
-                    Boolean start = metastorage.read(STAT_ENABLED_PREFIX);
+                    Boolean performanceStatsEnabled = metastorage.read(PERFORMANCE_STAT_ENABLED_PREFIX);
 
-                    if (start == null)
+                    if (performanceStatsEnabled == null)
                         return;
 
-                    onMetastorageUpdate(start);
+                    onMetastorageUpdate(performanceStatsEnabled);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -171,7 +171,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
-        metastorage.write(STAT_ENABLED_PREFIX, true);
+        metastorage.write(PERFORMANCE_STAT_ENABLED_PREFIX, true);
     }
 
     /**
@@ -185,7 +185,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
-        metastorage.write(STAT_ENABLED_PREFIX, false);
+        metastorage.write(PERFORMANCE_STAT_ENABLED_PREFIX, false);
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */
