@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache info DTO.
@@ -78,6 +79,10 @@ public class CacheInfo extends VisorDataTransferObject {
 
     /** Affinity class name. */
     private String affinityClsName;
+
+    /** Cache size. */
+    @Nullable
+    private Long cacheSize;
 
     /** */
     public String getSeqName() {
@@ -322,11 +327,11 @@ public class CacheInfo extends VisorDataTransferObject {
                 map.put("atomicity", getAtomicityMode());
                 map.put("backups", getBackupsCnt());
                 map.put("affCls", getAffinityClsName());
-
+                map.put("cacheSize", getCacheSize());
                 break;
 
             default:
-                map = new LinkedHashMap<>(10);
+                map = new LinkedHashMap<>(11);
 
                 map.put("cacheName", getCacheName());
                 map.put("cacheId", getCacheId());
@@ -338,6 +343,7 @@ public class CacheInfo extends VisorDataTransferObject {
                 map.put("atomicity", getAtomicityMode());
                 map.put("backups", getBackupsCnt());
                 map.put("affCls", getAffinityClsName());
+                map.put("cacheSize", getCacheSize());
         }
 
         return map;
@@ -345,7 +351,7 @@ public class CacheInfo extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V2;
+        return V3;
     }
 
     /** {@inheritDoc} */
@@ -364,6 +370,7 @@ public class CacheInfo extends VisorDataTransferObject {
         U.writeString(out, affinityClsName);
         out.writeInt(cachesCnt);
         U.writeEnum(out, atomicityMode);
+        out.writeObject(cacheSize);
     }
 
     /** {@inheritDoc} */
@@ -382,10 +389,26 @@ public class CacheInfo extends VisorDataTransferObject {
         affinityClsName = U.readString(in);
         cachesCnt = in.readInt();
         atomicityMode = protoVer >= V2 ? CacheAtomicityMode.fromOrdinal(in.readByte()) : null;
+        cacheSize = protoVer >= V3 ? (Long)in.readObject() : null;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheInfo.class, this);
+    }
+
+    /**
+     * Set off-heap size for Cache
+     * @param cacheSize Set off-heapcount.
+     */
+    public void setCacheSize(@Nullable Long cacheSize) {
+        this.cacheSize = cacheSize;
+    }
+
+    /**
+     * Get off-heap entries count
+     */
+    public @Nullable Long getCacheSize() {
+        return cacheSize;
     }
 }

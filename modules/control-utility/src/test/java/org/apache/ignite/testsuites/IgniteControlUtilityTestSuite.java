@@ -19,20 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.processors.security.GridCommandHandlerSslWithSecurityTest;
-import org.apache.ignite.util.GridCommandHandlerBrokenIndexTest;
-import org.apache.ignite.util.GridCommandHandlerCheckIndexesInlineSizeTest;
-import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
-import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassWithSSLTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingWithSSLTest;
-import org.apache.ignite.util.GridCommandHandlerMetadataTest;
-import org.apache.ignite.util.GridCommandHandlerSslTest;
-import org.apache.ignite.util.GridCommandHandlerTest;
-import org.apache.ignite.util.GridCommandHandlerWithSSLTest;
-import org.apache.ignite.util.KillCommandsCommandShTest;
+import org.apache.ignite.util.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -59,6 +46,7 @@ import org.junit.runners.Suite;
     GridCommandHandlerIndexingCheckSizeTest.class,
     GridCommandHandlerCheckIndexesInlineSizeTest.class,
     GridCommandHandlerMetadataTest.class,
+    GridCommandHandlerGetCacheSizeTest.class,
 
     KillCommandsCommandShTest.class,
 })

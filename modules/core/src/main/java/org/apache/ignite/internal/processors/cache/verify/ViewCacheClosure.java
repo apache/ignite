@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -32,7 +33,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.AtomicDataStructureValue;
 import org.apache.ignite.internal.processors.datastructures.DataStructureType;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -102,6 +105,18 @@ public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
                     ci.setAtomicityMode(context.config().getAtomicityMode());
                     ci.setMapped(mapped(context.caches().iterator().next().name()));
 
+                    GridCacheProcessor cacheProcessor = k.context().cache();
+
+                    long sizeSummary = 0L;
+
+                    for (GridCacheContext cacheContext : context.caches()) {
+                        String nameInGrp = cacheContext.cache().name();
+                        IgniteCache<Object, Object> cache = cacheProcessor.jcache(nameInGrp);
+                        sizeSummary += cache.sizeLong();
+                    }
+
+                    ci.setCacheSize(sizeSummary);
+
                     cacheInfo.add(ci);
                 }
 
@@ -128,6 +143,11 @@ public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
                     ci.setMode(desc.cacheConfiguration().getCacheMode());
                     ci.setAtomicityMode(desc.cacheConfiguration().getAtomicityMode());
                     ci.setMapped(mapped(desc.cacheName()));
+
+                    GridCacheProcessor cacheProcessor = k.context().cache();
+                    IgniteCache<Object, Object> cache = cacheProcessor.jcache(ci.getCacheName());
+
+                    ci.setCacheSize(cache.sizeLong());
 
                     cacheInfo.add(ci);
                 }
