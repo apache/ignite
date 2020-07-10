@@ -162,9 +162,12 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             awaitPartitionMapExchange();
 
             loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
-                while (!Thread.currentThread().isInterrupted())
+                while (!Thread.currentThread().isInterrupted()) {
                     cache.put(keys.incrementAndGet(), 0);
-            }, 3, "cq-put-");
+
+                    doSleep(10);
+                }
+            }, 6, "cq-put-");
 
             // Entries are checked by CacheEntryUpdatedListener which has been set to CQ. Check that all
             // entries greater than pending limit filtered correctly (entries are sent to client on buffer overflow).
@@ -253,7 +256,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             updFut = GridTestUtils.runMultiThreadedAsync(() -> {
                 while (!Thread.currentThread().isInterrupted())
                     cache.put(keys.incrementAndGet(), 0);
-            }, 3, "cq-put-");
+            }, 5, "cq-put-");
 
             assertNotNull("Partition remote buffers must be inited", pending);
 
