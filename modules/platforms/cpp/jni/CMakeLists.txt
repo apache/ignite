@@ -29,13 +29,21 @@ if (WIN32)
     list(APPEND SOURCES os/win/src/utils.cpp)
 else()
     list(APPEND SOURCES os/linux/src/utils.cpp)
-endif ()
+endif()
 
 add_library(${TARGET} SHARED ${SOURCES})
 
 set_target_properties(${TARGET} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 
 target_link_libraries(${TARGET} ignite-common ${JVM_LIBRARY})
+
+if (WIN32)
+    target_link_libraries(${TARGET} delayimp)
+
+    set_target_properties(${TARGET} PROPERTIES LINK_FLAGS "/DELAYLOAD:jvm.dll")
+	
+	set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.jni")
+endif()
 
 target_include_directories(${TARGET} INTERFACE include)
 

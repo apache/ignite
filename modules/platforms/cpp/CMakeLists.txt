@@ -42,6 +42,10 @@ if (WIN32)
     add_definitions(-DUNICODE=1)
 
     add_compile_options(/source-charset:utf-8)
+
+    set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()
 
 option (WITH_ODBC OFF)
