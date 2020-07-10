@@ -251,6 +251,8 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(5);
         awaitPartitionMapExchange();
 
+        log.info("DBG: started");
+
         IgniteEx latchCrd = grid(LATCH_CRD_INDEX);
 
         // Latch to synchronize node states.
