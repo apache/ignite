@@ -17,10 +17,9 @@
 
 package org.apache.ignite.platform.dotnet;
 
+import java.util.Map;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleBean;
-
-import java.util.Map;
 
 /**
  * Lifecycle bean implementation which can be used to configure .Net lifecycle beans in Java Spring configuration.
