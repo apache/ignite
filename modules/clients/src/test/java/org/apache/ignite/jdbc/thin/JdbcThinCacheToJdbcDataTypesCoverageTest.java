@@ -300,6 +300,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13238")
     @Test
     @Override public void testInstantDataType() throws Exception {
         asPreparedParam = true;
