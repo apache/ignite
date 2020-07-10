@@ -130,7 +130,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     public void testContinuousQueryPendingBufferLimit() throws Exception {
         doTestContinuousQueryPendingBufferLimit((n, msg) ->
             (cachePutOperationRequestMessage(msg) && msgCntr.getAndIncrement() == 10) ||
-                msg instanceof CacheContinuousQueryBatchAck, (int)(MAX_PENDING_BUFF_SIZE * 1.1));
+                msg instanceof CacheContinuousQueryBatchAck, (int)(MAX_PENDING_BUFF_SIZE * 1.2));
     }
 
     /** @throws Exception If fails. */
@@ -251,16 +251,16 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
             spi(locIgnite).blockMessages(locBlockPred);
 
             updFut = GridTestUtils.runMultiThreadedAsync(() -> {
-                while (!Thread.currentThread().isInterrupted())
+                while (keys.get() <= OVERFLOW_KEYS_COUNT)
                     cache.put(keys.incrementAndGet(), 0);
-            }, 5, "cq-put-");
+            }, 3, "cq-put-");
 
             assertNotNull("Partition remote buffers must be inited", pending);
 
             log.warning("Waiting for pending buffer being overflowed within " + OVERFLOW_KEYS_COUNT +
                 " number of keys.");
 
-            boolean await = waitForCondition(() -> pending.size() > pendingLimit, () -> keys.get() < OVERFLOW_KEYS_COUNT);
+            boolean await = waitForCondition(() -> pending.size() > pendingLimit, () -> keys.get() <= OVERFLOW_KEYS_COUNT);
 
             assertFalse("Pending buffer exceeded the limit despite entries have been acked " +
                     "[lastAcked=" + lastAcked + ", pending=" + S.compact(pending.keySet(), i -> i + 1) + ']',
