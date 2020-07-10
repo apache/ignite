@@ -159,9 +159,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
 
         startGrids(5);
         awaitPartitionMapExchange();
-        //waitForLatchesCleanup();
-
-        doSleep(1000);
+        waitForLatchesCleanup();
     }
 
     /** {@inheritDoc} */
