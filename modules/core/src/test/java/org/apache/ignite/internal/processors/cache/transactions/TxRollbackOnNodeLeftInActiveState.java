@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -31,6 +30,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -189,7 +189,7 @@ public class TxRollbackOnNodeLeftInActiveState extends GridCommonAbstractTest {
 
             assertTrue(t2 - t1 < TX_TIMEOUT / 100); // Interrupted immediately!
 
-            assertThrows(log, tx::commit, IgniteException.class, null);
+            assertThrows(log, tx::commit, TransactionRollbackException.class, null);
         }
 
         primaryNodeStoppedFut.get();
@@ -213,9 +213,9 @@ public class TxRollbackOnNodeLeftInActiveState extends GridCommonAbstractTest {
 
             Thread.sleep(500);
 
-            assertThrows(log, operation, IgniteException.class, String.format(NODE_LEFT_ROLLBACK_MSG, partPrimaryNodeId, partPrimaryNodeConsistentId));
+            assertThrows(log, operation, TransactionRollbackException.class, String.format(NODE_LEFT_ROLLBACK_MSG, partPrimaryNodeId, partPrimaryNodeConsistentId));
 
-            assertThrows(log, tx::commit, IgniteException.class, null);
+            assertThrows(log, tx::commit, TransactionRollbackException.class, null);
         }
 
         primaryNodeStoppedFut.get();
