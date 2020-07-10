@@ -46,7 +46,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// <summary>
         /// If ambient transaction is present, starts an Ignite transaction and enlists it.
         /// </summary>
-        /// <param name="label">Label.</param>
         public void StartTxIfNeeded()
         {
             if (_transactions.CurrentTx != null)
