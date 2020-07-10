@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.util.EnumSet;
 
 /**
- * Operation type.
+ * Performance statistics operation type.
  */
 public enum OperationType {
     /** Cache get. */

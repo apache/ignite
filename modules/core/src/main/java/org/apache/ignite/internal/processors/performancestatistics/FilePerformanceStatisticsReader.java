@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -261,7 +262,7 @@ public class FilePerformanceStatisticsReader {
                 boolean needReadString = buf.get() != 0;
                 int strId = buf.getInt();
 
-                String str;
+                String text;
 
                 if (needReadString) {
                     int textLength = buf.getInt();
@@ -269,23 +270,23 @@ public class FilePerformanceStatisticsReader {
                     if (buf.remaining() < textLength + 8 + 8 + 8 + 1)
                         return false;
 
-                    str = readString(buf, textLength);
+                    text = readString(buf, textLength);
 
-                    stringById.putIfAbsent(strId, str);
+                    stringById.putIfAbsent(strId, text);
                 }
                 else
-                    str = stringById.get(strId);
+                    text = stringById.get(strId);
 
                 long id = buf.getLong();
                 long startTime = buf.getLong();
                 long duration = buf.getLong();
                 boolean success = buf.get() != 0;
 
-                if (str == null)
+                if (text == null)
                     return true;
 
                 for (PerformanceStatisticsHandler handler : handlers)
-                    handler.query(nodeId, queryType, str, id, startTime, duration, success);
+                    handler.query(nodeId, queryType, text, id, startTime, duration, success);
 
                 return true;
             }
@@ -356,7 +357,7 @@ public class FilePerformanceStatisticsReader {
                 return true;
             }
             else
-                throw new RuntimeException("Unknown operation type id [typeId=" + opTypeByte + ']');
+                throw new IgniteException("Unknown operation type id [typeId=" + opTypeByte + ']');
         }
 
         /** Reads string from byte buffer. */

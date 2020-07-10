@@ -56,8 +56,6 @@ import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationEx
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBeanTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordSerializationTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
-import org.apache.ignite.internal.performancestatistics.PerformanceStatisticsMBeanSelfTest;
-import org.apache.ignite.internal.performancestatistics.PerformanceStatisticsSelfTest;
 import org.apache.ignite.internal.processors.DeadLockOnNodeLeftExchangeTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
@@ -298,10 +296,7 @@ import org.junit.runners.Suite;
 
     ClusterActivationStartedEventTest.class,
 
-    IgniteThreadGroupNodeRestartTest.class,
-
-    PerformanceStatisticsSelfTest.class,
-    PerformanceStatisticsMBeanSelfTest.class
+    IgniteThreadGroupNodeRestartTest.class
 })
 public class IgniteBasicTestSuite {
 }
