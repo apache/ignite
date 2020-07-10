@@ -25,7 +25,6 @@ import io.opencensus.trace.Tracing;
 import io.opencensus.trace.export.SpanExporter;
 import io.opencensus.trace.samplers.Samplers;
 import org.apache.ignite.internal.tracing.TracingSpiType;
-import org.apache.ignite.opencensus.spi.tracing.OpenCensusTraceExporter;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;

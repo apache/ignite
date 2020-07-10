@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.opencensus.spi.metric;
+package org.apache.ignite.spi.metric.opencensus;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;

@@ -16,11 +16,7 @@
  */
 
 /**
- *
- */
-package org.apache.ignite.opencensus.spi.metric;
-
-/**
  * <!-- Package description. -->
- * Contains Opencensus based implementation of MetricExporterSpi.
+ * Contains API for OpenCensus Tracing framework integration.
  */
+package org.apache.ignite.spi.tracing.opencensus;

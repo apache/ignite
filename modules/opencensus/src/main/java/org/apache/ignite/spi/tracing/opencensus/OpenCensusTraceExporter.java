@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.opencensus.spi.tracing;
+package org.apache.ignite.spi.tracing.opencensus;
 
 import io.opencensus.trace.Tracing;
 import io.opencensus.trace.export.SpanExporter;
