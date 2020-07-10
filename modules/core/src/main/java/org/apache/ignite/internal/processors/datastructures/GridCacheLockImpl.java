@@ -48,11 +48,11 @@ import org.apache.ignite.IgniteLock;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -634,8 +634,9 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
                             }
                             catch (Exception e) {
                                 if (interruptAll) {
-                                    log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
-                                        " aborting transaction.");
+                                    if (log.isInfoEnabled())
+                                        log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
+                                            " aborting transaction.");
 
                                     // Abort this attempt to synchronize queue and start another one,
                                     // that will return immediately.
@@ -1159,6 +1160,9 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
         try {
             initializeReentrantLock();
+
+            if (sync == null)
+                throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
 
             sync.lock();
 

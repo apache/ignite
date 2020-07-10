@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -35,13 +41,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Cursor;
 import org.h2.result.Row;
 import org.h2.value.Value;
-
-import javax.cache.CacheException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;

@@ -295,7 +295,8 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         if (threads == 0)
             threads = permits = 1;
 
-        log.info("Evict partition permits=" + permits);
+        if (log.isInfoEnabled())
+            log.info("Evict partition permits=" + permits);
 
         evictionQueue = new BucketQueue(threads);
     }
@@ -420,8 +421,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         private void awaitFinish(Integer part, IgniteInternalFuture<?> fut) {
             // Wait for last offered partition eviction completion
             try {
-                log.info("Await partition evict, grpName=" + grp.cacheOrGroupName() +
-                    ", grpId=" + grp.groupId() + ", partId=" + part);
+                if (log.isInfoEnabled())
+                    log.info("Await partition evict, grpName=" + grp.cacheOrGroupName() +
+                        ", grpId=" + grp.groupId() + ", partId=" + part);
 
                 fut.get();
             }
@@ -442,6 +444,13 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                     ", partsEvictInProgress=" + taskInProgress +
                     ", totalParts=" + grp.topology().localPartitions().size() + "]");
         }
+    }
+
+    /**
+     * Awaits all futures.
+     */
+    public void awaitFinishAll() {
+        evictionGroupsMap.values().forEach(GroupEvictionContext::awaitFinishAll);
     }
 
     /**
@@ -506,7 +515,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                 finishFut.onDone(ex);
 
                 if (cctx.kernalContext().isStopping()) {
-                    LT.warn(log, ex, "Partition eviction failed (current node is stopping).",
+                    LT.warn(log, ex, "Partition eviction failed (current node is stopping) " +
+                        "[grp=" + grpEvictionCtx.grp.cacheOrGroupName() +
+                        ", readyVer=" + grpEvictionCtx.grp.topology().readyTopologyVersion() + ']',
                         false,
                         true);
                 }

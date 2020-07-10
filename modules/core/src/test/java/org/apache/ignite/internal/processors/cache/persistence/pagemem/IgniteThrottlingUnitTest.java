@@ -28,9 +28,9 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.logger.NullLogger;
@@ -307,6 +307,8 @@ public class IgniteThrottlingUnitTest {
     public void warningInCaseTooMuchThrottling() {
         AtomicInteger warnings = new AtomicInteger(0);
         IgniteLogger log = mock(IgniteLogger.class);
+
+        when(log.isInfoEnabled()).thenReturn(true);
 
         doAnswer(invocation -> {
             Object[] args = invocation.getArguments();

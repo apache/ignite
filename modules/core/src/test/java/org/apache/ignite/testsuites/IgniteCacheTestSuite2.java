@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.IgniteAtomicCacheEntryProcess
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryProcessorNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheIncrementTxTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheNoSyncForGetTest;
+import org.apache.ignite.internal.processors.cache.IgniteCachePartitionMapUpdateSafeLossPolicyTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePartitionMapUpdateTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientCacheStartFailoverTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheAndNodeStop;
@@ -150,6 +151,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.NearCachePut
 import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheSyncUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.NoneRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedJobExecutionTest;
+import org.apache.ignite.internal.processors.cache.local.GridCacheFastNodeLeftForTransactionTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBasicStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalBasicApiSelfTest;
@@ -162,7 +164,6 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalIsolatedN
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalLoadAllSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalLockSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMultithreadedSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheFastNodeLeftForTransactionTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxReadTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxSingleThreadedSelfTest;
@@ -297,6 +298,7 @@ public class IgniteCacheTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheClientNodePartitionsExchangeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheClientNodeChangingTopologyTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheServerNodeConcurrentStart.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCachePartitionMapUpdateSafeLossPolicyTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheEntryProcessorNodeJoinTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteAtomicCacheEntryProcessorNodeJoinTest.class, ignoredTests);

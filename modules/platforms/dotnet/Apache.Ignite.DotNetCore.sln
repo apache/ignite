@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.DotNetCore", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Benchmarks.DotNetCore", "Apache.Ignite.Benchmarks\Apache.Ignite.Benchmarks.DotNetCore.csproj", "{4344AEB8-6772-4625-9445-2C4A224B7716}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.BenchmarkDotNet", "Apache.Ignite.BenchmarkDotNet\Apache.Ignite.BenchmarkDotNet.csproj", "{4ACD0487-0774-4705-8245-8D4F36A2F963}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{4344AEB8-6772-4625-9445-2C4A224B7716}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4344AEB8-6772-4625-9445-2C4A224B7716}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4344AEB8-6772-4625-9445-2C4A224B7716}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4ACD0487-0774-4705-8245-8D4F36A2F963}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4ACD0487-0774-4705-8245-8D4F36A2F963}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4ACD0487-0774-4705-8245-8D4F36A2F963}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4ACD0487-0774-4705-8245-8D4F36A2F963}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

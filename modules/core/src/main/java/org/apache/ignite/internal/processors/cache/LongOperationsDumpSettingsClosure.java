@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -37,7 +35,7 @@ public class LongOperationsDumpSettingsClosure implements IgniteRunnable {
 
     /** Auto-inject Ignite instance. */
     @IgniteInstanceResource
-    private Ignite ignite;
+    private IgniteEx ignite;
 
     /**
      * Constructor.
@@ -50,8 +48,6 @@ public class LongOperationsDumpSettingsClosure implements IgniteRunnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        ((IgniteEx)ignite).context().cache().context().tm().longOperationsDumpTimeout(longOpsDumpTimeout);
-
-        ((IgniteKernal)ignite).scheduleLongOperationsDumpTask(longOpsDumpTimeout);
+        ignite.context().cache().context().tm().longOperationsDumpTimeout(longOpsDumpTimeout);
     }
 }

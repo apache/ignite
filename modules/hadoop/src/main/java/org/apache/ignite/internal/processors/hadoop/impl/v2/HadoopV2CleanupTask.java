@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
+import java.io.IOException;
 import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.mapreduce.OutputCommitter;
@@ -24,8 +25,6 @@ import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
-
-import java.io.IOException;
 
 /**
  * Hadoop cleanup task (commits or aborts job).

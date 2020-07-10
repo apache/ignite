@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -67,15 +66,17 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
-import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
-import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
-import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterChangeStateRequest;
-import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterIsActiveRequest;
-import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
-import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGetStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodeIdsRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesDetailsRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesEndpointsRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
+import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
+import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 
 /**
  * Thin client message parser.
@@ -222,7 +223,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /* Cluster operations. */
     /** */
-    private static final short OP_CLUSTER_IS_ACTIVE = 5000;
+    private static final short OP_CLUSTER_GET_STATE = 5000;
 
     /** */
     private static final short OP_CLUSTER_CHANGE_STATE = 5001;
@@ -239,12 +240,18 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_CLUSTER_GROUP_GET_NODE_INFO = 5101;
 
+    /** */
+    private static final short OP_CLUSTER_GROUP_GET_NODE_ENDPOINTS = 5102;
+
     /* Compute operations. */
     /** */
     private static final short OP_COMPUTE_TASK_EXECUTE = 6000;
 
     /** */
     public static final short OP_COMPUTE_TASK_FINISHED = 6001;
+
+    /** Service invocation. */
+    private static final short OP_SERVICE_INVOKE = 7000;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -276,7 +283,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
         BinaryInputStream inStream = new BinaryHeapInputStream(msg);
 
         // skipHdrCheck must be true (we have 103 op code).
-        BinaryRawReaderEx reader = new BinaryReaderExImpl(marsh.context(), inStream,
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), inStream,
                 null, null, true, true);
 
         return decode(reader);
@@ -288,7 +295,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
      * @param reader Reader.
      * @return Request.
      */
-    public ClientListenerRequest decode(BinaryRawReaderEx reader) {
+    public ClientListenerRequest decode(BinaryReaderExImpl reader) {
         short opCode = reader.readShort();
 
         switch (opCode) {
@@ -423,8 +430,8 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_TX_END:
                 return new ClientTxEndRequest(reader);
 
-            case OP_CLUSTER_IS_ACTIVE:
-                return new ClientClusterIsActiveRequest(reader);
+            case OP_CLUSTER_GET_STATE:
+                return new ClientClusterGetStateRequest(reader);
 
             case OP_CLUSTER_CHANGE_STATE:
                 return new ClientClusterChangeStateRequest(reader);
@@ -441,8 +448,14 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_CLUSTER_GROUP_GET_NODE_INFO:
                 return new ClientClusterGroupGetNodesDetailsRequest(reader);
 
+            case OP_CLUSTER_GROUP_GET_NODE_ENDPOINTS:
+                return new ClientClusterGroupGetNodesEndpointsRequest(reader);
+
             case OP_COMPUTE_TASK_EXECUTE:
                 return new ClientExecuteTaskRequest(reader);
+
+            case OP_SERVICE_INVOKE:
+                return new ClientServiceInvokeRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

@@ -1,10 +1,13 @@
 # Apache Ignite
 
-<a href="https://ignite.apache.org/"><img src="https://github.com/apache/ignite-website/blob/master/images/Ignite_tm_Logo_black_RGB.svg" hspace="20"/></a>
+<a href="https://ignite.apache.org/"><img src="https://github.com/apache/ignite-website/blob/master/images/ignite_logo_full.svg" hspace="20"/></a>
 
-<a href="https://ci.ignite.apache.org/viewType.html?buildTypeId=IgniteTests24Java8_RunAll&branch_IgniteTests24Java8=%3Cdefault%3E"><img src="https://ci.ignite.apache.org/app/rest/builds/buildType:(id:IgniteTests24Java8_RunAll)/statusIcon.svg"/></a>
 [![Build Status](https://travis-ci.org/apache/ignite.svg?branch=master)](https://travis-ci.org/apache/ignite)
-
+[![GitHub](https://img.shields.io/github/license/apache/ignite?color=blue)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.apache.ignite/ignite-core/badge.svg)](https://search.maven.org/search?q=org.apache.ignite)
+[![GitHub release](https://img.shields.io/badge/release-download-brightgreen.svg)](https://ignite.apache.org/download.cgi)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/apache/ignite)
+[![Twitter Follow](https://img.shields.io/twitter/follow/ApacheIgnite?style=social)](https://twitter.com/ApacheIgnite)
 
 ## What is Apache Ignite?
 

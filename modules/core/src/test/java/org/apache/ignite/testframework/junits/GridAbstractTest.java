@@ -44,6 +44,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import javax.management.DynamicMBean;
@@ -158,7 +159,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_META_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
@@ -194,6 +194,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
     /** */
     private static final transient Map<Class<?>, IgniteTestResources> tests = new ConcurrentHashMap<>();
+
+    /** Loggers with changed log level for test's purposes. */
+    private static final transient Map<Logger, Level> changedLevels = new ConcurrentHashMap<>();
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
@@ -328,7 +331,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If failed.
      */
     protected void afterTest() throws Exception {
-        // No-op.
+        try {
+            for (Logger logger : changedLevels.keySet())
+                logger.setLevel(changedLevels.get(logger));
+        }
+        finally {
+            changedLevels.clear();
+        }
     }
 
     /**
@@ -433,6 +442,18 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             return IgniteNodeRunner.startedInstance().log();
 
         return log;
+    }
+
+    /**
+     * Sets the log level for root logger ({@link #log}) to {@link Level#DEBUG}. The log level will be resetted to
+     * default in {@link #afterTest()}.
+     */
+    protected final void setRootLoggerDebugLevel() {
+        Logger logger = Logger.getRootLogger();
+
+        assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, logger.getLevel()));
+
+        logger.setLevel(Level.DEBUG);
     }
 
     /**
@@ -643,15 +664,17 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Will clean and re-create marshaller directory from scratch.
      */
     private void resolveWorkDirectory() throws Exception {
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), BINARY_META_FOLDER, true);
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, true);
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, true);
     }
 
     /** */
     private void beforeFirstTest() throws Exception {
         sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
 
-        info(">>> Starting test class: " + testClassDescription() + " <<<");
+        clsLdr = Thread.currentThread().getContextClassLoader();
+
+        U.quietAndInfo(log(), ">>> Starting test class: " + testClassDescription() + " <<<");
 
         if (isSafeTopology())
             assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution:" + G.allGrids();
@@ -676,6 +699,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             t.printStackTrace();
 
             try {
+                // This is a very questionable solution.
                 cleanUpTestEnviroment();
             }
             catch (Exception e) {
@@ -696,7 +720,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private void cleanUpTestEnviroment() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
-        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+        U.quietAndInfo(log(),">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
 
         try {
             afterTest();
@@ -884,7 +908,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param cnt Grid count
      * @throws Exception If an error occurs.
      */
-    @SuppressWarnings({"BusyWait"})
     protected void checkTopology(int cnt) throws Exception {
         for (int j = 0; j < 10; j++) {
             boolean topOk = true;
@@ -964,6 +987,18 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Starts new grid with given index.
+     *
+     * @param idx Index of the grid to start.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(int idx, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
+        return startGrid(getTestIgniteInstanceName(idx), cfgOp);
+    }
+
+    /**
      * Starts new client grid with given index.
      *
      * @param idx Index of the grid to start.
@@ -1030,6 +1065,18 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Starts new grid with given name.
      *
      * @param igniteInstanceName Ignite instance name.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(String igniteInstanceName, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
+        return (IgniteEx)startGrid(igniteInstanceName, cfgOp, null);
+    }
+
+    /**
+     * Starts new grid with given name.
+     *
+     * @param igniteInstanceName Ignite instance name.
      * @param ctx Spring context.
      * @return Started grid.
      * @throws Exception If failed.
@@ -1058,6 +1105,24 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                     validateDataRegion(reg);
             }
         }
+    }
+
+    /**
+     * Starts new grid with given name.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @param ctx Spring context.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected Ignite startGrid(String igniteInstanceName, UnaryOperator<IgniteConfiguration> cfgOp, GridSpringResourceContext ctx) throws Exception {
+        IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName));
+
+        if (cfgOp != null)
+            cfg = cfgOp.apply(cfg);
+
+        return startGrid(igniteInstanceName, cfg, ctx);
     }
 
     /**
@@ -1220,7 +1285,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             if (discoverySpi != null && !(discoverySpi instanceof TcpDiscoverySpi)) {
                 try {
                     // Clone added to support ZookeeperDiscoverySpi.
-                    cfg.setDiscoverySpi(cloneDiscoverySpi(cfg.getDiscoverySpi()));
+                    cfg.setDiscoverySpi(cloneDiscoverySpi(discoverySpi));
 
                     resetDiscovery = false;
                 }
@@ -1251,7 +1316,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Additional JVM args for remote instances.
      */
     protected List<String> additionalRemoteJvmArgs() {
-        return Collections.emptyList();
+        return new ArrayList<>();
     }
 
     /**
@@ -1923,7 +1988,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
     /** */
     private void afterLastTest() throws Exception {
-        info(">>> Stopping test class: " + testClassDescription() + " <<<");
+        U.quietAndInfo(log(), ">>> Stopping test class: " + testClassDescription() + " <<<");
 
         Exception err = null;
 
@@ -2285,7 +2350,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         // Clear log throttle.
         LT.clear();
 
-        info(">>> Starting test: " + testDescription() + " <<<");
+        U.quietAndInfo(log(), ">>> Starting test: " + testDescription() + " <<<");
 
         try {
             beforeTest();

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.DataInput;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
@@ -24,10 +27,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.DataInput;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_CLOSED_WRITE;
 

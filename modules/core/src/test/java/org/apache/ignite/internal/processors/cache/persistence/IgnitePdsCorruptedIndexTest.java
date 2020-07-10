@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import javax.cache.Cache;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -26,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -77,7 +77,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
             .setCheckpointFrequency(10 * 60 * 1000)
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(512 * 1024 * 1024)
+                    .setMaxSize(256 * 1024 * 1024)
                     .setPersistenceEnabled(true)
             );
 
@@ -179,7 +179,13 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
 
         corruptedNode.cluster().active(true);
 
+        // Not all owners have been returned, data loss is expected.
+        assertFalse(grid(0).cache(CACHE).lostPartitions().isEmpty());
+        assertFalse(grid(corruptedNodeName).cache(CACHE).lostPartitions().isEmpty());
+
         resetBaselineTopology();
+
+        grid(0).resetLostPartitions(Collections.singleton(CACHE));
 
         // If index was corrupted, rebalance or one of the following queries should be failed.
         awaitPartitionMapExchange();

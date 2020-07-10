@@ -16,9 +16,13 @@
  */
 package org.apache.ignite.internal.processors.database.baseline;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest;
 
 /**
@@ -56,6 +60,36 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
         startGrid(gridCount() + 1);
 
         awaitPartitionMapExchange();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteInternalFuture createRestartAction(final AtomicBoolean done, final AtomicInteger restartCnt) throws Exception {
+        return multithreadedAsync(new Callable<Object>() {
+            /** */
+            private final int logFreq = 50;
+
+            @SuppressWarnings({"BusyWait"})
+            @Override public Object call() throws Exception {
+                while (!done.get()) {
+                    int idx = gridCount();
+
+                    startGrid(idx);
+
+                    stopGrid(idx);
+
+                    int c = restartCnt.incrementAndGet();
+
+                    if (c % logFreq == 0)
+                        info("Node restarts: " + c);
+                }
+
+                return true;
+            }
+        }, 1, "restart-thread");
+    }
+
+    @Override protected int countRebalances(int nodes, int restarts) {
+        return 0;
     }
 
     /** {@inheritDoc} */

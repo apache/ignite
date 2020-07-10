@@ -108,7 +108,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         // Daemon node should not open client port
         if (cfg.isDaemon()) {
-            log.debug("Client connection configuration ignored for daemon node.");
+            if (log.isDebugEnabled())
+                log.debug("Client connection configuration ignored for daemon node.");
 
             return;
         }
@@ -376,6 +377,76 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
+     *
+     */
+    public void closeAllSessions() {
+        Collection<? extends GridNioSession> sessions = srv.sessions();
+
+        for (GridNioSession ses : sessions) {
+            ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
+
+            if (connCtx == null || ses.closeTime() != 0)
+                continue; // Skip non-initialized or closed session.
+
+            srv.close(ses);
+
+            if (log.isInfoEnabled()) {
+                log.info("Client session has been dropped: "
+                    + clientConnectionDescription(ses, connCtx));
+            }
+        }
+    }
+
+    /**
+     * Compose connection description string.
+     * @param ses Client's NIO session.
+     * @param ctx Client's connection context.
+     * @return connection description.
+     */
+    @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
+    private static String clientConnectionDescription(
+        GridNioSession ses,
+        ClientListenerConnectionContext ctx
+    )
+    {
+        AuthorizationContext authCtx = ctx.authorizationContext();
+
+        StringBuilder sb = new StringBuilder();
+
+        if (ctx instanceof JdbcConnectionContext)
+            sb.append("JdbcClient [");
+        else if (ctx instanceof OdbcConnectionContext)
+            sb.append("OdbcClient [");
+        else
+            sb.append("ThinClient [");
+
+        InetSocketAddress rmtAddr = ses.remoteAddress();
+        InetSocketAddress locAddr = ses.localAddress();
+
+        assert rmtAddr != null;
+        assert locAddr != null;
+
+        String rmtAddrStr = rmtAddr.getHostString() + ":" + rmtAddr.getPort();
+        String locAddrStr = locAddr.getHostString() + ":" + locAddr.getPort();
+
+        String login;
+
+        if (authCtx != null)
+            login = authCtx.userName();
+        else if (ctx.securityContext() != null)
+            login = "@" + ctx.securityContext().subject().login();
+        else
+            login = "<anonymous>";
+
+        sb.append("id=" + ctx.connectionId());
+        sb.append(", user=").append(login);
+        sb.append(", rmtAddr=" + rmtAddrStr);
+        sb.append(", locAddr=" + locAddrStr);
+
+        return sb.append(']').toString();
+    }
+
+    /**
      * @return Server port.
      */
     public int port() {
@@ -425,11 +496,13 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 cliConnCfg.setTcpNoDelay(sqlConnCfg.isTcpNoDelay());
                 cliConnCfg.setThreadPoolSize(sqlConnCfg.getThreadPoolSize());
 
-                U.warn(log, "Automatically converted deprecated " + SqlConnectorConfiguration.class.getSimpleName() +
+                U.warn(log, "Automatically converted deprecated "
+                    + SqlConnectorConfiguration.class.getSimpleName() +
                     " to " + ClientConnectorConfiguration.class.getSimpleName() + ".");
 
                 if (odbcCfg != null) {
-                    U.warn(log, "Deprecated " + OdbcConfiguration.class.getSimpleName() + " will be ignored because " +
+                    U.warn(log, "Deprecated " + OdbcConfiguration.class.getSimpleName() +
+                        " will be ignored because " +
                         SqlConnectorConfiguration.class.getSimpleName() + " is set.");
                 }
             }
@@ -533,18 +606,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void dropAllConnections() {
-            Collection<? extends GridNioSession> sessions = srv.sessions();
-
-            for (GridNioSession ses : sessions) {
-                ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
-
-                if (connCtx == null || ses.closeTime() != 0)
-                    continue; // Skip non-initialized or closed session.
-
-                srv.close(ses);
-
-                log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
-            }
+            closeAllSessions();
         }
 
         /** {@inheritDoc} */
@@ -560,56 +622,25 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     continue;
 
                 if (ses.closeTime() != 0) {
-                    if (log.isDebugEnabled())
-                        log.debug("Client session is already closed: " + clientConnectionDescription(ses, connCtx));
+                    if (log.isDebugEnabled()) {
+                        log.debug("Client session is already closed: " +
+                            clientConnectionDescription(ses, connCtx));
+                    }
 
                     return false;
                 }
 
                 srv.close(ses);
 
-                log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
+                if (log.isInfoEnabled()) {
+                    log.info("Client session has been dropped: " +
+                        clientConnectionDescription(ses, connCtx));
+                }
 
                 return true;
             }
 
             return false;
-        }
-
-        /**
-         * Compose connection description string.
-         * @param ses client NIO session.
-         * @param ctx client connection context.
-         * @return connection description
-         */
-        @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
-        private String clientConnectionDescription(GridNioSession ses, ClientListenerConnectionContext ctx) {
-            AuthorizationContext authCtx = ctx.authorizationContext();
-
-            StringBuilder sb = new StringBuilder();
-
-            if (ctx instanceof JdbcConnectionContext)
-                sb.append("JdbcClient [");
-            else if (ctx instanceof OdbcConnectionContext)
-                sb.append("OdbcClient [");
-            else
-                sb.append("ThinClient [");
-
-            InetSocketAddress rmtAddr = ses.remoteAddress();
-            InetSocketAddress locAddr = ses.localAddress();
-
-            assert rmtAddr != null;
-            assert locAddr != null;
-
-            String rmtAddrStr = rmtAddr.getHostString() + ":" + rmtAddr.getPort();
-            String locAddrStr = locAddr.getHostString() + ":" + locAddr.getPort();
-
-            sb.append("id=" + ctx.connectionId());
-            sb.append(", user=").append(authCtx == null ? "<anonymous>" : authCtx.userName());
-            sb.append(", rmtAddr=" + rmtAddrStr);
-            sb.append(", locAddr=" + locAddrStr);
-
-            return sb.append(']').toString();
         }
     }
 }

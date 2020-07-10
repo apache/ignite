@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.igfs.secondary.local;
 
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 
 /**
  * Positioned readable interface for local secondary file system.

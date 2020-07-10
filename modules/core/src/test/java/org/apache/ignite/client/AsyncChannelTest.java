@@ -24,25 +24,22 @@ import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
  * Async channel tests.
  */
-public class AsyncChannelTest extends GridCommonAbstractTest {
+public class AsyncChannelTest extends AbstractThinClientTest {
     /** Nodes count. */
     private static final int NODES_CNT = 3;
 
@@ -51,9 +48,6 @@ public class AsyncChannelTest extends GridCommonAbstractTest {
 
     /** Cache name. */
     private static final String CACHE_NAME = "tx_cache";
-
-    /** Client connector address. */
-    private static final String CLIENT_CONN_ADDR = "127.0.0.1:" + ClientConnectorConfiguration.DFLT_PORT;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -75,7 +69,7 @@ public class AsyncChannelTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAsyncRequests() throws Exception {
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(CLIENT_CONN_ADDR))) {
+        try (IgniteClient client = startClient(0)) {
             Ignite ignite = grid(0);
 
             IgniteCache<Integer, Integer> igniteCache = ignite.cache(CACHE_NAME);
@@ -130,7 +124,7 @@ public class AsyncChannelTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConcurrentRequests() throws Exception {
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(CLIENT_CONN_ADDR))) {
+        try (IgniteClient client = startClient(0)) {
             ClientCache<Integer, Integer> clientCache = client.cache(CACHE_NAME);
 
             clientCache.clear();
@@ -164,7 +158,7 @@ public class AsyncChannelTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConcurrentQueries() throws Exception {
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(CLIENT_CONN_ADDR))) {
+        try (IgniteClient client = startClient(0)) {
             ClientCache<Integer, Integer> clientCache = client.cache(CACHE_NAME);
 
             clientCache.clear();

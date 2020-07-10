@@ -91,9 +91,6 @@ public class CacheGroupContext {
     /** Node ID cache group was received from. */
     private volatile UUID rcvdFrom;
 
-    /** Flag indicating that this cache group is in a recovery mode due to partitions loss. */
-    private boolean needsRecovery;
-
     /** */
     private volatile AffinityTopologyVersion locStartVer;
 
@@ -688,20 +685,6 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return Current cache state. Must only be modified during exchange.
-     */
-    public boolean needsRecovery() {
-        return needsRecovery;
-    }
-
-    /**
-     * @param needsRecovery Needs recovery flag.
-     */
-    public void needsRecovery(boolean needsRecovery) {
-        this.needsRecovery = needsRecovery;
-    }
-
-    /**
      * @return Topology version when group was started on local node.
      */
     public AffinityTopologyVersion localStartVersion() {
@@ -1240,8 +1223,9 @@ public class CacheGroupContext {
      */
     public void globalWalEnabled(boolean enabled) {
         if (globalWalEnabled != enabled) {
-            log.info("Global WAL state for group=" + cacheOrGroupName() +
-                " changed from " + globalWalEnabled + " to " + enabled);
+            if (log.isInfoEnabled())
+                log.info("Global WAL state for group=" + cacheOrGroupName() +
+                    " changed from " + globalWalEnabled + " to " + enabled);
 
             persistGlobalWalState(enabled);
 
@@ -1255,8 +1239,10 @@ public class CacheGroupContext {
      */
     public void localWalEnabled(boolean enabled, boolean persist) {
         if (localWalEnabled != enabled) {
-            log.info("Local WAL state for group=" + cacheOrGroupName() +
-                " changed from " + localWalEnabled + " to " + enabled);
+            if (log.isInfoEnabled()) {
+                log.info("Local WAL state for group=" + cacheOrGroupName() +
+                    " changed from " + localWalEnabled + " to " + enabled);
+            }
 
             if (persist)
                 persistLocalWalState(enabled);

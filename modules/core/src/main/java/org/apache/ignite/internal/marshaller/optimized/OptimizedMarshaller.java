@@ -100,6 +100,9 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
     /** Class descriptors by class. */
     private final ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap<>();
 
+    /** */
+    private OptimizedObjectStreamRegistry registry = new OptimizedObjectSharedStreamRegistry();
+
     /**
      * Creates new marshaller will all defaults.
      *
@@ -162,7 +165,9 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
      * @return {@code this} for chaining.
      */
     public OptimizedMarshaller setPoolSize(int poolSize) {
-        OptimizedObjectStreamRegistry.poolSize(poolSize);
+        registry = poolSize > 0 ?
+            new OptimizedObjectPooledStreamRegistry(poolSize) :
+            new OptimizedObjectSharedStreamRegistry();
 
         return this;
     }
@@ -174,7 +179,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         OptimizedObjectOutputStream objOut = null;
 
         try {
-            objOut = OptimizedObjectStreamRegistry.out();
+            objOut = registry.out();
 
             objOut.context(clsMap, ctx, mapper, requireSer);
 
@@ -186,7 +191,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
             throw new IgniteCheckedException("Failed to serialize object: " + obj, e);
         }
         finally {
-            OptimizedObjectStreamRegistry.closeOut(objOut);
+            registry.closeOut(objOut);
         }
     }
 
@@ -195,7 +200,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         OptimizedObjectOutputStream objOut = null;
 
         try {
-            objOut = OptimizedObjectStreamRegistry.out();
+            objOut = registry.out();
 
             objOut.context(clsMap, ctx, mapper, requireSer);
 
@@ -207,7 +212,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
             throw new IgniteCheckedException("Failed to serialize object: " + obj, e);
         }
         finally {
-            OptimizedObjectStreamRegistry.closeOut(objOut);
+            registry.closeOut(objOut);
         }
     }
 
@@ -218,7 +223,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         OptimizedObjectInputStream objIn = null;
 
         try {
-            objIn = OptimizedObjectStreamRegistry.in();
+            objIn = registry.in();
 
             objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
 
@@ -237,7 +242,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
                 "[clsLdr=" + clsLdr + ", err=" + e.getMessage() + "]", e);
         }
         finally {
-            OptimizedObjectStreamRegistry.closeIn(objIn);
+            registry.closeIn(objIn);
         }
     }
 
@@ -248,7 +253,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         OptimizedObjectInputStream objIn = null;
 
         try {
-            objIn = OptimizedObjectStreamRegistry.in();
+            objIn = registry.in();
 
             objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
 
@@ -265,7 +270,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
             throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
         }
         finally {
-            OptimizedObjectStreamRegistry.closeIn(objIn);
+            registry.closeIn(objIn);
         }
     }
 

@@ -46,6 +46,8 @@ public class IgniteDataStreamerTest extends GridCommonAbstractTest {
 
         startGrids(2);
         startClientGrid("client");
+
+        awaitPartitionMapExchange();
     }
 
     @Override protected void afterTest() throws Exception {
@@ -94,8 +96,10 @@ public class IgniteDataStreamerTest extends GridCommonAbstractTest {
                 //This should not throw any exception.
                 Object res = fut.get(WAIT_TIMEOUT);
 
-                //Printing future result to log to prevent jvm optimization
-                log.debug(res == null ? null : res.toString());
+                if (log.isDebugEnabled()) {
+                    //Printing future result to log to prevent jvm optimization
+                    log.debug(String.valueOf(res));
+                }
             }
 
             assertTrue(cache.size(ALL) == DATA_SIZE);

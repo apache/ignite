@@ -478,6 +478,10 @@ public class GridMapQueryExecutor {
                 nodeRess.remove(reqId, segmentId, qryResults);
 
                 qryResults.close();
+
+                // If a query is cancelled before execution is started partitions have to be released.
+                if (!lazy || !qryResults.isAllClosed())
+                    qryResults.releaseQueryContext();
             }
             else
                 releaseReservations(qctx);
@@ -668,7 +672,7 @@ public class GridMapQueryExecutor {
 
                     if (log.isDebugEnabled())
                         U.warn(log, errMsg, err);
-                    else
+                    else if (log.isInfoEnabled())
                         log.info(errMsg);
                 }
                 else

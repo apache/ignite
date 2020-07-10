@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
@@ -99,7 +101,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                         .setInitialSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                         .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                 )
-                    // Test verifies checkpoint count, so it is essencial that no checkpoint is triggered by timeout
+                // Test verifies checkpoint count, so it is essential that no checkpoint is triggered by timeout
                 .setCheckpointFrequency(999_999_999_999L)
                 .setWalMode(WALMode.LOG_ONLY)
                 .setFileIOFactory(new TestFileIOFactory(new DataStorageConfiguration().getFileIOFactory()))
@@ -108,7 +110,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                    // Test checks internal state before and after rebalance, so it is configured to be triggered manually
+                // Test checks internal state before and after rebalance, so it is configured to be triggered manually
                 .setRebalanceDelay(-1)
                 .setBackups(dfltCacheBackupCnt),
 
@@ -459,7 +461,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         for (Ignite g : G.allGrids())
             g.cache(REPL_CACHE).rebalance();
 
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(false, false, null, false, Collections.singleton(REPL_CACHE));
 
         for (int nodeIdx = 2; nodeIdx < nodeCnt; nodeIdx++) {
             CacheGroupContext grpCtx = grid(nodeIdx).cachex(REPL_CACHE).context().group();
@@ -518,9 +520,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         // Await fully exchange complete.
         awaitExchange(newIgnite);
-
-        for (Ignite g : G.allGrids())
-            g.cache(DEFAULT_CACHE_NAME).rebalance();
 
         assertFalse(grpCtx.walEnabled());
 
@@ -583,10 +582,20 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         for (int k = 0; k < keysCnt; k++)
             assertFalse("k=" + k + ", v=" + cache.get(k), cache.containsKey(k));
 
+        Collection<Integer> lostParts = cache.lostPartitions();
+
         Set<Integer> keys = new TreeSet<>();
 
-        for (int k = 0; k < keysCnt; k++)
+        for (int k = 0; k < keysCnt; k++) {
+            // Skip lost partitions.
+            if (lostParts.contains(newIgnite.affinity(DEFAULT_CACHE_NAME).partition(k)))
+                continue;
+
             keys.add(k);
+        }
+
+        for (Integer k : keys)
+            assertFalse("k=" + k + ", v=" + cache.get(k), cache.containsKey(k));
 
         assertFalse(cache.containsKeys(keys));
     }
@@ -617,6 +626,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         stopGrid(2);
 
         ignite.cluster().setBaselineTopology(5);
+
+        ignite.resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
 
         // Await fully exchange complete.
         awaitExchange((IgniteEx)ignite);
