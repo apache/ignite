@@ -397,14 +397,21 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
     public static class Account2 {
         /** */
         private Long id;
+
         /** */
         private String name2;
+
         /** */
         private Long Wamount2;
+
         /** */
         private Date updateDate2;
 
-        /** */
+        /**
+         * Constructor.
+         *
+         * @param id Account id.
+         */
         public Account2(Long id) {
             this.id = id;
 
