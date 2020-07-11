@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     /// <summary>
     /// Ignite Thin Client transaction facade.
     /// </summary>
-    internal class ClientTransaction: IClientTransactionInternal
+    internal class TransactionClient: ITransactionClientInternal
     {
         /** Unique  transaction ID.*/
         private readonly int _id;
@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// <param name="id">ID.</param>
         /// <param name="ignite"></param>
         /// <param name="socket"></param>
-        public ClientTransaction(int id, IgniteClient ignite, ClientSocket socket)
+        public TransactionClient(int id, IgniteClient ignite, ClientSocket socket)
         {
             _id = id;
             _ignite = ignite;
@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         }
 
         /** <inheritdoc /> */
-        ~ClientTransaction()
+        ~TransactionClient()
         {
             Dispose();
         }

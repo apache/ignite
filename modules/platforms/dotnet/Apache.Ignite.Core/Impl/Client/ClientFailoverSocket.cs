@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Marshaller. */
         private readonly Marshaller _marsh;
 
-        private readonly IClientTransactionsInternal _transactions;
+        private readonly ITransactionsClientInternal _transactions;
 
         /** Endpoints with corresponding hosts - from config. */
         private readonly List<SocketEndpoint> _endPoints;
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Client
         public ClientFailoverSocket(
             IgniteClientConfiguration config,
             Marshaller marsh,
-            IClientTransactionsInternal transactions)
+            ITransactionsClientInternal transactions)
         {
             Debug.Assert(config != null);
             Debug.Assert(marsh != null);

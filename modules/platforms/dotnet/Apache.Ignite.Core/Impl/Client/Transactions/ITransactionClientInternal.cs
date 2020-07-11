@@ -17,35 +17,18 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
-    using System;
     using Apache.Ignite.Core.Client.Transactions;
-    using Apache.Ignite.Core.Transactions;
 
-    internal interface IClientTransactionsInternal : IClientTransactions
+    internal interface ITransactionClientInternal : ITransactionClient
     {
         /// <summary>
-        /// Current thread transaction
+        /// Transaction ID.
         /// </summary>
-        IClientTransactionInternal CurrentTx { get; }
+        int Id { get; }
 
         /// <summary>
-        /// If ambient transaction is present, starts an Ignite transaction and enlists it.
+        /// Socket associated with transaction. 
         /// </summary>
-        void StartTxIfNeeded();
-
-        /// <summary>
-        /// Default transaction concurrency.
-        /// </summary>
-        TransactionConcurrency DefaultTxConcurrency {get;}
-
-        /// <summary>
-        /// Default transaction isolation.
-        /// </summary>
-        TransactionIsolation DefaultTxIsolation { get; }
-
-        /// <summary>
-        /// Default transaction timeout.
-        /// </summary>
-        TimeSpan DefaultTimeout { get; }
+        ClientSocket Socket { get; }
     }
 }

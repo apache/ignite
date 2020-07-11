@@ -67,8 +67,8 @@
     <Compile Include="Client\IgniteClientConfigurationSection.cs" />
     <Compile Include="Client\ISslStreamFactory.cs" />
     <Compile Include="Client\SslStreamFactory.cs" />
-    <Compile Include="Client\Transactions\IClientTransaction.cs" />
-    <Compile Include="Client\Transactions\IClientTransactions.cs" />
+    <Compile Include="Client\Transactions\ITransactionClient.cs" />
+    <Compile Include="Client\Transactions\ITransactionsClient.cs" />
     <Compile Include="Cluster\IBaselineNode.cs" />
     <Compile Include="Common\IgniteProductVersion.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />
@@ -124,11 +124,11 @@
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
     <Compile Include="Impl\Client\Transactions\ClientCacheTransactionManager.cs" />
-    <Compile Include="Impl\Client\Transactions\IClientTransactionInternal.cs" />
-    <Compile Include="Impl\Client\Transactions\IClientTransactionsInternal.cs" />
+    <Compile Include="Impl\Client\Transactions\ITransactionClientInternal.cs" />
+    <Compile Include="Impl\Client\Transactions\ITransactionsClientInternal.cs" />
     <Compile Include="Impl\Common\PlatformType.cs" />
-    <Compile Include="Impl\Client\Transactions\ClientTransaction.cs" />
-    <Compile Include="Impl\Client\Transactions\ClientTransactions.cs" />
+    <Compile Include="Impl\Client\Transactions\TransactionClient.cs" />
+    <Compile Include="Impl\Client\Transactions\TransactionsClient.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />
     <Compile Include="Impl\Compute\ComputeRunner.cs" />
     <Compile Include="Impl\IgniteLock.cs" />

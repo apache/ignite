@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     internal class ClientCacheTransactionManager : ISinglePhaseNotification
     {
         /** */
-        private readonly IClientTransactionsInternal _transactions;
+        private readonly ITransactionsClientInternal _transactions;
 
         /** */
         private readonly ThreadLocal<Enlistment> _enlistment = new ThreadLocal<Enlistment>();
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Initializes a new instance of <see cref="ClientCacheTransactionManager"/> class.
         /// </summary>
         /// <param name="transactions">Transactions.</param>
-        public ClientCacheTransactionManager(IClientTransactionsInternal transactions)
+        public ClientCacheTransactionManager(ITransactionsClientInternal transactions)
         {
             _transactions = transactions;
         }

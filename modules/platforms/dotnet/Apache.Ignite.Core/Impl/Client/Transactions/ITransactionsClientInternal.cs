@@ -15,23 +15,37 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Client.Transactions
+namespace Apache.Ignite.Core.Impl.Client.Transactions
 {
     using System;
+    using Apache.Ignite.Core.Client.Transactions;
+    using Apache.Ignite.Core.Transactions;
 
-    /// <summary>
-    /// Thin client transaction.
-    /// </summary>
-    public interface IClientTransaction : IDisposable
+    internal interface ITransactionsClientInternal : ITransactionsClient
     {
         /// <summary>
-        /// Commits this transaction.
+        /// Current thread transaction
         /// </summary>
-        void Commit();
+        ITransactionClientInternal CurrentTx { get; }
 
         /// <summary>
-        /// Rolls back this transaction.
+        /// If ambient transaction is present, starts an Ignite transaction and enlists it.
         /// </summary>
-        void Rollback();
+        void StartTxIfNeeded();
+
+        /// <summary>
+        /// Default transaction concurrency.
+        /// </summary>
+        TransactionConcurrency DefaultTxConcurrency {get;}
+
+        /// <summary>
+        /// Default transaction isolation.
+        /// </summary>
+        TransactionIsolation DefaultTxIsolation { get; }
+
+        /// <summary>
+        /// Default transaction timeout.
+        /// </summary>
+        TimeSpan DefaultTimeout { get; }
     }
 }

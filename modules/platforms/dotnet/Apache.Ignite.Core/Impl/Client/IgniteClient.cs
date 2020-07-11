@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly IgniteClientConfiguration _configuration;
 
         /** Transactions. */
-        private readonly ClientTransactions _transactions;
+        private readonly TransactionsClient _transactions;
 
         /** Node info cache. */
         private readonly ConcurrentDictionary<Guid, IClientClusterNode> _nodes =
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 Ignite = this
             };
 
-            _transactions = new ClientTransactions(this);
+            _transactions = new TransactionsClient(this);
 
             _socket = new ClientFailoverSocket(_configuration, _marsh, _transactions);
 
@@ -205,13 +205,13 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        IClientTransactions IIgniteClient.GetTransactions()
+        ITransactionsClient IIgniteClient.GetTransactions()
         {
             return _transactions;
         }
 
         /** Internal transactions representation. */
-        internal IClientTransactionsInternal Transactions
+        internal ITransactionsClientInternal Transactions
         {
             get { return _transactions; }
         }

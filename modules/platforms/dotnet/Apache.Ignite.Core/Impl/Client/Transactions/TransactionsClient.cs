@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
     /// <summary>
     /// Ignite Thin Client transactions facade.
     /// </summary>
-    internal class ClientTransactions : IClientTransactionsInternal, IDisposable
+    internal class TransactionsClient : ITransactionsClientInternal, IDisposable
     {
         /** Ignite. */
         private readonly IgniteClient _ignite;
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         private readonly TimeSpan _dfltTimeout = TimeSpan.Zero;
 
         /** Transaction for this thread and client. */
-        private readonly ThreadLocal<ClientTransaction> _currentTx = new ThreadLocal<ClientTransaction>();
+        private readonly ThreadLocal<TransactionClient> _currentTx = new ThreadLocal<TransactionClient>();
 
         /** Transaction manager. */
         private readonly ClientCacheTransactionManager _txManager;
@@ -54,14 +54,14 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Constructor.
         /// </summary>
         /// <param name="ignite">Ignite.</param>
-        public ClientTransactions(IgniteClient ignite)
+        public TransactionsClient(IgniteClient ignite)
         {
             _ignite = ignite;
             _txManager = new ClientCacheTransactionManager(this);
         }
 
         /** <inheritdoc /> */
-        public IClientTransactionInternal CurrentTx
+        public ITransactionClientInternal CurrentTx
         {
             get
             {
@@ -106,25 +106,25 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         }
 
         /** <inheritDoc /> */
-        public IClientTransaction TxStart()
+        public ITransactionClient TxStart()
         {
             return TxStart(_dfltConcurrency, _dfltIsolation);
         }
 
         /** <inheritDoc /> */
-        public IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation)
+        public ITransactionClient TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation)
         {
             return TxStart(concurrency, isolation, _dfltTimeout);
         }
 
         /** <inheritDoc /> */
-        public IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
+        public ITransactionClient TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
             TimeSpan timeout)
         {
             return TxStart(concurrency, isolation, timeout, null);
         }
 
-        private IClientTransaction TxStart(TransactionConcurrency concurrency,
+        private ITransactionClient TxStart(TransactionConcurrency concurrency,
             TransactionIsolation isolation,
             TimeSpan timeout,
             string label)
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
                     ctx.Writer.WriteTimeSpanAsLong(timeout);
                     ctx.Writer.WriteString(label);
                 },
-                ctx => new ClientTransaction(
+                ctx => new TransactionClient(
                     ctx.Reader.ReadInt(),
                     _ignite,
                     ctx.Socket)
@@ -154,11 +154,11 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         }
 
         /** <inheritDoc /> */
-        public IClientTransactions WithLabel(string label)
+        public ITransactionsClient WithLabel(string label)
         {
             IgniteArgumentCheck.NotNullOrEmpty(label, "label");
 
-            return new ClientTransactionsWithLabel(this, label); 
+            return new TransactionsClientWithLabel(this, label); 
         }
 
         /** <inheritDoc /> */
@@ -173,10 +173,10 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// <summary>
         /// Wrapper for transactions with label.
         /// </summary>
-        private class ClientTransactionsWithLabel : IClientTransactionsInternal
+        private class TransactionsClientWithLabel : ITransactionsClientInternal
         {
             /** Transactions. */
-            private readonly ClientTransactions _transactions;
+            private readonly TransactionsClient _transactions;
 
             /** Label. */
             private readonly string _label;
@@ -184,26 +184,26 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             /// <summary>
             /// Client transactions wrapper with label.
             /// </summary>
-            public ClientTransactionsWithLabel(ClientTransactions transactions, string label)
+            public TransactionsClientWithLabel(TransactionsClient transactions, string label)
             {
                 _transactions = transactions;
                 _label = label;
             }
 
             /** <inheritDoc /> */
-            public IClientTransaction TxStart()
+            public ITransactionClient TxStart()
             {
                 return TxStart(DefaultTxConcurrency, DefaultTxIsolation);
             }
 
             /** <inheritDoc /> */
-            public IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation)
+            public ITransactionClient TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation)
             {
                 return TxStart(concurrency, isolation, DefaultTimeout);
             }
 
             /** <inheritDoc /> */
-            public IClientTransaction TxStart(
+            public ITransactionClient TxStart(
                 TransactionConcurrency concurrency, 
                 TransactionIsolation isolation, 
                 TimeSpan timeout)
@@ -212,13 +212,13 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             }
 
             /** <inheritDoc /> */
-            public IClientTransactions WithLabel(string label)
+            public ITransactionsClient WithLabel(string label)
             {
-                return new ClientTransactionsWithLabel(_transactions, label);
+                return new TransactionsClientWithLabel(_transactions, label);
             }
 
             /** <inheritDoc /> */
-            public IClientTransactionInternal CurrentTx
+            public ITransactionClientInternal CurrentTx
             {
                 get { return _transactions.CurrentTx; }
             }
@@ -250,7 +250,7 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             }
 
             /** <inheritDoc /> */
-            public IClientTransaction TxStart(TransactionConcurrency concurrency,
+            public ITransactionClient TxStart(TransactionConcurrency concurrency,
                 TransactionIsolation isolation,
                 TimeSpan timeout,
                 string label)

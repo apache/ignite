@@ -384,7 +384,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestTransactionScopeOptions()
         {
             var cache = TransactionalCache();
-            var transactions = (IClientTransactionsInternal) Client.GetTransactions();
+            var transactions = (ITransactionsClientInternal) Client.GetTransactions();
 
             var modes = new[]
             {
@@ -516,7 +516,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 act(cache, 1);
 
-                Assert.IsNotNull(((IClientTransactionsInternal) Client.GetTransactions()).CurrentTx,
+                Assert.IsNotNull(((ITransactionsClientInternal) Client.GetTransactions()).CurrentTx,
                     "Transaction has not started.");
             }
         }
@@ -547,7 +547,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     act(cache, 1);
 
-                    Assert.IsNotNull(((IClientTransactionsInternal)Client.GetTransactions()).CurrentTx,
+                    Assert.IsNotNull(((ITransactionsClientInternal)Client.GetTransactions()).CurrentTx,
                         "Transaction has not started.");
                 }
 

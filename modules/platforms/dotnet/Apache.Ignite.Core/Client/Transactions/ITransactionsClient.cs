@@ -23,13 +23,13 @@ namespace Apache.Ignite.Core.Client.Transactions
     /// <summary>
     /// Ignite Thin Client transactions facade.
     /// </summary>
-    public interface IClientTransactions
+    public interface ITransactionsClient
     {
         /// <summary>
         /// Starts a new transaction with the default isolation level, concurrency and timeout. 
         /// </summary>
         /// <returns>New transaction.</returns>
-        IClientTransaction TxStart();
+        ITransactionClient TxStart();
 
         /// <summary>
         /// Starts new transaction with the specified concurrency and isolation.
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Client.Transactions
         /// <param name="concurrency">Concurrency.</param>
         /// <param name="isolation">Isolation.</param>
         /// <returns>New transaction.</returns>
-        IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation);
+        ITransactionClient TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation);
 
         /// <summary>
         /// Starts new transaction with the specified concurrency, isolation and timeout.
@@ -46,13 +46,13 @@ namespace Apache.Ignite.Core.Client.Transactions
         /// <param name="isolation">Isolation.</param>
         /// <param name="timeout">Timeout. TimeSpan. Zero for indefinite timeout.</param>
         /// <returns>New transaction.</returns>
-        IClientTransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation, TimeSpan timeout);
+        ITransactionClient TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation, TimeSpan timeout);
 
         /// <summary>
-        /// Returns instance of <see cref="IClientTransactions"/>> to mark a transaction with a special label.
+        /// Returns instance of <see cref="ITransactionsClient"/>> to mark a transaction with a special label.
         /// </summary>
         /// <param name="label"></param>
         /// <returns><see cref="T:Apache.Ignite.Core.Client.Transactions.IClientTransactions" /></returns>
-        IClientTransactions WithLabel(string label);
+        ITransactionsClient WithLabel(string label);
     }
 }
