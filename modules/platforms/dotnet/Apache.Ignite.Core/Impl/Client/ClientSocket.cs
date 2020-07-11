@@ -252,12 +252,18 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Adds a notification handler.
         /// </summary>
         /// <param name="notificationId">Notification id.</param>
-        /// <param name="handler">Handler delegate.</param>
-        public void AddNotificationHandler(long notificationId, ClientNotificationHandler.Handler handler)
+        /// <param name="handlerDelegate">Handler delegate.</param>
+        public void AddNotificationHandler(long notificationId, ClientNotificationHandler.Handler handlerDelegate)
         {
-            _notificationListeners.AddOrUpdate(notificationId,
-                _ => new ClientNotificationHandler(_logger, handler),
-                (_, oldHandler) => oldHandler.SetHandler(handler));
+            var handler = _notificationListeners.GetOrAdd(notificationId,
+                _ => new ClientNotificationHandler(_logger, handlerDelegate));
+
+            if (!handler.HasHandler)
+            {
+                // We could use AddOrUpdate, but SetHandler must be called outside of Update call,
+                // because it causes handler execution, which, in turn, may call RemoveNotificationHandler.
+                handler.SetHandler(handlerDelegate);
+            }
 
             _listenerEvent.Set();
         }
@@ -269,6 +275,11 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <returns>True when removed, false otherwise.</returns>
         public void RemoveNotificationHandler(long notificationId)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             ClientNotificationHandler unused;
             var removed = _notificationListeners.TryRemove(notificationId, out unused);
             Debug.Assert(removed);

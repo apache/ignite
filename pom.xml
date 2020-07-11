@@ -94,6 +94,7 @@
         <module>modules/ml/xgboost-model-parser</module>
         <module>modules/ml/h2o-model-parser</module>
         <module>modules/opencensus</module>
+        <module>modules/control-utility</module>
     </modules>
 
     <profiles>
@@ -205,6 +206,27 @@
                                 </goals>
                                 <phase>validate</phase>
                                 <configuration>
+                                    <additionalDependencies>
+                                        <!--
+                                        Only the last version of spring data is included to class path, some classes
+                                        required by old spring data modules are absent in this version.
+                                        Add spring-data-2.0 explicitly to be able to find all required classes.
+                                        -->
+                                        <dependency>
+                                            <groupId>org.springframework.data</groupId>
+                                            <artifactId>spring-data-commons</artifactId>
+                                            <version>${spring.data-2.0.version}</version>
+                                        </dependency>
+                                    </additionalDependencies>
+                                    <!--
+                                    For some reason maven-javadoc-plugin 3.0+ doesn't include taglet artifact from
+                                    parent configuration to -tagletpath javadoc parameter.
+                                    -->
+                                    <tagletArtifact>
+                                        <groupId>org.apache.ignite</groupId>
+                                        <artifactId>ignite-tools</artifactId>
+                                        <version>${project.version}</version>
+                                    </tagletArtifact>
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
                                     <subpackages>org.apache.ignite -exclude org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.communication.tcp.internal:org.apache.ignite.spi.discovery.zk.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>

@@ -64,6 +64,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
@@ -78,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -89,6 +91,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -97,6 +100,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -121,6 +125,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
@@ -232,6 +237,37 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(ACTIVE, ignite.cluster().state());
 
         assertContains(log, testOut.toString(), "Cluster state changed to ACTIVE");
+    }
+
+    /**
+     * Verifies that update-tag action obeys its specification: doesn't allow updating tag on inactive cluster,
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterChangeTag() throws Exception {
+        final String newTag = "new_tag";
+
+        IgniteEx cl = startGrid(0);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--change-tag", newTag));
+
+        String out = testOut.toString();
+
+        //because cluster is inactive
+        assertTrue(out.contains("Error has occurred during tag update:"));
+
+        cl.cluster().active(true);
+
+        //because new tag should be non-empty string
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--change-tag", ""));
+
+        assertEquals(EXIT_CODE_OK, execute("--change-tag", newTag));
+
+        boolean tagUpdated = GridTestUtils.waitForCondition(() -> newTag.equals(cl.cluster().tag()), 10_000);
+        assertTrue("Tag has not been updated in 10 seconds", tagUpdated);
     }
 
     /**
@@ -399,6 +435,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testState() throws Exception {
+        final String newTag = "new_tag";
+
         Ignite ignite = startGrids(1);
 
         assertFalse(ignite.cluster().active());
@@ -408,6 +446,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
         assertContains(log, testOut.toString(), "Cluster is inactive");
+
+        String out = testOut.toString();
+
+        UUID clId = ignite.cluster().id();
+        String clTag = ignite.cluster().tag();
+
+        assertTrue(out.contains("Cluster  ID: " + clId));
+        assertTrue(out.contains("Cluster tag: " + clTag));
 
         ignite.cluster().active(true);
 
@@ -426,6 +472,25 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
         assertContains(log, testOut.toString(), "Cluster is active (read-only)");
+
+        boolean tagUpdated = GridTestUtils.waitForCondition(() -> {
+            try {
+                ignite.cluster().tag(newTag);
+            }
+            catch (IgniteCheckedException e) {
+                return false;
+            }
+
+            return true;
+        }, 10_000);
+
+        assertTrue("Tag has not been updated in 10 seconds.", tagUpdated);
+
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        out = testOut.toString();
+
+        assertTrue(out.contains("Cluster tag: " + newTag));
     }
 
     /**
@@ -2165,5 +2230,36 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), startCli.cache(DEFAULT_CACHE_NAME),
             snpName -> assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", snpName)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
+    public void testCleaningGarbageAfterCacheDestroyedAndNodeStop_ControlConsoleUtil() throws Exception {
+        new IgniteCacheGroupsWithRestartsTest().testFindAndDeleteGarbage(this::executeTaskViaControlConsoleUtil);
+    }
+
+    /**
+     * @param ignite Ignite to execute task on.
+     * @param delFoundGarbage If clearing mode should be used.
+     * @return Result of task run.
+     */
+    private VisorFindAndDeleteGarbageInPersistenceTaskResult executeTaskViaControlConsoleUtil(
+        IgniteEx ignite,
+        boolean delFoundGarbage
+    ) {
+        CommandHandler hnd = new CommandHandler();
+
+        List<String> args = new ArrayList<>(Arrays.asList("--yes", "--port", "11212", "--cache", "find_garbage",
+            ignite.localNode().id().toString()));
+
+        if (delFoundGarbage)
+            args.add(FindAndDeleteGarbageArg.DELETE.argName());
+
+        hnd.execute(args);
+
+        return hnd.getLastOperationResult();
     }
 }

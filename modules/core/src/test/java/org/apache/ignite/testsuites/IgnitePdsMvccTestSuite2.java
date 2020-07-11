@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWALT
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFormatFileFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorExceptionDuringReadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorSwitchSegmentTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceLoggingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalSerializerVersionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionSwitchOnTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionTest;
@@ -93,6 +94,7 @@ public class IgnitePdsMvccTestSuite2 {
         ignoredTests.add(StandaloneWalRecordsIteratorTest.class);
         ignoredTests.add(IgniteWALTailIsReachedDuringIterationOverArchiveTest.class);
         ignoredTests.add(WalRolloverTypesTest.class);
+        ignoredTests.add(IgniteWalRebalanceLoggingTest.class);
         ignoredTests.add(FsyncWalRolloverDoesNotBlockTest.class);
 
         return IgnitePdsTestSuite2.suite(ignoredTests);
