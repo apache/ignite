@@ -25,7 +25,6 @@ import com.google.common.collect.Lists;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -295,7 +294,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
             U.sleep(10);
 
             if (hasErrors.get())
-                throw new Exception("All nodes should complete shared latch without errors");
+                throw new Exception("All nodes should complete latches without errors");
         }
 
         latchCrd.close();
@@ -304,16 +303,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
         syncLatch.countDown();
 
         // Wait for distributed latch completion.
-        try {
-            finishAllLatches.get(10000);
-        } catch (IgniteFutureTimeoutCheckedException e) {
-            U.dumpThreads(log);
-
-            fail("Failed to wait");
-        }
-        finally {
-            log.info("DBG: after");
-        }
+        finishAllLatches.get(5000);
 
         Assert.assertFalse("All nodes should complete latches without errors", hasErrors.get());
     }
