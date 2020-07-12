@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Client
     using System.Linq;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
@@ -119,6 +120,11 @@ namespace Apache.Ignite.Core.Client
             EnablePartitionAwareness = cfg.EnablePartitionAwareness;
             Logger = cfg.Logger;
             ProtocolVersion = cfg.ProtocolVersion;
+
+            if (cfg.TransactionConfiguration != null)
+            {
+                TransactionConfiguration = new TransactionClientConfiguration(cfg.TransactionConfiguration);
+            }
         }
 
         /// <summary>
@@ -223,6 +229,11 @@ namespace Apache.Ignite.Core.Client
         /// Default is <see cref="ConsoleLogger"/>. Set to <c>null</c> to disable logging.
         /// </summary>
         public ILogger Logger { get; set; }
+
+        /// <summary>
+        /// Gets or sets the transaction configuration.
+        /// </summary>
+        public TransactionClientConfiguration TransactionConfiguration { get; set; }
 
         /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.

@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 Ignite = this
             };
 
-            _transactions = new TransactionsClient(this);
+            _transactions = new TransactionsClient(this, clientConfiguration.TransactionConfiguration);
 
             _socket = new ClientFailoverSocket(_configuration, _marsh, _transactions);
 

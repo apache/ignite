@@ -69,6 +69,7 @@
     <Compile Include="Client\SslStreamFactory.cs" />
     <Compile Include="Client\Transactions\ITransactionClient.cs" />
     <Compile Include="Client\Transactions\ITransactionsClient.cs" />
+    <Compile Include="Client\Transactions\TransactionClientConfiguration.cs" />
     <Compile Include="Cluster\IBaselineNode.cs" />
     <Compile Include="Common\IgniteProductVersion.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />

@@ -35,14 +35,8 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** Ignite. */
         private readonly IgniteClient _ignite;
 
-        /** Default transaction concurrency. */
-        private const TransactionConcurrency _dfltConcurrency = TransactionConcurrency.Pessimistic;
-
-        /** Default transaction isolation. */
-        private const TransactionIsolation _dfltIsolation = TransactionIsolation.RepeatableRead;
-
-        /** Default transaction timeout. */
-        private readonly TimeSpan _dfltTimeout = TimeSpan.Zero;
+        /** Default transaction configuration. */
+        private readonly TransactionClientConfiguration _cfg;
 
         /** Transaction for this thread and client. */
         private readonly ThreadLocal<TransactionClient> _currentTx = new ThreadLocal<TransactionClient>();
@@ -54,9 +48,11 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /// Constructor.
         /// </summary>
         /// <param name="ignite">Ignite.</param>
-        public TransactionsClient(IgniteClient ignite)
+        /// <param name="cfg"></param>
+        public TransactionsClient(IgniteClient ignite, TransactionClientConfiguration cfg)
         {
             _ignite = ignite;
+            _cfg = cfg ?? new TransactionClientConfiguration();
             _txManager = new ClientCacheTransactionManager(this);
         }
 
@@ -90,35 +86,36 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
         /** <inheritDoc /> */
         public TransactionConcurrency DefaultTxConcurrency
         {
-            get { return _dfltConcurrency; }
+            get { return _cfg.DefaultTransactionConcurrency; }
         }
 
         /** <inheritDoc /> */
         public TransactionIsolation DefaultTxIsolation
         {
-            get { return _dfltIsolation; }
+            get { return _cfg.DefaultTransactionIsolation; }
         }
 
         /** <inheritDoc /> */
         public TimeSpan DefaultTimeout
         {
-            get { return _dfltTimeout; }
+            get { return _cfg.DefaultTimeout; }
         }
 
         /** <inheritDoc /> */
         public ITransactionClient TxStart()
         {
-            return TxStart(_dfltConcurrency, _dfltIsolation);
+            return TxStart(_cfg.DefaultTransactionConcurrency, _cfg.DefaultTransactionIsolation);
         }
 
         /** <inheritDoc /> */
         public ITransactionClient TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation)
         {
-            return TxStart(concurrency, isolation, _dfltTimeout);
+            return TxStart(concurrency, isolation, _cfg.DefaultTimeout);
         }
 
         /** <inheritDoc /> */
-        public ITransactionClient TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
+        public ITransactionClient TxStart(TransactionConcurrency concurrency, 
+            TransactionIsolation isolation,
             TimeSpan timeout)
         {
             return TxStart(concurrency, isolation, timeout, null);
@@ -247,15 +244,6 @@ namespace Apache.Ignite.Core.Impl.Client.Transactions
             public TimeSpan DefaultTimeout
             {
                 get { return _transactions.DefaultTimeout; }
-            }
-
-            /** <inheritDoc /> */
-            public ITransactionClient TxStart(TransactionConcurrency concurrency,
-                TransactionIsolation isolation,
-                TimeSpan timeout,
-                string label)
-            {
-                return _transactions.TxStart(concurrency, isolation, timeout, label);
             }
         }
     }

@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -99,6 +100,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new ClientConnectorConfiguration());
             CheckDefaultValueAttributes(new PersistentStoreConfiguration());
             CheckDefaultValueAttributes(new IgniteClientConfiguration());
+            CheckDefaultValueAttributes(new TransactionClientConfiguration());
             CheckDefaultValueAttributes(new QueryIndex());
             CheckDefaultValueAttributes(new DataStorageConfiguration());
             CheckDefaultValueAttributes(new DataRegionConfiguration());
