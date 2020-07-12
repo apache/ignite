@@ -623,10 +623,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         }
 
         /**
-         * 0 - PRIORITY QUEUE (compare by partition size).
+         * 1 - PRIORITY QUEUE (compare by partition size).
          * default (any other values) - FIFO.
+         * 2 - PRIORITY QUEUE (compared by rebalance mode and by partition size)
          */
-        private static final byte QUEUE_TYPE = 1;
+        private static final byte QUEUE_TYPE = 2;
 
         /**
          *
@@ -637,6 +638,16 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                 case 1:
                     return new PriorityBlockingQueue<>(
                         1000, Comparator.comparingLong(p -> p.part.fullSize()));
+                case 2:
+                    return new PriorityBlockingQueue<>(
+                        1000, new Comparator<PartitionEvictionTask>() {
+                        @Override public int compare(PartitionEvictionTask o1, PartitionEvictionTask o2) {
+                            int compRebalanceMode = o1.grpEvictionCtx.grp.config().getRebalanceMode().compareTo(
+                                o2.grpEvictionCtx.grp.config().getRebalanceMode());
+
+                            return compRebalanceMode == 0 ? Long.compare(o1.part.fullSize(), o2.part.fullSize()) : compRebalanceMode;
+                        }
+                    });
                 default:
                     return new LinkedBlockingQueue<>();
             }
