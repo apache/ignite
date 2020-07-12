@@ -19,7 +19,7 @@ package org.apache.ignite;
 
 /**
  * This class reperesents a policy of shutdown.
- * The policy gives a guaranties data safety on ordinal shutdown one or more cluster nodes.
+ * The policy specifies data safety guarantees on ordinary shutdown of one or more cluster nodes.
  */
 public enum ShutdownPolicy {
     /**

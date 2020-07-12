@@ -338,7 +338,7 @@ public class CommandHandlerParsingTest {
      * Tets checks a parser of shutdown policy command.
      */
     @Test
-    public void tesParseShutdownPolicyParameters() {
+    public void testParseShutdownPolicyParameters() {
         ConnectionAndSslParameters args = parseArgs(asList(SHUTDOWN_POLICY.text()));
 
         assertEquals(SHUTDOWN_POLICY.command(), args.command());
