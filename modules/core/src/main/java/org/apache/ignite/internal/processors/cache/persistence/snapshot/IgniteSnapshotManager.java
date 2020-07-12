@@ -111,7 +111,6 @@ import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -660,6 +659,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (cctx.kernalContext().clientNode())
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
+        if (locSnpDir == null)
+            return Collections.emptyList();
+
         synchronized (snpOpMux) {
             return Arrays.stream(locSnpDir.listFiles(File::isDirectory))
                 .map(File::getName)
@@ -736,7 +738,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
                 throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
 
-            if (!active(cctx.kernalContext().state().clusterState().state()))
+            if (!CU.isPersistenceEnabled(cctx.gridConfig())) {
+                throw new IgniteException("Create snapshot request has been rejected. Snapshots on an in-memory " +
+                    "clusters are not allowed.");
+            }
+
+            if (!cctx.kernalContext().state().clusterState().state().active())
                 throw new IgniteException("Snapshot operation has been rejected. The cluster is inactive.");
 
             DiscoveryDataClusterState clusterState = cctx.kernalContext().state().clusterState();

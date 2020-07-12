@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import org.junit.Assert;
@@ -94,6 +96,79 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
 //            not supported.
 //            fail("Incompatible! getAll() does not return null values!");
 //            Assert.assertTrue(result.contains("nil"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMGetDirectOrder() throws Exception {
+        testMGetOrder(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMGetReverseOrder() throws Exception {
+        testMGetOrder(false);
+    }
+
+    /**
+     * Tests mget operation.
+     *
+     * @param directOrder {@code true} if the order of inserting to a cache should be the same as the order using by mget.
+     */
+    public void testMGetOrder(boolean directOrder) {
+        int keysCnt = 33;
+
+        List<String> keys = new ArrayList<>(keysCnt);
+        List<String> values = new ArrayList<>(keysCnt);
+
+        // Fill values.
+        for (int i = 0; i < keysCnt; ++i) {
+            keys.add("getKey" + i);
+
+            values.add("getValue" + i);
+        }
+
+        try (Jedis jedis = pool.getResource()) {
+            for (int i = 0; i < keysCnt; ++i)
+                jcache().put(keys.get(i), values.get(i));
+
+            if (!directOrder) {
+                Collections.reverse(keys);
+
+                Collections.reverse(values);
+            }
+
+            List<String> res = jedis.mget(keys.toArray(new String[keysCnt]));
+
+            Assert.assertEquals("The response size is not expected.", keysCnt, res.size());
+
+            for (int i = 0; i < keysCnt; ++i)
+                Assert.assertEquals(values.get(i), res.get(i));
+        }
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMGetDuplicates() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            jcache().put("key-A", "value-A");
+            jcache().put("key-B", "value-B");
+
+            List<String> res = jedis.mget("key-A", "key-B", "key-A");
+
+            Assert.assertEquals("The size of returned array must be equal to 3.", 3, res.size());
+
+            Assert.assertEquals("value-A", res.get(0));
+            Assert.assertEquals("value-B", res.get(1));
+            Assert.assertEquals("value-A", res.get(2));
         }
     }
 

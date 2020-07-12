@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.hadoop.io.IntWritable;
@@ -27,12 +32,6 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMu
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.X;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
 import org.junit.Test;
 
 /**

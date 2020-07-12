@@ -58,6 +58,22 @@ public class IgniteSpiOperationTimeoutHelper {
     }
 
     /**
+     * Creates timeout helper based on time of last related operation.
+     *
+     * @param adapter SPI adapter.
+     * @param srvOp {@code True} if communicates with server node.
+     * @param lastOperStartNanos Time of last related operation in nanos.
+     */
+    public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp, long lastOperStartNanos) {
+        this(adapter, srvOp);
+
+        this.lastOperStartNanos = lastOperStartNanos;
+
+        if (lastOperStartNanos > 0)
+            timeout = failureDetectionTimeout;
+    }
+
+    /**
      * Returns a timeout value to use for the next network operation.
      *
      * If failure detection timeout is enabled then the returned value is a portion of time left since the last time

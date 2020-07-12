@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -43,6 +40,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -4056,7 +4056,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     private void checkState(ClusterState expState) throws Exception {
         assertClusterState(expState);
-        assertClusterState(ClusterState.active(expState));
+        assertClusterState(expState.active());
     }
 
     /**
