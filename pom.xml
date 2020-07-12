@@ -76,7 +76,6 @@
         <module>modules/kafka</module>
         <module>modules/yarn</module>
         <module>modules/jms11</module>
-        <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>
         <module>modules/camel</module>
