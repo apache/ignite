@@ -70,6 +70,17 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
  * Default snapshot manager test.
  */
 public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        // Disable implicit checkpoints for this test to avoid a race if an implicit cp has been scheduled before
+        // listener registration and calling snpFutTask.start().
+        cfg.getDataStorageConfiguration().setCheckpointFrequency(TimeUnit.DAYS.toMillis(365));
+
+        return cfg;
+    }
+
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotLocalPartitions() throws Exception {
