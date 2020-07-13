@@ -19,6 +19,7 @@ package org.apache.ignite.client;
 
 import java.util.Objects;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * A person entity used for the tests.
@@ -61,5 +62,10 @@ public class Person {
         Person other = (Person)obj;
 
         return other.id.equals(id) && other.name.equals(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(Person.class, this);
     }
 }

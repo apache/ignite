@@ -64,6 +64,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
@@ -1903,19 +1904,24 @@ public final class GridTestUtils {
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
     public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedCheckedException {
-        long curTime = U.currentTimeMillis();
-        long endTime = curTime + timeout;
+        long endTime = U.currentTimeMillis() + timeout;
+        long endTime0 = endTime < 0 ? Long.MAX_VALUE : endTime;
 
-        if (endTime < 0)
-            endTime = Long.MAX_VALUE;
+        return waitForCondition(cond, () -> U.currentTimeMillis() < endTime0);
+    }
 
-        while (curTime < endTime) {
+    /**
+     * @param cond Condition to wait for.
+     * @param wait Wait predicate.
+     * @return {@code true} if condition was achieved, {@code false} otherwise.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    public static boolean waitForCondition(GridAbsPredicate cond, BooleanSupplier wait) throws IgniteInterruptedCheckedException {
+        while (wait.getAsBoolean()) {
             if (cond.apply())
                 return true;
 
             U.sleep(DFLT_BUSYWAIT_SLEEP_INTERVAL);
-
-            curTime = U.currentTimeMillis();
         }
 
         return false;
@@ -2252,20 +2258,20 @@ public final class GridTestUtils {
      * Checks that {@code state} is active.
      *
      * @param state Passed cluster state.
-     * @see ClusterState#active(ClusterState)
+     * @see ClusterState#active()
      */
     public static void assertActive(ClusterState state) {
-        assertTrue(state + " isn't active state", ClusterState.active(state));
+        assertTrue(state + " isn't active state", state.active());
     }
 
     /**
      * Checks that {@code state} isn't active.
      *
      * @param state Passed cluster state.
-     * @see ClusterState#active(ClusterState)
+     * @see ClusterState#active()
      */
     public static void assertInactive(ClusterState state) {
-        assertFalse(state + " isn't inactive state", ClusterState.active(state));
+        assertFalse(state + " isn't inactive state", state.active());
     }
 
     /** Test parameters scale factor util. */

@@ -428,7 +428,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (Ignition.Start(cfg))
             {
-                var marshDir = Path.Combine(cfg.WorkDirectory, "marshaller");
+                var marshDir = Path.Combine(cfg.WorkDirectory, "db", "marshaller");
 
                 Assert.IsTrue(Directory.Exists(marshDir));
             }

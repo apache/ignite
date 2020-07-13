@@ -107,11 +107,42 @@ This utility can do the following commands:
       routine_id      - Routine identifier.
       origin_node_id  - Originating node id.
 
+  Kill running snapshot by snapshot name:
+    control.(sh|bat) --kill SNAPSHOT snapshot_name
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
   Create cluster snapshot:
     control.(sh|bat) --snapshot create snapshot_name
 
     Parameters:
       snapshot_name  - Snapshot name.
+
+  Cancel running snapshot:
+    control.(sh|bat) --snapshot cancel snapshot_name
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
+  Change cluster tag to new value:
+    control.(sh|bat) --change-tag newTagValue [--yes]
+
+  Print metadata command help:
+    control.(sh|bat) --meta help
+
+  Print list of binary metadata types:
+    control.(sh|bat) --meta list
+
+  Print detailed info about specified binary type (the type must be specified by type name or by type identifier):
+    control.(sh|bat) --meta details [--typeId <typeId>] [--typeName <typeName>]
+
+  Remove the metadata of the specified type (the type must be specified by type name or by type identifier) from cluster and saves the removed metadata to the specified file.
+If the file name isn't specified the output file name is: '<typeId>.bin'
+    control.(sh|bat) --meta remove [--typeId <typeId>] [--typeName <typeName>] [--out <fileName>]
+
+  Update cluster metadata from specified file (file name is required)
+    control.(sh|bat) --meta update --in <fileName>
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

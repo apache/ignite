@@ -124,37 +124,29 @@ public class ConcurrentStripedPool<E> implements Iterable<E> {
     /** {@inheritDoc} */
     @Override public @NotNull Iterator<E> iterator() {
         return new Iterator<E>() {
-            int idx = 0;
-            Iterator<E> it = stripePools[idx].iterator();
+            private int idx;
+
+            private Iterator<E> it = stripePools[idx].iterator();
 
             @Override public boolean hasNext() {
-                if (it.hasNext())
-                    return true;
+                while (true) {
+                    if (it.hasNext())
+                        return true;
 
-                idx++;
+                    if (++idx >= stripes)
+                        break;
 
-                if (idx < stripes) {
                     it = stripePools[idx].iterator();
-
-                    return it.hasNext();
                 }
-                else
-                    return false;
+
+                return false;
             }
 
             @Override public E next() {
-                if (it.hasNext())
+                if (hasNext())
                     return it.next();
 
-                idx++;
-
-                if (idx < stripes) {
-                    it = stripePools[idx].iterator();
-
-                    return it.next();
-                }
-                else
-                    throw new NoSuchElementException();
+                throw new NoSuchElementException();
             }
         };
     }

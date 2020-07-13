@@ -223,7 +223,7 @@ public class DiscoveryDataClusterState implements Serializable {
      */
     @Deprecated
     public boolean active() {
-        return ClusterState.active(state);
+        return state.active();
     }
 
     /**

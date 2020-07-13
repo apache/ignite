@@ -17,12 +17,11 @@
 
 package org.apache.ignite.plugin;
 
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.Cache;
 
 /**
  * Cache plugin provider is a point for processing of properties 

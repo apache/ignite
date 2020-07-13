@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
+import java.util.function.Supplier;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /**
  * Message factory.
  */
-public class CalciteMessageFactory implements MessageFactory {
+public class CalciteMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
-    @Override public @Nullable Message create(short type) {
-        return MessageType.newMessage(type);
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Override public void registerAll(IgniteMessageFactory factory) {
+        for (MessageType type : MessageType.values())
+            factory.register(type.directType(), (Supplier)type.factory());
     }
 
     /**

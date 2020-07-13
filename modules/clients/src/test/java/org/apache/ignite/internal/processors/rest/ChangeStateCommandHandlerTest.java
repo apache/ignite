@@ -31,7 +31,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
 
 /**
@@ -90,9 +89,7 @@ public class ChangeStateCommandHandlerTest extends GridCommonAbstractTest {
     public void testActivateDeActivate() throws GridClientException {
         GridClientClusterState state = client.state();
 
-        boolean active = active(state.state());
-
-        assertTrue(active);
+        assertTrue(state.state().toString(), state.state().active());
 
         state.state(INACTIVE, true);
 

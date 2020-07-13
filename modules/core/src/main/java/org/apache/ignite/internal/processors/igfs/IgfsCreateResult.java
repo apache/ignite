@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.OutputStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.OutputStream;
 
 /**
  * IGFS file create or append result.

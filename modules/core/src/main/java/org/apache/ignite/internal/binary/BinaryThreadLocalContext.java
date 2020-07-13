@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorChunk;
 import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator;
+import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorChunk;
 
 /**
  * Contains thread-local data for binary marshalling.

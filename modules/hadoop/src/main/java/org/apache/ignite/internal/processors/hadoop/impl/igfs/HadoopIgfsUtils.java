@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.AbstractFileSystem;
 import org.apache.hadoop.fs.FileStatus;
@@ -31,9 +33,6 @@ import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 /**
  * Utility constants and methods for IGFS Hadoop file system.
