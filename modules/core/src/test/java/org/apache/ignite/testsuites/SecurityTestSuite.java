@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.security.GridCommandHandlerSslWithSecurityTest;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
@@ -33,6 +32,7 @@ import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRem
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckTest;
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckWithGlobalAuthTest;
 import org.apache.ignite.internal.processors.security.client.AttributeSecurityCheckTest;
+import org.apache.ignite.internal.processors.security.client.IgniteClientContainSubjectAddressTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSecurityContextOnRemoteNodeTest;
@@ -74,6 +74,7 @@ import org.junit.runners.Suite;
     ThinClientPermissionCheckTest.class,
     ThinClientPermissionCheckSecurityTest.class,
     ContinuousQueryPermissionCheckTest.class,
+    IgniteClientContainSubjectAddressTest.class,
 
     DistributedClosureRemoteSecurityContextCheckTest.class,
     ComputeTaskRemoteSecurityContextCheckTest.class,
@@ -107,7 +108,6 @@ import org.junit.runners.Suite;
     ContinuousQueryWithTransformerSandboxTest.class,
 
     IgniteSecurityProcessorTest.class,
-    GridCommandHandlerSslWithSecurityTest.class,
     MultipleSSLContextsTest.class
 })
 public class SecurityTestSuite {

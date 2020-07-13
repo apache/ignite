@@ -191,13 +191,13 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
 
             ctx.Socket.AddNotificationHandler(taskId, (stream, ex) =>
             {
+                ctx.Socket.RemoveNotificationHandler(taskId);
+
                 if (ex != null)
                 {
                     tcs.TrySetException(ex);
                     return;
                 }
-
-                ctx.Socket.RemoveNotificationHandler(taskId);
 
                 var reader = ctx.Marshaller.StartUnmarshal(stream,
                     keepBinary ? BinaryMode.ForceBinary : BinaryMode.Deserialize);
