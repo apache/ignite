@@ -26,9 +26,13 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,30 +40,55 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class CacheContinuousQueryEventBuffer {
-    /** */
+    /** Maximum size of buffer for pending events. Default value is {@code 10_000}. */
+    public static final int MAX_PENDING_BUFF_SIZE =
+        IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_PENDING_BUFF_SIZE", 10_000);
+
+    /** Batch buffer size. */
     private static final int BUF_SIZE =
         IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_SERVER_BUFFER_SIZE", 1000);
 
     /** */
     private static final Object RETRY = new Object();
 
-    /** */
-    protected final int part;
+    /** Continuous query category logger. */
+    private final IgniteLogger log;
 
     /** */
-    private AtomicReference<Batch> curBatch = new AtomicReference<>();
+    private final int part;
 
-    /** */
-    private FastSizeDeque<CacheContinuousQueryEntry> backupQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
+    /** Batch of entries currently being collected to send to the remote. */
+    private final AtomicReference<Batch> curBatch = new AtomicReference<>();
 
-    /** */
-    private ConcurrentSkipListMap<Long, CacheContinuousQueryEntry> pending = new ConcurrentSkipListMap<>();
+    /** Queue for keeping backup entries which partition counter less the counter processing by current batch. */
+    private final FastSizeDeque<CacheContinuousQueryEntry> backupQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
+
+    /** Entries which are waiting for being processed. */
+    private final ConcurrentSkipListMap<Long, CacheContinuousQueryEntry> pending = new ConcurrentSkipListMap<>();
+
+    /**
+     * The size method of the pending ConcurrentSkipListMap is not a constant-time operation. Since each
+     * entry processed under the GridCacheMapEntry lock it's necessary to maintain the size of map explicitly.
+     */
+    private final AtomicInteger pendingCurrSize = new AtomicInteger();
+
+    /** Last seen ack partition counter tracked by the CQ handler partition recovery queue. */
+    private final GridAtomicLong ackedUpdCntr = new GridAtomicLong(0);
+
+    /**
+     * @param part Partition number.
+     * @param log Continuous query category logger.
+     */
+    CacheContinuousQueryEventBuffer(int part, IgniteLogger log) {
+        this.part = part;
+        this.log = log;
+    }
 
     /**
      * @param part Partition number.
      */
     CacheContinuousQueryEventBuffer(int part) {
-        this.part = part;
+        this(part, null);
     }
 
     /**
@@ -74,6 +103,8 @@ public class CacheContinuousQueryEventBuffer {
             if (backupEntry.updateCounter() <= updateCntr)
                 it.remove();
         }
+
+        ackedUpdCntr.setIfGreater(updateCntr);
     }
 
     /**
@@ -154,6 +185,7 @@ public class CacheContinuousQueryEventBuffer {
         Object res = null;
 
         for (;;) {
+            // Set batch only if batch is null (first attempt).
             batch = initBatch(entry.topologyVersion(), backup);
 
             if (batch == null || cntr < batch.startCntr) {
@@ -172,21 +204,55 @@ public class CacheContinuousQueryEventBuffer {
                 if (res == RETRY)
                     continue;
             }
-            else
+            else {
+                if (batch.endCntr < ackedUpdCntr.get() && batch.tryRollOver(entry.topologyVersion()) == RETRY)
+                    continue;
+
+                pendingCurrSize.incrementAndGet();
                 pending.put(cntr, entry);
+
+                if (pendingCurrSize.get() > MAX_PENDING_BUFF_SIZE) {
+                    synchronized (pending) {
+                        if (pendingCurrSize.get() <= MAX_PENDING_BUFF_SIZE)
+                            break;
+
+                        LT.warn(log, "Buffer for pending events reached max of its size " +
+                            "[cacheId=" + entry.cacheId() + ", maxSize=" + MAX_PENDING_BUFF_SIZE +
+                            ", partId=" + entry.partition() + ']');
+
+                        // Remove first BUFF_SIZE keys.
+                        int keysToRemove = BUF_SIZE;
+
+                        Iterator<Map.Entry<Long, CacheContinuousQueryEntry>> iter = pending.entrySet().iterator();
+
+                        while (iter.hasNext() && keysToRemove > 0) {
+                            CacheContinuousQueryEntry entry0 = iter.next().getValue();
+
+                            // Discard messages on backup and send to client if primary.
+                            if (!backup)
+                                res = addResult(res, entry0.copyWithDataReset(), backup);
+
+                            iter.remove();
+                            pendingCurrSize.decrementAndGet();
+                            keysToRemove--;
+                        }
+                    }
+                }
+            }
 
             break;
         }
 
         Batch batch0 = curBatch.get();
 
+        // Batch has been changed on entry processing to the new one.
         if (batch0 != batch) {
             do {
                 batch = batch0;
 
                 res = processPending(res, batch, backup);
 
-                batch0 = initBatch(entry.topologyVersion(), backup);
+                batch0 = curBatch.get();
             }
             while (batch != batch0);
         }
@@ -230,22 +296,28 @@ public class CacheContinuousQueryEventBuffer {
      * @return New result.
      */
     @Nullable private Object processPending(@Nullable Object res, Batch batch, boolean backup) {
-        if (pending.floorKey(batch.endCntr) != null) {
+        if (pending.floorKey(batch.endCntr) == null)
+            return res;
+
+        synchronized (pending) {
             for (Map.Entry<Long, CacheContinuousQueryEntry> p : pending.headMap(batch.endCntr, true).entrySet()) {
                 long cntr = p.getKey();
 
                 assert cntr <= batch.endCntr;
 
-                if (pending.remove(p.getKey()) != null) {
-                    if (cntr < batch.startCntr)
-                        res = addResult(res, p.getValue(), backup);
-                    else
-                        res = batch.processEntry0(res, p.getKey(), p.getValue(), backup);
-                }
-            }
-        }
+                if (pending.remove(cntr) == null)
+                    continue;
 
-        return res;
+                if (cntr < batch.startCntr)
+                    res = addResult(res, p.getValue(), backup);
+                else
+                    res = batch.processEntry0(res, p.getKey(), p.getValue(), backup);
+
+                pendingCurrSize.decrementAndGet();
+            }
+
+            return res;
+        }
     }
 
     /**
@@ -439,6 +511,7 @@ public class CacheContinuousQueryEventBuffer {
                 entries[pos] = entry;
 
                 int next = lastProc + 1;
+                long ackedUpdCntr0 = ackedUpdCntr.get();
 
                 if (next == pos) {
                     for (int i = next; i < entries.length; i++) {
@@ -463,26 +536,52 @@ public class CacheContinuousQueryEventBuffer {
 
                     lastProc = pos;
 
-                    if (pos == entries.length - 1) {
-                        Arrays.fill(entries, null);
-
-                        Batch nextBatch = new Batch(this.startCntr + BUF_SIZE,
-                            filtered,
-                            entries,
-                            entry.topologyVersion());
-
-                        entries = null;
-
-                        assert curBatch.get() == this;
-
-                        curBatch.set(nextBatch);
-                    }
+                    if (pos == entries.length - 1)
+                        rollOver(startCntr + BUF_SIZE, filtered, entry.topologyVersion());
                 }
-                else
-                    return res;
+                else if (endCntr < ackedUpdCntr0)
+                    rollOver(ackedUpdCntr0 + 1, 0, entry.topologyVersion());
+
+                return res;
+            }
+        }
+
+        /**
+         * @param topVer Topology version of current processing entry.
+         */
+        private synchronized Object tryRollOver(AffinityTopologyVersion topVer) {
+            if (entries == null)
+                return RETRY;
+
+            long ackedUpdCntr0 = ackedUpdCntr.get();
+
+            if (endCntr < ackedUpdCntr0) {
+                rollOver(ackedUpdCntr0 + 1, 0, topVer);
+
+                return RETRY;
             }
 
-            return res;
+            return null;
+        }
+
+        /**
+         * @param startCntr Start batch position.
+         * @param filtered Number of filtered entries prior start position.
+         * @param topVer Next topology version based on cache entry.
+         */
+        private void rollOver(long startCntr, long filtered, AffinityTopologyVersion topVer) {
+            Arrays.fill(entries, null);
+
+            Batch nextBatch = new Batch(startCntr,
+                filtered,
+                entries,
+                topVer);
+
+            entries = null;
+
+            boolean changed = curBatch.compareAndSet(this, nextBatch);
+
+            assert changed;
         }
     }
 }

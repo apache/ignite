@@ -17,16 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Formatter;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-import java.util.logging.StreamHandler;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -37,6 +32,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -53,7 +50,7 @@ import static java.util.stream.IntStream.range;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
-import static org.apache.ignite.internal.commandline.CommandHandler.initLogger;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.LogListener.matches;
@@ -231,7 +228,7 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         assertTrue(logLsnr.check());
 
-        startGrid(stoppedNodeId);
+        IgniteEx stoppedNode = startGrid(stoppedNodeId);
 
         awaitPartitionMapExchange();
 
@@ -240,27 +237,13 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         checkCacheData(cacheValues, cacheName);
 
-        assertPartitionsSame(idleVerify(grid(0), cacheName));
-    }
+        IdleVerifyResultV2 idleVerifyResV2 = idleVerify(stoppedNode, null);
 
-    /**
-     * Creating a logger for a CommandHandler.
-     *
-     * @param outputStream Stream for recording the result of a command.
-     * @return Logger.
-     */
-    private Logger createTestLogger(OutputStream outputStream) {
-        assert nonNull(outputStream);
+        SB sb = new SB();
 
-        Logger log = initLogger(null);
+        idleVerifyResV2.print(sb::a);
 
-        log.addHandler(new StreamHandler(outputStream, new Formatter() {
-            @Override public String format(LogRecord record) {
-                return record.getMessage() + "\n";
-            }
-        }));
-
-        return log;
+        assertContains(listeningLog, sb.toString(), "no conflicts have been found");
     }
 
     /**

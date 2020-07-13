@@ -135,6 +135,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.PartitionDestroyQueue;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.PartitionDestroyRequest;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.ReservationReason;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -1739,7 +1740,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         Map</*grpId*/Integer, Set</*partId*/Integer>> applicableGroupsAndPartitions = partitionsApplicableForWalRebalance();
 
-        Map</*grpId*/Integer, Map</*partId*/Integer, CheckpointEntry>> earliestValidCheckpoints;
+        Map</*grpId*/Integer, T2</*reason*/ReservationReason, Map</*partId*/Integer, CheckpointEntry>>> earliestValidCheckpoints;
 
         checkpointReadLock();
 
@@ -1752,10 +1753,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         Map</*grpId*/Integer, Map</*partId*/Integer, /*updCntr*/Long>> grpPartsWithCnts = new HashMap<>();
 
-        for (Map.Entry<Integer, Map<Integer, CheckpointEntry>> e : earliestValidCheckpoints.entrySet()) {
+        for (Map.Entry<Integer, T2</*reason*/ReservationReason, Map</*partId*/Integer, CheckpointEntry>>> e : earliestValidCheckpoints.entrySet()) {
             int grpId = e.getKey();
 
-            for (Map.Entry<Integer, CheckpointEntry> e0 : e.getValue().entrySet()) {
+            if (e.getValue().get2() == null)
+                continue;
+
+            for (Map.Entry<Integer, CheckpointEntry> e0 : e.getValue().get2().entrySet()) {
                 CheckpointEntry cpEntry = e0.getValue();
 
                 int partId = e0.getKey();
@@ -1774,7 +1778,62 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
+        if (log.isInfoEnabled() && !F.isEmpty(earliestValidCheckpoints))
+            printReservationToLog(earliestValidCheckpoints);
+
         return grpPartsWithCnts;
+    }
+
+    /**
+     * Prints detail information about caches which were not reserved
+     * and reservation depth for the caches which have WAL history enough.
+     *
+     * @param earliestValidCheckpoints Map contains information about caches' reservation.
+     */
+    private void printReservationToLog(
+        Map<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> earliestValidCheckpoints) {
+        try {
+            Map<ReservationReason, List<Integer>> notReservedCachesToPrint = new HashMap<>();
+            Map<ReservationReason, List<T2<Integer, CheckpointEntry>>> reservedCachesToPrint = new HashMap<>();
+
+            for (Map.Entry<Integer, T2<ReservationReason, Map<Integer, CheckpointEntry>>> entry : earliestValidCheckpoints.entrySet()) {
+                if (entry.getValue().get2() == null) {
+                    notReservedCachesToPrint.computeIfAbsent(entry.getValue().get1(), reason -> new ArrayList<>())
+                        .add(entry.getKey());
+                }
+                else {
+                    reservedCachesToPrint.computeIfAbsent(entry.getValue().get1(), reason -> new ArrayList<>())
+                        .add(new T2(entry.getKey(), entry.getValue().get2().values().stream().min(
+                            Comparator.comparingLong(CheckpointEntry::timestamp)).get()));
+                }
+            }
+
+            if (!F.isEmpty(notReservedCachesToPrint)) {
+                log.info("Cache groups were not reserved [" +
+                    notReservedCachesToPrint.entrySet().stream()
+                        .map(entry -> '[' +
+                            entry.getValue().stream().map(grpId -> "[grpId=" + grpId +
+                                ", grpName=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ']')
+                                .collect(Collectors.joining(", ")) +
+                            ", reason=" + entry.getKey() + ']')
+                        .collect(Collectors.joining(", ")) + ']');
+            }
+
+            if (!F.isEmpty(reservedCachesToPrint)) {
+                log.info("Cache groups with earliest reserved checkpoint and a reason why a previous checkpoint was inapplicable: [" +
+                    reservedCachesToPrint.entrySet().stream()
+                        .map(entry -> '[' +
+                            entry.getValue().stream().map(grpCp -> "[grpId=" + grpCp.get1() +
+                                ", grpName=" + cctx.cache().cacheGroup(grpCp.get1()).cacheOrGroupName() +
+                                ", cp=(" + grpCp.get2().checkpointId() + ", " + U.format(grpCp.get2().timestamp()) + ")]")
+                                .collect(Collectors.joining(", ")) +
+                            ", reason=" + entry.getKey() + ']')
+                        .collect(Collectors.joining(", ")) + ']');
+            }
+        }
+        catch (Exception e) {
+            log.error("An error happened during printing partitions that were reserved for potential historical rebalance.", e);
+        }
     }
 
     /**
