@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.security;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
 
 /**

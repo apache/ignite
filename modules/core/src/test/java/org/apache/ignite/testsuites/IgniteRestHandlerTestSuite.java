@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.rest.RestProcessorInitializationTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorHangTest;
+import org.apache.ignite.internal.processors.rest.RestProcessorInitializationTest;
 import org.apache.ignite.internal.processors.rest.RestProtocolStartTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheAtomicCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandlerSelfTest;

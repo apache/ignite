@@ -39,6 +39,15 @@
         <!-- Import Checks. See: http://checkstyle.sourceforge.net/config_imports.html -->
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>
+        <module name="CustomImportOrder">
+            <property name="customImportOrderRules"
+                      value="STANDARD_JAVA_PACKAGE###SPECIAL_IMPORTS###THIRD_PARTY_PACKAGE###STATIC"/>
+            <property name="standardPackageRegExp" value="^java\."/>
+            <property name="specialImportsRegExp" value="^javax\."/>
+            <property name="sortImportsInGroupAlphabetically" value="true"/>
+            <property name="separateLineBetweenGroups" value="false"/>
+        </module>
+        <module name="AvoidStarImport"/>
 
         <!-- Whitespaces: See: https://checkstyle.sourceforge.io/config_whitespace.html -->
         <module name="WhitespaceAround">

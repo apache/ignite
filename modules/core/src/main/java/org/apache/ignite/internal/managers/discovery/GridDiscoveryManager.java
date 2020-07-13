@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.BaselineNode;
@@ -144,7 +145,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBI
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -164,6 +164,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_US
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
@@ -768,6 +769,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ctx.authentication().onLocalJoin();
 
                         ctx.encryption().onLocalJoin();
+
+                        ctx.cluster().onLocalJoin();
                     }
 
                     IgniteInternalFuture<Boolean> transitionWaitFut = ctx.state().onLocalJoin(discoCache);
@@ -1142,6 +1145,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         boolean locP2pEnabled = locNode.attribute(ATTR_PEER_CLASSLOADING);
 
+        ShutdownPolicy locShutdownPolicy = ShutdownPolicy.fromOrdinal(locNode.attribute(ATTR_SHUTDOWN_POLICY));
+
         boolean ipV4Warned = false;
 
         boolean jvmMajVerWarned = false;
@@ -1256,6 +1261,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", locNodeAddrs=" + U.addressesAsString(locNode) +
                     ", rmtNodeAddrs=" + U.addressesAsString(n) +
                     ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
+            }
+
+            ShutdownPolicy rmtShutdownPolicy = n.attribute(ATTR_SHUTDOWN_POLICY) == null ? null :
+                ShutdownPolicy.fromOrdinal(n.attribute(ATTR_SHUTDOWN_POLICY));
+
+            if (rmtShutdownPolicy != null && !F.eq(locShutdownPolicy, rmtShutdownPolicy)) {
+                throw new IgniteCheckedException("Remote node has shutdoun policy different from local" +
+                    " local [locId8=" + U.id8(locNode.id()) + ", locShutdownPolicy=" + locShutdownPolicy +
+                    ", rmtId8=" + U.id8(n.id()) + ", rmtShutdownPolicy=" + rmtShutdownPolicy +
+                    ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
             if (ctx.security().enabled()) {
@@ -1540,7 +1555,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             if (targetState == null)
                 targetState = ctx.config().isAutoActivationEnabled() ? ACTIVE : INACTIVE;
 
-            if (!active(state.state()) && active(targetState)) {
+            if (!state.state().active() && targetState.active()) {
                 String offlineConsistentIds = "";
 
                 if (bltOffline > 0 && bltOffline <= 5) {

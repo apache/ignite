@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
@@ -40,10 +43,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -351,7 +350,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             "Number of partitions need to be cleared before actual rebalance start.");
 
         mreg.register("IsIndexRebuildInProgress", () -> {
-            IgniteInternalFuture fut = cctx.shared().database().indexRebuildFuture(cctx.cacheId());
+            IgniteInternalFuture fut = cctx.shared().kernalContext().query().indexRebuildFuture(cctx.cacheId());
 
             return fut != null && !fut.isDone();
         }, "True if index rebuild is in progress.");

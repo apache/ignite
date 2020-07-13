@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
+import java.util.List;
+import java.util.concurrent.Future;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.h2.index.Cursor;
 import org.h2.index.IndexLookupBatch;
 import org.h2.result.SearchRow;
-
-import java.util.List;
-import java.util.concurrent.Future;
 
 /**
  * Lookip batch for proxy indexes.
