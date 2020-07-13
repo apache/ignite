@@ -17,17 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import org.apache.hadoop.mapreduce.Counter;
-import org.apache.hadoop.mapreduce.CounterGroup;
-import org.apache.hadoop.mapreduce.Counters;
-import org.apache.hadoop.mapreduce.FileSystemCounter;
-import org.apache.hadoop.mapreduce.counters.AbstractCounters;
-import org.apache.hadoop.mapreduce.counters.Limits;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
-import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2Counter;
-import org.apache.ignite.internal.util.typedef.T2;
-
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -38,6 +27,16 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import org.apache.hadoop.mapreduce.Counter;
+import org.apache.hadoop.mapreduce.CounterGroup;
+import org.apache.hadoop.mapreduce.Counters;
+import org.apache.hadoop.mapreduce.FileSystemCounter;
+import org.apache.hadoop.mapreduce.counters.AbstractCounters;
+import org.apache.hadoop.mapreduce.counters.Limits;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
+import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2Counter;
+import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Hadoop counters adapter.

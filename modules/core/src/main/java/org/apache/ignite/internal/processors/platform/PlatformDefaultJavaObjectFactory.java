@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Map;
 
 /**
  * Default Java object factory implementation.

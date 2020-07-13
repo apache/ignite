@@ -17,12 +17,16 @@
 package org.apache.ignite.ml.math.distances;
 
 import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Interface for distance measures of n-dimensional vectors.
+ * This class is based on the corresponding class from Apache Common Math lib. Interface for distance measures of
+ * n-dimensional vectors.
  */
 public interface DistanceMeasure extends Externalizable {
     /**
@@ -47,5 +51,17 @@ public interface DistanceMeasure extends Externalizable {
      * @return The distance between vector and array.
      * @throws CardinalityException if the data structures lengths differ.
      */
-    public double compute(Vector a, double[] b) throws CardinalityException;
+    default double compute(Vector a, double[] b) throws CardinalityException {
+        return compute(a, new DenseVector(b));
+    }
+
+    /** {@inheritDoc} */
+    @Override default void writeExternal(ObjectOutput out) throws IOException {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override default void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        // No-op
+    }
 }

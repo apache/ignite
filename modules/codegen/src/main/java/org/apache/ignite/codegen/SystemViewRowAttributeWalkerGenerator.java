@@ -36,16 +36,17 @@ import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.SystemViewLocal;
-import org.apache.ignite.spi.systemview.view.CachePagesListView;
-import org.apache.ignite.spi.systemview.view.ComputeJobView;
-import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.jmx.SystemViewMBean;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
+import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.PagesListView;
+import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SqlIndexView;
@@ -104,6 +105,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(StripedExecutorTaskView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(PagesListView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(CachePagesListView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(PartitionStateView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);

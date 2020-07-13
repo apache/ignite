@@ -24,9 +24,9 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assume;
 import org.junit.Test;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Test remove all method.

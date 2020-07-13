@@ -210,7 +210,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                 throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
 
-            actx = authenticate(ses.certificates(), user, passwd);
+            actx = authenticate(ses, user, passwd);
         }
 
         protoCtx = new JdbcProtocolContext(ver, features, true);

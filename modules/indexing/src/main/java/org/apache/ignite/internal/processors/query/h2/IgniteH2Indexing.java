@@ -1957,19 +1957,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
         assert nonNull(cctx);
 
-        // No data in fresh in-memory cache.
-        if (!cctx.group().persistenceEnabled())
+        if (!CU.affinityNode(cctx.localNode(), cctx.config().getNodeFilter()))
             return null;
 
         IgnitePageStoreManager pageStore = cctx.shared().pageStore();
-
-        assert nonNull(pageStore);
 
         SchemaIndexCacheVisitorClosure clo;
 
         String cacheName = cctx.name();
 
-        if (!pageStore.hasIndexStore(cctx.groupId())) {
+        if (pageStore == null || !pageStore.hasIndexStore(cctx.groupId())) {
             // If there are no index store, rebuild all indexes.
             clo = new IndexRebuildFullClosure(cctx.queries(), cctx.mvccEnabled());
         }
@@ -1996,6 +1993,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
 
+        //to avoid possible data race
+        GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
+
         rebuildCacheIdxFut.listen(fut -> {
             Throwable err = fut.error();
 
@@ -2005,18 +2005,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
                 catch (Throwable t) {
                     err = t;
-
-                    rebuildCacheIdxFut.onDone(t);
                 }
             }
 
             if (nonNull(err))
                 U.error(log, "Failed to rebuild indexes for cache: " + cacheName, err);
+
+            outRebuildCacheIdxFut.onDone(err);
         });
 
         rebuildIndexesFromHash0(cctx, clo, rebuildCacheIdxFut);
 
-        return rebuildCacheIdxFut;
+        return outRebuildCacheIdxFut;
     }
 
     /**

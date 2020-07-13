@@ -30,8 +30,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cluster.ClusterState.active;
-
 /**
  * Cache change requests to execute when receive {@link DynamicCacheChangeBatch} event.
  */
@@ -204,14 +202,14 @@ public class ExchangeActions {
      * @return {@code True} if has deactivate request.
      */
     public boolean deactivate() {
-        return stateChangeReq != null && stateChangeReq.activeChanged() && !active(stateChangeReq.state());
+        return stateChangeReq != null && stateChangeReq.activeChanged() && !stateChangeReq.state().active();
     }
 
     /**
      * @return {@code True} if has activate request.
      */
     public boolean activate() {
-        return stateChangeReq != null && stateChangeReq.activeChanged() && active(stateChangeReq.state());
+        return stateChangeReq != null && stateChangeReq.activeChanged() && stateChangeReq.state().active();
     }
 
     /**

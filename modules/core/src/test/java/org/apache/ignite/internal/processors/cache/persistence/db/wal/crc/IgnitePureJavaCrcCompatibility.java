@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.nio.ByteBuffer;
-
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
