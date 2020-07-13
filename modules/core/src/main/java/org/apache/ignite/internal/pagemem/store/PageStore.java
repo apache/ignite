@@ -170,24 +170,4 @@ public interface PageStore extends Closeable {
      * @param usefulBytes Number of meaningful bytes from the beginning of the page.
      */
     void punchHole(long pageId, int usefulBytes);
-
-    /**
-     * @return Index of the last reencrypted page.
-     */
-    public int encryptedPageIndex();
-
-    /**
-     * @param pageIdx Index of the last reencrypted page.
-     */
-    public void encryptedPageIndex(int pageIdx);
-
-    /**
-     * @return Total pages to be reencrypted.
-     */
-    public int encryptedPageCount();
-
-    /**
-     * @param pageCnt Total pages to be reencrypted.
-     */
-    public void encryptedPageCount(int pageCnt);
 }

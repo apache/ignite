@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Logical record to restart reencryption with the latest encryption key.
@@ -29,8 +31,14 @@ public class EncryptionStatusRecord extends WALRecord {
     /**
      * @param grpStates Mapping the cache group ID to a list of partitions with the number of encrypted pages.
      */
-    public EncryptionStatusRecord(Map<Integer, Map<Integer, Integer>> grpStates) {
-        this.grpStates = grpStates;
+    public EncryptionStatusRecord(Map<Integer, Map<Integer, Long>> grpStates) {
+        this.grpStates = U.newHashMap(grpStates.size());
+
+        for (Map.Entry<Integer, Map<Integer, Long>> entry : grpStates.entrySet()) {
+            for (Map.Entry<Integer, Long> entry0 : entry.getValue().entrySet())
+                this.grpStates.computeIfAbsent(entry.getKey(),
+                    v -> new HashMap<>()).put(entry0.getKey(), (int)entry0.getValue().longValue());
+        }
     }
 
     /**

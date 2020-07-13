@@ -36,7 +36,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -392,11 +390,12 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                 if (!pageStore.exists())
                     continue;
 
-                String msg = String.format("p=%d, off=%d, total=%d",
-                    p, pageStore.encryptedPageIndex(), pageStore.encryptedPageCount());
+                long val = grid.context().encryption().getEncryptionState(grpId, p);
 
-                assertEquals(msg, 0, pageStore.encryptedPageCount());
-                assertEquals(msg, 0, pageStore.encryptedPageIndex());
+                String msg = String.format("p=%d, off=%d, total=%d", p, (int)(val >> 32), (int)val);
+
+                assertEquals(msg, 0, (int)val);
+                assertEquals(msg, 0, (int)(val >> 32));
 
                 long startPageId = PageIdUtils.pageId(p, PageIdAllocator.FLAG_DATA, 0);
 
@@ -469,17 +468,17 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
      * @return {@code True} If reencryption of the specified group is not yet complete.
      */
     protected boolean isReencryptionInProgress(IgniteEx node, int grpId) {
-        FilePageStoreManager pageStoreMgr = ((FilePageStoreManager)node.context().cache().context().pageStore());
+        CacheGroupContext grp = node.context().cache().cacheGroup(grpId);
 
-        try {
-            for (PageStore pageStore : pageStoreMgr.getStores(grpId)) {
-                if (pageStore.encryptedPageIndex() != pageStore.encryptedPageCount())
-                    return true;
-            }
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+        for (int p = 0; p < grp.affinity().partitions(); p++) {
+            long val = node.context().encryption().getEncryptionState(grpId, p);
+
+            if ((int)(val >> 32) != (int)val)
+                return true;
         }
 
-        return false;
+        long val = node.context().encryption().getEncryptionState(grpId, INDEX_PARTITION);
+
+        return (int)(val >> 32) != (int)val;
     }
 }

@@ -124,12 +124,6 @@ public class FilePageStore implements PageStore {
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    /** Total pages to be reencrypted. */
-    private volatile int encryptedPageCnt;
-
-    /** Index of the last reencrypted page. */
-    private volatile int encryptedPageIdx;
-
     /** */
     public FilePageStore(
         byte type,
@@ -361,7 +355,7 @@ public class FilePageStore implements PageStore {
 
                 fileExists = false;
 
-                encryptedPageIdx = encryptedPageCnt = 0;
+//                encryptedPageIdx = encryptedPageCnt = 0;
             }
         }
         finally {
@@ -410,7 +404,7 @@ public class FilePageStore implements PageStore {
 
             fileExists = false;
 
-            encryptedPageIdx = encryptedPageCnt = 0;
+//            encryptedPageIdx = encryptedPageCnt = 0;
         }
         catch (IOException e) {
             throw new StorageException("Failed to truncate partition file [file=" + filePath.toAbsolutePath() + "]", e);
@@ -905,25 +899,5 @@ public class FilePageStore implements PageStore {
                 reinit(fileIO);
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public int encryptedPageCount() {
-        return encryptedPageCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void encryptedPageCount(int pageCnt) {
-        encryptedPageCnt = pageCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int encryptedPageIndex() {
-        return encryptedPageIdx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void encryptedPageIndex(int pageIdx) {
-        encryptedPageIdx = pageIdx;
     }
 }

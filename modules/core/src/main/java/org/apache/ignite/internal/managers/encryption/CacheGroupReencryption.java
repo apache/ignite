@@ -37,13 +37,12 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
@@ -51,7 +50,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -247,16 +246,16 @@ public class CacheGroupReencryption implements DbCheckpointListener {
 
             GroupReencryptionContext ctx0 = new GroupReencryptionContext(grpId, skipDirty);
 
-            forEachPageStore(grp, new IgniteInClosure2X<Integer, PageStore>() {
-                @Override public void applyx(Integer partId, PageStore pageStore) {
-                    if (pageStore.encryptedPageCount() == 0) {
+            forEachPageStore(grp, new IgniteInClosureX<Integer>() {
+                @Override public void applyx(Integer partId) {
+                    if (ctx.encryption().getEncryptionState(grpId, partId) == 0) {
                         if (log.isDebugEnabled())
                             log.debug("Skipping partition reencryption [grp=" + grpId + ", p=" + partId + "]");
 
                         return;
                     }
 
-                    PageStoreScanTask scan = new PageStoreScanTask(ctx0, partId, pageStore);
+                    PageStoreScanTask scan = new PageStoreScanTask(ctx0, partId);
 
                     ctx0.add(partId, scan);
 
@@ -326,22 +325,19 @@ public class CacheGroupReencryption implements DbCheckpointListener {
      * @return Map of partitions with current page count.
      * @throws IgniteCheckedException If failed.
      */
-    public Map<Integer, Integer> storePagesCount(CacheGroupContext grp) throws IgniteCheckedException {
-        Map<Integer, Integer> offsets = new HashMap<>();
+    public Map<Integer, Long> storePagesCount(CacheGroupContext grp) throws IgniteCheckedException {
+        Map<Integer, Long> offsets = new HashMap<>();
 
         ctx.cache().context().database().checkpointReadLock();
 
         try {
-            forEachPageStore(grp, new IgniteInClosure2X<Integer, PageStore>() {
-                @Override public void applyx(Integer partId, PageStore pageStore) throws IgniteCheckedException {
-                    int pagesCnt = pageStore.pages();
-
-                    pageStore.encryptedPageCount(pagesCnt);
-                    pageStore.encryptedPageIndex(0);
+            forEachPageStore(grp, new IgniteInClosureX<Integer>() {
+                @Override public void applyx(Integer partId) throws IgniteCheckedException {
+                    int pagesCnt = ctx.cache().context().pageStore().pages(grp.groupId(), partId);
 
                     storePagesCountOnMetaPage(grp, partId, pagesCnt);
 
-                    offsets.put(partId, pagesCnt);
+                    offsets.put(partId, (long)pagesCnt);
                 }
             });
         } finally {
@@ -378,8 +374,8 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                 PageMetaIO metaIO = partId == PageIdAllocator.INDEX_PARTITION ?
                     PageMetaIO.VERSIONS.forPage(pageAddr) : PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
-                changed |= metaIO.setEncryptedPageCount(pageAddr, cnt);
                 changed |= metaIO.setEncryptedPageIndex(pageAddr, 0);
+                changed |= metaIO.setEncryptedPageCount(pageAddr, cnt);
 
                 IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
 
@@ -406,23 +402,19 @@ public class CacheGroupReencryption implements DbCheckpointListener {
      * @param grp Cache group context.
      * @param hnd Page store handler.
      */
-    private void forEachPageStore(CacheGroupContext grp, IgniteInClosure2X<Integer, PageStore> hnd) throws IgniteCheckedException {
+    private void forEachPageStore(CacheGroupContext grp, IgniteInClosureX<Integer> hnd) throws IgniteCheckedException {
         int parts = grp.affinity().partitions();
 
-        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)ctx.cache().context().pageStore();
+        IgnitePageStoreManager pageStoreMgr = ctx.cache().context().pageStore();
 
         for (int p = 0; p < parts; p++) {
             if (!pageStoreMgr.exists(grp.groupId(), p))
                 continue;
 
-            PageStore pageStore = pageStoreMgr.getStore(grp.groupId(), p);
-
-            hnd.applyx(p, pageStore);
+            hnd.applyx(p);
         }
 
-        PageStore idxStore = pageStoreMgr.getStore(grp.groupId(), PageIdAllocator.INDEX_PARTITION);
-
-        hnd.applyx(PageIdAllocator.INDEX_PARTITION, idxStore);
+        hnd.applyx(PageIdAllocator.INDEX_PARTITION);
     }
 
     /**
@@ -544,21 +536,16 @@ public class CacheGroupReencryption implements DbCheckpointListener {
         /** Partiion ID. */
         private final int partId;
 
-        /** Page store. */
-        private final PageStore store;
-
         /** Cache group reencryption context. */
         private final GroupReencryptionContext encrCtx;
 
         /**
          * @param encrCtx Cache group reencryption context.
          * @param partId Partition ID.
-         * @param store Page store.
          */
-        public PageStoreScanTask(GroupReencryptionContext encrCtx, int partId, PageStore store) {
+        public PageStoreScanTask(GroupReencryptionContext encrCtx, int partId) {
             this.encrCtx = encrCtx;
             this.partId = partId;
-            this.store = store;
         }
 
         /** {@inheritDoc} */
@@ -579,34 +566,32 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                     return;
                 }
 
-                IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
                 PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
                 long metaPageId = pageMem.partitionMetaPageId(grpId, partId);
-                int pageSize = pageMem.realPageSize(grpId);
-                int pageNum = store.encryptedPageIndex();
-                int cnt = store.encryptedPageCount();
+                long state = ctx.encryption().getEncryptionState(grpId, partId);
 
-                assert cnt <= store.pages() : "cnt=" + cnt + ", max=" + store.pages();
+                int pageIdx = (int)(state >> 32);
+                int cnt = (int)state;
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition reencryption is started [grpId=" + grpId +
-                        ", p=" + partId + ", remain=" + (cnt - pageNum) + ", total=" + cnt + "]");
+                        ", p=" + partId + ", remain=" + (cnt - pageIdx) + ", total=" + cnt + "]");
                 }
 
-                while (pageNum < cnt) {
+                while (pageIdx < cnt) {
                     synchronized (this) {
                         ctx.cache().context().database().checkpointReadLock();
 
                         try {
-                            if (isDone() || store.encryptedPageCount() == 0)
+                            if (isDone() || ctx.encryption().getEncryptionState(grpId, partId) == 0)
                                 break;
 
-                            int end = Math.min(pageNum + batchSize, cnt);
+                            int end = Math.min(pageIdx + batchSize, cnt);
 
                             do {
-                                long pageId = metaPageId + pageNum;
+                                long pageId = metaPageId + pageIdx;
 
-                                pageNum += 1;
+                                pageIdx += 1;
 
                                 long page = pageMem.acquirePage(grpId, pageId);
 
@@ -622,14 +607,14 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                                     pageMem.releasePage(grpId, pageId, page);
                                 }
                             }
-                            while (pageNum < end);
+                            while (pageIdx < end);
                         }
                         finally {
                             ctx.cache().context().database().checkpointReadUnlock();
                         }
                     }
 
-                    store.encryptedPageIndex(pageNum);
+                    ctx.encryption().setEncryptionState(grpId, partId, pageIdx, cnt);
 
                     if (timeoutBetweenBatches != 0 && !isDone())
                         U.sleep(timeoutBetweenBatches);
@@ -639,7 +624,7 @@ public class CacheGroupReencryption implements DbCheckpointListener {
                     log.debug("Partition reencryption is finished " +
                         "[grpId=" + grpId +
                         ", p=" + partId +
-                        ", remain=" + (cnt - pageNum) +
+                        ", remain=" + (cnt - pageIdx) +
                         ", total=" + cnt +
                         ", cancelled=" + isCancelled() +
                         ", failed=" + isFailed() + "]");

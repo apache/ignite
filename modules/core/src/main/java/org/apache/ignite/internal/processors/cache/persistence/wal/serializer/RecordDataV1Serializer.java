@@ -1251,16 +1251,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case ENCRYPTION_STATUS_RECORD:
                 int grpsCnt = in.readInt();
 
-                Map<Integer, Map<Integer, Integer>> map = U.newHashMap(grpsCnt);
+                Map<Integer, Map<Integer, Long>> map = U.newHashMap(grpsCnt);
 
                 for (int i = 0; i < grpsCnt; i++) {
                     int grpId = in.readInt();
                     int partsCnt = in.readInt();
 
-                    Map<Integer, Integer> parts = U.newHashMap(partsCnt);
+                    Map<Integer, Long> parts = U.newHashMap(partsCnt);
 
                     for (int j = 0; j < partsCnt; j++)
-                        parts.put(in.readShort() & 0xffff, in.readInt());
+                        parts.put(in.readShort() & 0xffff, (long)in.readInt());
 
                     map.put(grpId, parts);
                 }

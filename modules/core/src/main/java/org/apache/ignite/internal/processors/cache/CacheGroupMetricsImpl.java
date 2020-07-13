@@ -31,6 +31,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -508,6 +510,8 @@ public class CacheGroupMetricsImpl {
 
         FilePageStoreManager mgr = (FilePageStoreManager)ctx.shared().pageStore();
 
+        GridEncryptionManager encrMgr = ctx.shared().kernalContext().encryption();
+
         try {
             for (int p = 0; p < ctx.affinity().partitions(); p++) {
                 PageStore pageStore = mgr.getStore(ctx.groupId(), p);
@@ -515,8 +519,20 @@ public class CacheGroupMetricsImpl {
                 if (!pageStore.exists())
                     continue;
 
-                pagesLeft += (pageStore.encryptedPageCount() - pageStore.encryptedPageIndex());
+                long val = encrMgr.getEncryptionState(ctx.groupId(), p);
+
+                int off = (int)(val >> 32);
+                int cnt = (int)val;
+
+                pagesLeft += cnt - off;
             }
+
+            long val = encrMgr.getEncryptionState(ctx.groupId(), PageIdAllocator.INDEX_PARTITION);
+
+            int off = (int)(val >> 32);
+            int cnt = (int)val;
+
+            pagesLeft += cnt - off;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
