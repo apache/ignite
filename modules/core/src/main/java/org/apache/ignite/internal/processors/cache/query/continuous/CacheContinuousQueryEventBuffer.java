@@ -124,7 +124,7 @@ public class CacheContinuousQueryEventBuffer {
 
         Batch batch = curBatch.get();
 
-        if (batch != null)
+        if (batch != null && filteredEntryFactory != null)
             batch.flushCurrentEntries(ret, filteredEntryFactory);
 
         if (!pending.isEmpty()) {
@@ -229,15 +229,12 @@ public class CacheContinuousQueryEventBuffer {
         Batch batch0 = curBatch.get();
 
         // Batch has been changed on entry processing to the new one.
-        if (batch0 != batch) {
-            do {
-                batch = batch0;
+        while (batch != batch0) {
+            batch = batch0;
 
-                res = processPending(res, batch, backup);
+            res = processPending(res, batch, backup);
 
-                batch0 = curBatch.get();
-            }
-            while (batch != batch0);
+            batch0 = curBatch.get();
         }
 
         return res;
