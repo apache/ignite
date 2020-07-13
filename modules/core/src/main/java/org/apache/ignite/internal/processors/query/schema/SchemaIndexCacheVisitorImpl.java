@@ -54,9 +54,6 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Cache context. */
     private final GridCacheContext cctx;
 
-    /** Row filter. */
-    private final SchemaIndexCacheFilter rowFilter;
-
     /** Cancellation token. */
     private final SchemaIndexOperationCancellationToken cancel;
 
@@ -70,13 +67,11 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * Constructor.
      *
      * @param cctx Cache context.
-     * @param rowFilter Row filter.
      * @param cancel Cancellation token.
      * @param buildIdxFut Future for create/rebuild index.
      */
     public SchemaIndexCacheVisitorImpl(
         GridCacheContext cctx,
-        @Nullable SchemaIndexCacheFilter rowFilter,
         @Nullable SchemaIndexOperationCancellationToken cancel,
         GridFutureAdapter<Void> buildIdxFut
     ) {
@@ -90,7 +85,6 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         this.buildIdxFut = buildIdxFut;
 
         this.cancel = cancel;
-        this.rowFilter = rowFilter;
 
         log = cctx.kernalContext().log(getClass());
     }
@@ -122,7 +116,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             GridWorkerFuture<SchemaIndexCacheStat> workerFut = new GridWorkerFuture<>();
 
             GridWorker worker =
-                new SchemaIndexCachePartitionWorker(cctx, locPart, stop, cancel, clo, workerFut, rowFilter, partsCnt);
+                new SchemaIndexCachePartitionWorker(cctx, locPart, stop, cancel, clo, workerFut, partsCnt);
 
             workerFut.setWorker(worker);
             buildIdxCompoundFut.add(workerFut);
