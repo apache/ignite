@@ -1169,25 +1169,29 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private FileDescriptor readFileDescriptor(File file, FileIOFactory ioFactory) {
         FileDescriptor ds = new FileDescriptor(file);
 
-        try (
-            SegmentIO fileIO = ds.toIO(ioFactory);
-            ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
-        ) {
-            final DataInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
+        try (SegmentIO fileIO = ds.toIO(ioFactory)) {
 
-            // Header record must be agnostic to the serializer version.
-            final int type = in.readUnsignedByte();
-
-            if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE) {
-                if (log.isInfoEnabled())
-                    log.info("Reached logical end of the segment for file " + file);
-
+            // File may be empty when LOG_ONLY mode is enabled and mmap is disabled
+            if (fileIO.size() == 0)
                 return null;
+
+            try (ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
+                final DataInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
+
+                // Header record must be agnostic to the serializer version.
+                final int type = in.readUnsignedByte();
+
+                if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE) {
+                    if (log.isInfoEnabled())
+                        log.info("Reached logical end of the segment for file " + file);
+
+                    return null;
+                }
+
+                FileWALPointer ptr = readPosition(in);
+
+                return new FileDescriptor(file, ptr.index());
             }
-
-            FileWALPointer ptr = readPosition(in);
-
-            return new FileDescriptor(file, ptr.index());
         }
         catch (IOException e) {
             U.warn(log, "Failed to read file header [" + file + "]. Skipping this file", e);
