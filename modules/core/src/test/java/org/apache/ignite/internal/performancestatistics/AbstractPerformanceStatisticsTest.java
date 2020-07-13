@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.performancestatistics.TestFilePerformanceStatisticsReader.readToLog;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERFORMANCE_STAT_DIR;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -43,7 +43,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PERFORMANCE_STAT_DIR, false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT, false));
     }
 
     /** {@inheritDoc} */
@@ -52,7 +52,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         stopAllGrids();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PERFORMANCE_STAT_DIR, false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT, false));
     }
 
     /** Starts collecting performance statistics. */

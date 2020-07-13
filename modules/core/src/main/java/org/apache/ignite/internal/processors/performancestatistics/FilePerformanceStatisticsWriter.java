@@ -55,7 +55,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 /**
  * Performance statistics writer based on logging to a file.
  * <p>
- * Each node collects statistics to a file placed under {@link #PERFORMANCE_STAT_DIR}.
+ * Each node collects statistics to a file placed under {@link #PERF_STAT}.
  * <p>
  * <b>Note:</b> Start again will erase previous performance statistics files.
  * <p>
@@ -63,7 +63,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
  */
 public class FilePerformanceStatisticsWriter {
     /** Directory to store performance statistics files. Placed under Ignite work directory. */
-    public static final String PERFORMANCE_STAT_DIR = "performanceStatistics";
+    public static final String PERF_STAT = "performanceStatistics";
 
     /** Default maximum file size in bytes. Performance statistics will be stopped when the size exceeded. */
     public static final long DFLT_FILE_MAX_SIZE = 32 * U.GB;
@@ -345,7 +345,7 @@ public class FilePerformanceStatisticsWriter {
     private static File statisticsFile(GridKernalContext ctx) throws IgniteCheckedException {
         String igniteWorkDir = U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome());
 
-        File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERFORMANCE_STAT_DIR, false);
+        File fileDir = U.resolveWorkDirectory(igniteWorkDir, PERF_STAT, false);
 
         return new File(fileDir, "node-" + ctx.localNodeId() + ".prf");
     }

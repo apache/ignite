@@ -58,6 +58,9 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
 
+    /** Synchronization mutex for start/stop collecting performance statistics operations. */
+    private final Object mux = new Object();
+
     /** @param ctx Kernal context. */
     public PerformaceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
@@ -218,7 +221,9 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     /** Starts performance statistics writer. */
     private void startWriter() {
         try {
-            synchronized (this) {
+            boolean started;
+
+            synchronized (mux) {
                 if (enabled)
                     return;
 
@@ -228,8 +233,11 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
 
                 enabled = true;
 
-                log.info("Performance statistics writer started.");
+                started = true;
             }
+
+            if (started)
+                log.info("Performance statistics writer started.");
         }
         catch (Exception e) {
             log.error("Failed to start performance statistics writer.", e);
@@ -238,7 +246,9 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
 
     /** Stops performance statistics writer. */
     private void stopWriter() {
-        synchronized (this) {
+        boolean stopped;
+
+        synchronized (mux) {
             if (!enabled)
                 return;
 
@@ -248,8 +258,11 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
 
             writer = null;
 
-            log.info("Performance statistics writer stopped.");
+            stopped = true;
         }
+
+        if (stopped)
+            log.info("Performance statistics writer stopped.");
     }
 
     /** Writes statistics through passed writer. */
