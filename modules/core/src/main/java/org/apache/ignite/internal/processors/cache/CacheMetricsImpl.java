@@ -1224,7 +1224,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
         if (AffinityTopologyVersion.NONE.equals(topVer))
-            return new EntriesStatMetrics();
+            return unknownEntriesStat();
 
         int owningPartCnt = 0;
         int movingPartCnt = 0;
@@ -1286,14 +1286,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             }
         }
         catch (Exception e) {
-            owningPartCnt = -1;
-            movingPartCnt = 0;
-            offHeapEntriesCnt = -1L;
-            offHeapPrimaryEntriesCnt = -1L;
-            offHeapBackupEntriesCnt = -1L;
-            heapEntriesCnt = -1L;
-            size = -1;
-            sizeLong = -1L;
+            return unknownEntriesStat();
         }
 
         isEmpty = (offHeapEntriesCnt == 0);
@@ -1310,6 +1303,24 @@ public class CacheMetricsImpl implements CacheMetrics {
         stat.isEmpty(isEmpty);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
         stat.rebalancingPartitionsCount(movingPartCnt);
+
+        return stat;
+    }
+
+    /** @return Instance of {@link EntriesStatMetrics} with default values in case of unknown metrics. */
+    private EntriesStatMetrics unknownEntriesStat() {
+        EntriesStatMetrics stat = new EntriesStatMetrics();
+
+        stat.offHeapEntriesCount(-1L);
+        stat.offHeapPrimaryEntriesCount(-1L);
+        stat.offHeapBackupEntriesCount(-1L);
+        stat.heapEntriesCount(-1L);
+        stat.size(-1);
+        stat.cacheSize(-1L);
+        stat.keySize(-1);
+        stat.isEmpty(false);
+        stat.totalPartitionsCount(-1);
+        stat.rebalancingPartitionsCount(0);
 
         return stat;
     }
@@ -1538,7 +1549,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         private int keySize;
 
         /** Is empty. */
-        private boolean isEmpty = true;
+        private boolean isEmpty;
 
         /**
          * @return Total partitions count.

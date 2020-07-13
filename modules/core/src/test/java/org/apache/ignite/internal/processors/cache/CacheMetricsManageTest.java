@@ -32,7 +32,6 @@ import javax.cache.Caching;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -830,11 +829,11 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         assertFalse(grid.cluster().state().active());
 
-        CacheMetricsMXBean mxBean = mxBean(0, CACHE1, CacheClusterMetricsMXBeanImpl.class);
+        CacheMetricsMXBean mxBean = mxBean(0, CACHE1, CacheLocalMetricsMXBeanImpl.class);
 
         long size = mxBean.getCacheSize();
 
-        assertEquals(0, size);
+        assertEquals(-1, size);
     }
 
     /**
