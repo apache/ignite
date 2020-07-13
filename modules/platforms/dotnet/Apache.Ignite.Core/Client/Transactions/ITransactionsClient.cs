@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Client.Transactions
     {
         /// <summary>
         /// Starts a new transaction with the default isolation level, concurrency and timeout.
-        /// <para />Default values for transaction isolation level, concurrency and timeout can be configured via
+        /// <para /> Default values for transaction isolation level, concurrency and timeout can be configured via
         /// <see cref="TransactionClientConfiguration"/>.
         /// <para /> Should not be used with async calls.
         /// </summary>
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Client.Transactions
 
         /// <summary>
         /// Returns instance of <see cref="ITransactionsClient"/> to mark a transaction with a special label.
-        /// The label is helpful for diagnostic and exposed by some diagnostic tools like
+        /// The label is helpful for diagnostic and exposed to some diagnostic tools like
         /// SYS.TRANSACTIONS system view, control.sh commands, JMX TransactionsMXBean,
         /// long-running transactions dump in logs.
         /// </summary>
