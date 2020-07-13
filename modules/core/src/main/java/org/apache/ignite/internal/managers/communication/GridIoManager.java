@@ -138,6 +138,7 @@ import org.apache.ignite.spi.communication.tcp.internal.CommunicationListenerEx;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionRequestor;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
 import org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -4316,7 +4317,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /**
          * Executor service to send special communication message.
          */
-        private ExecutorService responseSendService = Executors.newCachedThreadPool();
+        private ExecutorService responseSendService = Executors
+            .newCachedThreadPool(new IgniteThreadFactory(ctx.igniteInstanceName(), "io-send-service"));
 
         /**
          * Discovery event listener (works only on client nodes for now) notified when

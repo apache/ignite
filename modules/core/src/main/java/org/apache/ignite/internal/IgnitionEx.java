@@ -2153,7 +2153,7 @@ public class IgnitionEx {
             // Do NOT set it up only if IGNITE_NO_SHUTDOWN_HOOK=TRUE is provided.
             if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
                 try {
-                    Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
+                    Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread("shutdown-hook") {
                         @Override public void run() {
                             if (log.isInfoEnabled())
                                 log.info("Invoking shutdown hook...");

@@ -263,6 +263,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
@@ -2114,7 +2115,8 @@ public abstract class IgniteUtils {
 
         Collection<Future<?>> futs = new ArrayList<>(addrs.size());
 
-        ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
+        ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()),
+            new IgniteThreadFactory("utils", "reachable"));
 
         try {
             for (final InetAddress addr : addrs) {

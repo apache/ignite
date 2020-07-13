@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.junit.Test;
 
 /**
@@ -178,8 +179,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     public void testListenNotify() throws Exception {
         GridTestKernalContext ctx = new GridTestKernalContext(log);
 
-        ctx.setExecutorService(Executors.newFixedThreadPool(1));
-        ctx.setSystemExecutorService(Executors.newFixedThreadPool(1));
+        ctx.setExecutorService(Executors.newSingleThreadExecutor(new IgniteThreadFactory("testscope", "exec-svc")));
+        ctx.setSystemExecutorService(Executors.newSingleThreadExecutor(new IgniteThreadFactory("testscope", "system-exec")));
 
         ctx.add(new PoolProcessor(ctx));
         ctx.add(new GridClosureProcessor(ctx));
@@ -237,7 +238,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     public void testChaining() throws Exception {
         checkChaining(null);
 
-        ExecutorService exec = Executors.newFixedThreadPool(1);
+        ExecutorService exec = Executors.newSingleThreadExecutor(new IgniteThreadFactory("testscope", "grid-future-adapter-test-exec"));
 
         try {
             checkChaining(exec);

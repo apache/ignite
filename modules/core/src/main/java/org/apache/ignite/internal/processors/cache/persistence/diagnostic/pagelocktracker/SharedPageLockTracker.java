@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.worker.CycleThread;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
@@ -67,11 +68,6 @@ public class SharedPageLockTracker implements LifecycleAware, PageLockListener, 
     /**
      *
      */
-    public final int timeOutWorkerInterval;
-
-    /**
-     *
-     */
     private final Map<Long, PageLockTracker<? extends PageLockDump>> threadStacks = new HashMap<>();
 
     /**
@@ -85,7 +81,7 @@ public class SharedPageLockTracker implements LifecycleAware, PageLockListener, 
     private final Map<String, Integer> structureNameToId = new HashMap<>();
 
     /** Thread for clean terminated threads from map. */
-    private final TimeOutWorker timeOutWorker = new TimeOutWorker();
+    private final TimeOutWorker timeOutWorker;
 
     /**
      *
@@ -137,7 +133,7 @@ public class SharedPageLockTracker implements LifecycleAware, PageLockListener, 
         MemoryCalculator memCalc
     ) {
         this.threadLimits = threadLimits;
-        this.timeOutWorkerInterval = timeOutWorkerInterval;
+        timeOutWorker = new TimeOutWorker(timeOutWorkerInterval);
         this.hangThreadsCallBack = hangThreadsCallBack;
         this.memCalc = memCalc;
 
@@ -368,27 +364,24 @@ public class SharedPageLockTracker implements LifecycleAware, PageLockListener, 
     /**
      *
      */
-    private class TimeOutWorker extends Thread {
+    private class TimeOutWorker extends CycleThread {
+
         /**
          *
          */
-        @Override public void run() {
-            try {
-                while (!Thread.currentThread().isInterrupted()) {
-                    sleep(timeOutWorkerInterval);
+        TimeOutWorker(long interval) {
+            super("page-lock-tracker-timeout", interval);
+        }
 
-                    cleanTerminatedThreads();
+        /** {@inheritDoc} */
+        @Override public void iteration() {
+            cleanTerminatedThreads();
 
-                    if (hangThreadsCallBack != null) {
-                        Set<SharedPageLockTracker.State> threadIds = hangThreads();
+            if (hangThreadsCallBack != null) {
+                Set<SharedPageLockTracker.State> threadIds = hangThreads();
 
-                        if (!F.isEmpty(threadIds))
-                            hangThreadsCallBack.accept(threadIds);
-                    }
-                }
-            }
-            catch (InterruptedException e) {
-                // No-op.
+                if (!F.isEmpty(threadIds))
+                    hangThreadsCallBack.accept(threadIds);
             }
         }
     }
