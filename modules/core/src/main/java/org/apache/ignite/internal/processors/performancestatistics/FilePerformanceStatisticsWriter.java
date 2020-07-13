@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -77,11 +78,14 @@ public class FilePerformanceStatisticsWriter {
     /** Factory to provide I/O interface. */
     private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
 
+    /** Performance statistics file I/O. */
+    private final FileIO fileIo;
+
     /** Performance statistics file writer worker. */
     private final FileWriter fileWriter;
 
-    /** Performance statistics file I/O. */
-    private final FileIO fileIo;
+    /** File writer thread started flag. */
+    private boolean started;
 
     /** File write buffer. */
     private final SegmentedRingByteBuffer ringByteBuf;
@@ -120,8 +124,13 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** Starts collecting performance statistics. */
-    public void start() {
+    public synchronized void start() {
+        if (started)
+            throw new IgniteException("The writer should be run with a single thread.");
+
         new IgniteThread(fileWriter).start();
+
+        started = true;
     }
 
     /** Stops collecting performance statistics. */

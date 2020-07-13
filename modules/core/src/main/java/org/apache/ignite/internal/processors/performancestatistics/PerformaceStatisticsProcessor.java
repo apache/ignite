@@ -36,6 +36,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
+import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
 
 /**
  * Performance statistics processor.
@@ -47,13 +48,11 @@ import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
  */
 public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     /** Prefix for performance statistics enabled property name. */
-    private static final String PERFORMANCE_STAT_ENABLED_PREFIX = "performanceStatistics.enabled";
+    private static final String PERFORMANCE_STAT_ENABLED_PREFIX = IGNITE_INTERNAL_KEY_PREFIX +
+        "performanceStatistics.enabled";
 
-    /** Performance statistics writer. */
+    /** Performance statistics writer. {@code Null} if collecting statistics disabled. */
     @Nullable private volatile FilePerformanceStatisticsWriter writer;
-
-    /** Performance statistics enabled flag. */
-    private volatile boolean enabled;
 
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
@@ -193,7 +192,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
 
     /** @return {@code True} if collecting performance statistics is enabled. */
     public boolean enabled() {
-        return enabled;
+        return writer != null;
     }
 
     /** {@inheritDoc} */
@@ -224,14 +223,12 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
             boolean started;
 
             synchronized (mux) {
-                if (enabled)
+                if (writer != null)
                     return;
 
                 writer = new FilePerformanceStatisticsWriter(ctx);
 
                 writer.start();
-
-                enabled = true;
 
                 started = true;
             }
@@ -249,10 +246,8 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         boolean stopped;
 
         synchronized (mux) {
-            if (!enabled)
+            if (writer == null)
                 return;
-
-            enabled = false;
 
             writer.stop();
 
