@@ -1030,10 +1030,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     if (!internal && !skipPrimaryCheck)
                         sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
                 }
-                else {
-                    if (!entry.isFiltered())
-                        notifyLocalListener(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt), trans);
-                }
+                else if (!entry.isFiltered())
+                    notifyLocalListener(F.asList(evt), trans);
             }
             else {
                 if (!entry.isFiltered()) {
@@ -1069,7 +1067,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled()) {
-                    log.debug("Failed to trigger a continuoue query event. " +
+                    log.debug("Failed to trigger a continuous query event. " +
                         "[routineId=" + routineId + ", cacheName=" + cacheName + ", err=" + e + "]");
                 }
 
