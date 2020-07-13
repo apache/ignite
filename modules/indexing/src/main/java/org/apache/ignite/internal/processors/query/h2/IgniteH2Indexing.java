@@ -1972,7 +1972,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else {
             // Otherwise iterate over tables looking for missing indexes.
-            IndexRebuildPartialClosure clo0 = new IndexRebuildPartialClosure();
+            IndexRebuildPartialClosure clo0 = new IndexRebuildPartialClosure(cctx);
 
             for (H2TableDescriptor tblDesc : schemaMgr.tablesForCache(cacheName)) {
                 GridH2Table tbl = tblDesc.table();
@@ -2031,7 +2031,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         SchemaIndexCacheVisitorClosure clo,
         GridFutureAdapter<Void> rebuildIdxFut
     ) {
-        new SchemaIndexCacheVisitorImpl(cctx, null, null, rebuildIdxFut).visit(clo);
+        new SchemaIndexCacheVisitorImpl(cctx, null, rebuildIdxFut).visit(clo);
     }
 
     /**
