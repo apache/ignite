@@ -122,9 +122,12 @@ public class CacheContinuousQueryEventBuffer {
             }
         }
 
+        if (filteredEntryFactory == null)
+            return null;
+
         Batch batch = curBatch.get();
 
-        if (batch != null && filteredEntryFactory != null)
+        if (batch != null)
             batch.flushCurrentEntries(ret, filteredEntryFactory);
 
         if (!pending.isEmpty()) {

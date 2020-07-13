@@ -1257,11 +1257,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     @Override public void flushOnNodeLeft() {
         nodeLeft = true;
 
-        for (Map.Entry<Integer, CacheContinuousQueryEventBuffer> bufE : entryBufs.entrySet()) {
-            CacheContinuousQueryEventBuffer buf = bufE.getValue();
-
+        for (CacheContinuousQueryEventBuffer buf : entryBufs.values())
             buf.flushOnExchange(null);
-        }
     }
 
     /** {@inheritDoc} */
