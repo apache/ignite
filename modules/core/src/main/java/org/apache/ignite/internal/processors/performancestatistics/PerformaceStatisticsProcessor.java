@@ -241,11 +241,11 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
             if (writer == null)
                 return;
 
-            FilePerformanceStatisticsWriter writer = this.writer;
+            FilePerformanceStatisticsWriter cached = writer;
 
-            this.writer = null;
+            writer = null;
 
-            writer.stop();
+            cached.stop();
         }
 
         log.info("Performance statistics writer stopped.");
