@@ -613,7 +613,7 @@ public class CheckpointHistory {
      * @param grpId Group ID.
      * @param cp Checkpoint.
      */
-    private boolean isCheckpointApplicableForGroup(int grpId, CheckpointEntry cp) throws IgniteCheckedException {
+    public boolean isCheckpointApplicableForGroup(int grpId, CheckpointEntry cp) throws IgniteCheckedException {
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) cctx.database();
 
         if (dbMgr.isCheckpointInapplicableForWalRebalance(cp.timestamp(), grpId))
