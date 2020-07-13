@@ -145,6 +145,13 @@ class FilePerformanceStatisticsWriter {
 
         ringByteBuf.free();
 
+        try {
+            fileIo.force();
+        }
+        catch (IOException e) {
+            log.error("Failed to fsync the performance statistics file.", e);
+        }
+
         U.closeQuiet(fileIo);
 
         started = false;
@@ -413,8 +420,6 @@ class FilePerformanceStatisticsWriter {
                     seg.release();
                 }
             }
-
-            fileIo.force();
 
             return written;
         }
