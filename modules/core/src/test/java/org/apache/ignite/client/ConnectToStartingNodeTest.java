@@ -20,25 +20,19 @@ package org.apache.ignite.client;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
  * Checks that connection with starting node will be established correctly.
  */
-public class ConnectToStartingNodeTest extends GridCommonAbstractTest {
-    /** Client connector address. */
-    private static final String CLIENT_CONN_ADDR = "127.0.0.1:" + ClientConnectorConfiguration.DFLT_PORT;
-
+public class ConnectToStartingNodeTest extends AbstractThinClientTest {
     /** Barrier to suspend discovery SPI start. */
     private final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -75,7 +69,7 @@ public class ConnectToStartingNodeTest extends GridCommonAbstractTest {
         barrier.await();
 
         IgniteInternalFuture<IgniteClient> futStartClient = GridTestUtils.runAsync(
-            () -> Ignition.startClient(new ClientConfiguration().setAddresses(CLIENT_CONN_ADDR)));
+            () -> startClient(grid()));
 
         // Server doesn't accept connection before discovery SPI started.
         assertFalse(GridTestUtils.waitForCondition(futStartClient::isDone, 500L));

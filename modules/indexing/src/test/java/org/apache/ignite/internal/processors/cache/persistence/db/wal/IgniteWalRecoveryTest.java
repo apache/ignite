@@ -64,6 +64,7 @@ import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -82,6 +83,9 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
@@ -94,18 +98,25 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.Compactab
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.loadtests.colocation.GridTestLifecycleBean;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
@@ -129,6 +140,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  *
  */
 public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
+    /** */
+    private static final int PARTS = 32;
+
     /** */
     private static final String HAS_CACHE = "HAS_CACHE";
 
@@ -155,6 +169,12 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
     /** */
     private static final String LOC_CACHE_NAME = "local";
+
+    /** */
+    private static final String CACHE_1 = "cache1";
+
+    /** */
+    private static final String CACHE_2 = "cache2";
 
     /** */
     private boolean renamed = false;
@@ -186,12 +206,14 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
         CacheConfiguration<Integer, IndexedObject> ccfg = renamed ?
             new CacheConfiguration<>(RENAMED_CACHE_NAME) : new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS));
         ccfg.setNodeFilter(new RemoteNodeFilter());
         ccfg.setIndexedTypes(Integer.class, IndexedObject.class);
 
@@ -199,7 +221,17 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         locCcfg.setCacheMode(CacheMode.LOCAL);
         locCcfg.setIndexedTypes(Integer.class, IndexedObject.class);
 
-        cfg.setCacheConfiguration(ccfg, locCcfg);
+        CacheConfiguration<Object, Object> cfg1 = new CacheConfiguration<>("cache1")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setRebalanceMode(CacheRebalanceMode.SYNC)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setBackups(0);
+
+        CacheConfiguration<Object, Object> cfg2 = new CacheConfiguration<>(cfg1).setName("cache2").setRebalanceOrder(10);
+
+        cfg.setCacheConfiguration(ccfg, locCcfg, cfg1, cfg2);
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
@@ -1708,6 +1740,127 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests a scenario when a coordinator has failed after recovery during node join.
+     */
+    @Test
+    @WithSystemProperty(key = "IGNITE_DISABLE_WAL_DURING_REBALANCING", value = "false")
+    public void testRecoveryAfterRestart_Join() throws Exception {
+        IgniteEx crd = startGrid(1);
+        crd.cluster().active(true);
+
+        for (int i = 0; i < PARTS; i++) {
+            crd.cache(CACHE_1).put(i, i);
+            crd.cache(CACHE_2).put(i, i);
+        }
+
+        TestRecordingCommunicationSpi.spi(crd).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode clusterNode, Message msg) {
+                if (msg instanceof GridDhtPartitionSupplyMessage) {
+                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage) msg;
+
+                    return msg0.groupId() == CU.cacheId(CACHE_2);
+                }
+
+                return false;
+            }
+        });
+
+        IgniteEx g2 = startGrid(2);
+
+        resetBaselineTopology();
+
+        TestRecordingCommunicationSpi.spi(crd).waitForBlocked();
+
+        forceCheckpoint(g2);
+
+        g2.close();
+
+        TestRecordingCommunicationSpi.spi(crd).stopBlock();
+
+        waitForTopology(1);
+
+        CountDownLatch l1 = new CountDownLatch(1);
+        CountDownLatch l2 = new CountDownLatch(1);
+
+        GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(getPMEBlockingConfiguration(2, l1, l2));
+
+                return null;
+            }
+        });
+
+        assertTrue(U.await(l1, 10, TimeUnit.SECONDS));
+
+        stopGrid(getTestIgniteInstanceName(1), true, false);
+
+        l2.countDown();
+
+        awaitPartitionMapExchange();
+    }
+
+    /**
+     * Tests a scenario when a coordinator has failed after recovery during activation.
+     */
+    @Test
+    @WithSystemProperty(key = "IGNITE_DISABLE_WAL_DURING_REBALANCING", value = "false")
+    public void testRecoveryAfterRestart_Activate() throws Exception {
+        IgniteEx crd = startGrid(1);
+        crd.cluster().active(true);
+
+        for (int i = 0; i < PARTS; i++) {
+            crd.cache(CACHE_1).put(i, i);
+            crd.cache(CACHE_2).put(i, i);
+        }
+
+        TestRecordingCommunicationSpi.spi(crd).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode clusterNode, Message msg) {
+                if (msg instanceof GridDhtPartitionSupplyMessage) {
+                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage) msg;
+
+                    return msg0.groupId() == CU.cacheId(CACHE_2);
+                }
+
+                return false;
+            }
+        });
+
+        IgniteEx g2 = startGrid(2);
+
+        resetBaselineTopology();
+
+        TestRecordingCommunicationSpi.spi(crd).waitForBlocked();
+
+        forceCheckpoint(g2);
+
+        stopAllGrids();
+
+        waitForTopology(0);
+
+        // Restart and activate.
+        CountDownLatch l1 = new CountDownLatch(1);
+        CountDownLatch l2 = new CountDownLatch(1);
+
+        crd = startGrid(1);
+
+        startGrid(getPMEBlockingConfiguration(2, l1, l2));
+
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                grid(1).cluster().active(true);
+            }
+        });
+
+        assertTrue(U.await(l1, 10, TimeUnit.SECONDS));
+
+        stopGrid(getTestIgniteInstanceName(1), true, false);
+
+        l2.countDown();
+
+        awaitPartitionMapExchange();
+    }
+
+    /**
      * Generate random lowercase string for test purposes.
      */
     private String randomString(Random random) {
@@ -1718,6 +1871,45 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             sb.append(random.nextInt(26) + 'a');
 
         return sb.toString();
+    }
+
+    /**
+     * Returns node start configuration with ability to sync on PME onInitBeforeTopologyLock stage.
+     *
+     * @param idx Node index.
+     * @param l1 Blocked event latch.
+     * @param l2 Released event latch.
+     *
+     * @return A configuration.
+     */
+    private IgniteConfiguration getPMEBlockingConfiguration(
+        int idx,
+        CountDownLatch l1,
+        CountDownLatch l2
+    ) throws Exception {
+        return getConfiguration(getTestIgniteInstanceName(idx)).setLifecycleBeans(new GridTestLifecycleBean() {
+            @Override public void onLifecycleEvent(LifecycleEventType type) {
+                if (type == LifecycleEventType.BEFORE_NODE_START) {
+                    g.context().internalSubscriptionProcessor().registerDistributedMetastorageListener(
+                        new DistributedMetastorageLifecycleListener() {
+                        @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+                            g.context().cache().context().exchange().registerExchangeAwareComponent(
+                                new PartitionsExchangeAware() {
+                                @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                                    l1.countDown();
+
+                                    try {
+                                        assertTrue(U.await(l2, 10, TimeUnit.SECONDS));
+                                    } catch (IgniteInterruptedCheckedException e) {
+                                        fail(X.getFullStackTrace(e));
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        });
     }
 
     /**

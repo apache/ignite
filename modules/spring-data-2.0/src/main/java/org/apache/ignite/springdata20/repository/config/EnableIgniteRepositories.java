@@ -97,8 +97,8 @@ public @interface EnableIgniteRepositories {
     Key queryLookupStrategy() default Key.CREATE_IF_NOT_FOUND;
 
     /**
-     * Returns the {@link FactoryBean} class to be used for each repository instance. Defaults to
-     * {@link IgniteRepositoryFactoryBean}.
+     * Returns the {@link FactoryBean} class to be used for each repository instance. Defaults to {@link
+     * IgniteRepositoryFactoryBean}.
      *
      * @return {@link FactoryBean} class to be used for each repository instance.
      */

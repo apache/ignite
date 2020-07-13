@@ -27,6 +27,7 @@ import java.util.Collections;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -147,7 +148,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     private void cleanUpWorkingDir() throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        U.delete(U.resolveWorkDirectory(workDir, "marshaller", false));
+        U.delete(U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
     }
 
     /**

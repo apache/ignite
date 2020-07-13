@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryReaderHandles;
 import org.apache.ignite.internal.binary.BinarySchema;
+import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
@@ -527,6 +529,13 @@ final class ClientUtils {
         out.writeByteArray(marsh.marshal(obj));
     }
 
+    /**
+     * @param out Output stream.
+     */
+    BinaryRawWriterEx createBinaryWriter(BinaryOutputStream out) {
+        return new BinaryWriterExImpl(marsh.context(), out, BinaryThreadLocalContext.get().schemaHolder(), null);
+    }
+
     /** Read Ignite binary object from input stream. */
     <T> T readObject(BinaryInputStream in, boolean keepBinary) {
         if (keepBinary)
@@ -590,7 +599,7 @@ final class ClientUtils {
         if (BinaryUtils.knownArray(arr))
             return arr;
 
-        Object[] res = new Object[arr.length];
+        Object[] res = (Object[])Array.newInstance(arr.getClass().getComponentType(), arr.length);
 
         for (int i = 0; i < arr.length; i++)
             res[i] = unwrapBinary(arr[i], hnds);

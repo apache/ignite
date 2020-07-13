@@ -93,6 +93,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelf
 import org.apache.ignite.internal.processors.cache.IgniteCheckClusterStateBeforeExecuteQueryTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectCacheQueriesFailoverTest;
 import org.apache.ignite.internal.processors.cache.IgniteCrossCachesJoinsQueryTest;
+import org.apache.ignite.internal.processors.cache.IgniteDynamicEnableIndexingRestoreTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicSqlRestoreTest;
 import org.apache.ignite.internal.processors.cache.IgniteErrorOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IncorrectQueryEntityTest;
@@ -223,6 +224,7 @@ import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExcept
 import org.apache.ignite.internal.processors.query.SqlMergeOnClientNodeTest;
 import org.apache.ignite.internal.processors.query.SqlMergeTest;
 import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
+import org.apache.ignite.internal.processors.query.SqlNotNullKeyValueFieldTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelfTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistorySelfTest;
@@ -271,7 +273,6 @@ import org.apache.ignite.internal.sql.SqlParserUserSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.sqltests.PartitionedSqlTest;
 import org.apache.ignite.sqltests.ReplicatedSqlTest;
-import org.apache.ignite.util.KillCommandsCommandShTest;
 import org.apache.ignite.util.KillCommandsMXBeanTest;
 import org.apache.ignite.util.KillCommandsSQLTest;
 import org.junit.runner.RunWith;
@@ -337,6 +338,7 @@ import org.junit.runners.Suite;
     IgniteCacheDuplicateEntityConfigurationSelfTest.class,
     IncorrectQueryEntityTest.class,
     IgniteDynamicSqlRestoreTest.class,
+    IgniteDynamicEnableIndexingRestoreTest.class,
 
     // Queries tests.
     IgniteQueryTableLockAndConnectionPoolLazyModeOnTest.class,
@@ -519,6 +521,7 @@ import org.junit.runners.Suite;
     IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest.class,
     IgniteCacheDistributedPartitionQueryConfigurationSelfTest.class,
     IgniteSqlKeyValueFieldsTest.class,
+    SqlNotNullKeyValueFieldTest.class,
     IgniteSqlRoutingTest.class,
     IgniteSqlNotNullConstraintTest.class,
     LongIndexNameTest.class,
@@ -609,7 +612,6 @@ import org.junit.runners.Suite;
     KillQueryOnClientDisconnectTest.class,
     KillQueryErrorOnCancelTest.class,
     KillCommandsMXBeanTest.class,
-    KillCommandsCommandShTest.class,
     KillCommandsSQLTest.class,
 
     // Table statistics.
