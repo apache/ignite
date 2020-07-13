@@ -310,7 +310,7 @@ class FilePerformanceStatisticsWriter {
 
         ByteBuffer buf = seg.buffer();
 
-        buf.put((byte)op.ordinal());
+        buf.put(op.id());
 
         writer.accept(buf);
 

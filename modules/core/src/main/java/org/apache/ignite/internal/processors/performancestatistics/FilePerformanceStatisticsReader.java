@@ -212,7 +212,7 @@ public class FilePerformanceStatisticsReader {
 
             byte opTypeByte = buf.get();
 
-            OperationType opType = OperationType.fromOrdinal(opTypeByte);
+            OperationType opType = OperationType.of(opTypeByte);
 
             if (cacheOperation(opType)) {
                 if (buf.remaining() < 4 + 8 + 8)

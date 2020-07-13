@@ -17,62 +17,66 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Performance statistics operation type.
  */
 public enum OperationType {
     /** Cache get. */
-    CACHE_GET,
+    CACHE_GET((byte)0),
 
     /** Cache put. */
-    CACHE_PUT,
+    CACHE_PUT((byte)1),
 
     /** Cache remove. */
-    CACHE_REMOVE,
+    CACHE_REMOVE((byte)2),
 
     /** Cache get and put. */
-    CACHE_GET_AND_PUT,
+    CACHE_GET_AND_PUT((byte)3),
 
     /** Cache get and remove. */
-    CACHE_GET_AND_REMOVE,
+    CACHE_GET_AND_REMOVE((byte)4),
 
     /** Cache invoke. */
-    CACHE_INVOKE,
+    CACHE_INVOKE((byte)5),
 
     /** Cache lock. */
-    CACHE_LOCK,
+    CACHE_LOCK((byte)6),
 
     /** Cache get all. */
-    CACHE_GET_ALL,
+    CACHE_GET_ALL((byte)7),
 
     /** Cache put all. */
-    CACHE_PUT_ALL,
+    CACHE_PUT_ALL((byte)8),
 
     /** Cache remove all. */
-    CACHE_REMOVE_ALL,
+    CACHE_REMOVE_ALL((byte)9),
 
     /** Cache invoke all. */
-    CACHE_INVOKE_ALL,
+    CACHE_INVOKE_ALL((byte)10),
 
     /** Transaction commit. */
-    TX_COMMIT,
+    TX_COMMIT((byte)11),
 
     /** Transaction rollback. */
-    TX_ROLLBACK,
+    TX_ROLLBACK((byte)12),
 
     /** Query. */
-    QUERY,
+    QUERY((byte)13),
 
     /** Query reads. */
-    QUERY_READS,
+    QUERY_READS((byte)14),
 
     /** Task. */
-    TASK,
+    TASK((byte)15),
 
     /** Job. */
-    JOB;
+    JOB((byte)16);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
@@ -82,12 +86,38 @@ public enum OperationType {
     /** Transaction operations. */
     public static final EnumSet<OperationType> TX_OPS = EnumSet.of(TX_COMMIT, TX_ROLLBACK);
 
-    /** Values. */
-    private static final OperationType[] VALS = values();
+    /** Value by identifier. */
+    private static final Map<Byte, OperationType> VALS;
 
-    /** @return Operation type from ordinal. */
-    public static OperationType fromOrdinal(byte ord) {
-        return ord < 0 || ord >= VALS.length ? null : VALS[ord];
+    /** Unique operation identifier. */
+    private final byte id;
+
+    /** Static initializer. */
+    static {
+        Map<Byte, OperationType> vals = new HashMap<>();
+
+        for (OperationType op : values()) {
+            OperationType old = vals.put(op.id(), op);
+
+            assert old == null : "Duplicate operation ID found [op=" + op + ']';
+        }
+
+        VALS = Collections.unmodifiableMap(vals);
+    }
+
+    /** @param id Unique operation identifier. */
+    OperationType(byte id) {
+        this.id = id;
+    }
+
+    /** @return Unique operation identifier. */
+    public byte id() {
+        return id;
+    }
+
+    /** @return Operation type of given identifier. */
+    @Nullable public static OperationType of(byte id) {
+        return VALS.get(id);
     }
 
     /** @return {@code True} if cache operation. */
