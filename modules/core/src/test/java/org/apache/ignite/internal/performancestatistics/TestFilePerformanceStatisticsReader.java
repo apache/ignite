@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 
 /**
  * Test performance statistics file reader.
@@ -41,7 +41,7 @@ public class TestFilePerformanceStatisticsReader {
      * @param log Log to write operations to.
      */
     public static void readToLog(IgniteLogger log) throws Exception {
-        File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT, false);
+        File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
 
         FilePerformanceStatisticsReader.read(Collections.singletonList(dir), new LogMessageHandler(log));
     }

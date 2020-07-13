@@ -47,9 +47,8 @@ import static org.apache.ignite.internal.processors.metastorage.DistributedMetaS
  * @see FilePerformanceStatisticsReader
  */
 public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
-    /** Prefix for performance statistics enabled property name. */
-    private static final String PERFORMANCE_STAT_ENABLED_PREFIX = IGNITE_INTERNAL_KEY_PREFIX +
-        "performanceStatistics.enabled";
+    /** Prefix for performance statistics enabled key. */
+    private static final String PERF_STAT_KEY = IGNITE_INTERNAL_KEY_PREFIX + "performanceStatistics.enabled";
 
     /** Performance statistics writer. {@code Null} if collecting statistics disabled. */
     @Nullable private volatile FilePerformanceStatisticsWriter writer;
@@ -67,7 +66,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
             @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-                metastorage.listen(PERFORMANCE_STAT_ENABLED_PREFIX::equals, (key, oldVal, newVal) -> {
+                metastorage.listen(PERF_STAT_KEY::equals, (key, oldVal, newVal) -> {
                     // Skip history on local join.
                     if (!ctx.discovery().localJoinFuture().isDone())
                         return;
@@ -80,7 +79,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
                 PerformaceStatisticsProcessor.this.metastorage = metastorage;
 
                 try {
-                    Boolean performanceStatsEnabled = metastorage.read(PERFORMANCE_STAT_ENABLED_PREFIX);
+                    Boolean performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
 
                     if (performanceStatsEnabled == null)
                         return;
@@ -173,7 +172,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
-        metastorage.write(PERFORMANCE_STAT_ENABLED_PREFIX, true);
+        metastorage.write(PERF_STAT_KEY, true);
     }
 
     /**
@@ -187,7 +186,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
-        metastorage.write(PERFORMANCE_STAT_ENABLED_PREFIX, false);
+        metastorage.write(PERF_STAT_KEY, false);
     }
 
     /** @return {@code True} if collecting performance statistics is enabled. */
