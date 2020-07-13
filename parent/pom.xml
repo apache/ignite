@@ -141,6 +141,7 @@
         <zookeeper.version>3.5.5</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
+        <commons.lang3.version>3.9</commons.lang3.version>
         <!--Spark 2.4 version support -->
         <spark24.hadoop.version>2.6.5</spark24.hadoop.version>
         <spark24.version>2.4.4</spark24.version>
