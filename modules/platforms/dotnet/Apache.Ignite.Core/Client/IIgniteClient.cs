@@ -113,7 +113,10 @@ namespace Apache.Ignite.Core.Client
         IBinary GetBinary();
 
         /// <summary>
-        /// Gets Ignite transactions facade.
+        /// Gets Ignite transactions facade <see cref="ITransactionsClient"/>.
+        /// <para /> Transactions are bound to the thread started the transaction. After that, each cache operation within this thread
+        /// will belong to the corresponding transaction until the transaction is committed, rolled back or closed.
+        /// <para /> Should not be used with async calls.
         /// </summary>
         ITransactionsClient GetTransactions();
 

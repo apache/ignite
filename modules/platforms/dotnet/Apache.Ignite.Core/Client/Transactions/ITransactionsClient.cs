@@ -22,17 +22,24 @@ namespace Apache.Ignite.Core.Client.Transactions
 
     /// <summary>
     /// Ignite Thin Client transactions facade.
-    /// </summary>
+    /// <para /> Transactions are bound to the thread started the transaction. After that, each cache operation within this thread
+    /// will belong to the corresponding transaction until the transaction is committed, rolled back or closed.
+    /// <para /> Should not be used with async calls.
+    /// </summary> 
     public interface ITransactionsClient
     {
         /// <summary>
-        /// Starts a new transaction with the default isolation level, concurrency and timeout. 
+        /// Starts a new transaction with the default isolation level, concurrency and timeout.
+        /// <para />Default values for transaction isolation level, concurrency and timeout can be configured via
+        /// <see cref="TransactionClientConfiguration"/>.
+        /// <para /> Should not be used with async calls.
         /// </summary>
         /// <returns>New transaction.</returns>
         ITransactionClient TxStart();
 
         /// <summary>
         /// Starts new transaction with the specified concurrency and isolation.
+        /// <para /> Should not be used with async calls.
         /// </summary>
         /// <param name="concurrency">Concurrency.</param>
         /// <param name="isolation">Isolation.</param>
@@ -41,6 +48,7 @@ namespace Apache.Ignite.Core.Client.Transactions
 
         /// <summary>
         /// Starts new transaction with the specified concurrency, isolation and timeout.
+        /// <para /> Should not be used with async calls.
         /// </summary>
         /// <param name="concurrency">Concurrency.</param>
         /// <param name="isolation">Isolation.</param>
@@ -49,7 +57,7 @@ namespace Apache.Ignite.Core.Client.Transactions
         ITransactionClient TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation, TimeSpan timeout);
 
         /// <summary>
-        /// Returns instance of <see cref="ITransactionsClient"/>> to mark a transaction with a special label.
+        /// Returns instance of <see cref="ITransactionsClient"/> to mark a transaction with a special label.
         /// The label is helpful for diagnostic and exposed by some diagnostic tools like
         /// SYS.TRANSACTIONS system view, control.sh commands, JMX TransactionsMXBean,
         /// long-running transactions dump in logs.
