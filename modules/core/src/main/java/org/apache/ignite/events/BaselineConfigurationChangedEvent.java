@@ -67,7 +67,6 @@ public class BaselineConfigurationChangedEvent extends EventAdapter {
     /** @see IgniteCluster#baselineAutoAdjustTimeout() */
     private final long autoAdjustTimeout;
 
-
     /**
      * Creates baseline configuration changed event with given parameters.
      * @param node Node.
