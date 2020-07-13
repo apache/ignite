@@ -50,8 +50,11 @@ namespace Apache.Ignite.Core.Client.Transactions
 
         /// <summary>
         /// Returns instance of <see cref="ITransactionsClient"/>> to mark a transaction with a special label.
+        /// The label is helpful for diagnostic and exposed by some diagnostic tools like
+        /// SYS.TRANSACTIONS system view, control.sh commands, JMX TransactionsMXBean,
+        /// long-running transactions dump in logs.
         /// </summary>
-        /// <param name="label"></param>
+        /// <param name="label">Label.</param>
         /// <returns><see cref="T:Apache.Ignite.Core.Client.Transactions.IClientTransactions" /></returns>
         ITransactionsClient WithLabel(string label);
     }
