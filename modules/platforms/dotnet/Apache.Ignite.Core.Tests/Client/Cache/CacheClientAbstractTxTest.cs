@@ -62,7 +62,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestClientTransactionConfiguration()
         {
             var timeout = TransactionClientConfiguration.DefaultDefaultTimeout.Add(TimeSpan.FromMilliseconds(1000));
-
             var cfg = GetClientConfiguration();
             cfg.TransactionConfiguration = new TransactionClientConfiguration
             {
@@ -78,6 +77,42 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     using (var client = Ignition.StartClient(cfg))
                     {
                         using (client.GetTransactions().TxStart())
+                        {
+                            var tx = GetSingleLocalTransaction();
+                            Assert.AreEqual(concurrency, tx.Concurrency);
+                            Assert.AreEqual(isolation, tx.Isolation);
+                            Assert.AreEqual(timeout, tx.Timeout);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tests that parameters passed to TxStart are applied.
+        /// </summary>
+        [Test]
+        public void TestTxStartPassesParameters()
+        {
+            var timeout = TransactionClientConfiguration.DefaultDefaultTimeout.Add(TimeSpan.FromMilliseconds(1000));
+            var acts = new List<Func<ITransactionsClient>>
+            {
+                () => Client.GetTransactions(),
+                () => Client.GetTransactions().WithLabel("label"),
+            };
+            foreach (var concurrency in AllConcurrencyControls)
+            {
+                foreach (var isolation in AllIsolationLevels)
+                {
+                    foreach (var act in acts)
+                    {
+                        using (act().TxStart(concurrency, isolation))
+                        {
+                            var tx = GetSingleLocalTransaction();
+                            Assert.AreEqual(concurrency, tx.Concurrency);
+                            Assert.AreEqual(isolation, tx.Isolation);
+                        }
+                        using (act().TxStart(concurrency, isolation, timeout))
                         {
                             var tx = GetSingleLocalTransaction();
                             Assert.AreEqual(concurrency, tx.Concurrency);
@@ -147,7 +182,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cache.Put(1, 1);
             cache.Put(2, 2);
 
-            using (var tx = Client.GetTransactions().TxStart())
+            using (Client.GetTransactions().TxStart())
             {
                 cache.Put(1, 10);
                 cache.Put(2, 20);
@@ -163,14 +198,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestThrowsIfMultipleStarted()
         {
-            Assert.Throws<IgniteClientException>(() =>
-            {
-                using (Client.GetTransactions().TxStart())
-                using (Client.GetTransactions().TxStart())
-                {
-                    // No-op.
-                }
-            });
+            TestThrowsIfMultipleStarted(
+                () => Client.GetTransactions().TxStart(),
+                () => Client.GetTransactions().TxStart());
         }
 
         /// <summary>
@@ -236,32 +266,17 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Assert.AreEqual(tx.Label, label2);
             }
 
-            Assert.Throws<IgniteClientException>(() =>
-            {
-                using (Client.GetTransactions().WithLabel(label1).TxStart())
-                using (Client.GetTransactions().TxStart())
-                {
-                    // No-op.
-                }
-            });
-            
-            Assert.Throws<IgniteClientException>(() =>
-            {
-                using (Client.GetTransactions().TxStart())
-                using (Client.GetTransactions().WithLabel(label1).TxStart())
-                {
-                    // No-op.
-                }
-            });
-            
-            Assert.Throws<IgniteClientException>(() =>
-            {
-                using (Client.GetTransactions().WithLabel(label1).TxStart())
-                using (Client.GetTransactions().WithLabel(label1).TxStart())
-                {
-                    // No-op.
-                }
-            });
+            TestThrowsIfMultipleStarted(
+                () => Client.GetTransactions().WithLabel(label1).TxStart(),
+                () => Client.GetTransactions().TxStart());
+
+            TestThrowsIfMultipleStarted(
+                () => Client.GetTransactions().TxStart(),
+                () => Client.GetTransactions().WithLabel(label1).TxStart());
+
+            TestThrowsIfMultipleStarted(
+                () => Client.GetTransactions().WithLabel(label1).TxStart(),
+                () => Client.GetTransactions().WithLabel(label2).TxStart());
         }
 
         /// <summary>
@@ -636,6 +651,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                .GetTransactions()
                .GetLocalActiveTransactions()
                .Single();
+        }
+
+        /// <summary>
+        /// Tests that client can't start multiple transactions in one thread.
+        /// </summary>
+        private void TestThrowsIfMultipleStarted(Func<IDisposable> outer, Func<IDisposable> inner)
+        {
+            Assert.Throws<IgniteClientException>(() =>
+                {
+                    using (outer())
+                    using (inner())
+                    {
+                        // No-op.
+                    }
+                },
+                "A transaction has already been started by the current thread.");
         }
 
         /// <summary>
