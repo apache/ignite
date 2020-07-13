@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestTxPartitioned()
         {
-            var cache = TransactionalCache();
+            var cache = GetTransactionalCache();
             var ignite1 = GetIgnite();
             var ignite2 = GetIgnite(1);
             var key1 = TestUtils.GetPrimaryKey(ignite1, GetCacheName());
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestTransactionScopePartitioned()
         {
-            var cache = TransactionalCache();
+            var cache = GetTransactionalCache();
             var ignite1 = GetIgnite();
             var ignite2 = GetIgnite(1);
             var key1 = TestUtils.GetPrimaryKey(ignite1, GetCacheName());

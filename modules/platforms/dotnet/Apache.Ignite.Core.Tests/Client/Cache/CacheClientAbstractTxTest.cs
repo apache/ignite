@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
@@ -33,10 +34,59 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// </summary>
     public abstract class CacheClientAbstractTxTest : ClientTestBase
     {
+        /** All concurrency controls. */
+        private static readonly TransactionConcurrency[] AllConcurrencyControls =
+        {
+            TransactionConcurrency.Optimistic, 
+            TransactionConcurrency.Pessimistic
+        };
+
+        /** All isolation levels*/
+        private static readonly TransactionIsolation[] AllIsolationLevels = 
+        {
+            TransactionIsolation.Serializable,
+            TransactionIsolation.ReadCommitted,
+            TransactionIsolation.RepeatableRead
+        };
+
         protected CacheClientAbstractTxTest(int serverCount, bool enablePartitionAwareness) : base(serverCount,
             enablePartitionAwareness: enablePartitionAwareness)
         {
             // No-op.
+        }
+
+        /// <summary>
+        /// Tests that custom client transactions configuration is applied.
+        /// </summary>
+        [Test]
+        public void TestClientTransactionConfiguration()
+        {
+            var timeout = TransactionClientConfiguration.DefaultDefaultTimeout.Add(TimeSpan.FromMilliseconds(1000));
+
+            var cfg = GetClientConfiguration();
+            cfg.TransactionConfiguration = new TransactionClientConfiguration
+            {
+                DefaultTimeout = timeout
+            };
+
+            foreach (var concurrency in AllConcurrencyControls)
+            {
+                foreach (var isolation in AllIsolationLevels)
+                {
+                    cfg.TransactionConfiguration.DefaultTransactionConcurrency = concurrency;
+                    cfg.TransactionConfiguration.DefaultTransactionIsolation = isolation;
+                    using (var client = Ignition.StartClient(cfg))
+                    {
+                        using (client.GetTransactions().TxStart())
+                        {
+                            var tx = GetSingleLocalTransaction();
+                            Assert.AreEqual(concurrency, tx.Concurrency);
+                            Assert.AreEqual(isolation, tx.Isolation);
+                            Assert.AreEqual(timeout, tx.Timeout);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -45,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestTxCommit()
         {
-            var cache = TransactionalCache();
+            var cache = GetTransactionalCache();
 
             cache.Put(1, 1);
             cache.Put(2, 2);
@@ -68,7 +118,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestTxRollback()
         {
-            var cache = TransactionalCache();
+            var cache = GetTransactionalCache();
             cache.Put(1, 1);
             cache.Put(2, 2);
 
@@ -92,7 +142,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestTxClose()
         {
-            var cache = TransactionalCache();
+            var cache = GetTransactionalCache();
 
             cache.Put(1, 1);
             cache.Put(2, 2);
@@ -148,15 +198,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             const string label1 = "label1";
             const string label2 = "label2";
 
-            var cache = TransactionalCache();
+            var cache = GetTransactionalCache();
             cache.Put(1, 1);
             cache.Put(2, 2);
 
             using (Client.GetTransactions().WithLabel(label1).TxStart())
             {
-                var igniteTx = GetIgnite().GetTransactions()
-                   .GetLocalActiveTransactions()
-                   .Single();
+                var igniteTx = GetSingleLocalTransaction();
 
                 Assert.AreEqual(igniteTx.Label, label1);
 
@@ -169,9 +217,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             using (var tx = Client.GetTransactions().WithLabel(label1).TxStart())
             {
-                var igniteTx = GetIgnite().GetTransactions()
-                   .GetLocalActiveTransactions()
-                   .Single();
+                var igniteTx = GetSingleLocalTransaction();
 
                 Assert.AreEqual(igniteTx.Label, label1);
 
@@ -185,9 +231,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             using (Client.GetTransactions().WithLabel(label1).WithLabel(label2).TxStart())
             {
-                var tx = GetIgnite().GetTransactions()
-                   .GetLocalActiveTransactions()
-                   .Single();
+                var tx = GetSingleLocalTransaction();
 
                 Assert.AreEqual(tx.Label, label2);
             }
@@ -226,7 +270,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestTransactionScopeSingleCache()
         {
-            var cache = TransactionalCache();
+            var cache = GetTransactionalCache();
 
             cache[1] = 1;
             cache[2] = 2;
@@ -261,8 +305,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestTransactionScopeMultiCache()
         {
-            var cache1 = TransactionalCache();
-            var cache2 = TransactionalCache(cache1.Name + "1");
+            var cache1 = GetTransactionalCache();
+            var cache2 = GetTransactionalCache(cache1.Name + "1");
 
             cache1[1] = 1;
             cache2[1] = 2;
@@ -297,7 +341,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestTransactionScopeWithManualIgniteTx()
         {
-            var cache = TransactionalCache();
+            var cache = GetTransactionalCache();
             var transactions = Client.GetTransactions();
 
             cache[1] = 1;
@@ -322,7 +366,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestSuppressedTransactionScope()
         {
-            var cache = TransactionalCache();
+            var cache = GetTransactionalCache();
 
             cache[1] = 1;
 
@@ -341,7 +385,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestNestedTransactionScope()
         {
-            var cache = TransactionalCache();
+            var cache = GetTransactionalCache();
 
             cache[1] = 1;
 
@@ -383,7 +427,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestTransactionScopeOptions()
         {
-            var cache = TransactionalCache();
+            var cache = GetTransactionalCache();
             var transactions = (ITransactionsClientInternal) Client.GetTransactions();
 
             var modes = new[]
@@ -405,9 +449,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     cache[1] = 1;
 
-                    var tx = GetIgnite().GetTransactions()
-                       .GetLocalActiveTransactions()
-                       .Single();
+                    var tx = GetSingleLocalTransaction();
                     Assert.AreEqual(mode.Item2, tx.Isolation);
                     Assert.AreEqual(transactions.DefaultTxConcurrency, tx.Concurrency);
                 }
@@ -508,7 +550,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var txOpts = new TransactionOptions {IsolationLevel = IsolationLevel.RepeatableRead};
             const TransactionScopeOption scope = TransactionScopeOption.Required;
 
-            var cache = TransactionalCache();
+            var cache = GetTransactionalCache();
             cache[1] = 1;
 
             // Rollback.
@@ -537,7 +579,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 var txOpts = new TransactionOptions {IsolationLevel = isolationLevel};
                 const TransactionScopeOption scope = TransactionScopeOption.Required;
 
-                var cache = TransactionalCache();
+                var cache = GetTransactionalCache();
 
                 cache[1] = 1;
                 cache[2] = 2;
@@ -586,6 +628,17 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Gets single transaction from Ignite.
+        /// </summary>
+        private static ITransaction GetSingleLocalTransaction()
+        {
+            return GetIgnite()
+               .GetTransactions()
+               .GetLocalActiveTransactions()
+               .Single();
+        }
+
+        /// <summary>
         /// Gets cache name.
         /// </summary>
         protected virtual string GetCacheName()
@@ -596,7 +649,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Gets or creates transactional cache
         /// </summary>
-        protected ICacheClient<int, int> TransactionalCache(string cacheName = null)
+        protected ICacheClient<int, int> GetTransactionalCache(string cacheName = null)
         {
             return Client.GetOrCreateCache<int, int>(new CacheClientConfiguration
             {
