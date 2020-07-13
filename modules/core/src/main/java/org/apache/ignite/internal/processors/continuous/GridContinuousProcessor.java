@@ -2022,8 +2022,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     if (info.autoUnsubscribe)
                         unregisterRemote(routineId);
 
-                    if (info.hnd.isQuery())
-                        info.hnd.onNodeLeft();
+                    info.hnd.flushOnNodeLeft();
                 }
             }
 
@@ -2172,7 +2171,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     public static class RemoteRoutineInfo implements RoutineInfo {
         /** Master node ID. */
-        private UUID nodeId;
+        private final UUID nodeId;
 
         /** Continuous routine handler. */
         private final GridContinuousHandler hnd;
@@ -2193,7 +2192,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         private long lastSndTime = U.currentTimeMillis();
 
         /** Automatic unsubscribe flag. */
-        private boolean autoUnsubscribe;
+        private final boolean autoUnsubscribe;
 
         /** Delayed register flag. */
         private boolean delayedRegister;

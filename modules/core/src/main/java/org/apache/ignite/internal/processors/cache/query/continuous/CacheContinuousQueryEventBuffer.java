@@ -29,6 +29,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
+import java.util.function.LongUnaryOperator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -54,8 +56,8 @@ public class CacheContinuousQueryEventBuffer {
     /** Continuous query category logger. */
     private final IgniteLogger log;
 
-    /** */
-    private final int part;
+    /** Function returns current partition counter related to this buffer. */
+    private final LongUnaryOperator currPartCntr;
 
     /** Batch of entries currently being collected to send to the remote. */
     private final AtomicReference<Batch> curBatch = new AtomicReference<>();
@@ -76,19 +78,19 @@ public class CacheContinuousQueryEventBuffer {
     private final GridAtomicLong ackedUpdCntr = new GridAtomicLong(0);
 
     /**
-     * @param part Partition number.
+     * @param currPartCntr Current partition counter.
      * @param log Continuous query category logger.
      */
-    CacheContinuousQueryEventBuffer(int part, IgniteLogger log) {
-        this.part = part;
+    CacheContinuousQueryEventBuffer(LongUnaryOperator currPartCntr, IgniteLogger log) {
+        this.currPartCntr = currPartCntr;
         this.log = log;
     }
 
     /**
-     * @param part Partition number.
+     * @param log Continuous query category logger.
      */
-    CacheContinuousQueryEventBuffer(int part) {
-        this(part, null);
+    CacheContinuousQueryEventBuffer(IgniteLogger log) {
+        this((backup) -> 0, log);
     }
 
     /**
@@ -96,53 +98,41 @@ public class CacheContinuousQueryEventBuffer {
      */
     void cleanupOnAck(long updateCntr) {
         backupQ.removeIf(backupEntry -> backupEntry.updateCounter() <= updateCntr);
-
         ackedUpdCntr.setIfGreater(updateCntr);
     }
 
     /**
      * @return Backup entries.
      */
-    @Nullable Collection<CacheContinuousQueryEntry> flushOnExchange() {
-        TreeMap<Long, CacheContinuousQueryEntry> ret = null;
+    @Nullable Collection<CacheContinuousQueryEntry> flushOnExchange(
+        BiFunction<Long, Long, CacheContinuousQueryEntry> filteredEntryFactory
+    ) {
+        Map<Long, CacheContinuousQueryEntry> ret = new TreeMap<>();
 
         int size = backupQ.size();
 
         if (size > 0) {
-            ret = new TreeMap<>();
-
             for (int i = 0; i < size; i++) {
                 CacheContinuousQueryEntry e = backupQ.pollFirst();
 
-                if (e != null)
-                    ret.put(e.updateCounter(), e);
-                else
+                if (e == null)
                     break;
+
+                ret.put(e.updateCounter(), e);
             }
         }
 
         Batch batch = curBatch.get();
 
         if (batch != null)
-            ret = batch.flushCurrentEntries(ret);
+            batch.flushCurrentEntries(ret, filteredEntryFactory);
 
         if (!pending.isEmpty()) {
-            if (ret == null)
-                ret = new TreeMap<>();
-
             for (CacheContinuousQueryEntry e : pending.values())
                 ret.put(e.updateCounter(), e);
         }
 
-        return ret != null ? ret.values() : null;
-    }
-
-    /**
-     * @param backup {@code True} if backup context.
-     * @return Initial partition counter.
-     */
-    protected long currentPartitionCounter(boolean backup) {
-        return 0;
+        return ret.isEmpty() ? null : ret.values();
     }
 
     /**
@@ -179,7 +169,7 @@ public class CacheContinuousQueryEventBuffer {
 
         for (;;) {
             // Set batch only if batch is null (first attempt).
-            batch = initBatch(entry.topologyVersion(), backup);
+            batch = initBatch(backup);
 
             if (batch == null || cntr < batch.startCntr) {
                 if (backup) {
@@ -254,23 +244,23 @@ public class CacheContinuousQueryEventBuffer {
     }
 
     /**
-     * @param topVer Current event topology version.
      * @param backup {@code True} if backup entry.
      * @return Current batch.
      */
-    private Batch initBatch(AffinityTopologyVersion topVer, boolean backup) {
+    private Batch initBatch(boolean backup) {
         Batch batch = curBatch.get();
 
         if (batch != null)
             return batch;
 
         for (;;) {
-            long curCntr = currentPartitionCounter(backup);
+            // todo refactor this
+            long curCntr = currPartCntr.applyAsLong(backup ? 1 : 0);
 
             if (curCntr == -1)
                 return null;
 
-            batch = new Batch(curCntr + 1, 0L, new CacheContinuousQueryEntry[BUF_SIZE], topVer);
+            batch = new Batch(curCntr + 1, 0L, new CacheContinuousQueryEntry[BUF_SIZE]);
 
             if (curBatch.compareAndSet(null, batch))
                 return batch;
@@ -369,36 +359,32 @@ public class CacheContinuousQueryEventBuffer {
         /** */
         private CacheContinuousQueryEntry[] entries;
 
-        /** */
-        private final AffinityTopologyVersion topVer;
-
         /**
          * @param filtered Number of filtered events before this batch.
          * @param entries Entries array.
-         * @param topVer Current event topology version.
          * @param startCntr Start counter.
          */
-        Batch(long startCntr, long filtered, CacheContinuousQueryEntry[] entries, AffinityTopologyVersion topVer) {
+        Batch(long startCntr, long filtered, CacheContinuousQueryEntry[] entries) {
             assert startCntr >= 0;
             assert filtered >= 0;
 
             this.startCntr = startCntr;
             this.filtered = filtered;
             this.entries = entries;
-            this.topVer = topVer;
 
             endCntr = startCntr + BUF_SIZE - 1;
         }
 
         /**
          * @param res Current entries.
-         * @return Entries to send as part of backup queue.
+         * @param filteredEntryFactory Factory which produces filtered entries.
          */
-        @Nullable synchronized TreeMap<Long, CacheContinuousQueryEntry> flushCurrentEntries(
-            @Nullable TreeMap<Long, CacheContinuousQueryEntry> res
+        synchronized void flushCurrentEntries(
+            Map<Long, CacheContinuousQueryEntry> res,
+            BiFunction<Long, Long, CacheContinuousQueryEntry> filteredEntryFactory
         ) {
             if (entries == null)
-                return res;
+                return;
 
             long filtered = this.filtered;
             long cntr = startCntr;
@@ -410,7 +396,7 @@ public class CacheContinuousQueryEventBuffer {
 
                 if (e == null) {
                     if (filtered != 0) {
-                        flushEntry = filteredEntry(cntr - 1, filtered - 1);
+                        flushEntry = filteredEntryFactory.apply(cntr - 1, filtered - 1);
 
                         filtered = 0;
                     }
@@ -436,50 +422,17 @@ public class CacheContinuousQueryEventBuffer {
                     }
                 }
 
-                if (flushEntry != null) {
-                    if (res == null)
-                        res = new TreeMap<>();
-
+                if (flushEntry != null)
                     res.put(flushEntry.updateCounter(), flushEntry);
-                }
 
                 cntr++;
             }
 
             if (filtered != 0L) {
-                if (res == null)
-                    res = new TreeMap<>();
-
-                CacheContinuousQueryEntry flushEntry = filteredEntry(cntr - 1, filtered - 1);
+                CacheContinuousQueryEntry flushEntry = filteredEntryFactory.apply(cntr - 1, filtered - 1);
 
                 res.put(flushEntry.updateCounter(), flushEntry);
             }
-
-            return res;
-        }
-
-        /**
-         * @param cntr Entry counter.
-         * @param filtered Number of entries filtered before this entry.
-         * @return Entry.
-         */
-        private CacheContinuousQueryEntry filteredEntry(long cntr, long filtered) {
-            CacheContinuousQueryEntry e = new CacheContinuousQueryEntry(0,
-                null,
-                null,
-                null,
-                null,
-                false,
-                part,
-                cntr,
-                topVer,
-                (byte)0);
-
-            e.markFiltered();
-
-            e.filteredCount(filtered);
-
-            return e;
         }
 
         /**
@@ -568,8 +521,7 @@ public class CacheContinuousQueryEventBuffer {
 
             Batch nextBatch = new Batch(startCntr,
                 filtered,
-                entries,
-                topVer);
+                entries);
 
             entries = null;
 

@@ -83,6 +83,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.toCountersMap;
+import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry.create;
 
 /**
  * Continuous query handler.
@@ -499,7 +500,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     for (Map.Entry<Integer, CacheContinuousQueryEventBuffer> bufE : entryBufs.entrySet()) {
                         CacheContinuousQueryEventBuffer buf = bufE.getValue();
 
-                        Collection<CacheContinuousQueryEntry> backupQueue = buf.flushOnExchange();
+                        Collection<CacheContinuousQueryEntry> backupQueue = buf.flushOnExchange((cntr, filtered) ->
+                            create(cctx.cacheId(), bufE.getKey(), topVer, cntr, filtered));
 
                         if (backupQueue != null && node != null) {
                             for (CacheContinuousQueryEntry e : backupQueue) {
@@ -1233,26 +1235,24 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /**
      * @param cctx Cache context.
-     * @param part Partition.
+     * @param partId Partition id.
      * @return Event buffer.
      */
-    CacheContinuousQueryEventBuffer partitionBuffer(final GridCacheContext cctx, int part) {
-        CacheContinuousQueryEventBuffer buf = entryBufs.get(part);
+    CacheContinuousQueryEventBuffer partitionBuffer(GridCacheContext<?, ?> cctx, int partId) {
+        CacheContinuousQueryEventBuffer buf = entryBufs.get(partId);
 
         if (buf == null) {
-            buf = new CacheContinuousQueryEventBuffer(part, ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY)) {
-                @Override protected long currentPartitionCounter(boolean backup) {
-                    GridDhtLocalPartition locPart = cctx.topology().localPartition(part, null, false);
+            buf = new CacheContinuousQueryEventBuffer((backup) -> {
+                GridDhtLocalPartition locPart = cctx.topology().localPartition(partId, null, false);
 
-                    if (locPart == null)
-                        return -1L;
+                if (locPart == null)
+                    return -1L;
 
-                    // Use HWM for primary, LWM for backup.
-                    return backup ? locPart.updateCounter() : locPart.reservedCounter();
-                }
-            };
+                // Use HWM for primary, LWM for backup.
+                return backup > 0 ? locPart.updateCounter() : locPart.reservedCounter();
+            }, ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY));
 
-            CacheContinuousQueryEventBuffer oldBuf = entryBufs.putIfAbsent(part, buf);
+            CacheContinuousQueryEventBuffer oldBuf = entryBufs.putIfAbsent(partId, buf);
 
             if (oldBuf != null)
                 buf = oldBuf;
@@ -1262,13 +1262,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
-    @Override public void onNodeLeft() {
+    @Override public void flushOnNodeLeft() {
         nodeLeft = true;
 
         for (Map.Entry<Integer, CacheContinuousQueryEventBuffer> bufE : entryBufs.entrySet()) {
             CacheContinuousQueryEventBuffer buf = bufE.getValue();
 
-            buf.flushOnExchange();
+            buf.flushOnExchange((cntr, filtered) -> null);
         }
     }
 

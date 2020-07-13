@@ -139,7 +139,8 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         int part,
         long updateCntr,
         @Nullable AffinityTopologyVersion topVer,
-        byte flags) {
+        byte flags
+    ) {
         this.cacheId = cacheId;
         this.evtType = evtType;
         this.key = key;
@@ -152,6 +153,38 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
         if (keepBinary)
             this.flags |= KEEP_BINARY;
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param partId Partition id entry related to.
+     * @param topVer Topology version.
+     * @param cntr Update counter entry related to.
+     * @param filtered Number of filtered entries prior to current one.
+     * @return Entry instance.
+     */
+    public static CacheContinuousQueryEntry create(
+        int cacheId,
+        int partId,
+        AffinityTopologyVersion topVer,
+        long cntr,
+        long filtered
+    ) {
+        CacheContinuousQueryEntry e = new CacheContinuousQueryEntry(cacheId,
+            null,
+            null,
+            null,
+            null,
+            false,
+            partId,
+            cntr,
+            topVer,
+            (byte)0);
+
+        e.markFiltered();
+        e.filteredCount(filtered);
+
+        return e;
     }
 
     /**
