@@ -686,9 +686,9 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
     /**
      * @param topVer Finished exchange topology version.
      */
-    public void flushBackupQueue(AffinityTopologyVersion topVer) {
+    public void flushOnExchangeDone(AffinityTopologyVersion topVer) {
         for (CacheContinuousQueryListener lsnr : lsnrs.values())
-            lsnr.flushBackupQueue(cctx.kernalContext(), topVer);
+            lsnr.flushOnExchangeDone(cctx.kernalContext(), topVer);
     }
 
     /**

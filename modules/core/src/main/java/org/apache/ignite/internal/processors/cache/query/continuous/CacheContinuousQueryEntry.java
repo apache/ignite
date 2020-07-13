@@ -163,7 +163,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @param filtered Number of filtered entries prior to current one.
      * @return Entry instance.
      */
-    public static CacheContinuousQueryEntry create(
+    public static CacheContinuousQueryEntry createContinuousQueryEntry(
         int cacheId,
         int partId,
         AffinityTopologyVersion topVer,

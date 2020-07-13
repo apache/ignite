@@ -83,7 +83,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.toCountersMap;
-import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry.create;
+import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry.createContinuousQueryEntry;
 
 /**
  * Continuous query handler.
@@ -489,7 +489,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 }
             }
 
-            @Override public void flushBackupQueue(GridKernalContext ctx, AffinityTopologyVersion topVer) {
+            @Override public void flushOnExchangeDone(GridKernalContext ctx, AffinityTopologyVersion topVer) {
                 assert topVer != null;
 
                 try {
@@ -500,19 +500,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     for (Map.Entry<Integer, CacheContinuousQueryEventBuffer> bufE : entryBufs.entrySet()) {
                         CacheContinuousQueryEventBuffer buf = bufE.getValue();
 
-                        Collection<CacheContinuousQueryEntry> backupQueue = buf.flushOnExchange((cntr, filtered) ->
-                            create(cctx.cacheId(), bufE.getKey(), topVer, cntr, filtered));
+                        Collection<CacheContinuousQueryEntry> entries = buf.flushOnExchange((cntr, filtered) ->
+                            createContinuousQueryEntry(cctx.cacheId(), bufE.getKey(), topVer, cntr, filtered));
 
-                        if (backupQueue != null && node != null) {
-                            for (CacheContinuousQueryEntry e : backupQueue) {
-                                e.markBackup();
+                        if (entries == null || node == null)
+                            continue;
 
-                                if (!e.isFiltered())
-                                    prepareEntry(cctx, nodeId, e);
-                            }
+                        for (CacheContinuousQueryEntry e : entries) {
+                            e.markBackup();
 
-                            ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue, topic);
+                            if (!e.isFiltered())
+                                prepareEntry(cctx, nodeId, e);
                         }
+
+                        ctx.continuous().addBackupNotification(nodeId, routineId, entries, topic);
                     }
                 }
                 catch (IgniteCheckedException e) {

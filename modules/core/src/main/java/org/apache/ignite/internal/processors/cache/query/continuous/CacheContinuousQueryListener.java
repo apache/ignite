@@ -74,7 +74,7 @@ public interface CacheContinuousQueryListener<K, V> {
      * @param ctx Context.
      * @param topVer Topology version.
      */
-    public void flushBackupQueue(GridKernalContext ctx, AffinityTopologyVersion topVer);
+    public void flushOnExchangeDone(GridKernalContext ctx, AffinityTopologyVersion topVer);
 
     /**
      * @param ctx Context.
