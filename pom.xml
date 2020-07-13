@@ -763,6 +763,24 @@
                                                 <include name="**/Resource.rc" />
                                             </fileset>
                                         </replaceregexp>
+
+                                        <echo message="Update ignite.version in other resource files" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignite.version=).+$" />
+                                            <substitution expression="\1${new.ignite.version}" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/ignite.properties" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignVer = )'.+'" />
+                                            <substitution expression="\1'${new.ignite.version}'" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/build.gradle" />
+                                            </fileset>
+                                        </replaceregexp>
                                     </target>
                                 </configuration>
                             </execution>
