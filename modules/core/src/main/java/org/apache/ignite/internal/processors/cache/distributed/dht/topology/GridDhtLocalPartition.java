@@ -443,7 +443,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Reserves a partition so it won't be cleared or evicted.
+     * Reserves an owned partition so it won't be cleared or evicted.
      *
      * @return {@code True} if reserved.
      */
@@ -451,7 +451,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         while (true) {
             long state = this.state.get();
 
-            if (getPartState(state) == EVICTED)
+            if (getPartState(state) == RENTING || getPartState(state) == EVICTED)
                 return false;
 
             long newState = setReservations(state, getReservations(state) + 1);
