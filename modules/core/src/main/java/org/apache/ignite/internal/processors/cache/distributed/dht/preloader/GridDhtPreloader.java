@@ -566,4 +566,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     @Override public void resume() {
         busyLock.writeLock().unlock();
     }
+
+    /**
+     * Returns supplier.
+     *
+     * @return Supplier.
+     * */
+    public GridDhtPartitionSupplier supplier() {
+        return supplier;
+    }
 }

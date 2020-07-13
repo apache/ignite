@@ -108,7 +108,10 @@ public enum IgniteFeatures {
     DISTRIBUTED_TX_COLLISIONS_DUMP(37),
 
     /** Remove metadata from cluster for specified type. */
-    REMOVE_METADATA(39);
+    REMOVE_METADATA(39),
+
+    /** Support policy of shutdown. */
+    SHUTDOWN_POLICY(40);
     /**
      * Unique feature identifier.
      */
