@@ -969,22 +969,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-        final IgniteCache cache = cctx.kernalContext().cache().jcache(cctx.name());
-
-        if (internal) {
-            if (e.isFiltered())
-                return Collections.emptyList();
-            else
-                return F.<CacheEntryEvent<? extends K, ? extends V>>
-                    asList(new CacheContinuousQueryEvent<K, V>(cache, cctx, e));
-        }
+        IgniteCache<?, ?> cache = ctx.cache().jcache(cctx.name());
 
         // Initial query entry or evicted entry. These events should be fired immediately.
-        if (e.updateCounter() == -1L) {
-            return !e.isFiltered() ? F.<CacheEntryEvent<? extends K, ? extends V>>asList(
-                new CacheContinuousQueryEvent<K, V>(cache, cctx, e)) :
-                Collections.<CacheEntryEvent<? extends K, ? extends V>>emptyList();
-        }
+        if (internal || e.updateCounter() == -1L)
+            return e.isFiltered() ? Collections.emptyList() : F.asList(new CacheContinuousQueryEvent<>(cache, cctx, e));
 
         CacheContinuousQueryPartitionRecovery rec = getOrCreatePartitionRecovery(ctx, e.partition(), e.topologyVersion());
 
