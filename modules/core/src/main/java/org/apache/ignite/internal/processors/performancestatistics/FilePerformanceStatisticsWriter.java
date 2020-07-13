@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -62,7 +61,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
  * <p>
  * To iterate over records use {@link FilePerformanceStatisticsReader}.
  */
-public class FilePerformanceStatisticsWriter {
+class FilePerformanceStatisticsWriter {
     /** Directory to store performance statistics files. Placed under Ignite work directory. */
     public static final String PERF_STAT_DIR = "perf_stat";
 
@@ -125,8 +124,7 @@ public class FilePerformanceStatisticsWriter {
 
     /** Starts collecting performance statistics. */
     public synchronized void start() {
-        if (started)
-            throw new IgniteException("The writer should be run with a single thread.");
+        assert !started;
 
         new IgniteThread(fileWriter).start();
 
@@ -134,7 +132,9 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /** Stops collecting performance statistics. */
-    public void stop() {
+    public synchronized void stop() {
+        assert started;
+
         // Stop accepting new records.
         ringByteBuf.close();
 
@@ -149,6 +149,8 @@ public class FilePerformanceStatisticsWriter {
         U.closeQuiet(fileIo);
 
         cachedStrings.clear();
+
+        started = false;
     }
 
     /**

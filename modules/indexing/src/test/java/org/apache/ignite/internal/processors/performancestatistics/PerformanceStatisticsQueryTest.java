@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.performancestatistics;
+package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.Collections;
 import java.util.UUID;

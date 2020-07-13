@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.performancestatistics;
+package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.Collections;
 import java.util.concurrent.locks.Lock;
@@ -28,7 +28,6 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;

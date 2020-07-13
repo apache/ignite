@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.performancestatistics;
+package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
@@ -28,8 +28,8 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.performancestatistics.TestFilePerformanceStatisticsReader.readToLog;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
+import static org.apache.ignite.internal.processors.performancestatistics.TestFilePerformanceStatisticsReader.readToLog;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**

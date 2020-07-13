@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.performancestatistics;
+package org.apache.ignite.internal.processors.performancestatistics;
 
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsMBeanImpl;
 import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
 import org.junit.Test;
 
