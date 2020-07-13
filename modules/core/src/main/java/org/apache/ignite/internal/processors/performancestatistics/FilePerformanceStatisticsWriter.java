@@ -24,7 +24,6 @@ import java.nio.channels.ClosedByInterruptException;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -98,9 +97,6 @@ class FilePerformanceStatisticsWriter {
     /** {@code True} if worker stopped due to maximum file size reached. */
     private final AtomicBoolean stopByMaxSize = new AtomicBoolean();
 
-    /** Hashcodes of cached strings. */
-    private final ConcurrentSkipListSet<Integer> cachedStrings = new ConcurrentSkipListSet<>();
-
     /** Logger. */
     private final IgniteLogger log;
 
@@ -147,8 +143,6 @@ class FilePerformanceStatisticsWriter {
         ringByteBuf.free();
 
         U.closeQuiet(fileIo);
-
-        cachedStrings.clear();
 
         started = false;
     }
@@ -200,31 +194,19 @@ class FilePerformanceStatisticsWriter {
      * @param success Success flag.
      */
     public void query(GridCacheQueryType type, String text, long id, long startTime, long duration, boolean success) {
-        boolean needWriteStr = !stringCached(text);
-        byte[] strBytes = needWriteStr ? text.getBytes() : null;
+        byte[] textBytes = text.getBytes();
 
-        doWrite(QUERY, () -> {
-            int size = 1 + 1 + 4 + 8 + 8 + 8 + 1;
-
-            if (needWriteStr)
-                size += 4 + strBytes.length;
-
-            return size;
-        }, buf -> {
-            buf.put((byte)type.ordinal());
-            buf.put(needWriteStr ? (byte)1 : 0);
-            buf.putInt(text.hashCode());
-
-            if (needWriteStr) {
-                buf.putInt(strBytes.length);
-                buf.put(strBytes);
-            }
-
-            buf.putLong(id);
-            buf.putLong(startTime);
-            buf.putLong(duration);
-            buf.put(success ? (byte)1 : 0);
-        });
+        doWrite(QUERY,
+            () -> 1 + 4 + textBytes.length + 4 + 8 + 8 + 8 + 1,
+            buf -> {
+                buf.put((byte)type.ordinal());
+                buf.putInt(textBytes.length);
+                buf.put(textBytes);
+                buf.putLong(id);
+                buf.putLong(startTime);
+                buf.putLong(duration);
+                buf.put(success ? (byte)1 : 0);
+            });
     }
 
     /**
@@ -254,30 +236,18 @@ class FilePerformanceStatisticsWriter {
      * @param affPartId Affinity partition id.
      */
     public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
-        boolean needWriteStr = !stringCached(taskName);
-        byte[] strBytes = needWriteStr ? taskName.getBytes() : null;
+        byte[] nameBytes = taskName.getBytes();
 
-        doWrite(TASK, () -> {
-            int size = 24 + 1 + 4 + 8 + 8 + 4;
-
-            if (needWriteStr)
-                size += 4 + strBytes.length;
-
-            return size;
-        }, buf -> {
-            writeIgniteUuid(buf, sesId);
-            buf.put(needWriteStr ? (byte)1 : 0);
-            buf.putInt(taskName.hashCode());
-
-            if (needWriteStr) {
-                buf.putInt(strBytes.length);
-                buf.put(strBytes);
-            }
-
-            buf.putLong(startTime);
-            buf.putLong(duration);
-            buf.putInt(affPartId);
-        });
+        doWrite(TASK,
+            () -> 24 + 4 + nameBytes.length + 8 + 8 + 4,
+            buf -> {
+                writeIgniteUuid(buf, sesId);
+                buf.putInt(nameBytes.length);
+                buf.put(nameBytes);
+                buf.putLong(startTime);
+                buf.putLong(duration);
+                buf.putInt(affPartId);
+            });
     }
 
     /**
@@ -338,18 +308,12 @@ class FilePerformanceStatisticsWriter {
 
         int bufCnt = writtenToBuf.get() / DFLT_FLUSH_SIZE;
 
-        if (writtenToBuf.addAndGet(size) / DFLT_FLUSH_SIZE > bufCnt)
-            fileWriter.wakeUp();
-    }
-
-    /** @return {@code True} if string is cached. {@code False} if need write string.  */
-    private boolean stringCached(String str) {
-        boolean cached = cachedStrings.contains(str.hashCode());
-
-        if (!cached)
-            cachedStrings.add(str.hashCode());
-
-        return cached;
+        if (writtenToBuf.addAndGet(size) / DFLT_FLUSH_SIZE > bufCnt) {
+            // Wake up worker to start writing data to the file.
+            synchronized (fileWriter) {
+                fileWriter.notify();
+            }
+        }
     }
 
     /** @return Performance statistics file. */
@@ -451,13 +415,6 @@ class FilePerformanceStatisticsWriter {
             fileIo.force();
 
             return written;
-        }
-
-        /** Wake up worker to start writing data to the file. */
-        void wakeUp() {
-            synchronized (this) {
-                notify();
-            }
         }
     }
 }

@@ -27,7 +27,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -100,10 +99,9 @@ public class FilePerformanceStatisticsReader {
 
         ByteBuffer buf = allocateDirect(READ_BUFFER_SIZE).order(nativeOrder());
 
-        try (
-            FileIO io = ioFactory.create(file);
-            PerformanceStatisticsDeserializer des = new PerformanceStatisticsDeserializer(nodeId, handlers)
-        ) {
+        PerformanceStatisticsDeserializer des = new PerformanceStatisticsDeserializer(nodeId, handlers);
+
+        try (FileIO io = ioFactory.create(file)) {
             while (true) {
                 int read = io.read(buf);
 
@@ -174,10 +172,7 @@ public class FilePerformanceStatisticsReader {
     }
 
     /** Performance statistics operations deserializer. */
-    private static class PerformanceStatisticsDeserializer implements AutoCloseable {
-        /** Cached strings by id. */
-        private final HashMap<Integer, String> stringById = new HashMap<>();
-
+    private static class PerformanceStatisticsDeserializer {
         /** Handlers to process deserialized operation. */
         private final PerformanceStatisticsHandler[] handlers;
 
@@ -255,35 +250,21 @@ public class FilePerformanceStatisticsReader {
                 return true;
             }
             else if (opType == QUERY) {
-                if (buf.remaining() < 1 + 1 + 4 + 8 + 8 + 8 + 1)
+                if (buf.remaining() < 1 + 4 + 8 + 8 + 8 + 1)
                     return false;
 
                 GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
-                boolean needReadString = buf.get() != 0;
-                int strId = buf.getInt();
 
-                String text;
+                int textLength = buf.getInt();
 
-                if (needReadString) {
-                    int textLength = buf.getInt();
+                if (buf.remaining() < textLength + 8 + 8 + 8 + 1)
+                    return false;
 
-                    if (buf.remaining() < textLength + 8 + 8 + 8 + 1)
-                        return false;
-
-                    text = readString(buf, textLength);
-
-                    stringById.putIfAbsent(strId, text);
-                }
-                else
-                    text = stringById.get(strId);
-
+                String text = readString(buf, textLength);
                 long id = buf.getLong();
                 long startTime = buf.getLong();
                 long duration = buf.getLong();
                 boolean success = buf.get() != 0;
-
-                if (text == null)
-                    return true;
 
                 for (PerformanceStatisticsHandler handler : handlers)
                     handler.query(nodeId, queryType, text, id, startTime, duration, success);
@@ -307,28 +288,17 @@ public class FilePerformanceStatisticsReader {
                 return true;
             }
             else if (opType == TASK) {
-                if (buf.remaining() < 24 + 1 + 4 + 8 + 8 + 4)
+                if (buf.remaining() < 24 + 4 + 8 + 8 + 4)
                     return false;
 
                 IgniteUuid sesId = readIgniteUuid(buf);
-                boolean needReadString = buf.get() != 0;
-                int strId = buf.getInt();
 
-                String taskName;
+                int textLength = buf.getInt();
 
-                if (needReadString) {
-                    int textLength = buf.getInt();
+                if (buf.remaining() < textLength + 8 + 8 + 4)
+                    return false;
 
-                    if (buf.remaining() < textLength + 8 + 8 + 4)
-                        return false;
-
-                    taskName = readString(buf, textLength);
-
-                    stringById.putIfAbsent(strId, taskName);
-                }
-                else
-                    taskName = stringById.get(strId);
-
+                String taskName = readString(buf, textLength);
                 long startTime = buf.getLong();
                 long duration = buf.getLong();
                 int affPartId = buf.getInt();
@@ -367,11 +337,6 @@ public class FilePerformanceStatisticsReader {
             buf.get(bytes);
 
             return new String(bytes);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            stringById.clear();
         }
     }
 }
