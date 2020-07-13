@@ -84,10 +84,10 @@ public class FilePerformanceStatisticsWriter {
     private final FileIO fileIo;
 
     /** File write buffer. */
-    private final SegmentedRingByteBuffer ringByteBuffer;
+    private final SegmentedRingByteBuffer ringByteBuf;
 
     /** Count of written to buffer bytes. */
-    private final AtomicInteger writtenToBuffer = new AtomicInteger();
+    private final AtomicInteger writtenToBuf = new AtomicInteger();
 
     /** {@code True} if the small buffer warning message logged. */
     private final AtomicBoolean smallBufLogged = new AtomicBoolean();
@@ -113,7 +113,7 @@ public class FilePerformanceStatisticsWriter {
 
         log.info("Performance statistics file created [file=" + file.getAbsolutePath() + ']');
 
-        ringByteBuffer = new SegmentedRingByteBuffer(DFLT_BUFFER_SIZE, DFLT_FILE_MAX_SIZE,
+        ringByteBuf = new SegmentedRingByteBuffer(DFLT_BUFFER_SIZE, DFLT_FILE_MAX_SIZE,
             SegmentedRingByteBuffer.BufferMode.DIRECT);
 
         fileWriter = new FileWriter(ctx, log);
@@ -127,15 +127,15 @@ public class FilePerformanceStatisticsWriter {
     /** Stops collecting performance statistics. */
     public void stop() {
         // Stop accepting new records.
-        ringByteBuffer.close();
+        ringByteBuf.close();
 
         U.awaitForWorkersStop(Collections.singleton(fileWriter), true, log);
 
         // Make sure that all producers released their buffers to safe deallocate memory (in case of worker
         // stopped abnormally).
-        ringByteBuffer.poll();
+        ringByteBuf.poll();
 
-        ringByteBuffer.free();
+        ringByteBuf.free();
 
         U.closeQuiet(fileIo);
 
@@ -296,7 +296,7 @@ public class FilePerformanceStatisticsWriter {
     private void doWrite(OperationType op, IntSupplier sizeSupplier, Consumer<ByteBuffer> writer) {
         int size = sizeSupplier.getAsInt() + /*type*/ 1;
 
-        SegmentedRingByteBuffer.WriteSegment seg = ringByteBuffer.offer(size);
+        SegmentedRingByteBuffer.WriteSegment seg = ringByteBuf.offer(size);
 
         if (seg == null) {
             if (smallBufLogged.compareAndSet(false, true)) {
@@ -325,9 +325,9 @@ public class FilePerformanceStatisticsWriter {
 
         seg.release();
 
-        int bufCnt = writtenToBuffer.get() / DFLT_FLUSH_SIZE;
+        int bufCnt = writtenToBuf.get() / DFLT_FLUSH_SIZE;
 
-        if (writtenToBuffer.addAndGet(size) / DFLT_FLUSH_SIZE > bufCnt)
+        if (writtenToBuf.addAndGet(size) / DFLT_FLUSH_SIZE > bufCnt)
             fileWriter.wakeUp();
     }
 
@@ -384,7 +384,7 @@ public class FilePerformanceStatisticsWriter {
 
                     try {
                         synchronized (this) {
-                            if (writtenToFile / DFLT_FLUSH_SIZE == writtenToBuffer.get() / DFLT_FLUSH_SIZE)
+                            if (writtenToFile / DFLT_FLUSH_SIZE == writtenToBuf.get() / DFLT_FLUSH_SIZE)
                                 wait();
                         }
                     }
@@ -419,7 +419,7 @@ public class FilePerformanceStatisticsWriter {
          * @return Count of written bytes.
          */
         private int flush() throws IOException {
-            List<SegmentedRingByteBuffer.ReadSegment> segs = ringByteBuffer.poll();
+            List<SegmentedRingByteBuffer.ReadSegment> segs = ringByteBuf.poll();
 
             if (segs == null)
                 return 0;
