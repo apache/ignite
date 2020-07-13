@@ -65,6 +65,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -413,6 +414,20 @@ class ServerImpl extends TcpDiscoveryImpl {
             tcpSrvr = new TcpServer(log);
 
         spi.initLocalNode(tcpSrvr.port, true);
+
+        if (spi.locNodeAddrs.size() > 1 && log.isDebugEnabled()) {
+            if (spi.failureDetectionTimeoutEnabled()) {
+                log.debug("This node " + spi.locNode.id() + " has " + spi.locNodeAddrs.size() + " TCP " +
+                    "addresses. Note that TcpDiscoverySpi.failureDetectionTimeout works per address sequentially. " +
+                    "Setting of several addresses can prolong detection of current node failure.");
+            }
+            else {
+                log.debug("This node " + spi.locNode.id() + " has " + spi.locNodeAddrs.size() + " TPC " +
+                    "addresses. With exception of connRecoveryTimeout, timeouts and setting like sockTimeout, " +
+                    "ackTimeout, reconCnt in TcpDiscoverySpi work per address sequentially. Setting of several " +
+                    "addresses can prolong detection of current node failure.");
+            }
+        }
 
         locNode = spi.locNode;
 
@@ -2989,7 +3004,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         new Thread(new Runnable() {
                             @Override public void run() {
                                 try {
-                                    IgnitionEx.stop(ignite.name(), true, true);
+                                    IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
 
                                     U.log(log, "Stopped the node successfully in response to TcpDiscoverySpi's " +
                                         "message worker thread abnormal termination.");

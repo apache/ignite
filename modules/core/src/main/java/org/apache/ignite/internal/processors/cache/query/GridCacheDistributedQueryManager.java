@@ -561,6 +561,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             Boolean dataPageScanEnabled = qry.query().isDataPageScanEnabled();
             MvccSnapshot mvccSnapshot = qry.query().mvccSnapshot();
 
+            boolean deployFilterOrTransformer = (qry.query().scanFilter() != null || qry.query().transform() != null)
+                && cctx.gridDeploy().enabled();
+
             final GridCacheQueryRequest req = new GridCacheQueryRequest(
                 cctx.cacheId(),
                 reqId,
@@ -584,7 +587,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 queryTopologyVersion(),
                 mvccSnapshot,
                 // Force deployment anyway if scan query is used.
-                cctx.deploymentEnabled() || (qry.query().scanFilter() != null && cctx.gridDeploy().enabled()),
+                cctx.deploymentEnabled() || deployFilterOrTransformer,
                 dataPageScanEnabled);
 
             addQueryFuture(req.id(), fut);

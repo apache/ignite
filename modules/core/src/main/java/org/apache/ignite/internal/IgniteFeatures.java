@@ -110,8 +110,11 @@ public enum IgniteFeatures {
     /** Remove metadata from cluster for specified type. */
     REMOVE_METADATA(39),
 
+    /** Support policy of shutdown. */
+    SHUTDOWN_POLICY(40),
+
     /** Collecting performance statistics. */
-    PERFORMANCE_STATISTICS(40);
+    PERFORMANCE_STATISTICS(41);
 
     /**
      * Unique feature identifier.
