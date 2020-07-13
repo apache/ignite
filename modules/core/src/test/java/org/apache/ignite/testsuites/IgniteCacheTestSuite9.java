@@ -33,6 +33,7 @@ import org.apache.ignite.internal.metric.ReadMetricsOnNodeStartupTest;
 import org.apache.ignite.internal.metric.SystemViewComputeJobTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest;
 import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
+import org.apache.ignite.internal.processors.cache.GridCacheDataTypesCoverageTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLongRunningTransactionDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
@@ -129,6 +130,9 @@ public class IgniteCacheTestSuite9 {
         GridTestUtils.addTestIfNeeded(suite, GridCacheLongRunningTransactionDiagnosticsTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, FailBackupOnAtomicOperationTest.class, ignoredTests);
+
+        // Data Types coverage
+        GridTestUtils.addTestIfNeeded(suite, GridCacheDataTypesCoverageTest.class, ignoredTests);
 
         return suite;
     }
