@@ -537,16 +537,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (localNode(p, aff)) {
                     GridDhtLocalPartition locPart = locParts.get(p);
 
-                    if (locPart != null && locPart.state() == RENTING) {
-                        // By reserving we will prevent destroying.
-                        if (locPart.reserve()) {
-                            locPart.moving(); // Transition RENTING -> MOVING is safe.
+                    if (locPart != null) {
+                        if (locPart.state() == RENTING)
+                            locPart.moving();
 
-                            locPart.clearAsync();
-
-                            locPart.release();
-                        }
-                        else
+                        if (locPart.state() == EVICTED)
                             locPart = getOrCreatePartition(p);
                     }
                     else

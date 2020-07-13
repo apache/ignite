@@ -830,9 +830,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         // Some entries still might be present in partition cache maps due to concurrent updates on backup nodes,
         // but it's safe to finish eviction because no physical updates are possible.
-        if (state == EVICTED ||
-                (store.isEmpty() && getReservations(state0) == 0 && state == RENTING && casState(state0, EVICTED)))
+        if (state == RENTING && casState(state0, EVICTED)) {
+            assert store.isEmpty() : this;
+            assert getReservations(state0) == 0 : this;
+
             updateSeqOnDestroy = updateSeq;
+        }
     }
 
     /**
