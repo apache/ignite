@@ -66,7 +66,7 @@ public interface CacheContinuousQueryListener<K, V> {
      *
      * @param updateCntrs Update indexes map.
      */
-    public void cleanupBackupQueue(Map<Integer, Long> updateCntrs);
+    public void cleanupOnAck(Map<Integer, Long> updateCntrs);
 
     /**
      * Flushes backup queue.

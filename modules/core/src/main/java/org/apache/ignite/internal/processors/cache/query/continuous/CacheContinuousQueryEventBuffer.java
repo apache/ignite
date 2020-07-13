@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -61,7 +61,7 @@ public class CacheContinuousQueryEventBuffer {
     private final AtomicReference<Batch> curBatch = new AtomicReference<>();
 
     /** Queue for keeping backup entries which partition counter less the counter processing by current batch. */
-    private final FastSizeDeque<CacheContinuousQueryEntry> backupQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
+    private final Deque<CacheContinuousQueryEntry> backupQ = new ConcurrentLinkedDeque<>();
 
     /** Entries which are waiting for being processed. */
     private final ConcurrentSkipListMap<Long, CacheContinuousQueryEntry> pending = new ConcurrentSkipListMap<>();
@@ -94,15 +94,8 @@ public class CacheContinuousQueryEventBuffer {
     /**
      * @param updateCntr Acknowledged counter.
      */
-    void cleanupBackupQueue(Long updateCntr) {
-        Iterator<CacheContinuousQueryEntry> it = backupQ.iterator();
-
-        while (it.hasNext()) {
-            CacheContinuousQueryEntry backupEntry = it.next();
-
-            if (backupEntry.updateCounter() <= updateCntr)
-                it.remove();
-        }
+    void cleanupOnAck(long updateCntr) {
+        backupQ.removeIf(backupEntry -> backupEntry.updateCounter() <= updateCntr);
 
         ackedUpdCntr.setIfGreater(updateCntr);
     }
@@ -113,7 +106,7 @@ public class CacheContinuousQueryEventBuffer {
     @Nullable Collection<CacheContinuousQueryEntry> flushOnExchange() {
         TreeMap<Long, CacheContinuousQueryEntry> ret = null;
 
-        int size = backupQ.sizex();
+        int size = backupQ.size();
 
         if (size > 0) {
             ret = new TreeMap<>();
@@ -402,7 +395,8 @@ public class CacheContinuousQueryEventBuffer {
          * @return Entries to send as part of backup queue.
          */
         @Nullable synchronized TreeMap<Long, CacheContinuousQueryEntry> flushCurrentEntries(
-            @Nullable TreeMap<Long, CacheContinuousQueryEntry> res) {
+            @Nullable TreeMap<Long, CacheContinuousQueryEntry> res
+        ) {
             if (entries == null)
                 return res;
 

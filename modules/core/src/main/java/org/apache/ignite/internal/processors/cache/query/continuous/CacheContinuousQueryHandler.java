@@ -479,12 +479,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 }
             }
 
-            @Override public void cleanupBackupQueue(Map<Integer, Long> updateCntrs) {
+            @Override public void cleanupOnAck(Map<Integer, Long> updateCntrs) {
                 for (Map.Entry<Integer, Long> e : updateCntrs.entrySet()) {
                     CacheContinuousQueryEventBuffer buf = entryBufs.get(e.getKey());
 
                     if (buf != null)
-                        buf.cleanupBackupQueue(e.getValue());
+                        buf.cleanupOnAck(e.getValue());
                 }
             }
 

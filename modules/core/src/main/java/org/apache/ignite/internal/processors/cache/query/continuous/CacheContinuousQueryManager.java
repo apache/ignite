@@ -166,7 +166,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                         CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
 
                         if (lsnr != null)
-                            lsnr.cleanupBackupQueue(msg.updateCntrs());
+                            lsnr.cleanupOnAck(msg.updateCntrs());
                     }
                 });
 
