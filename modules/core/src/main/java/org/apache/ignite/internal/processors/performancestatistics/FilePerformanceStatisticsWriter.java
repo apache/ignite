@@ -73,6 +73,9 @@ class FilePerformanceStatisticsWriter {
     /** Default minimal batch size to flush in bytes. */
     public static final int DFLT_FLUSH_SIZE = (int)(8 * U.MB);
 
+    /** File writer thread name. */
+    static final String WRITER_THREAD_NAME = "performance-statistics-writer";
+
     /** Factory to provide I/O interface. */
     private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
 
@@ -345,8 +348,7 @@ class FilePerformanceStatisticsWriter {
          * @param log Logger.
          */
         FileWriter(GridKernalContext ctx, IgniteLogger log) {
-            super(ctx.igniteInstanceName(), "performance-statistics-writer%" + ctx.igniteInstanceName(), log,
-                ctx.workersRegistry());
+            super(ctx.igniteInstanceName(), WRITER_THREAD_NAME, log, ctx.workersRegistry());
         }
 
         /** {@inheritDoc} */

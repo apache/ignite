@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.lang.management.ThreadInfo;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.GridKernalContext;
@@ -29,6 +30,7 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.WRITER_THREAD_NAME;
 import static org.apache.ignite.internal.processors.performancestatistics.TestFilePerformanceStatisticsReader.readToLog;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -101,10 +103,17 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
                 if (performanceStatsEnabled != ctx.performanceStatistics().enabled())
                     return false;
+            }
 
-                // Make sure that writer flushed data and stopped.
-                if (!performanceStatsEnabled)
-                    return U.field(ctx.performanceStatistics(), "writer") == null;
+            // Make sure that writer flushed data and stopped.
+            if (!performanceStatsEnabled) {
+                for (long id : U.getThreadMx().getAllThreadIds()) {
+                    ThreadInfo info = U.getThreadMx().getThreadInfo(id);
+
+                    if (info != null && info.getThreadState() != Thread.State.TERMINATED &&
+                        info.getThreadName().startsWith(WRITER_THREAD_NAME))
+                        return false;
+                }
             }
 
             return true;
