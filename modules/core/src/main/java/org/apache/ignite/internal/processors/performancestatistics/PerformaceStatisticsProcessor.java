@@ -51,7 +51,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     private static final String PERF_STAT_KEY = IGNITE_INTERNAL_KEY_PREFIX + "performanceStatistics.enabled";
 
     /** Performance statistics writer. {@code Null} if collecting statistics disabled. */
-    @Nullable private volatile FilePerformanceStatisticsWriter writer;
+    @Nullable private volatile FilePerformanceStatisticsWriter writer = null;
 
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
@@ -219,8 +219,6 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     /** Starts performance statistics writer. */
     private void startWriter() {
         try {
-            boolean started;
-
             synchronized (mux) {
                 if (writer != null)
                     return;
@@ -228,12 +226,9 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
                 writer = new FilePerformanceStatisticsWriter(ctx);
 
                 writer.start();
-
-                started = true;
             }
 
-            if (started)
-                log.info("Performance statistics writer started.");
+            log.info("Performance statistics writer started.");
         }
         catch (Exception e) {
             log.error("Failed to start performance statistics writer.", e);
@@ -242,21 +237,18 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
 
     /** Stops performance statistics writer. */
     private void stopWriter() {
-        boolean stopped;
-
         synchronized (mux) {
             if (writer == null)
                 return;
 
+            FilePerformanceStatisticsWriter writer = this.writer;
+
+            this.writer = null;
+
             writer.stop();
-
-            writer = null;
-
-            stopped = true;
         }
 
-        if (stopped)
-            log.info("Performance statistics writer stopped.");
+        log.info("Performance statistics writer stopped.");
     }
 
     /** Writes statistics through passed writer. */
