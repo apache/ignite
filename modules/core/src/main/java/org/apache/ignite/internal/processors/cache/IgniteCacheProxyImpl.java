@@ -748,6 +748,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                         //noinspection rawtypes
                         return cur instanceof QueryCursorEx ? ((QueryCursorEx)cur).fieldsMeta() : null;
                     }
+
+                    @Override public boolean isQuery() {
+                        return false;
+                    }
                 };
             } catch (Throwable t) {
                 // Initial query failed: stop the routine.
