@@ -40,6 +40,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.BaselineConfigurationChangedEvent;
 import org.apache.ignite.events.ClusterStateChangeStartedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -68,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -95,6 +97,8 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_STATE_ON_START;
+import static org.apache.ignite.events.EventType.EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED;
+import static org.apache.ignite.events.EventType.EVT_BASELINE_AUTO_ADJUST_ENABLED_CHANGED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -110,9 +114,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
  *
  */
 public class GridClusterStateProcessor extends GridProcessorAdapter implements IGridClusterStateProcessor, MetastorageLifecycleListener {
-    /** Stripe id for cluster activation event. */
-    public static final int CLUSTER_ACTIVATION_EVT_STRIPE_ID = Integer.MAX_VALUE;
-
     /** */
     private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
 
@@ -202,7 +203,36 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             ctx,
             ctx.log(DistributedBaselineConfiguration.class)
         );
+
+        distributedBaselineConfiguration.listenAutoAdjustEnabled(makeEventListener(
+            EVT_BASELINE_AUTO_ADJUST_ENABLED_CHANGED
+        ));
+
+        distributedBaselineConfiguration.listenAutoAdjustTimeout(makeEventListener(
+            EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED
+        ));
     }
+
+    /** */
+    private DistributePropertyListener<Object> makeEventListener(int evtType) {
+        //noinspection CodeBlock2Expr
+        return (name, oldVal, newVal) -> {
+            ctx.getStripedExecutorService().execute(() -> {
+                if (ctx.event().isRecordable(evtType)) {
+                    ctx.event().record(new BaselineConfigurationChangedEvent(
+                        ctx.discovery().localNode(),
+                        evtType == EVT_BASELINE_AUTO_ADJUST_ENABLED_CHANGED
+                            ? "Baseline auto-adjust \"enabled\" flag has been changed"
+                            : "Baseline auto-adjust timeout has been changed",
+                        evtType,
+                        distributedBaselineConfiguration.isBaselineAutoAdjustEnabled(),
+                        distributedBaselineConfiguration.getBaselineAutoAdjustTimeout()
+                    ));
+                }
+            });
+        };
+    }
+
 
     /** {@inheritDoc} */
     @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
@@ -700,7 +730,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 if (newState.state() != state.state()) {
                     if (ctx.event().isRecordable(EventType.EVT_CLUSTER_STATE_CHANGE_STARTED)) {
                         ctx.getStripedExecutorService().execute(
-                            CLUSTER_ACTIVATION_EVT_STRIPE_ID,
                             () -> ctx.event().record(new ClusterStateChangeStartedEvent(
                                 state.state(),
                                 newState.state(),
