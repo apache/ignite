@@ -143,7 +143,7 @@ class CacheContinuousQueryPartitionRecovery {
 
                     for (CacheContinuousQueryEntry evt : pendingEvts.values()) {
                         if (evt != HOLE && !evt.isFiltered())
-                            entries.add(new CacheContinuousQueryEvent<K, V>(cache, cctx, evt));
+                            entries.add(new CacheContinuousQueryEvent<>(cache, cctx, evt));
                     }
 
                     pendingEvts.clear();
@@ -155,8 +155,8 @@ class CacheContinuousQueryPartitionRecovery {
                     if (!entry.isFiltered())
                         entries.add(new CacheContinuousQueryEvent<K, V>(cache, cctx, entry));
 
-                    if (log.isDebugEnabled())
-                        log.debug("Partition was lost [lastFiredEvt=" + lastFiredEvt +
+                    if (log.isInfoEnabled())
+                        log.info("Partition was lost [lastFiredEvt=" + lastFiredEvt +
                             ", curTop=" + curTop +
                             ", entUpdCnt=" + entry.updateCounter() +
                             ", partId=" + entry.partition() +

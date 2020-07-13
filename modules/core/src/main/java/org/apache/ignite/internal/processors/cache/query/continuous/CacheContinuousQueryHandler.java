@@ -507,6 +507,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                             continue;
 
                         for (CacheContinuousQueryEntry e : entries) {
+                            // todo why backup is matters?
                             e.markBackup();
 
                             if (!e.isFiltered())
