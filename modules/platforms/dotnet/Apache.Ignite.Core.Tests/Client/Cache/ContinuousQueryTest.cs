@@ -18,18 +18,13 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
-    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Event;
-    using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Cache.Query.Continuous;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Cache.Event;
@@ -223,91 +218,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
-        /// Tests that server starts sending notifications only when client is ready to receive them.
-        /// There is a brief moment when server starts the continuous query,
-        /// but client has not received the response with query ID yet - server should not send notifications.
-        /// </summary>
-        [Test]
-        public void TestContinuousQueryWithInitialQueryDoesNotMissCacheUpdates()
-        {
-            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            var serverCache = Ignition.GetIgnite().GetCache<int, int>(cache.Name);
-
-            var keys = new ConcurrentBag<int>();
-            var listener = new DelegateListener<int, int>(e => keys.Add(e.Key));
-
-            var enableCacheUpdates = true;
-            long key = 0;
-
-            var generatorTask = Task.Factory.StartNew(() =>
-            {
-                // ReSharper disable once AccessToModifiedClosure
-                while (Volatile.Read(ref enableCacheUpdates))
-                {
-                    // ReSharper disable once AccessToModifiedClosure
-                    serverCache[(int)Interlocked.Increment(ref key)] = 1;
-                }
-            });
-
-            TestUtils.WaitForTrueCondition(() => Interlocked.Read(ref key) > 10);
-
-            var qry = new ContinuousQueryClient<int, int>(listener);
-            var initialQry = new ScanQuery<int, int>();
-
-            using (var handle = cache.QueryContinuous(qry, initialQry))
-            {
-                foreach (var e in handle.GetInitialQueryCursor())
-                {
-                    keys.Add(e.Key);
-                }
-
-                // Wait for some more events.
-                var currentKey = Interlocked.Read(ref key);
-                TestUtils.WaitForTrueCondition(() => Interlocked.Read(ref key) > currentKey);
-
-                // Stop generator.
-                Volatile.Write(ref enableCacheUpdates, false);
-                generatorTask.Wait();
-            }
-
-            var lastKey = Interlocked.Read(ref key);
-            Assert.AreEqual(lastKey, keys.Max());
-
-            // Initial query can overlap the events (same with thick client) => use Distinct().
-            CollectionAssert.AreEquivalent(Enumerable.Range(1, (int) lastKey), keys.Distinct());
-        }
-
-        /// <summary>
-        /// Tests that SqlFieldsQuery works as initial query, returns both data and metadata.
-        /// </summary>
-        [Test]
-        public void TestInitialSqlQueryReturnsRowDataAndColumnNames()
-        {
-            var queryEntity = new QueryEntity(typeof(int), typeof(int))
-            {
-                TableName = TestUtils.TestName
-            };
-
-            var cacheCfg = new CacheClientConfiguration(TestUtils.TestName, queryEntity);
-            var cache = Client.GetOrCreateCache<int, int>(cacheCfg);
-
-            var qry = new ContinuousQueryClient<int,int>(new DelegateListener<int, int>());
-            var initialQry = new SqlFieldsQuery("select _key from " + TestUtils.TestName);
-
-            cache[1] = 1;
-
-            using (var handle = cache.QueryContinuous(qry, initialQry))
-            {
-                using (var cur = handle.GetInitialQueryCursor())
-                {
-                    CollectionAssert.AreEqual(new[]{"_KEY"}, cur.FieldNames);
-
-                    CollectionAssert.AreEqual(new[] {1}, cur.Single());
-                }
-            }
-        }
-
-        /// <summary>
         /// Tests that server-side updates are sent to the client.
         /// </summary>
         [Test]
@@ -338,59 +248,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
-        /// Tests that initial Scan query returns data that existed before the Continuous query has started.
-        /// </summary>
-        [Test]
-        public void TestInitialScanQuery(
-            [Values(InitialQueryMode.GetOne, InitialQueryMode.GetAll, InitialQueryMode.ToList)] InitialQueryMode mode)
-        {
-            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-
-            var initialKeys = Enumerable.Range(1, 10).ToArray();
-            cache.PutAll(initialKeys.ToDictionary(x => x, x => x));
-
-            ICacheEntryEvent<int, int> lastEvt = null;
-
-            var qry = new ContinuousQueryClient<int, int>
-            {
-                Listener = new DelegateListener<int, int>(e => lastEvt = e)
-            };
-
-            var initialQry = new ScanQuery<int, int>
-            {
-                PageSize = 1
-            };
-
-            using (var handle = cache.QueryContinuous(qry, initialQry))
-            {
-                using (var cursor = handle.GetInitialQueryCursor())
-                {
-                    if (mode == InitialQueryMode.GetOne)
-                    {
-                        var initialItem = cursor.First();
-                        CollectionAssert.Contains(initialKeys, initialItem.Key);
-                    }
-                    else
-                    {
-                        var initialItems = mode == InitialQueryMode.GetAll
-                            ? cursor.GetAll()
-                            : cursor.ToList();
-
-                        CollectionAssert.AreEquivalent(initialKeys, initialItems.Select(e => e.Key));
-                    }
-                }
-
-                cache.Put(20, 20);
-
-                TestUtils.WaitForTrueCondition(() => lastEvt != null);
-                Assert.AreEqual(20, lastEvt.Key);
-
-                cache.Put(21, 21);
-                TestUtils.WaitForTrueCondition(() => 21 == lastEvt.Key);
-            }
-        }
-
-        /// <summary>
         /// Tests that initial Scan query returns data that existed before the Continuous query has started
         /// in binary mode.
         /// </summary>
@@ -398,30 +255,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestInitialScanQueryInBinaryMode([Values(true, false)] bool getAll)
         {
             // TODO:
-        }
-
-        /// <summary>
-        /// Tests that initial scan query with filter returns filtered entries.
-        /// </summary>
-        [Test]
-        public void TestInitialScanQueryWithFilter()
-        {
-            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            cache.PutAll(Enumerable.Range(1, 8).ToDictionary(x => x, x => x));
-
-            var initialQry = new ScanQuery<int, int>
-            {
-                Filter = new OddKeyFilter()
-            };
-
-            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>());
-
-            using (var handle = cache.QueryContinuous(qry, initialQry))
-            {
-                var entries = handle.GetInitialQueryCursor().GetAll();
-
-                CollectionAssert.AreEquivalent(new[] {1, 3, 5, 7}, entries.Select(e => e.Key));
-            }
         }
 
         [Test]
@@ -471,52 +304,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             // Assert: continuous query event is delivered.
             Assert.AreEqual(new[] {1}, evts);
-        }
-
-        /// <summary>
-        /// Tests that exception in initial query filter causes exception in initial query cursor.
-        /// </summary>
-        [Test]
-        public void TestExceptionInInitialQueryFilterResultsInCorrectErrorMessage()
-        {
-            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-
-            ICacheEntryEvent<int, int> lastEvt = null;
-            var qry = new ContinuousQueryClient<int, int>(
-                new DelegateListener<int, int>(e => lastEvt = e));
-
-            var initialQry = new ScanQuery<int, int>(new ExceptionalFilter());
-
-            cache[1] = 1;
-
-            using (var handle = cache.QueryContinuous(qry, initialQry))
-            {
-                // Listener works:
-                cache[2] = 2;
-                TestUtils.WaitForTrueCondition(() => lastEvt != null && lastEvt.Key == 2);
-
-                // TODO: GetAll causes cursor disposal - add a separate test for this.
-                var ex = Assert.Throws<IgniteClientException>(() => handle.GetInitialQueryCursor().GetAll());
-                StringAssert.Contains("Foo failed because of bar", ex.Message);
-
-                // Listener still works:
-                cache[3] = 3;
-                TestUtils.WaitForTrueCondition(() => lastEvt != null && lastEvt.Key == 3);
-            }
-        }
-
-        /// <summary>
-        /// Tests that invalid SQL query used as initial query provides a correct error message.
-        /// </summary>
-        [Test]
-        public void TestInvalidInitialSqlQueryResultsInCorrectErrorMessage()
-        {
-            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
-            var qry = new ContinuousQueryClient<int,int>(new DelegateListener<int, int>());
-            var initialQry = new SqlFieldsQuery("select a from b");
-
-            var ex = Assert.Throws<IgniteClientException>(() => cache.QueryContinuous(qry, initialQry));
-            StringAssert.StartsWith("Failed to parse query", ex.Message);
         }
 
         /// <summary>
