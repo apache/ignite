@@ -21,18 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorGridSplitCacheTest;
-import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest;
-import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheTest;
-import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedTxCacheGroupsTest;
-import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedTxCacheTest;
-import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorPartitionedAtomicCacheGroupsTest;
-import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorPartitionedAtomicCacheTest;
-import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorPartitionedTxCacheGroupsTest;
-import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorPartitionedTxCacheTest;
-import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedAtomicCacheGroupsTest;
-import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedAtomicCacheTest;
-import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheGroupsTest;
-import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
