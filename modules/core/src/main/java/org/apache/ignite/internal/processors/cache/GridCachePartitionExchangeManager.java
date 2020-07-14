@@ -597,8 +597,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         baselineChanging = exchActions.changedBaseline()
                             // Or it is the first activation.
                             || state.state() != ClusterState.INACTIVE && !state.previouslyActive() && state.previousBaselineTopology() == null;
-//                    state.baselineChanging()
-//                            || state.active() && !state.previouslyActive() && state.previousBaselineTopology() == null;
                     }
 
                     exchFut.listen(f -> onClusterStateChangeFinish(f, exchActions, baselineChanging));
@@ -737,8 +735,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (baselineChanging) {
-            System.out.println("<@> " + exchActions.changedBaseline());
-            System.out.println("<!> " + state);
             ctx.getStripedExecutorService().execute(new Runnable() {
                 @Override public void run() {
                     if (ctx.event().isRecordable(EventType.EVT_BASELINE_CHANGED)) {
