@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.lang.reflect.Method;
+
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;

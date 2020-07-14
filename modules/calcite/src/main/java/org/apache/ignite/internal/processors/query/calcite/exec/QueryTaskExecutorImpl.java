@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Objects;
 import java.util.UUID;
+
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;

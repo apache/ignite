@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;

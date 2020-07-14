@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;

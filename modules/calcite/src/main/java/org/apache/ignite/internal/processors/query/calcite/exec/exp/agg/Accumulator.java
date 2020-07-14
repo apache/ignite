@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.io.Serializable;
 import java.util.List;
+
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 

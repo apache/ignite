@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;

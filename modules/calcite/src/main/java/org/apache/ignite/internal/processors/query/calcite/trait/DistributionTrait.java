@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import com.google.common.collect.Ordering;
 import java.util.Objects;
+
+import com.google.common.collect.Ordering;
 import org.apache.calcite.plan.RelMultipleTrait;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;

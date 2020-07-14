@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.LinkedHashMap;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;

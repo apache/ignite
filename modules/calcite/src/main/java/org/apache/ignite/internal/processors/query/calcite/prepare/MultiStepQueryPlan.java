@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**

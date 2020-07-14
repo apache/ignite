@@ -17,16 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Primitives;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Primitives;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;

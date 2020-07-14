@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.List;
+
+import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;

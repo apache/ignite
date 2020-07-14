@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -29,6 +28,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;

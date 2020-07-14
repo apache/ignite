@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
