@@ -6567,7 +6567,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         long timeThreshold = rcvdTime + U.millisToNanos(effectiveExchangeTimeout());
 
                         // We got message from previous in less than effective exchange timeout.
-                        boolean ok =  timeThreshold > now;
+                        boolean ok = timeThreshold > now;
                         TcpDiscoveryNode previous = null;
 
                         if (ok) {
