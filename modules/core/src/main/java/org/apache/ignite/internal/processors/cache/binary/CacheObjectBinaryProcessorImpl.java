@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,6 +49,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -125,9 +127,6 @@ import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
  * Binary processor implementation.
  */
 public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter implements IgniteCacheObjectProcessor {
-    /** Binary metadata file store folder. */
-    public static final String BINARY_META_FOLDER = "binary_meta";
-
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
@@ -210,20 +209,26 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @return Working directory.
      */
     public static File resolveBinaryWorkDir(String igniteWorkDir, String consId) {
-        try {
-            File workDir = new File(U.resolveWorkDirectory(
-                igniteWorkDir,
-                BINARY_META_FOLDER,
-                false),
-                consId);
+        File workDir = binaryWorkDir(igniteWorkDir, consId);
 
-            U.ensureDirectory(workDir, "directory for serialized binary metadata", null);
+        if (!U.mkdirs(workDir))
+            throw new IgniteException("Could not create directory for binary metadata: " + workDir);
 
-            return workDir;
+        return workDir;
+    }
+
+    /**
+     * @param igniteWorkDir Basic ignite working directory.
+     * @param consId Node consistent id.
+     * @return Working directory.
+     */
+    public static File binaryWorkDir(String igniteWorkDir, String consId) {
+        if (F.isEmpty(igniteWorkDir) || F.isEmpty(consId)) {
+            throw new IgniteException("Work directory or consistent id has not been set " +
+                "[igniteWorkDir=" + igniteWorkDir + ", consId=" + consId + ']');
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+
+        return Paths.get(igniteWorkDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, consId).toFile();
     }
 
     /** {@inheritDoc} */
@@ -676,7 +681,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         catch (BinaryObjectException e) {
             throw new BinaryObjectException("New binary metadata is incompatible with binary metadata" +
                 " persisted locally." +
-                " Consider cleaning up persisted metadata from <workDir>/binary_meta directory.", e);
+                " Consider cleaning up persisted metadata from <workDir>/db/binary_meta directory.", e);
         }
     }
 

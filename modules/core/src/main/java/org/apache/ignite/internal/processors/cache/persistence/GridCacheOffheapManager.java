@@ -987,23 +987,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (grp.mvccEnabled()) // TODO IGNITE-7384
             return super.historicalIterator(partCntrs, missing);
 
-        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
-
-        FileWALPointer minPtr = null;
+        Map<Integer, Long> partsCounters = new HashMap<>();
 
         for (int i = 0; i < partCntrs.size(); i++) {
             int p = partCntrs.partitionAt(i);
             long initCntr = partCntrs.initialUpdateCounterAt(i);
 
-            FileWALPointer startPtr = (FileWALPointer)database.checkpointHistory().searchPartitionCounter(
-                grp.groupId(), p, initCntr);
-
-            if (startPtr == null)
-                throw new IgniteCheckedException("Could not find start pointer for partition [part=" + p + ", partCntrSince=" + initCntr + "]");
-
-            if (minPtr == null || startPtr.compareTo(minPtr) < 0)
-                minPtr = startPtr;
+            partsCounters.put(p, initCntr);
         }
+
+        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
+
+        FileWALPointer minPtr = (FileWALPointer)database.checkpointHistory().searchEarliestWalPointer(grp.groupId(), partsCounters);
 
         WALIterator it = grp.shared().wal().replay(minPtr);
 

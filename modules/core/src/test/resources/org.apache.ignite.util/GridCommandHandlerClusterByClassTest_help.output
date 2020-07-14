@@ -107,8 +107,20 @@ This utility can do the following commands:
       routine_id      - Routine identifier.
       origin_node_id  - Originating node id.
 
+  Kill running snapshot by snapshot name:
+    control.(sh|bat) --kill SNAPSHOT snapshot_name
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
   Create cluster snapshot:
     control.(sh|bat) --snapshot create snapshot_name
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
+  Cancel running snapshot:
+    control.(sh|bat) --snapshot cancel snapshot_name
 
     Parameters:
       snapshot_name  - Snapshot name.

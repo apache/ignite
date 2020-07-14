@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
@@ -102,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                         new BinaryTypeConfiguration(typeof(KeepBinaryFilter))
                     }
                 },
-                SpringConfigUrl = "config\\cache-query-continuous.xml",
+                SpringConfigUrl = Path.Combine("Config", "cache-query-continuous.xml"),
                 IgniteInstanceName = "grid-1"
             };
 
@@ -145,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             Console.WriteLine("Test started: " + TestContext.CurrentContext.Test.Name);
         }
-        
+
         /// <summary>
         /// Test arguments validation.
         /// </summary>
@@ -202,7 +203,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             int key1 = PrimaryKey(cache1);
             int key2 = PrimaryKey(cache2);
-            
+
             ContinuousQuery<int, BinarizableEntry> qry = loc ?
                 new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>(), true) :
                 new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
@@ -247,8 +248,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             cache1.Put(key2, Entry(key2));
             CheckNoCallback(100);
-        } 
-        
+        }
+
         /// <summary>
         /// Test Ignite injection into callback.
         /// </summary>
@@ -264,7 +265,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.IsNotNull(cb.ignite);
             }
         }
-        
+
         /// <summary>
         /// Test binarizable filter logic.
         /// </summary>
@@ -308,8 +309,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             ICacheEntryEventFilter<int, BinarizableEntry> filter =
                 binarizable ? (AbstractFilter<BinarizableEntry>) new BinarizableFilter() : new SerializableFilter();
 
-            ContinuousQuery<int, BinarizableEntry> qry = loc ? 
-                new ContinuousQuery<int, BinarizableEntry>(lsnr, filter, true) : 
+            ContinuousQuery<int, BinarizableEntry> qry = loc ?
+                new ContinuousQuery<int, BinarizableEntry>(lsnr, filter, true) :
                 new ContinuousQuery<int, BinarizableEntry>(lsnr, filter);
 
             using (cache1.QueryContinuous(qry))
@@ -493,7 +494,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             CheckFilterUnmarshalError(true);
         }
-        
+
         /// <summary>
         /// Test serializable filter unmarshalling error.
         /// </summary>
@@ -524,7 +525,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 int key1 = PrimaryKey(cache1);
                 cache1.GetAndPut(key1, Entry(key1));
                 CheckFilterSingle(key1, null, Entry(key1));
-                
+
                 // Remote put must fail.
                 Assert.Throws<IgniteException>(() => cache1.GetAndPut(PrimaryKey(cache2), Entry(1)));
             }
@@ -680,9 +681,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 cache1.GetAndPut(rmtKeys[0], Entry(rmtKeys[0]));
 
                 CheckNoCallback(100);
-                
+
                 cache1.GetAndPut(rmtKeys[1], Entry(rmtKeys[1]));
-                
+
                 CallbackEvent evt;
 
                 Assert.IsTrue(CB_EVTS.TryTake(out evt, 1000));
@@ -769,13 +770,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             // Sql query, GetAll
             TestInitialQuery(new SqlQuery(typeof(BinarizableEntry), "val < 33"), cur => cur.GetAll());
-            
+
             // Sql query, iterator
             TestInitialQuery(new SqlQuery(typeof(BinarizableEntry), "val < 33"), cur => cur.ToList());
 
             // Text query, GetAll
             TestInitialQuery(new TextQuery(typeof(BinarizableEntry), "1*"), cur => cur.GetAll());
-            
+
             // Text query, iterator
             TestInitialQuery(new TextQuery(typeof(BinarizableEntry), "1*"), cur => cur.ToList());
 
@@ -787,9 +788,57 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
+        /// Tests the initial fields query.
+        /// </summary>
+        [Test]
+        public void TestInitialFieldsQuery()
+        {
+            var sqlFieldsQuery = new SqlFieldsQuery("select _key, _val, val from BINARIZABLEENTRY where val < 33");
+
+            TestInitialQuery(sqlFieldsQuery, cur => cur.GetAll());
+            TestInitialQuery(sqlFieldsQuery, cur => cur.ToList());
+        }
+
+        /// <summary>
+        /// Tests fields metadata in the initial fields query.
+        /// </summary>
+        [Test]
+        public void TestInitialFieldsQueryMetadata()
+        {
+            var sqlFieldsQuery = new SqlFieldsQuery("select val, _val from BINARIZABLEENTRY where val < 33");
+            var qry = new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
+
+            using (var contQry = cache1.QueryContinuous(qry, sqlFieldsQuery))
+            {
+                var fields = contQry.GetInitialQueryCursor().Fields;
+
+                Assert.AreEqual(2, fields.Count);
+
+                Assert.AreEqual("VAL", fields[0].Name);
+                Assert.AreEqual(typeof(int), fields[0].Type);
+
+                Assert.AreEqual("_VAL", fields[1].Name);
+                Assert.AreEqual(typeof(object), fields[1].Type);
+            }
+        }
+
+        /// <summary>
+        /// Tests the initial fields query with bad SQL.
+        /// </summary>
+        [Test]
+        public void TestInitialFieldsQueryWithBadSql()
+        {
+            // Invalid SQL query.
+            var ex = Assert.Throws<IgniteException>(() => TestInitialQuery(
+                new SqlFieldsQuery("select FOO from BAR"), cur => cur.GetAll()));
+
+            StringAssert.StartsWith("Failed to parse query. Table \"BAR\" not found;", ex.Message);
+        }
+
+        /// <summary>
         /// Tests the initial query.
         /// </summary>
-        private void TestInitialQuery(QueryBase initialQry, Func<IQueryCursor<ICacheEntry<int, BinarizableEntry>>, 
+        private void TestInitialQuery(QueryBase initialQry, Func<IQueryCursor<ICacheEntry<int, BinarizableEntry>>,
             IEnumerable<ICacheEntry<int, BinarizableEntry>>> getAllFunc)
         {
             var qry = new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
@@ -801,7 +850,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             try
             {
                 IContinuousQueryHandle<ICacheEntry<int, BinarizableEntry>> contQry;
-                
+
                 using (contQry = cache1.QueryContinuous(qry, initialQry))
                 {
                     // Check initial query
@@ -816,6 +865,57 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     {
                         Assert.AreEqual(i + 11, initialEntries[i].Key);
                         Assert.AreEqual(i + 11, initialEntries[i].Value.val);
+                    }
+
+                    // Check continuous query
+                    cache1.Put(44, Entry(44));
+                    CheckCallbackSingle(44, null, Entry(44), CacheEntryEventType.Created);
+                }
+
+                Assert.Throws<ObjectDisposedException>(() => contQry.GetInitialQueryCursor());
+
+                contQry.Dispose();  // multiple dispose calls are ok
+            }
+            finally
+            {
+                cache1.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Tests the initial fields query.
+        /// </summary>
+        private void TestInitialQuery(SqlFieldsQuery initialQry,
+            Func<IFieldsQueryCursor, IEnumerable<IList<object>>> getAllFunc)
+        {
+            var qry = new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
+
+            cache1.Put(11, Entry(11));
+            cache1.Put(12, Entry(12));
+            cache1.Put(33, Entry(33));
+
+            try
+            {
+                IContinuousQueryHandleFields contQry;
+
+                using (contQry = cache1.QueryContinuous(qry, initialQry))
+                {
+                    // Check initial query
+                    var initialQueryCursor = contQry.GetInitialQueryCursor();
+                    var initialEntries = getAllFunc(initialQueryCursor).OrderBy(x => x[0]).ToList();
+
+                    Assert.Throws<InvalidOperationException>(() => contQry.GetInitialQueryCursor());
+
+                    Assert.AreEqual(2, initialEntries.Count);
+                    Assert.GreaterOrEqual(initialQueryCursor.Fields.Count, 2);
+
+                    for (int i = 0; i < initialEntries.Count; i++)
+                    {
+                        var key = (int) initialEntries[i][0];
+                        var val = (BinarizableEntry) initialEntries[i][1];
+
+                        Assert.AreEqual(i + 11, key);
+                        Assert.AreEqual(i + 11, val.val);
                     }
 
                     // Check continuous query
@@ -880,9 +980,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="timeout">Timeout.</param>
         private static void CheckNoFilter(int timeout)
         {
-            FilterEvent evt;
+            FilterEvent _;
 
-            Assert.IsFalse(FILTER_EVTS.TryTake(out evt, timeout));
+            Assert.IsFalse(FILTER_EVTS.TryTake(out _, timeout));
         }
 
         /// <summary>
@@ -915,9 +1015,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="timeout">Timeout.</param>
         private void CheckNoCallback(int timeout)
         {
-            CallbackEvent evt;
+            CallbackEvent _;
 
-            Assert.IsFalse(CB_EVTS.TryTake(out evt, timeout));
+            Assert.IsFalse(CB_EVTS.TryTake(out _, timeout));
         }
 
         /// <summary>
@@ -1112,7 +1212,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             [InstanceResource]
             public IIgnite ignite;
-            
+
             /** <inheritDoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<int, V>> evts)
             {
