@@ -21,6 +21,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.platform.client.ClientCloseableResource;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientMessageParser;
+import org.apache.ignite.internal.processors.platform.client.ClientNotification;
 
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -58,9 +59,7 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
             return;
 
         ClientCacheEntryEventNotification notification = new ClientCacheEntryEventNotification(
-                ClientMessageParser.OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION,
-                id,
-                iterable);
+                ClientMessageParser.OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION, id, iterable);
 
         ctx.notifyClient(notification);
     }
@@ -84,8 +83,11 @@ public class ClientCacheQueryContinuousHandle implements CacheEntryUpdatedListen
         {
             cur0.close();
             cur = null;
-        }
 
-        // TODO: Notify client with a special message that the query has ended.
+            ClientNotification endNotification = new ClientNotification(
+                    ClientMessageParser.OP_QUERY_CONTINUOUS_END_NOTIFICATION, id);
+
+            ctx.notifyClient(endNotification);
+        }
     }
 }
