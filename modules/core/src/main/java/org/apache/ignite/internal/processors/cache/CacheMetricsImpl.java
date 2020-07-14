@@ -1252,6 +1252,11 @@ public class CacheMetricsImpl implements CacheMetrics {
      * Calculates entries count/partitions count metrics using one iteration over local partitions for all metrics
      */
     public EntriesStatMetrics getEntriesStat() {
+        AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+
+        if (AffinityTopologyVersion.NONE.equals(topVer))
+            return unknownEntriesStat();
+
         int owningPartCnt = 0;
         int movingPartCnt = 0;
         long offHeapEntriesCnt = 0L;
@@ -1280,8 +1285,6 @@ public class CacheMetricsImpl implements CacheMetrics {
                 }
             }
             else {
-                AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
-
                 IntSet primaries = ImmutableIntSet.wrap(cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
                 IntSet backups = ImmutableIntSet.wrap(cctx.affinity().backupPartitions(cctx.localNodeId(), topVer));
 
@@ -1314,14 +1317,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             }
         }
         catch (Exception e) {
-            owningPartCnt = -1;
-            movingPartCnt = 0;
-            offHeapEntriesCnt = -1L;
-            offHeapPrimaryEntriesCnt = -1L;
-            offHeapBackupEntriesCnt = -1L;
-            heapEntriesCnt = -1L;
-            size = -1;
-            sizeLong = -1L;
+            return unknownEntriesStat();
         }
 
         isEmpty = (offHeapEntriesCnt == 0);
@@ -1338,6 +1334,24 @@ public class CacheMetricsImpl implements CacheMetrics {
         stat.isEmpty(isEmpty);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
         stat.rebalancingPartitionsCount(movingPartCnt);
+
+        return stat;
+    }
+
+    /** @return Instance of {@link EntriesStatMetrics} with default values in case of unknown metrics. */
+    private EntriesStatMetrics unknownEntriesStat() {
+        EntriesStatMetrics stat = new EntriesStatMetrics();
+
+        stat.offHeapEntriesCount(-1L);
+        stat.offHeapPrimaryEntriesCount(-1L);
+        stat.offHeapBackupEntriesCount(-1L);
+        stat.heapEntriesCount(-1L);
+        stat.size(-1);
+        stat.cacheSize(-1L);
+        stat.keySize(-1);
+        stat.isEmpty(false);
+        stat.totalPartitionsCount(-1);
+        stat.rebalancingPartitionsCount(0);
 
         return stat;
     }

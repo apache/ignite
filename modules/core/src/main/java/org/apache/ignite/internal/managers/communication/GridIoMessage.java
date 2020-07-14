@@ -29,12 +29,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionIndexAwareMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements Message {
+public class GridIoMessage implements TcpConnectionIndexAwareMessage {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
@@ -67,6 +68,9 @@ public class GridIoMessage implements Message {
     /** Message. */
     private Message msg;
 
+    /** */
+    private transient int connIdx = UNDEFINED_CONNECTION_INDEX;
+
     /**
      * No-op constructor to support {@link Externalizable} interface.
      * This constructor is not meant to be used for other purposes.
@@ -91,7 +95,8 @@ public class GridIoMessage implements Message {
         Message msg,
         boolean ordered,
         long timeout,
-        boolean skipOnTimeout
+        boolean skipOnTimeout,
+        int connIdx
     ) {
         assert topic != null;
         assert topicOrd <= Byte.MAX_VALUE;
@@ -104,6 +109,7 @@ public class GridIoMessage implements Message {
         this.ordered = ordered;
         this.timeout = timeout;
         this.skipOnTimeout = skipOnTimeout;
+        this.connIdx = connIdx;
     }
 
     /**
@@ -167,6 +173,11 @@ public class GridIoMessage implements Message {
      */
     public boolean skipOnTimeout() {
         return skipOnTimeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int connectionIndex() {
+        return connIdx;
     }
 
     /**

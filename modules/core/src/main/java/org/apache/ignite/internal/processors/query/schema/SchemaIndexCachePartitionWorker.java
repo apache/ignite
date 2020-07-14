@@ -85,7 +85,6 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
      * @param cancel Cancellation token between all workers for all caches.
      * @param clo Index closure.
      * @param fut Worker future.
-     * @param rowFilter Row filter.
      * @param partsCnt Count of partitions to be processed.
      */
     public SchemaIndexCachePartitionWorker(
@@ -95,7 +94,6 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         SchemaIndexOperationCancellationToken cancel,
         SchemaIndexCacheVisitorClosure clo,
         GridFutureAdapter<SchemaIndexCacheStat> fut,
-        @Nullable SchemaIndexCacheFilter rowFilter,
         AtomicInteger partsCnt
     ) {
         super(
@@ -114,7 +112,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         assert nonNull(partsCnt);
 
         this.stop = stop;
-        wrappedClo = new SchemaIndexCacheVisitorClosureWrapper(clo, rowFilter);
+        wrappedClo = new SchemaIndexCacheVisitorClosureWrapper(clo);
         this.fut = fut;
         this.partsCnt = partsCnt;
     }
@@ -279,22 +277,17 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         /** Object for collecting statistics about index update. */
         @Nullable private final SchemaIndexCacheStat indexCacheStat;
 
-        /** Row filter. */
-        @Nullable private final SchemaIndexCacheFilter rowFilter;
-
         /** */
         private SchemaIndexCacheVisitorClosureWrapper(
-            SchemaIndexCacheVisitorClosure clo,
-            @Nullable SchemaIndexCacheFilter filter
+            SchemaIndexCacheVisitorClosure clo
         ) {
             this.clo = clo;
             indexCacheStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false) ? new SchemaIndexCacheStat() : null;
-            rowFilter = filter;
         }
 
         /** {@inheritDoc} */
         @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-            if (row != null && (rowFilter == null || rowFilter.apply(row))) {
+            if (row != null) {
                 clo.apply(row);
 
                 if (indexCacheStat != null) {
