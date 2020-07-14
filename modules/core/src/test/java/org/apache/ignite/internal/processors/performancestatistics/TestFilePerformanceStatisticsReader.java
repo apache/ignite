@@ -40,7 +40,7 @@ public class TestFilePerformanceStatisticsReader {
     public static void readToLog(IgniteLogger log) throws Exception {
         File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
 
-        FilePerformanceStatisticsReader.read(Collections.singletonList(dir), new LogMessageHandler(log));
+        new FilePerformanceStatisticsReader(new LogMessageHandler(log)).read(Collections.singletonList(dir));
     }
 
     /** The handler that writes handled operations to the log. */
