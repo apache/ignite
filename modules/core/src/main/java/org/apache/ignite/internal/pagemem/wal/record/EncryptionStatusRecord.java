@@ -35,9 +35,12 @@ public class EncryptionStatusRecord extends WALRecord {
         this.grpStates = U.newHashMap(grpStates.size());
 
         for (Map.Entry<Integer, Map<Integer, Long>> entry : grpStates.entrySet()) {
+            Map<Integer, Integer> partStates = U.newHashMap(entry.getValue().size());
+
             for (Map.Entry<Integer, Long> entry0 : entry.getValue().entrySet())
-                this.grpStates.computeIfAbsent(entry.getKey(),
-                    v -> new HashMap<>()).put(entry0.getKey(), (int)entry0.getValue().longValue());
+                partStates.put(entry0.getKey(), (int)entry0.getValue().longValue());
+
+            this.grpStates.put(entry.getKey(), partStates);
         }
     }
 

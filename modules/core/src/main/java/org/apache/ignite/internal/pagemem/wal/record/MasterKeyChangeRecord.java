@@ -20,7 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.T3;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD_V2;
 
 /**
  * Logical record that stores encryption keys. Written to the WAL on the master key change.
@@ -53,7 +53,7 @@ public class MasterKeyChangeRecord extends WALRecord {
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return MASTER_KEY_CHANGE_RECORD;
+        return MASTER_KEY_CHANGE_RECORD_V2;
     }
 
     /** @return Record data size. */

@@ -123,6 +123,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.putRecordType;
@@ -555,7 +556,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)record);
 
-            case MASTER_KEY_CHANGE_RECORD:
+            case MASTER_KEY_CHANGE_RECORD_V2:
                 MasterKeyChangeRecord rec = (MasterKeyChangeRecord)record;
 
                 return rec.dataSize();
@@ -1219,6 +1220,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case MASTER_KEY_CHANGE_RECORD:
+            case MASTER_KEY_CHANGE_RECORD_V2:
                 int keyNameLen = in.readInt();
 
                 byte[] keyNameBytes = new byte[keyNameLen];
@@ -1231,12 +1233,13 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 List<T3<Integer, Byte, byte[]>> grpKeys = new ArrayList<>(keysCnt);
 
+                boolean readKeyId = type == MASTER_KEY_CHANGE_RECORD_V2;
+
                 for (int i = 0; i < keysCnt; i++) {
                     int grpId = in.readInt();
-                    byte keyId = in.readByte();
+                    byte keyId = readKeyId ? in.readByte() : 0;
 
                     int grpKeySize = in.readInt();
-
                     byte[] grpKey = new byte[grpKeySize];
 
                     in.readFully(grpKey);
@@ -1862,7 +1865,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case SWITCH_SEGMENT_RECORD:
                 break;
 
-            case MASTER_KEY_CHANGE_RECORD:
+            case MASTER_KEY_CHANGE_RECORD_V2:
                 MasterKeyChangeRecord mkChangeRec = (MasterKeyChangeRecord)rec;
 
                 byte[] keyIdBytes = mkChangeRec.getMasterKeyName().getBytes();
